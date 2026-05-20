@@ -416,9 +416,14 @@ export function resolveTopology(
 
   const manifest = loadTopologyManifest(options.manifestPath);
   if (manifest) {
+    const hostUrls = manifest.version === 2 ? manifest.urls.host : manifest.serviceUrls;
+    const dockerUrls = manifest.version === 2 ? manifest.urls.docker : manifest.internalUrls;
+    const allCapabilities = manifest.version === 2 ? manifest.capabilitiesV2.all : manifest.capabilities;
+    const byRoleCapabilities = manifest.version === 2 ? manifest.capabilitiesV2.byRole : manifest.capabilitiesByRole;
+
     const serviceUrls = {
       ...defaultServiceUrls(webClient),
-      ...(manifest.urls?.host || manifest.serviceUrls),
+      ...hostUrls,
     };
     if (webClient) serviceUrls.webClient = webClient.publicUrl;
     return {
@@ -431,15 +436,11 @@ export function resolveTopology(
       serviceUrls,
       internalUrls: {
         ...defaultInternalUrls(serviceUrls),
-        ...(manifest.urls?.docker || manifest.internalUrls),
+        ...dockerUrls,
       },
       serviceNames: manifest.serviceNames,
-      capabilities: new Set(
-        manifest.capabilitiesV2?.all || manifest.capabilities,
-      ),
-      capabilitiesByRole: capabilitiesByRoleToSets(
-        manifest.capabilitiesV2?.byRole || manifest.capabilitiesByRole,
-      ),
+      capabilities: new Set(allCapabilities),
+      capabilitiesByRole: capabilitiesByRoleToSets(byRoleCapabilities),
       manifest,
     };
   }

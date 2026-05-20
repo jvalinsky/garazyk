@@ -344,11 +344,15 @@ export interface TopologyDiagnosticProbe {
 /** Versioned topology manifest serialized to disk
  *
  * @remarks
- * Version 1 and 2 share the same core shape; version 2 adds nested URL, env, capability, resource, and service summaries
+ * Version 1 and 2 are discriminated by the `version` field.
+ * Version 2 adds nested URL, env, capability, resource, and service summaries.
  */
-export interface TopologyManifest {
+export type TopologyManifest = TopologyManifestV1 | TopologyManifestV2;
+
+/** Version 1 topology manifest */
+export interface TopologyManifestV1 {
   /** Manifest format version */
-  version: 1 | 2;
+  version: 1;
   /** Topology name */
   name: string;
   /** Topology description */
@@ -379,30 +383,66 @@ export interface TopologyManifest {
   diagnostics: TopologyDiagnosticProbe[];
   /** Source build metadata captured for the topology */
   sources: SourceBuildInfo[];
-  /** Version 2 host and docker URL maps keyed by role */
-  urls?: {
+}
+
+/** Version 2 topology manifest with structured URL, env, capability, resource, and service summaries */
+export interface TopologyManifestV2 {
+  /** Manifest format version */
+  version: 2;
+  /** Topology name */
+  name: string;
+  /** Topology description */
+  description: string;
+  /** Run directory used when the manifest was generated */
+  runDir: string;
+  /** Repository root used for resolution */
+  repoRoot: string;
+  /** Compose file used to launch the topology */
+  composeFile: string;
+  /** Docker network name for the run */
+  networkName: string;
+  /** Public service URLs keyed by role */
+  serviceUrls: Record<string, string>;
+  /** Internal service URLs keyed by role */
+  internalUrls: Record<string, string>;
+  /** Compose service names keyed by role */
+  serviceNames: Record<string, string>;
+  /** Capabilities available in the topology */
+  capabilities: string[];
+  /** Capabilities grouped by role */
+  capabilitiesByRole: Record<string, string[]>;
+  /** Scenario environment variables exported by the topology */
+  scenarioEnv: Record<string, string>;
+  /** Health probes captured for the topology */
+  health: TopologyHealthProbe[];
+  /** Diagnostic probes captured for the topology */
+  diagnostics: TopologyDiagnosticProbe[];
+  /** Source build metadata captured for the topology */
+  sources: SourceBuildInfo[];
+  /** Host and docker URL maps keyed by role */
+  urls: {
     host: Record<string, string>;
     docker: Record<string, string>;
   };
-  /** Version 2 runner and scenario environment maps */
-  env?: {
+  /** Runner and scenario environment maps */
+  env: {
     hostRunner: Record<string, string>;
     dockerRunner: Record<string, string>;
     scenario: Record<string, string>;
   };
-  /** Version 2 capability summary keyed by role */
-  capabilitiesV2?: {
+  /** Capability summary keyed by role */
+  capabilitiesV2: {
     all: string[];
     byRole: Record<string, string[]>;
   };
-  /** Version 2 resource hints keyed by role */
-  resources?: Record<string, {
+  /** Resource hints keyed by role */
+  resources: Record<string, {
     cpu?: string;
     memory?: string;
     localDisk?: string;
   }>;
-  /** Version 2 service summary keyed by role */
-  services?: Record<string, {
+  /** Service summary keyed by role */
+  services: Record<string, {
     role: string;
     name: string;
     serviceName: string;

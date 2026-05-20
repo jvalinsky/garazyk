@@ -25,6 +25,22 @@ import {
 export type { SourceBuildInfo } from "./topology.ts";
 
 /** Options used to compile a topology preset into Docker Compose files. */
+/** OpenTelemetry / SigNoz configuration overrides. */
+export interface OtelOptions {
+  /** SigNoz ClickHouse image tag. @defaultValue "25.5" */
+  clickhouseImage?: string;
+  /** SigNoz OTel Collector image tag. @defaultValue "v0.144.4" */
+  collectorImage?: string;
+  /** SigNoz UI image tag. @defaultValue "v0.123.0" */
+  signozImage?: string;
+  /** SigNoz UI host port. @defaultValue 3301 */
+  signozPort?: number;
+  /** OTel gRPC port. @defaultValue 4317 */
+  grpcPort?: number;
+  /** OTel HTTP port. @defaultValue 4318 */
+  httpPort?: number;
+}
+
 export interface CompilerOptions {
   /** Preset name (e.g. "garazyk-default") or loaded TopologyPreset */
   preset: string | TopologyPreset;
@@ -40,6 +56,8 @@ export interface CompilerOptions {
   includePds2?: boolean;
   /** Enable OpenTelemetry: inject OTel env vars into services and add SigNoz to compose */
   otel?: boolean;
+  /** OpenTelemetry / SigNoz configuration overrides (only used when otel is true) */
+  otelConfig?: OtelOptions;
 }
 
 /** Result of compiling a topology preset into Docker Compose files and manifest. */
@@ -128,10 +146,16 @@ export function validatePreset(preset: TopologyPreset): string[] {
  * The OTel Collector listens on 4317 (gRPC) and 4318 (HTTP).
  * The SigNoz UI is on port 3301 (remapped from 8080 to avoid conflict).
  */
-function renderSigNozServices(services: Record<string, any>, volumes: Set<string>): void {
+function renderSigNozServices(services: Record<string, any>, volumes: Set<string>, config?: OtelOptions): void {
+  const clickhouseImage = `clickhouse/clickhouse-server:${config?.clickhouseImage ?? "25.5"}`;
+  const collectorImage = `signoz/signoz-otel-collector:${config?.collectorImage ?? "v0.144.4"}`;
+  const signozImage = `signoz/signoz:${config?.signozImage ?? "v0.123.0"}`;
+  const signozPort = config?.signozPort ?? 3301;
+  const grpcPort = config?.grpcPort ?? 4317;
+  const httpPort = config?.httpPort ?? 4318;
   // ClickHouse
   services["clickhouse"] = {
-    image: "clickhouse/clickhouse-server:25.5",
+    image: clickhouseImage,
     container_name: "signoz-clickhouse",
     volumes: [
       "signoz_clickhouse_data:/var/lib/clickhouse",
@@ -172,7 +196,7 @@ function renderSigNozServices(services: Record<string, any>, volumes: Set<string
 
   // OTel Collector
   services["signoz-otel-collector"] = {
-    image: "signoz/signoz-otel-collector:v0.144.4",
+    image: collectorImage,
     container_name: "signoz-otel-collector",
     entrypoint: ["/bin/sh"],
     command: [
@@ -192,8 +216,8 @@ function renderSigNozServices(services: Record<string, any>, volumes: Set<string
       SIGNOZ_OTEL_COLLECTOR_TIMEOUT: "10m",
     },
     ports: [
-      "4317:4317",
-      "4318:4318",
+      `${grpcPort}:${grpcPort}`,
+      `${httpPort}:${httpPort}`,
     ],
     depends_on: {
       clickhouse: { condition: "service_healthy" },
@@ -211,10 +235,10 @@ function renderSigNozServices(services: Record<string, any>, volumes: Set<string
 
   // SigNoz UI
   services["signoz"] = {
-    image: "signoz/signoz:v0.123.0",
+    image: signozImage,
     container_name: "signoz",
     ports: [
-      "3301:8080",
+      `${signozPort}:8080`,
     ],
     volumes: [
       "signoz_sqlite_data:/var/lib/signoz/",
@@ -331,9 +355,10 @@ export function renderComposeYaml(
     }
     // Inject OpenTelemetry environment variables when --otel is set
     if (options.otel) {
+      const httpPort = options.otelConfig?.httpPort ?? 4318;
       envMap["OTEL_SERVICE_NAME"] = adapter.name;
       envMap["OTEL_EXPORTER_OTLP_ENDPOINT"] =
-        "http://signoz-otel-collector:4318";
+        `http://signoz-otel-collector:${httpPort}`;
       envMap["OTEL_EXPORTER_OTLP_PROTOCOL"] = "http/protobuf";
       envMap["OTEL_RESOURCE_ATTRIBUTES"] =
         "service.version=dev,deployment.environment=e2e";
@@ -419,7 +444,7 @@ export function renderComposeYaml(
 
   // Add SigNoz OTel infrastructure when --otel is set
   if (options.otel) {
-    renderSigNozServices(services, volumes);
+    renderSigNozServices(services, volumes, options.otelConfig);
   }
 
   const composeObj: Record<string, any> = {
@@ -507,6 +532,10 @@ function extractHostPort(adapter: ServiceAdapter): string | undefined {
 function extractContainerPort(
   adapter: ServiceAdapter | SidecarAdapter,
 ): string | undefined {
+  // Explicit health-check port takes priority
+  if (adapter.healthCheck?.port !== undefined) {
+    return String(adapter.healthCheck.port);
+  }
   if (!adapter.ports || adapter.ports.length === 0) return undefined;
   return parsePortMapping(adapter.ports[0]).containerPort;
 }

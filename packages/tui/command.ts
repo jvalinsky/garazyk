@@ -111,6 +111,15 @@ export function rasterize(commands: RenderCommand[], buffer: {
     title: string,
     style?: CellStyle,
   ): void;
+  boxClipped(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    style?: CellStyle,
+    focused?: boolean,
+    clip?: BoundingBox,
+  ): void;
 }): void {
   for (const cmd of commands) {
     switch (cmd.type) {
@@ -133,14 +142,26 @@ export function rasterize(commands: RenderCommand[], buffer: {
         );
         break;
       case "box":
-        buffer.box(
-          cmd.box.x,
-          cmd.box.y,
-          cmd.box.width,
-          cmd.box.height,
-          cmd.style,
-          cmd.focused,
-        );
+        if (cmd.clip) {
+          buffer.boxClipped(
+            cmd.box.x,
+            cmd.box.y,
+            cmd.box.width,
+            cmd.box.height,
+            cmd.style,
+            cmd.focused,
+            cmd.clip,
+          );
+        } else {
+          buffer.box(
+            cmd.box.x,
+            cmd.box.y,
+            cmd.box.width,
+            cmd.box.height,
+            cmd.style,
+            cmd.focused,
+          );
+        }
         if (cmd.title) {
           buffer.boxTitle(
             cmd.box.x,
