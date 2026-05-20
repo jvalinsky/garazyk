@@ -14,7 +14,7 @@ import {
   type Msg,
   update,
 } from "./dashboard_state.ts";
-import type { Run, ServiceStatus } from "./services/types.ts";
+import type { Run, ScenarioResultView, ServiceStatus } from "./services/types.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -602,4 +602,192 @@ Deno.test("backoff: resets on success", () => {
   // Success resets
   const [s2] = step(s1, { type: "network/healthReceived", services: [] });
   assertEquals(s2.network.healthCheckDelayMs, 5000);
+});
+
+// ---------------------------------------------------------------------------
+// Run detail overlay — regression tests
+// ---------------------------------------------------------------------------
+
+Deno.test("run detail: viewDetail opens overlay and stores run", () => {
+  const state = initState();
+  const run: Run = {
+    id: "r-detail-1",
+    status: "completed",
+    startedAt: 1000,
+    totalScenarios: 3,
+    passed: 2,
+    failed: 1,
+    skipped: 0,
+  };
+  const [next, cmds] = step(state, { type: "runs/viewDetail", runId: "r-detail-1", run });
+  assertEquals(next.runs.detailRunId, "r-detail-1");
+  assertEquals(next.runs.detailRun, run);
+  assertEquals(next.runs.detailResults, []);
+  assertEquals(next.runs.detailCursor, 0);
+  assertEquals(next.runs.detailScrollOffset, 0);
+  // Should issue a fetch Cmd for the results
+  const fetches = fetchCmds(cmds);
+  assertEquals(fetches.length, 1);
+  assertEquals(fetches[0]!.url, "/api/runs/r-detail-1/results");
+  assertEquals(fetches[0]!.onSuccess, "runs/detailResults");
+  assertEquals(fetches[0]!.onError, "runs/closeDetail");
+});
+
+Deno.test("run detail: closeDetail clears all detail state", () => {
+  const run: Run = {
+    id: "r-detail-2",
+    status: "completed",
+    startedAt: 1000,
+    totalScenarios: 1,
+    passed: 0,
+    failed: 1,
+    skipped: 0,
+  };
+  const state = initState({
+    runs: {
+      ...initState().runs,
+      detailRunId: "r-detail-2",
+      detailRun: run,
+      detailResults: [{
+        scenarioId: "01",
+        scenarioName: "test",
+        status: "failed",
+        passed: 0,
+        failed: 1,
+        skipped: 0,
+        durationMs: 500,
+        steps: [{ name: "step1", status: "failed", detail: "error msg", duration_ms: 500 }],
+        artifacts: null,
+      }],
+      detailCursor: 0,
+      detailScrollOffset: 0,
+    },
+  });
+  const [next, cmds] = step(state, { type: "runs/closeDetail" });
+  assertEquals(next.runs.detailRunId, null);
+  assertEquals(next.runs.detailRun, null);
+  assertEquals(next.runs.detailResults, []);
+  assertEquals(next.runs.detailCursor, 0);
+  assertEquals(next.runs.detailScrollOffset, 0);
+  assertEquals(cmds.length, 0);
+});
+
+Deno.test("run detail: detailResults stores results and clamps cursor", () => {
+  const state = initState({
+    runs: {
+      ...initState().runs,
+      detailRunId: "r-1",
+      detailRun: { id: "r-1", status: "completed", startedAt: 1000, totalScenarios: 3, passed: 1, failed: 2, skipped: 0 },
+      detailCursor: 5, // cursor beyond results length
+      detailResults: [],
+    },
+  });
+  const results: ScenarioResultView[] = [
+    { scenarioId: "01", scenarioName: "a", status: "passed", passed: 1, failed: 0, skipped: 0, durationMs: 100, steps: [], artifacts: null },
+    { scenarioId: "02", scenarioName: "b", status: "failed", passed: 0, failed: 1, skipped: 0, durationMs: 200, steps: [{ name: "s1", status: "failed", detail: "err", duration_ms: 200 }], artifacts: null },
+  ];
+  const [next] = step(state, { type: "runs/detailResults", results });
+  assertEquals(next.runs.detailResults, results);
+  assertEquals(next.runs.detailCursor, 1); // clamped to last index
+});
+
+Deno.test("run detail: detailCursorUp moves cursor up", () => {
+  const state = initState({
+    runs: {
+      ...initState().runs,
+      detailRunId: "r-1",
+      detailRun: { id: "r-1", status: "completed", startedAt: 1000, totalScenarios: 2, passed: 1, failed: 1, skipped: 0 },
+      detailCursor: 2,
+      detailResults: [
+        { scenarioId: "01", scenarioName: "a", status: "passed", passed: 1, failed: 0, skipped: 0, durationMs: 0, steps: [], artifacts: null },
+        { scenarioId: "02", scenarioName: "b", status: "failed", passed: 0, failed: 1, skipped: 0, durationMs: 0, steps: [], artifacts: null },
+        { scenarioId: "03", scenarioName: "c", status: "passed", passed: 1, failed: 0, skipped: 0, durationMs: 0, steps: [], artifacts: null },
+      ],
+    },
+  });
+  const [next] = step(state, { type: "runs/detailCursorUp" });
+  assertEquals(next.runs.detailCursor, 1);
+});
+
+Deno.test("run detail: detailCursorDown moves cursor down", () => {
+  const state = initState({
+    runs: {
+      ...initState().runs,
+      detailRunId: "r-1",
+      detailRun: { id: "r-1", status: "completed", startedAt: 1000, totalScenarios: 2, passed: 1, failed: 1, skipped: 0 },
+      detailCursor: 0,
+      detailResults: [
+        { scenarioId: "01", scenarioName: "a", status: "passed", passed: 1, failed: 0, skipped: 0, durationMs: 0, steps: [], artifacts: null },
+        { scenarioId: "02", scenarioName: "b", status: "failed", passed: 0, failed: 1, skipped: 0, durationMs: 0, steps: [], artifacts: null },
+      ],
+    },
+  });
+  const [next] = step(state, { type: "runs/detailCursorDown" });
+  assertEquals(next.runs.detailCursor, 1);
+});
+
+Deno.test("run detail: detailCursorUp clamps at 0", () => {
+  const state = initState({
+    runs: {
+      ...initState().runs,
+      detailRunId: "r-1",
+      detailRun: { id: "r-1", status: "completed", startedAt: 1000, totalScenarios: 1, passed: 1, failed: 0, skipped: 0 },
+      detailCursor: 0,
+      detailResults: [
+        { scenarioId: "01", scenarioName: "a", status: "passed", passed: 1, failed: 0, skipped: 0, durationMs: 0, steps: [], artifacts: null },
+      ],
+    },
+  });
+  const [next] = step(state, { type: "runs/detailCursorUp" });
+  assertEquals(next.runs.detailCursor, 0);
+});
+
+Deno.test("run detail: detailCursorDown clamps at last index", () => {
+  const state = initState({
+    runs: {
+      ...initState().runs,
+      detailRunId: "r-1",
+      detailRun: { id: "r-1", status: "completed", startedAt: 1000, totalScenarios: 1, passed: 1, failed: 0, skipped: 0 },
+      detailCursor: 0,
+      detailResults: [
+        { scenarioId: "01", scenarioName: "a", status: "passed", passed: 1, failed: 0, skipped: 0, durationMs: 0, steps: [], artifacts: null },
+      ],
+    },
+  });
+  const [next] = step(state, { type: "runs/detailCursorDown" });
+  assertEquals(next.runs.detailCursor, 0);
+});
+
+Deno.test("run detail: closeDetail on fetch failure (onError path)", () => {
+  const run: Run = {
+    id: "r-fail",
+    status: "completed",
+    startedAt: 1000,
+    totalScenarios: 1,
+    passed: 0,
+    failed: 1,
+    skipped: 0,
+  };
+  const state = initState({
+    runs: {
+      ...initState().runs,
+      detailRunId: "r-fail",
+      detailRun: run,
+      detailResults: [],
+      detailCursor: 0,
+    },
+  });
+  // Simulate the error path: constructMsg maps to runs/closeDetail
+  const [next] = step(state, { type: "runs/closeDetail" });
+  assertEquals(next.runs.detailRunId, null);
+  assertEquals(next.runs.detailRun, null);
+});
+
+Deno.test("run detail: initial state has null detailRunId and detailRun", () => {
+  const state = initState();
+  assertEquals(state.runs.detailRunId, null);
+  assertEquals(state.runs.detailRun, null);
+  assertEquals(state.runs.detailResults, []);
+  assertEquals(state.runs.detailCursor, 0);
+  assertEquals(state.runs.detailScrollOffset, 0);
 });

@@ -70,6 +70,8 @@ export interface RunsSlice {
   recentToken: number;
   /** Run detail overlay: which run is being viewed, or null */
   detailRunId: string | null;
+  /** Run detail overlay: the Run object for the viewed run */
+  detailRun: Run | null;
   /** Run detail overlay: fetched scenario results */
   detailResults: ScenarioResultView[];
   /** Run detail overlay: cursor position in scenario list */
@@ -298,7 +300,7 @@ export type Msg =
   // Run events (push-based from RunManager — replaces polling for active runs)
   | { type: "runs/event"; event: RunEvent }
   // Run detail overlay
-  | { type: "runs/viewDetail"; runId: string }
+  | { type: "runs/viewDetail"; runId: string; run: Run }
   | { type: "runs/closeDetail" }
   | { type: "runs/detailResults"; results: ScenarioResultView[] }
   | { type: "runs/detailCursorUp" }
@@ -1314,6 +1316,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
           runs: {
             ...state.runs,
             detailRunId: msg.runId,
+            detailRun: msg.run,
             detailResults: [],
             detailCursor: 0,
             detailScrollOffset: 0,
@@ -1334,6 +1337,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
         runs: {
           ...state.runs,
           detailRunId: null,
+          detailRun: null,
           detailResults: [],
           detailCursor: 0,
           detailScrollOffset: 0,
@@ -1431,6 +1435,7 @@ export function createInitialState(overrides?: Partial<DashboardState>): Dashboa
       recentDelayMs: BASE_RECENT_POLL_MS,
       recentToken: 0,
       detailRunId: null,
+      detailRun: null,
       detailResults: [],
       detailCursor: 0,
       detailScrollOffset: 0,
