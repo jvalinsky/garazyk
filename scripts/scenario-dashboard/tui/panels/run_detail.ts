@@ -7,14 +7,15 @@
  * @module tui/panels/run_detail
  */
 
-import type { ScreenBuffer } from "@garazyk/tui";
+import type { CellStyle, ScreenBuffer } from "@garazyk/tui";
 import {
+  ANSI,
+  bg,
   bold,
   COLORS,
   DEFAULT_STYLE,
   dim,
   fg,
-  reverse,
   truncate,
 } from "@garazyk/tui";
 import type { Run, ScenarioResultView, ScenarioStep } from "../../services/types.ts";
@@ -111,12 +112,11 @@ export function renderRunDetailOverlay(
   cursor: number,
   scrollOffset: number,
 ): void {
-  const overlayStyle = reverse(DEFAULT_STYLE);
-  const titleStyle = reverse(bold(DEFAULT_STYLE));
-  const labelStyle = reverse(dim(DEFAULT_STYLE));
-  const accentStyle = reverse(bold(fg(COLORS.accent)));
+  const overlayStyle = bg(ANSI.BLACK);
+  const titleStyle = bold(fg(COLORS.accent));
+  const labelStyle = dim(fg(COLORS.textSecondary));
 
-  // Fill the entire screen with reverse-video background
+  // Fill the entire screen with dark background
   buf.fillRect(0, 0, buf.width, buf.height, " ", overlayStyle);
 
   // Calculate box dimensions
@@ -140,7 +140,7 @@ export function renderRunDetailOverlay(
   const badgeColor = statusBadgeColor(run.status);
   const titleText = `Run ${truncate(run.id, 30)}`;
   buf.writeClipped(contentX, row, titleText, titleStyle, clip);
-  buf.writeClipped(contentX + titleText.length + 1, row, badge, reverse(fg(badgeColor)), clip);
+  buf.writeClipped(contentX + titleText.length + 1, row, badge, fg(badgeColor), clip);
   row++;
 
   // ── Metadata line: topology, runner, pds2, binary ──────────────────
@@ -162,7 +162,7 @@ export function renderRunDetailOverlay(
     const skipped = run.skipped;
     const dur = formatDurationSec(run.durationS);
     let summaryText = `${passed} passed  ${failed} failed  ${skipped} skipped  duration: ${dur}`;
-    buf.writeClipped(contentX, row, summaryText, reverse(DEFAULT_STYLE), clip);
+    buf.writeClipped(contentX, row, summaryText, fg(COLORS.textPrimary), clip);
     row++;
   }
 
@@ -190,7 +190,7 @@ export function renderRunDetailOverlay(
     resultIndex: number;
     text: string;
     isCursor: boolean;
-    style: ReturnType<typeof reverse>;
+    style: CellStyle;
   }
 
   const displayRows: DisplayRow[] = [];
@@ -208,11 +208,11 @@ export function renderRunDetailOverlay(
     const padding = Math.max(0, contentWidth - namePart.length - durPart.length);
 
     const rowStyle = isCursor
-      ? reverse(fg(COLORS.accent))
-      : reverse(DEFAULT_STYLE);
+      ? bold(fg(COLORS.accent))
+      : fg(COLORS.textPrimary);
     const indicatorStyle = isCursor
-      ? reverse(fg(COLORS.accent))
-      : reverse(fg(color));
+      ? bold(fg(COLORS.accent))
+      : fg(color);
 
     displayRows.push({
       type: "scenario",
@@ -228,8 +228,8 @@ export function renderRunDetailOverlay(
       if (failedStep?.detail) {
         const detailText = `   \u2514 ${truncate(failedStep.detail, contentWidth - 4)}`;
         const detailStyle = isCursor
-          ? reverse(fg(COLORS.accent))
-          : reverse(fg(COLORS.statusErr));
+          ? bold(fg(COLORS.accent))
+          : fg(COLORS.statusErr);
         displayRows.push({
           type: "detail",
           resultIndex: i,
@@ -247,7 +247,7 @@ export function renderRunDetailOverlay(
     const dr = displayRows[i]!;
     // Cursor highlight: fill the row background
     if (dr.isCursor && dr.type === "scenario") {
-      buf.fillRect(contentX, renderRow, contentWidth, 1, " ", reverse(fg(COLORS.accent)));
+      buf.fillRect(contentX, renderRow, contentWidth, 1, " ", bg(ANSI.BRIGHT_BLACK));
     }
     buf.writeClipped(contentX, renderRow, dr.text, dr.style, clip);
     renderRow++;
@@ -256,7 +256,7 @@ export function renderRunDetailOverlay(
   // ── Footer: keybinding hints ───────────────────────────────────────
   const footerRow = boxY + boxHeight - 2;
   const footerText = "\u2191\u2193 navigate  Esc close";
-  buf.writeClipped(contentX, footerRow, footerText, reverse(dim(DEFAULT_STYLE)), clip);
+  buf.writeClipped(contentX, footerRow, footerText, dim(fg(COLORS.textMuted)), clip);
 
   // ── Box title ───────────────────────────────────────────────────────
   buf.boxTitle(boxX, boxY, boxWidth, "Run Detail", overlayStyle);
