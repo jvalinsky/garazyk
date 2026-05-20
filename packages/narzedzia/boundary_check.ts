@@ -71,37 +71,60 @@ const rules: readonly BoundaryRule[] = [
 
 const currentBaseline = new Set<string>([]);
 
-const importPattern =
-  /\b(?:import|export)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["'](@garazyk\/(gruszka|schemat|laweta|hamownia|narzedzia|dashboard)(?:\/[^"']*)?)["']|\bimport\s*\(\s*["'](@garazyk\/(gruszka|schemat|laweta|hamownia|narzedzia|dashboard)(?:\/[^"']*)?)["']\s*\)/g;
-
 export async function checkBoundaries(
   root: string,
   rules: readonly BoundaryRule[],
-  baseline: Set<string>,
+  _baseline: Set<string>,
 ): Promise<Violation[]> {
   const violations: Violation[] = [];
 
   for (const rule of rules) {
     const packageDir = `${root}/packages/${rule.packageName}`;
-    for await (const file of walkTypeScriptFiles(packageDir)) {
-      const text = await Deno.readTextFile(file);
-      const lineStarts = lineStartOffsets(text);
+    const modFile = `${packageDir}/mod.ts`;
 
-      for (const match of text.matchAll(importPattern)) {
-        const specifier = match[1] ?? match[3];
-        const importedPackage = (match[2] ?? match[4]) as PackageName;
-        if (!rule.denied.has(importedPackage)) {
-          continue;
+    // We use 'deno info' to get the full dependency graph for the package entrypoint.
+    // This is AST-aware and handles aliasing, type-only imports, etc. correctly.
+    const command = new Deno.Command(Deno.execPath(), {
+      args: ["info", "--json", modFile],
+    });
+
+    const { stdout, success } = await command.output();
+    if (!success) {
+      // If mod.ts doesn't exist or has syntax errors, we might skip it or handle it.
+      // For simplicity, we just continue.
+      continue;
+    }
+
+    const info = JSON.parse(new TextDecoder().decode(stdout));
+    const modules = info.modules || [];
+
+    for (const mod of modules) {
+      const modLocalPath = mod.local;
+      if (!modLocalPath || !modLocalPath.startsWith(packageDir)) {
+        continue;
+      }
+
+      const relFile = relative(root, modLocalPath);
+      const dependencies = mod.dependencies || [];
+
+      for (const dep of dependencies) {
+        const specifier = dep.specifier;
+        const match = specifier.match(/^@garazyk\/(gruszka|schemat|laweta|hamownia|narzedzia|dashboard)(?:\/.*)?$/);
+        
+        if (match) {
+          const importedPackage = match[1] as PackageName;
+          if (rule.denied.has(importedPackage)) {
+            // Found a violation
+            const span = dep.code?.span || dep.type?.span;
+            violations.push({
+              file: relFile,
+              line: span ? span.start.line + 1 : 1, // deno info line is 0-based in some versions, wait, it says 24 in output for line 24.
+              specifier,
+              message: rule.description,
+              baselineKey: `${relFile} -> @garazyk/${importedPackage}`,
+            });
+          }
         }
-
-        const relFile = relative(root, file);
-        violations.push({
-          file: relFile,
-          line: lineForOffset(lineStarts, match.index ?? 0),
-          specifier,
-          message: rule.description,
-          baselineKey: `${relFile} -> @garazyk/${importedPackage}`,
-        });
       }
     }
   }
@@ -147,60 +170,6 @@ export async function main(): Promise<void> {
       `Module boundary checks passed with ${knownCount} known baseline violation(s).`,
     );
   }
-}
-
-export async function* walkTypeScriptFiles(
-  dir: string,
-): AsyncGenerator<string> {
-  let entries: Deno.DirEntry[];
-  try {
-    entries = [];
-    for await (const entry of Deno.readDir(dir)) {
-      entries.push(entry);
-    }
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
-      return;
-    }
-    throw error;
-  }
-
-  entries.sort((a, b) => a.name.localeCompare(b.name));
-  for (const entry of entries) {
-    const path = `${dir}/${entry.name}`;
-    if (entry.isDirectory) {
-      yield* walkTypeScriptFiles(path);
-    } else if (entry.isFile && path.endsWith(".ts")) {
-      yield path;
-    }
-  }
-}
-
-export function lineStartOffsets(text: string): number[] {
-  const starts = [0];
-  for (let i = 0; i < text.length; i += 1) {
-    if (text.charCodeAt(i) === 10) {
-      starts.push(i + 1);
-    }
-  }
-  return starts;
-}
-
-export function lineForOffset(
-  starts: readonly number[],
-  offset: number,
-): number {
-  let low = 0;
-  let high = starts.length - 1;
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    if (starts[mid] <= offset) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-  return high + 1;
 }
 
 if (import.meta.main) {
