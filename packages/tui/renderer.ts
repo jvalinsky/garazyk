@@ -12,13 +12,6 @@ import { getCharWidth } from "./text.ts";
 import { getCurrentTheme } from "./theme.ts";
 
 // ---------------------------------------------------------------------------
-// NO_COLOR — https://no-color.org/
-// ---------------------------------------------------------------------------
-
-/** Whether the NO_COLOR environment variable is set. When true, color codes are suppressed but text attributes (bold, dim, reverse, underline) are preserved. */
-export const NO_COLOR: boolean = Deno.env.get("NO_COLOR") !== undefined;
-
-// ---------------------------------------------------------------------------
 // Cell — single character position in the buffer
 // ---------------------------------------------------------------------------
 
@@ -53,9 +46,11 @@ export const DEFAULT_STYLE: CellStyle = {
   underline: false,
 };
 
-// ---------------------------------------------------------------------------
-// ScreenBuffer — virtual terminal canvas
-// ---------------------------------------------------------------------------
+/** ScreenBuffer configuration options. */
+export interface ScreenBufferOptions {
+  /** Suppress ANSI color codes (text attributes are preserved). */
+  noColor?: boolean;
+}
 
 /** Virtual terminal canvas that renders to a 2D grid of cells. */
 export class ScreenBuffer {
@@ -63,10 +58,12 @@ export class ScreenBuffer {
   private prevCells: Cell[];
   width: number;
   height: number;
+  private noColor: boolean;
 
-  constructor(width: number, height: number) {
+  constructor(width: number, height: number, options: ScreenBufferOptions = {}) {
     this.width = width;
     this.height = height;
+    this.noColor = options.noColor ?? false;
     this.cells = Array.from({ length: width * height }, emptyCell);
     this.prevCells = Array.from({ length: width * height }, emptyCell);
   }
@@ -76,7 +73,12 @@ export class ScreenBuffer {
     this.width = width;
     this.height = height;
     this.cells = Array.from({ length: width * height }, emptyCell);
-    this.prevCells = Array.from({ length: width * height }, emptyCell);
+    // Initialize prevCells with a unique state that will never match a real cell
+    // to ensure the next diff() emits a full redraw.
+    this.prevCells = Array.from({ length: width * height }, () => ({
+      char: "",
+      style: { ...DEFAULT_STYLE, fg: -1 }, // fg -1 is impossible
+    }));
   }
 
   /** Clear all cells to spaces with default style. */
@@ -288,10 +290,9 @@ export class ScreenBuffer {
 
       // Apply style if changed
       if (!stylesEqual(curr.style, lastStyle)) {
-        parts.push(encodeStyle(curr.style));
+        parts.push(encodeStyle(curr.style, this.noColor));
         lastStyle = { ...curr.style };
       }
-
       parts.push(curr.char);
       cursorX = x + 1;
       cursorY = y;
@@ -325,7 +326,7 @@ export class ScreenBuffer {
 
       // Apply style if changed
       if (!stylesEqual(cell.style, lastStyle)) {
-        parts.push(encodeStyle(cell.style));
+        parts.push(encodeStyle(cell.style, this.noColor));
         lastStyle = { ...cell.style };
       }
 
@@ -449,7 +450,7 @@ function moveCursor(x: number, y: number): string {
   return `\x1b[${y + 1};${x + 1}H`;
 }
 
-function encodeStyle(style: CellStyle): string {
+function encodeStyle(style: CellStyle, noColor: boolean): string {
   const parts: string[] = ["0"]; // reset
 
   if (style.bold) parts.push("1");
@@ -459,7 +460,7 @@ function encodeStyle(style: CellStyle): string {
 
   // Skip color codes when NO_COLOR is set (https://no-color.org/)
   // Text attributes (bold, dim, reverse, underline) are preserved.
-  if (!NO_COLOR) {
+  if (!noColor) {
     if (style.fg >= 0) {
       if (style.fg < 16) {
         parts.push(`${30 + style.fg % 8}`);
