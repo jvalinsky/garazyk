@@ -190,7 +190,7 @@ function renderStatusBar(
     x: bar.x + bar.width - time.length - 1,
     y: bar.y,
     text: time,
-    style: dim(fg(COLORS.textPrimary)),
+    style: dim(fg(COLORS.textSecondary)),
   });
 
   // Running indicator
@@ -263,7 +263,7 @@ function renderHintBar(
         x: col + key.length,
         y: bar.y,
         text: ` ${label}`,
-        style: dim(fg(COLORS.textPrimary)),
+        style: dim(fg(COLORS.textSecondary)),
       });
     }
     col += fullLen + 2; // +2 for spacing between hints
@@ -325,7 +325,7 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
   const overlayStyle = bg(COLORS.surfaceBase);
   const titleStyle = bold(fg(COLORS.accent));
   const keyStyle = bold(fg(COLORS.accent));
-  const actionStyle = dim(fg(COLORS.textPrimary));
+  const actionStyle = dim(fg(COLORS.textSecondary));
 
   // Calculate content dimensions
   let maxBindingWidth = 0;
@@ -357,7 +357,6 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
   let row = boxY + 1; // start inside the top border
   const maxRow = boxY + boxHeight - 2; // stay inside the bottom border
   const contentX = boxX + 2; // left padding inside border
-  const contentWidth = boxWidth - 4; // usable width inside border
 
   for (const section of HELP_SECTIONS) {
     if (row > maxRow) break;
@@ -396,7 +395,7 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
 
   // Footer
   if (row <= maxRow) {
-    buf.writeClipped(contentX, row, "Press any key to close", dim(fg(COLORS.textPrimary)), {
+    buf.writeClipped(contentX, row, "Press any key to close", dim(fg(COLORS.textSecondary)), {
       x: boxX + 1,
       y: boxY + 1,
       width: boxWidth - 2,

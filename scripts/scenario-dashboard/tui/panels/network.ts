@@ -9,7 +9,6 @@
 
 import type { CellStyle, RenderCommand } from "@garazyk/tui";
 import {
-  ANSI,
   bg,
   bold,
   COLORS,
@@ -58,7 +57,7 @@ export function renderNetworkPanel(
       x: area.x,
       y: area.y + row,
       text: "No services discovered",
-      style: dim(fg(COLORS.textPrimary)),
+      style: dim(fg(COLORS.textSecondary)),
       clip,
     });
     return cmds;
@@ -143,7 +142,7 @@ export function renderNetworkPanel(
         text: endpoint,
         style: isCursorRow
           ? CURSOR_TEXT_STYLE
-          : dim(fg(COLORS.textPrimary)),
+          : dim(fg(COLORS.textSecondary)),
         clip,
       });
     }

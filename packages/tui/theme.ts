@@ -131,13 +131,13 @@ const ANSI_COLORS = {
 /**
  * Dark theme — the default for terminals with dark backgrounds.
  *
- * Surface hierarchy (lazygit-inspired):
+ * Surface hierarchy:
  *   surfaceBase     → BLACK (0)         deep app background
  *   surfacePanel    → BRIGHT_BLACK (8)  subtle dark gray panel fill
- *   surfaceElevated → BLUE (4)          cursor/selected rows
+ *   surfaceElevated → CYAN (6)          cursor/selected rows (teal)
  *
  * Accent: MAGENTA (5) — strawberry brand (hue 15° in OKLCH).
- *   Distinct from RED (1, used for errors) and CYAN (6, used in classic theme).
+ *   Distinct from RED (1, used for errors) and CYAN (6, used for elevated surfaces).
  */
 export const darkTheme: Theme = {
   name: "dark",
@@ -145,11 +145,11 @@ export const darkTheme: Theme = {
   // Surface hierarchy
   surfaceBase: ANSI_COLORS.BLACK,
   surfacePanel: ANSI_COLORS.BRIGHT_BLACK,
-  surfaceElevated: ANSI_COLORS.BLUE,
+  surfaceElevated: ANSI_COLORS.CYAN,
 
   // Text
   textPrimary: ANSI_COLORS.DEFAULT,
-  textSecondary: ANSI_COLORS.BRIGHT_BLACK,
+  textSecondary: ANSI_COLORS.WHITE,
   textMuted: ANSI_COLORS.BRIGHT_BLACK,
 
   // Accent (strawberry brand)
@@ -173,7 +173,7 @@ export const darkTheme: Theme = {
 
   // Progress
   progressBar: ANSI_COLORS.GREEN,
-  progressTrack: ANSI_COLORS.BRIGHT_BLACK,
+  progressTrack: ANSI_COLORS.BLACK,
 
   // Title
   title: ANSI_COLORS.MAGENTA,
@@ -201,7 +201,11 @@ export const lightTheme: Theme = {
   surfacePanel: ANSI_COLORS.DEFAULT, // terminal default (usually white/light)
   surfaceElevated: ANSI_COLORS.BLUE,
 
-  // Text — dark for contrast on light backgrounds
+  // Text — dark for contrast on light backgrounds.
+  // NOTE: textSecondary and textMuted both map to BRIGHT_BLACK (8).
+  // The 16-color palette cannot express three distinct text levels on a
+  // light background while maintaining contrast. Callers should use `dim()`
+  // to visually separate secondary from muted when needed.
   textPrimary: ANSI_COLORS.BLACK,
   textSecondary: ANSI_COLORS.BRIGHT_BLACK,
   textMuted: ANSI_COLORS.BRIGHT_BLACK,
@@ -250,6 +254,10 @@ export const classicTheme: Theme = {
   surfaceElevated: ANSI_COLORS.BLUE,
 
   // Text
+  // NOTE: textSecondary and textMuted both map to BRIGHT_BLACK (8).
+  // The 16-color palette cannot express three distinct text levels while
+  // keeping BRIGHT_BLACK as the surface panel fill. Callers should use
+  // `dim()` to visually separate secondary from muted when needed.
   textPrimary: ANSI_COLORS.DEFAULT,
   textSecondary: ANSI_COLORS.BRIGHT_BLACK,
   textMuted: ANSI_COLORS.BRIGHT_BLACK,

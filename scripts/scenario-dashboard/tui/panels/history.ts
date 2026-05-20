@@ -9,7 +9,6 @@
 
 import type { CellStyle, RenderCommand } from "@garazyk/tui";
 import {
-  ANSI,
   bg,
   bold,
   COLORS,
@@ -64,7 +63,7 @@ export function renderHistoryPanel(
       x: area.x,
       y: area.y + row,
       text: "No recorded runs",
-      style: dim(fg(COLORS.textPrimary)),
+      style: dim(fg(COLORS.textSecondary)),
       clip,
     });
   } else {
@@ -140,7 +139,7 @@ export function renderHistoryPanel(
             text: dur,
             style: isCursorRow
               ? CURSOR_TEXT_STYLE
-              : dim(fg(COLORS.textPrimary)),
+              : dim(fg(COLORS.textSecondary)),
             clip,
           });
         }
@@ -183,7 +182,7 @@ export function renderHistoryPanel(
         x: area.x + 11,
         y: area.y + row,
         text: cpu,
-        style: dim(fg(COLORS.textPrimary)),
+        style: dim(fg(COLORS.textSecondary)),
         clip,
       });
       if (area.x + 11 + cpu.length + mem.length <= area.x + area.width) {
@@ -192,7 +191,7 @@ export function renderHistoryPanel(
           x: area.x + 11 + cpu.length,
           y: area.y + row,
           text: mem,
-          style: dim(fg(COLORS.textPrimary)),
+          style: dim(fg(COLORS.textSecondary)),
           clip,
         });
       }

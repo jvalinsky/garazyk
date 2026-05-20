@@ -85,10 +85,11 @@ Deno.test("theme: all theme color tokens are in valid ANSI range", () => {
   }
 });
 
-Deno.test("theme: darkTheme surface hierarchy is progressive", () => {
-  // surfaceBase < surfacePanel < surfaceElevated in the dark theme
-  // (darker backgrounds for deeper layers)
-  assert(darkTheme.surfaceBase <= darkTheme.surfacePanel);
+Deno.test("theme: darkTheme surface hierarchy layers are distinct", () => {
+  // Each surface layer must be visually distinct
+  assert(darkTheme.surfaceBase !== darkTheme.surfacePanel);
+  assert(darkTheme.surfacePanel !== darkTheme.surfaceElevated);
+  assert(darkTheme.surfaceBase !== darkTheme.surfaceElevated);
 });
 
 Deno.test("theme: darkTheme has DEFAULT textPrimary (uses terminal default)", () => {
@@ -96,8 +97,8 @@ Deno.test("theme: darkTheme has DEFAULT textPrimary (uses terminal default)", ()
 });
 
 Deno.test("theme: lightTheme text is dark for contrast on light background", () => {
-  // Light theme should use dark foreground colors
-  assert(lightTheme.textPrimary <= 8); // BLACK or BRIGHT_BLACK
+  // Light theme must use BLACK (0) for text on white background
+  assertEquals(lightTheme.textPrimary, 0);
 });
 
 Deno.test("theme: lightTheme surfaceBase is light", () => {
@@ -212,7 +213,7 @@ Deno.test("theme: COLORS surface tokens in dark theme", () => {
   setTheme("dark");
   assertEquals(COLORS.surfaceBase, 0);    // BLACK
   assertEquals(COLORS.surfacePanel, 8);   // BRIGHT_BLACK
-  assertEquals(COLORS.surfaceElevated, 4); // BLUE
+  assertEquals(COLORS.surfaceElevated, 6); // CYAN (teal, better contrast than dark blue)
 });
 
 Deno.test("theme: COLORS status tokens in dark theme use standard colors", () => {
@@ -220,6 +221,19 @@ Deno.test("theme: COLORS status tokens in dark theme use standard colors", () =>
   assertEquals(COLORS.statusOk, 2);    // GREEN
   assertEquals(COLORS.statusWarn, 3);  // YELLOW
   assertEquals(COLORS.statusErr, 1);   // RED
+});
+
+Deno.test("theme: COLORS text tokens in dark theme", () => {
+  setTheme("dark");
+  assertEquals(COLORS.textPrimary, -1);    // DEFAULT (terminal fg)
+  assertEquals(COLORS.textSecondary, 7);   // WHITE (brighter than dim, less than default)
+  assertEquals(COLORS.textMuted, 8);       // BRIGHT_BLACK
+});
+
+Deno.test("theme: COLORS progress track is darker than panel fill", () => {
+  setTheme("dark");
+  assertEquals(COLORS.progressTrack, 0);  // BLACK — darker than surfacePanel (8)
+  assertEquals(COLORS.progressBar, 2);    // GREEN
 });
 
 Deno.test("theme: COLORS border tokens in dark theme", () => {
@@ -231,6 +245,80 @@ Deno.test("theme: COLORS border tokens in dark theme", () => {
 Deno.test("theme: COLORS title uses accent in dark theme", () => {
   setTheme("dark");
   assertEquals(COLORS.title, COLORS.accent);
+});
+
+Deno.test("theme: COLORS all getters return valid ANSI after switching to light theme", () => {
+  setTheme("light");
+  const keys = Object.keys(COLORS) as (keyof typeof COLORS)[];
+  for (const key of keys) {
+    const value = COLORS[key];
+    assert(value >= -1 && value <= 15,
+      `COLORS.${key}=${value} out of range in light theme`);
+  }
+  setTheme("dark");
+});
+
+Deno.test("theme: COLORS all getters return valid ANSI after switching to classic theme", () => {
+  setTheme("classic");
+  const keys = Object.keys(COLORS) as (keyof typeof COLORS)[];
+  for (const key of keys) {
+    const value = COLORS[key];
+    assert(value >= -1 && value <= 15,
+      `COLORS.${key}=${value} out of range in classic theme`);
+  }
+  setTheme("dark");
+});
+
+Deno.test("theme: COLORS getters reflect light theme surface tokens after switching", () => {
+  setTheme("light");
+  assertEquals(COLORS.surfaceBase, 7);        // WHITE
+  assertEquals(COLORS.surfacePanel, -1);       // DEFAULT
+  assertEquals(COLORS.surfaceElevated, 4);     // BLUE
+  setTheme("dark");
+});
+
+Deno.test("theme: COLORS getters reflect light theme text tokens after switching", () => {
+  setTheme("light");
+  assertEquals(COLORS.textPrimary, 0);         // BLACK
+  assertEquals(COLORS.textSecondary, 8);       // BRIGHT_BLACK
+  assertEquals(COLORS.textMuted, 8);            // BRIGHT_BLACK (converged)
+  setTheme("dark");
+});
+
+Deno.test("theme: COLORS getters reflect classic theme CYAN tokens after switching", () => {
+  setTheme("classic");
+  assertEquals(COLORS.accent, 6);              // CYAN
+  assertEquals(COLORS.borderFocused, 6);        // CYAN
+  assertEquals(COLORS.badgeRunning, 6);         // CYAN
+  assertEquals(COLORS.title, 6);                // CYAN
+  setTheme("dark");
+});
+
+Deno.test("theme: COLORS getters reflect classic theme progress track after switching", () => {
+  setTheme("classic");
+  assertEquals(COLORS.progressBar, 2);         // GREEN
+  assertEquals(COLORS.progressTrack, 8);       // BRIGHT_BLACK
+  setTheme("dark");
+});
+
+Deno.test("theme: COLORS getters across all three themes have no stale values", () => {
+  // Switch through all three themes and check a token that differs in each
+  setTheme("dark");
+  assertEquals(COLORS.surfaceElevated, 6);     // CYAN in dark
+  assertEquals(COLORS.progressTrack, 0);       // BLACK in dark
+
+  setTheme("light");
+  assertEquals(COLORS.surfaceElevated, 4);     // BLUE in light
+  assertEquals(COLORS.progressTrack, 8);       // BRIGHT_BLACK in light
+
+  setTheme("classic");
+  assertEquals(COLORS.surfaceElevated, 4);     // BLUE in classic
+  assertEquals(COLORS.progressTrack, 8);       // BRIGHT_BLACK in classic
+
+  // Switch back and verify no stale values
+  setTheme("dark");
+  assertEquals(COLORS.surfaceElevated, 6);     // restored correctly
+  assertEquals(COLORS.progressTrack, 0);       // restored correctly
 });
 
 // ---------------------------------------------------------------------------
@@ -261,4 +349,100 @@ Deno.test("theme: rapid theme switching via COLORS getter consistency", () => {
 Deno.test("theme: all themes have unique names", () => {
   const names = Object.values(themes).map((t) => t.name);
   assertEquals(new Set(names).size, names.length);
+});
+
+// ---------------------------------------------------------------------------
+// Light theme — explicit token values (focus on what differs from dark)
+// ---------------------------------------------------------------------------
+
+Deno.test("theme: lightTheme surface hierarchy — white base, default panel, blue elevated", () => {
+  assertEquals(lightTheme.surfaceBase, 7);       // WHITE
+  assertEquals(lightTheme.surfacePanel, -1);      // DEFAULT (terminal bg)
+  assertEquals(lightTheme.surfaceElevated, 4);    // BLUE
+});
+
+Deno.test("theme: lightTheme surface hierarchy layers are distinct", () => {
+  assert(lightTheme.surfaceBase !== lightTheme.surfacePanel);
+  assert(lightTheme.surfacePanel !== lightTheme.surfaceElevated);
+  assert(lightTheme.surfaceBase !== lightTheme.surfaceElevated);
+});
+
+Deno.test("theme: lightTheme text tokens — dark text on light bg", () => {
+  assertEquals(lightTheme.textPrimary, 0);        // BLACK
+  assertEquals(lightTheme.textSecondary, 8);      // BRIGHT_BLACK (gray)
+  assertEquals(lightTheme.textMuted, 8);          // BRIGHT_BLACK (gray)
+});
+
+Deno.test("theme: lightTheme uses MAGENTA accent (same brand as dark)", () => {
+  assertEquals(lightTheme.accent, 5);             // MAGENTA
+  assertEquals(lightTheme.borderFocused, 5);       // MAGENTA
+  assertEquals(lightTheme.badgeRunning, 5);        // MAGENTA
+  assertEquals(lightTheme.title, 5);               // MAGENTA
+});
+
+Deno.test("theme: lightTheme progress — GREEN bar, BRIGHT_BLACK track", () => {
+  assertEquals(lightTheme.progressBar, 2);        // GREEN
+  assertEquals(lightTheme.progressTrack, 8);      // BRIGHT_BLACK (lighter than dark's BLACK)
+});
+
+Deno.test("theme: lightTheme status tokens use standard traffic-light colors", () => {
+  assertEquals(lightTheme.statusOk, 2);           // GREEN
+  assertEquals(lightTheme.statusWarn, 3);         // YELLOW
+  assertEquals(lightTheme.statusErr, 1);          // RED
+  assertEquals(lightTheme.statusMuted, 8);        // BRIGHT_BLACK
+});
+
+Deno.test("theme: lightTheme border and badge tokens", () => {
+  assertEquals(lightTheme.border, 8);              // BRIGHT_BLACK
+  assertEquals(lightTheme.badgePassed, 2);         // GREEN
+  assertEquals(lightTheme.badgeFailed, 1);         // RED
+  assertEquals(lightTheme.badgeSkipped, 3);        // YELLOW
+});
+
+// ---------------------------------------------------------------------------
+// Classic theme — explicit token values (focus on what differs from dark)
+// ---------------------------------------------------------------------------
+
+Deno.test("theme: classicTheme surface hierarchy — black, grey, blue", () => {
+  assertEquals(classicTheme.surfaceBase, 0);       // BLACK (same as dark)
+  assertEquals(classicTheme.surfacePanel, 8);      // BRIGHT_BLACK (same as dark)
+  assertEquals(classicTheme.surfaceElevated, 4);   // BLUE (classic blue cursor)
+});
+
+Deno.test("theme: classicTheme surface hierarchy layers are distinct", () => {
+  assert(classicTheme.surfaceBase !== classicTheme.surfacePanel);
+  assert(classicTheme.surfacePanel !== classicTheme.surfaceElevated);
+  assert(classicTheme.surfaceBase !== classicTheme.surfaceElevated);
+});
+
+Deno.test("theme: classicTheme text tokens", () => {
+  assertEquals(classicTheme.textPrimary, -1);      // DEFAULT (terminal fg)
+  assertEquals(classicTheme.textSecondary, 8);     // BRIGHT_BLACK
+  assertEquals(classicTheme.textMuted, 8);         // BRIGHT_BLACK
+});
+
+Deno.test("theme: classicTheme CYAN throughout (accent, border, badge, title)", () => {
+  assertEquals(classicTheme.accent, 6);            // CYAN
+  assertEquals(classicTheme.borderFocused, 6);      // CYAN
+  assertEquals(classicTheme.badgeRunning, 6);       // CYAN
+  assertEquals(classicTheme.title, 6);              // CYAN
+});
+
+Deno.test("theme: classicTheme progress — GREEN bar, BRIGHT_BLACK track", () => {
+  assertEquals(classicTheme.progressBar, 2);       // GREEN
+  assertEquals(classicTheme.progressTrack, 8);     // BRIGHT_BLACK
+});
+
+Deno.test("theme: classicTheme status tokens use standard traffic-light colors", () => {
+  assertEquals(classicTheme.statusOk, 2);          // GREEN
+  assertEquals(classicTheme.statusWarn, 3);        // YELLOW
+  assertEquals(classicTheme.statusErr, 1);         // RED
+  assertEquals(classicTheme.statusMuted, 8);       // BRIGHT_BLACK
+});
+
+Deno.test("theme: classicTheme border and badge tokens", () => {
+  assertEquals(classicTheme.border, 8);             // BRIGHT_BLACK
+  assertEquals(classicTheme.badgePassed, 2);        // GREEN
+  assertEquals(classicTheme.badgeFailed, 1);        // RED
+  assertEquals(classicTheme.badgeSkipped, 3);       // YELLOW
 });
