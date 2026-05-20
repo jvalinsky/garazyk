@@ -1,6 +1,6 @@
-#!/usr/bin/env -S deno run --allow-read
+#!/usr/bin/env -S deno run --allow-read --allow-write
 
-import { relative } from "@std/path";
+import { join, relative } from "@std/path";
 
 export type PackageName =
   | "gruszka"
@@ -25,6 +25,7 @@ export interface Violation {
 }
 
 const root = Deno.args[0] ?? Deno.cwd();
+const addBaseline = Deno.args.includes("--add-baseline");
 
 const rules: readonly BoundaryRule[] = [
   {
@@ -69,7 +70,29 @@ const rules: readonly BoundaryRule[] = [
   },
 ];
 
-const currentBaseline = new Set<string>([]);
+const BASELINE_FILE = "boundary-baseline.json";
+
+/** Load the baseline from a JSON file next to the root. */
+function loadBaseline(rootDir: string): Set<string> {
+  try {
+    const text = Deno.readTextFileSync(join(rootDir, BASELINE_FILE));
+    const arr: string[] = JSON.parse(text);
+    return new Set(arr);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Save the baseline to a JSON file next to the root. */
+function saveBaseline(rootDir: string, baseline: Set<string>): void {
+  const arr = [...baseline].sort();
+  Deno.writeTextFileSync(
+    join(rootDir, BASELINE_FILE),
+    JSON.stringify(arr, null, 2) + "\n",
+  );
+}
+
+const currentBaseline = loadBaseline(root);
 
 export async function checkBoundaries(
   root: string,
@@ -148,14 +171,23 @@ export async function main(): Promise<void> {
         `${violation.file}:${violation.line}: ${violation.specifier} (${violation.message})`,
       );
     }
+    if (addBaseline) {
+      for (const violation of newViolations) {
+        currentBaseline.add(violation.baselineKey);
+      }
+      saveBaseline(root, currentBaseline);
+      console.error("Added new violations to baseline file.");
+    }
   }
 
   if (staleBaseline.length > 0) {
     console.error("Module boundary baseline contains resolved violation(s):");
     for (const key of staleBaseline) {
       console.error(`  ${key}`);
+      currentBaseline.delete(key);
     }
-    console.error("Remove resolved entries from currentBaseline.");
+    saveBaseline(root, currentBaseline);
+    console.error("Updated baseline file — resolved entries removed.");
   }
 
   if (newViolations.length > 0 || staleBaseline.length > 0) {
