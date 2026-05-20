@@ -1,6 +1,6 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
 import { constructErrorMsg, constructMsg } from "./runtime.ts";
-import type { Run, ServiceStatus } from "./services/types.ts";
+import type { Run, ScenarioResultView, ServiceStatus } from "./services/types.ts";
 
 // ---------------------------------------------------------------------------
 // constructMsg — API response to Msg mapping
@@ -181,4 +181,48 @@ Deno.test("constructMsg: malformed progress response becomes typed failure", () 
 Deno.test("constructMsg: services as non-array becomes typed failure", () => {
   const msg = constructMsg("network/healthReceived", { services: "not-an-array" });
   assertEquals(msg, { type: "network/healthFailed", error: "Malformed health response" });
+});
+
+// ---------------------------------------------------------------------------
+// Run detail overlay — regression tests for constructMsg/constructErrorMsg
+// These prevent the "Unknown success msg type: runs/detailResults" crash
+// ---------------------------------------------------------------------------
+
+Deno.test("constructMsg: runs/detailResults maps results array", () => {
+  const results: ScenarioResultView[] = [
+    {
+      scenarioId: "01",
+      scenarioName: "account_lifecycle",
+      status: "failed",
+      passed: 0,
+      failed: 1,
+      skipped: 0,
+      durationMs: 500,
+      steps: [{ name: "create account", status: "failed", detail: "timeout", duration_ms: 500 }],
+      artifacts: null,
+    },
+  ];
+  const msg = constructMsg("runs/detailResults", { results });
+  assertEquals(msg, { type: "runs/detailResults", results });
+});
+
+Deno.test("constructMsg: runs/detailResults with empty results array", () => {
+  const msg = constructMsg("runs/detailResults", { results: [] });
+  assertEquals(msg, { type: "runs/detailResults", results: [] });
+});
+
+Deno.test("constructMsg: runs/detailResults malformed data closes overlay", () => {
+  // Missing results array → closeDetail (graceful fallback)
+  const msg = constructMsg("runs/detailResults", {});
+  assertEquals(msg, { type: "runs/closeDetail" });
+});
+
+Deno.test("constructMsg: runs/detailResults non-array results closes overlay", () => {
+  const msg = constructMsg("runs/detailResults", { results: "not-an-array" });
+  assertEquals(msg, { type: "runs/closeDetail" });
+});
+
+Deno.test("constructErrorMsg: runs/closeDetail produces closeDetail msg", () => {
+  const msg = constructErrorMsg("runs/closeDetail", "fetch failed");
+  assertEquals(msg, { type: "runs/closeDetail" });
 });

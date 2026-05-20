@@ -134,18 +134,14 @@ export function renderView(
   }
 
   // Run detail overlay — rendered on top of everything
-  if (state.runs.detailRunId) {
-    const detailRun = recentRuns.find((r) => r.id === state.runs.detailRunId) ??
-      state.runs.active;
-    if (detailRun && detailRun.id === state.runs.detailRunId) {
-      renderRunDetailOverlay(
-        buf,
-        detailRun,
-        state.runs.detailResults,
-        state.runs.detailCursor,
-        state.runs.detailScrollOffset,
-      );
-    }
+  if (state.runs.detailRunId && state.runs.detailRun) {
+    renderRunDetailOverlay(
+      buf,
+      state.runs.detailRun,
+      state.runs.detailResults,
+      state.runs.detailCursor,
+      state.runs.detailScrollOffset,
+    );
   }
 }
 
