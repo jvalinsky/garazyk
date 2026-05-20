@@ -292,8 +292,8 @@ function contentTypeForInputEncoding(encoding: string): string {
 type WrapData<T> = T extends Promise<infer U> ? Promise<{ data: U }> : T;
 
 type WrapClient<C> = {
-  [K in keyof C]: C[K] extends (...args: any[]) => any
-    ? (...args: Parameters<C[K]>) => WrapData<ReturnType<C[K]>>
+  [K in keyof C]: C[K] extends (...args: infer A) => infer R
+    ? (...args: A) => WrapData<R>
     : WrapClient<C[K]>;
 };
 

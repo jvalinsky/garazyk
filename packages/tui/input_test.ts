@@ -167,3 +167,49 @@ Deno.test("isQuit: matches q or Ctrl+C", () => {
   assertEquals(isQuit(ctrlC), true);
   assertEquals(isQuit(other), false);
 });
+
+// ── Bracketed paste ──────────────────────────────────────────────────────
+
+Deno.test("Key parser: bracketed paste start (ESC[200~)", () => {
+  // ESC [ 2 0 0 ~
+  const key = parse([27, 91, 50, 48, 48, 126])!;
+  assertEquals(key.key, Keys.PASTE_START);
+  assertEquals(key.ctrl, false);
+  assertEquals(key.alt, false);
+  assertEquals(key.shift, false);
+});
+
+Deno.test("Key parser: bracketed paste end (ESC[201~)", () => {
+  // ESC [ 2 0 1 ~
+  const key = parse([27, 91, 50, 48, 49, 126])!;
+  assertEquals(key.key, Keys.PASTE_END);
+  assertEquals(key.ctrl, false);
+  assertEquals(key.alt, false);
+  assertEquals(key.shift, false);
+});
+
+// ── Kitty keyboard protocol ─────────────────────────────────────────────
+
+Deno.test("Key parser: Kitty 'a' key (ESC[97;1u)", () => {
+  // ESC [ 9 7 ; 1 u  →  codepoint 97 ('a'), modifier 1 (shift)
+  const key = parse([27, 91, 57, 55, 59, 49, 117])!;
+  assertEquals(key.key, "a");
+  assertEquals(key.shift, true);
+});
+
+Deno.test("Key parser: Kitty Ctrl+Enter (ESC[57344;5u)", () => {
+  // Kitty special codepoint 57344 = ENTER, modifier 5 (ctrl+shift)
+  const bytes = [27, 91, 53, 55, 51, 52, 52, 59, 53, 117];
+  const key = parse(bytes)!;
+  assertEquals(key.key, Keys.ENTER);
+  assertEquals(key.ctrl, true);
+  assertEquals(key.shift, true);
+});
+
+Deno.test("Key parser: Kitty Up arrow (ESC[57353;1u)", () => {
+  // ESC [ 5 7 3 5 3 ; 1 u  →  Kitty special 57353 = UP, modifier 1 (shift)
+  const bytes = [27, 91, 53, 55, 51, 53, 51, 59, 49, 117];
+  const key = parse(bytes)!;
+  assertEquals(key.key, Keys.UP);
+  assertEquals(key.shift, true);
+});
