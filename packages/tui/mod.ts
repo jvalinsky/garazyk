@@ -13,3 +13,4 @@ export * from "./dashboard_layout.ts";
 export * from "./focus.ts";
 export * from "./command.ts";
 export * from "./text.ts";
+export * from "./theme.ts";
