@@ -513,7 +513,7 @@ function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle, recentRuns: Run[]
     // Open run detail overlay for the selected run
     const selected = recentRuns[panelState.cursor];
     if (selected) {
-      runtime.dispatch({ type: "runs/viewDetail", runId: selected.id });
+      runtime.dispatch({ type: "runs/viewDetail", runId: selected.id, run: selected });
     }
     return true;
   }
