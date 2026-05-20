@@ -74,22 +74,50 @@ export function renderRunPanel(
   });
   row++;
 
-  // Progress bar
+  // Progress bar — two-color: filled (GREEN) and track (BLACK cutout)
   if (row < area.height) {
     // Use progress.completed (from live report scanning) when available,
     // fall back to the Run object's counts (only updated on completion)
     const completed = progress?.completed ?? (activeRun.passed + activeRun.failed + activeRun.skipped);
     const total = progress?.total ?? activeRun.totalScenarios;
     const barWidth = Math.min(area.width - 12, 30);
-    const bar = progressBar(completed, total, barWidth);
-    cmds.push({
-      type: "text",
-      x: area.x,
-      y: area.y + row,
-      text: bar,
-      style: fg(COLORS.textPrimary),
-      clip,
-    });
+
+    if (total <= 0) {
+      // Empty state: dim track color for entire bar
+      cmds.push({
+        type: "text",
+        x: area.x,
+        y: area.y + row,
+        text: `[${"─".repeat(barWidth)}]`,
+        style: fg(COLORS.progressTrack),
+        clip,
+      });
+    } else {
+      const filledWidth = Math.max(0, Math.min(barWidth, Math.round((completed / total) * barWidth)));
+      const emptyWidth = barWidth - filledWidth;
+
+      // Filled portion — GREEN (progressBar), draws attention to completion
+      let col = area.x;
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: `[${filledWidth > 0 ? "█".repeat(filledWidth) : ""}`,
+        style: fg(COLORS.progressBar),
+        clip,
+      });
+      col += 1 + filledWidth;
+
+      // Unfilled portion — BLACK (progressTrack), darker than panel grey
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: `${emptyWidth > 0 ? "░".repeat(emptyWidth) : ""}] ${completed}/${total}`,
+        style: fg(COLORS.progressTrack),
+        clip,
+      });
+    }
     row++;
   }
 
@@ -160,7 +188,7 @@ export function renderRunPanel(
       x: area.x,
       y: area.y + row,
       text: `Elapsed: ${elapsed}`,
-      style: dim(fg(COLORS.textPrimary)),
+      style: dim(fg(COLORS.textSecondary)),
       clip,
     });
     row++;
@@ -173,7 +201,7 @@ export function renderRunPanel(
       x: area.x,
       y: area.y + row,
       text: `Duration: ${formatDurationSec(activeRun.durationS)}`,
-      style: dim(fg(COLORS.textPrimary)),
+      style: dim(fg(COLORS.textSecondary)),
       clip,
     });
     row++;
@@ -191,7 +219,7 @@ export function renderRunPanel(
         x: area.x,
         y: area.y + row,
         text: truncate(line, area.width),
-        style: dim(fg(COLORS.textPrimary)),
+        style: dim(fg(COLORS.textSecondary)),
         clip,
       });
       row++;
@@ -237,7 +265,7 @@ function renderNoActiveRun(
     x: area.x,
     y: area.y,
     text: "No active run",
-    style: dim(fg(COLORS.textPrimary)),
+    style: dim(fg(COLORS.textSecondary)),
     clip,
   });
 
@@ -254,6 +282,7 @@ function renderNoActiveRun(
   }
   return cmds;
 }
+
 function runStatusBadge(status: Run["status"]): string {
   switch (status) {
     case "completed":
@@ -284,16 +313,6 @@ function runStatusStyle(
   }
 }
 
-function progressBar(completed: number, total: number, width: number): string {
-  if (total <= 0) return `[${"─".repeat(width)}]`;
-  const filled = Math.max(
-    0,
-    Math.min(width, Math.round((completed / total) * width)),
-  );
-  const bar = "█".repeat(filled) + "░".repeat(width - filled);
-  return `[${bar}] ${completed}/${total}`;
-}
-
 function formatElapsed(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
   if (totalSec < 60) return `${totalSec}s`;
@@ -308,4 +327,3 @@ function formatDurationSec(s: number): string {
   const sec = Math.round(s % 60);
   return `${m}m ${sec}s`;
 }
-

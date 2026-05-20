@@ -12,12 +12,11 @@ import {
   bg,
   bold,
   COLORS,
-  DEFAULT_STYLE,
   dim,
   fg,
   truncate,
 } from "@garazyk/tui";
-import type { Run, ScenarioResultView, ScenarioStep } from "../../services/types.ts";
+import type { Run, ScenarioResultView } from "../../services/types.ts";
 
 // ---------------------------------------------------------------------------
 // Status indicators
@@ -113,7 +112,7 @@ export function renderRunDetailOverlay(
 ): void {
   const overlayStyle = bg(COLORS.surfaceBase);
   const titleStyle = bold(fg(COLORS.accent));
-  const labelStyle = dim(fg(COLORS.textPrimary));
+  const labelStyle = dim(fg(COLORS.textSecondary));
 
   // Fill the entire screen with dark background
   buf.fillRect(0, 0, buf.width, buf.height, " ", overlayStyle);
@@ -160,7 +159,7 @@ export function renderRunDetailOverlay(
     const failed = run.failed;
     const skipped = run.skipped;
     const dur = formatDurationSec(run.durationS);
-    let summaryText = `${passed} passed  ${failed} failed  ${skipped} skipped  duration: ${dur}`;
+    const summaryText = `${passed} passed  ${failed} failed  ${skipped} skipped  duration: ${dur}`;
     buf.writeClipped(contentX, row, summaryText, fg(COLORS.textPrimary), clip);
     row++;
   }
@@ -170,18 +169,6 @@ export function renderRunDetailOverlay(
 
   // ── Scenario list ─────────────────────────────────────────────────
   const listStartRow = row;
-  const listHeight = maxRow - row + 1 - 1; // -1 for footer
-  const visibleCount = Math.max(0, listHeight);
-
-  // Compute how many rows each scenario takes (failed ones get an extra line for the error)
-  function scenarioRows(result: ScenarioResultView): number {
-    if (result.status === "failed" && result.steps.length > 0) {
-      const failedStep = result.steps.find((s) => s.status === "failed");
-      if (failedStep?.detail) return 2; // scenario line + error detail line
-    }
-    return 1;
-  }
-
   // Build a flat list of display rows for virtual scrolling
   // Each entry is either a scenario row or a detail row
   interface DisplayRow {
@@ -190,6 +177,10 @@ export function renderRunDetailOverlay(
     text: string;
     isCursor: boolean;
     style: CellStyle;
+    /** Status indicator character (●/✖/○) for scenario rows, colored by result. */
+    indicatorChar?: string;
+    /** Style for the indicator — green/red/muted based on status. */
+    indicatorStyle?: CellStyle;
   }
 
   const displayRows: DisplayRow[] = [];
@@ -197,21 +188,19 @@ export function renderRunDetailOverlay(
     const r = results[i]!;
     const isCursor = i === cursor;
     const indicator = scenarioIndicator(r.status);
-    const color = scenarioColor(r.status);
+    const indicatorColor = scenarioColor(r.status);
     const name = truncate(r.scenarioName, contentWidth - 16);
     const dur = formatDurationMs(r.durationMs);
 
-    // Right-aligned duration
-    const namePart = ` ${indicator} ${name}`;
+    // Right-aligned duration — indicator rendered separately with status color
+    const indicatorPrefix = `${indicator} `;
+    const namePart = name;
     const durPart = ` ${r.status} ${dur}`;
-    const padding = Math.max(0, contentWidth - namePart.length - durPart.length);
+    const padding = Math.max(0, contentWidth - indicatorPrefix.length - namePart.length - durPart.length);
 
     const rowStyle = isCursor
       ? bold(fg(COLORS.accent))
       : fg(COLORS.textPrimary);
-    const indicatorStyle = isCursor
-      ? bold(fg(COLORS.accent))
-      : fg(color);
 
     displayRows.push({
       type: "scenario",
@@ -219,6 +208,10 @@ export function renderRunDetailOverlay(
       text: namePart + " ".repeat(padding) + durPart,
       isCursor,
       style: rowStyle,
+      indicatorChar: indicator,
+      indicatorStyle: isCursor
+        ? bold(fg(COLORS.accent))
+        : fg(indicatorColor),
     });
 
     // Failed step detail line
@@ -248,14 +241,20 @@ export function renderRunDetailOverlay(
     if (dr.isCursor && dr.type === "scenario") {
       buf.fillRect(contentX, renderRow, contentWidth, 1, " ", bg(COLORS.surfaceElevated));
     }
-    buf.writeClipped(contentX, renderRow, dr.text, dr.style, clip);
+    // Render status indicator with its own color (green/red/muted)
+    if (dr.indicatorChar) {
+      buf.writeClipped(contentX, renderRow, dr.indicatorChar + " ", dr.indicatorStyle ?? dr.style, clip);
+      buf.writeClipped(contentX + 2, renderRow, dr.text, dr.style, clip);
+    } else {
+      buf.writeClipped(contentX, renderRow, dr.text, dr.style, clip);
+    }
     renderRow++;
   }
 
   // ── Footer: keybinding hints ───────────────────────────────────────
   const footerRow = boxY + boxHeight - 2;
   const footerText = "\u2191\u2193 navigate  Esc close";
-  buf.writeClipped(contentX, footerRow, footerText, dim(fg(COLORS.textPrimary)), clip);
+  buf.writeClipped(contentX, footerRow, footerText, dim(fg(COLORS.textSecondary)), clip);
 
   // ── Box title ───────────────────────────────────────────────────────
   buf.boxTitle(boxX, boxY, boxWidth, "Run Detail", overlayStyle);
