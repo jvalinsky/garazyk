@@ -32,3 +32,4 @@ export {
   generatePassword,
   randomString,
 } from "./account_ops.ts";
+export { formatBytes } from "./format.ts";
