@@ -9,6 +9,7 @@
  */
 
 import { getCharWidth } from "./text.ts";
+import { currentTheme } from "./theme.ts";
 
 // ---------------------------------------------------------------------------
 // NO_COLOR — https://no-color.org/
@@ -202,7 +203,7 @@ export class ScreenBuffer {
     focused: boolean = false,
   ): void {
     const borderStyle = focused
-      ? { ...style, bold: true, fg: ANSI.CYAN }
+      ? { ...style, bold: true, fg: currentTheme.borderFocused }
       : style;
 
     // Corners
@@ -411,33 +412,11 @@ export function mergeStyles(
 // Semantic color palette
 // ---------------------------------------------------------------------------
 
-/** Semantic color tokens for the dashboard. */
-export const COLORS = {
-  title: ANSI.CYAN,
-  statusOk: ANSI.GREEN,
-  statusWarn: ANSI.YELLOW,
-  statusErr: ANSI.RED,
-  statusMuted: ANSI.BRIGHT_BLACK,
-  textPrimary: -1, // default terminal foreground
-  textSecondary: ANSI.BRIGHT_BLACK,
-  textMuted: ANSI.BRIGHT_BLACK,
-  accent: ANSI.CYAN,
-  border: ANSI.BRIGHT_BLACK,
-  borderFocused: ANSI.CYAN,
-  progressBar: ANSI.GREEN,
-  progressTrack: ANSI.BRIGHT_BLACK,
-  badgePassed: ANSI.GREEN,
-  badgeFailed: ANSI.RED,
-  badgeSkipped: ANSI.YELLOW,
-  badgeRunning: ANSI.CYAN,
-  // Surface hierarchy — background shades for visual depth.
-  // BRIGHT_BLACK (color 8) is dark gray — terrible as foreground on
-  // dark terminals, but excellent as a subtle background tint that
-  // creates panel depth without harsh borders.
-  surfaceBase: ANSI.BLACK, // deepest: app background
-  surfacePanel: ANSI.BRIGHT_BLACK, // panels: slightly elevated
-  surfaceElevated: ANSI.BLUE, // cursor/selected: blue (lazygit convention)
-} as const;
+/**
+ * Semantic color tokens derived from the active theme (see `theme.ts`).
+ * Exported via theme.ts → mod.ts; not re-exported here to avoid conflicts.
+ */
+export { COLORS, currentTheme, setTheme } from "./theme.ts";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
