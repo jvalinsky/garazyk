@@ -3,23 +3,32 @@ import { parseArgs } from "@std/cli/parse-args";
 
 /** State for a single verification code tracked by the mock server. */
 export interface MockVerificationState {
+  /** The verification code sent to the user. */
   code: string;
+  /** Timestamp when the code was created. */
   createdAt: number;
+  /** Whether the code has been verified. */
   verified: boolean;
 }
 
 /** Serializable snapshot of the mock Twilio server state. */
 export interface MockState {
+  /** Verification records keyed by phone number. */
   store: Record<string, MockVerificationState>;
+  /** Codes that should be approved without verification. */
   alwaysApproveCodes: string[];
 }
 
 /** Per-instance state for a mock Twilio server. */
 export class MockTwilioState {
+  /** Verification records keyed by phone number. */
   store: Record<string, MockVerificationState> = {};
+  /** Codes that are always approved. */
   alwaysApproveCodes: string[] = ["000000"];
+  /** Server start timestamp in milliseconds. */
   readonly startTime: number = Date.now();
 
+  /** Reset the store and always-approve codes to defaults. */
   reset(): void {
     for (const key of Object.keys(this.store)) delete this.store[key];
     this.alwaysApproveCodes = ["000000"];
@@ -36,14 +45,21 @@ export interface MockState {
 
 /** Configuration for the mock Twilio server process. */
 export interface MockTwilioServerConfig {
+  /** Port to listen on. */
   port: number;
+  /** Twilio account SID for basic auth. */
   accountSid: string;
+  /** Twilio auth token for basic auth. */
   authToken: string;
+  /** Codes that always pass verification. */
   alwaysApprove: string[];
+  /** Simulated network latency in milliseconds. */
   latency?: number;
+  /** Probability (0-1) of simulated request failures. */
   failRate?: number;
 }
 
+/** Split a comma-separated string of codes into a trimmed array. */
 function normalizeAlwaysApprove(value: string): string[] {
   return value.split(",").map((s) => s.trim());
 }
@@ -82,10 +98,12 @@ export function parseMockTwilioConfig(args: string[]): MockTwilioServerConfig {
   };
 }
 
+/** Generate a random 6-digit verification code. */
 function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/** Generate a random Twilio-format verification SID. */
 function randomSid(): string {
   const chars = "abcdef0123456789";
   let sid = "VE";
@@ -95,6 +113,7 @@ function randomSid(): string {
   return sid;
 }
 
+/** Decode a Basic auth header into user/pass or null on failure. */
 function parseBasicAuth(
   authHeader: string | null,
 ): { user: string; pass: string } | null {
@@ -109,15 +128,18 @@ function parseBasicAuth(
   }
 }
 
+/** Simulate network latency by delaying for the given number of milliseconds. */
 async function maybeLatency(ms: number) {
   if (ms > 0) await new Promise((r) => setTimeout(r, ms));
 }
 
+/** Simulate a random request failure based on the configured fail rate. */
 async function maybeFail(failRate: number): Promise<boolean> {
   if (failRate > 0 && Math.random() < failRate) return true;
   return false;
 }
 
+/** Build a JSON Response with the given body and status code. */
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
