@@ -7,19 +7,26 @@
  * @module tui/panels/history
  */
 
-import type { RenderCommand } from "@garazyk/tui";
+import type { CellStyle, RenderCommand } from "@garazyk/tui";
 import {
+  ANSI,
+  bg,
   bold,
   COLORS,
   dim,
   fg,
-  reverse,
   truncate,
 } from "@garazyk/tui";
 import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { Run } from "../../services/types.ts";
+
+/** Style for the cursor highlight row — blue background, default foreground. */
+const CURSOR_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1 };
+
+/** Style for the cursor highlight row text — bold default foreground on blue. */
+const CURSOR_TEXT_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1, bold: true };
 
 /** Render the run history panel. */
 export function renderHistoryPanel(
@@ -48,7 +55,7 @@ export function renderHistoryPanel(
       x: area.x,
       y: area.y + row,
       text: "No recorded runs",
-      style: dim(fg(COLORS.textMuted)),
+      style: dim(fg(COLORS.textPrimary)),
       clip,
     });
   } else {
@@ -58,17 +65,17 @@ export function renderHistoryPanel(
 
       const statusBadge = runStatusBadge(run.status);
       const statusStyle = isCursorRow
-        ? reverse(fg(COLORS.accent))
+        ? CURSOR_TEXT_STYLE
         : runStatusStyle(run.status);
       const runId = truncate(run.id, 20);
 
-      // Clear row for cursor highlight
+      // Fill cursor row with blue background
       if (isCursorRow) {
         cmds.push({
           type: "rect",
           box: { x: area.x, y: area.y + row, width: area.width, height: 1 },
           char: " ",
-          style: reverse(fg(COLORS.accent)),
+          style: CURSOR_STYLE,
           clip,
         });
       }
@@ -90,7 +97,7 @@ export function renderHistoryPanel(
         y: area.y + row,
         text: runId,
         style: isCursorRow
-          ? reverse(fg(COLORS.accent))
+          ? CURSOR_TEXT_STYLE
           : fg(COLORS.textPrimary),
         clip,
       });
@@ -107,7 +114,7 @@ export function renderHistoryPanel(
         y: area.y + row,
         text: results,
         style: isCursorRow
-          ? reverse(fg(COLORS.accent))
+          ? CURSOR_TEXT_STYLE
           : (run.failed > 0 ? fg(COLORS.statusErr) : fg(COLORS.statusOk)),
         clip,
       });
@@ -123,8 +130,8 @@ export function renderHistoryPanel(
             y: area.y + row,
             text: dur,
             style: isCursorRow
-              ? reverse(fg(COLORS.accent))
-              : dim(fg(COLORS.textSecondary)),
+              ? CURSOR_TEXT_STYLE
+              : dim(fg(COLORS.textPrimary)),
             clip,
           });
         }
@@ -167,7 +174,7 @@ export function renderHistoryPanel(
         x: area.x + 11,
         y: area.y + row,
         text: cpu,
-        style: dim(fg(COLORS.textSecondary)),
+        style: dim(fg(COLORS.textPrimary)),
         clip,
       });
       if (area.x + 11 + cpu.length + mem.length <= area.x + area.width) {
@@ -176,7 +183,7 @@ export function renderHistoryPanel(
           x: area.x + 11 + cpu.length,
           y: area.y + row,
           text: mem,
-          style: dim(fg(COLORS.textSecondary)),
+          style: dim(fg(COLORS.textPrimary)),
           clip,
         });
       }
@@ -193,7 +200,7 @@ export function renderHistoryPanel(
       x: area.x,
       y: actionsRow,
       text: actions,
-      style: dim(fg(COLORS.accent)),
+      style: fg(COLORS.accent),
       clip,
     });
   }
@@ -224,7 +231,7 @@ function runStatusBadge(status: Run["status"]): string {
 
 function runStatusStyle(
   status: Run["status"],
-): import("@garazyk/tui").CellStyle {
+): CellStyle {
   switch (status) {
     case "completed":
       return fg(COLORS.statusOk);
