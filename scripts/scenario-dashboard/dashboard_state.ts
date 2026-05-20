@@ -120,6 +120,8 @@ export interface ScenarioMeta {
   id: string;
   /** Scenario display name. */
   name: string;
+  /** One-line scenario description. */
+  description: string;
   /** Scenario category. */
   category: string;
   /** Whether the scenario requires PDS2. */
