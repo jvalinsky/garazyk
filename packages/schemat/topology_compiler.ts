@@ -1,4 +1,5 @@
 /** Topology compilation — validate presets, render Docker Compose YAML, and write manifests. @module topology_compiler */
+import { stringify } from "@std/yaml";
 import { join, relative, resolve } from "@std/path";
 import {
   createTopologyManifest,
@@ -127,127 +128,116 @@ export function validatePreset(preset: TopologyPreset): string[] {
  * The OTel Collector listens on 4317 (gRPC) and 4318 (HTTP).
  * The SigNoz UI is on port 3301 (remapped from 8080 to avoid conflict).
  */
-function renderSigNozServices(lines: string[], volumes: Set<string>): void {
-  lines.push("  # --- SigNoz OpenTelemetry Backend ---");
-
+function renderSigNozServices(services: Record<string, any>, volumes: Set<string>): void {
   // ClickHouse
-  lines.push("  clickhouse:");
-  lines.push("    image: clickhouse/clickhouse-server:25.5");
-  lines.push("    container_name: signoz-clickhouse");
-  lines.push("    volumes:");
-  lines.push("      - signoz_clickhouse_data:/var/lib/clickhouse");
-  lines.push("      - signoz_clickhouse_logs:/var/log/clickhouse-server");
-  lines.push("    environment:");
-  lines.push("      - CLICKHOUSE_DB=signoz");
-  lines.push("    healthcheck:");
-  lines.push(
-    '      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/clickhouse"]',
-  );
-  lines.push("      interval: 10s");
-  lines.push("      timeout: 5s");
-  lines.push("      retries: 5");
-  lines.push("      start_period: 10s");
-  lines.push("    networks:");
-  lines.push("      - topology_net");
+  services["clickhouse"] = {
+    image: "clickhouse/clickhouse-server:25.5",
+    container_name: "signoz-clickhouse",
+    volumes: [
+      "signoz_clickhouse_data:/var/lib/clickhouse",
+      "signoz_clickhouse_logs:/var/log/clickhouse-server",
+    ],
+    environment: {
+      CLICKHOUSE_DB: "signoz",
+    },
+    healthcheck: {
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/clickhouse"],
+      interval: "10s",
+      timeout: "5s",
+      retries: 5,
+      start_period: "10s",
+    },
+    networks: ["topology_net"],
+  };
 
   // Zookeeper
-  lines.push("  signoz-zookeeper:");
-  lines.push("    image: bitnami/zookeeper:3.7");
-  lines.push("    container_name: signoz-zookeeper");
-  lines.push("    environment:");
-  lines.push("      - ALLOW_ANONYMOUS_LOGIN=yes");
-  lines.push("      - ZOO_ENABLE_PROMETHEUS_METRICS=no");
-  lines.push("    volumes:");
-  lines.push("      - signoz_zookeeper_data:/bitnami/zookeeper");
-  lines.push("    healthcheck:");
-  lines.push(
-    '      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]',
-  );
-  lines.push("      interval: 10s");
-  lines.push("      timeout: 5s");
-  lines.push("      retries: 5");
-  lines.push("    networks:");
-  lines.push("      - topology_net");
+  services["signoz-zookeeper"] = {
+    image: "bitnami/zookeeper:3.7",
+    container_name: "signoz-zookeeper",
+    environment: {
+      ALLOW_ANONYMOUS_LOGIN: "yes",
+      ZOO_ENABLE_PROMETHEUS_METRICS: "no",
+    },
+    volumes: [
+      "signoz_zookeeper_data:/bitnami/zookeeper",
+    ],
+    healthcheck: {
+      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"],
+      interval: "10s",
+      timeout: "5s",
+      retries: 5,
+    },
+    networks: ["topology_net"],
+  };
 
   // OTel Collector
-  lines.push("  signoz-otel-collector:");
-  lines.push("    image: signoz/signoz-otel-collector:v0.144.4");
-  lines.push("    container_name: signoz-otel-collector");
-  lines.push('    entrypoint: ["/bin/sh"]');
-  lines.push("    command:");
-  lines.push("      - -c");
-  lines.push("      - |");
-  lines.push("        /signoz-otel-collector migrate sync check && \\");
-  lines.push(
-    "        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml",
-  );
-  lines.push("    volumes:");
-  lines.push(
-    "      - ../docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml",
-  );
-  lines.push(
-    "      - ../docker/otel/otel-collector-opamp-config.yaml:/etc/manager-config.yaml",
-  );
-  lines.push("    environment:");
-  lines.push(
-    "      - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux",
-  );
-  lines.push("      - LOW_CARDINAL_EXCEPTION_GROUPING=false");
-  lines.push(
-    "      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000",
-  );
-  lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster");
-  lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=false");
-  lines.push("      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m");
-  lines.push("    ports:");
-  lines.push('      - "4317:4317"');
-  lines.push('      - "4318:4318"');
-  lines.push("    depends_on:");
-  lines.push("      clickhouse:");
-  lines.push("        condition: service_healthy");
-  lines.push("      signoz-zookeeper:");
-  lines.push("        condition: service_healthy");
-  lines.push("    healthcheck:");
-  lines.push(
-    '      test: ["CMD", "wget", "--spider", "-q", "localhost:13133/"]',
-  );
-  lines.push("      interval: 10s");
-  lines.push("      timeout: 5s");
-  lines.push("      retries: 5");
-  lines.push("      start_period: 15s");
-  lines.push("    networks:");
-  lines.push("      - topology_net");
+  services["signoz-otel-collector"] = {
+    image: "signoz/signoz-otel-collector:v0.144.4",
+    container_name: "signoz-otel-collector",
+    entrypoint: ["/bin/sh"],
+    command: [
+      "-c",
+      "/signoz-otel-collector migrate sync check && \\\n/signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml\n",
+    ],
+    volumes: [
+      "../docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml",
+      "../docker/otel/otel-collector-opamp-config.yaml:/etc/manager-config.yaml",
+    ],
+    environment: {
+      OTEL_RESOURCE_ATTRIBUTES: "host.name=signoz-host,os.type=linux",
+      LOW_CARDINAL_EXCEPTION_GROUPING: "false",
+      SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: "tcp://clickhouse:9000",
+      SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER: "cluster",
+      SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION: "false",
+      SIGNOZ_OTEL_COLLECTOR_TIMEOUT: "10m",
+    },
+    ports: [
+      "4317:4317",
+      "4318:4318",
+    ],
+    depends_on: {
+      clickhouse: { condition: "service_healthy" },
+      "signoz-zookeeper": { condition: "service_healthy" },
+    },
+    healthcheck: {
+      test: ["CMD", "wget", "--spider", "-q", "localhost:13133/"],
+      interval: "10s",
+      timeout: "5s",
+      retries: 5,
+      start_period: "15s",
+    },
+    networks: ["topology_net"],
+  };
 
   // SigNoz UI
-  lines.push("  signoz:");
-  lines.push("    image: signoz/signoz:v0.123.0");
-  lines.push("    container_name: signoz");
-  lines.push("    ports:");
-  lines.push('      - "3301:8080"');
-  lines.push("    volumes:");
-  lines.push("      - signoz_sqlite_data:/var/lib/signoz/");
-  lines.push("    environment:");
-  lines.push("      - SIGNOZ_ALERTMANAGER_PROVIDER=signoz");
-  lines.push(
-    "      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://clickhouse:9000",
-  );
-  lines.push("      - SIGNOZ_SQLSTORE_SQLITE_PATH=/var/lib/signoz/signoz.db");
-  lines.push("      - SIGNOZ_TOKENIZER_JWT_SECRET=localdev-signoz-secret");
-  lines.push("    depends_on:");
-  lines.push("      clickhouse:");
-  lines.push("        condition: service_healthy");
-  lines.push("      signoz-otel-collector:");
-  lines.push("        condition: service_healthy");
-  lines.push("    healthcheck:");
-  lines.push(
-    '      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"]',
-  );
-  lines.push("      interval: 30s");
-  lines.push("      timeout: 5s");
-  lines.push("      retries: 3");
-  lines.push("      start_period: 15s");
-  lines.push("    networks:");
-  lines.push("      - topology_net");
+  services["signoz"] = {
+    image: "signoz/signoz:v0.123.0",
+    container_name: "signoz",
+    ports: [
+      "3301:8080",
+    ],
+    volumes: [
+      "signoz_sqlite_data:/var/lib/signoz/",
+    ],
+    environment: {
+      SIGNOZ_ALERTMANAGER_PROVIDER: "signoz",
+      SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN: "tcp://clickhouse:9000",
+      SIGNOZ_SQLSTORE_SQLITE_PATH: "/var/lib/signoz/signoz.db",
+      SIGNOZ_TOKENIZER_JWT_SECRET: "localdev-signoz-secret",
+    },
+    depends_on: {
+      clickhouse: { condition: "service_healthy" },
+      "signoz-otel-collector": { condition: "service_healthy" },
+    },
+    healthcheck: {
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"],
+      interval: "30s",
+      timeout: "5s",
+      retries: 3,
+      start_period: "15s",
+    },
+    networks: ["topology_net"],
+  };
 
   // Register volumes
   volumes.add("signoz_clickhouse_data");
@@ -331,26 +321,25 @@ export function renderComposeYaml(
       }
     }
 
-    // Environment
-    const envEntries: string[] = [];
+    // Environment — use YAML map format to ensure proper quoting of values
+    // containing ':', '#', newlines, or boolean-like strings.
+    const envMap: Record<string, string> = {};
     if (adapter.env) {
       for (const [k, v] of Object.entries(adapter.env)) {
-        envEntries.push(`${k}=${v}`);
+        envMap[k] = v;
       }
     }
     // Inject OpenTelemetry environment variables when --otel is set
     if (options.otel) {
-      envEntries.push(`OTEL_SERVICE_NAME=${adapter.name}`);
-      envEntries.push(
-        "OTEL_EXPORTER_OTLP_ENDPOINT=http://signoz-otel-collector:4318",
-      );
-      envEntries.push("OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf");
-      envEntries.push(
-        "OTEL_RESOURCE_ATTRIBUTES=service.version=dev,deployment.environment=e2e",
-      );
+      envMap["OTEL_SERVICE_NAME"] = adapter.name;
+      envMap["OTEL_EXPORTER_OTLP_ENDPOINT"] =
+        "http://signoz-otel-collector:4318";
+      envMap["OTEL_EXPORTER_OTLP_PROTOCOL"] = "http/protobuf";
+      envMap["OTEL_RESOURCE_ATTRIBUTES"] =
+        "service.version=dev,deployment.environment=e2e";
     }
-    if (envEntries.length > 0) {
-      service.environment = envEntries;
+    if (Object.keys(envMap).length > 0) {
+      service.environment = envMap;
     }
 
     // Depends on
@@ -428,86 +417,28 @@ export function renderComposeYaml(
     }
   }
 
-  // Build the YAML manually (no external deps needed)
-  const lines: string[] = ["services:"];
-  for (const [name, svc] of Object.entries(services)) {
-    lines.push(`  ${name}:`);
-    if (svc.image) lines.push(`    image: ${svc.image}`);
-    if (svc.build) {
-      lines.push(`    build:`);
-      lines.push(`      context: ${svc.build.context}`);
-      lines.push(`      dockerfile: ${svc.build.dockerfile}`);
-      if (svc.build.args) {
-        lines.push(`      args:`);
-        for (
-          const [k, v] of Object.entries(
-            svc.build.args as Record<string, string>,
-          )
-        ) {
-          lines.push(`        ${k}: "${v}"`);
-        }
-      }
-    }
-    if (svc.entrypoint) {
-      lines.push(`    entrypoint: ${JSON.stringify(svc.entrypoint)}`);
-    }
-    if (svc.command) {
-      lines.push(`    command: ${JSON.stringify(svc.command)}`);
-    }
-    if (svc.ports) {
-      lines.push(`    ports:`);
-      for (const p of svc.ports) lines.push(`      - "${p}"`);
-    }
-    if (svc.volumes && svc.volumes.length > 0) {
-      lines.push(`    volumes:`);
-      for (const v of svc.volumes) lines.push(`      - ${v}`);
-    }
-    if (svc.environment) {
-      lines.push(`    environment:`);
-      for (const e of svc.environment) lines.push(`      - ${e}`);
-    }
-    if (svc.depends_on) {
-      lines.push(`    depends_on:`);
-      for (
-        const [dep, cfg] of Object.entries(
-          svc.depends_on as Record<string, { condition: string }>,
-        )
-      ) {
-        lines.push(`      ${dep}:`);
-        lines.push(`        condition: ${cfg.condition}`);
-      }
-    }
-    if (svc.healthcheck) {
-      const hc = svc.healthcheck;
-      lines.push(`    healthcheck:`);
-      lines.push(`      test: ${JSON.stringify(hc.test)}`);
-      lines.push(`      interval: ${hc.interval}`);
-      lines.push(`      timeout: ${hc.timeout}`);
-      lines.push(`      retries: ${hc.retries}`);
-      lines.push(`      start_period: ${hc.start_period}`);
-    }
-    renderNetworks(lines, svc.networks);
-  }
-
   // Add SigNoz OTel infrastructure when --otel is set
   if (options.otel) {
-    renderSigNozServices(lines, volumes);
+    renderSigNozServices(services, volumes);
   }
 
-  lines.push("");
-  lines.push("networks:");
-  lines.push("  topology_net:");
-  lines.push("    driver: bridge");
+  const composeObj: Record<string, any> = {
+    services,
+    networks: {
+      topology_net: {
+        driver: "bridge",
+      },
+    },
+  };
 
   if (volumes.size > 0) {
-    lines.push("");
-    lines.push("volumes:");
+    composeObj.volumes = {};
     for (const v of volumes) {
-      lines.push(`  ${v}:`);
+      composeObj.volumes[v] = null;
     }
   }
 
-  return lines.join("\n") + "\n";
+  return stringify(composeObj);
 }
 
 /**
@@ -580,6 +511,37 @@ function extractContainerPort(
   return parsePortMapping(adapter.ports[0]).containerPort;
 }
 
+function ensurePathIsWithinBase(
+  requestedPath: string,
+  resolvedPath: string,
+  resolvedBase: string,
+  contextMsg: string,
+) {
+  // Textual check
+  const rel = relative(resolvedBase, resolvedPath);
+  if (rel.startsWith("..") || rel.startsWith("/")) {
+    throw new Error(
+      `${contextMsg}: "${requestedPath}" (resolved: ${resolvedPath}, base: ${resolvedBase})`,
+    );
+  }
+
+  // Symlink check if path exists
+  try {
+    const realPath = Deno.realPathSync(resolvedPath);
+    const realBase = Deno.realPathSync(resolvedBase);
+    const realRel = relative(realBase, realPath);
+    if (realRel.startsWith("..") || realRel.startsWith("/")) {
+      throw new Error(
+        `${contextMsg} via symlink: "${requestedPath}" (resolved: ${realPath}, base: ${realBase})`,
+      );
+    }
+  } catch (err) {
+    if (!(err instanceof Deno.errors.NotFound)) {
+      throw err;
+    }
+  }
+}
+
 function renderVolume(
   volume: string,
   adapter: ServiceAdapter,
@@ -600,41 +562,16 @@ function renderVolume(
   const resolvedSource = resolve(join(base, source));
   const resolvedBase = resolve(base);
 
-  // Verify the resolved path stays under the base directory.
-  // This prevents path traversal via preset-controlled volume sources.
-  const rel = relative(resolvedBase, resolvedSource);
-  if (rel.startsWith("..") || rel.startsWith("/")) {
-    throw new Error(
-      `Volume source path escapes base directory: "${source}" (resolved: ${resolvedSource}, base: ${resolvedBase})`,
-    );
-  }
+  ensurePathIsWithinBase(
+    source,
+    resolvedSource,
+    resolvedBase,
+    "Volume source path escapes base directory",
+  );
 
   return [resolvedSource, ...parts.slice(1)].join(":");
 }
 
-function renderNetworks(
-  lines: string[],
-  networks: string[] | Record<string, { aliases?: string[] }>,
-) {
-  lines.push(`    networks:`);
-  if (Array.isArray(networks)) {
-    for (const network of networks) lines.push(`      - ${network}`);
-    return;
-  }
-  for (
-    const [network, config] of Object.entries(
-      networks || { topology_net: {} },
-    ) as Array<
-      [string, { aliases?: string[] }]
-    >
-  ) {
-    lines.push(`      ${network}:`);
-    if (config.aliases && config.aliases.length > 0) {
-      lines.push(`        aliases:`);
-      for (const alias of config.aliases) lines.push(`          - ${alias}`);
-    }
-  }
-}
 
 /** Render a sidecar as a compose service object */
 function renderSidecarService(
@@ -693,12 +630,12 @@ function renderSidecarService(
       // Verify the config file path stays under the parent clone directory.
       const resolvedHost = resolve(hostPath);
       const resolvedClone = resolve(parentCloneDir);
-      const rel = relative(resolvedClone, resolvedHost);
-      if (rel.startsWith("..") || rel.startsWith("/")) {
-        throw new Error(
-          `Config file path escapes clone directory: "${sourceRelPath}" (resolved: ${resolvedHost}, clone: ${resolvedClone})`,
-        );
-      }
+      ensurePathIsWithinBase(
+        sourceRelPath,
+        resolvedHost,
+        resolvedClone,
+        "Config file path escapes clone directory"
+      );
       allVolumes.push(`${hostPath}:${containerPath}:ro`);
     }
   }
@@ -708,9 +645,7 @@ function renderSidecarService(
   }
 
   if (sidecar.env) {
-    service.environment = Object.entries(sidecar.env).map(
-      ([k, v]) => `${k}=${v}`,
-    );
+    service.environment = { ...sidecar.env };
   }
 
   if (sidecar.healthCheck?.customTest) {
