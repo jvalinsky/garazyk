@@ -4,14 +4,14 @@
  * Supports collapsible categories, cursor navigation, and search filter.
  * All writes are clipped to the panel content area to prevent overflow.
  *
- * Color design notes:
- * - Cursor highlight uses a blue background (ANSI.BLUE) following the
- *   lazygit convention — blue is typically the darkest terminal color
- *   and provides good contrast without the blinding white of reverse-video.
- * - Description preview uses default terminal foreground (fg: -1) which
- *   adapts to both light and dark terminal themes. We never use
- *   ANSI.BRIGHT_BLACK for text on dark backgrounds — it's dark gray and
- *   nearly invisible.
+ * Surface hierarchy (background shades create visual depth):
+ * - surfaceBase (BLACK): app background, not used inside panels
+ * - surfacePanel (BRIGHT_BLACK): subtle dark gray fills the panel interior
+ * - surfaceElevated (BLUE): cursor highlight row
+ *
+ * The description preview row uses surfacePanel background with default
+ * terminal foreground — the background tint creates visual hierarchy
+ * without needing a special foreground color.
  *
  * @module tui/panels/scenarios
  */
@@ -42,11 +42,11 @@ const CATEGORIES: Record<string, string> = {
 
 const CATEGORY_ORDER = ["core", "identity", "scale", "edge"];
 
-/** Style for the cursor highlight row — blue background, default foreground. */
-const CURSOR_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1 };
+/** Style for the cursor highlight row — elevated surface (blue bg), default fg. */
+const CURSOR_STYLE: CellStyle = { ...bg(COLORS.surfaceElevated), fg: -1 };
 
 /** Style for the cursor highlight row text — bold default foreground on blue. */
-const CURSOR_TEXT_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1, bold: true };
+const CURSOR_TEXT_STYLE: CellStyle = { ...bg(COLORS.surfaceElevated), fg: -1, bold: true };
 
 /** A flat list item — either a category header or a scenario row. */
 interface FlatItem {
@@ -116,6 +116,15 @@ export function renderScenariosPanel(
   const cmds: RenderCommand[] = [];
 
   if (area.height < 1 || area.width < 10) return cmds;
+
+  // Fill panel interior with surface background (subtle dark gray)
+  cmds.push({
+    type: "rect",
+    box: { x: area.x, y: area.y, width: area.width, height: area.height },
+    char: " ",
+    style: bg(COLORS.surfacePanel),
+    clip,
+  });
 
   // Group scenarios by category
   const grouped: Record<string, ScenarioMeta[]> = {};
@@ -235,9 +244,11 @@ export function renderScenariosPanel(
   }
 
   // Description preview area — 1 row above the summary line
-  // Uses default terminal foreground (fg: -1) which adapts to both light
-  // and dark terminal themes. Never use ANSI.BRIGHT_BLACK here — it's
-  // dark gray and invisible on dark backgrounds.
+  // Uses default terminal foreground on the panel surface background.
+  // The background tint creates visual hierarchy — no need for a special
+  // foreground color. The description is visually distinct because it
+  // sits on the same surfacePanel background as the rest of the panel,
+  // but separated from the list by empty space.
   const descRow = area.y + area.height - 2;
   if (focused && cursorDescription) {
     const descText = truncate(cursorDescription, area.width - 2);
@@ -246,18 +257,12 @@ export function renderScenariosPanel(
       x: area.x + 1,
       y: descRow,
       text: descText,
-      style: fg(COLORS.accent),
+      style: dim(fg(COLORS.textPrimary)),
       clip,
     });
   } else if (focused) {
     // Clear the description row when no scenario is selected
-    cmds.push({
-      type: "rect",
-      box: { x: area.x, y: descRow, width: area.width, height: 1 },
-      char: " ",
-      style: fg(COLORS.accent),
-      clip,
-    });
+    // (already filled by the panel background rect above)
   }
 
   // Summary line
