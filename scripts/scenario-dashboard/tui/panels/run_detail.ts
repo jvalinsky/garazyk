@@ -114,7 +114,7 @@ export function renderRunDetailOverlay(
 ): void {
   const overlayStyle = bg(ANSI.BLACK);
   const titleStyle = bold(fg(COLORS.accent));
-  const labelStyle = dim(fg(COLORS.textSecondary));
+  const labelStyle = dim(fg(COLORS.textPrimary));
 
   // Fill the entire screen with dark background
   buf.fillRect(0, 0, buf.width, buf.height, " ", overlayStyle);
@@ -256,7 +256,7 @@ export function renderRunDetailOverlay(
   // ── Footer: keybinding hints ───────────────────────────────────────
   const footerRow = boxY + boxHeight - 2;
   const footerText = "\u2191\u2193 navigate  Esc close";
-  buf.writeClipped(contentX, footerRow, footerText, dim(fg(COLORS.textMuted)), clip);
+  buf.writeClipped(contentX, footerRow, footerText, dim(fg(COLORS.textPrimary)), clip);
 
   // ── Box title ───────────────────────────────────────────────────────
   buf.boxTitle(boxX, boxY, boxWidth, "Run Detail", overlayStyle);

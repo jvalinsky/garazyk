@@ -150,7 +150,7 @@ export function renderRunPanel(
       x: area.x,
       y: area.y + row,
       text: `Elapsed: ${elapsed}`,
-      style: dim(fg(COLORS.textSecondary)),
+      style: dim(fg(COLORS.textPrimary)),
       clip,
     });
     row++;
@@ -163,7 +163,7 @@ export function renderRunPanel(
       x: area.x,
       y: area.y + row,
       text: `Duration: ${formatDurationSec(activeRun.durationS)}`,
-      style: dim(fg(COLORS.textSecondary)),
+      style: dim(fg(COLORS.textPrimary)),
       clip,
     });
     row++;
@@ -181,7 +181,7 @@ export function renderRunPanel(
         x: area.x,
         y: area.y + row,
         text: truncate(line, area.width),
-        style: dim(fg(COLORS.textMuted)),
+        style: dim(fg(COLORS.textPrimary)),
         clip,
       });
       row++;
@@ -226,7 +226,7 @@ function renderNoActiveRun(
     x: area.x,
     y: area.y,
     text: "No active run",
-    style: dim(fg(COLORS.textMuted)),
+    style: dim(fg(COLORS.textPrimary)),
     clip,
   });
 

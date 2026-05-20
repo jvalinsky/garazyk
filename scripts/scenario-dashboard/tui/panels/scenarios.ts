@@ -4,16 +4,26 @@
  * Supports collapsible categories, cursor navigation, and search filter.
  * All writes are clipped to the panel content area to prevent overflow.
  *
+ * Color design notes:
+ * - Cursor highlight uses a blue background (ANSI.BLUE) following the
+ *   lazygit convention — blue is typically the darkest terminal color
+ *   and provides good contrast without the blinding white of reverse-video.
+ * - Description preview uses default terminal foreground (fg: -1) which
+ *   adapts to both light and dark terminal themes. We never use
+ *   ANSI.BRIGHT_BLACK for text on dark backgrounds — it's dark gray and
+ *   nearly invisible.
+ *
  * @module tui/panels/scenarios
  */
 
 import type { CellStyle, RenderCommand } from "@garazyk/tui";
 import {
+  ANSI,
+  bg,
   bold,
   COLORS,
   dim,
   fg,
-  reverse,
   truncate,
 } from "@garazyk/tui";
 import type { ResolvedNode } from "@garazyk/tui";
@@ -31,6 +41,12 @@ const CATEGORIES: Record<string, string> = {
 };
 
 const CATEGORY_ORDER = ["core", "identity", "scale", "edge"];
+
+/** Style for the cursor highlight row — blue background, default foreground. */
+const CURSOR_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1 };
+
+/** Style for the cursor highlight row text — bold default foreground on blue. */
+const CURSOR_TEXT_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1, bold: true };
 
 /** A flat list item — either a category header or a scenario row. */
 interface FlatItem {
@@ -123,6 +139,10 @@ export function renderScenariosPanel(
   // Build flat list of items
   const items = buildFlatItems(filtered, collapsedCategories);
 
+  // Reserve 2 rows at the bottom: description preview + summary line
+  const bottomReserved = focused ? 2 : 1;
+  const listHeight = area.height - bottomReserved;
+
   let row = 0;
 
   // Search indicator
@@ -142,16 +162,32 @@ export function renderScenariosPanel(
   const scrollOffset = panelState.scrollOffset;
   const cursor = panelState.cursor;
 
-  for (let i = scrollOffset; i < items.length && row < area.height - 1; i++) {
+  // Track the description of the cursor item for the preview area
+  let cursorDescription = "";
+
+  for (let i = scrollOffset; i < items.length && row < listHeight; i++) {
     const item = items[i]!;
     const isCursorRow = focused && i === cursor;
 
-    // Highlight style for cursor row
-    const rowStyle = isCursorRow ? reverse(fg(COLORS.accent)) : undefined;
+    if (isCursorRow && item.description) {
+      cursorDescription = item.description;
+    }
 
     if (item.type === "category") {
       const header = `${item.statusDot} ${item.label} (${item.count})`;
-      const style = isCursorRow ? rowStyle! : bold(fg(COLORS.textPrimary));
+      const style = isCursorRow ? CURSOR_TEXT_STYLE : bold(fg(COLORS.textPrimary));
+
+      // Fill cursor row with blue background
+      if (isCursorRow) {
+        cmds.push({
+          type: "rect",
+          box: { x: area.x, y: area.y + row, width: area.width, height: 1 },
+          char: " ",
+          style: CURSOR_STYLE,
+          clip,
+        });
+      }
+
       cmds.push({
         type: "text",
         x: area.x,
@@ -162,17 +198,17 @@ export function renderScenariosPanel(
       });
     } else {
       // Scenario row
-      const dotStyle = isCursorRow ? rowStyle! : item.statusStyle;
-      const nameStyle = isCursorRow ? rowStyle! : fg(COLORS.textPrimary);
+      const dotStyle = isCursorRow ? CURSOR_TEXT_STYLE : item.statusStyle;
+      const nameStyle = isCursorRow ? CURSOR_TEXT_STYLE : fg(COLORS.textPrimary);
       const name = truncate(item.label, area.width - 4);
 
-      // Clear the row first for clean reverse-video highlight
+      // Fill cursor row with blue background
       if (isCursorRow) {
         cmds.push({
           type: "rect",
           box: { x: area.x, y: area.y + row, width: area.width, height: 1 },
           char: " ",
-          style: rowStyle!,
+          style: CURSOR_STYLE,
           clip,
         });
       }
@@ -193,23 +229,35 @@ export function renderScenariosPanel(
         style: nameStyle,
         clip,
       });
-
-      // Description preview line below the cursor
-      if (isCursorRow && item.description && row + 1 < area.height - 1) {
-        row++;
-        const descText = truncate("  " + item.description, area.width - 2);
-        cmds.push({
-          type: "text",
-          x: area.x,
-          y: area.y + row,
-          text: descText,
-          style: dim(fg(COLORS.textSecondary)),
-          clip,
-        });
-      }
     }
 
     row++;
+  }
+
+  // Description preview area — 1 row above the summary line
+  // Uses default terminal foreground (fg: -1) which adapts to both light
+  // and dark terminal themes. Never use ANSI.BRIGHT_BLACK here — it's
+  // dark gray and invisible on dark backgrounds.
+  const descRow = area.y + area.height - 2;
+  if (focused && cursorDescription) {
+    const descText = truncate(cursorDescription, area.width - 2);
+    cmds.push({
+      type: "text",
+      x: area.x + 1,
+      y: descRow,
+      text: descText,
+      style: fg(COLORS.textPrimary),
+      clip,
+    });
+  } else if (focused) {
+    // Clear the description row when no scenario is selected
+    cmds.push({
+      type: "rect",
+      box: { x: area.x, y: descRow, width: area.width, height: 1 },
+      char: " ",
+      style: fg(COLORS.textPrimary),
+      clip,
+    });
   }
 
   // Summary line
@@ -221,7 +269,7 @@ export function renderScenariosPanel(
       x: area.x,
       y: summaryRow,
       text: actions,
-      style: dim(fg(COLORS.accent)),
+      style: fg(COLORS.accent),
       clip,
     });
   } else {
@@ -234,7 +282,7 @@ export function renderScenariosPanel(
       x: area.x,
       y: summaryRow,
       text: summary,
-      style: dim(fg(COLORS.textSecondary)),
+      style: dim(fg(COLORS.textPrimary)),
       clip,
     });
   }
