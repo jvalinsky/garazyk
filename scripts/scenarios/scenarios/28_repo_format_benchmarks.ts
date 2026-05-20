@@ -1,7 +1,7 @@
 /**
  * @module scenarios/28_repo_format_benchmarks
  *
- * Scenario: 28 repo format benchmarks
+ * Scenario: Benchmarks repo fetch performance across CAR and STAR formats.
  *
  * Behavior:
  * - Executes the 28 repo format benchmarks scenario.

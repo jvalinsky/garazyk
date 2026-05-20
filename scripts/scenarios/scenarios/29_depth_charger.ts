@@ -1,7 +1,7 @@
 /**
  * @module scenarios/29_depth_charger
  *
- * Scenario: 29 depth charger
+ * Scenario: Rejects records that exceed lexicon nesting depth limits.
  *
  * Behavior:
  * - Executes the 29 depth charger scenario.

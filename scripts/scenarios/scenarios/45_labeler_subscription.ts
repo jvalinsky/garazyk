@@ -1,7 +1,7 @@
 /**
  * @module scenarios/45_labeler_subscription
  *
- * Scenario: 45 labeler subscription
+ * Scenario: Publishes a labeler service and subscribes another account to it.
  *
  * Behavior:
  * - Executes the 45 labeler subscription scenario.

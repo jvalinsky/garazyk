@@ -1,7 +1,7 @@
 /**
  * @module scenarios/42_handle_change_propagation
  *
- * Scenario: 42 handle change propagation
+ * Scenario: Updates a handle and verifies propagation through PLC and AppView.
  *
  * Behavior:
  * - Executes the 42 handle change propagation scenario.

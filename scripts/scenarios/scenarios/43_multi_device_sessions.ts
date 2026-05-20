@@ -1,7 +1,7 @@
 /**
  * @module scenarios/43_multi_device_sessions
  *
- * Scenario: 43 multi device sessions
+ * Scenario: Manages multiple sessions for one account and revokes one device session.
  *
  * Behavior:
  * - Executes the 43 multi device sessions scenario.

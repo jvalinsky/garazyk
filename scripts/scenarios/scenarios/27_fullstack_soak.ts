@@ -1,7 +1,7 @@
 /**
  * @module scenarios/27_fullstack_soak
  *
- * Scenario: 27 fullstack soak
+ * Scenario: Runs a sustained mixed workload across PDS, Relay, and AppView, then checks consistency.
  *
  * Behavior:
  * - Executes the 27 fullstack soak scenario.

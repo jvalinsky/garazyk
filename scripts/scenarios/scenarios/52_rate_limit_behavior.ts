@@ -1,7 +1,7 @@
 /**
  * @module scenarios/52_rate_limit_behavior
  *
- * Scenario: 52 rate limit behavior
+ * Scenario: Triggers rate limiting on record creation and verifies recovery.
  *
  * Behavior:
  * - Executes the 52 rate limit behavior scenario.
