@@ -11,7 +11,7 @@
 import { join } from "@std/path";
 import type { Cmd, DashboardState, Msg, RunProgress, TopologyPreview } from "../dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "../dashboard_state.ts";
-import type { Run, RunEvent, ServiceStatus } from "../services/types.ts";
+import type { Run, RunEvent, ScenarioResultView, ServiceStatus } from "../services/types.ts";
 
 // ---------------------------------------------------------------------------
 // Runtime handle
@@ -445,6 +445,12 @@ function constructMsg(
       }
       return { type: "runs/recentReceived", runs: data as Run[], ...tokenField };
 
+    case "runs/detailResults":
+      if (!isRecord(data) || !Array.isArray(d.results)) {
+        return { type: "runs/closeDetail" };
+      }
+      return { type: "runs/detailResults", results: d.results as ScenarioResultView[] };
+
     default:
       throw new Error(`Unknown success msg type: ${onSuccess}`);
   }
@@ -492,6 +498,8 @@ function constructErrorMsg(
       return { type: "metrics/failed", error, ...tokenField };
     case "runs/recentFailed":
       return { type: "runs/recentFailed", error, ...tokenField };
+    case "runs/closeDetail":
+      return { type: "runs/closeDetail" };
     default:
       throw new Error(`Unknown error msg type: ${onError}`);
   }

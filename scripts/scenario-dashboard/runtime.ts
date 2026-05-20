@@ -251,6 +251,11 @@ export function constructMsg(
         return { type: "metrics/failed", error: "Malformed metrics response", ...tokenField };
       }
       return { type: "metrics/received", stats: (d.stats ?? {}) as never, ...tokenField };
+    case "runs/detailResults":
+      if (!isRecord(data) || !Array.isArray(d.results)) {
+        return { type: "runs/closeDetail" };
+      }
+      return { type: "runs/detailResults", results: d.results as never };
     default:
       throw new Error(`Unknown success msg type: ${onSuccess}`);
   }
@@ -318,6 +323,8 @@ export function constructErrorMsg(
       return { type: "logs/failed", error, ...runField, ...tokenField };
     case "metrics/failed":
       return { type: "metrics/failed", error, ...tokenField };
+    case "runs/closeDetail":
+      return { type: "runs/closeDetail" };
     default:
       throw new Error(`Unknown error msg type: ${onError}`);
   }
