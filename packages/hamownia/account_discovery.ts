@@ -3,24 +3,32 @@ import { XrpcClient } from "@garazyk/gruszka";
 
 /** A resolved account target used by chat and account-creation tooling. */
 export interface TargetIdentity {
+  /** The original user-provided identifier (handle or DID). */
   input: string;
+  /** The resolved decentralized identifier. */
   did: string;
+  /** The resolved handle, if available. */
   handle?: string;
 }
 
 /** Options controlling target resolution. */
 export interface ResolveTargetsOptions {
+  /** SSH host for remote database discovery. */
   sshHost?: string;
+  /** Path to the PDS service SQLite database. */
   dbPath?: string;
+  /** Maximum number of accounts to return (1-100, default 10). */
   limit?: number;
 }
 
 type JsonRecord = Record<string, unknown>;
 
+/** Cast a value to a JSON record, returning an empty object for non-objects. */
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === "object" ? value as JsonRecord : {};
 }
 
+/** Clamp a user-provided limit to the range [1, 100] with a default of 10. */
 function normalizeLimit(limit?: number): number {
   if (typeof limit === "number" && Number.isFinite(limit)) {
     return Math.max(1, Math.min(100, Math.trunc(limit)));
@@ -28,6 +36,7 @@ function normalizeLimit(limit?: number): number {
   return 10;
 }
 
+/** Check whether a regular file exists at the given path. */
 async function fileExists(path: string): Promise<boolean> {
   try {
     const stat = await Deno.stat(path);
@@ -37,6 +46,7 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
+/** Map a raw database row into a TargetIdentity, skipping rows without a DID. */
 function normalizeTargetRow(row: unknown): TargetIdentity | null {
   const record = asRecord(row);
   const did = String(record.did || "");
@@ -56,6 +66,7 @@ function normalizeTargetRow(row: unknown): TargetIdentity | null {
   };
 }
 
+/** Convert database rows into TargetIdentity objects, filtering to PLC DIDs only. */
 function normalizeTargets(rows: unknown[]): TargetIdentity[] {
   return rows
     .map(normalizeTargetRow)
@@ -63,6 +74,7 @@ function normalizeTargets(rows: unknown[]): TargetIdentity[] {
     .filter((row) => row.did.startsWith("did:plc:"));
 }
 
+/** Execute a SQL query against a local SQLite database and return parsed JSON rows. */
 async function runSqliteJson(dbPath: string, sql: string): Promise<unknown[]> {
   const command = new Deno.Command("sqlite3", {
     args: ["-json", dbPath, sql],
@@ -80,6 +92,7 @@ async function runSqliteJson(dbPath: string, sql: string): Promise<unknown[]> {
   return JSON.parse(stdout) as unknown[];
 }
 
+/** Spawn a command, pipe input to its stdin, and return exit code with captured output. */
 async function runCommandWithInput(
   command: string,
   args: string[],
