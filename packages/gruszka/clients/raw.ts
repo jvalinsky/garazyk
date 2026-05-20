@@ -255,22 +255,26 @@ export class RawClient {
   }
 }
 
+/** Look up the output encoding for a method from the lexicon table. */
 function outputEncodingFor(method: string): string {
   return LEXICON_METHOD_OUTPUT_ENCODINGS[
     method as keyof typeof LEXICON_METHOD_OUTPUT_ENCODINGS
   ] ?? "application/json";
 }
 
+/** Look up the input encoding for a method from the lexicon table. */
 function inputEncodingFor(method: string): string {
   return LEXICON_METHOD_INPUT_ENCODINGS[
     method as keyof typeof LEXICON_METHOD_INPUT_ENCODINGS
   ] ?? "application/json";
 }
 
+/** Determine whether an encoding string represents a binary format. */
 function isBinaryEncoding(encoding: string): boolean {
   return encoding !== "application/json";
 }
 
+/** Map an input encoding to the corresponding Content-Type header value. */
 function contentTypeForInputEncoding(encoding: string): string {
   return encoding === "*/*" ? "application/octet-stream" : encoding;
 }

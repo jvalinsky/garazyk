@@ -3,8 +3,11 @@ import { XrpcClient } from "@garazyk/gruszka";
 
 /** Configuration for the PDS CLI helpers. */
 export interface PdsCliConfig {
+  /** Base URL of the PDS (e.g. http://localhost:3000). */
   pdsUrl: string;
+  /** Path to the kaszlak CLI binary. */
   binPath: string;
+  /** Path to the PDS data directory. */
   dataDir: string;
 }
 
@@ -20,6 +23,7 @@ function asRecord(value: unknown): JsonRecord {
   return value && typeof value === "object" ? value as JsonRecord : {};
 }
 
+/** Extract the next positional argument after a flag, exiting on failure. */
 function takeValue(argv: string[], index: number, flag: string): string {
   const value = argv[index + 1];
   if (!value) {
@@ -29,18 +33,22 @@ function takeValue(argv: string[], index: number, flag: string): string {
   return value;
 }
 
+/** Return the current UTC timestamp in ISO 8601 format without milliseconds. */
 function nowIsoTrimmed(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
+/** Print an informational message to stdout. */
 function printInfo(message: string): void {
   console.log(message);
 }
 
+/** Print a success-prefixed message to stdout. */
 function printSuccess(message: string): void {
   console.log(`OK: ${message}`);
 }
 
+/** Print an error message to stderr, optionally with extra diagnostic data. */
 function printError(message: string, extra?: Record<string, unknown>): void {
   console.error(`Error: ${message}`);
   if (extra && Object.keys(extra).length > 0) {
@@ -48,6 +56,7 @@ function printError(message: string, extra?: Record<string, unknown>): void {
   }
 }
 
+/** Authenticate with the PDS via createSession and return session credentials. */
 async function login(
   client: XrpcClient,
   pdsUrl: string,
