@@ -5,7 +5,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { ANSI, DEFAULT_STYLE, fg, ScreenBuffer } from "./renderer.ts";
+import { ANSI, COLORS, DEFAULT_STYLE, fg, ScreenBuffer } from "./renderer.ts";
 import { type BoundingBox, rasterize, type RenderCommand } from "./command.ts";
 
 // ── TextCommand ──────────────────────────────────────────────────────────────
@@ -167,10 +167,10 @@ Deno.test("rasterize: BoxCommand with focused draws bold border", () => {
   ];
   rasterize(commands, buf);
 
-  // Focused border should use cyan bold style
+  // Focused border should use the theme's focused border color in bold style
   const cornerStyle = buf.getCell(1, 1)?.style;
   assert(cornerStyle?.bold, "Focused box corner should be bold");
-  assertEquals(cornerStyle?.fg, ANSI.CYAN);
+  assertEquals(cornerStyle?.fg, COLORS.borderFocused);
 });
 
 // ── ScrollBoxCommand ─────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assert } from "@std/assert";
-import { ScreenBuffer, DEFAULT_STYLE, ANSI, fg, bg, bold, dim } from "./renderer.ts";
+import { ScreenBuffer, DEFAULT_STYLE, ANSI, fg, bg, bold, dim, currentTheme } from "./renderer.ts";
 
 Deno.test("ScreenBuffer: setCell and getCell", () => {
   const buf = new ScreenBuffer(10, 5);
@@ -141,12 +141,12 @@ Deno.test("ScreenBuffer: box draws border", () => {
   assertEquals(buf.getCell(8, 1)?.char, "│");
 });
 
-Deno.test("ScreenBuffer: box with focused uses cyan bold border", () => {
+Deno.test("ScreenBuffer: box with focused uses theme borderFocused color", () => {
   const buf = new ScreenBuffer(10, 5);
   buf.box(1, 0, 8, 4, DEFAULT_STYLE, true);
 
   const cornerStyle = buf.getCell(1, 0)?.style;
-  assertEquals(cornerStyle?.fg, ANSI.CYAN);
+  assertEquals(cornerStyle?.fg, currentTheme.borderFocused);
   assertEquals(cornerStyle?.bold, true);
 });
 
