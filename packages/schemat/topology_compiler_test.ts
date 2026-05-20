@@ -1,4 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
+import { parse } from "jsr:@std/yaml@0.224.0";
 import {
   Cap,
   compileTopology,
@@ -132,11 +133,9 @@ Deno.test("renderComposeYaml: image-based adapter", () => {
     composeProject: "test",
   });
 
-  assertEquals(
-    yaml.includes("image: ghcr.io/bluesky-social/atproto/pds:latest"),
-    true,
-  );
-  assertEquals(yaml.includes("build:"), false);
+  const parsed = parse(yaml) as any;
+  assertEquals(parsed.services["local-pds"].image, "ghcr.io/bluesky-social/atproto/pds:latest");
+  assertEquals(parsed.services["local-pds"].build, undefined);
 });
 
 Deno.test("renderComposeYaml: includes depends_on", () => {
@@ -259,11 +258,12 @@ Deno.test("renderComposeYaml: sidecars rendered as separate services", () => {
     composeProject: "test",
   });
 
-  assertEquals(yaml.includes("local-plc:"), true);
-  assertEquals(yaml.includes("local-plc-db:"), true);
-  assertEquals(yaml.includes("image: postgres:16-alpine"), true);
-  assertEquals(yaml.includes("pg_isready -U plc"), true);
-  assertEquals(yaml.includes("ref_plc_pg_data"), true);
+  const parsed = parse(yaml) as any;
+  assertEquals(!!parsed.services["local-plc"], true);
+  assertEquals(!!parsed.services["local-plc-db"], true);
+  assertEquals(parsed.services["local-plc-db"].image, "postgres:16-alpine");
+  assertEquals(parsed.services["local-plc-db"].healthcheck.test.join(" "), "CMD-SHELL pg_isready -U plc");
+  assertEquals(parsed.services["local-plc-db"].volumes.includes("ref_plc_pg_data:/var/lib/postgresql/data"), true);
 });
 
 Deno.test("renderComposeYaml: customTest health check", () => {
@@ -594,10 +594,11 @@ Deno.test("compileTopology: typed port and volume objects survive registry loadi
     });
 
     const yaml = await Deno.readTextFile(result.composeFile);
-    assertEquals(yaml.includes('- "3300:3000"'), true);
-    assertEquals(yaml.includes("object_appview_data:/data"), true);
-    assertEquals(yaml.includes("/repo/fixtures:/fixtures:ro"), true);
-    assertEquals(yaml.includes("object_appview_data:"), true);
+    const parsed = parse(yaml) as any;
+    assertEquals(parsed.services["local-appview"].ports.includes("3300:3000"), true);
+    assertEquals(parsed.services["local-appview"].volumes.includes("object_appview_data:/data"), true);
+    assertEquals(parsed.services["local-appview"].volumes.includes("/repo/fixtures:/fixtures:ro"), true);
+    assertEquals(parsed.volumes !== undefined && parsed.volumes["object_appview_data"] !== undefined, true);
     assertEquals(result.serviceUrls.appview, "http://localhost:3300");
     assertEquals(result.internalUrls.appview, "http://local-appview:3000");
     assertEquals(result.manifest.serviceUrls.appview, "http://localhost:3300");
