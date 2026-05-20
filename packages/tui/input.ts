@@ -57,6 +57,8 @@ export const Keys = {
   F11: "f11",
   F12: "f12",
   SPACE: "space",
+  PASTE_START: "paste_start",
+  PASTE_END: "paste_end",
   UNKNOWN: "unknown",
 } as const;
 
@@ -197,6 +199,28 @@ function parseCsiSequence(bytes: number[]): [Key, number] | null {
 
   const b2 = bytes[2]!;
 
+  // Bracketed paste: ESC [ 2 0 0 ~ (start) and ESC [ 2 0 1 ~ (end)
+  if (b2 === 50 && bytes.length >= 6) { // '2'
+    if (bytes[3] === 48 && bytes[4] === 48 && bytes[5] === 126) { // '0', '0', '~'
+      return [{ key: Keys.PASTE_START, ctrl: false, alt: false, shift: false }, 6];
+    }
+    if (bytes[3] === 48 && bytes[4] === 49 && bytes[5] === 126) { // '0', '1', '~'
+      return [{ key: Keys.PASTE_END, ctrl: false, alt: false, shift: false }, 6];
+    }
+  }
+
+  // Kitty keyboard protocol: ESC [ <params> u
+  // The final byte is 'u' (0x75). Params encode the key and modifiers.
+  // Format: ESC [ codepoint ; modifiers u
+  if (b2 >= 48 && b2 <= 57) {
+    // Scan for 'u' (0x75) as final byte — Kitty protocol
+    for (let i = 3; i < Math.min(bytes.length, 16); i++) {
+      if (bytes[i] === 117) { // 'u'
+        return parseKittySequence(bytes, i);
+      }
+    }
+  }
+
   // Simple 2-byte CSI: ESC [ <final>
   // A=up, B=down, C=right, D=left, H=home, F=end
   if (b2 >= 65 && b2 <= 90) {
@@ -282,6 +306,71 @@ function parseCsiSequence(bytes: number[]): [Key, number] | null {
 
   // Fallback
   return [{ key: Keys.ESCAPE, ctrl: false, alt: false, shift: false }, 1];
+}
+
+/**
+ * Parse a Kitty keyboard protocol sequence: ESC [ codepoint ; modifiers u
+ *
+ * The Kitty protocol encodes the key's Unicode codepoint and modifier bitmask.
+ * Modifier bits: 1=shift, 2=alt, 4=ctrl, 8=super.
+ * Special codepoints: 57344+ for function keys and special keys.
+ *
+ * @see https://sw.kovidgoyal.net/kitty/keyboard-protocol/
+ */
+function parseKittySequence(bytes: number[], uIdx: number): [Key, number] {
+  const consumed = uIdx + 1;
+  const paramStr = String.fromCharCode(...bytes.slice(2, uIdx));
+  const parts = paramStr.split(";");
+
+  const codepoint = parseInt(parts[0] || "0", 10);
+  const modBits = parseInt(parts[1] || "0", 10);
+
+  const shift = !!(modBits & 1);
+  const alt = !!(modBits & 2);
+  const ctrl = !!(modBits & 4);
+
+  // Kitty special key codepoints (57344+)
+  const kittySpecials: Record<number, string> = {
+    57344: Keys.ENTER,
+    57345: Keys.ESCAPE,
+    57346: Keys.TAB,
+    57347: Keys.BACKSPACE,
+    57349: Keys.INSERT,
+    57350: Keys.DELETE,
+    57351: Keys.LEFT,
+    57352: Keys.RIGHT,
+    57353: Keys.UP,
+    57354: Keys.DOWN,
+    57355: Keys.PAGE_UP,
+    57356: Keys.PAGE_DOWN,
+    57357: Keys.HOME,
+    57358: Keys.END,
+    57359: Keys.F1,
+    57360: Keys.F2,
+    57361: Keys.F3,
+    57362: Keys.F4,
+    57363: Keys.F5,
+    57364: Keys.F6,
+    57365: Keys.F7,
+    57366: Keys.F8,
+    57367: Keys.F9,
+    57368: Keys.F10,
+    57369: Keys.F11,
+    57370: Keys.F12,
+  };
+
+  const specialKey = kittySpecials[codepoint];
+  if (specialKey) {
+    return [{ key: specialKey, ctrl, alt, shift }, consumed];
+  }
+
+  // Regular Unicode codepoint
+  if (codepoint >= 32 && codepoint <= 0x10FFFF) {
+    const char = String.fromCodePoint(codepoint);
+    return [{ key: char.toLowerCase(), ctrl, alt, shift: shift || (codepoint >= 65 && codepoint <= 90) }, consumed];
+  }
+
+  return [{ key: Keys.UNKNOWN, ctrl, alt, shift }, consumed];
 }
 
 /** Parse an SS3 sequence: ESC O <final> */

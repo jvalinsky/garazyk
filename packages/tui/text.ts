@@ -80,8 +80,10 @@ export function getCharWidth(char: string): number {
 /**
  * Calculate the visual column width of a string in a terminal grid.
  *
- * Handles CJK double-width characters (2 cells each) and strips
- * ANSI escape sequences before measuring.
+ * Handles CJK double-width characters (2 cells each), strips
+ * ANSI escape sequences before measuring, and uses grapheme-aware
+ * segmentation for correct measurement of combining characters
+ * and emoji ZWJ sequences.
  *
  * @param text - String to measure
  * @returns Visual column width (number of terminal cells)
@@ -94,8 +96,12 @@ export function getCharWidth(char: string): number {
  */
 export function measureText(text: string): number {
   let width = 0;
-  for (const char of text) {
-    width += getCharWidth(char);
+  // Use Intl.Segmenter for grapheme-aware iteration.
+  // This correctly handles combining marks, ZWJ sequences, and
+  // emoji skin tone modifiers as single visual units.
+  const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+  for (const { segment } of segmenter.segment(text)) {
+    width += getCharWidth(segment);
   }
   return width;
 }
