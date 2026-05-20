@@ -29,6 +29,8 @@ export interface DiscoveredScenario {
   id: string;
   /** Human-readable scenario name */
   name: string;
+  /** One-line description extracted from the scenario file header */
+  description: string;
   /** Filesystem path to the scenario entry point */
   path: string;
   /** Scenario category used for grouping in the dashboard */

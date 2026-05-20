@@ -26,10 +26,15 @@ export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
             r.role ? `${r.role}:${r.capability}` : r.capability
           );
 
+          // Extract description from the file's JSDoc header
+          const filePath = join(SCENARIOS_DIR, entry.name);
+          const description = await extractDescription(filePath);
+
           scenarios.push({
             id,
             name: match[2].replace(/_/g, " "),
-            path: join(SCENARIOS_DIR, entry.name),
+            description,
+            path: filePath,
             category: categorize(id),
             needsPds2: needsPds2(id),
             requires,
@@ -44,6 +49,24 @@ export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
 
   scenarios.sort((a, b) => a.id.localeCompare(b.id));
   return scenarios;
+}
+
+/**
+ * Extract the one-line description from a scenario file's JSDoc header.
+ * Looks for a line matching `* Scenario: <description>` and returns
+ * the description text. Falls back to empty string if not found.
+ */
+async function extractDescription(filePath: string): Promise<string> {
+  try {
+    const content = await Deno.readTextFile(filePath);
+    const match = content.match(/\*\s*Scenario:\s*(.+)/);
+    if (match) {
+      return match[1]!.trim().replace(/\s*\*?\s*$/, "");
+    }
+  } catch {
+    // File may not be readable
+  }
+  return "";
 }
 
 /** Cache discovered scenarios for the lifetime of the process */

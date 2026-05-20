@@ -37,6 +37,7 @@ interface FlatItem {
   type: "category" | "scenario";
   key: string; // category key or scenario id
   label: string;
+  description: string; // one-line description for scenarios, empty for categories
   statusDot: string;
   statusStyle: CellStyle;
   isCollapsed: boolean;
@@ -59,6 +60,7 @@ function buildFlatItems(
       type: "category",
       key: catKey,
       label,
+      description: "",
       statusDot: isCollapsed ? "▶" : "▼",
       statusStyle: bold(fg(COLORS.textPrimary)),
       isCollapsed,
@@ -71,6 +73,7 @@ function buildFlatItems(
           type: "scenario",
           key: sc.id,
           label: sc.id + " " + sc.name,
+          description: sc.description,
           statusDot: scenarioStatusDot(sc.lastStatus),
           statusStyle: scenarioStatusStyle(sc.lastStatus),
           isCollapsed: false,
@@ -190,6 +193,20 @@ export function renderScenariosPanel(
         style: nameStyle,
         clip,
       });
+
+      // Description preview line below the cursor
+      if (isCursorRow && item.description && row + 1 < area.height - 1) {
+        row++;
+        const descText = truncate("  " + item.description, area.width - 2);
+        cmds.push({
+          type: "text",
+          x: area.x,
+          y: area.y + row,
+          text: descText,
+          style: dim(fg(COLORS.textSecondary)),
+          clip,
+        });
+      }
     }
 
     row++;

@@ -74,7 +74,7 @@ Deno.test("constructMsg: runs/progressReceived passes data through as progress",
 });
 
 Deno.test("constructMsg: scenarios/received maps scenarios array", () => {
-  const scenarios = [{ id: "01", name: "test", category: "core", needsPds2: false }];
+  const scenarios = [{ id: "01", name: "test", description: "A test scenario", category: "core", needsPds2: false }];
   const data = { scenarios };
   const msg = constructMsg("scenarios/received", data);
   assertEquals(msg, { type: "scenarios/received", scenarios });
