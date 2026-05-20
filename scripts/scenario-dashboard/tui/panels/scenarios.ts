@@ -18,7 +18,6 @@
 
 import type { CellStyle, RenderCommand } from "@garazyk/tui";
 import {
-  ANSI,
   bg,
   bold,
   COLORS,
@@ -257,7 +256,7 @@ export function renderScenariosPanel(
       x: area.x + 1,
       y: descRow,
       text: descText,
-      style: dim(fg(COLORS.textPrimary)),
+      style: dim(fg(COLORS.textSecondary)),
       clip,
     });
   } else if (focused) {
@@ -287,7 +286,7 @@ export function renderScenariosPanel(
       x: area.x,
       y: summaryRow,
       text: summary,
-      style: dim(fg(COLORS.textPrimary)),
+      style: dim(fg(COLORS.textSecondary)),
       clip,
     });
   }
