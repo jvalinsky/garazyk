@@ -134,6 +134,10 @@ com.apple.DeveloperTools/
 *.profdata
 *.profraw
 coverage/
+coverage.json
+
+# Agent skill lock file
+skills-lock.json
 
 # Test logs
 testing_*_logs.txt
