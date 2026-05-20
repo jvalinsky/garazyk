@@ -101,6 +101,11 @@ export function publicUrlForRole(
   role: string,
   adapter: ServiceAdapter,
 ): string {
+  const healthPort = adapter.healthCheck?.port;
+  if (healthPort) {
+    return `http://localhost:${healthPort}`;
+  }
+
   const parsed = parsePortMapping(adapter.ports?.[0]);
   const port = parsed.hostPort || defaultPortForRole(role);
   return `http://localhost:${port}`;
@@ -111,6 +116,11 @@ export function internalUrlForRole(
   role: string,
   adapter: ServiceAdapter,
 ): string {
+  const healthPort = adapter.healthCheck?.port;
+  if (healthPort) {
+    return `http://${serviceNameForRole(role, adapter)}:${healthPort}`;
+  }
+
   const parsed = parsePortMapping(adapter.ports?.[0]);
   const port = parsed.containerPort || parsed.hostPort ||
     defaultPortForRole(role);
