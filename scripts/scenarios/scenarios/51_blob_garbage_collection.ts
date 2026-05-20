@@ -1,7 +1,7 @@
 /**
  * @module scenarios/51_blob_garbage_collection
  *
- * Scenario: 51 blob garbage collection
+ * Scenario: Deletes an orphaned blob while preserving referenced blobs.
  *
  * Behavior:
  * - Executes the 51 blob garbage collection scenario.

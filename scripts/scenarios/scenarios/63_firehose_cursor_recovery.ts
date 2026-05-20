@@ -1,7 +1,7 @@
 /**
  * @module scenarios/63_firehose_cursor_recovery
  *
- * Scenario: 63 firehose cursor recovery
+ * Scenario: Resubscribes to the firehose with cursors and verifies continuation and replay.
  *
  * Behavior:
  * - Executes the 63 firehose cursor recovery scenario.

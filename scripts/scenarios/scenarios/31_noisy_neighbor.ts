@@ -1,7 +1,7 @@
 /**
  * @module scenarios/31_noisy_neighbor
  *
- * Scenario: 31 noisy neighbor
+ * Scenario: Verifies rate limiting is isolated between accounts.
  *
  * Behavior:
  * - Executes the 31 noisy neighbor scenario.

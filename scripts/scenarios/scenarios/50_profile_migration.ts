@@ -1,7 +1,7 @@
 /**
  * @module scenarios/50_profile_migration
  *
- * Scenario: 50 profile migration
+ * Scenario: Evolves a profile through avatar, banner, and display name updates.
  *
  * Behavior:
  * - Executes the 50 profile migration scenario.

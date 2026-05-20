@@ -1,7 +1,7 @@
 /**
  * @module scenarios/33_tortoise_consumer
  *
- * Scenario: 33 tortoise consumer
+ * Scenario: Drops a slow firehose consumer when backpressure builds.
  *
  * Behavior:
  * - Executes the 33 tortoise consumer scenario.

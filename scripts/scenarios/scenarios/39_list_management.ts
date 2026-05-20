@@ -1,7 +1,7 @@
 /**
  * @module scenarios/39_list_management
  *
- * Scenario: 39 list management
+ * Scenario: Creates a curated list, adds a member, and removes it again.
  *
  * Behavior:
  * - Executes the 39 list management scenario.

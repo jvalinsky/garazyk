@@ -1,7 +1,7 @@
 /**
  * @module scenarios/59_web_client_browser_flow
  *
- * Scenario: 59 web client browser flow
+ * Scenario: Loads the web client in a browser and checks for console errors or public network leaks.
  *
  * Behavior:
  * - Executes the 59 web client browser flow scenario.
