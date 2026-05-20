@@ -20,6 +20,8 @@ export {
   isTerminal,
   getTerminalSize,
   NO_COLOR,
+  getCurrentTheme,
+  setCurrentTheme,
 } from "./renderer.ts";
 
 // Key reading — from input.ts

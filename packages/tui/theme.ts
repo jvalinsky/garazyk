@@ -300,8 +300,24 @@ export const themes: Record<string, Theme> = {
   classic: classicTheme,
 };
 
-/** The currently active theme. Mutate to change themes at runtime. */
-export let currentTheme: Theme = resolveTheme();
+/** The currently active theme. Use {@link getCurrentTheme} and {@link setCurrentTheme} to access. */
+let _currentTheme: Theme | undefined;
+
+/** Get the currently active theme. Lazily resolves from environment on first call. */
+export function getCurrentTheme(): Theme {
+  if (_currentTheme === undefined) {
+    _currentTheme = resolveTheme();
+  }
+  return _currentTheme;
+}
+
+/** Set the active theme by name. */
+export function setCurrentTheme(name: string): Theme {
+  const theme = themes[name];
+  if (!theme) throw new Error(`Unknown theme: ${name}. Available: ${Object.keys(themes).join(", ")}`);
+  _currentTheme = theme;
+  return theme;
+}
 
 /**
  * Resolve the initial theme based on environment:
@@ -338,17 +354,6 @@ function resolveTheme(): Theme {
   return darkTheme;
 }
 
-/**
- * Switch to a different theme at runtime.
- * Updates `currentTheme` and returns the new theme.
- */
-export function setTheme(name: string): Theme {
-  const theme = themes[name];
-  if (!theme) throw new Error(`Unknown theme: ${name}. Available: ${Object.keys(themes).join(", ")}`);
-  currentTheme = theme;
-  return theme;
-}
-
 // ---------------------------------------------------------------------------
 // COLORS re-export (backward compat)
 // ---------------------------------------------------------------------------
@@ -356,28 +361,28 @@ export function setTheme(name: string): Theme {
 /**
  * Semantic color tokens — derived from the active theme.
  *
- * @deprecated Prefer importing `currentTheme` directly. This object
+ * @deprecated Prefer importing `getCurrentTheme()` directly. This object
  *   exists for backward compatibility with existing panel code.
  */
 export const COLORS: Readonly<Omit<Theme, "name">> = {
-  get surfaceBase() { return currentTheme.surfaceBase; },
-  get surfacePanel() { return currentTheme.surfacePanel; },
-  get surfaceElevated() { return currentTheme.surfaceElevated; },
-  get textPrimary() { return currentTheme.textPrimary; },
-  get textSecondary() { return currentTheme.textSecondary; },
-  get textMuted() { return currentTheme.textMuted; },
-  get accent() { return currentTheme.accent; },
-  get statusOk() { return currentTheme.statusOk; },
-  get statusWarn() { return currentTheme.statusWarn; },
-  get statusErr() { return currentTheme.statusErr; },
-  get statusMuted() { return currentTheme.statusMuted; },
-  get border() { return currentTheme.border; },
-  get borderFocused() { return currentTheme.borderFocused; },
-  get badgePassed() { return currentTheme.badgePassed; },
-  get badgeFailed() { return currentTheme.badgeFailed; },
-  get badgeSkipped() { return currentTheme.badgeSkipped; },
-  get badgeRunning() { return currentTheme.badgeRunning; },
-  get progressBar() { return currentTheme.progressBar; },
-  get progressTrack() { return currentTheme.progressTrack; },
-  get title() { return currentTheme.title; },
+  get surfaceBase() { return getCurrentTheme().surfaceBase; },
+  get surfacePanel() { return getCurrentTheme().surfacePanel; },
+  get surfaceElevated() { return getCurrentTheme().surfaceElevated; },
+  get textPrimary() { return getCurrentTheme().textPrimary; },
+  get textSecondary() { return getCurrentTheme().textSecondary; },
+  get textMuted() { return getCurrentTheme().textMuted; },
+  get accent() { return getCurrentTheme().accent; },
+  get statusOk() { return getCurrentTheme().statusOk; },
+  get statusWarn() { return getCurrentTheme().statusWarn; },
+  get statusErr() { return getCurrentTheme().statusErr; },
+  get statusMuted() { return getCurrentTheme().statusMuted; },
+  get border() { return getCurrentTheme().border; },
+  get borderFocused() { return getCurrentTheme().borderFocused; },
+  get badgePassed() { return getCurrentTheme().badgePassed; },
+  get badgeFailed() { return getCurrentTheme().badgeFailed; },
+  get badgeSkipped() { return getCurrentTheme().badgeSkipped; },
+  get badgeRunning() { return getCurrentTheme().badgeRunning; },
+  get progressBar() { return getCurrentTheme().progressBar; },
+  get progressTrack() { return getCurrentTheme().progressTrack; },
+  get title() { return getCurrentTheme().title; },
 };
