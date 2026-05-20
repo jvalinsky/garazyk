@@ -66,7 +66,7 @@ export async function checkPlaywright(required: boolean): Promise<PreflightResul
   try {
     // We use a dynamic import to avoid a hard dependency if playwright isn't even used.
     // In Deno, this will pull from npm if not already cached.
-    const { chromium } = await import("npm:playwright");
+    const { chromium } = await import("npm:playwright@1.52.0");
     const browser = await chromium.launch({ timeout: 2000 });
     await browser.close();
     return { ok: true, fatal: required };
