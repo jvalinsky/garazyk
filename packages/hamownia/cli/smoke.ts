@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { runSmoke } from "../../narzedzia/smoke_command.ts";
+import { runSmoke } from "../smoke_command.ts";
 
 export const smokeCommand = new Command()
   .description("Run a smoke test against a local ATProto PDS.\n\n" +

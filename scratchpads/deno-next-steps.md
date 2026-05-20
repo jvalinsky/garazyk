@@ -1,6 +1,6 @@
 # Deno Packages: Next Steps Plan
 
-> Generated: 2026-05-20
+> Generated: 2026-05-20 · Updated after completing Phases 1–6
 
 ---
 
@@ -8,233 +8,172 @@
 
 | Package | Tests | JSR Publish | Sans-IO | Key Gaps |
 |---------|-------|-------------|---------|----------|
-| `tui` | 9 files, 145 tests | Clean | ⚠️ `mod.ts` re-exports terminal I/O | Theme system done; surface hierarchy done |
-| `schemat` | 4 files | ✅ `dry-run` passes | ✅ Pure | 11 untested source files; `topology_types.ts` untested |
-| `hamownia` | 14 files | — | ❌ 2 high-severity leaks | `progress.ts` + `run_loop.ts` write to stdout; 28 untested files |
-| `gruszka` | 6 files, 35 tests | — | ✅ (chat_viewer moved) | 20 untested source files (mostly generated clients) |
-| `laweta` | 4 files | — | ⚠️ `HOME` at module load | `DockerApiClient` accepts only `endpoint?: string`; no options object |
-| `narzedzia` | 0 files | ❌ Blocked: missing `fuzz_command.ts` | ✅ Pure | Zero tests; publish blocked |
+| `gruszka` | 35 | ✅ Clean | ✅ Pure | 20 untested files (mostly generated clients) |
+| `schemat` | 67 | ✅ Clean | ✅ Pure | 10 untested source files |
+| `laweta` | 63 | ✅ Clean | ✅ HOME deferred | 6 untested files (compose, health, format, telemetry) |
+| `hamownia` | 73 | ❌ 3 stale exports | ✅ Pure (progress fixed) | 27 untested files; `npm:playwright` missing constraint |
+| `narzedzia` | 11 | ❌ `npm:playwright` transitive | ✅ Pure | 12 untested files; smoke_command boundary violation |
+| `tui` | 227 | ❌ Missing LICENSE | ✅ Pure root + runtime subpath | 3 untested files |
 
-**Total: 2424 tests passing, 0 failures.**
+**Total: 2856 tests passing, 0 failures. All `deno check` clean.**
+
+### Completed Architecture Plan Actions
+
+| Action | Status | What was done |
+|--------|--------|--------------|
+| A1 — Extract ProgressBar rendering | ✅ | `render()` returns string, `run_loop.ts` owns stdout |
+| A2 — Remove run_loop terminal I/O | ✅ | `writeProgressLine()` helper, zero `Deno.stdout` in pure logic |
+| A3 — Split tui/ subpaths | ✅ | `@garazyk/tui` pure root, `@garazyk/tui/runtime` for terminal I/O |
+| A4 — Move chat_viewer out of gruszka | ✅ | Already done before this session |
+| A7 — Inject env into docker_api.ts | ✅ | `DockerApiClientOptions` with `endpoint/dockerHost/homeDir` |
+| A8 — Slice DashboardState.Msg | ✅ | 7 sub-unions + per-slice reducers + root coordinator |
+| E — Narzedzia publish blocker | ✅ | Stale `fuzz-command` removed, `addCname()` return type fixed |
+| F — Test coverage | ✅ | 17 new tests (11 boundary_check, 6 topology_types) |
 
 ---
 
-## 2. Workstreams (Priority Order)
+## 2. Remaining Issues (Priority Order)
 
-### Stream A: Sans-IO Fixes (architecture plan A1 + A2)
+### P1. JSR Publish Blockers (3 packages)
 
-These are the highest-priority structural issues — they make hamownia untestable without a TTY and block the dashboard from reusing progress reporting.
+**P1a. hamownia — 3 stale exports referencing deleted files**
 
-#### A1. Extract ProgressBar rendering → `render() → string`
-
-**Current:** `ProgressBar.render()` calls `Deno.stdout.writeSync` directly (line 180). `finish()` also calls `console.log("")`.
-
-**Target:** `render()` returns a string. `finish()` returns a string. The caller decides where to write it.
-
-**API change:**
-```ts
-// Before
-class ProgressBar {
-  start(taskName: string): void;       // calls render() → writeSync
-  update(current: number, taskName?: string): void;  // same
-  finish(): void;                       // render(true) + console.log
-}
-
-// After
-class ProgressBar {
-  start(taskName: string): string;       // returns rendered string
-  update(current: number, taskName?: string): string;  // same
-  finish(): string;                      // returns rendered string + newline
-}
-```
-
-**Single consumer:** `packages/hamownia/run_loop.ts:87` — update `runScenarioLoop` to write the returned string.
-
-**Effort:** Small. **Risk:** Low (single consumer, public subpath but trivial migration).
-
-#### A2. Remove `Deno.stdout.writeSync` from `run_loop.ts`
-
-**Current:** Line 236–238 clears the line with `Deno.stdout.writeSync("\r" + " ".repeat(120) + "\r")`.
-
-**Target:** Replace with the ProgressBar's returned string (which already handles `\r` + padding). The clear-line is redundant once ProgressBar returns strings — the caller can emit the progress line and the summary on separate writes.
+`deno.json` exports `./service-command`, `./demo-command`, `./test-command` but the files were moved to `cli/service.ts`, `cli/demo.ts`, `cli/test.ts` in commit 56efcbd7. The exports need to either:
+- Point to the new `cli/*.ts` paths, or
+- Be removed if the CLI subpaths aren't part of the public API
 
 **Effort:** Small. **Risk:** Low.
 
-**Verification:** After A1 + A2, `grep -rn "Deno.stdout" packages/hamownia/` should return zero hits.
+**P1b. hamownia — `npm:playwright` missing version constraint**
+
+`preflight.ts:69` uses `import("npm:playwright")` without a version constraint. JSR requires `npm:playwright@1.60.0` or similar. This also blocks narzedzia (transitive dependency via hamownia).
+
+**Effort:** Small. **Risk:** Low (just add `@1.60.0` to the specifier).
+
+**P1c. tui — Missing LICENSE file**
+
+JSR requires a license field or file. `packages/tui/deno.json` has no `license` key and no `LICENSE` file. Other packages use `"license": "Unlicense OR CC0-1.0"` and have a `LICENSE` file.
+
+**Effort:** Small. **Risk:** None.
+
+### P2. Boundary Violation (1 active)
+
+**narzedzia/smoke_command.ts imports @garazyk/hamownia**
+
+`smoke_command.ts:2` imports `createCharacterRegistry`, `ScenarioResult`, `timedCall` from hamownia. The boundary rule says narzedzia must not depend on hamownia.
+
+Options:
+- **Move smoke_command.ts to hamownia** — it's a scenario utility, not a dev tool
+- **Extract the shared types** (`ScenarioResult`, `timedCall`) into schemat or a new shared package
+- **Add to baseline** if the dependency is accepted
+
+**Effort:** Small–Medium. **Risk:** Low.
+
+### P3. Deferred Architecture Plan Items
+
+| Item | Status | Why still deferred |
+|------|--------|-------------------|
+| A5 — Generic TEA types | Deferred | No second consumer yet; dashboard's Cmd is runtime-specific |
+| A6 — `Result<T, E>` type | Deferred | Useful but not blocking anything; can be added incrementally |
+
+### P4. Test Coverage Gaps (by priority)
+
+**High-priority untested files (core logic, not CLI/generated):**
+
+| File | Package | Why it matters |
+|------|---------|----------------|
+| `laweta/docker_health.ts` | laweta | Health check logic — core Docker feature |
+| `laweta/compose.ts` | laweta | Compose integration — 37 bytes, likely just a re-export |
+| `laweta/format.ts` | laweta | Formatting utilities |
+| `schemat/topology_presets.ts` | schemat | Built-in topology definitions — source of truth |
+| `schemat/topology_manifest.ts` | schemat | Manifest loading — core feature |
+| `schemat/topology_compiler.ts` | schemat | Topology compilation — core feature |
+| `narzedzia/doc_coverage.ts` | narzedzia | Doc coverage tooling |
+| `narzedzia/spdx_headers.ts` | narzedzia | License header tooling |
+
+**Low-priority (CLI commands, generated code, or scripts):**
+- `hamownia/cli/*.ts` — CLI commands, hard to unit test without Docker
+- `gruszka/clients/*.ts` — Generated from lexicons, low ROI for hand-written tests
+- `narzedzia/ops_command.ts` — Cloudflare ops, requires API keys
 
 ---
 
-### Stream B: TUI Public API Cleanup (architecture plan A3)
+## 3. Proposed Workstreams
 
-**Current:** `packages/tui/mod.ts` uses `export * from "./renderer.ts"` and `export * from "./input.ts"`, which re-exports terminal I/O functions into the JSR public API:
-- `enterTerminalMode()`, `exitTerminalMode()`, `writeToTerminal()` — terminal mode
-- `isTerminal()`, `getTerminalSize()` — terminal queries
-- `readKeys()` — raw stdin reading
-- `NO_COLOR` — reads `Deno.env` at module load
-
-**Only consumer:** `scripts/scenario-dashboard/tui.ts` — imports all of these directly.
-
-**Target:**
-```
-packages/tui/mod.ts          → pure types + functions only
-packages/tui/runtime.ts      → terminal I/O (enterTerminalMode, exitTerminalMode, writeToTerminal, isTerminal, getTerminalSize, readKeys, NO_COLOR)
-```
-
-`scripts/scenario-dashboard/tui.ts` changes `import { ... } from "@garazyk/tui"` to `import { ... } from "@garazyk/tui/runtime"` for the runtime functions.
-
-**Effort:** Medium. **Risk:** Medium (breaking change for any JSR consumer importing runtime functions from root — but currently only `scripts/` uses them).
-
----
-
-### Stream C: Laweta Constructor Injection (architecture plan A7)
-
-**Current:**
-- `DEFAULT_SOCKET_PATHS` reads `Deno.env.get("HOME")` at module load (line 27)
-- Constructor accepts only `endpoint?: string` — no options object
-- `DOCKER_HOST` read inside constructor (line 304) and `detectSocketPath()` (line 682)
-- No `certPath` / TLS config support
-
-**Target:**
-```ts
-interface DockerApiClientOptions {
-  endpoint?: string;
-  dockerHost?: string;
-  socketPath?: string;
-  homeDir?: string;       // inject for testing, falls back to Deno.env.get("HOME")
-  certPath?: string;      // future TLS support
-}
-
-class DockerApiClient {
-  constructor(options?: DockerApiClientOptions | string);  // backward compat
-}
-```
-
-**Callers to update:** 6 sites (most use `createDockerClient()` with no args — minimal impact).
-
-**Effort:** Small. **Risk:** Low (backward compat via union type).
-
----
-
-### Stream D: Dashboard Msg Slicing (architecture plan A8)
-
-**Current:** 53-variant flat `Msg` union in 1523-line `dashboard_state.ts`. The `update` switch is already grouped by prefix. State already has separate slice interfaces.
-
-**Target:**
-```ts
-type Msg =
-  | { type: "network"; sub: NetworkMsg }   // 9 variants
-  | { type: "runs"; sub: RunsMsg }         // 26 variants
-  | { type: "scenarios"; sub: ScenariosMsg } // 2 variants
-  | { type: "topology"; sub: TopologyMsg } // 5 variants
-  | { type: "logs"; sub: LogsMsg }         // 3 variants
-  | { type: "metrics"; sub: MetricsMsg }   // 3 variants
-  | { type: "ux"; sub: UxMsg }             // 4 variants
-  | { type: "tick" };                      // 1 variant
-```
-
-**Coupling hotspots** (need special handling):
-- `runs/activeReceived` — updates `runs` + `logs` + `metrics`
-- `runs/event` — updates `runs` + `ux`
-- `tick` — updates `network` + `runs` + `logs` + `metrics`
-
-**Strategy:** Per-slice reducers return partial state updates. The root `update` merges them. Cross-slice messages handled by the root reducer before delegating.
-
-**Effort:** Medium. **Risk:** Medium (behavior must stay identical — 102 dashboard tests are the safety net).
-
----
-
-### Stream E: Narzedzia Publish Blocker
-
-**Current:** `deno publish --dry-run` fails with `Cannot find module 'fuzz_command.ts'`. The file is referenced in `deno.json` exports but doesn't exist.
-
-**Target:** Either create the missing file or remove it from exports. Then fix any slow-type errors in exported `new Command()` builder instances.
-
-**Effort:** Small. **Risk:** Low.
-
----
-
-### Stream F: Test Coverage for Critical Paths
-
-**Priority files with zero tests:**
-
-| File | Risk | Why it matters |
-|------|------|----------------|
-| `hamownia/progress.ts` | High | Sans-IO refactor target — need tests before changing |
-| `hamownia/run_loop.ts` | High | Sans-IO refactor target — need tests before changing |
-| `schemat/topology_types.ts` | Medium | Source of truth for all topology types |
-| `schemat/topology_presets.ts` | Medium | Built-in topology definitions |
-| `laweta/docker_health.ts` | Medium | Health check logic |
-| `narzedzia/boundary_check.ts` | Medium | Core tool — zero tests in entire package |
-
-**Strategy:** Add tests for Stream A targets (progress, run_loop) *before* refactoring them. Other coverage can be incremental.
-
----
-
-## 3. Implementation Sequence
+### Stream 1: JSR Publish Readiness (P1)
 
 ```
-Phase 1: Test + Fix Sans-IO (A1, A2)
-  1a. Add progress_test.ts (render returns string, formatting assertions)
-  1b. Refactor ProgressBar.render() → string
-  1c. Update run_loop.ts consumer
-  1d. Remove Deno.stdout.writeSync from run_loop.ts
-  1e. Verify: grep -rn "Deno.stdout" packages/hamownia/ → zero hits
-
-Phase 2: TUI API Split (A3)
-  2a. Create packages/tui/runtime.ts — re-export terminal I/O from renderer + input
-  2b. Replace export * in mod.ts with explicit pure exports
-  2c. Update scripts/scenario-dashboard/tui.ts imports
-  2d. Verify: deno check, deno test, deno task boundaries
-
-Phase 3: Laweta Constructor (A7)
-  3a. Add DockerApiClientOptions interface
-  3b. Update constructor to accept options | string
-  3c. Move DEFAULT_SOCKET_PATHS init into detectSocketPath with injected homeDir
-  3d. Verify: existing tests pass unchanged
-
-Phase 4: Narzedzia Publish Blocker (E)
-  4a. Fix or remove fuzz_command.ts reference
-  4b. Run deno publish --dry-run
-  4c. Fix any slow-type errors in exported Command builders
-
-Phase 5: Dashboard Msg Slicing (A8)
-  5a. Define per-slice sub-unions (NetworkMsg, RunsMsg, etc.)
-  5b. Define per-slice update reducers
-  5c. Wire root update to delegate + merge
-  5d. Handle cross-slice messages (runs/activeReceived, runs/event, tick)
-  5e. Verify: all 102 dashboard tests pass
-
-Phase 6: Incremental Test Coverage (F)
-  6a. schemat/topology_types.ts tests
-  6b. schemat/topology_presets.ts tests
-  6c. laweta/docker_health.ts tests
-  6d. narzedzia/boundary_check.ts tests
+1a. Remove stale hamownia exports (service-command, demo-command, test-command)
+1b. Add version constraint to npm:playwright in hamownia/preflight.ts
+1c. Add LICENSE file + license field to tui/deno.json
+1d. Verify: deno publish --dry-run passes for all 6 packages
 ```
 
-**Suggested order:** 1 → 2 → 3 → 4 → 5 → 6
+**Effort:** Small (1–2 hours). **Risk:** Low.
 
-Phases 1–3 are small, independent, and high-value. Phase 4 is a quick fix. Phase 5 is the largest structural change. Phase 6 is ongoing.
+### Stream 2: Boundary Fix (P2)
+
+```
+2a. Decide: move smoke_command.ts to hamownia, or extract shared types, or baseline
+2b. Implement the chosen fix
+2c. Verify: deno run -A packages/narzedzia/boundary_check.ts passes
+```
+
+**Effort:** Small–Medium. **Risk:** Low.
+
+### Stream 3: Incremental Test Coverage (P4)
+
+Focus on the high-priority untested files first:
+
+```
+3a. laweta/docker_health.ts tests
+3b. laweta/format.ts tests
+3c. schemat/topology_presets.ts tests (preset structure, defaults)
+3d. schemat/topology_compiler.ts tests (compilation logic)
+3e. narzedzia/doc_coverage.ts tests
+3f. narzedzia/spdx_headers.ts tests
+```
+
+**Effort:** Medium (each file is 1–3 hours). **Risk:** Low.
+
+### Stream 4: Deferred Architecture Items (when needed)
+
+- **A5 (TEA types):** Create `@garazyk/tea` or `tui/tea.ts` when a second TEA consumer appears
+- **A6 (Result type):** Add `Result<T, E>` to narzedzia or schemat when ad-hoc patterns become painful
+
+**Effort:** Medium each. **Risk:** Medium (A5 needs careful design).
 
 ---
 
-## 4. What's NOT in this plan (deferred)
+## 4. Implementation Sequence
 
-| Item | Why deferred |
-|------|-------------|
-| A5 — Generic TEA types | No second consumer yet; dashboard's Cmd is runtime-specific |
-| A6 — `Result<T, E>` type | Useful but not blocking anything; can be added incrementally |
-| JSR slow-type fixes (other packages) | Only narzedzia is publish-blocked; other packages pass dry-run |
-| gruszka client test coverage | Generated code — low ROI for hand-written tests |
-| Coverage tooling / CI integration | Valuable but orthogonal to structural work |
+```
+Phase 7: JSR Publish Readiness (Stream 1)
+  7a. Fix hamownia stale exports
+  7b. Add npm:playwright@1.60.0 constraint
+  7c. Add LICENSE + license to tui
+  7d. Verify: deno publish --dry-run passes for all 6 packages
+
+Phase 8: Boundary Fix (Stream 2)
+  8a. Move smoke_command.ts to hamownia (or extract shared types)
+  8b. Verify: boundary check passes with zero violations
+
+Phase 9: Test Coverage (Stream 3, ongoing)
+  9a. laweta: docker_health, format
+  9b. schemat: topology_presets, topology_compiler
+  9c. narzedzia: doc_coverage, spdx_headers
+```
+
+**Suggested order:** 7 → 8 → 9
+
+Phase 7 is the highest priority — it unblocks JSR publishing for all packages. Phase 8 cleans up the last boundary violation. Phase 9 is ongoing quality improvement.
 
 ---
 
 ## 5. Success Criteria
 
-- [ ] `grep -rn "Deno.stdout\|Deno.stdin\|Deno.stderr" packages/hamownia/` returns zero hits
-- [ ] `packages/tui/mod.ts` does not export `enterTerminalMode`, `exitTerminalMode`, `writeToTerminal`, `readKeys`, `isTerminal`, `getTerminalSize`
-- [ ] `DockerApiClient` accepts an options object with injectable `homeDir`
-- [ ] `deno publish --dry-run` passes for `narzedzia`
-- [ ] `DashboardState.Msg` uses per-slice sub-unions with per-slice reducers
-- [ ] All 2424+ package tests pass + 102 dashboard tests pass
+- [ ] `deno publish --dry-run` passes for all 6 packages
+- [ ] `deno run -A packages/narzedzia/boundary_check.ts` passes with zero violations
+- [ ] All 2856+ package tests pass + 102 dashboard tests pass
 - [ ] `deno task check` passes with zero errors
+- [ ] Test count increases by 20+ (covering laweta, schemat, narzedzia core modules)
