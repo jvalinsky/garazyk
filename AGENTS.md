@@ -19,16 +19,13 @@ files are located in `.agents/`. Do not edit the `.claude/` symlinks directly.
 
 ## Standard Workflows
 
-Follow these workflows for specific tasks:
+Follow these workflows for specific tasks (see `.opencode/workflows/`):
 
-- [Quality Gates](.opencode/workflows/quality_gates.md): Pre-push checks.
-- [Production Deployment](.opencode/workflows/production_deployment.md): Deployment to
-  `pds.garazyk.xyz`.
-- [Session Completion](.opencode/workflows/session_completion.md): Steps for ending a work session.
-- [Feature Implementation](.opencode/workflows/feature_implementation_workflow.md): Implementation
-  loop.
-- [Pull Request Review](.opencode/workflows/pull_request_review_workflow.md): Diff review
-  delegation.
+- **Quality Gates**: Pre-push checks.
+- **Production Deployment**: Deployment to `pds.garazyk.xyz`.
+- **Session Completion**: Steps for ending a work session.
+- **Feature Implementation**: Implementation loop.
+- **Pull Request Review**: Diff review delegation.
 
 ## Subagent Delegation
 
