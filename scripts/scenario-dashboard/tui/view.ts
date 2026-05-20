@@ -10,12 +10,13 @@
 
 import type { RenderCommand, ScreenBuffer } from "@garazyk/tui";
 import {
+  ANSI,
+  bg,
   bold,
   COLORS,
   DEFAULT_STYLE,
   dim,
   fg,
-  reverse,
 } from "@garazyk/tui";
 import type { PanelId, ResolvedNode } from "@garazyk/tui";
 import type { FocusRing } from "@garazyk/tui";
@@ -312,10 +313,10 @@ const HELP_SECTIONS: Array<{ title: string; bindings: Array<{ key: string; actio
 
 /** Render a full-screen help overlay on top of the current buffer content. */
 function renderHelpOverlay(buf: ScreenBuffer): void {
-  const overlayStyle = reverse(DEFAULT_STYLE);
-  const titleStyle = reverse(bold(DEFAULT_STYLE));
-  const keyStyle = reverse(bold(fg(COLORS.accent)));
-  const actionStyle = reverse(dim(DEFAULT_STYLE));
+  const overlayStyle = bg(ANSI.BLACK);
+  const titleStyle = bold(fg(COLORS.accent));
+  const keyStyle = bold(fg(COLORS.accent));
+  const actionStyle = dim(fg(COLORS.textSecondary));
 
   // Calculate content dimensions
   let maxBindingWidth = 0;
@@ -336,7 +337,7 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
   const boxX = Math.floor((buf.width - boxWidth) / 2);
   const boxY = Math.floor((buf.height - boxHeight) / 2);
 
-  // Fill the entire screen with reverse-video background
+  // Fill the entire screen with dark background
   buf.fillRect(0, 0, buf.width, buf.height, " ", overlayStyle);
 
   // Draw the help box border
@@ -386,7 +387,7 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
 
   // Footer
   if (row <= maxRow) {
-    buf.writeClipped(contentX, row, "Press any key to close", reverse(dim(DEFAULT_STYLE)), {
+    buf.writeClipped(contentX, row, "Press any key to close", dim(fg(COLORS.textMuted)), {
       x: boxX + 1,
       y: boxY + 1,
       width: boxWidth - 2,
