@@ -21,6 +21,7 @@ import type {
   TopologyDiagnosticProbe,
   TopologyHealthProbe,
   TopologyManifest,
+  TopologyManifestV2,
   TopologyPreset,
 } from "./topology_types.ts";
 
@@ -180,8 +181,8 @@ export function createTopologyManifest(
   const health: TopologyHealthProbe[] = [];
   const diagnostics: TopologyDiagnosticProbe[] = [];
   const sources: SourceBuildInfo[] = [];
-  const resources: TopologyManifest["resources"] = {};
-  const services: NonNullable<TopologyManifest["services"]> = {};
+  const resources: TopologyManifestV2["resources"] = {};
+  const services: TopologyManifestV2["services"] = {};
 
   for (const [role, adapterValue] of Object.entries(preset.roles)) {
     if ("inherit" in adapterValue) {
