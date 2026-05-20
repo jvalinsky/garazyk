@@ -1,7 +1,7 @@
 /**
  * @module scenarios/56_federation_relay_propagation
  *
- * Scenario: 56 federation relay propagation
+ * Scenario: Verifies PDS writes and handle changes propagate through Relay to AppView.
  *
  * Behavior:
  * - Executes the 56 federation relay propagation scenario.

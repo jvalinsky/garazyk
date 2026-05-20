@@ -1,7 +1,7 @@
 /**
  * @module scenarios/46_video_cdn_playback
  *
- * Scenario: 46 video cdn playback
+ * Scenario: Uploads a video, waits for CDN processing, and verifies playback assets.
  *
  * Behavior:
  * - Executes the 46 video cdn playback scenario.

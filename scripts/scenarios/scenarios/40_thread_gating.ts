@@ -1,7 +1,7 @@
 /**
  * @module scenarios/40_thread_gating
  *
- * Scenario: 40 thread gating
+ * Scenario: Creates a thread gate and rejects disallowed replies.
  *
  * Behavior:
  * - Executes the 40 thread gating scenario.

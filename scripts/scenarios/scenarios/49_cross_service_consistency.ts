@@ -1,7 +1,7 @@
 /**
  * @module scenarios/49_cross_service_consistency
  *
- * Scenario: 49 cross service consistency
+ * Scenario: Verifies PDS writes propagate to AppView without content drift.
  *
  * Behavior:
  * - Executes the 49 cross service consistency scenario.

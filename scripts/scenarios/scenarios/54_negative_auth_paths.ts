@@ -1,7 +1,7 @@
 /**
  * @module scenarios/54_negative_auth_paths
  *
- * Scenario: 54 negative auth paths
+ * Scenario: Rejects revoked and expired tokens, cross-account writes, and suspended-account access.
  *
  * Behavior:
  * - Executes the 54 negative auth paths scenario.

@@ -1,7 +1,7 @@
 /**
  * @module scenarios/55_takedown_read_enforcement
  *
- * Scenario: 55 takedown read enforcement
+ * Scenario: Enforces takedowns on public reads while preserving admin access.
  *
  * Behavior:
  * - Executes the 55 takedown read enforcement scenario.
