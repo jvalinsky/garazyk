@@ -48,6 +48,16 @@ export function renderView(
 
   const commands: RenderCommand[] = [];
 
+  // Base background — fill the entire screen with the deepest surface.
+  // This ensures empty areas between panels have a consistent dark
+  // background instead of the terminal's default (which may differ).
+  commands.push({
+    type: "rect",
+    box: { x: 0, y: 0, width: buf.width, height: buf.height },
+    char: " ",
+    style: bg(COLORS.surfaceBase),
+  });
+
   // Status bar
   const statusBar = findPanel(layout, "status-bar");
   if (statusBar) {

@@ -6,6 +6,7 @@
 
 import type { RenderCommand } from "@garazyk/tui";
 import {
+  bg,
   bold,
   COLORS,
   dim,
@@ -31,8 +32,17 @@ export function renderRunPanel(
 
   if (area.height < 1 || area.width < 10) return cmds;
 
+  // Fill panel interior with surface background (subtle dark gray)
+  cmds.push({
+    type: "rect",
+    box: { x: area.x, y: area.y, width: area.width, height: area.height },
+    char: " ",
+    style: bg(COLORS.surfacePanel),
+    clip,
+  });
+
   if (!activeRun) {
-    return renderNoActiveRun(area, focused);
+    return renderNoActiveRun(area, focused, cmds);
   }
 
   const progress = progressByRunId[activeRun.id];
@@ -218,8 +228,9 @@ export function renderRunPanel(
 function renderNoActiveRun(
   area: { x: number; y: number; width: number; height: number },
   focused: boolean,
+  existingCmds: RenderCommand[] = [],
 ): RenderCommand[] {
-  const cmds: RenderCommand[] = [];
+  const cmds = [...existingCmds];
   const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
   cmds.push({
     type: "text",

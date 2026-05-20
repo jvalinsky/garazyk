@@ -22,11 +22,11 @@ import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { Run } from "../../services/types.ts";
 
-/** Style for the cursor highlight row — blue background, default foreground. */
-const CURSOR_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1 };
+/** Style for the cursor highlight row — elevated surface (blue bg), default fg. */
+const CURSOR_STYLE: CellStyle = { ...bg(COLORS.surfaceElevated), fg: -1 };
 
 /** Style for the cursor highlight row text — bold default foreground on blue. */
-const CURSOR_TEXT_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1, bold: true };
+const CURSOR_TEXT_STYLE: CellStyle = { ...bg(COLORS.surfaceElevated), fg: -1, bold: true };
 
 /** Render the run history panel. */
 export function renderHistoryPanel(
@@ -41,6 +41,15 @@ export function renderHistoryPanel(
   const cmds: RenderCommand[] = [];
 
   if (area.height < 1 || area.width < 10) return cmds;
+
+  // Fill panel interior with surface background (subtle dark gray)
+  cmds.push({
+    type: "rect",
+    box: { x: area.x, y: area.y, width: area.width, height: area.height },
+    char: " ",
+    style: bg(COLORS.surfacePanel),
+    clip,
+  });
 
   let row = 0;
   const cursor = panelState.cursor;

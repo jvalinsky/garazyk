@@ -430,6 +430,13 @@ export const COLORS = {
   badgeFailed: ANSI.RED,
   badgeSkipped: ANSI.YELLOW,
   badgeRunning: ANSI.CYAN,
+  // Surface hierarchy — background shades for visual depth.
+  // BRIGHT_BLACK (color 8) is dark gray — terrible as foreground on
+  // dark terminals, but excellent as a subtle background tint that
+  // creates panel depth without harsh borders.
+  surfaceBase: ANSI.BLACK, // deepest: app background
+  surfacePanel: ANSI.BRIGHT_BLACK, // panels: slightly elevated
+  surfaceElevated: ANSI.BLUE, // cursor/selected: blue (lazygit convention)
 } as const;
 
 // ---------------------------------------------------------------------------
