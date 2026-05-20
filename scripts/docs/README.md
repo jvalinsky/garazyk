@@ -140,25 +140,25 @@ The scenario harness API is documented from `scripts/lib/deno/mod.ts`.
 npm --prefix scripts/docs install
 
 # Lint exported TSDoc/JSDoc and public type references
-deno task --config scripts/deno.json doc-lint
+deno task doc-lint
 
 # Regenerate committed TypeDoc HTML under scripts/docs/api/
 npm --prefix scripts/docs run api:ts
 
 # Report TypeScript documentation coverage for harness and dashboard exports
-deno task --config scripts/deno.json doc:ts-coverage
+deno task doc:ts-coverage
 
 # Enforce the current conservative CI baseline for the public harness
-deno task --config scripts/deno.json doc:ts-coverage:ci
+deno task doc:ts-coverage:ci
 
 # Generate local Deno HTML docs under scripts/docs/
-deno task --config scripts/deno.json doc:serve
+deno task doc:serve
 ```
 
 Objective-C HeaderDoc coverage remains separate:
 
 ```bash
-deno task --config scripts/deno.json doc:coverage --by-subsystem
+deno task doc:coverage --by-subsystem
 ```
 
 ## Development

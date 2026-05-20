@@ -134,7 +134,7 @@ async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): 
     const body = await req.json();
     const phone: string = body.To || "";
     if (!phone) {
-      return jsonResponse({ status: 400, message: "Missing 'To' parameter", code: 20005 }, 400);
+      return jsonResponse({ status: 400, message: "Missing 'To' parameter", code: 60202 }, 400);
     }
 
     const code = generateCode();
@@ -172,7 +172,7 @@ async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): 
     const code: string = body.Code || "";
 
     if (!phone || !code) {
-      return jsonResponse({ status: 400, message: "Missing 'To' or 'Code'", code: 20005 }, 400);
+      return jsonResponse({ status: 400, message: "Missing 'To' or 'Code'", code: 60202 }, 400);
     }
 
     const state = store[phone];
