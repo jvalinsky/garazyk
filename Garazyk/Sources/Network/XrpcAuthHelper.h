@@ -16,40 +16,53 @@
 @class JWTMinter;
 @class PDSController;
 @class PDSServiceDatabases;
+/**
+ * @protocol PDSAdminController
+ * @abstract Forward declaration for admin controller protocol.
+ */
 @protocol PDSAdminController;
+/**
+ * @protocol PDSSessionRepository
+ * @abstract Forward declaration for session repository protocol.
+ */
 @protocol PDSSessionRepository;
+/**
+ * @protocol XrpcRoutePackServices
+ * @abstract Forward declaration for route pack services protocol.
+ */
 @protocol XrpcRoutePackServices;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcAuthHelper provides centralized authentication logic for XRPC endpoints.
- *
- * Responsibilities:
- * - Extract and validate DIDs from Authorization headers
- * - Support Bearer tokens (JWT) and DPoP tokens
- * - Verify JWT signatures with algorithm selection
- * - Validate DPoP proofs and thumbprint binding
- * - Handle DPoP nonce challenges
- * - Reject takedown accounts
- * - Enforce admin authorization
+ * @abstract Centralizes authentication logic for XRPC endpoints.
+ * @discussion Extracts and validates DIDs from Authorization headers, supports Bearer
+ * and DPoP tokens, verifies signatures, and enforces admin authorization.
  */
 @interface XrpcAuthHelper : NSObject
 
 /**
- * Extract and validate DID from Authorization header.
- *
- * @param authHeader Authorization header value (Bearer or DPoP)
- * @param jwtMinter JWT minter for signature verification
- * @param adminController Admin controller for takedown checks
- * @param request HTTP request for DPoP URL construction
- * @return Authenticated DID or nil on failure
+ * @abstract Extracts and validates a DID from an Authorization header.
+ * @param authHeader Authorization header value (Bearer or DPoP).
+ * @param jwtMinter JWT minter for signature verification.
+ * @param adminController Admin controller for takedown checks.
+ * @param request HTTP request for DPoP URL construction.
+ * @return Authenticated DID or nil on failure.
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                        jwtMinter:(JWTMinter *)jwtMinter
                                  adminController:(id<PDSAdminController>)adminController
                                          request:(HttpRequest *)request;
 
+/**
+ * @abstract Extracts and validates a DID with optional response for DPoP nonce handling.
+ * @param authHeader Authorization header value (Bearer or DPoP).
+ * @param jwtMinter JWT minter for signature verification.
+ * @param adminController Admin controller for takedown checks (nullable).
+ * @param request HTTP request for DPoP URL construction.
+ * @param response Optional response for DPoP nonce challenges.
+ * @return Authenticated DID or nil on failure.
+ */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                        jwtMinter:(JWTMinter *)jwtMinter
                                  adminController:(nullable id<PDSAdminController>)adminController

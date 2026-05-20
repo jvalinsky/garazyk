@@ -75,13 +75,12 @@ extern NSString * const GZLogComponentCLI;
  GZ_LOG_INFO(@"Server started on port %d", port);
  GZ_LOG_ERROR(@"Failed to start: %@", error);
  
- // Direct method call
- [logger logWithLevel:GZLogLevelDebug file:__FILE__ line:__LINE__ format:@"Debug info: %@", details];
- @endcode
- */
-/**
- * @abstract Declares the GZLogger public API.
- */
+  // Direct method call
+  [logger logWithLevel:GZLogLevelDebug file:__FILE__ line:__LINE__ format:@"Debug info: %@", details];
+  @endcode
+
+  @abstract Declares the GZLogger public API.
+  */
 @interface GZLogger : NSObject
 
 /*!
@@ -119,17 +118,12 @@ extern NSString * const GZLogComponentCLI;
 
 /*!
  @method logWithLevel:file:line:format:
- 
  @abstract Logs a message with format string arguments.
- 
  @param level The severity level for this message.
  @param file The source file name (use __FILE__).
  @param line The source line number (use __LINE__).
  @param format The format string for the log message.
  @param ... Variable arguments for the format string.
- */
-/**
- * @abstract Performs the logWithLevel operation.
  */
 - (void)logWithLevel:(GZLogLevel)level
                 file:(const char *)file
@@ -170,18 +164,13 @@ extern NSString * const GZLogComponentCLI;
 
 /*!
  @method logWithLevel:component:file:line:format:
-
  @abstract Logs a message with component tag and format string arguments.
-
  @param level The severity level for this message.
  @param component The component tag (e.g., "Database", "Auth").
  @param file The source file name (use __FILE__).
  @param line The source line number (use __LINE__).
  @param format The format string for the log message.
  @param ... Variable arguments for the format string.
- */
-/**
- * @abstract Performs the logWithLevel operation.
  */
 - (void)logWithLevel:(GZLogLevel)level
            component:(NSString *)component
