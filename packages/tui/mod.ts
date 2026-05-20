@@ -32,7 +32,7 @@ export {
 
 // ── Theme system ───────────────────────────────────────────────────────────
 export type { Theme } from "./theme.ts";
-export { COLORS, currentTheme, setTheme, darkTheme, lightTheme, classicTheme, themes } from "./theme.ts";
+export { COLORS, getCurrentTheme, setCurrentTheme, darkTheme, lightTheme, classicTheme, themes } from "./theme.ts";
 
 // ── Key types and parsing (pure) ───────────────────────────────────────────
 export type { Key } from "./input.ts";
