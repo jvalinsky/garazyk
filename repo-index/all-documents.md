@@ -1,0 +1,96 @@
+---
+title: All Documents
+---
+# All Documents
+
+Auto-generated documentation index for repository discoverability.
+
+Total documents in this view: **85**
+
+| Path | Classification | Canonical Target | Owner | Status |
+| --- | --- | --- | --- | --- |
+| [.impeccable.md](../../.impeccable.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [AGENTS_QUICKREF.md](../../AGENTS_QUICKREF.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
+| [AGENTS.md](../../AGENTS.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
+| [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `canonical` | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `docs` | `active` |
+| [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `canonical` | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `docs` | `active` |
+| [docs/10-tutorials/index.md](../10-tutorials/index.md) | `canonical` | [docs/10-tutorials/index.md](../10-tutorials/index.md) | `docs` | `active` |
+| [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `canonical` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `docs` | `active` |
+| [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md) | `canonical` | [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md) | `docs` | `active` |
+| [docs/11-reference/deno-scenario-framework.md](../11-reference/deno-scenario-framework.md) | `canonical` | [docs/11-reference/deno-scenario-framework.md](../11-reference/deno-scenario-framework.md) | `docs` | `active` |
+| [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `canonical` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
+| [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `canonical` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `docs` | `active` |
+| [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `canonical` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `docs` | `active` |
+| [docs/20-explanation/architecture/atproto_pds_architecture.md](../20-explanation/architecture/atproto_pds_architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/20-explanation/guides/DEPLOYMENT.md](../20-explanation/guides/DEPLOYMENT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/archive/core_subsystem_subplans.md](../archive/core_subsystem_subplans.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/README.md](../archive/planning/README.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/documentation_remediation_plan.md](../documentation_remediation_plan.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/documentation_roadmap.md](../documentation_roadmap.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/index.md](../index.md) | `canonical` | [docs/index.md](../index.md) | `docs` | `active` |
+| [docs/plans/deno-packages-next-steps.md](../plans/deno-packages-next-steps.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/next-steps.md](../plans/next-steps.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/tsdoc-revision-plan.md](../plans/tsdoc-revision-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/repo-index/all-documents.md](all-documents.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/backlinks.md](backlinks.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/examples.md](examples.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/index.md](index.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/root-entrypoints.md](root-entrypoints.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/scripts.md](scripts.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/skills.md](skills.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/source-adjacent.md](source-adjacent.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/tooling.md](tooling.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/architecture.md](../tui/architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/components.md](../tui/components.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/core-primitives.md](../tui/core-primitives.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/README.md](../tui/README.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/runtime.md](../tui/runtime.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/theme-architecture.md](../tui/theme-architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [Garazyk/docs-site/README.md](../../Garazyk/docs-site/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/advanced-parsing/db-pool-concurrency.md](../../Garazyk/docs-site/src/content/docs/advanced-parsing/db-pool-concurrency.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/advanced-parsing/fast-parsing.md](../../Garazyk/docs-site/src/content/docs/advanced-parsing/fast-parsing.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/advanced-parsing/sans-io-architecture.md](../../Garazyk/docs-site/src/content/docs/advanced-parsing/sans-io-architecture.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/atproto/cryptography.md](../../Garazyk/docs-site/src/content/docs/atproto/cryptography.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/atproto/data-modeling.md](../../Garazyk/docs-site/src/content/docs/atproto/data-modeling.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/atproto/merkle-search-trees.md](../../Garazyk/docs-site/src/content/docs/atproto/merkle-search-trees.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/auth/hardware-security.md](../../Garazyk/docs-site/src/content/docs/auth/hardware-security.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/auth/oauth-dpop.md](../../Garazyk/docs-site/src/content/docs/auth/oauth-dpop.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/core-server/gcd-threading.md](../../Garazyk/docs-site/src/content/docs/core-server/gcd-threading.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/core-server/http-server.md](../../Garazyk/docs-site/src/content/docs/core-server/http-server.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/core-server/sqlite-persistence.md](../../Garazyk/docs-site/src/content/docs/core-server/sqlite-persistence.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/federation/firehose.md](../../Garazyk/docs-site/src/content/docs/federation/firehose.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/federation/websockets.md](../../Garazyk/docs-site/src/content/docs/federation/websockets.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/fundamentals/at-protocol.md](../../Garazyk/docs-site/src/content/docs/fundamentals/at-protocol.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs-site/src/content/docs/fundamentals/objective-c-env.md](../../Garazyk/docs-site/src/content/docs/fundamentals/objective-c-env.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs/guides/objective_c_research_guide.md](../../Garazyk/docs/guides/objective_c_research_guide.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/docs/guides/objective_c_tips.md](../../Garazyk/docs/guides/objective_c_tips.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Frameworks/README.md](../../Garazyk/Frameworks/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md](../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/Admin/ADMINUI_DELIVERY_SUMMARY.md](../../Garazyk/Sources/Admin/ADMINUI_DELIVERY_SUMMARY.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md](../../Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/Admin/ADMINUI_INTEGRATION_COMPLETE.md](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION_COMPLETE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/Admin/Diagnostics/README.md](../../Garazyk/Sources/Admin/Diagnostics/README.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md](../../Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md](../../Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Sources/AdminUIServer/Assets/README.md](../../Garazyk/Sources/AdminUIServer/Assets/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Sources/Database/ARCHITECTURE.md](../../Garazyk/Sources/Database/ARCHITECTURE.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Sources/Database/README.md](../../Garazyk/Sources/Database/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Tests/fixtures/atproto-interop-tests/README.md](../../Garazyk/Tests/fixtures/atproto-interop-tests/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Tests/plc_e2e/README.md](../../Garazyk/Tests/plc_e2e/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [README.md](../../README.md) | `entrypoint` | [docs/index.md](../index.md) | `docs` | `active` |
+| [scripts/API_README.md](../../scripts/API_README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/docs/configs/README.md](../../scripts/docs/configs/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/docs/lib/README-content-updater.md](../../scripts/docs/lib/README-content-updater.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/docs/lib/README-git-operations.md](../../scripts/docs/lib/README-git-operations.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/docs/lib/README-link-parser.md](../../scripts/docs/lib/README-link-parser.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/docs/lib/README-migration-mapping.md](../../scripts/docs/lib/README-migration-mapping.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/docs/lib/README-path-resolver.md](../../scripts/docs/lib/README-path-resolver.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/docs/README.md](../../scripts/docs/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/plc/README.md](../../scripts/plc/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/REVIEW-e2e-harness.md](../../scripts/REVIEW-e2e-harness.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/scenarios/README.md](../../scripts/scenarios/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/scenarios/SCENARIO_STANDARDS.md](../../scripts/scenarios/SCENARIO_STANDARDS.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/scenarios/topologies/README.md](../../scripts/scenarios/topologies/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
