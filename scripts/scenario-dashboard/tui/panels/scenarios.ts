@@ -246,7 +246,7 @@ export function renderScenariosPanel(
       x: area.x + 1,
       y: descRow,
       text: descText,
-      style: fg(COLORS.textPrimary),
+      style: fg(COLORS.accent),
       clip,
     });
   } else if (focused) {
@@ -255,7 +255,7 @@ export function renderScenariosPanel(
       type: "rect",
       box: { x: area.x, y: descRow, width: area.width, height: 1 },
       char: " ",
-      style: fg(COLORS.textPrimary),
+      style: fg(COLORS.accent),
       clip,
     });
   }
