@@ -1,5 +1,6 @@
 import { XrpcClient } from "@garazyk/gruszka";
-import { createCharacterRegistry, ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { createCharacterRegistry } from "./config.ts";
+import { ScenarioResult, timedCall } from "./runner.ts";
 
 export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account + Post Creation");

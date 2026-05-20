@@ -117,3 +117,4 @@ export type {
   MockTwilioServerConfig,
   MockVerificationState,
 } from "./mock_twilio.ts";
+export { runSmoke } from "./smoke_command.ts";
