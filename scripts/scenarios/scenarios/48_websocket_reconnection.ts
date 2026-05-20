@@ -1,7 +1,7 @@
 /**
  * @module scenarios/48_websocket_reconnection
  *
- * Scenario: 48 websocket reconnection
+ * Scenario: Reconnects to the firehose with a cursor and checks event continuity.
  *
  * Behavior:
  * - Executes the 48 websocket reconnection scenario.

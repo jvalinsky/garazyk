@@ -1,7 +1,7 @@
 /**
  * @module scenarios/41_account_deactivation
  *
- * Scenario: 41 account deactivation
+ * Scenario: Deactivates and reactivates an account while checking profile visibility.
  *
  * Behavior:
  * - Executes the 41 account deactivation scenario.

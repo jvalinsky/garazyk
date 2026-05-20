@@ -1,7 +1,7 @@
 /**
  * @module scenarios/38_feed_generator
  *
- * Scenario: 38 feed generator
+ * Scenario: Creates a feed generator and verifies it is readable through AppView.
  *
  * Behavior:
  * - Executes the 38 feed generator scenario.

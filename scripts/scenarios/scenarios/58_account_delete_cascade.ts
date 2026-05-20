@@ -1,7 +1,7 @@
 /**
  * @module scenarios/58_account_delete_cascade
  *
- * Scenario: 58 account delete cascade
+ * Scenario: Hard-deletes an account and confirms records, blobs, and sessions are removed.
  *
  * Behavior:
  * - Executes the 58 account delete cascade scenario.

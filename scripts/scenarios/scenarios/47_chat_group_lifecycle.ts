@@ -1,7 +1,7 @@
 /**
  * @module scenarios/47_chat_group_lifecycle
  *
- * Scenario: 47 chat group lifecycle
+ * Scenario: Creates a group chat, sends messages, mutes it, and tests leaving.
  *
  * Behavior:
  * - Executes the 47 chat group lifecycle scenario.

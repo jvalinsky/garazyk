@@ -1,7 +1,7 @@
 /**
  * @module scenarios/60_mikrus_links
  *
- * Scenario: 60 mikrus links
+ * Scenario: Indexes backlinks for posts, follows, likes, reposts, and lists in Mikrus.
  *
  * Behavior:
  * - Executes the 60 mikrus links scenario.

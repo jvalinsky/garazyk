@@ -1,7 +1,7 @@
 /**
  * @module scenarios/36_video_processing
  *
- * Scenario: 36 video processing
+ * Scenario: Uploads a video, polls processing, and rejects non-video uploads.
  *
  * Behavior:
  * - Executes the 36 video processing scenario.

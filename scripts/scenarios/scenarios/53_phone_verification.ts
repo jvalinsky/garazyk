@@ -1,7 +1,7 @@
 /**
  * @module scenarios/53_phone_verification
  *
- * Scenario: 53 phone verification
+ * Scenario: Exercises phone verification against the mock Twilio service.
  *
  * Behavior:
  * - Executes the 53 phone verification scenario.

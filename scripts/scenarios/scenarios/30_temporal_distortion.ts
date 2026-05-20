@@ -1,7 +1,7 @@
 /**
  * @module scenarios/30_temporal_distortion
  *
- * Scenario: 30 temporal distortion
+ * Scenario: Checks repo head monotonicity during a burst of writes.
  *
  * Behavior:
  * - Executes the 30 temporal distortion scenario.

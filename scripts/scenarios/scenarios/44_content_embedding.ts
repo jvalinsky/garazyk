@@ -1,7 +1,7 @@
 /**
  * @module scenarios/44_content_embedding
  *
- * Scenario: 44 content embedding
+ * Scenario: Creates posts with image, quote, and external embeds.
  *
  * Behavior:
  * - Executes the 44 content embedding scenario.

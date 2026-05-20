@@ -1,7 +1,7 @@
 /**
  * @module scenarios/32_identity_fatigue
  *
- * Scenario: 32 identity fatigue
+ * Scenario: Exhausts PLC operation quota and rejects further identity operations.
  *
  * Behavior:
  * - Executes the 32 identity fatigue scenario.

@@ -1,7 +1,7 @@
 /**
  * @module scenarios/37_germ_e2ee_dms
  *
- * Scenario: 37 germ e2ee dms
+ * Scenario: Exercises plaintext chat and Germ-backed encrypted direct messages.
  *
  * Behavior:
  * - Executes the 37 germ e2ee dms scenario.

@@ -1,7 +1,7 @@
 /**
  * @module scenarios/34_format_roundtrip
  *
- * Scenario: 34 format roundtrip
+ * Scenario: Verifies repo export round-tripping between CAR and STAR formats.
  *
  * Behavior:
  * - Executes the 34 format roundtrip scenario.

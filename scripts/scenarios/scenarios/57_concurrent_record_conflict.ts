@@ -1,7 +1,7 @@
 /**
  * @module scenarios/57_concurrent_record_conflict
  *
- * Scenario: 57 concurrent record conflict
+ * Scenario: Handles concurrent record, delete, and blob races without server errors.
  *
  * Behavior:
  * - Executes the 57 concurrent record conflict scenario.

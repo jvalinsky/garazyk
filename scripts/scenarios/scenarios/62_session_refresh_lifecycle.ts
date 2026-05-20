@@ -1,7 +1,7 @@
 /**
  * @module scenarios/62_session_refresh_lifecycle
  *
- * Scenario: 62 session refresh lifecycle
+ * Scenario: Refreshes sessions and rejects invalid or stale tokens.
  *
  * Behavior:
  * - Executes the 62 session refresh lifecycle scenario.

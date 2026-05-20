@@ -1,7 +1,7 @@
 /**
  * @module scenarios/61_graph_read_verification
  *
- * Scenario: 61 graph read verification
+ * Scenario: Verifies graph reads for follows, followers, blocks, mutes, and relationships.
  *
  * Behavior:
  * - Executes the 61 graph read verification scenario.
