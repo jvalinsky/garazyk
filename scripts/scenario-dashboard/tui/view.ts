@@ -181,7 +181,7 @@ function renderStatusBar(
     x: bar.x + bar.width - time.length - 1,
     y: bar.y,
     text: time,
-    style: dim(fg(COLORS.textSecondary)),
+    style: dim(fg(COLORS.textPrimary)),
   });
 
   // Running indicator
@@ -254,7 +254,7 @@ function renderHintBar(
         x: col + key.length,
         y: bar.y,
         text: ` ${label}`,
-        style: dim(fg(COLORS.textMuted)),
+        style: dim(fg(COLORS.textPrimary)),
       });
     }
     col += fullLen + 2; // +2 for spacing between hints
@@ -316,7 +316,7 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
   const overlayStyle = bg(ANSI.BLACK);
   const titleStyle = bold(fg(COLORS.accent));
   const keyStyle = bold(fg(COLORS.accent));
-  const actionStyle = dim(fg(COLORS.textSecondary));
+  const actionStyle = dim(fg(COLORS.textPrimary));
 
   // Calculate content dimensions
   let maxBindingWidth = 0;
@@ -387,7 +387,7 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
 
   // Footer
   if (row <= maxRow) {
-    buf.writeClipped(contentX, row, "Press any key to close", dim(fg(COLORS.textMuted)), {
+    buf.writeClipped(contentX, row, "Press any key to close", dim(fg(COLORS.textPrimary)), {
       x: boxX + 1,
       y: boxY + 1,
       width: boxWidth - 2,

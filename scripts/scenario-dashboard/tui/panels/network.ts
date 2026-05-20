@@ -9,16 +9,23 @@
 
 import type { CellStyle, RenderCommand } from "@garazyk/tui";
 import {
+  ANSI,
+  bg,
   bold,
   COLORS,
   dim,
   fg,
-  reverse,
 } from "@garazyk/tui";
 import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { ServiceStatus } from "../../services/types.ts";
+
+/** Style for the cursor highlight row — blue background, default foreground. */
+const CURSOR_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1 };
+
+/** Style for the cursor highlight row text — bold default foreground on blue. */
+const CURSOR_TEXT_STYLE: CellStyle = { ...bg(ANSI.BLUE), fg: -1, bold: true };
 
 /** Render the network services panel. */
 export function renderNetworkPanel(
@@ -42,7 +49,7 @@ export function renderNetworkPanel(
       x: area.x,
       y: area.y + row,
       text: "No services discovered",
-      style: dim(fg(COLORS.textMuted)),
+      style: dim(fg(COLORS.textPrimary)),
       clip,
     });
     return cmds;
@@ -62,7 +69,7 @@ export function renderNetworkPanel(
     // Status dot
     const dot = statusDot(svc.status, svc.healthy);
     const dotStyle = isCursorRow
-      ? reverse(fg(COLORS.accent))
+      ? CURSOR_TEXT_STYLE
       : statusDotStyle(svc.status, svc.healthy);
 
     // Name
@@ -71,19 +78,19 @@ export function renderNetworkPanel(
     // Status badge
     const badge = statusBadge(svc.status, svc.healthy);
     const badgeStyle = isCursorRow
-      ? reverse(fg(COLORS.accent))
+      ? CURSOR_TEXT_STYLE
       : statusBadgeStyle(svc.status, svc.healthy);
 
     // Endpoint
     const endpoint = svc.url || (svc.port ? `localhost:${svc.port}` : "");
 
-    // Render — clear row first if cursor for clean highlight
+    // Fill cursor row with blue background
     if (isCursorRow) {
       cmds.push({
         type: "rect",
         box: { x: area.x, y: area.y + row, width: area.width, height: 1 },
         char: " ",
-        style: reverse(fg(COLORS.accent)),
+        style: CURSOR_STYLE,
         clip,
       });
     }
@@ -104,7 +111,7 @@ export function renderNetworkPanel(
       y: area.y + row,
       text: name,
       style: isCursorRow
-        ? reverse(fg(COLORS.accent))
+        ? CURSOR_TEXT_STYLE
         : bold(fg(COLORS.textPrimary)),
       clip,
     });
@@ -126,8 +133,8 @@ export function renderNetworkPanel(
         y: area.y + row,
         text: endpoint,
         style: isCursorRow
-          ? reverse(fg(COLORS.accent))
-          : dim(fg(COLORS.textSecondary)),
+          ? CURSOR_TEXT_STYLE
+          : dim(fg(COLORS.textPrimary)),
         clip,
       });
     }
@@ -144,7 +151,7 @@ export function renderNetworkPanel(
       x: area.x,
       y: actionsRow,
       text: actions,
-      style: dim(fg(COLORS.accent)),
+      style: fg(COLORS.accent),
       clip,
     });
   }
