@@ -111,67 +111,93 @@ export function missingCounts(counts: Counts): MissingCounts {
   return results;
 }
 
+/** Represents a single declaration found in a header. */
+interface Declaration {
+  kind: Bucket;
+  name: string;
+  line: number;
+  documented: boolean;
+}
+
 export function countDocumentation(content: string): Counts {
   const results = emptyCounts();
+  const declarations: Declaration[] = [];
   const lines = content.split("\n");
-  let docBlockStart = -1000;
-  let inDocBlock = false;
+
+  let currentInterface: string | null = null;
+  let lastCommentStartLine = -1000;
+  let inComment = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.includes("/*!") || line.includes("/**")) {
-      inDocBlock = true;
-      docBlockStart = i;
-    }
-    if (line.includes("*/") && inDocBlock) inDocBlock = false;
+    const line = lines[i].trim();
+    if (!line) continue;
 
-    const previous10 = lines.slice(Math.max(0, i - 10), i).join("\n");
-    const previous5 = lines.slice(Math.max(0, i - 5), i).join("\n");
-
-    if (/^@interface\s+\w+\s*[:{<]/.test(line)) {
-      results.classes.total++;
-      if (previous10.includes("@class") || previous10.includes("@abstract")) {
-        results.classes.documented++;
-      }
+    // Track comments
+    if (line.startsWith("/*!") || line.startsWith("/**")) {
+      inComment = true;
+      lastCommentStartLine = i;
     }
-    if (/^@interface\s+\w+\s*\(/.test(line)) {
+    if (line.includes("*/")) {
+      inComment = false;
+    }
+
+    // Detect declarations
+    // @interface ClassName(Category)
+    const categoryMatch = line.match(/^@interface\s+\w+\s*\(/);
+    if (categoryMatch) {
+      const documented = (i - lastCommentStartLine <= 10);
       results.categories.total++;
-      if (
-        previous10.includes("@category") || previous10.includes("@abstract")
-      ) {
-        results.categories.documented++;
-      }
+      if (documented) results.categories.documented++;
+      continue;
     }
-    if (/^@protocol\s+\w+/.test(line)) {
+
+    // @interface ClassName : BaseClass
+    const interfaceMatch = line.match(/^@interface\s+(\w+)\s*[:{<]/);
+    if (interfaceMatch) {
+      currentInterface = interfaceMatch[1];
+      const documented = (i - lastCommentStartLine <= 10);
+      results.classes.total++;
+      if (documented) results.classes.documented++;
+      continue;
+    }
+
+    // @end
+    if (line.startsWith("@end")) {
+      currentInterface = null;
+      continue;
+    }
+
+    // @protocol ProtocolName
+    const protocolMatch = line.match(/^@protocol\s+(\w+)/);
+    if (protocolMatch) {
+      const documented = (i - lastCommentStartLine <= 10);
       results.protocols.total++;
-      if (
-        previous10.includes("@protocol") || previous10.includes("@abstract")
-      ) {
-        results.protocols.documented++;
-      }
+      if (documented) results.protocols.documented++;
+      continue;
     }
-    if (line.includes("@property")) {
+
+    // @property (readonly) type name;
+    if (line.startsWith("@property")) {
+      const documented = (i - lastCommentStartLine <= 5);
       results.properties.total++;
-      if (
-        previous5.includes("@abstract") || previous5.includes("@property") ||
-        previous5.includes("/*!") || previous5.includes("/**")
-      ) {
-        results.properties.documented++;
-      }
+      if (documented) results.properties.documented++;
+      continue;
     }
+
+    // - (void)methodName:(type)arg;
     if (/^[+-]\s*\(/.test(line)) {
+      const documented = (i - lastCommentStartLine <= 10);
       results.methods.total++;
-      if (i - docBlockStart <= 10 && docBlockStart >= 0) {
-        results.methods.documented++;
-      }
+      if (documented) results.methods.documented++;
+      continue;
     }
-    if (
-      line.includes("typedef NS_ENUM") || line.includes("typedef NS_OPTIONS")
-    ) {
+
+    // typedef NS_ENUM(type, name) { ... }
+    if (line.includes("NS_ENUM") || line.includes("NS_OPTIONS")) {
+      const documented = (i - lastCommentStartLine <= 10);
       results.enums.total++;
-      if (previous10.includes("@enum") || previous10.includes("@abstract")) {
-        results.enums.documented++;
-      }
+      if (documented) results.enums.documented++;
+      continue;
     }
   }
 

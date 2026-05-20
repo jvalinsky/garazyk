@@ -24,8 +24,8 @@ function validateDid(did: string): boolean {
 
 /** Sanitize a path for use in sqlite CLI commands. Rejects paths with quotes or shell metacharacters. */
 function sanitizePathForSqlite(path: string): string | null {
-  // Reject paths containing characters that could break out of quoting
-  if (/[`'"$`;|&<>()!]/.test(path)) {
+  // Only allow alphanumeric, dots, slashes, underscores, and hyphens
+  if (!/^[a-zA-Z0-9./_-]+$/.test(path)) {
     return null;
   }
   return path;
@@ -365,9 +365,13 @@ export class CloudflareClient {
 
   async addCname(name: string, content: string): Promise<boolean> {
     logInfo(`Checking if CNAME for '${name}' already exists...`);
+    const params = new URLSearchParams({
+      type: "CNAME",
+      name: name,
+    });
     try {
       const listResp = await fetch(
-        `https://api.cloudflare.com/client/v4/zones/${this.zoneId}/dns_records?type=CNAME&name=${name}`,
+        `https://api.cloudflare.com/client/v4/zones/${this.zoneId}/dns_records?${params.toString()}`,
         {
           headers: {
             "Authorization": `Bearer ${this.token}`,
