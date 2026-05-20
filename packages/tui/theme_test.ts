@@ -10,8 +10,8 @@ import {
   lightTheme,
   classicTheme,
   themes,
-  currentTheme,
-  setTheme,
+  getCurrentTheme,
+  setCurrentTheme,
   COLORS,
 } from "./theme.ts";
 
@@ -110,78 +110,78 @@ Deno.test("theme: themes registry contains all three presets", () => {
 });
 
 // ---------------------------------------------------------------------------
-// setTheme — theme switching
+// setCurrentTheme — theme switching
 // ---------------------------------------------------------------------------
 
-Deno.test("theme: setTheme switches to light theme", () => {
-  setTheme("dark"); // reset to known state
-  const original = currentTheme;
-  const newTheme = setTheme("light");
+Deno.test("theme: setCurrentTheme switches to light theme", () => {
+  setCurrentTheme("dark"); // reset to known state
+  const original = getCurrentTheme();
+  const newTheme = setCurrentTheme("light");
   assertEquals(newTheme, lightTheme);
-  assertEquals(currentTheme, lightTheme);
-  assert(currentTheme !== original);
-  setTheme("dark"); // restore
+  assertEquals(getCurrentTheme(), lightTheme);
+  assert(getCurrentTheme() !== original);
+  setCurrentTheme("dark"); // restore
 });
 
-Deno.test("theme: setTheme switches to classic theme", () => {
-  setTheme("dark");
-  const newTheme = setTheme("classic");
+Deno.test("theme: setCurrentTheme switches to classic theme", () => {
+  setCurrentTheme("dark");
+  const newTheme = setCurrentTheme("classic");
   assertEquals(newTheme, classicTheme);
-  assertEquals(currentTheme, classicTheme);
-  setTheme("dark");
+  assertEquals(getCurrentTheme(), classicTheme);
+  setCurrentTheme("dark");
 });
 
-Deno.test("theme: setTheme throws on unknown theme name", () => {
+Deno.test("theme: setCurrentTheme throws on unknown theme name", () => {
   assertThrows(
-    () => setTheme("nonexistent"),
+    () => setCurrentTheme("nonexistent"),
     Error,
     "Unknown theme",
   );
 });
 
-Deno.test("theme: setTheme returns the new theme", () => {
-  setTheme("dark");
-  const result = setTheme("light");
+Deno.test("theme: setCurrentTheme returns the new theme", () => {
+  setCurrentTheme("dark");
+  const result = setCurrentTheme("light");
   assertEquals(result, lightTheme);
-  assertEquals(result, currentTheme);
-  setTheme("dark");
+  assertEquals(result, getCurrentTheme());
+  setCurrentTheme("dark");
 });
 
 // ---------------------------------------------------------------------------
-// COLORS — backward-compat getters track currentTheme
+// COLORS — backward-compat getters track getCurrentTheme()
 // ---------------------------------------------------------------------------
 
 Deno.test("theme: COLORS.accent tracks dark theme", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.accent, 5); // MAGENTA
 });
 
 Deno.test("theme: COLORS.accent tracks light theme", () => {
-  setTheme("light");
+  setCurrentTheme("light");
   assertEquals(COLORS.accent, 5); // MAGENTA (same accent in light)
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS.accent tracks classic theme", () => {
-  setTheme("classic");
+  setCurrentTheme("classic");
   assertEquals(COLORS.accent, 6); // CYAN
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS getters update when theme is switched", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.accent, 5);
   assertEquals(COLORS.statusOk, 2);
 
-  setTheme("classic");
+  setCurrentTheme("classic");
   assertEquals(COLORS.accent, 6);
   assertEquals(COLORS.statusOk, 2); // green is same in both
 
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS has all expected keys", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   const expectedKeys = [
     "surfaceBase",
     "surfacePanel",
@@ -210,113 +210,113 @@ Deno.test("theme: COLORS has all expected keys", () => {
 });
 
 Deno.test("theme: COLORS surface tokens in dark theme", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.surfaceBase, 0);    // BLACK
   assertEquals(COLORS.surfacePanel, 8);   // BRIGHT_BLACK
   assertEquals(COLORS.surfaceElevated, 6); // CYAN (teal, better contrast than dark blue)
 });
 
 Deno.test("theme: COLORS status tokens in dark theme use standard colors", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.statusOk, 2);    // GREEN
   assertEquals(COLORS.statusWarn, 3);  // YELLOW
   assertEquals(COLORS.statusErr, 1);   // RED
 });
 
 Deno.test("theme: COLORS text tokens in dark theme", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.textPrimary, -1);    // DEFAULT (terminal fg)
   assertEquals(COLORS.textSecondary, 7);   // WHITE (brighter than dim, less than default)
   assertEquals(COLORS.textMuted, 8);       // BRIGHT_BLACK
 });
 
 Deno.test("theme: COLORS progress track is darker than panel fill", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.progressTrack, 0);  // BLACK — darker than surfacePanel (8)
   assertEquals(COLORS.progressBar, 2);    // GREEN
 });
 
 Deno.test("theme: COLORS border tokens in dark theme", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.border, 8);          // BRIGHT_BLACK (subtle gray)
   assertEquals(COLORS.borderFocused, 5);   // MAGENTA (strawberry)
 });
 
 Deno.test("theme: COLORS title uses accent in dark theme", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.title, COLORS.accent);
 });
 
 Deno.test("theme: COLORS all getters return valid ANSI after switching to light theme", () => {
-  setTheme("light");
+  setCurrentTheme("light");
   const keys = Object.keys(COLORS) as (keyof typeof COLORS)[];
   for (const key of keys) {
     const value = COLORS[key];
     assert(value >= -1 && value <= 15,
       `COLORS.${key}=${value} out of range in light theme`);
   }
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS all getters return valid ANSI after switching to classic theme", () => {
-  setTheme("classic");
+  setCurrentTheme("classic");
   const keys = Object.keys(COLORS) as (keyof typeof COLORS)[];
   for (const key of keys) {
     const value = COLORS[key];
     assert(value >= -1 && value <= 15,
       `COLORS.${key}=${value} out of range in classic theme`);
   }
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS getters reflect light theme surface tokens after switching", () => {
-  setTheme("light");
+  setCurrentTheme("light");
   assertEquals(COLORS.surfaceBase, 7);        // WHITE
   assertEquals(COLORS.surfacePanel, -1);       // DEFAULT
   assertEquals(COLORS.surfaceElevated, 4);     // BLUE
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS getters reflect light theme text tokens after switching", () => {
-  setTheme("light");
+  setCurrentTheme("light");
   assertEquals(COLORS.textPrimary, 0);         // BLACK
   assertEquals(COLORS.textSecondary, 8);       // BRIGHT_BLACK
   assertEquals(COLORS.textMuted, 8);            // BRIGHT_BLACK (converged)
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS getters reflect classic theme CYAN tokens after switching", () => {
-  setTheme("classic");
+  setCurrentTheme("classic");
   assertEquals(COLORS.accent, 6);              // CYAN
   assertEquals(COLORS.borderFocused, 6);        // CYAN
   assertEquals(COLORS.badgeRunning, 6);         // CYAN
   assertEquals(COLORS.title, 6);                // CYAN
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS getters reflect classic theme progress track after switching", () => {
-  setTheme("classic");
+  setCurrentTheme("classic");
   assertEquals(COLORS.progressBar, 2);         // GREEN
   assertEquals(COLORS.progressTrack, 8);       // BRIGHT_BLACK
-  setTheme("dark");
+  setCurrentTheme("dark");
 });
 
 Deno.test("theme: COLORS getters across all three themes have no stale values", () => {
   // Switch through all three themes and check a token that differs in each
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.surfaceElevated, 6);     // CYAN in dark
   assertEquals(COLORS.progressTrack, 0);       // BLACK in dark
 
-  setTheme("light");
+  setCurrentTheme("light");
   assertEquals(COLORS.surfaceElevated, 4);     // BLUE in light
   assertEquals(COLORS.progressTrack, 8);       // BRIGHT_BLACK in light
 
-  setTheme("classic");
+  setCurrentTheme("classic");
   assertEquals(COLORS.surfaceElevated, 4);     // BLUE in classic
   assertEquals(COLORS.progressTrack, 8);       // BRIGHT_BLACK in classic
 
   // Switch back and verify no stale values
-  setTheme("dark");
+  setCurrentTheme("dark");
   assertEquals(COLORS.surfaceElevated, 6);     // restored correctly
   assertEquals(COLORS.progressTrack, 0);       // restored correctly
 });
@@ -324,23 +324,23 @@ Deno.test("theme: COLORS getters across all three themes have no stale values", 
 // ---------------------------------------------------------------------------
 // GARAZYK_TUI_THEME env var detection — basic properties only
 // (can't easily mock Deno.env.get at module load time, so test
-//  the themes themselves and the setTheme path)
+//  the themes themselves and the setCurrentTheme path)
 // ---------------------------------------------------------------------------
 
 Deno.test("theme: theme switching is idempotent", () => {
-  setTheme("dark");
-  const t1 = currentTheme;
-  setTheme("dark");
-  const t2 = currentTheme;
+  setCurrentTheme("dark");
+  const t1 = getCurrentTheme();
+  setCurrentTheme("dark");
+  const t2 = getCurrentTheme();
   assertEquals(t1, t2);
 });
 
 Deno.test("theme: rapid theme switching via COLORS getter consistency", () => {
-  setTheme("dark");
+  setCurrentTheme("dark");
   const darkAccent = COLORS.accent;
-  setTheme("classic");
+  setCurrentTheme("classic");
   const classicAccent = COLORS.accent;
-  setTheme("dark");
+  setCurrentTheme("dark");
   const darkAccentAgain = COLORS.accent;
   assertEquals(darkAccent, darkAccentAgain);
   assert(darkAccent !== classicAccent);

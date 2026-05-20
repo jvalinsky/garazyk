@@ -9,7 +9,7 @@
  */
 
 import { getCharWidth } from "./text.ts";
-import { currentTheme } from "./theme.ts";
+import { getCurrentTheme } from "./theme.ts";
 
 // ---------------------------------------------------------------------------
 // NO_COLOR — https://no-color.org/
@@ -213,7 +213,7 @@ export class ScreenBuffer {
     focused: boolean = false,
   ): void {
     const borderStyle = focused
-      ? { ...style, bold: true, fg: currentTheme.borderFocused }
+      ? { ...style, bold: true, fg: getCurrentTheme().borderFocused }
       : style;
 
     // Corners
@@ -439,7 +439,7 @@ export function mergeStyles(
  * Semantic color tokens derived from the active theme (see `theme.ts`).
  * Exported via theme.ts → mod.ts; not re-exported here to avoid conflicts.
  */
-export { COLORS, currentTheme, setTheme } from "./theme.ts";
+export { COLORS, getCurrentTheme, setCurrentTheme } from "./theme.ts";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
