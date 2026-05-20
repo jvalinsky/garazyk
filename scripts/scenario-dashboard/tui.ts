@@ -11,16 +11,19 @@
 
 import {
   ScreenBuffer,
+  CLEAR_SCREEN,
+  CURSOR_HOME,
+  RESET,
+} from "@garazyk/tui";
+import {
   enterTerminalMode,
   exitTerminalMode,
   writeToTerminal,
   isTerminal,
   getTerminalSize,
-  CLEAR_SCREEN,
-  CURSOR_HOME,
-  RESET,
-} from "@garazyk/tui";
-import { readKeys, isKey, isCtrl, isQuit, Keys } from "@garazyk/tui";
+  readKeys,
+} from "@garazyk/tui/runtime";
+import { isKey, isCtrl, isQuit, Keys } from "@garazyk/tui";
 import type { Key } from "@garazyk/tui";
 import { dashboardLayoutTree, solveLayout, PANEL_IDS, type PanelId, type ResolvedNode } from "@garazyk/tui";
 import { findPanel, panelContentArea } from "@garazyk/tui";
