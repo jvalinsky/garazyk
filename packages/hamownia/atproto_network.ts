@@ -130,11 +130,6 @@ export async function startLocalNetwork(
       // Best-effort marker for dashboard discovery.
     }
 
-    if (ctx.statsSampler) {
-      await ctx.statsSampler.stop();
-      console.log("[INFO]  Container stats sampler stopped");
-    }
-
     if (options.useBinary) {
       await (dependencies.startBinaryServices ?? startBinaryServices)(ctx);
       return;
@@ -265,24 +260,10 @@ export async function startLocalNetwork(
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
     if (isOtelEnabled() && !options.useBinary) {
-      const dockerClient = await createDockerClient();
-      if (dockerClient) {
-        ctx.statsSampler = new ContainerStatsSampler({
-          client: dockerClient,
-          composeProject: ctx.composeProject,
-          intervalMs: 5000,
-          onMemoryPressure: (alert) => {
-            console.warn(
-              `[WARN]  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
-                `(${formatBytes(alert.memoryUsageBytes)} / ${
-                  formatBytes(alert.memoryLimitBytes)
-                })`,
-            );
-          },
-        });
-        ctx.statsSampler.start();
-        console.log("[INFO]  Container stats sampler started (5s interval)");
-      }
+      // In standalone mode, we do not start the background stats sampler 
+      // because we cannot reliably clean up the client and interval 
+      // across separate start/stop CLI invocations.
+      console.log("[INFO]  Container stats sampler is disabled in standalone network mode (run scenarios via hamownia runner instead)");
     }
 
     console.log("[OK]    Local network is ready!");
