@@ -10,6 +10,7 @@
 
 import { getCharWidth } from "./text.ts";
 import { getCurrentTheme } from "./theme.ts";
+import type { BoundingBox } from "./command.ts";
 
 // ---------------------------------------------------------------------------
 // Cell — single character position in the buffer
@@ -248,6 +249,52 @@ export class ScreenBuffer {
     const label = ` ${title} `;
     const startX = x + Math.max(1, Math.floor((w - label.length) / 2));
     this.write(startX, y, label, { ...style, bold: true });
+  }
+
+  /** Draw a box border, clipped to the given region. */
+  boxClipped(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    style: CellStyle = DEFAULT_STYLE,
+    focused: boolean = false,
+    clip?: BoundingBox,
+  ): void {
+    if (!clip) {
+      this.box(x, y, w, h, style, focused);
+      return;
+    }
+
+    const borderStyle = focused
+      ? { ...style, bold: true, fg: getCurrentTheme().borderFocused }
+      : style;
+
+    // Helper: only set cell if within clip
+    const setIfClipped = (cx: number, cy: number, char: string) => {
+      if (cx >= clip.x && cx < clip.x + clip.width &&
+          cy >= clip.y && cy < clip.y + clip.height) {
+        this.setCell(cx, cy, { char, style: borderStyle });
+      }
+    };
+
+    // Corners
+    setIfClipped(x, y, "┌");
+    setIfClipped(x + w - 1, y, "┐");
+    setIfClipped(x, y + h - 1, "└");
+    setIfClipped(x + w - 1, y + h - 1, "┘");
+
+    // Top and bottom edges
+    for (let col = x + 1; col < x + w - 1; col++) {
+      setIfClipped(col, y, "─");
+      setIfClipped(col, y + h - 1, "─");
+    }
+
+    // Left and right edges
+    for (let row = y + 1; row < y + h - 1; row++) {
+      setIfClipped(x, row, "│");
+      setIfClipped(x + w - 1, row, "│");
+    }
   }
 
   /**
