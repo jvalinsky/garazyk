@@ -85,6 +85,10 @@ export async function runScenarioLoop(
   const durationCache = new DurationCache(repoRoot);
   const expectedDurations = selected.map((s) => durationCache.get(s.id));
   const progress = new ProgressBar(selected.length, expectedDurations);
+  const encoder = new TextEncoder();
+  const writeProgressLine = (line: string): void => {
+    if (line) Deno.stdout.writeSync(encoder.encode(line));
+  };
   const progressPath = `${runContext.runDir}/progress.json`;
   const writeProgress = async (
     completed: number,
@@ -156,7 +160,7 @@ export async function runScenarioLoop(
     let abortedForCrash = false;
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
-      progress.start(`${scenario.id} - ${scenario.name}`);
+      writeProgressLine(progress.start(`${scenario.id} - ${scenario.name}`));
       await writeProgress(i, scenario, true);
 
       const health = await checkEssentialServicesHealth(topology);
@@ -191,7 +195,7 @@ export async function runScenarioLoop(
           reportPaths.push(reportPath);
           console.log(`  Report: ${reportPath}`);
         }
-        progress.update(results.length);
+        writeProgressLine(progress.update(results.length));
         await writeProgress(results.length, null, false);
         abortedForCrash = true;
         break;
@@ -233,6 +237,9 @@ export async function runScenarioLoop(
         runner: args.runner,
       };
 
+      // Clear the progress line before printing the scenario summary.
+      // The progress bar's next update will overwrite this line anyway,
+      // but we clear explicitly so the summary starts on a clean line.
       Deno.stdout.writeSync(
         new TextEncoder().encode("\r" + " ".repeat(120) + "\r"),
       );
@@ -252,7 +259,7 @@ export async function runScenarioLoop(
         console.log(`  Report: ${reportPath}`);
       }
 
-      progress.update(i + 1);
+      writeProgressLine(progress.update(i + 1));
       await writeProgress(
         i + 1,
         i + 1 < selected.length ? selected[i + 1] : null,
@@ -262,7 +269,7 @@ export async function runScenarioLoop(
     if (abortedForCrash) {
       console.log("");
     } else {
-      progress.finish();
+      writeProgressLine(progress.finish());
       await writeProgress(results.length, null, false);
     }
   } finally {
