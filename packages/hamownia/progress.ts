@@ -86,21 +86,23 @@ export class ProgressBar {
   /**
    * Start tracking a new task.
    * @param taskName - Name of the current task
+   * @returns The rendered progress string (caller writes to terminal)
    */
-  start(taskName: string) {
+  start(taskName: string): string {
     this.currentTask = taskName;
-    this.render();
+    return this.render();
   }
 
   /**
    * Update the progress bar position.
    * @param current - Current progress count
    * @param taskName - Optional new task name
+   * @returns The rendered progress string (caller writes to terminal)
    */
-  update(current: number, taskName?: string) {
+  update(current: number, taskName?: string): string {
     this.current = current;
     if (taskName) this.currentTask = taskName;
-    this.render();
+    return this.render();
   }
 
   /** Time elapsed since the progress bar was created, in milliseconds. */
@@ -108,14 +110,18 @@ export class ProgressBar {
     return Date.now() - this.startTime;
   }
 
-  /** Render the final state and print a newline. */
-  finish() {
-    this.render(true);
-    console.log(""); // Final newline
+  /**
+   * Render the final state and return the string with a trailing newline.
+   * @returns The finished progress string (caller writes to terminal)
+   */
+  finish(): string {
+    const output = this.render(true);
+    this.lastRendered = "";
+    return output + "\n";
   }
 
-  private render(isFinished = false) {
-    if (this.total === 0) return;
+  private render(isFinished = false): string {
+    if (this.total === 0) return "";
 
     const progress = Math.min(1, this.current / this.total);
     const filledWidth = Math.round(progress * this.width);
@@ -177,8 +183,8 @@ export class ProgressBar {
     const padding = Math.max(0, this.lastRendered.length - output.length);
     const finalOutput = output + " ".repeat(padding);
 
-    Deno.stdout.writeSync(new TextEncoder().encode(finalOutput));
     this.lastRendered = output;
+    return finalOutput;
   }
 
   private formatDuration(ms: number): string {
