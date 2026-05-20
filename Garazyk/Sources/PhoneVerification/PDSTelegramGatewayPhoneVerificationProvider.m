@@ -16,6 +16,7 @@
 
 static NSString *const kTelegramGatewayBaseURL = @"https://gatewayapi.telegram.org";
 static NSString *const kTelegramGatewayTokenEnvVar = @"TELEGRAM_GATEWAY_TOKEN";
+static NSString *const kTelegramGatewayBaseURLEnvVar = @"TELEGRAM_API_BASE_URL";
 
 NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegramgatewayprovider";
 
@@ -78,8 +79,18 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
 
         self->_gatewayToken = [gatewayToken copy];
 
+        // Determine base URL
+        NSString *baseURLString = self->_providerConfig[@"baseURL"];
+        if (!baseURLString) {
+            baseURLString = [self.secretsProvider secretForKey:kTelegramGatewayBaseURLEnvVar
+                                                         error:&secretError];
+        }
+        if (!baseURLString) {
+            baseURLString = kTelegramGatewayBaseURL;
+        }
+
         // Telegram Gateway uses Bearer token authentication.
-        NSURL *baseURL = [NSURL URLWithString:kTelegramGatewayBaseURL];
+        NSURL *baseURL = [NSURL URLWithString:baseURLString];
         self->_httpClient = [[PDSProviderHTTPClient alloc]
             initWithBaseURL:baseURL
                     apiKey:gatewayToken];
