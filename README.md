@@ -36,7 +36,7 @@ Bluesky federation will refuse connections.
 
 For instructions on provisioning reverse proxies, configuring environment variables (`PDS_ISSUER`,
 `PDS_ADMIN_PASSWORD`), and managing database backups, read the
-**[Deployment Guide](docs/guides/DEPLOYMENT.md)**.
+**[Deployment Guide](docs/20-explanation/guides/DEPLOYMENT.md)**.
 
 ## Technical Architecture
 
@@ -52,7 +52,7 @@ Garazyk implements the ATProto topology:
   executing Objective-C in the browser via an integrated C interpreter.
 
 For system design, data models, and request lifecycle, see the
-**[Architecture Overview](docs/architecture/atproto_pds_architecture.md)**.
+**[Architecture Overview](docs/20-explanation/architecture/atproto_pds_architecture.md)**.
 
 ## Building from Source
 
@@ -88,12 +88,14 @@ network to validate federation and OAuth flows.
 
 The `docs/` folder is the source of truth for operators and contributors.
 
-- **[Deployment Guide](docs/guides/DEPLOYMENT.md)**
-- **[Architecture Overview](docs/architecture/atproto_pds_architecture.md)**
+- **[Documentation Hub](docs/index.md)** — full documentation index
+- **[Architecture Overview](docs/20-explanation/architecture/atproto_pds_architecture.md)**
+- **[Deployment Guide](docs/20-explanation/guides/DEPLOYMENT.md)**
 - [Contributor Setup](docs/01-getting-started/setup.md)
 - [Codebase Map](docs/01-getting-started/codebase-map.md)
 - [Developer Tutorials](docs/10-tutorials/index.md)
 - [Deno Scenario Framework](docs/11-reference/deno-scenario-framework.md)
+- [Deno Packages](docs/11-reference/deno-packages.md)
 
 ## Licensing
 

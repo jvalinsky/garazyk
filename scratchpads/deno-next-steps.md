@@ -1,179 +1,200 @@
 # Deno Packages: Next Steps Plan
 
-> Generated: 2026-05-20 · Updated after completing Phases 1–6
+> Generated: 2026-05-20 · Updated after completing Phases 1–8
 
 ---
 
 ## 1. Current State Summary
 
-| Package | Tests | JSR Publish | Sans-IO | Key Gaps |
-|---------|-------|-------------|---------|----------|
-| `gruszka` | 35 | ✅ Clean | ✅ Pure | 20 untested files (mostly generated clients) |
-| `schemat` | 67 | ✅ Clean | ✅ Pure | 10 untested source files |
-| `laweta` | 63 | ✅ Clean | ✅ HOME deferred | 6 untested files (compose, health, format, telemetry) |
-| `hamownia` | 73 | ❌ 3 stale exports | ✅ Pure (progress fixed) | 27 untested files; `npm:playwright` missing constraint |
-| `narzedzia` | 11 | ❌ `npm:playwright` transitive | ✅ Pure | 12 untested files; smoke_command boundary violation |
-| `tui` | 227 | ❌ Missing LICENSE | ✅ Pure root + runtime subpath | 3 untested files |
+| Package | Tests | JSR Publish | Sans-IO | Untested Source Files |
+|---------|-------|-------------|---------|-----------------------|
+| `gruszka` | 35 | ✅ Clean | ✅ Pure | 20 (mostly generated clients) |
+| `schemat` | 67 | ✅ Clean | ✅ Pure | 10 |
+| `laweta` | 63 | ✅ Clean | ✅ HOME deferred | 6 |
+| `hamownia` | 73 | ✅ Clean | ✅ Pure (progress fixed) | 28 (mostly CLI/infra) |
+| `narzedzia` | 11 | ✅ Clean | ✅ Pure | 10 |
+| `tui` | 227 | ✅ Clean | ⚠️ `currentTheme` reads env at module load | 3 |
 
-**Total: 2856 tests passing, 0 failures. All `deno check` clean.**
+**Total: 2856 package tests + 104 dashboard tests = 2960 passing.**
+**All 6 packages pass `deno publish --dry-run`. Boundary check passes with zero violations.**
 
-### Completed Architecture Plan Actions
+### Completed Phases (1–8)
 
-| Action | Status | What was done |
-|--------|--------|--------------|
-| A1 — Extract ProgressBar rendering | ✅ | `render()` returns string, `run_loop.ts` owns stdout |
-| A2 — Remove run_loop terminal I/O | ✅ | `writeProgressLine()` helper, zero `Deno.stdout` in pure logic |
-| A3 — Split tui/ subpaths | ✅ | `@garazyk/tui` pure root, `@garazyk/tui/runtime` for terminal I/O |
-| A4 — Move chat_viewer out of gruszka | ✅ | Already done before this session |
-| A7 — Inject env into docker_api.ts | ✅ | `DockerApiClientOptions` with `endpoint/dockerHost/homeDir` |
-| A8 — Slice DashboardState.Msg | ✅ | 7 sub-unions + per-slice reducers + root coordinator |
-| E — Narzedzia publish blocker | ✅ | Stale `fuzz-command` removed, `addCname()` return type fixed |
-| F — Test coverage | ✅ | 17 new tests (11 boundary_check, 6 topology_types) |
+| Phase | What was done |
+|-------|--------------|
+| 1 (A1, A2) | ProgressBar.render() returns string, run_loop.ts owns stdout, 8 progress tests |
+| 2 (A3) | tui/mod.ts pure root, @garazyk/tui/runtime subpath, explicit named exports |
+| 3 (A7) | DockerApiClientOptions with endpoint/dockerHost/homeDir, HOME deferred |
+| 4 (E) | Stale fuzz-command export removed, addCname() return type fixed |
+| 5 (A8) | 53-variant Msg union → 7 sub-unions + per-slice reducers |
+| 6 (F) | 17 new tests (11 boundary_check, 6 topology_types) |
+| 7 | All 6 packages JSR-ready. Stale hamownia exports removed, npm:playwright@1.52.0, tui LICENSE, mock_twilio slow-type |
+| 8 | smoke_command.ts moved narzedzia→hamownia, boundary check zero violations |
 
 ---
 
-## 2. Remaining Issues (Priority Order)
+## 2. Remaining Issues
 
-### P1. JSR Publish Blockers (3 packages)
+### P1. tui `currentTheme` module-load env read (Low severity)
 
-**P1a. hamownia — 3 stale exports referencing deleted files**
+**Current:** `tui/theme.ts:304` initializes `currentTheme = resolveTheme()` at module load, which reads `Deno.env.get("GARAZYK_TUI_THEME")` and `Deno.env.get("COLORFGBG")`. Since `mod.ts` re-exports `currentTheme` and `COLORS`, importing `@garazyk/tui` (the pure root) triggers an env read.
 
-`deno.json` exports `./service-command`, `./demo-command`, `./test-command` but the files were moved to `cli/service.ts`, `cli/demo.ts`, `cli/test.ts` in commit 56efcbd7. The exports need to either:
-- Point to the new `cli/*.ts` paths, or
-- Be removed if the CLI subpaths aren't part of the public API
+**Options:**
+- **Lazy init:** Change `currentTheme` to a getter that calls `resolveTheme()` on first access, then caches
+- **Move to runtime:** Don't re-export `currentTheme`/`COLORS` from the pure root; only from `@garazyk/tui/runtime`
+- **Accept it:** It's a non-blocking env read that returns a default; low practical impact
+
+**Effort:** Small. **Risk:** Low (breaking change if moving to runtime).
+
+### P2. Duplicate `formatBytes` in laweta and hamownia
+
+**Current:** `laweta/format.ts` and `hamownia/format.ts` both implement `formatBytes()` with slightly different logic:
+- laweta: loop-based, supports TiB, `toFixed(0)` for bytes
+- hamownia: if-chain, no TiB, always `toFixed(1)`
+
+**Options:**
+- **Extract to gruszka:** Both laweta and hamownia import from `@garazyk/gruszka/format`. Gruszka is the shared utilities package.
+- **Accept duplication:** Both packages are independent; the functions are small and stable.
 
 **Effort:** Small. **Risk:** Low.
 
-**P1b. hamownia — `npm:playwright` missing version constraint**
-
-`preflight.ts:69` uses `import("npm:playwright")` without a version constraint. JSR requires `npm:playwright@1.60.0` or similar. This also blocks narzedzia (transitive dependency via hamownia).
-
-**Effort:** Small. **Risk:** Low (just add `@1.60.0` to the specifier).
-
-**P1c. tui — Missing LICENSE file**
-
-JSR requires a license field or file. `packages/tui/deno.json` has no `license` key and no `LICENSE` file. Other packages use `"license": "Unlicense OR CC0-1.0"` and have a `LICENSE` file.
-
-**Effort:** Small. **Risk:** None.
-
-### P2. Boundary Violation (1 active)
-
-**narzedzia/smoke_command.ts imports @garazyk/hamownia**
-
-`smoke_command.ts:2` imports `createCharacterRegistry`, `ScenarioResult`, `timedCall` from hamownia. The boundary rule says narzedzia must not depend on hamownia.
-
-Options:
-- **Move smoke_command.ts to hamownia** — it's a scenario utility, not a dev tool
-- **Extract the shared types** (`ScenarioResult`, `timedCall`) into schemat or a new shared package
-- **Add to baseline** if the dependency is accepted
-
-**Effort:** Small–Medium. **Risk:** Low.
-
 ### P3. Deferred Architecture Plan Items
 
-| Item | Status | Why still deferred |
-|------|--------|-------------------|
+| Item | Status | Why deferred |
+|------|--------|-------------|
 | A5 — Generic TEA types | Deferred | No second consumer yet; dashboard's Cmd is runtime-specific |
-| A6 — `Result<T, E>` type | Deferred | Useful but not blocking anything; can be added incrementally |
+| A6 — `Result<T, E>` type | Deferred | Useful but not blocking; can be added incrementally |
 
 ### P4. Test Coverage Gaps (by priority)
 
-**High-priority untested files (core logic, not CLI/generated):**
+**Tier 1 — Pure logic, high value, easy to test:**
+
+| File | Package | Exports | Why it matters |
+|------|---------|---------|----------------|
+| `laweta/format.ts` | laweta | `formatBytes()` | Pure function, 13 lines, used by docker_api + container_stats |
+| `hamownia/format.ts` | hamownia | `formatBytes()` | Pure function, 16 lines, used by atproto_network + run_loop |
+| `schemat/topology_registry.ts` | schemat | `isKnownServiceRole`, `roleEnvKey`, `defaultServiceName`, `defaultRolePort`, `validateRoleCapability`, `Cap`, `Role` constants | Pure validation/lookup, core source of truth |
+| `schemat/topology_manifest.ts` | schemat | `parsePortMapping`, `sanitizeTopologyName`, `serviceNameForRole`, `publicUrlForRole`, `internalUrlForRole`, `roleToEnvKey` | Pure helpers, core manifest logic |
+| `narzedzia/spdx_headers.ts` | narzedzia | `hasSpdx()`, `addSpdxHeader()` | Pure string functions, license tooling |
+| `narzedzia/doc_coverage.ts` | narzedzia | `countDocumentation()`, `subsystemForPath()`, `classifyDoc()`, `pct()`, `summarize()` | Pure heuristics and path mapping |
+| `narzedzia/tsdoc_coverage.ts` | narzedzia | `buildReport()` | Pure aggregation, core coverage logic |
+
+**Tier 2 — Mostly pure, needs some env mocking:**
+
+| File | Package | Exports | Why it matters |
+|------|---------|---------|----------------|
+| `laweta/telemetry.ts` | laweta | `withSpan`, `addSpanEvent`, `recordGauge`, `recordCounter`, `isOtelEnabled`, `setTelemetryTestHook` | Test hook system, OTel integration |
+| `schemat/docker_config.ts` | schemat | `neededPorts()`, `serviceUrl()` | Port calculation, env-dependent |
+| `schemat/logging.ts` | schemat | `initLogger`, `logDebug`, `logInfo`, `logOk`, `logWarn`, `logError` | Logging with verbose/quiet state |
+| `schemat/topology_list.ts` | schemat | `listTopologyPresets()` | Preset listing, registry integration |
+
+**Tier 3 — I/O-heavy, test via integration or mocks:**
 
 | File | Package | Why it matters |
 |------|---------|----------------|
-| `laweta/docker_health.ts` | laweta | Health check logic — core Docker feature |
-| `laweta/compose.ts` | laweta | Compose integration — 37 bytes, likely just a re-export |
-| `laweta/format.ts` | laweta | Formatting utilities |
-| `schemat/topology_presets.ts` | schemat | Built-in topology definitions — source of truth |
-| `schemat/topology_manifest.ts` | schemat | Manifest loading — core feature |
-| `schemat/topology_compiler.ts` | schemat | Topology compilation — core feature |
-| `narzedzia/doc_coverage.ts` | narzedzia | Doc coverage tooling |
-| `narzedzia/spdx_headers.ts` | narzedzia | License header tooling |
+| `laweta/docker_health.ts` | laweta | Health check logic, needs fetch/Docker mocks |
+| `laweta/docker_compose.ts` | laweta | Command building, needs Deno.Command mocks |
+| `narzedzia/repo_docs.ts` | narzedzia | Link analysis, needs filesystem fixtures |
+| `narzedzia/vitepress_migration.ts` | narzedzia | String transforms are pure, but class is I/O-heavy |
 
-**Low-priority (CLI commands, generated code, or scripts):**
-- `hamownia/cli/*.ts` — CLI commands, hard to unit test without Docker
-- `gruszka/clients/*.ts` — Generated from lexicons, low ROI for hand-written tests
-- `narzedzia/ops_command.ts` — Cloudflare ops, requires API keys
+**Tier 4 — Low ROI (CLI commands, generated code, or scripts):**
+
+| Files | Why skipped |
+|-------|-----------|
+| `hamownia/cli/*.ts` | CLI commands, require Docker |
+| `gruszka/clients/*.ts` | Generated from lexicons |
+| `narzedzia/ops_command.ts` | Cloudflare ops, requires API keys |
+| `narzedzia/doc_validator.ts` | Mostly stubs, I/O-heavy |
 
 ---
 
 ## 3. Proposed Workstreams
 
-### Stream 1: JSR Publish Readiness (P1)
+### Stream 1: tui currentTheme lazy init (P1)
 
 ```
-1a. Remove stale hamownia exports (service-command, demo-command, test-command)
-1b. Add version constraint to npm:playwright in hamownia/preflight.ts
-1c. Add LICENSE file + license field to tui/deno.json
-1d. Verify: deno publish --dry-run passes for all 6 packages
+1a. Change currentTheme from `let` to a lazy getter pattern
+1b. Verify: importing @garazyk/tui doesn't trigger env reads until first access
+1c. Verify: all 227 tui tests pass
 ```
 
-**Effort:** Small (1–2 hours). **Risk:** Low.
+**Effort:** Small. **Risk:** Low.
 
-### Stream 2: Boundary Fix (P2)
-
-```
-2a. Decide: move smoke_command.ts to hamownia, or extract shared types, or baseline
-2b. Implement the chosen fix
-2c. Verify: deno run -A packages/narzedzia/boundary_check.ts passes
-```
-
-**Effort:** Small–Medium. **Risk:** Low.
-
-### Stream 3: Incremental Test Coverage (P4)
-
-Focus on the high-priority untested files first:
+### Stream 2: Deduplicate formatBytes (P2)
 
 ```
-3a. laweta/docker_health.ts tests
-3b. laweta/format.ts tests
-3c. schemat/topology_presets.ts tests (preset structure, defaults)
-3d. schemat/topology_compiler.ts tests (compilation logic)
-3e. narzedzia/doc_coverage.ts tests
-3f. narzedzia/spdx_headers.ts tests
+2a. Move the laweta version (loop-based, TiB support) to gruszka/format.ts
+2b. Update laweta/format.ts to re-export from @garazyk/gruszka
+2c. Update hamownia/format.ts to re-export from @garazyk/gruszka
+2d. Add formatBytes tests to gruszka
+2e. Verify: deno check, deno test, deno task boundaries
 ```
 
-**Effort:** Medium (each file is 1–3 hours). **Risk:** Low.
+**Effort:** Small. **Risk:** Low (gruszka is already a dependency of both).
 
-### Stream 4: Deferred Architecture Items (when needed)
+### Stream 3: Tier 1 Test Coverage (P4)
 
-- **A5 (TEA types):** Create `@garazyk/tea` or `tui/tea.ts` when a second TEA consumer appears
-- **A6 (Result type):** Add `Result<T, E>` to narzedzia or schemat when ad-hoc patterns become painful
+```
+3a. laweta/format.ts tests (already covered if deduplicated to gruszka)
+3b. schemat/topology_registry.ts tests (isKnownServiceRole, roleEnvKey, validateRoleCapability, etc.)
+3c. schemat/topology_manifest.ts tests (parsePortMapping, sanitizeTopologyName, publicUrlForRole, etc.)
+3d. narzedzia/spdx_headers.ts tests (hasSpdx, addSpdxHeader)
+3e. narzedzia/doc_coverage.ts tests (countDocumentation, subsystemForPath, classifyDoc)
+3f. narzedzia/tsdoc_coverage.ts tests (buildReport)
+```
 
-**Effort:** Medium each. **Risk:** Medium (A5 needs careful design).
+**Effort:** Medium (each file 1–2 hours). **Risk:** Low.
+
+### Stream 4: Tier 2 Test Coverage (P4, after Stream 3)
+
+```
+4a. laweta/telemetry.ts tests (withSpan, test hooks, isOtelEnabled)
+4b. schemat/docker_config.ts tests (neededPorts, serviceUrl with env stubs)
+4c. schemat/logging.ts tests (initLogger, verbose/quiet state)
+4d. schemat/topology_list.ts tests (listTopologyPresets)
+```
+
+**Effort:** Medium. **Risk:** Low.
 
 ---
 
 ## 4. Implementation Sequence
 
 ```
-Phase 7: JSR Publish Readiness (Stream 1)
-  7a. Fix hamownia stale exports
-  7b. Add npm:playwright@1.60.0 constraint
-  7c. Add LICENSE + license to tui
-  7d. Verify: deno publish --dry-run passes for all 6 packages
+Phase 9: tui currentTheme lazy init (Stream 1)
+  9a. Refactor currentTheme to lazy getter
+  9b. Verify: all tests pass
 
-Phase 8: Boundary Fix (Stream 2)
-  8a. Move smoke_command.ts to hamownia (or extract shared types)
-  8b. Verify: boundary check passes with zero violations
+Phase 10: Deduplicate formatBytes (Stream 2)
+  10a. Extract to gruszka/format.ts
+  10b. Update laweta + hamownia imports
+  10c. Add formatBytes tests
+  10d. Verify: boundaries, check, test
 
-Phase 9: Test Coverage (Stream 3, ongoing)
-  9a. laweta: docker_health, format
-  9b. schemat: topology_presets, topology_compiler
-  9c. narzedzia: doc_coverage, spdx_headers
+Phase 11: Tier 1 Test Coverage (Stream 3)
+  11a. schemat/topology_registry.ts tests
+  11b. schemat/topology_manifest.ts tests
+  11c. narzedzia/spdx_headers.ts tests
+  11d. narzedzia/doc_coverage.ts tests
+  11e. narzedzia/tsdoc_coverage.ts tests
+
+Phase 12: Tier 2 Test Coverage (Stream 4)
+  12a. laweta/telemetry.ts tests
+  12b. schemat/docker_config.ts tests
+  12c. schemat/logging.ts tests
+  12d. schemat/topology_list.ts tests
 ```
 
-**Suggested order:** 7 → 8 → 9
+**Suggested order:** 9 → 10 → 11 → 12
 
-Phase 7 is the highest priority — it unblocks JSR publishing for all packages. Phase 8 cleans up the last boundary violation. Phase 9 is ongoing quality improvement.
+Phase 9 is a small architectural fix. Phase 10 removes duplication. Phases 11–12 are ongoing quality improvement.
 
 ---
 
 ## 5. Success Criteria
 
-- [ ] `deno publish --dry-run` passes for all 6 packages
-- [ ] `deno run -A packages/narzedzia/boundary_check.ts` passes with zero violations
-- [ ] All 2856+ package tests pass + 102 dashboard tests pass
-- [ ] `deno task check` passes with zero errors
-- [ ] Test count increases by 20+ (covering laweta, schemat, narzedzia core modules)
+- [ ] Importing `@garazyk/tui` does not trigger `Deno.env.get` at module load time
+- [ ] `formatBytes` has a single implementation in gruszka, re-exported by laweta and hamownia
+- [ ] Test count increases by 40+ (covering registry, manifest, spdx, doc_coverage, tsdoc_coverage, telemetry, docker_config, logging)
+- [ ] All 2960+ tests pass, `deno check` clean, boundary check passes
+- [ ] All 6 packages still pass `deno publish --dry-run`
