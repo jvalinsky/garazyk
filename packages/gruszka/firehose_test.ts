@@ -84,3 +84,47 @@ Deno.test("parseFirehoseFrame rejects trailing bytes", () => {
     "trailing byte",
   );
 });
+
+Deno.test("parseFirehoseFrame rejects oversized frames", () => {
+  // Create a frame larger than 10MB by padding the body
+  const header = encode({ op: 1, t: "#commit" });
+  const largeBody = new Uint8Array(10 * 1024 * 1024 + 1);
+  const payload = concatBytes(header, encode({ seq: 1, ops: [], blocks: largeBody }));
+
+  assertThrows(
+    () => parseFirehoseFrame(payload),
+    FirehoseFrameParseError,
+    "exceeds maximum size",
+  );
+});
+
+Deno.test("validateDagCborShape rejects deeply nested objects", () => {
+  // Build a deeply nested object that exceeds depth 256
+  let obj: Record<string, unknown> = {};
+  for (let i = 0; i < 300; i++) {
+    obj = { inner: obj };
+  }
+  const payload = frame({ op: 1, t: "#commit" }, { seq: 1, ops: [], nested: obj });
+
+  // The error is wrapped by decodeDagCborObject as "Invalid body DAG-CBOR object"
+  assertThrows(
+    () => parseFirehoseFrame(payload),
+    FirehoseFrameParseError,
+    "Invalid body DAG-CBOR object",
+  );
+});
+
+Deno.test("validateDagCborShape rejects constructor keys", () => {
+  const payload = frame(
+    { op: 1, t: "#commit" },
+    { seq: 1, ops: [], constructor: { prototype: true } },
+  );
+
+  // DAG-CBOR encoding preserves "constructor" as a regular key,
+  // and validateDagCborShape rejects it — wrapped by decodeDagCborObject
+  assertThrows(
+    () => parseFirehoseFrame(payload),
+    FirehoseFrameParseError,
+    "Invalid body DAG-CBOR object",
+  );
+});

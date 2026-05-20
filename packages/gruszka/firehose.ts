@@ -72,6 +72,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     !Array.isArray(value) && !(value instanceof Uint8Array);
 }
 
+function validateDagCborShape(value: unknown, depth = 0): void {
+  if (depth > 256) {
+    throw new Error("DAG-CBOR nesting exceeds maximum depth of 256");
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      validateDagCborShape(item, depth + 1);
+    }
+  } else if (isRecord(value)) {
+    for (const key of Object.keys(value)) {
+      if (key === "__proto__" || key === "constructor") {
+        throw new Error(`Forbidden key "${key}" found in DAG-CBOR object`);
+      }
+      validateDagCborShape(value[key], depth + 1);
+    }
+  }
+}
+
 function decodeDagCborObject(
   bytes: Uint8Array,
   label: string,
@@ -84,6 +102,7 @@ function decodeDagCborObject(
       unknown,
       Uint8Array,
     ];
+    validateDagCborShape(decoded);
   } catch (cause) {
     throw new FirehoseFrameParseError(`Invalid ${label} DAG-CBOR object`, {
       cause,
@@ -109,8 +128,16 @@ function stringField(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+/** Maximum allowed firehose frame size (10 MB). */
+const MAX_FRAME_SIZE = 10 * 1024 * 1024;
+
 /** Decode a subscribeRepos WebSocket frame into its header and body objects. */
 export function parseFirehoseFrame(payload: Uint8Array): FirehoseFrame {
+  if (payload.length > MAX_FRAME_SIZE) {
+    throw new FirehoseFrameParseError(
+      `Firehose frame exceeds maximum size: ${payload.length} bytes (limit: ${MAX_FRAME_SIZE})`,
+    );
+  }
   const [header, bodyBytes] = decodeDagCborObject(payload, "header");
   const [body, trailingBytes] = decodeDagCborObject(bodyBytes, "body");
 
@@ -139,6 +166,9 @@ export class FirehoseClient {
   /** Events collected by the most recent subscription. */
   public events: FirehoseEvent[] = [];
 
+  /** The sequence number of the last event received by this client. */
+  public lastSeq: number | undefined = undefined;
+
   /** Create a firehose client connected to the given relay. */
   constructor(relayUrl = "ws://localhost:2584") {
     this.wsUrl = relayUrl.replace("http://", "ws://").replace(
@@ -158,8 +188,11 @@ export class FirehoseClient {
     signal?: AbortSignal,
   ): Promise<void> {
     const url = new URL(`${this.wsUrl}/xrpc/com.atproto.sync.subscribeRepos`);
-    if (cursor !== undefined) {
-      url.searchParams.append("cursor", cursor.toString());
+    
+    // Use explicit cursor, or fallback to the last tracked sequence
+    const effectiveCursor = cursor ?? this.lastSeq;
+    if (effectiveCursor !== undefined) {
+      url.searchParams.append("cursor", effectiveCursor.toString());
     }
 
     return new Promise((resolve) => {
@@ -189,14 +222,8 @@ export class FirehoseClient {
       };
 
       ws.onmessage = (event) => {
-        try {
-          if (event.data instanceof ArrayBuffer) {
-            const buf = new Uint8Array(event.data);
-            const fe = firehoseEventFromFrame(parseFirehoseFrame(buf));
-            if (callback) callback(fe);
-          }
-        } catch (e) {
-          console.warn("Firehose parse error", e);
+        if (event.data instanceof ArrayBuffer) {
+          this.handleMessage(new Uint8Array(event.data), callback);
         }
       };
 
@@ -224,5 +251,29 @@ export class FirehoseClient {
     this.events = [];
     return this.subscribe((e) => this.events.push(e), durationS, cursor, signal)
       .then(() => this.events);
+  }
+
+  /**
+   * Handle a raw binary message from the firehose.
+   *
+   * This is internal but exposed for testing. It parses the frame,
+   * updates the sequence cursor, and invokes the callback.
+   */
+  public handleMessage(
+    data: Uint8Array,
+    callback?: (e: FirehoseEvent) => void,
+  ): void {
+    try {
+      const fe = firehoseEventFromFrame(parseFirehoseFrame(data));
+
+      // Track cursor
+      if (fe.seq > 0) {
+        this.lastSeq = fe.seq;
+      }
+
+      if (callback) callback(fe);
+    } catch (e) {
+      console.warn("Firehose parse error", e);
+    }
   }
 }

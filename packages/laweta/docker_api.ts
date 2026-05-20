@@ -316,6 +316,7 @@ export class DockerApiClient {
   private _available: boolean | null = null;
   private _baseUrl: string;
   private _useUnix = true;
+  private _closed = false;
 
   /**
    * Create a Docker API client.
@@ -385,10 +386,22 @@ export class DockerApiClient {
 
   /** Close the underlying HTTP client. */
   close(): void {
+    this._closed = true;
     if (this.client) {
       this.client.close();
       this.client = null;
     }
+  }
+
+  /** Dispose pattern for `using` keyword support. */
+  [Symbol.dispose](): void {
+    this.close();
+  }
+
+  /** Async dispose pattern for `await using` keyword support. */
+  [Symbol.asyncDispose](): Promise<void> {
+    this.close();
+    return Promise.resolve();
   }
 
   // -----------------------------------------------------------------------
@@ -628,6 +641,9 @@ export class DockerApiClient {
     body?: unknown,
     signal?: AbortSignal,
   ): Promise<Response> {
+    if (this._closed) {
+      throw new Error("DockerApiClient has been closed.");
+    }
     if (!this.client) {
       throw new Error("DockerApiClient not initialized. Call init() first.");
     }
@@ -764,10 +780,18 @@ async function* parseNdjsonStream<T>(
       if (result.done) break;
 
       buffer += decoder.decode(result.value, { stream: true });
+      if (buffer.length > 1024 * 1024) {
+        throw new Error(`NDJSON buffer limit exceeded (1MB) in ${context}`);
+      }
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
 
       for (const line of lines) {
+        if (line.length > 65536) {
+          throw new Error(
+            `NDJSON line length limit exceeded (64KB) in ${context}`,
+          );
+        }
         yield* parseLine(line);
       }
     }
@@ -958,7 +982,10 @@ function parseMultiplexedBuffer(initialBuffer: Uint8Array): string {
   let buffer = initialBuffer;
 
   while (true) {
-    if (buffer.length < 8) return outputParts.join("");
+    if (buffer.length < 8) {
+      outputParts.push(decoder.decode()); // flush
+      return outputParts.join("");
+    }
 
     // Parse header. Byte 0 is stream type; bytes 1-3 are reserved.
     const payloadSize = (buffer[4] << 24) | (buffer[5] << 16) |
@@ -972,7 +999,7 @@ function parseMultiplexedBuffer(initialBuffer: Uint8Array): string {
 
     if (buffer.length < 8 + payloadSize) {
       const available = buffer.slice(8);
-      outputParts.push(decoder.decode(available, { stream: true }));
+      outputParts.push(decoder.decode(available)); // flush
       return outputParts.join("");
     }
 

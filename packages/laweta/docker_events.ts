@@ -123,6 +123,7 @@ interface Waiter {
   resolve: (value: boolean) => void;
   reject: (reason: Error) => void;
   timeoutId: number;
+  intervalId?: number;
   serviceName: string;
   waitFor: "healthy" | "running";
 }
@@ -460,9 +461,12 @@ export class ContainerEventWatcher {
       this.abortController.abort();
     }
 
-    // Reject all pending waiters
+    // Reject all pending waiters, clearing their timers
     for (const waiter of this.waiters) {
       clearTimeout(waiter.timeoutId);
+      if (waiter.intervalId !== undefined) {
+        clearInterval(waiter.intervalId);
+      }
       waiter.reject(new Error("ContainerEventWatcher closed"));
     }
     this.waiters = [];
@@ -694,6 +698,9 @@ export class ContainerEventWatcher {
           // Container may not exist yet — keep trying
         }
       }, 5000);
+
+      // Store the interval ID on the waiter so close() can clear it
+      waiter.intervalId = discoveryIntervalId;
     });
   }
 
@@ -784,6 +791,9 @@ export class ContainerEventWatcher {
           // Inspect failed — keep polling
         }
       }, 5000);
+
+      // Store the interval ID on the waiter so close() can clear it
+      waiter.intervalId = pollIntervalId;
     });
   }
 }

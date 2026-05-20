@@ -132,7 +132,7 @@ Deno.test("request: POST does not retry on 503 by default", async () => {
   }
 });
 
-Deno.test("request: POST retries when maxRetries is explicitly set", async () => {
+Deno.test("request: POST retries when maxRetries and allowMutationRetry are set", async () => {
   let calls = 0;
   installMockFetch(async () => {
     calls++;
@@ -142,7 +142,7 @@ Deno.test("request: POST retries when maxRetries is explicitly set", async () =>
 
   try {
     const t = new TransportLayer("http://localhost:2583");
-    const res = await t.request("POST", "/xrpc/test", { method: "POST" }, { maxRetries: 3 });
+    const res = await t.request("POST", "/xrpc/test", { method: "POST" }, { maxRetries: 3, allowMutationRetry: true });
     assertEquals(res.status, 200);
     assertEquals(calls, 2);
   } finally {
