@@ -238,28 +238,41 @@ export interface DashboardState {
 
 /** Discriminated union of all state transitions in the TEA model. */
 export type Msg =
-  // Network health
+  | NetworkMsg
+  | RunsMsg
+  | ScenariosMsg
+  | TopologyMsg
+  | LogsMsg
+  | MetricsMsg
+  | UxMsg
+  | { type: "tick"; nowMs: number };
+
+// ---------------------------------------------------------------------------
+// Sub-unions (per-slice Msg variants)
+// ---------------------------------------------------------------------------
+
+/** Network health and control messages. */
+export type NetworkMsg =
   | { type: "network/healthReceived"; services: ServiceStatus[]; token?: number }
   | { type: "network/healthFailed"; error: string; token?: number }
   | { type: "network/healthTimeout"; token?: number }
-  // Network control
   | { type: "network/startRequested"; pds2: boolean }
   | { type: "network/startSucceeded" }
   | { type: "network/startFailed"; error: string }
   | { type: "network/stopRequested" }
   | { type: "network/stopSucceeded" }
-  | { type: "network/stopFailed"; error: string }
-  // Active run
+  | { type: "network/stopFailed"; error: string };
+
+/** Run lifecycle, progress, control, events, and detail overlay messages. */
+export type RunsMsg =
   | { type: "runs/activeReceived"; run: Run | null; token?: number }
   | { type: "runs/activeFailed"; error: string; token?: number }
   | { type: "runs/activeTimeout"; token?: number }
-  // Run progress
   | { type: "runs/hydrateRun"; run: Run }
   | { type: "runs/viewRun"; runId: string }
   | { type: "runs/progressReceived"; progress: RunProgress; runId?: string; token?: number }
   | { type: "runs/progressFailed"; error: string; runId?: string; token?: number }
   | { type: "runs/progressTimeout"; runId?: string; token?: number }
-  // Run control
   | { type: "runs/startRequested"; scenarioIds: string[]; pds2: boolean }
   | { type: "runs/startSucceeded"; runId: string }
   | { type: "runs/startFailed"; error: string }
@@ -269,46 +282,74 @@ export type Msg =
   | { type: "runs/restartRequested" }
   | { type: "runs/restartSucceeded"; newRunId: string }
   | { type: "runs/restartFailed"; error: string }
-  // Recent runs (history panel)
   | { type: "runs/recentReceived"; runs: Run[]; token?: number }
   | { type: "runs/recentFailed"; error: string; token?: number }
   | { type: "runs/recentTimeout"; token?: number }
-  // Scenarios
+  | { type: "runs/event"; event: RunEvent }
+  | { type: "runs/viewDetail"; runId: string; run: Run }
+  | { type: "runs/closeDetail" }
+  | { type: "runs/detailResults"; results: ScenarioResultView[] }
+  | { type: "runs/detailCursorUp" }
+  | { type: "runs/detailCursorDown" };
+
+/** Scenario discovery messages. */
+export type ScenariosMsg =
   | { type: "scenarios/received"; scenarios: ScenarioMeta[] }
-  | { type: "scenarios/failed"; error: string }
-  // Topology
+  | { type: "scenarios/failed"; error: string };
+
+/** Topology selection and preview messages. */
+export type TopologyMsg =
   | { type: "topology/selected"; name: string }
   | { type: "topology/previewReceived"; preview: TopologyPreview; name?: string; token?: number }
   | { type: "topology/previewFailed"; error: string; name?: string; token?: number }
   | { type: "topology/listReceived"; topologies: Array<{ name: string }> }
-  | { type: "topology/listFailed"; error: string }
-  // Logs
+  | { type: "topology/listFailed"; error: string };
+
+/** Log polling messages. */
+export type LogsMsg =
   | { type: "logs/received"; text: string; runId?: string; token?: number }
   | { type: "logs/failed"; error: string; runId?: string; token?: number }
-  | { type: "logs/timeout"; runId?: string; token?: number }
-  // Metrics
+  | { type: "logs/timeout"; runId?: string; token?: number };
+
+/** Metrics polling messages. */
+export type MetricsMsg =
   | {
     type: "metrics/received";
     stats: Record<string, { cpu: string; mem: string }>;
     token?: number;
   }
   | { type: "metrics/failed"; error: string; token?: number }
-  | { type: "metrics/timeout"; token?: number }
-  // UX
+  | { type: "metrics/timeout"; token?: number };
+
+/** UI interaction messages. */
+export type UxMsg =
   | { type: "ux/toggleSettings" }
   | { type: "ux/setScenarioParam"; key: string; value: unknown }
   | { type: "ux/toggleCategory"; category: string }
-  | { type: "ux/setSearchTerm"; term: string }
-  // Run events (push-based from RunManager — replaces polling for active runs)
-  | { type: "runs/event"; event: RunEvent }
-  // Run detail overlay
-  | { type: "runs/viewDetail"; runId: string; run: Run }
-  | { type: "runs/closeDetail" }
-  | { type: "runs/detailResults"; results: ScenarioResultView[] }
-  | { type: "runs/detailCursorUp" }
-  | { type: "runs/detailCursorDown" }
-  // Tick (for elapsed time display)
-  | { type: "tick"; nowMs: number };
+  | { type: "ux/setSearchTerm"; term: string };
+
+/** Type guard: does this Msg belong to a given slice prefix? */
+function isNetworkMsg(msg: Msg): msg is NetworkMsg {
+  return msg.type.startsWith("network/");
+}
+function isRunsMsg(msg: Msg): msg is RunsMsg {
+  return msg.type.startsWith("runs/");
+}
+function isScenariosMsg(msg: Msg): msg is ScenariosMsg {
+  return msg.type.startsWith("scenarios/");
+}
+function isTopologyMsg(msg: Msg): msg is TopologyMsg {
+  return msg.type.startsWith("topology/");
+}
+function isLogsMsg(msg: Msg): msg is LogsMsg {
+  return msg.type.startsWith("logs/");
+}
+function isMetricsMsg(msg: Msg): msg is MetricsMsg {
+  return msg.type.startsWith("metrics/");
+}
+function isUxMsg(msg: Msg): msg is UxMsg {
+  return msg.type.startsWith("ux/");
+}
 
 // ---------------------------------------------------------------------------
 // Cmd (declarative effects — data, not functions)
@@ -356,551 +397,102 @@ function trimRecord<T>(record: Record<string, T>, max: number): Record<string, T
 }
 
 // ---------------------------------------------------------------------------
-// update() — pure state transition function
+// Per-slice reducers
 // ---------------------------------------------------------------------------
 
-function isLiveRun(run: Run | null | undefined): boolean {
-  return run?.status === "running" || run?.status === "starting" || run?.status === "stopping";
-}
-
-function nextToken(token: number | undefined): number {
-  return (token ?? 0) + 1;
-}
-
-function shouldAccept(current: number, token: number | undefined): boolean {
-  return token === undefined || token === current;
-}
-
-function selectedProgressRunId(state: DashboardState, msgRunId?: string): string | null {
-  return msgRunId ?? state.runs.viewedRunId ?? state.runs.active?.id ?? null;
-}
-
-/** Pure state transition function. Takes current state and a Msg, returns next state and effects. */
-export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]] {
+/** Update the network slice. Returns the updated slice and any commands. */
+function updateNetwork(state: DashboardState, msg: NetworkMsg): [Partial<DashboardState>, Cmd[]] {
   switch (msg.type) {
-    // ── Network health ──────────────────────────────────────────────────
-
     case "network/healthReceived": {
-      if (!shouldAccept(state.network.healthToken, msg.token)) return [state, []];
-      const cmds: Cmd[] = [];
-
+      if (!shouldAccept(state.network.healthToken, msg.token)) return [{}, []];
       const network: NetworkSlice = {
         ...state.network,
         services: msg.services,
         lastHealthCheckMs: 0,
-        healthCheckDelayMs: BASE_HEALTH_CHECK_MS, // reset on success
+        healthCheckDelayMs: BASE_HEALTH_CHECK_MS,
         healthCheckInFlight: false,
       };
-
-      // Schedule next health check
-      cmds.push({
+      return [{ network }, [{
         type: "schedule",
         delayMs: BASE_HEALTH_CHECK_MS,
         msg: { type: "network/healthTimeout" },
-      });
-
-      return [{ ...state, network }, cmds];
+      }]];
     }
 
     case "network/healthFailed": {
-      if (!shouldAccept(state.network.healthToken, msg.token)) return [state, []];
+      if (!shouldAccept(state.network.healthToken, msg.token)) return [{}, []];
       const backoff = Math.min(
         state.network.healthCheckDelayMs * BACKOFF_MULTIPLIER,
         MAX_BACKOFF_MS,
       );
-      const cmds: Cmd[] = [];
       const network: NetworkSlice = {
         ...state.network,
         healthCheckInFlight: false,
         healthCheckDelayMs: backoff,
       };
-
-      cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "network/healthTimeout" } });
-
-      return [{ ...state, network }, cmds];
+      return [{ network }, [{ type: "schedule", delayMs: backoff, msg: { type: "network/healthTimeout" } }]];
     }
 
     case "network/healthTimeout": {
-      if (state.network.healthCheckInFlight) {
-        // Already in flight — skip (deduplication)
-        return [state, []];
-      }
+      if (state.network.healthCheckInFlight) return [{}, []];
       const token = nextToken(state.network.healthToken);
       const network: NetworkSlice = {
         ...state.network,
         healthCheckInFlight: true,
         healthToken: token,
       };
-      const cmd: Cmd = {
+      return [{ network }, [{
         type: "fetch",
         url: "/api/network/health",
         onSuccess: "network/healthReceived",
         onError: "network/healthFailed",
         meta: { token },
-      };
-      return [{ ...state, network }, [cmd]];
+      }]];
     }
 
-    // ── Network control ─────────────────────────────────────────────────
+    // Network control messages touch both network and ux — handled by root update()
+    default:
+      return [{}, []];
+  }
+}
 
-    case "network/startRequested": {
-      if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
-      const body = msg.pds2 ? { pds2: true } : {};
-      return [
-        { ...state, ux: { ...state.ux, busy: true } },
-        [{
-          type: "fetch",
-          url: "/api/network/start",
-          method: "POST",
-          body,
-          onSuccess: "network/startSucceeded",
-          onError: "network/startFailed",
-        }],
-      ];
-    }
-
-    case "network/startSucceeded": {
-      // Re-fetch health after starting
-      return [
-        { ...state, ux: { ...state.ux, busy: false } },
-        [
-          {
-            type: "fetch",
-            url: "/api/network/health",
-            onSuccess: "network/healthReceived",
-            onError: "network/healthFailed",
-          },
-        ],
-      ];
-    }
-
-    case "network/startFailed": {
-      return [{ ...state, ux: { ...state.ux, busy: false } }, []];
-    }
-
-    case "network/stopRequested": {
-      if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
-      return [
-        { ...state, ux: { ...state.ux, busy: true } },
-        [{
-          type: "fetch",
-          url: "/api/network/stop",
-          method: "POST",
-          onSuccess: "network/stopSucceeded",
-          onError: "network/stopFailed",
-        }],
-      ];
-    }
-
-    case "network/stopSucceeded": {
-      return [
-        { ...state, ux: { ...state.ux, busy: false } },
-        [
-          {
-            type: "fetch",
-            url: "/api/network/health",
-            onSuccess: "network/healthReceived",
-            onError: "network/healthFailed",
-          },
-        ],
-      ];
-    }
-
-    case "network/stopFailed": {
-      return [{ ...state, ux: { ...state.ux, busy: false } }, []];
-    }
-
-    // ── Active run ──────────────────────────────────────────────────────
-
-    case "runs/activeReceived": {
-      if (!shouldAccept(state.runs.activeToken, msg.token)) return [state, []];
-      const cmds: Cmd[] = [];
-      const isActive = isLiveRun(msg.run);
-      const delay = isActive ? BASE_ACTIVE_POLL_MS : BASE_ACTIVE_POLL_MS * 5; // 10s when idle
-
-      let runs: RunsSlice = {
-        ...state.runs,
-        active: msg.run,
-        activeInFlight: false,
-        activeDelayMs: delay,
-      };
-      let logs = state.logs;
-      let metrics = state.metrics;
-
-      cmds.push({ type: "schedule", delayMs: delay, msg: { type: "runs/activeTimeout" } });
-
-      // Kick off log and metrics polling when a run becomes active.
-      // Always schedule for the new run — stale in-flight polls for the
-      // previous run will be rejected by token/runId checks.
-      const prevActiveId = state.runs.active?.id ?? null;
-      const newActiveId = msg.run?.id ?? null;
-      const runChanged = prevActiveId !== newActiveId;
-
-      if (isActive && msg.run) {
-        // Invalidate stale in-flight polls for the previous run
-        if (runChanged) {
-          if (state.runs.progressInFlight && state.runs.progressInFlightRunId !== newActiveId) {
-            runs = { ...runs, progressInFlight: false, progressInFlightRunId: null };
-          }
-          if (state.logs.fetchInFlight && state.logs.inFlightRunId !== newActiveId) {
-            logs = { ...logs, fetchInFlight: false, inFlightRunId: null };
-          }
-          if (state.metrics.fetchInFlight) {
-            metrics = { ...metrics, fetchInFlight: false };
-          }
-        }
-
-        cmds.push({
-          type: "schedule",
-          delayMs: 0,
-          msg: { type: "runs/progressTimeout", runId: msg.run.id },
-        });
-        cmds.push({
-          type: "schedule",
-          delayMs: 0,
-          msg: { type: "logs/timeout", runId: msg.run.id },
-        });
-        cmds.push({ type: "schedule", delayMs: 0, msg: { type: "metrics/timeout" } });
-      }
-
-      // Clear metrics when no active run
-      if (!isActive && Object.keys(metrics.stats).length > 0) {
-        return [{ ...state, runs, logs, metrics: { ...metrics, stats: {} } }, cmds];
-      }
-
-      // If run just completed, clear progress
-      if (msg.run && !isActive && runs.progressByRunId[msg.run.id]) {
-        const progressByRunId = { ...runs.progressByRunId };
-        delete progressByRunId[msg.run.id];
-        return [{ ...state, runs: { ...runs, progressByRunId }, logs, metrics }, cmds];
-      }
-
-      return [{ ...state, runs, logs, metrics }, cmds];
-    }
-
-    case "runs/activeFailed": {
-      if (!shouldAccept(state.runs.activeToken, msg.token)) return [state, []];
-      const backoff = Math.min(state.runs.activeDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
-      const cmds: Cmd[] = [];
-      cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "runs/activeTimeout" } });
-      return [
-        { ...state, runs: { ...state.runs, activeInFlight: false, activeDelayMs: backoff } },
-        cmds,
-      ];
-    }
-
-    case "runs/activeTimeout": {
-      if (state.runs.activeInFlight) return [state, []]; // dedup
-      const token = nextToken(state.runs.activeToken);
-      const runs: RunsSlice = { ...state.runs, activeInFlight: true, activeToken: token };
-      return [
-        { ...state, runs },
-        [{
-          type: "fetch",
-          url: "/api/runs/active",
-          onSuccess: "runs/activeReceived",
-          onError: "runs/activeFailed",
-          meta: { token },
-        }],
-      ];
-    }
-
-    // ── Run progress ────────────────────────────────────────────────────
-
-    case "runs/hydrateRun": {
-      return [{ ...state, runs: { ...state.runs, viewedRunId: msg.run.id } }, [
-        { type: "schedule", delayMs: 0, msg: { type: "runs/progressTimeout", runId: msg.run.id } },
-        { type: "schedule", delayMs: 0, msg: { type: "logs/timeout", runId: msg.run.id } },
-      ]];
-    }
-
-    case "runs/viewRun": {
-      return [{ ...state, runs: { ...state.runs, viewedRunId: msg.runId } }, [
-        { type: "schedule", delayMs: 0, msg: { type: "runs/progressTimeout", runId: msg.runId } },
-        { type: "schedule", delayMs: 0, msg: { type: "logs/timeout", runId: msg.runId } },
-      ]];
-    }
-
-    case "runs/progressReceived": {
-      const runId = msg.runId ?? msg.progress.runId;
-      if (
-        runId !== state.runs.progressInFlightRunId ||
-        !shouldAccept(state.runs.progressToken, msg.token)
-      ) return [state, []];
-      const cmds: Cmd[] = [];
-      const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
-      const delay = isActive ? BASE_PROGRESS_POLL_MS : BASE_PROGRESS_POLL_MS * 5;
-
-      const runs: RunsSlice = {
-        ...state.runs,
-        progressByRunId: trimRecord(
-          { ...state.runs.progressByRunId, [runId]: msg.progress },
-          MAX_RUN_CACHE_SIZE,
-        ),
-        lastProgressMs: 0,
-        progressDelayMs: delay,
-        progressInFlight: false,
-        progressInFlightRunId: null,
-      };
-
-      if (isActive) {
-        cmds.push({
-          type: "schedule",
-          delayMs: delay,
-          msg: { type: "runs/progressTimeout", runId },
-        });
-      }
-
-      return [{ ...state, runs }, cmds];
-    }
-
-    case "runs/progressFailed": {
-      const runId = msg.runId ?? state.runs.progressInFlightRunId;
-      if (
-        runId !== state.runs.progressInFlightRunId ||
-        !shouldAccept(state.runs.progressToken, msg.token)
-      ) return [state, []];
-      const backoff = Math.min(state.runs.progressDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
-      const cmds: Cmd[] = [];
-      const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
-      if (isActive) {
-        cmds.push({
-          type: "schedule",
-          delayMs: backoff,
-          msg: { type: "runs/progressTimeout", runId },
-        });
-      }
-      return [{
-        ...state,
-        runs: {
-          ...state.runs,
-          progressInFlight: false,
-          progressInFlightRunId: null,
-          progressDelayMs: backoff,
-        },
-      }, cmds];
-    }
-
-    case "runs/progressTimeout": {
-      if (state.runs.progressInFlight) return [state, []]; // dedup
-      const runId = selectedProgressRunId(state, msg.runId);
-      if (!runId) return [state, []];
-      const token = nextToken(state.runs.progressToken);
-      const runs: RunsSlice = {
-        ...state.runs,
-        progressInFlight: true,
-        progressInFlightRunId: runId,
-        progressToken: token,
-      };
-      return [
-        { ...state, runs },
-        [{
-          type: "fetch",
-          url: `/api/runs/${runId}/progress`,
-          onSuccess: "runs/progressReceived",
-          onError: "runs/progressFailed",
-          meta: { runId, token },
-        }],
-      ];
-    }
-
-    // ── Run control ─────────────────────────────────────────────────────
-
-    case "runs/startRequested": {
-      if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
-      return [
-        { ...state, ux: { ...state.ux, busy: true } },
-        [{
-          type: "fetch",
-          url: "/api/runs/start",
-          method: "POST",
-          body: {
-            topology: state.topology.selected,
-            runner: "host",
-            scenarioIds: msg.scenarioIds,
-            pds2: msg.pds2,
-            binaryMode: false,
-            scenarioParams: state.ux.scenarioParams,
-          },
-          onSuccess: "runs/startSucceeded",
-          onError: "runs/startFailed",
-        }],
-      ];
-    }
-
-    case "runs/startSucceeded": {
-      return [
-        { ...state, ux: { ...state.ux, busy: false, settingsOpen: false } },
-        [{ type: "navigate", url: `/run/${msg.runId}` }],
-      ];
-    }
-
-    case "runs/startFailed": {
-      return [{ ...state, ux: { ...state.ux, busy: false } }, []];
-    }
-
-    case "runs/stopRequested": {
-      if (state.ux.busy) return [state, []];
-      const runId = state.runs.active?.id;
-      if (!runId) return [state, []];
-      return [
-        { ...state, ux: { ...state.ux, busy: true } },
-        [{
-          type: "fetch",
-          url: `/api/runs/${runId}/stop`,
-          method: "POST",
-          body: { graceful: true },
-          onSuccess: "runs/stopSucceeded",
-          onError: "runs/stopFailed",
-        }],
-      ];
-    }
-
-    case "runs/stopSucceeded": {
-      return [{ ...state, ux: { ...state.ux, busy: false } }, []];
-    }
-
-    case "runs/stopFailed": {
-      return [{ ...state, ux: { ...state.ux, busy: false } }, []];
-    }
-
-    case "runs/restartRequested": {
-      if (state.ux.busy) return [state, []];
-      const runId = state.runs.active?.id;
-      if (!runId) return [state, []];
-      return [
-        { ...state, ux: { ...state.ux, busy: true } },
-        [{
-          type: "fetch",
-          url: `/api/runs/${runId}/restart`,
-          method: "POST",
-          onSuccess: "runs/restartSucceeded",
-          onError: "runs/restartFailed",
-        }],
-      ];
-    }
-
-    case "runs/restartSucceeded": {
-      return [
-        { ...state, ux: { ...state.ux, busy: false } },
-        [{ type: "navigate", url: `/run/${msg.newRunId}` }],
-      ];
-    }
-
-    case "runs/restartFailed": {
-      return [{ ...state, ux: { ...state.ux, busy: false } }, []];
-    }
-
-    // ── Recent runs (history panel) ──────────────────────────────────────
-
-    case "runs/recentReceived": {
-      if (!shouldAccept(state.runs.recentToken, msg.token)) return [state, []];
-      const delay = BASE_RECENT_POLL_MS;
-      return [
-        {
-          ...state,
-          runs: {
-            ...state.runs,
-            recentRuns: msg.runs,
-            recentInFlight: false,
-            recentDelayMs: delay,
-          },
-        },
-        [{ type: "schedule", delayMs: delay, msg: { type: "runs/recentTimeout" } }],
-      ];
-    }
-
-    case "runs/recentFailed": {
-      if (!shouldAccept(state.runs.recentToken, msg.token)) return [state, []];
-      const backoff = Math.min(state.runs.recentDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
-      return [
-        {
-          ...state,
-          runs: { ...state.runs, recentInFlight: false, recentDelayMs: backoff },
-        },
-        [{ type: "schedule", delayMs: backoff, msg: { type: "runs/recentTimeout" } }],
-      ];
-    }
-
-    case "runs/recentTimeout": {
-      if (state.runs.recentInFlight) return [state, []]; // dedup
-      const token = nextToken(state.runs.recentToken);
-      return [
-        { ...state, runs: { ...state.runs, recentInFlight: true, recentToken: token } },
-        [{
-          type: "fetch",
-          url: "/api/runs/recent?limit=6",
-          onSuccess: "runs/recentReceived",
-          onError: "runs/recentFailed",
-          meta: { token },
-        }],
-      ];
-    }
-
-    // ── Scenarios ────────────────────────────────────────────────────────
-
+/** Update the scenarios slice. Returns the updated slice and any commands. */
+function updateScenarios(state: DashboardState, msg: ScenariosMsg): [Partial<DashboardState>, Cmd[]] {
+  switch (msg.type) {
     case "scenarios/received": {
-      return [{
-        ...state,
-        scenarios: { ...state.scenarios, all: msg.scenarios, fetchInFlight: false },
-      }, []];
+      return [{ scenarios: { ...state.scenarios, all: msg.scenarios, fetchInFlight: false } }, []];
     }
-
     case "scenarios/failed": {
-      return [{ ...state, scenarios: { ...state.scenarios, fetchInFlight: false } }, []];
+      return [{ scenarios: { ...state.scenarios, fetchInFlight: false } }, []];
     }
+  }
+}
 
-    // ── Topology ─────────────────────────────────────────────────────────
-
+/** Update the topology slice. Returns the updated slice and any commands. */
+function updateTopology(state: DashboardState, msg: TopologyMsg): [Partial<DashboardState>, Cmd[]] {
+  switch (msg.type) {
     case "topology/selected": {
-      if (isLiveRun(state.runs.active)) return [state, []];
-      if (msg.name === state.topology.selected) {
-        return [state, []]; // no-op when same topology
-      }
-      const token = nextToken(state.topology.previewToken);
-      return [
-        {
-          ...state,
-          topology: {
-            ...state.topology,
-            selected: msg.name,
-            previewInFlight: true,
-            previewInFlightName: msg.name,
-            previewToken: token,
-          },
-        },
-        [{
-          type: "fetch",
-          url: `/api/topologies/${msg.name}`,
-          onSuccess: "topology/previewReceived",
-          onError: "topology/previewFailed",
-          meta: { name: msg.name, token },
-        }],
-      ];
+      // Cross-slice: reads runs.active — handled by root update()
+      return [{}, []];
     }
 
     case "topology/previewReceived": {
-      if (msg.name && msg.name !== state.topology.previewInFlightName) return [state, []];
-      if (!shouldAccept(state.topology.previewToken, msg.token)) return [state, []];
-      return [
-        {
-          ...state,
-          topology: {
-            ...state.topology,
-            preview: msg.preview,
-            previewInFlight: false,
-            previewInFlightName: null,
-          },
+      if (msg.name && msg.name !== state.topology.previewInFlightName) return [{}, []];
+      if (!shouldAccept(state.topology.previewToken, msg.token)) return [{}, []];
+      return [{
+        topology: {
+          ...state.topology,
+          preview: msg.preview,
+          previewInFlight: false,
+          previewInFlightName: null,
         },
-        [],
-      ];
+      }, []];
     }
 
     case "topology/previewFailed": {
-      if (msg.name && msg.name !== state.topology.previewInFlightName) return [state, []];
-      if (!shouldAccept(state.topology.previewToken, msg.token)) return [state, []];
+      if (msg.name && msg.name !== state.topology.previewInFlightName) return [{}, []];
+      if (!shouldAccept(state.topology.previewToken, msg.token)) return [{}, []];
       return [{
-        ...state,
         topology: { ...state.topology, previewInFlight: false, previewInFlightName: null },
       }, []];
     }
@@ -922,7 +514,6 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
           meta: { name: selected, token },
         });
         return [{
-          ...state,
           topology: {
             ...state.topology,
             available: msg.topologies,
@@ -933,23 +524,23 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
           },
         }, cmds];
       }
-      return [
-        { ...state, topology: { ...state.topology, available: msg.topologies, selected } },
-        cmds,
-      ];
+      return [{ topology: { ...state.topology, available: msg.topologies, selected } }, cmds];
     }
 
     case "topology/listFailed": {
-      return [state, []];
+      return [{}, []];
     }
+  }
+}
 
-    // ── Logs ────────────────────────────────────────────────────────────
-
+/** Update the logs slice. Returns the updated slice and any commands. */
+function updateLogs(state: DashboardState, msg: LogsMsg): [Partial<DashboardState>, Cmd[]] {
+  switch (msg.type) {
     case "logs/received": {
       const runId = msg.runId ?? state.logs.inFlightRunId;
-      if (
-        !runId || runId !== state.logs.inFlightRunId || !shouldAccept(state.logs.token, msg.token)
-      ) return [state, []];
+      if (!runId || runId !== state.logs.inFlightRunId || !shouldAccept(state.logs.token, msg.token)) {
+        return [{}, []];
+      }
       const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
       const delay = isActive ? BASE_LOG_POLL_MS : BASE_LOG_POLL_MS * 5;
       const logs: LogsSlice = {
@@ -967,14 +558,14 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       if (isActive) {
         cmds.push({ type: "schedule", delayMs: delay, msg: { type: "logs/timeout", runId } });
       }
-      return [{ ...state, logs }, cmds];
+      return [{ logs }, cmds];
     }
 
     case "logs/failed": {
       const runId = msg.runId ?? state.logs.inFlightRunId;
-      if (
-        !runId || runId !== state.logs.inFlightRunId || !shouldAccept(state.logs.token, msg.token)
-      ) return [state, []];
+      if (!runId || runId !== state.logs.inFlightRunId || !shouldAccept(state.logs.token, msg.token)) {
+        return [{}, []];
+      }
       const backoff = Math.min(state.logs.delayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
       const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
       const logs: LogsSlice = {
@@ -987,31 +578,31 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       if (isActive) {
         cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "logs/timeout", runId } });
       }
-      return [{ ...state, logs }, cmds];
+      return [{ logs }, cmds];
     }
 
     case "logs/timeout": {
-      if (state.logs.fetchInFlight) return [state, []]; // dedup
+      if (state.logs.fetchInFlight) return [{}, []];
       const runId = msg.runId ?? state.runs.viewedRunId ?? state.runs.active?.id;
-      if (!runId) return [state, []];
+      if (!runId) return [{}, []];
       const token = nextToken(state.logs.token);
       const logs: LogsSlice = { ...state.logs, fetchInFlight: true, inFlightRunId: runId, token };
-      return [
-        { ...state, logs },
-        [{
-          type: "fetch",
-          url: `/api/runs/${runId}/logs`,
-          onSuccess: "logs/received",
-          onError: "logs/failed",
-          meta: { runId, token },
-        }],
-      ];
+      return [{ logs }, [{
+        type: "fetch",
+        url: `/api/runs/${runId}/logs`,
+        onSuccess: "logs/received",
+        onError: "logs/failed",
+        meta: { runId, token },
+      }]];
     }
+  }
+}
 
-    // ── Metrics ─────────────────────────────────────────────────────────
-
+/** Update the metrics slice. Returns the updated slice and any commands. */
+function updateMetrics(state: DashboardState, msg: MetricsMsg): [Partial<DashboardState>, Cmd[]] {
+  switch (msg.type) {
     case "metrics/received": {
-      if (!shouldAccept(state.metrics.token, msg.token)) return [state, []];
+      if (!shouldAccept(state.metrics.token, msg.token)) return [{}, []];
       const isActive = isLiveRun(state.runs.active);
       const delay = isActive ? BASE_METRICS_POLL_MS : BASE_METRICS_POLL_MS * 5;
       const metrics: MetricsSlice = {
@@ -1025,11 +616,11 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       if (isActive) {
         cmds.push({ type: "schedule", delayMs: delay, msg: { type: "metrics/timeout" } });
       }
-      return [{ ...state, metrics }, cmds];
+      return [{ metrics }, cmds];
     }
 
     case "metrics/failed": {
-      if (!shouldAccept(state.metrics.token, msg.token)) return [state, []];
+      if (!shouldAccept(state.metrics.token, msg.token)) return [{}, []];
       const backoff = Math.min(state.metrics.delayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
       const isActive = isLiveRun(state.runs.active);
       const metrics: MetricsSlice = {
@@ -1041,369 +632,550 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       if (isActive) {
         cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "metrics/timeout" } });
       }
-      return [{ ...state, metrics }, cmds];
+      return [{ metrics }, cmds];
     }
 
     case "metrics/timeout": {
-      if (state.metrics.fetchInFlight) return [state, []]; // dedup
+      if (state.metrics.fetchInFlight) return [{}, []];
       const isActive = isLiveRun(state.runs.active);
-      if (!isActive) return [state, []];
+      if (!isActive) return [{}, []];
       const token = nextToken(state.metrics.token);
       const metrics: MetricsSlice = { ...state.metrics, fetchInFlight: true, token };
-      return [
-        { ...state, metrics },
-        [{
-          type: "fetch",
-          url: "/api/runs/active/metrics",
-          onSuccess: "metrics/received",
-          onError: "metrics/failed",
-          meta: { token },
-        }],
-      ];
+      return [{ metrics }, [{
+        type: "fetch",
+        url: "/api/runs/active/metrics",
+        onSuccess: "metrics/received",
+        onError: "metrics/failed",
+        meta: { token },
+      }]];
     }
+  }
+}
 
-    // ── UX ───────────────────────────────────────────────────────────────
-
+/** Update the UX slice. Returns the updated slice and any commands. */
+function updateUx(state: DashboardState, msg: UxMsg): [Partial<DashboardState>, Cmd[]] {
+  switch (msg.type) {
     case "ux/toggleSettings": {
-      return [{ ...state, ux: { ...state.ux, settingsOpen: !state.ux.settingsOpen } }, []];
+      return [{ ux: { ...state.ux, settingsOpen: !state.ux.settingsOpen } }, []];
     }
-
     case "ux/setScenarioParam": {
-      return [{
-        ...state,
-        ux: { ...state.ux, scenarioParams: { ...state.ux.scenarioParams, [msg.key]: msg.value } },
-      }, []];
+      return [{ ux: { ...state.ux, scenarioParams: { ...state.ux.scenarioParams, [msg.key]: msg.value } } }, []];
     }
-
     case "ux/toggleCategory": {
       const next = new Set(state.ux.collapsedCategories);
       if (next.has(msg.category)) next.delete(msg.category);
       else next.add(msg.category);
-      return [{ ...state, ux: { ...state.ux, collapsedCategories: next } }, []];
+      return [{ ux: { ...state.ux, collapsedCategories: next } }, []];
     }
-
     case "ux/setSearchTerm": {
-      return [{ ...state, ux: { ...state.ux, searchTerm: msg.term } }, []];
-    }
-
-    // ── Run events (push-based from RunManager) ────────────────────────
-
-    case "runs/event": {
-      const event = msg.event;
-
-      switch (event.type) {
-        case "run_started": {
-          // A new run has started — set active run and clear busy flag
-          const run: Run = {
-            id: event.runId,
-            startedAt: event.startedAt,
-            status: "starting",
-            totalScenarios: event.totalScenarios,
-            passed: 0,
-            failed: 0,
-            skipped: 0,
-          };
-          const runs: RunsSlice = {
-            ...state.runs,
-            active: run,
-            activeInFlight: false,
-            // Initialize progress for the new run
-            progressByRunId: trimRecord(
-              {
-                ...state.runs.progressByRunId,
-                [event.runId]: {
-                  exists: true,
-                  runId: event.runId,
-                  total: event.totalScenarios,
-                  completed: 0,
-                  currentScenario: null,
-                  currentScenarioId: null,
-                  elapsedMs: 0,
-                  updatedAt: Date.now(),
-                  now: Date.now(),
-                  running: true,
-                },
-              },
-              MAX_RUN_CACHE_SIZE,
-            ),
-          };
-          return [{ ...state, runs, ux: { ...state.ux, busy: false } }, []];
-        }
-
-        case "run_status": {
-          // Lifecycle status change for the active run
-          if (state.runs.active?.id !== event.runId) return [state, []];
-          return [{
-            ...state,
-            runs: { ...state.runs, active: { ...state.runs.active!, status: event.status } },
-          }, []];
-        }
-
-        case "scenario_started": {
-          // A scenario within the active run has started
-          if (state.runs.active?.id !== event.runId) return [state, []];
-          const progress = state.runs.progressByRunId[event.runId];
-          const updatedProgress: RunProgress = progress
-            ? { ...progress, currentScenario: event.scenarioName, currentScenarioId: event.scenarioId }
-            : {
-              exists: true,
-              runId: event.runId,
-              total: state.runs.active.totalScenarios,
-              completed: 0,
-              currentScenario: event.scenarioName,
-              currentScenarioId: event.scenarioId,
-              elapsedMs: Date.now() - state.runs.active.startedAt,
-              updatedAt: Date.now(),
-              now: Date.now(),
-              running: true,
-            };
-          return [{
-            ...state,
-            runs: {
-              ...state.runs,
-              progressByRunId: trimRecord(
-                { ...state.runs.progressByRunId, [event.runId]: updatedProgress },
-                MAX_RUN_CACHE_SIZE,
-              ),
-            },
-          }, []];
-        }
-
-        case "scenario_finished": {
-          // A scenario within the active run has finished
-          const progress = state.runs.progressByRunId[event.runId];
-          const prevCompleted = progress?.completed ?? 0;
-          const updatedProgress: RunProgress = progress
-            ? {
-              ...progress,
-              completed: prevCompleted + 1,
-              currentScenario: null,
-              currentScenarioId: null,
-              updatedAt: Date.now(),
-              now: Date.now(),
-            }
-            : {
-              exists: true,
-              runId: event.runId,
-              total: state.runs.active?.totalScenarios ?? 0,
-              completed: 1,
-              currentScenario: null,
-              currentScenarioId: null,
-              elapsedMs: 0,
-              updatedAt: Date.now(),
-              now: Date.now(),
-              running: true,
-            };
-
-          // Update active run counters
-          let active = state.runs.active;
-          if (active?.id === event.runId) {
-            active = {
-              ...active,
-              passed: active.passed + (event.status === "passed" ? 1 : 0),
-              failed: active.failed + (event.status === "failed" ? 1 : 0),
-              skipped: active.skipped + (event.status === "skipped" ? 1 : 0),
-            };
-          }
-
-          return [{
-            ...state,
-            runs: {
-              ...state.runs,
-              active,
-              progressByRunId: trimRecord(
-                { ...state.runs.progressByRunId, [event.runId]: updatedProgress },
-                MAX_RUN_CACHE_SIZE,
-              ),
-            },
-          }, []];
-        }
-
-        case "run_completed": {
-          // The run has finished successfully
-          let active = state.runs.active;
-          if (active?.id === event.runId) {
-            active = {
-              ...active,
-              status: "completed",
-              finishedAt: event.finishedAt,
-              passed: event.passed,
-              failed: event.failed,
-              skipped: event.skipped,
-            };
-          }
-          // Update progress to show final state
-          const progress = state.runs.progressByRunId[event.runId];
-          const finalProgress: RunProgress = progress
-            ? { ...progress, running: false, updatedAt: Date.now(), now: Date.now() }
-            : {
-              exists: true,
-              runId: event.runId,
-              total: event.passed + event.failed + event.skipped,
-              completed: event.passed + event.failed + event.skipped,
-              currentScenario: null,
-              currentScenarioId: null,
-              elapsedMs: 0,
-              updatedAt: Date.now(),
-              now: Date.now(),
-              running: false,
-            };
-
-          return [{
-            ...state,
-            runs: {
-              ...state.runs,
-              active,
-              progressByRunId: trimRecord(
-                { ...state.runs.progressByRunId, [event.runId]: finalProgress },
-                MAX_RUN_CACHE_SIZE,
-              ),
-            },
-            ux: { ...state.ux, busy: false },
-          }, []];
-        }
-
-        case "run_failed": {
-          // The run has failed or been stopped
-          let active = state.runs.active;
-          if (active?.id === event.runId) {
-            active = {
-              ...active,
-              status: "error",
-              finishedAt: event.finishedAt,
-              stopReason: event.reason,
-              exitCode: event.exitCode,
-            };
-          }
-
-          return [{
-            ...state,
-            runs: { ...state.runs, active },
-            ux: { ...state.ux, busy: false },
-          }, []];
-        }
-
-        case "log_line": {
-          // Append a log line to the text buffer
-          const prev = state.logs.textByRunId[event.runId] ?? "";
-          const appended = prev + (prev ? "\n" : "") + event.line;
-          return [{
-            ...state,
-            logs: {
-              ...state.logs,
-              textByRunId: trimRecord(
-                { ...state.logs.textByRunId, [event.runId]: appended },
-                MAX_RUN_CACHE_SIZE,
-              ),
-              lastUpdateMs: 0,
-            },
-          }, []];
-        }
-
-        default: {
-          // Exhaustiveness check for RunEvent
-          const _eventExhaustive: never = event;
-          return [state, []];
-        }
-      }
-    }
-
-    // ── Run detail overlay ──────────────────────────────────────────────
-
-    case "runs/viewDetail": {
-      // Open the detail overlay for a run — fetch its scenario results
-      return [
-        {
-          ...state,
-          runs: {
-            ...state.runs,
-            detailRunId: msg.runId,
-            detailRun: msg.run,
-            detailResults: [],
-            detailCursor: 0,
-            detailScrollOffset: 0,
-          },
-        },
-        [{
-          type: "fetch",
-          url: `/api/runs/${msg.runId}/results`,
-          onSuccess: "runs/detailResults",
-          onError: "runs/closeDetail", // close overlay on fetch failure
-        }],
-      ];
-    }
-
-    case "runs/closeDetail": {
-      return [{
-        ...state,
-        runs: {
-          ...state.runs,
-          detailRunId: null,
-          detailRun: null,
-          detailResults: [],
-          detailCursor: 0,
-          detailScrollOffset: 0,
-        },
-      }, []];
-    }
-
-    case "runs/detailResults": {
-      const results = msg.results;
-      const cursor = Math.min(state.runs.detailCursor, Math.max(0, results.length - 1));
-      return [{
-        ...state,
-        runs: { ...state.runs, detailResults: results, detailCursor: cursor },
-      }, []];
-    }
-
-    case "runs/detailCursorUp": {
-      const cursor = Math.max(0, state.runs.detailCursor - 1);
-      // Adjust scroll offset to keep cursor visible
-      const scrollOffset = Math.min(state.runs.detailScrollOffset, cursor);
-      return [{
-        ...state,
-        runs: { ...state.runs, detailCursor: cursor, detailScrollOffset: scrollOffset },
-      }, []];
-    }
-
-    case "runs/detailCursorDown": {
-      const maxCursor = Math.max(0, state.runs.detailResults.length - 1);
-      const cursor = Math.min(maxCursor, state.runs.detailCursor + 1);
-      return [{
-        ...state,
-        runs: { ...state.runs, detailCursor: cursor },
-      }, []];
-    }
-
-    // ── Tick ─────────────────────────────────────────────────────────────
-
-    case "tick": {
-      const delta = msg.nowMs - state.lastTickMs;
-      const network: NetworkSlice = {
-        ...state.network,
-        lastHealthCheckMs: state.network.lastHealthCheckMs + delta,
-      };
-      const runs: RunsSlice = {
-        ...state.runs,
-        lastProgressMs: state.runs.lastProgressMs + delta,
-      };
-      const logs: LogsSlice = {
-        ...state.logs,
-        lastUpdateMs: state.logs.lastUpdateMs + delta,
-      };
-      const metrics: MetricsSlice = {
-        ...state.metrics,
-        lastUpdateMs: state.metrics.lastUpdateMs + delta,
-      };
-      return [{ ...state, network, runs, logs, metrics, lastTickMs: msg.nowMs }, []];
-    }
-
-    default: {
-      // Exhaustiveness check — if TypeScript doesn't complain, all Msg variants are handled
-      const _exhaustive: never = msg;
-      return [state, []];
+      return [{ ux: { ...state.ux, searchTerm: msg.term } }, []];
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// update() — pure state transition function (root dispatcher)
+// ---------------------------------------------------------------------------
+
+function isLiveRun(run: Run | null | undefined): boolean {
+  return run?.status === "running" || run?.status === "starting" || run?.status === "stopping";
+}
+
+function nextToken(token: number | undefined): number {
+  return (token ?? 0) + 1;
+}
+
+function shouldAccept(current: number, token: number | undefined): boolean {
+  return token === undefined || token === current;
+}
+
+function selectedProgressRunId(state: DashboardState, msgRunId?: string): string | null {
+  return msgRunId ?? state.runs.viewedRunId ?? state.runs.active?.id ?? null;
+}
+
+/** Pure state transition function. Takes current state and a Msg, returns next state and effects. */
+export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]] {
+  // ── Delegate to slice reducers for single-slice messages ──────────────
+
+  if (isScenariosMsg(msg)) {
+    const [partial, cmds] = updateScenarios(state, msg);
+    return [{ ...state, ...partial }, cmds];
+  }
+
+  if (isTopologyMsg(msg)) {
+    // topology/selected has cross-slice reads — handle specially
+    if (msg.type === "topology/selected") {
+      if (isLiveRun(state.runs.active)) return [state, []];
+      if (msg.name === state.topology.selected) return [state, []];
+      const token = nextToken(state.topology.previewToken);
+      return [{
+        ...state,
+        topology: {
+          ...state.topology,
+          selected: msg.name,
+          previewInFlight: true,
+          previewInFlightName: msg.name,
+          previewToken: token,
+        },
+      }, [{
+        type: "fetch",
+        url: `/api/topologies/${msg.name}`,
+        onSuccess: "topology/previewReceived",
+        onError: "topology/previewFailed",
+        meta: { name: msg.name, token },
+      }]];
+    }
+    const [partial, cmds] = updateTopology(state, msg);
+    return [{ ...state, ...partial }, cmds];
+  }
+
+  if (isLogsMsg(msg)) {
+    const [partial, cmds] = updateLogs(state, msg);
+    return [{ ...state, ...partial }, cmds];
+  }
+
+  if (isMetricsMsg(msg)) {
+    const [partial, cmds] = updateMetrics(state, msg);
+    return [{ ...state, ...partial }, cmds];
+  }
+
+  if (isUxMsg(msg)) {
+    const [partial, cmds] = updateUx(state, msg);
+    return [{ ...state, ...partial }, cmds];
+  }
+
+  // ── Network messages (some cross-slice) ──────────────────────────────
+
+  if (isNetworkMsg(msg)) {
+    // Health polling is pure network — delegate
+    if (msg.type === "network/healthReceived" || msg.type === "network/healthFailed" || msg.type === "network/healthTimeout") {
+      const [partial, cmds] = updateNetwork(state, msg);
+      return [{ ...state, ...partial }, cmds];
+    }
+
+    // Network control messages touch ux — handle here
+    switch (msg.type) {
+      case "network/startRequested": {
+        if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
+        const body = msg.pds2 ? { pds2: true } : {};
+        return [
+          { ...state, ux: { ...state.ux, busy: true } },
+          [{
+            type: "fetch",
+            url: "/api/network/start",
+            method: "POST",
+            body,
+            onSuccess: "network/startSucceeded",
+            onError: "network/startFailed",
+          }],
+        ];
+      }
+      case "network/startSucceeded": {
+        return [
+          { ...state, ux: { ...state.ux, busy: false } },
+          [{ type: "fetch", url: "/api/network/health", onSuccess: "network/healthReceived", onError: "network/healthFailed" }],
+        ];
+      }
+      case "network/startFailed": {
+        return [{ ...state, ux: { ...state.ux, busy: false } }, []];
+      }
+      case "network/stopRequested": {
+        if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
+        return [
+          { ...state, ux: { ...state.ux, busy: true } },
+          [{
+            type: "fetch",
+            url: "/api/network/stop",
+            method: "POST",
+            onSuccess: "network/stopSucceeded",
+            onError: "network/stopFailed",
+          }],
+        ];
+      }
+      case "network/stopSucceeded": {
+        return [
+          { ...state, ux: { ...state.ux, busy: false } },
+          [{ type: "fetch", url: "/api/network/health", onSuccess: "network/healthReceived", onError: "network/healthFailed" }],
+        ];
+      }
+      case "network/stopFailed": {
+        return [{ ...state, ux: { ...state.ux, busy: false } }, []];
+      }
+    }
+  }
+
+  // ── Runs messages (many cross-slice) ─────────────────────────────────
+
+  if (isRunsMsg(msg)) {
+    switch (msg.type) {
+      // ── Active run (cross-slice: updates runs, logs, metrics) ──────
+      case "runs/activeReceived": {
+        if (!shouldAccept(state.runs.activeToken, msg.token)) return [state, []];
+        const cmds: Cmd[] = [];
+        const isActive = isLiveRun(msg.run);
+        const delay = isActive ? BASE_ACTIVE_POLL_MS : BASE_ACTIVE_POLL_MS * 5;
+
+        let runs: RunsSlice = {
+          ...state.runs,
+          active: msg.run,
+          activeInFlight: false,
+          activeDelayMs: delay,
+        };
+        let logs = state.logs;
+        let metrics = state.metrics;
+
+        cmds.push({ type: "schedule", delayMs: delay, msg: { type: "runs/activeTimeout" } });
+
+        const prevActiveId = state.runs.active?.id ?? null;
+        const newActiveId = msg.run?.id ?? null;
+        const runChanged = prevActiveId !== newActiveId;
+
+        if (isActive && msg.run) {
+          if (runChanged) {
+            if (state.runs.progressInFlight && state.runs.progressInFlightRunId !== newActiveId) {
+              runs = { ...runs, progressInFlight: false, progressInFlightRunId: null };
+            }
+            if (state.logs.fetchInFlight && state.logs.inFlightRunId !== newActiveId) {
+              logs = { ...logs, fetchInFlight: false, inFlightRunId: null };
+            }
+            if (state.metrics.fetchInFlight) {
+              metrics = { ...metrics, fetchInFlight: false };
+            }
+          }
+
+          cmds.push({ type: "schedule", delayMs: 0, msg: { type: "runs/progressTimeout", runId: msg.run.id } });
+          cmds.push({ type: "schedule", delayMs: 0, msg: { type: "logs/timeout", runId: msg.run.id } });
+          cmds.push({ type: "schedule", delayMs: 0, msg: { type: "metrics/timeout" } });
+        }
+
+        if (!isActive && Object.keys(metrics.stats).length > 0) {
+          return [{ ...state, runs, logs, metrics: { ...metrics, stats: {} } }, cmds];
+        }
+
+        if (msg.run && !isActive && runs.progressByRunId[msg.run.id]) {
+          const progressByRunId = { ...runs.progressByRunId };
+          delete progressByRunId[msg.run.id];
+          return [{ ...state, runs: { ...runs, progressByRunId }, logs, metrics }, cmds];
+        }
+
+        return [{ ...state, runs, logs, metrics }, cmds];
+      }
+
+      case "runs/activeFailed": {
+        if (!shouldAccept(state.runs.activeToken, msg.token)) return [state, []];
+        const backoff = Math.min(state.runs.activeDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
+        return [
+          { ...state, runs: { ...state.runs, activeInFlight: false, activeDelayMs: backoff } },
+          [{ type: "schedule", delayMs: backoff, msg: { type: "runs/activeTimeout" } }],
+        ];
+      }
+
+      case "runs/activeTimeout": {
+        if (state.runs.activeInFlight) return [state, []];
+        const token = nextToken(state.runs.activeToken);
+        return [
+          { ...state, runs: { ...state.runs, activeInFlight: true, activeToken: token } },
+          [{ type: "fetch", url: "/api/runs/active", onSuccess: "runs/activeReceived", onError: "runs/activeFailed", meta: { token } }],
+        ];
+      }
+
+      // ── Run progress (pure runs) ─────────────────────────────────
+      case "runs/hydrateRun": {
+        return [{ ...state, runs: { ...state.runs, viewedRunId: msg.run.id } }, [
+          { type: "schedule", delayMs: 0, msg: { type: "runs/progressTimeout", runId: msg.run.id } },
+          { type: "schedule", delayMs: 0, msg: { type: "logs/timeout", runId: msg.run.id } },
+        ]];
+      }
+
+      case "runs/viewRun": {
+        return [{ ...state, runs: { ...state.runs, viewedRunId: msg.runId } }, [
+          { type: "schedule", delayMs: 0, msg: { type: "runs/progressTimeout", runId: msg.runId } },
+          { type: "schedule", delayMs: 0, msg: { type: "logs/timeout", runId: msg.runId } },
+        ]];
+      }
+
+      case "runs/progressReceived": {
+        const runId = msg.runId ?? msg.progress.runId;
+        if (runId !== state.runs.progressInFlightRunId || !shouldAccept(state.runs.progressToken, msg.token)) {
+          return [state, []];
+        }
+        const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
+        const delay = isActive ? BASE_PROGRESS_POLL_MS : BASE_PROGRESS_POLL_MS * 5;
+        const runs: RunsSlice = {
+          ...state.runs,
+          progressByRunId: trimRecord({ ...state.runs.progressByRunId, [runId]: msg.progress }, MAX_RUN_CACHE_SIZE),
+          lastProgressMs: 0,
+          progressDelayMs: delay,
+          progressInFlight: false,
+          progressInFlightRunId: null,
+        };
+        const cmds: Cmd[] = [];
+        if (isActive) cmds.push({ type: "schedule", delayMs: delay, msg: { type: "runs/progressTimeout", runId } });
+        return [{ ...state, runs }, cmds];
+      }
+
+      case "runs/progressFailed": {
+        const runId = msg.runId ?? state.runs.progressInFlightRunId;
+        if (runId !== state.runs.progressInFlightRunId || !shouldAccept(state.runs.progressToken, msg.token)) {
+          return [state, []];
+        }
+        const backoff = Math.min(state.runs.progressDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
+        const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
+        const cmds: Cmd[] = [];
+        if (isActive) cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "runs/progressTimeout", runId } });
+        return [{ ...state, runs: { ...state.runs, progressInFlight: false, progressInFlightRunId: null, progressDelayMs: backoff } }, cmds];
+      }
+
+      case "runs/progressTimeout": {
+        if (state.runs.progressInFlight) return [state, []];
+        const runId = selectedProgressRunId(state, msg.runId);
+        if (!runId) return [state, []];
+        const token = nextToken(state.runs.progressToken);
+        return [{ ...state, runs: { ...state.runs, progressInFlight: true, progressInFlightRunId: runId, progressToken: token } }, [{
+          type: "fetch", url: `/api/runs/${runId}/progress`, onSuccess: "runs/progressReceived", onError: "runs/progressFailed", meta: { runId, token },
+        }]];
+      }
+
+      // ── Run control (cross-slice: reads ux, runs, topology) ────────
+      case "runs/startRequested": {
+        if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
+        return [
+          { ...state, ux: { ...state.ux, busy: true } },
+          [{
+            type: "fetch",
+            url: "/api/runs/start",
+            method: "POST",
+            body: {
+              topology: state.topology.selected,
+              runner: "host",
+              scenarioIds: msg.scenarioIds,
+              pds2: msg.pds2,
+              binaryMode: false,
+              scenarioParams: state.ux.scenarioParams,
+            },
+            onSuccess: "runs/startSucceeded",
+            onError: "runs/startFailed",
+          }],
+        ];
+      }
+
+      case "runs/startSucceeded": {
+        return [{ ...state, ux: { ...state.ux, busy: false, settingsOpen: false } }, [{ type: "navigate", url: `/run/${msg.runId}` }]];
+      }
+
+      case "runs/startFailed": {
+        return [{ ...state, ux: { ...state.ux, busy: false } }, []];
+      }
+
+      case "runs/stopRequested": {
+        if (state.ux.busy) return [state, []];
+        const runId = state.runs.active?.id;
+        if (!runId) return [state, []];
+        return [
+          { ...state, ux: { ...state.ux, busy: true } },
+          [{ type: "fetch", url: `/api/runs/${runId}/stop`, method: "POST", body: { graceful: true }, onSuccess: "runs/stopSucceeded", onError: "runs/stopFailed" }],
+        ];
+      }
+
+      case "runs/stopSucceeded": {
+        return [{ ...state, ux: { ...state.ux, busy: false } }, []];
+      }
+
+      case "runs/stopFailed": {
+        return [{ ...state, ux: { ...state.ux, busy: false } }, []];
+      }
+
+      case "runs/restartRequested": {
+        if (state.ux.busy) return [state, []];
+        const runId = state.runs.active?.id;
+        if (!runId) return [state, []];
+        return [
+          { ...state, ux: { ...state.ux, busy: true } },
+          [{ type: "fetch", url: `/api/runs/${runId}/restart`, method: "POST", onSuccess: "runs/restartSucceeded", onError: "runs/restartFailed" }],
+        ];
+      }
+
+      case "runs/restartSucceeded": {
+        return [{ ...state, ux: { ...state.ux, busy: false } }, [{ type: "navigate", url: `/run/${msg.newRunId}` }]];
+      }
+
+      case "runs/restartFailed": {
+        return [{ ...state, ux: { ...state.ux, busy: false } }, []];
+      }
+
+      // ── Recent runs (pure runs) ───────────────────────────────────
+      case "runs/recentReceived": {
+        if (!shouldAccept(state.runs.recentToken, msg.token)) return [state, []];
+        return [{ ...state, runs: { ...state.runs, recentRuns: msg.runs, recentInFlight: false, recentDelayMs: BASE_RECENT_POLL_MS } }, [{ type: "schedule", delayMs: BASE_RECENT_POLL_MS, msg: { type: "runs/recentTimeout" } }]];
+      }
+
+      case "runs/recentFailed": {
+        if (!shouldAccept(state.runs.recentToken, msg.token)) return [state, []];
+        const backoff = Math.min(state.runs.recentDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
+        return [{ ...state, runs: { ...state.runs, recentInFlight: false, recentDelayMs: backoff } }, [{ type: "schedule", delayMs: backoff, msg: { type: "runs/recentTimeout" } }]];
+      }
+
+      case "runs/recentTimeout": {
+        if (state.runs.recentInFlight) return [state, []];
+        const token = nextToken(state.runs.recentToken);
+        return [{ ...state, runs: { ...state.runs, recentInFlight: true, recentToken: token } }, [{
+          type: "fetch", url: "/api/runs/recent?limit=6", onSuccess: "runs/recentReceived", onError: "runs/recentFailed", meta: { token },
+        }]];
+      }
+
+      // ── Run events (push-based, cross-slice: runs + ux + logs) ────
+      case "runs/event": {
+        const event = msg.event;
+        switch (event.type) {
+          case "run_started": {
+            const run: Run = {
+              id: event.runId,
+              startedAt: event.startedAt,
+              status: "starting",
+              totalScenarios: event.totalScenarios,
+              passed: 0,
+              failed: 0,
+              skipped: 0,
+            };
+            const runs: RunsSlice = {
+              ...state.runs,
+              active: run,
+              activeInFlight: false,
+              progressByRunId: trimRecord({
+                ...state.runs.progressByRunId,
+                [event.runId]: {
+                  exists: true, runId: event.runId, total: event.totalScenarios, completed: 0,
+                  currentScenario: null, currentScenarioId: null, elapsedMs: 0,
+                  updatedAt: Date.now(), now: Date.now(), running: true,
+                },
+              }, MAX_RUN_CACHE_SIZE),
+            };
+            return [{ ...state, runs, ux: { ...state.ux, busy: false } }, []];
+          }
+
+          case "run_status": {
+            if (state.runs.active?.id !== event.runId) return [state, []];
+            return [{ ...state, runs: { ...state.runs, active: { ...state.runs.active!, status: event.status } } }, []];
+          }
+
+          case "scenario_started": {
+            if (state.runs.active?.id !== event.runId) return [state, []];
+            const progress = state.runs.progressByRunId[event.runId];
+            const updatedProgress: RunProgress = progress
+              ? { ...progress, currentScenario: event.scenarioName, currentScenarioId: event.scenarioId }
+              : {
+                exists: true, runId: event.runId, total: state.runs.active.totalScenarios, completed: 0,
+                currentScenario: event.scenarioName, currentScenarioId: event.scenarioId,
+                elapsedMs: Date.now() - state.runs.active.startedAt, updatedAt: Date.now(), now: Date.now(), running: true,
+              };
+            return [{ ...state, runs: { ...state.runs, progressByRunId: trimRecord({ ...state.runs.progressByRunId, [event.runId]: updatedProgress }, MAX_RUN_CACHE_SIZE) } }, []];
+          }
+
+          case "scenario_finished": {
+            const progress = state.runs.progressByRunId[event.runId];
+            const prevCompleted = progress?.completed ?? 0;
+            const updatedProgress: RunProgress = progress
+              ? { ...progress, completed: prevCompleted + 1, currentScenario: null, currentScenarioId: null, updatedAt: Date.now(), now: Date.now() }
+              : {
+                exists: true, runId: event.runId, total: state.runs.active?.totalScenarios ?? 0, completed: 1,
+                currentScenario: null, currentScenarioId: null, elapsedMs: 0, updatedAt: Date.now(), now: Date.now(), running: true,
+              };
+            let active = state.runs.active;
+            if (active?.id === event.runId) {
+              active = {
+                ...active,
+                passed: active.passed + (event.status === "passed" ? 1 : 0),
+                failed: active.failed + (event.status === "failed" ? 1 : 0),
+                skipped: active.skipped + (event.status === "skipped" ? 1 : 0),
+              };
+            }
+            return [{ ...state, runs: { ...state.runs, active, progressByRunId: trimRecord({ ...state.runs.progressByRunId, [event.runId]: updatedProgress }, MAX_RUN_CACHE_SIZE) } }, []];
+          }
+
+          case "run_completed": {
+            let active = state.runs.active;
+            if (active?.id === event.runId) {
+              active = { ...active, status: "completed", finishedAt: event.finishedAt, passed: event.passed, failed: event.failed, skipped: event.skipped };
+            }
+            const progress = state.runs.progressByRunId[event.runId];
+            const finalProgress: RunProgress = progress
+              ? { ...progress, running: false, updatedAt: Date.now(), now: Date.now() }
+              : {
+                exists: true, runId: event.runId, total: event.passed + event.failed + event.skipped,
+                completed: event.passed + event.failed + event.skipped, currentScenario: null, currentScenarioId: null,
+                elapsedMs: 0, updatedAt: Date.now(), now: Date.now(), running: false,
+              };
+            return [{ ...state, runs: { ...state.runs, active, progressByRunId: trimRecord({ ...state.runs.progressByRunId, [event.runId]: finalProgress }, MAX_RUN_CACHE_SIZE) }, ux: { ...state.ux, busy: false } }, []];
+          }
+
+          case "run_failed": {
+            let active = state.runs.active;
+            if (active?.id === event.runId) {
+              active = { ...active, status: "error", finishedAt: event.finishedAt, stopReason: event.reason, exitCode: event.exitCode };
+            }
+            return [{ ...state, runs: { ...state.runs, active }, ux: { ...state.ux, busy: false } }, []];
+          }
+
+          case "log_line": {
+            const prev = state.logs.textByRunId[event.runId] ?? "";
+            const appended = prev + (prev ? "\n" : "") + event.line;
+            return [{ ...state, logs: { ...state.logs, textByRunId: trimRecord({ ...state.logs.textByRunId, [event.runId]: appended }, MAX_RUN_CACHE_SIZE), lastUpdateMs: 0 } }, []];
+          }
+
+          default: {
+            const _eventExhaustive: never = event;
+            return [state, []];
+          }
+        }
+      }
+
+      // ── Run detail overlay (pure runs) ─────────────────────────────
+      case "runs/viewDetail": {
+        return [{ ...state, runs: { ...state.runs, detailRunId: msg.runId, detailRun: msg.run, detailResults: [], detailCursor: 0, detailScrollOffset: 0 } }, [{
+          type: "fetch", url: `/api/runs/${msg.runId}/results`, onSuccess: "runs/detailResults", onError: "runs/closeDetail",
+        }]];
+      }
+
+      case "runs/closeDetail": {
+        return [{ ...state, runs: { ...state.runs, detailRunId: null, detailRun: null, detailResults: [], detailCursor: 0, detailScrollOffset: 0 } }, []];
+      }
+
+      case "runs/detailResults": {
+        const cursor = Math.min(state.runs.detailCursor, Math.max(0, msg.results.length - 1));
+        return [{ ...state, runs: { ...state.runs, detailResults: msg.results, detailCursor: cursor } }, []];
+      }
+
+      case "runs/detailCursorUp": {
+        const cursor = Math.max(0, state.runs.detailCursor - 1);
+        const scrollOffset = Math.min(state.runs.detailScrollOffset, cursor);
+        return [{ ...state, runs: { ...state.runs, detailCursor: cursor, detailScrollOffset: scrollOffset } }, []];
+      }
+
+      case "runs/detailCursorDown": {
+        const maxCursor = Math.max(0, state.runs.detailResults.length - 1);
+        const cursor = Math.min(maxCursor, state.runs.detailCursor + 1);
+        return [{ ...state, runs: { ...state.runs, detailCursor: cursor } }, []];
+      }
+    }
+  }
+
+  // ── Tick (cross-slice: updates network, runs, logs, metrics) ──────────
+
+  if (msg.type === "tick") {
+    const delta = msg.nowMs - state.lastTickMs;
+    return [{
+      ...state,
+      network: { ...state.network, lastHealthCheckMs: state.network.lastHealthCheckMs + delta },
+      runs: { ...state.runs, lastProgressMs: state.runs.lastProgressMs + delta },
+      logs: { ...state.logs, lastUpdateMs: state.logs.lastUpdateMs + delta },
+      metrics: { ...state.metrics, lastUpdateMs: state.metrics.lastUpdateMs + delta },
+      lastTickMs: msg.nowMs,
+    }, []];
+  }
+
+  // Exhaustiveness check — if TypeScript doesn't complain, all Msg variants are handled
+  const _exhaustive: never = msg;
+  return [state, []];
 }
 
 // ---------------------------------------------------------------------------
