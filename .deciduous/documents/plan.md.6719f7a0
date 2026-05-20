@@ -1,0 +1,50 @@
+# JSR Monorepo Migration Plan
+
+## Objective
+Convert the current repository into a fully functional Deno JSR monorepo utilizing standard Deno workspaces. This will enable native cross-package resolution and prepare the packages for publishing to JSR.
+
+## Key Files & Context
+- `deno.json` (Root Workspace Configuration)
+- `packages/laweta/deno.json`
+- `packages/gruszka/deno.json`
+- `packages/schemat/deno.json`
+- `packages/hamownia/deno.json`
+- `packages/dashboard/deno.json`
+- `packages/narzedzia/deno.json`
+- `scripts/deno.lock`
+
+## Implementation Steps
+
+1. **Clean up Root Configuration & Tasks**
+   - Remove the manual `@garazyk/*` alias mappings from the `imports` section in the root `deno.json`. Deno 1.40+ workspaces natively resolve these based on member `name` and `exports`.
+   - Fix the duplicate `"test"` task in the root `deno.json` (consolidate or rename).
+   - Clean up root `tasks` (e.g., `dashboard:check`) by removing redundant `--config` flags. With a proper workspace, `deno check` natively understands member configurations.
+
+2. **Standardize Package Configurations**
+   - Ensure `packages/laweta`, `gruszka`, `schemat`, `hamownia`, and `narzedzia` have a uniform `version` (currently `0.1.0-alpha.1`).
+   - Add a `publish` configuration block to these 5 library packages to explicitly `include` source files and `exclude` tests (e.g., `**/*_test.ts`, `**/*.test.ts`) to reduce artifact size.
+
+3. **Protect Non-Workspace Code (`scripts/`)**
+   - Code in the `scripts/` directory currently relies heavily on the root `@garazyk/` aliases.
+   - **Action:** Create a `scripts/deno.json` with `{ "name": "@garazyk/scripts", "private": true }` and add `"./scripts"` to the root `workspace` array to formally bring the scripts into the workspace resolution graph.
+
+4. **Address Dashboard JSR Constraints & Naming Mismatches**
+   - JSR strictly prohibits `https://` imports. `packages/dashboard` relies on `https://deno.land/x/fresh`, which means it **cannot** be published to JSR.
+   - **Action:** Remove the `version` field and the `publish` block from `packages/dashboard/deno.json`. Removing `version` prevents `deno publish` from attempting (and failing) to publish it during workspace-wide publish runs. It will remain a fully functional local workspace member.
+   - **Action:** Update the root `README.md` to fix the package name mismatch. Change references from `@garazyk/scenario-dashboard` to `@garazyk/dashboard` and update the run instructions to use the local workspace path.
+
+5. **Update CI/CD Publishing Workflow**
+   - Modify `.github/workflows/publish.yml` to remove the hardcoded `for pkg in laweta gruszka schemat hamownia; do ... cd packages/$pkg` bash loop.
+   - Replace it with native workspace publishing by either running a single `deno publish` at the root, or explicitly listing the 5 library packages: `deno publish packages/laweta packages/gruszka packages/schemat packages/hamownia packages/narzedzia --allow-slow-types`.
+
+6. **Consolidate Lockfiles**
+   - Delete the redundant `scripts/deno.lock` file.
+   - Regenerate the root `deno.lock` file.
+
+7. **Update Documentation**
+   - Update `AGENTS.md` and `MIGRATING.md` to remove instructions referencing the manual root aliases, reflecting the new native workspace resolution.
+
+## Verification & Testing
+- Run `deno task boundaries` and `deno check packages/*/mod.ts scripts/*.ts` to confirm cross-package imports (e.g., `import { XrpcClient } from "@garazyk/gruszka"`) resolve natively through the workspace without aliases.
+- Run `deno test -A packages/` to ensure the test suite passes.
+- Execute `deno publish --dry-run --allow-dirty` specifically for the 5 publishable library packages (`laweta`, `gruszka`, `schemat`, `hamownia`, `narzedzia`) to verify JSR publication readiness and confirm there are no bare specifier or slow-type errors.

@@ -1,0 +1,113 @@
+# ObjC Refactor: Next Steps Plan
+
+## Legend
+- ✅ Completed
+- 🔜 Ready (next session)
+- 📋 Planned (sequenced)
+
+---
+
+## Phase A: What Was Done (Session 1)
+
+### A1: Eliminate @synchronized → serial dispatch queues
+- `PDSRecordService.m` — statsCache via serial queue
+- `DID.m` — batch resolve via dispatch_sync
+- `PDSSignalManager.m` — handlers/sources via serial queue
+- `PDSRegistrationGate.m` — sCustomGateClasses via serial queue
+- `OAuth2.m` — activeSessions.count via dispatch_sync(sessionQueue)
+- **Result: 0 @synchronized remaining in codebase**
+
+### A2: Eliminate DISPATCH_TIME_FOREVER → timed waits
+- 14 files converted with 60-600s timeouts
+- Core: PDSPerDidWriteDispatcher.m, PDSRecordService.m, HttpServer.m, SubscribeReposHandler.m
+- Support: PDSCloudStorageBlobProvider.m, PDSEmailHTTPClient.m, XrpcIdentityHelper.m, ChatAuthManager.m, PDSCLIAccountManager.m, PDSProviderHTTPClient.m, UIBackendClient.m
+- Video: VideoRemoteBlobUploader.m, VideoThumbnailGenerator.m, VideoTranscoder.m
+
+### A3: AppViewDatabase.m deduplication
+- Removed private `_bindParams:`, `_valueFromStatement:`, `bindDataOrZeroBlob`
+- Uses shared `PDSDBBindParams`/`PDSDBColumnValue` from PDSDatabaseUtilities.h
+
+### A4: SQLITE_STATIC → SQLITE_TRANSIENT
+- Fixed in PDSDatabaseUtilities.h for blob binding safety
+
+---
+
+## Phase B: Remaining Concurrency Cleanup (Next Session)
+
+### B1: Remaining DISPATCH_TIME_FOREVER (3 shutdown sites, low risk)
+- HttpServer.m:914 — dispatch_group_wait in stop path
+- WebSocketServer.m:175,413 — shutdown paths
+- **Decision**: Fix with 30s timeouts. Low risk since these are shutdown paths, but a hung shutdown is still a bug.
+
+### B2: Protect unprotected global registries
+- Audit revealed: 5 static mutable registries exist. 3 protected with serial queues (Email, PhoneVerification, RegistrationGate). Need to verify and fix the remaining 1-2.
+- **Decision**: Audit and fix remaining unprotected registries.
+
+### B3: Migrate PDSDatabase category extensions to shared PDSDBBindParams
+- 59+ sites in PDSDatabase+Accounts.m, +Repos.m, +Records.m, +Blobs.m, +Blocks.m, +VideoJobs.m use raw `sqlite3_bind_text(..., SQLITE_STATIC)` instead of `PDSDBBindParams()`
+- **Decision**: Migrate to shared helpers. Safe (all DB is serialized), but reduces duplication.
+
+---
+
+## Phase C: Refactor Library-Readiness Roadmap
+
+Following the reviewed execution order from `.opencode/plans/refactor-library-readiness/`:
+
+### C1: Plan 7 — Stub/TODO Documentation
+- Document 6 known stubs: SMTP, CAPTCHA, YubiKey, STAR MST walk, GSTREAMER
+- Add `#pragma message` compile-time warnings
+- **Effort**: Small. **Risk**: None.
+
+### C2: Plan 5 (partial) — Characterization Tests for PDSDatabase
+- Write tests for inline categories: Accounts, Repos, Blocks, Blobs, Transactions, VideoJobs
+- Prerequisite for PDSDatabase decomposition (C3)
+- **Effort**: Medium. **Risk**: Low.
+
+### C3: Plan 1 — PDSDatabase Decomposition
+- Split 3,804-line PDSDatabase.m into 11 category files
+- Follow PDSActorStore pattern (already validated)
+- **Effort**: Large. **Risk**: High (must preserve behavior).
+
+### C4: Plan 6 — Legacy Migration Cleanup
+- Remove legacy Migration/ directory
+- Unify PDSDatabase.m on PDSMigrationManager
+- Depends on C3 completing first
+- **Effort**: Small. **Risk**: Low.
+
+### C5: Plan 5 (remaining) — More Tests
+- XRPC handler + registry tests
+- Service layer tests
+- **Effort**: Medium. **Risk**: Low.
+
+### C6: Plan 2 — Unified DB Connection Protocol
+- Define PDSConnectionManager protocol
+- Extract shared utilities, PDSDBConfig struct
+- Migrate 6 database implementations
+- **Effort**: Large. **Risk**: Medium.
+
+### C7: Plan 3 — XRPC Route Pack Protocol
+- Define XrpcRoutePack protocol + XrpcHandlerContext
+- Migrate 25+ packs, add middleware
+- **Effort**: Very Large. **Risk**: Medium.
+
+### C8: Plan 4 — Unified Service Binary Entry Points
+- ServiceMain helper for 9 service binaries
+- Move PDSCrashReporter to ATProtoCore
+- **Effort**: Medium. **Risk**: Low-Medium.
+
+---
+
+## Execution Strategy
+
+```
+B1 → B2 → B3 (concurrency cleanup, one session)
+C1 → C2 → C3 → C4 (database refactor, multiple sessions)
+C5 → C6 → C7 → C8 (protocols & services, multiple sessions)
+```
+
+## Rollback Notes
+
+Each phase is independent. If a phase causes regressions:
+1. Revert the specific commits
+2. Add missing characterization tests
+3. Re-attempt with narrower scope
