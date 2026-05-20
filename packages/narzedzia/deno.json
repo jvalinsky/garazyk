@@ -10,7 +10,6 @@
     "./boundary-check": "./boundary_check.ts",
     "./spdx-headers": "./spdx_headers.ts",
     "./vitepress-migration": "./vitepress_migration.ts",
-    "./fuzz-command": "./fuzz_command.ts",
     "./ops-command": "./ops_command.ts",
     "./smoke-command": "./smoke_command.ts"
   },
