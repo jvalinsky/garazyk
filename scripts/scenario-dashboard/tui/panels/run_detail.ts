@@ -9,7 +9,6 @@
 
 import type { CellStyle, ScreenBuffer } from "@garazyk/tui";
 import {
-  ANSI,
   bg,
   bold,
   COLORS,
@@ -112,7 +111,7 @@ export function renderRunDetailOverlay(
   cursor: number,
   scrollOffset: number,
 ): void {
-  const overlayStyle = bg(ANSI.BLACK);
+  const overlayStyle = bg(COLORS.surfaceBase);
   const titleStyle = bold(fg(COLORS.accent));
   const labelStyle = dim(fg(COLORS.textPrimary));
 
@@ -247,7 +246,7 @@ export function renderRunDetailOverlay(
     const dr = displayRows[i]!;
     // Cursor highlight: fill the row background
     if (dr.isCursor && dr.type === "scenario") {
-      buf.fillRect(contentX, renderRow, contentWidth, 1, " ", bg(ANSI.BRIGHT_BLACK));
+      buf.fillRect(contentX, renderRow, contentWidth, 1, " ", bg(COLORS.surfaceElevated));
     }
     buf.writeClipped(contentX, renderRow, dr.text, dr.style, clip);
     renderRow++;

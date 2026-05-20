@@ -10,7 +10,6 @@
 
 import type { RenderCommand, ScreenBuffer } from "@garazyk/tui";
 import {
-  ANSI,
   bg,
   bold,
   COLORS,
@@ -323,7 +322,7 @@ const HELP_SECTIONS: Array<{ title: string; bindings: Array<{ key: string; actio
 
 /** Render a full-screen help overlay on top of the current buffer content. */
 function renderHelpOverlay(buf: ScreenBuffer): void {
-  const overlayStyle = bg(ANSI.BLACK);
+  const overlayStyle = bg(COLORS.surfaceBase);
   const titleStyle = bold(fg(COLORS.accent));
   const keyStyle = bold(fg(COLORS.accent));
   const actionStyle = dim(fg(COLORS.textPrimary));
