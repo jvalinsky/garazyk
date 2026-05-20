@@ -102,10 +102,11 @@ export interface SidecarAdapter {
   /** Health check definition used to monitor the sidecar */
   healthCheck?: {
     path: string | null;
+    /** Explicit port for health checks (defaults to first mapped port if omitted) */
+    port?: number;
     customTest?: string[];
     headers?: Record<string, string>;
-  };
-  /** Upstream dependencies referenced by name */
+  };  /** Upstream dependencies referenced by name */
   dependsOn?: string[];
   /** Upstream dependencies referenced by topology role */
   dependsOnRoles?: ServiceRole[];
@@ -150,6 +151,8 @@ export interface ServiceAdapter {
   /** Primary health check used by the runner */
   healthCheck: {
     path: string | null;
+    /** Explicit port for health checks (defaults to first mapped port if omitted) */
+    port?: number;
     customTest?: string[];
     headers?: Record<string, string>;
   };
