@@ -65,6 +65,14 @@ export interface RequestOptions {
   maxRetries?: number;
   /** HTTP status codes that trigger a retry. @defaultValue [429, 502, 503, 504]. */
   retryableStatuses?: number[];
+  /**
+   * Allow retrying non-idempotent requests (POST, PUT, DELETE, PATCH).
+   * **Warning**: enabling this may cause duplicate side effects (e.g. creating
+   * duplicate records). Only use when the server is known to be idempotent
+   * for the specific method, or when duplicate creation is acceptable.
+   * @defaultValue false
+   */
+  allowMutationRetry?: boolean;
 }
 
 /**
@@ -165,15 +173,28 @@ export class TransportLayer {
   ): Promise<{ status: number; body: T }> {
     const targetUrl = new URL(url, this._baseUrl);
 
-    // Mutations (POST, PUT, DELETE, PATCH) are not idempotent — don't retry by default.
+    // Mutations (POST, PUT, DELETE, PATCH) are not idempotent in XRPC — don't retry by default
+    // to prevent duplicate side effects (e.g. creating duplicate records).
     const httpMethod = (options.method || "GET").toUpperCase();
     const isIdempotent = /^(GET|HEAD|OPTIONS)$/.test(httpMethod);
+    const isMutation = !isIdempotent;
     const maxAttempts = transportOptions?.maxRetries ??
       (isIdempotent ? this._maxAttempts : 1);
     const retryableStatuses = transportOptions?.retryableStatuses ??
       DEFAULT_RETRYABLE_STATUSES;
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (isMutation && maxAttempts > 1 && !transportOptions?.allowMutationRetry) {
+      console.warn(
+        `[TransportLayer] Warning: maxRetries=${maxAttempts} set for non-idempotent method ${httpMethod}, ` +
+        `but allowMutationRetry is not set. Retries are suppressed to prevent duplicate side effects. ` +
+        `Set allowMutationRetry: true to opt in.`,
+      );
+    }
+    const effectiveMaxAttempts = isMutation && !transportOptions?.allowMutationRetry
+      ? 1
+      : maxAttempts;
+
+    for (let attempt = 1; attempt <= effectiveMaxAttempts; attempt++) {
       try {
         const response = await fetch(targetUrl.toString(), options);
         let body: unknown;
@@ -188,7 +209,7 @@ export class TransportLayer {
 
         // Retry on retryable HTTP statuses (e.g. 429, 502, 503, 504)
         if (
-          retryableStatuses.includes(response.status) && attempt < maxAttempts
+          retryableStatuses.includes(response.status) && attempt < effectiveMaxAttempts
         ) {
           await new Promise((r) => setTimeout(r, this._baseDelay * attempt));
           continue;
@@ -196,7 +217,7 @@ export class TransportLayer {
 
         return { status: response.status, body: body as T };
       } catch (error) {
-        if (attempt === maxAttempts) {
+        if (attempt === effectiveMaxAttempts) {
           throw new TransportError(
             method,
             targetUrl.toString(),
@@ -208,7 +229,7 @@ export class TransportLayer {
       }
     }
     // Unreachable: the loop always returns or throws.
-    throw new Error(`request: unreachable (maxAttempts=${maxAttempts})`);
+    throw new Error(`request: unreachable (effectiveMaxAttempts=${effectiveMaxAttempts})`);
   }
 
   /**
@@ -382,7 +403,8 @@ export class TransportLayer {
     const mergedHeaders: Record<string, string> = { ...headers };
     if (token) mergedHeaders["Authorization"] = `Bearer ${token}`;
 
-    const maxAttempts = this._maxAttempts; // GET is idempotent — safe to retry
+    // GET is idempotent — safe to retry with the default maxAttempts.
+    const maxAttempts = this._maxAttempts;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const response = await fetch(url.toString(), {
@@ -396,7 +418,6 @@ export class TransportLayer {
           `binary: ${data.byteLength} bytes`,
         );
 
-        // Retry on retryable HTTP statuses
         if (
           DEFAULT_RETRYABLE_STATUSES.includes(response.status) &&
           attempt < maxAttempts
