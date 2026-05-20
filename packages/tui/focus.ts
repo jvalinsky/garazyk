@@ -35,7 +35,7 @@ export class FocusRing {
     return this.current;
   }
 
-  /** Jump to a specific panel by index (1-4). Returns true if changed. */
+  /** Jump to a specific panel by 0-based index. Returns true if changed. */
   jump(index: number): boolean {
     if (index < 0 || index >= PANEL_IDS.length) return false;
     if (this.index === index) return false;
