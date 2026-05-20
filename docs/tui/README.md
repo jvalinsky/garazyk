@@ -1,10 +1,11 @@
 # Scenario Dashboard TUI (Terminal User Interface)
 
-This directory documents the hand-rolled Terminal User Interface (TUI) previously built for the Garazyk Scenario Dashboard. 
-
-**Note on Transition**: The hand-rolled TUI (~2,600 lines of custom rendering, input, layout, and focus logic) is scheduled to be replaced by `@opentui/core`. OpenTUI provides a standard `yoga-layout` flexbox engine, built-in renderables (`Box`, `Text`, `ScrollBox`), mouse support, and a native Zig renderer. 
-
-This documentation preserves the architectural decisions and API designs of the custom TUI, as it serves as a foundation for understanding terminal capabilities and the specific layout/focus needs of the Garazyk dashboard.
+> **Status: Historical Reference** — The hand-rolled TUI documented here is scheduled for
+> replacement by `@opentui/core` (target Q3 2026). These docs are preserved for three reasons:
+> (1) understanding terminal rendering patterns used in the migration, (2) documenting the
+> TEA state bridge design which carries forward unchanged, and (3) the theme system which is
+> framework-agnostic and persists post-migration. For current development, prefer the
+> `@opentui/core` documentation and `opentui` skill.
 
 ## Documentation Index
 
