@@ -363,7 +363,7 @@ export async function runDnsAdd(options: DnsAddOptions): Promise<void> {
 export class CloudflareClient {
   constructor(private token: string, private zoneId: string) {}
 
-  async addCname(name: string, content: string) {
+  async addCname(name: string, content: string): Promise<boolean> {
     logInfo(`Checking if CNAME for '${name}' already exists...`);
     try {
       const listResp = await fetch(
