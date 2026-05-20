@@ -18,7 +18,7 @@ export interface MockState {
 export class MockTwilioState {
   store: Record<string, MockVerificationState> = {};
   alwaysApproveCodes: string[] = ["000000"];
-  readonly startTime = Date.now();
+  readonly startTime: number = Date.now();
 
   reset(): void {
     for (const key of Object.keys(this.store)) delete this.store[key];

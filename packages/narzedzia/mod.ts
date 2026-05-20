@@ -1,4 +1,3 @@
-export { runSmoke } from "./smoke_command.ts";
 export {
   CloudflareClient,
   runBackfill,
