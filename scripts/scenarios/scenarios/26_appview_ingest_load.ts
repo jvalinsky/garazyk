@@ -1,7 +1,7 @@
 /**
  * @module scenarios/26_appview_ingest_load
  *
- * Scenario: 26 appview ingest load
+ * Scenario: Stresses AppView ingest with sustained and burst writes, then verifies recovery.
  *
  * Behavior:
  * - Executes the 26 appview ingest load scenario.
