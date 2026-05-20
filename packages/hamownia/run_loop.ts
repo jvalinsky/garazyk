@@ -135,9 +135,10 @@ export async function runScenarioLoop(
     });
   }
 
+  let dockerClient = null;
   let statsSampler: ContainerStatsSampler | null = null;
   if (isOtelEnabled()) {
-    const dockerClient = await createDockerClient();
+    dockerClient = await createDockerClient();
     if (dockerClient) {
       statsSampler = new ContainerStatsSampler({
         client: dockerClient,
@@ -275,6 +276,7 @@ export async function runScenarioLoop(
   } finally {
     await crashWatcher?.close();
     await statsSampler?.stop();
+    dockerClient?.close();
   }
 
   return { results, reportPaths, crashedContainer: crashedContainer !== null };
