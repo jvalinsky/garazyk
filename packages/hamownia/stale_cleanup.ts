@@ -28,28 +28,32 @@ export async function stopStaleDockerE2e(
     return stopStaleDockerE2eCLI(opts, currentProject);
   }
 
-  const ports = neededPorts(opts);
-  const staleProjects = await findStaleProjectsOnPorts(
-    client,
-    ports,
-    currentProject,
-  );
+  try {
+    const ports = neededPorts(opts);
+    const staleProjects = await findStaleProjectsOnPorts(
+      client,
+      ports,
+      currentProject,
+    );
 
-  if (staleProjects.size === 0) return [];
+    if (staleProjects.size === 0) return [];
 
-  const projectNames = [...staleProjects];
-  console.log(
-    `[WARN] Stale e2e projects holding needed ports: ${
-      projectNames.join(", ")
-    }`,
-  );
+    const projectNames = [...staleProjects];
+    console.log(
+      `[WARN] Stale e2e projects holding needed ports: ${
+        projectNames.join(", ")
+      }`,
+    );
 
-  for (const project of projectNames) {
-    console.log(`[INFO] Tearing down stale compose project: ${project}`);
-    await composeDown(project);
+    for (const project of projectNames) {
+      console.log(`[INFO] Tearing down stale compose project: ${project}`);
+      await composeDown(project);
+    }
+
+    return projectNames;
+  } finally {
+    client.close();
   }
-
-  return projectNames;
 }
 
 async function stopStaleDockerE2eCLI(

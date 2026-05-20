@@ -171,6 +171,9 @@ async function runHostScenarioInChild(
   const childRunnerPath = fromFileUrl(
     new URL("./host_child_runner.ts", import.meta.url),
   );
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutSeconds * 1000);
+
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -189,59 +192,50 @@ async function runHostScenarioInChild(
     stdout: "inherit",
     stderr: "inherit",
   });
+
   const child = command.spawn();
-  const statusPromise = child.status;
-  let timeoutId: number | undefined;
-  const timeoutPromise = new Promise<"timeout">((resolve) =>
-    timeoutId = setTimeout(() => resolve("timeout"), timeoutSeconds * 1000)
-  );
-  const status = await Promise.race([statusPromise, timeoutPromise]);
-  if (timeoutId !== undefined) clearTimeout(timeoutId);
-  if (status === "timeout") {
-    child.kill("SIGTERM");
-    let graceTimeoutId: number | undefined;
-    const grace = new Promise<"grace-timeout">((resolve) =>
-      graceTimeoutId = setTimeout(
-        () => resolve("grace-timeout"),
-        HOST_CHILD_GRACE_MS,
-      )
-    );
-    const terminated = await Promise.race([statusPromise, grace]);
-    if (graceTimeoutId !== undefined) clearTimeout(graceTimeoutId);
-    if (terminated === "grace-timeout") {
-      child.kill("SIGKILL");
-      await statusPromise.catch(() => undefined);
+  const abortHandler = () => {
+    try {
+      child.kill("SIGTERM");
+    } catch {
+      // already dead
     }
-    const result = new ScenarioResult(scenario.name);
-    result.start();
-    result.stepFailed(
-      `Scenario ${scenario.id} timeout`,
-      `Timed out after ${timeoutSeconds}s; host child process was terminated`,
-    );
-    result.finish();
-    await Deno.remove(tempDir, { recursive: true }).catch(() => undefined);
-    return result;
-  }
+  };
+  controller.signal.addEventListener("abort", abortHandler);
 
   try {
-    const report = JSON.parse(
-      await Deno.readTextFile(outputPath),
-    ) as ScenarioReport;
-    return ScenarioResult.fromReport(report);
-  } catch (exc) {
-    const result = new ScenarioResult(scenario.name);
-    result.start();
-    result.stepFailed(
-      `Scenario ${scenario.id} report`,
-      `Host child exited but did not emit a parseable report: ${
-        exc instanceof Error ? exc.message : String(exc)
-      }`,
-    );
-    result.finish();
-    return result;
+    const status = await child.status;
+    clearTimeout(timeoutId);
+    if (!status.success && controller.signal.aborted) {
+      const result = new ScenarioResult(scenario.name);
+      result.start();
+      result.stepFailed(
+        `Scenario ${scenario.id} timeout`,
+        `Timed out after ${timeoutSeconds}s; host child process was terminated`,
+      );
+      result.finish();
+      return result;
+    }
+
+    try {
+      const report = JSON.parse(
+        await Deno.readTextFile(outputPath),
+      ) as ScenarioReport;
+      return ScenarioResult.fromReport(report);
+    } catch (exc) {
+      const result = new ScenarioResult(scenario.name);
+      result.start();
+      result.stepFailed(
+        `Scenario ${scenario.id} report`,
+        `Host child exited but did not emit a parseable report: ${
+          exc instanceof Error ? exc.message : String(exc)
+        }`,
+      );
+      result.finish();
+      return result;
+    }
   } finally {
-    await Deno.remove(dirname(outputPath), { recursive: true }).catch(() =>
-      undefined
-    );
+    controller.signal.removeEventListener("abort", abortHandler);
+    await Deno.remove(tempDir, { recursive: true }).catch(() => undefined);
   }
 }
