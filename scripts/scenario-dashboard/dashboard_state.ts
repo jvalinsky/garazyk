@@ -848,8 +848,11 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
           cmds.push({ type: "schedule", delayMs: 0, msg: { type: "metrics/timeout" } });
         }
 
-        if (!isActive && Object.keys(metrics.stats).length > 0) {
-          return [{ ...state, runs, logs, metrics: { ...metrics, stats: {} } }, cmds];
+        if (!isActive) {
+          // Run just stopped — keep last-known metrics visible (don't clear),
+          // but trigger a recent-runs refresh so the completed run appears
+          const refreshCmd: Cmd = { type: "fetch", url: "/api/runs/recent?limit=6", onSuccess: "runs/recentReceived", onError: "runs/recentFailed", meta: { token: nextToken(state.runs.recentToken) } };
+          return [{ ...state, runs, logs, metrics }, [...cmds, refreshCmd]];
         }
 
         if (msg.run && !isActive && runs.progressByRunId[msg.run.id]) {
@@ -1050,7 +1053,9 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
                 },
               }, MAX_RUN_CACHE_SIZE),
             };
-            return [{ ...state, runs, ux: { ...state.ux, busy: false } }, []];
+            // Clear stale metrics from previous run when a new run starts
+            const metrics: MetricsSlice = { ...state.metrics, stats: {} };
+            return [{ ...state, runs, metrics, ux: { ...state.ux, busy: false } }, []];
           }
 
           case "run_status": {
@@ -1105,7 +1110,9 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
                 completed: event.passed + event.failed + event.skipped, currentScenario: null, currentScenarioId: null,
                 elapsedMs: 0, updatedAt: Date.now(), now: Date.now(), running: false,
               };
-            return [{ ...state, runs: { ...state.runs, active, progressByRunId: trimRecord({ ...state.runs.progressByRunId, [event.runId]: finalProgress }, MAX_RUN_CACHE_SIZE) }, ux: { ...state.ux, busy: false } }, []];
+            // Trigger immediate recent-runs refresh so completed run appears in history
+            const refreshCmd: Cmd = { type: "fetch", url: "/api/runs/recent?limit=6", onSuccess: "runs/recentReceived", onError: "runs/recentFailed", meta: { token: nextToken(state.runs.recentToken) } };
+            return [{ ...state, runs: { ...state.runs, active, progressByRunId: trimRecord({ ...state.runs.progressByRunId, [event.runId]: finalProgress }, MAX_RUN_CACHE_SIZE) }, ux: { ...state.ux, busy: false } }, [refreshCmd]];
           }
 
           case "run_failed": {
@@ -1113,7 +1120,9 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
             if (active?.id === event.runId) {
               active = { ...active, status: "error", finishedAt: event.finishedAt, stopReason: event.reason, exitCode: event.exitCode };
             }
-            return [{ ...state, runs: { ...state.runs, active }, ux: { ...state.ux, busy: false } }, []];
+            // Trigger immediate recent-runs refresh so failed run appears in history
+            const refreshCmd: Cmd = { type: "fetch", url: "/api/runs/recent?limit=6", onSuccess: "runs/recentReceived", onError: "runs/recentFailed", meta: { token: nextToken(state.runs.recentToken) } };
+            return [{ ...state, runs: { ...state.runs, active }, ux: { ...state.ux, busy: false } }, [refreshCmd]];
           }
 
           case "log_line": {
