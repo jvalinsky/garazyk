@@ -98,7 +98,13 @@ export class ScreenBuffer {
     this.cells[y * this.width + x] = cell;
   }
 
-  /** Write a string starting at (x, y) with the given style. */
+  /**
+   * Write a string starting at (x, y) with the given style.
+   *
+   * When the write style has no background (bg < 0), the existing cell's
+   * background is preserved. This allows text to render on top of a filled
+   * panel background without clobbering it with the terminal default.
+   */
   write(
     x: number,
     y: number,
@@ -110,11 +116,12 @@ export class ScreenBuffer {
       if (cx >= this.width) break;
       const w = getCharWidth(char);
       if (w === 0) continue; // skip control characters
-      this.setCell(cx, y, { char, style });
+      const resolved = this.resolveStyle(cx, y, style);
+      this.setCell(cx, y, { char, style: resolved });
       // Mark following cells as continuation of a wide character
       for (let i = 1; i < w; i++) {
         if (cx + i >= this.width) break;
-        this.setCell(cx + i, y, { char: "", style });
+        this.setCell(cx + i, y, { char: "", style: resolved });
       }
       cx += w;
     }
@@ -123,7 +130,9 @@ export class ScreenBuffer {
   /**
    * Write a string clipped to a rectangular region.
    * Characters outside the clip region are silently dropped.
-   * Use this in panel renderers to prevent content overflowing into adjacent panels.
+   *
+   * When the write style has no background (bg < 0), the existing cell's
+   * background is preserved so text renders on top of panel fills.
    */
   writeClipped(
     x: number,
@@ -139,11 +148,12 @@ export class ScreenBuffer {
       const w = getCharWidth(char);
       if (w === 0) continue;
       if (cx >= clip.x && cx < clip.x + clip.width) {
-        this.setCell(cx, y, { char, style });
+        const resolved = this.resolveStyle(cx, y, style);
+        this.setCell(cx, y, { char, style: resolved });
         for (let i = 1; i < w; i++) {
           if (cx + i >= this.width) break;
           if (cx + i >= clip.x && cx + i < clip.x + clip.width) {
-            this.setCell(cx + i, y, { char: "", style });
+            this.setCell(cx + i, y, { char: "", style: resolved });
           }
         }
       }
@@ -236,6 +246,19 @@ export class ScreenBuffer {
     const label = ` ${title} `;
     const startX = x + Math.max(1, Math.floor((w - label.length) / 2));
     this.write(startX, y, label, { ...style, bold: true });
+  }
+
+  /**
+   * When the requested style has no background (bg < 0), pull the
+   * background from the existing cell so text doesn't clobber panel fills.
+   */
+  private resolveStyle(x: number, y: number, style: CellStyle): CellStyle {
+    if (style.bg >= 0) return style;
+    const existing = this.getCell(x, y);
+    if (existing && existing.style.bg >= 0) {
+      return { ...style, bg: existing.style.bg };
+    }
+    return style;
   }
 
   /**
