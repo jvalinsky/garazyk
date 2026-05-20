@@ -8,7 +8,6 @@
     "./legacy-clients": "./legacy_clients.ts",
     "./lexicons": "./lexicons.ts",
     "./seed": "./seed.ts",
-    "./chat-viewer": "./chat_viewer.ts",
     "./account-ops": "./account_ops.ts"
   },
   "license": "Unlicense OR CC0-1.0",
