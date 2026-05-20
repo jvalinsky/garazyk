@@ -306,7 +306,10 @@ let _currentTheme: Theme | undefined;
 /** Get the currently active theme. Lazily resolves from environment on first call. */
 export function getCurrentTheme(): Theme {
   if (_currentTheme === undefined) {
-    _currentTheme = resolveTheme();
+    _currentTheme = resolveTheme({
+      theme: Deno.env.get("GARAZYK_TUI_THEME"),
+      colorfgbg: Deno.env.get("COLORFGBG"),
+    });
   }
   return _currentTheme;
 }
@@ -319,25 +322,27 @@ export function setCurrentTheme(name: string): Theme {
   return theme;
 }
 
+/** Internal theme resolution options. */
+export interface ThemeResolutionOptions {
+  theme?: string;
+  colorfgbg?: string;
+}
+
 /**
- * Resolve the initial theme based on environment:
- *   1. GARAZYK_TUI_THEME env var ("dark", "light", "classic")
- *   2. COLORFGBG env var heuristic (terminal-reported fg/bg colors)
- *   3. Default to dark theme
+ * Resolve a theme based on provided options.
  */
-function resolveTheme(): Theme {
+export function resolveTheme(options: ThemeResolutionOptions = {}): Theme {
   // Explicit override
-  const envTheme = Deno.env.get("GARAZYK_TUI_THEME");
-  if (envTheme && themes[envTheme]) {
-    return themes[envTheme];
+  if (options.theme && themes[options.theme]) {
+    return themes[options.theme];
   }
 
   // Detect terminal background via COLORFGBG
   // Format: "fg;bg" where 0=black, 7=white, 15=bright white
   try {
-    const colorFgBg = Deno.env.get("COLORFGBG");
-    if (colorFgBg) {
-      const parts = colorFgBg.split(";");
+    const colorfgbg = options.colorfgbg;
+    if (colorfgbg) {
+      const parts = colorfgbg.split(";");
       if (parts.length >= 2) {
         const bg = parseInt(parts[1]!, 10);
         // bg=0 or bg=default → dark terminal → dark theme

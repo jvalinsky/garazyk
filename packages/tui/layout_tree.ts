@@ -26,8 +26,18 @@ export interface LayoutNode {
   width?: Sizing;
   /** Height constraint (default: "grow"). */
   height?: Sizing;
+  /** Minimum width constraint. */
+  minWidth?: number;
+  /** Maximum width constraint. */
+  maxWidth?: number;
+  /** Minimum height constraint. */
+  minHeight?: number;
+  /** Maximum height constraint. */
+  maxHeight?: number;
   /** Space between children (default: 0). */
   gap?: number;
+  /** Padding inside the node (default: 0). */
+  padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
   /** Child nodes. */
   children?: LayoutNode[];
 }
@@ -50,63 +60,152 @@ export interface ResolvedNode extends BoundingBox {
  * @param bounds - The bounding box to fit the tree into
  * @returns A tree of resolved nodes with absolute coordinates
  */
-export function solveLayout(root: LayoutNode, bounds: BoundingBox): ResolvedNode {
+export function solveLayout(
+  root: LayoutNode,
+  bounds: BoundingBox,
+): ResolvedNode {
   const resolvedChildren: ResolvedNode[] = [];
   const children = root.children || [];
   const direction = root.direction || "column";
   const gap = root.gap || 0;
 
+  // Resolve padding
+  const p = typeof root.padding === "number"
+    ? { top: root.padding, right: root.padding, bottom: root.padding, left: root.padding }
+    : {
+      top: root.padding?.top || 0,
+      right: root.padding?.right || 0,
+      bottom: root.padding?.bottom || 0,
+      left: root.padding?.left || 0,
+    };
+
+  // Content area within padding
+  const contentX = bounds.x + p.left;
+  const contentY = bounds.y + p.top;
+  const contentWidth = Math.max(0, bounds.width - p.left - p.right);
+  const contentHeight = Math.max(0, bounds.height - p.top - p.bottom);
+
   if (children.length > 0) {
     const isRow = direction === "row";
     const totalGap = Math.max(0, (children.length - 1) * gap);
-    
-    // Calculate fixed sizes and count growing children
-    let fixedSize = totalGap;
-    let growCount = 0;
-    for (const child of children) {
+    const mainAxisSize = isRow ? contentWidth : contentHeight;
+    const crossAxisSize = isRow ? contentHeight : contentWidth;
+
+    // Step 1: Initialize child sizes and identify growing children
+    const childMainSizes = new Array(children.length).fill(0);
+    const growingIndices: number[] = [];
+
+    let consumedMainSize = totalGap;
+
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
       const size = isRow ? child.width : child.height;
+      const min = isRow ? child.minWidth : child.minHeight;
+      const max = isRow ? child.maxWidth : child.maxHeight;
+
       if (typeof size === "number") {
-        fixedSize += size;
+        let s = size;
+        if (min !== undefined) s = Math.max(s, min);
+        if (max !== undefined) s = Math.min(s, max);
+        childMainSizes[i] = s;
+        consumedMainSize += s;
       } else {
-        growCount++;
+        growingIndices.push(i);
+        // "grow" children start with their minimum size (if any)
+        const s = min || 0;
+        childMainSizes[i] = s;
+        consumedMainSize += s;
       }
     }
 
-    // Distribute remaining space among growing children.
-    // Floor the base size and give remainder pixels to the last growing child
-    // to ensure all coordinates are integers (terminal cells are discrete).
-    const availSize = isRow ? bounds.width : bounds.height;
-    const totalGrow = growCount > 0 ? Math.max(0, availSize - fixedSize) : 0;
-    const baseGrowSize = growCount > 0 ? Math.floor(totalGrow / growCount) : 0;
-    const remainder = growCount > 0 ? totalGrow - baseGrowSize * growCount : 0;
+    // Step 2: Distribute remaining space among growing children
+    let remainingSpace = mainAxisSize - consumedMainSize;
 
+    if (remainingSpace > 0 && growingIndices.length > 0) {
+      // Iteratively distribute to respect maxWidth
+      let activeIndices = [...growingIndices];
+      while (remainingSpace > 0 && activeIndices.length > 0) {
+        const perChild = Math.floor(remainingSpace / activeIndices.length);
+        if (perChild === 0) break; // Remainder pixels handled below
+
+        let DistributedAny = false;
+        const nextActiveIndices: number[] = [];
+
+        for (const idx of activeIndices) {
+          const child = children[idx];
+          const max = isRow ? child.maxWidth : child.maxHeight;
+          const current = childMainSizes[idx];
+
+          if (max !== undefined && current >= max) {
+            // Already at max
+            continue;
+          }
+
+          const canTake = max !== undefined ? max - current : Infinity;
+          const take = Math.min(perChild, canTake);
+
+          if (take > 0) {
+            childMainSizes[idx] += take;
+            remainingSpace -= take;
+            DistributedAny = true;
+          }
+
+          if (max === undefined || childMainSizes[idx] < max) {
+            nextActiveIndices.push(idx);
+          }
+        }
+
+        if (!DistributedAny) break;
+        activeIndices = nextActiveIndices;
+      }
+
+      // Step 3: Distribute remainder pixels to the last growing child that can still take them
+      if (remainingSpace > 0) {
+        for (let i = growingIndices.length - 1; i >= 0; i--) {
+          const idx = growingIndices[i];
+          const child = children[idx];
+          const max = isRow ? child.maxWidth : child.maxHeight;
+          if (max === undefined || childMainSizes[idx] < max) {
+            childMainSizes[idx] += remainingSpace;
+            remainingSpace = 0;
+            break;
+          }
+        }
+      }
+    }
+
+    // Step 4: Resolve cross-axis sizes and child positions
     let offset = 0;
-    let growIndex = 0;
-    for (const child of children) {
-      const isGrow = isRow
-        ? typeof child.width !== "number"
-        : typeof child.height !== "number";
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      const mainSize = childMainSizes[i];
 
-      // Last growing child gets the remainder pixels
-      const extra = (isGrow && growIndex === growCount - 1) ? remainder : 0;
-      const childWidth = typeof child.width === "number"
-        ? child.width
-        : (isRow ? baseGrowSize + extra : bounds.width);
-      const childHeight = typeof child.height === "number"
-        ? child.height
-        : (isRow ? bounds.height : baseGrowSize + extra);
+      const crossSizeRaw = isRow ? child.height : child.width;
+      const crossMin = isRow ? child.minHeight : child.minWidth;
+      const crossMax = isRow ? child.maxHeight : child.maxWidth;
 
-      if (isGrow) growIndex++;
+      let crossSize: number;
+      if (typeof crossSizeRaw === "number") {
+        crossSize = crossSizeRaw;
+      } else {
+        crossSize = crossAxisSize;
+      }
+
+      if (crossMin !== undefined) crossSize = Math.max(crossSize, crossMin);
+      if (crossMax !== undefined) crossSize = Math.min(crossSize, crossMax);
+
+      const childWidth = isRow ? mainSize : crossSize;
+      const childHeight = isRow ? crossSize : mainSize;
 
       const childBounds: BoundingBox = {
-        x: bounds.x + (isRow ? offset : 0),
-        y: bounds.y + (isRow ? 0 : offset),
+        x: isRow ? contentX + offset : contentX,
+        y: isRow ? contentY : contentY + offset,
         width: childWidth,
         height: childHeight,
       };
 
       resolvedChildren.push(solveLayout(child, childBounds));
-      offset += (isRow ? childWidth : childHeight) + gap;
+      offset += mainSize + gap;
     }
   }
 
