@@ -463,13 +463,20 @@ export async function startMockTwilioServer(
 ): Promise<MockTwilioServer> {
   const server = new MockTwilioServer(`http://127.0.0.1:${port}`);
   server.startProcess();
-  await server.waitForHealth();
-  return server;
+  try {
+    await server.waitForHealth();
+    return server;
+  } catch (e) {
+    server.stopProcess();
+    throw e;
+  }
 }
 
-/** Stop a mock Twilio server process. */
-export function stopMockTwilioServer(server: MockTwilioServer): void {
-  server.stopProcess();
+/** Stop a mock Twilio server process. Accepts undefined for safe teardown. */
+export function stopMockTwilioServer(
+  server: MockTwilioServer | undefined,
+): void {
+  server?.stopProcess();
 }
 
 if (import.meta.main) {
