@@ -285,6 +285,7 @@ async function resolveServiceHandler(url: string): Promise<ServiceHandler | null
       const mapped = scenarios.map((s) => ({
         id: s.id,
         name: s.name,
+        description: s.description,
         category: s.category,
         needsPds2: s.needsPds2,
         lastStatus: null as string | null,
