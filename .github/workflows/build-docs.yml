@@ -58,6 +58,20 @@ jobs:
           cd docs
           npm run validate:all
 
+      - name: Objective-C Doc Coverage Gate
+        run: |
+          deno run -A --no-config scripts/docs/doc-coverage.ts Garazyk/Sources \
+            --min-overall 90 \
+            --min-subsystem Database=90 \
+            --by-subsystem
+
+      - name: Deno Packages TSDoc Coverage Gate
+        run: |
+          deno run -A packages/narzedzia/tsdoc_coverage.ts \
+            packages/schemat/ packages/gruszka/ packages/hamownia/ \
+            packages/laweta/ packages/narzedzia/ \
+            --min-overall 50
+
       - name: Sync Repo-Wide Docs Metadata
         run: |
           deno run -A scripts/docs/repo_docs.ts sync
