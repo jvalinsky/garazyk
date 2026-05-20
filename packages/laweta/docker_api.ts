@@ -23,13 +23,34 @@ import { withSpan } from "./telemetry.ts";
 /** Docker Engine API version used for all requests. */
 const API_VERSION = "v1.43";
 
-/** Default Unix socket paths to probe (in order). */
-const DEFAULT_SOCKET_PATHS = [
-  `${Deno.env.get("HOME")}/.orbstack/run/docker.sock`, // OrbStack
-  `${Deno.env.get("HOME")}/.docker/run/docker.sock`, // Docker Desktop
-  "/var/run/docker.sock",
-  "/run/docker.sock",
-];
+/**
+ * Options for creating a Docker API client.
+ *
+ * All fields are optional — when omitted, the client falls back to
+ * environment variables and common socket paths.
+ */
+export interface DockerApiClientOptions {
+  /** Docker host endpoint (tcp://, http://, https://) or Unix socket path. */
+  endpoint?: string;
+  /** Override for DOCKER_HOST environment variable. */
+  dockerHost?: string;
+  /** Override for HOME directory (used to locate OrbStack/Docker Desktop sockets). */
+  homeDir?: string;
+}
+
+/**
+ * Build the default socket path list, using an optional homeDir override.
+ * When homeDir is not provided, falls back to Deno.env.get("HOME").
+ */
+function getDefaultSocketPaths(homeDir?: string): string[] {
+  const home = homeDir || Deno.env.get("HOME") || "";
+  return [
+    `${home}/.orbstack/run/docker.sock`, // OrbStack
+    `${home}/.docker/run/docker.sock`, // Docker Desktop
+    "/var/run/docker.sock",
+    "/run/docker.sock",
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // Response types (subset of Docker Engine API)
@@ -298,10 +319,14 @@ export class DockerApiClient {
 
   /**
    * Create a Docker API client.
-   * @param endpoint - Optional Docker host endpoint or Unix socket path.
+   * @param options - Docker client options, or a legacy endpoint string.
+   *   When a string is passed, it is treated as the `endpoint` option
+   *   for backward compatibility.
    */
-  constructor(endpoint?: string) {
-    const host = endpoint || Deno.env.get("DOCKER_HOST") || "";
+  constructor(options?: DockerApiClientOptions | string) {
+    const opts: DockerApiClientOptions =
+      typeof options === "string" ? { endpoint: options } : (options ?? {});
+    const host = opts.endpoint || opts.dockerHost || Deno.env.get("DOCKER_HOST") || "";
     if (
       host.startsWith("tcp://") || host.startsWith("http://") ||
       host.startsWith("https://")
@@ -313,7 +338,7 @@ export class DockerApiClient {
         this._baseUrl = this._baseUrl.replace(/\/$/, "") + `/${API_VERSION}`;
       }
     } else {
-      this._socketPath = endpoint || detectSocketPath();
+      this._socketPath = opts.endpoint || detectSocketPath(opts.homeDir);
       this._baseUrl = `http://localhost/${API_VERSION}`;
     }
   }
@@ -677,7 +702,7 @@ export class DockerApiError extends Error {
 // ---------------------------------------------------------------------------
 
 /** Detect the Docker socket path from environment or common locations. */
-function detectSocketPath(): string {
+function detectSocketPath(homeDir?: string): string {
   // Check DOCKER_HOST first (supports unix:// and tcp://)
   const dockerHost = Deno.env.get("DOCKER_HOST");
   if (dockerHost) {
@@ -687,7 +712,8 @@ function detectSocketPath(): string {
   }
 
   // Probe common paths
-  for (const path of DEFAULT_SOCKET_PATHS) {
+  const socketPaths = getDefaultSocketPaths(homeDir);
+  for (const path of socketPaths) {
     try {
       const stat = Deno.statSync(path);
       // Sockets may report as isFile: false, so we check existence
@@ -764,9 +790,9 @@ async function* parseNdjsonStream<T>(
  * Returns null if the Docker daemon is not available.
  */
 export async function createDockerClient(
-  socketPath?: string,
+  optionsOrSocketPath?: DockerApiClientOptions | string,
 ): Promise<DockerApiClient | null> {
-  const client = new DockerApiClient(socketPath);
+  const client = new DockerApiClient(optionsOrSocketPath);
   const available = await client.init();
   if (!available) {
     client.close();
