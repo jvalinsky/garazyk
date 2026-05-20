@@ -152,11 +152,11 @@ jobs:
 
       - name: Run Deno Doc Lint
         run: |
-          deno task --config scripts/deno.json doc-lint
+          deno task doc-lint
 
       - name: Run TypeScript Documentation Coverage
         run: |
-          deno task --config scripts/deno.json doc:ts-coverage:ci
+          deno task doc:ts-coverage:ci
 
   objc-doc-coverage:
     name: Objective-C Documentation Coverage

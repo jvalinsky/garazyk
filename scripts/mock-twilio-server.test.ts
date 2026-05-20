@@ -27,7 +27,7 @@ Deno.test("Mock Twilio server integration", async (t) => {
         "run",
         "-A",
         "--config",
-        "scripts/deno.json",
+        "deno.json",
         "scripts/mock-twilio-server.ts",
         `--port=${PORT}`,
         "--always-approve=000000",
