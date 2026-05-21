@@ -32,6 +32,9 @@ import {
   CachingRecordFetcher,
 } from "./cache.ts";
 
+// Re-export the adapter implementations for convenience.
+export { DenoDnsResolver, HttpDidResolver, HttpRecordFetcher } from "./adapters.ts";
+
 import { init, update } from "./resolver.ts";
 
 // ---------------------------------------------------------------------------

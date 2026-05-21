@@ -19,7 +19,7 @@ import {
   HttpDidResolver,
   HttpRecordFetcher,
 } from "./adapters.ts";
-import { InMemoryCache } from "./cache.ts";
+import { InMemoryCache, DiskCache } from "./cache.ts";
 import type { DidDocument, LexiconDoc, ResolutionError } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -199,5 +199,48 @@ Deno.test({
       "same NSID should return the same lexicon version");
     assertEquals(first.value.defs.main.type, second.value.defs.main.type,
       "same NSID should return the same main definition type");
+  },
+});
+
+// =============================================================================
+// DiskCache integration
+// =============================================================================
+
+Deno.test({
+  name: "integration: DiskCache writes entries to disk and serves from cache",
+  ignore: !shouldRunIntegration(),
+  fn: async () => {
+    const tmpDir = await Deno.makeTempDir({ prefix: "lexicon-disk-cache-" });
+    try {
+      const diskCache = new DiskCache<LexiconDoc>({
+        directory: `${tmpDir}/lexicons`,
+        ttlMs: 3600_000,
+      });
+
+      const ports = {
+        ...makeRealPorts(),
+        cache: { record: diskCache },
+      };
+
+      // First resolution: cache miss, writes to disk.
+      const r1 = await resolveLexicon("app.bsky.feed.post", ports);
+      assert(r1.ok);
+      // Verify the cache directory was created and contains at least one file.
+      const entries1 = [];
+      for await (const entry of Deno.readDir(`${tmpDir}/lexicons`)) {
+        entries1.push(entry);
+      }
+      assert(entries1.length >= 1, "DiskCache should write at least one entry after first resolution");
+      assert(entries1.some((e) => e.isFile), "Cache directory should contain files");
+
+      // Second resolution: cache hit, returns from disk without network.
+      const r2 = await resolveLexicon("app.bsky.feed.post", ports);
+      assert(r2.ok);
+      assertEquals(r2.value.id, r1.value.id, "disk-cached resolution should return same lexicon");
+      assertEquals(r2.value.lexicon, r1.value.lexicon);
+      assertEquals(r2.value.defs.main.type, r1.value.defs.main.type);
+    } finally {
+      await Deno.remove(tmpDir, { recursive: true }).catch(() => undefined);
+    }
   },
 });
