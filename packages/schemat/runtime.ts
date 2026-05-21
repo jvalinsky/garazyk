@@ -8,10 +8,19 @@
  */
 
 export {
+  computeRunDir,
   initRunDir,
   neededPorts,
   repoRoot,
   SERVICE_PORTS,
   serviceUrl,
 } from "./docker_config.ts";
-export type { TopologyRunContext } from "./docker_config.ts";
+export type {
+  ClockSource,
+  ComputeRunDirOptions,
+  EnvSource,
+  FileSystemOps,
+  InitRunDirOptions,
+  ProcessInfo,
+  TopologyRunContext,
+} from "./docker_config.ts";
