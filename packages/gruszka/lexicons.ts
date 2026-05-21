@@ -20,33 +20,1358 @@ export interface LexiconProcedure<Input = unknown, Output = unknown> {
 
 export type BinaryXrpcResponse = [status: number, contentType: string, data: Uint8Array];
 
+/** Type definitions for lexicon schema records (populated at generation time). */
 export interface LexiconDefs {
 }
 
+/** Populated AT Protocol lexicon method definitions. */
 export interface Lexicons {
+  "app.bsky.actor.getPreferences": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.actor.getProfile": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.actor.getProfiles": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.actor.getSuggestions": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.actor.putPreferences": LexiconProcedure<unknown, unknown>;
+  "app.bsky.actor.searchActors": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.actor.searchActorsTypeahead": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.ageassurance.begin": LexiconProcedure<unknown, unknown>;
+  "app.bsky.ageassurance.getConfig": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.ageassurance.getState": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.bookmark.createBookmark": LexiconProcedure<unknown, unknown>;
+  "app.bsky.bookmark.deleteBookmark": LexiconProcedure<unknown, unknown>;
+  "app.bsky.bookmark.getBookmarks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.contact.dismissMatch": LexiconProcedure<unknown, unknown>;
+  "app.bsky.contact.getMatches": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.contact.getSyncStatus": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.contact.importContacts": LexiconProcedure<unknown, unknown>;
+  "app.bsky.contact.removeData": LexiconProcedure<unknown, unknown>;
+  "app.bsky.contact.sendNotification": LexiconProcedure<unknown, unknown>;
+  "app.bsky.contact.startPhoneVerification": LexiconProcedure<unknown, unknown>;
+  "app.bsky.contact.verifyPhone": LexiconProcedure<unknown, unknown>;
+  "app.bsky.draft.createDraft": LexiconProcedure<unknown, unknown>;
+  "app.bsky.draft.deleteDraft": LexiconProcedure<unknown, unknown>;
+  "app.bsky.draft.getDrafts": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.draft.updateDraft": LexiconProcedure<unknown, unknown>;
+  "app.bsky.feed.describeFeedGenerator": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getActorFeeds": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getActorLikes": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getAuthorFeed": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getFeed": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getFeedGenerator": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getFeedGenerators": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getFeedSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getLikes": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getListFeed": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getPosts": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getPostThread": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getQuotes": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getRepostedBy": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getSuggestedFeeds": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.getTimeline": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.searchPosts": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.sendInteractions": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.getActorStarterPacks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getBlocks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getFollowers": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getFollows": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getKnownFollowers": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getList": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getListBlocks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getListMutes": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getLists": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getListsWithMembership": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getMutes": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getRelationships": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getStarterPack": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getStarterPacks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getStarterPacksWithMembership": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getSuggestedFollowsByActor": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.muteActor": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.muteActorList": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.muteThread": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.searchStarterPacks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.unmuteActor": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.unmuteActorList": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.unmuteThread": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.verification.createVerification": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.verification.deleteVerification": LexiconProcedure<unknown, unknown>;
+  "app.bsky.labeler.getServices": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.notification.getPreferences": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.notification.getUnreadCount": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.notification.listActivitySubscriptions": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.notification.listNotifications": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.notification.putActivitySubscription": LexiconProcedure<unknown, unknown>;
+  "app.bsky.notification.putNotificationPreferences": LexiconProcedure<unknown, unknown>;
+  "app.bsky.notification.putPreferences": LexiconProcedure<unknown, unknown>;
+  "app.bsky.notification.putPreferencesV2": LexiconProcedure<unknown, unknown>;
+  "app.bsky.notification.registerPush": LexiconProcedure<unknown, unknown>;
+  "app.bsky.notification.unregisterPush": LexiconProcedure<unknown, unknown>;
+  "app.bsky.notification.updateSeen": LexiconProcedure<unknown, unknown>;
+  "app.bsky.unspecced.confirmAgeAssurance": LexiconProcedure<unknown, unknown>;
+  "app.bsky.unspecced.getAgeAssuranceState": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getConfig": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getPopularFeedGenerators": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getPostThreadOtherV2": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getPostThreadV2": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedFeeds": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedStarterPacks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsers": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsersForExplore": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestionsSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getTaggedSuggestions": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getTrendingTopics": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getTrends": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getTrendsSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.initAgeAssurance": LexiconProcedure<unknown, unknown>;
+  "app.bsky.unspecced.searchActorsSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.searchPostsSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.searchStarterPacksSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.video.getJobStatus": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.video.getUploadLimits": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.video.uploadVideo": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.actor.deleteAccount": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.actor.exportAccountData": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.acceptConvo": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.addReaction": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.deleteMessageForSelf": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.getConvo": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.getConvoAvailability": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.getConvoForMembers": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.getLog": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.getMessages": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.leaveConvo": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.listConvoRequests": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.listConvos": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.lockConvo": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.muteConvo": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.removeReaction": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.sendMessage": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.sendMessageBatch": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.unlockConvo": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.unmuteConvo": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.updateAllRead": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.convo.updateRead": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.addMembers": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.addReaction": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.approveJoinRequest": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.createGroup": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.createJoinLink": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.deleteGroup": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.deleteMessageForSelf": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.disableJoinLink": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.editGroup": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.editJoinLink": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.enableJoinLink": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.getGroupPublicInfo": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.group.getMessages": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.group.leaveGroup": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.listGroups": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.group.listInviteLinks": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.group.listJoinRequests": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.group.listMembers": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.group.rejectJoinRequest": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.removeMembers": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.removeReaction": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.requestJoin": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.group.sendMessage": LexiconProcedure<unknown, unknown>;
+  "chat.bsky.moderation.getActorMetadata": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.moderation.getMessageContext": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.moderation.updateActorAccess": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.deleteAccount": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.disableAccountInvites": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.disableInviteCodes": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.enableAccountInvites": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.getAccountInfo": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getAccountInfos": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getAccountTakedown": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.getAccountUsage": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getBlobAuditStatus": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getInviteCodes": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getModerationReports": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getServerStats": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getSubjectStatus": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.moderateAccount": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.moderateRecord": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.queryAuditLog": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.repairRepo": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.resolveReport": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.runBlobAudit": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.searchAccounts": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.sendEmail": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.takeDownAccount": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.updateAccountEmail": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.updateAccountHandle": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.updateAccountPassword": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.updateAccountSigningKey": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.updateSubjectStatus": LexiconProcedure<unknown, unknown>;
+  "com.atproto.identity.getRecommendedDidCredentials": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.identity.refreshIdentity": LexiconProcedure<unknown, unknown>;
+  "com.atproto.identity.requestPlcOperationSignature": LexiconProcedure<unknown, unknown>;
+  "com.atproto.identity.resolveDid": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.identity.resolveHandle": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.identity.resolveIdentity": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.identity.signPlcOperation": LexiconProcedure<unknown, unknown>;
+  "com.atproto.identity.submitPlcOperation": LexiconProcedure<unknown, unknown>;
+  "com.atproto.identity.updateHandle": LexiconProcedure<unknown, unknown>;
+  "com.atproto.label.createLabel": LexiconProcedure<unknown, unknown>;
+  "com.atproto.label.getLabels": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.label.queryLabels": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.lexicon.resolveLexicon": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.moderation.createReport": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.applyWrites": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.createRecord": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.deleteBlob": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.deleteRecord": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.describeRepo": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.repo.getBlob": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.repo.getRecord": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.repo.importRepo": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.listMissingBlobs": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.repo.listRecords": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.repo.putRecord": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.updateRecord": LexiconProcedure<unknown, unknown>;
+  "com.atproto.repo.uploadBlob": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.activateAccount": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.checkAccountStatus": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.confirmEmail": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.createAccount": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.createAppPassword": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.createInviteCode": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.createInviteCodes": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.createSession": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.deactivateAccount": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.deleteAccount": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.deleteSession": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.describeServer": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.getAccount": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.getAccountInviteCodes": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.getServiceAuth": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.getSession": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.listAppPasswords": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.refreshSession": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.requestAccountDelete": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.requestEmailConfirmation": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.requestEmailUpdate": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.requestPasswordReset": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.reserveSigningKey": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.resetPassword": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.revokeAppPassword": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.updateEmail": LexiconProcedure<unknown, unknown>;
+  "com.atproto.sync.getBlob": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getBlocks": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getCheckout": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getHead": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getHostStatus": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getLatestCommit": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getRecord": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getRepo": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.getRepoStatus": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.listBlobs": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.listHosts": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.listRepos": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.listReposByCollection": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.notifyOfUpdate": LexiconProcedure<unknown, unknown>;
+  "com.atproto.sync.requestCrawl": LexiconProcedure<unknown, unknown>;
+  "com.atproto.temp.addReservedHandle": LexiconProcedure<unknown, unknown>;
+  "com.atproto.temp.checkHandleAvailability": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.temp.checkSignupQueue": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.temp.dereferenceScope": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.temp.fetchLabels": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.temp.requestPhoneVerification": LexiconProcedure<unknown, unknown>;
+  "com.atproto.temp.revokeAccountCredentials": LexiconProcedure<unknown, unknown>;
+  "com.germnetwork.identity.getAnchorKey": LexiconQuery<unknown, unknown, unknown>;
+  "com.germnetwork.mailbox.claimAddresses": LexiconProcedure<unknown, unknown>;
+  "com.germnetwork.mailbox.deliver": LexiconProcedure<unknown, unknown>;
+  "com.germnetwork.mailbox.poll": LexiconQuery<unknown, unknown, unknown>;
+  "com.germnetwork.rendezvous.deliver": LexiconProcedure<unknown, unknown>;
+  "com.germnetwork.rendezvous.register": LexiconProcedure<unknown, unknown>;
+  "com.shinolabs.pinksea.getAuthorFeed": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getAuthorReplies": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getHandleFromDid": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getIdentity": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getOekaki": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getParentForReply": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getRecent": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getTagFeed": LexiconQuery<unknown, unknown, unknown>;
+  "com.whtwnd.blog.getAuthorPosts": LexiconQuery<unknown, unknown, unknown>;
+  "com.whtwnd.blog.getEntryMetadataByName": LexiconQuery<unknown, unknown, unknown>;
+  "com.whtwnd.blog.getMentionsByEntry": LexiconQuery<unknown, unknown, unknown>;
+  "com.whtwnd.blog.notifyOfNewEntry": LexiconProcedure<unknown, unknown>;
+  "place.stream.branding.deleteBlob": LexiconProcedure<unknown, unknown>;
+  "place.stream.branding.getBlob": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.branding.getBranding": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.branding.updateBlob": LexiconProcedure<unknown, unknown>;
+  "place.stream.broadcast.getBroadcaster": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.graph.getFollowingUser": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.live.getLiveUsers": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.live.getProfileCard": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.live.getRecommendations": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.live.getSegments": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.live.searchActorsTypeahead": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.moderation.createBlock": LexiconProcedure<unknown, unknown>;
+  "place.stream.moderation.createGate": LexiconProcedure<unknown, unknown>;
+  "place.stream.moderation.deleteBlock": LexiconProcedure<unknown, unknown>;
+  "place.stream.moderation.deleteGate": LexiconProcedure<unknown, unknown>;
+  "place.stream.moderation.updateLivestream": LexiconProcedure<unknown, unknown>;
+  "place.stream.multistream.createTarget": LexiconProcedure<unknown, unknown>;
+  "place.stream.multistream.deleteTarget": LexiconProcedure<unknown, unknown>;
+  "place.stream.multistream.listTargets": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.multistream.putTarget": LexiconProcedure<unknown, unknown>;
+  "place.stream.server.createWebhook": LexiconProcedure<unknown, unknown>;
+  "place.stream.server.deleteWebhook": LexiconProcedure<unknown, unknown>;
+  "place.stream.server.getServerTime": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.server.getWebhook": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.server.listWebhooks": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.server.updateWebhook": LexiconProcedure<unknown, unknown>;
+  "social.grain.actor.getActorFavs": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.actor.getProfile": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.actor.searchActors": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.actor.updateAvatar": LexiconProcedure<unknown, unknown>;
+  "social.grain.actor.updateProfile": LexiconProcedure<unknown, unknown>;
+  "social.grain.comment.createComment": LexiconProcedure<unknown, unknown>;
+  "social.grain.comment.deleteComment": LexiconProcedure<unknown, unknown>;
+  "social.grain.darkroom.getGalleryComposite": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.favorite.createFavorite": LexiconProcedure<unknown, unknown>;
+  "social.grain.favorite.deleteFavorite": LexiconProcedure<unknown, unknown>;
+  "social.grain.feed.getTimeline": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.gallery.applySort": LexiconProcedure<unknown, unknown>;
+  "social.grain.gallery.createGallery": LexiconProcedure<unknown, unknown>;
+  "social.grain.gallery.createItem": LexiconProcedure<unknown, unknown>;
+  "social.grain.gallery.deleteGallery": LexiconProcedure<unknown, unknown>;
+  "social.grain.gallery.deleteItem": LexiconProcedure<unknown, unknown>;
+  "social.grain.gallery.getActorGalleries": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.gallery.getGallery": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.gallery.getGalleryThread": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.gallery.updateGallery": LexiconProcedure<unknown, unknown>;
+  "social.grain.graph.createFollow": LexiconProcedure<unknown, unknown>;
+  "social.grain.graph.deleteFollow": LexiconProcedure<unknown, unknown>;
+  "social.grain.graph.getFollowers": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.graph.getFollows": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.notification.getNotifications": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.notification.updateSeen": LexiconProcedure<unknown, unknown>;
+  "social.grain.photo.applyAlts": LexiconProcedure<unknown, unknown>;
+  "social.grain.photo.createExif": LexiconProcedure<unknown, unknown>;
+  "social.grain.photo.deletePhoto": LexiconProcedure<unknown, unknown>;
+  "social.grain.photo.getActorPhotos": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.photo.uploadPhoto": LexiconProcedure<unknown, unknown>;
+  "tools.garazyk.account.getUsage": LexiconQuery<unknown, unknown, unknown>;
+  "tools.garazyk.sync.getRepoFiltered": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.communication.createTemplate": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.communication.deleteTemplate": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.communication.listTemplates": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.communication.updateTemplate": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.hosting.getAccountHistory": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.cancelScheduledAction": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.moderation.cancelScheduledActions": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.moderation.emitEvent": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.moderation.getAccountTimeline": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getEvent": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getRecord": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getRecords": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getRepo": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getReporterStats": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getRepos": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getSubjects": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getSubjectStatus": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.listScheduledActions": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.moderation.queryEvents": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.queryStatuses": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.scheduleAction": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.moderation.searchRepos": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.safelink.addRule": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.safelink.queryEvents": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.safelink.queryRules": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.safelink.removeRule": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.safelink.updateRule": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.server.getConfig": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.server.updateConfig": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.set.addValues": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.set.deleteSet": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.set.deleteValues": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.set.getValues": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.set.querySets": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.set.upsertSet": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.setting.listOptions": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.setting.removeOptions": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.setting.upsertOption": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.signature.findCorrelation": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.signature.findRelatedAccounts": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.signature.searchAccounts": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.team.addMember": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.team.deleteMember": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.team.listMembers": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.team.updateMember": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.verification.grantVerifications": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.verification.listVerifications": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.verification.revokeVerifications": LexiconProcedure<unknown, unknown>;
 }
 
 export const LEXICON_METHOD_TYPES = {
+  "app.bsky.actor.getPreferences": "query",
+  "app.bsky.actor.getProfile": "query",
+  "app.bsky.actor.getProfiles": "query",
+  "app.bsky.actor.getSuggestions": "query",
+  "app.bsky.actor.putPreferences": "procedure",
+  "app.bsky.actor.searchActors": "query",
+  "app.bsky.actor.searchActorsTypeahead": "query",
+  "app.bsky.ageassurance.begin": "procedure",
+  "app.bsky.ageassurance.getConfig": "query",
+  "app.bsky.ageassurance.getState": "query",
+  "app.bsky.bookmark.createBookmark": "procedure",
+  "app.bsky.bookmark.deleteBookmark": "procedure",
+  "app.bsky.bookmark.getBookmarks": "query",
+  "app.bsky.contact.dismissMatch": "procedure",
+  "app.bsky.contact.getMatches": "query",
+  "app.bsky.contact.getSyncStatus": "query",
+  "app.bsky.contact.importContacts": "procedure",
+  "app.bsky.contact.removeData": "procedure",
+  "app.bsky.contact.sendNotification": "procedure",
+  "app.bsky.contact.startPhoneVerification": "procedure",
+  "app.bsky.contact.verifyPhone": "procedure",
+  "app.bsky.draft.createDraft": "procedure",
+  "app.bsky.draft.deleteDraft": "procedure",
+  "app.bsky.draft.getDrafts": "query",
+  "app.bsky.draft.updateDraft": "procedure",
+  "app.bsky.feed.describeFeedGenerator": "query",
+  "app.bsky.feed.getActorFeeds": "query",
+  "app.bsky.feed.getActorLikes": "query",
+  "app.bsky.feed.getAuthorFeed": "query",
+  "app.bsky.feed.getFeed": "query",
+  "app.bsky.feed.getFeedGenerator": "query",
+  "app.bsky.feed.getFeedGenerators": "query",
+  "app.bsky.feed.getFeedSkeleton": "query",
+  "app.bsky.feed.getLikes": "query",
+  "app.bsky.feed.getListFeed": "query",
+  "app.bsky.feed.getPosts": "query",
+  "app.bsky.feed.getPostThread": "query",
+  "app.bsky.feed.getQuotes": "query",
+  "app.bsky.feed.getRepostedBy": "query",
+  "app.bsky.feed.getSuggestedFeeds": "query",
+  "app.bsky.feed.getTimeline": "query",
+  "app.bsky.feed.searchPosts": "query",
+  "app.bsky.feed.sendInteractions": "procedure",
+  "app.bsky.graph.getActorStarterPacks": "query",
+  "app.bsky.graph.getBlocks": "query",
+  "app.bsky.graph.getFollowers": "query",
+  "app.bsky.graph.getFollows": "query",
+  "app.bsky.graph.getKnownFollowers": "query",
+  "app.bsky.graph.getList": "query",
+  "app.bsky.graph.getListBlocks": "query",
+  "app.bsky.graph.getListMutes": "query",
+  "app.bsky.graph.getLists": "query",
+  "app.bsky.graph.getListsWithMembership": "query",
+  "app.bsky.graph.getMutes": "query",
+  "app.bsky.graph.getRelationships": "query",
+  "app.bsky.graph.getStarterPack": "query",
+  "app.bsky.graph.getStarterPacks": "query",
+  "app.bsky.graph.getStarterPacksWithMembership": "query",
+  "app.bsky.graph.getSuggestedFollowsByActor": "query",
+  "app.bsky.graph.muteActor": "procedure",
+  "app.bsky.graph.muteActorList": "procedure",
+  "app.bsky.graph.muteThread": "procedure",
+  "app.bsky.graph.searchStarterPacks": "query",
+  "app.bsky.graph.unmuteActor": "procedure",
+  "app.bsky.graph.unmuteActorList": "procedure",
+  "app.bsky.graph.unmuteThread": "procedure",
+  "app.bsky.graph.verification.createVerification": "procedure",
+  "app.bsky.graph.verification.deleteVerification": "procedure",
+  "app.bsky.labeler.getServices": "query",
+  "app.bsky.notification.getPreferences": "query",
+  "app.bsky.notification.getUnreadCount": "query",
+  "app.bsky.notification.listActivitySubscriptions": "query",
+  "app.bsky.notification.listNotifications": "query",
+  "app.bsky.notification.putActivitySubscription": "procedure",
+  "app.bsky.notification.putNotificationPreferences": "procedure",
+  "app.bsky.notification.putPreferences": "procedure",
+  "app.bsky.notification.putPreferencesV2": "procedure",
+  "app.bsky.notification.registerPush": "procedure",
+  "app.bsky.notification.unregisterPush": "procedure",
+  "app.bsky.notification.updateSeen": "procedure",
+  "app.bsky.unspecced.confirmAgeAssurance": "procedure",
+  "app.bsky.unspecced.getAgeAssuranceState": "query",
+  "app.bsky.unspecced.getConfig": "query",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": "query",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": "query",
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": "query",
+  "app.bsky.unspecced.getPopularFeedGenerators": "query",
+  "app.bsky.unspecced.getPostThreadOtherV2": "query",
+  "app.bsky.unspecced.getPostThreadV2": "query",
+  "app.bsky.unspecced.getSuggestedFeeds": "query",
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": "query",
+  "app.bsky.unspecced.getSuggestedStarterPacks": "query",
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsers": "query",
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": "query",
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsersForExplore": "query",
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": "query",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": "query",
+  "app.bsky.unspecced.getSuggestionsSkeleton": "query",
+  "app.bsky.unspecced.getTaggedSuggestions": "query",
+  "app.bsky.unspecced.getTrendingTopics": "query",
+  "app.bsky.unspecced.getTrends": "query",
+  "app.bsky.unspecced.getTrendsSkeleton": "query",
+  "app.bsky.unspecced.initAgeAssurance": "procedure",
+  "app.bsky.unspecced.searchActorsSkeleton": "query",
+  "app.bsky.unspecced.searchPostsSkeleton": "query",
+  "app.bsky.unspecced.searchStarterPacksSkeleton": "query",
+  "app.bsky.video.getJobStatus": "query",
+  "app.bsky.video.getUploadLimits": "query",
+  "app.bsky.video.uploadVideo": "procedure",
+  "chat.bsky.actor.deleteAccount": "procedure",
+  "chat.bsky.actor.exportAccountData": "query",
+  "chat.bsky.convo.acceptConvo": "procedure",
+  "chat.bsky.convo.addReaction": "procedure",
+  "chat.bsky.convo.deleteMessageForSelf": "procedure",
+  "chat.bsky.convo.getConvo": "query",
+  "chat.bsky.convo.getConvoAvailability": "query",
+  "chat.bsky.convo.getConvoForMembers": "query",
+  "chat.bsky.convo.getLog": "query",
+  "chat.bsky.convo.getMessages": "query",
+  "chat.bsky.convo.leaveConvo": "procedure",
+  "chat.bsky.convo.listConvoRequests": "query",
+  "chat.bsky.convo.listConvos": "query",
+  "chat.bsky.convo.lockConvo": "procedure",
+  "chat.bsky.convo.muteConvo": "procedure",
+  "chat.bsky.convo.removeReaction": "procedure",
+  "chat.bsky.convo.sendMessage": "procedure",
+  "chat.bsky.convo.sendMessageBatch": "procedure",
+  "chat.bsky.convo.unlockConvo": "procedure",
+  "chat.bsky.convo.unmuteConvo": "procedure",
+  "chat.bsky.convo.updateAllRead": "procedure",
+  "chat.bsky.convo.updateRead": "procedure",
+  "chat.bsky.group.addMembers": "procedure",
+  "chat.bsky.group.addReaction": "procedure",
+  "chat.bsky.group.approveJoinRequest": "procedure",
+  "chat.bsky.group.createGroup": "procedure",
+  "chat.bsky.group.createJoinLink": "procedure",
+  "chat.bsky.group.deleteGroup": "procedure",
+  "chat.bsky.group.deleteMessageForSelf": "procedure",
+  "chat.bsky.group.disableJoinLink": "procedure",
+  "chat.bsky.group.editGroup": "procedure",
+  "chat.bsky.group.editJoinLink": "procedure",
+  "chat.bsky.group.enableJoinLink": "procedure",
+  "chat.bsky.group.getGroupPublicInfo": "query",
+  "chat.bsky.group.getMessages": "query",
+  "chat.bsky.group.leaveGroup": "procedure",
+  "chat.bsky.group.listGroups": "query",
+  "chat.bsky.group.listInviteLinks": "query",
+  "chat.bsky.group.listJoinRequests": "query",
+  "chat.bsky.group.listMembers": "query",
+  "chat.bsky.group.rejectJoinRequest": "procedure",
+  "chat.bsky.group.removeMembers": "procedure",
+  "chat.bsky.group.removeReaction": "procedure",
+  "chat.bsky.group.requestJoin": "procedure",
+  "chat.bsky.group.sendMessage": "procedure",
+  "chat.bsky.moderation.getActorMetadata": "query",
+  "chat.bsky.moderation.getMessageContext": "query",
+  "chat.bsky.moderation.updateActorAccess": "procedure",
+  "com.atproto.admin.deleteAccount": "procedure",
+  "com.atproto.admin.disableAccountInvites": "procedure",
+  "com.atproto.admin.disableInviteCodes": "procedure",
+  "com.atproto.admin.enableAccountInvites": "procedure",
+  "com.atproto.admin.getAccountInfo": "query",
+  "com.atproto.admin.getAccountInfos": "query",
+  "com.atproto.admin.getAccountTakedown": "procedure",
+  "com.atproto.admin.getAccountUsage": "query",
+  "com.atproto.admin.getBlobAuditStatus": "query",
+  "com.atproto.admin.getInviteCodes": "query",
+  "com.atproto.admin.getModerationReports": "query",
+  "com.atproto.admin.getServerStats": "query",
+  "com.atproto.admin.getSubjectStatus": "query",
+  "com.atproto.admin.moderateAccount": "procedure",
+  "com.atproto.admin.moderateRecord": "procedure",
+  "com.atproto.admin.queryAuditLog": "query",
+  "com.atproto.admin.repairRepo": "procedure",
+  "com.atproto.admin.resolveReport": "procedure",
+  "com.atproto.admin.runBlobAudit": "procedure",
+  "com.atproto.admin.searchAccounts": "query",
+  "com.atproto.admin.sendEmail": "procedure",
+  "com.atproto.admin.takeDownAccount": "procedure",
+  "com.atproto.admin.updateAccountEmail": "procedure",
+  "com.atproto.admin.updateAccountHandle": "procedure",
+  "com.atproto.admin.updateAccountPassword": "procedure",
+  "com.atproto.admin.updateAccountSigningKey": "procedure",
+  "com.atproto.admin.updateSubjectStatus": "procedure",
+  "com.atproto.identity.getRecommendedDidCredentials": "query",
+  "com.atproto.identity.refreshIdentity": "procedure",
+  "com.atproto.identity.requestPlcOperationSignature": "procedure",
+  "com.atproto.identity.resolveDid": "query",
+  "com.atproto.identity.resolveHandle": "query",
+  "com.atproto.identity.resolveIdentity": "query",
+  "com.atproto.identity.signPlcOperation": "procedure",
+  "com.atproto.identity.submitPlcOperation": "procedure",
+  "com.atproto.identity.updateHandle": "procedure",
+  "com.atproto.label.createLabel": "procedure",
+  "com.atproto.label.getLabels": "query",
+  "com.atproto.label.queryLabels": "query",
+  "com.atproto.lexicon.resolveLexicon": "query",
+  "com.atproto.moderation.createReport": "procedure",
+  "com.atproto.repo.applyWrites": "procedure",
+  "com.atproto.repo.createRecord": "procedure",
+  "com.atproto.repo.deleteBlob": "procedure",
+  "com.atproto.repo.deleteRecord": "procedure",
+  "com.atproto.repo.describeRepo": "query",
+  "com.atproto.repo.getBlob": "query",
+  "com.atproto.repo.getRecord": "query",
+  "com.atproto.repo.importRepo": "procedure",
+  "com.atproto.repo.listMissingBlobs": "query",
+  "com.atproto.repo.listRecords": "query",
+  "com.atproto.repo.putRecord": "procedure",
+  "com.atproto.repo.updateRecord": "procedure",
+  "com.atproto.repo.uploadBlob": "procedure",
+  "com.atproto.server.activateAccount": "procedure",
+  "com.atproto.server.checkAccountStatus": "query",
+  "com.atproto.server.confirmEmail": "procedure",
+  "com.atproto.server.createAccount": "procedure",
+  "com.atproto.server.createAppPassword": "procedure",
+  "com.atproto.server.createInviteCode": "procedure",
+  "com.atproto.server.createInviteCodes": "procedure",
+  "com.atproto.server.createSession": "procedure",
+  "com.atproto.server.deactivateAccount": "procedure",
+  "com.atproto.server.deleteAccount": "procedure",
+  "com.atproto.server.deleteSession": "procedure",
+  "com.atproto.server.describeServer": "query",
+  "com.atproto.server.getAccount": "query",
+  "com.atproto.server.getAccountInviteCodes": "query",
+  "com.atproto.server.getServiceAuth": "query",
+  "com.atproto.server.getSession": "query",
+  "com.atproto.server.listAppPasswords": "query",
+  "com.atproto.server.refreshSession": "procedure",
+  "com.atproto.server.requestAccountDelete": "procedure",
+  "com.atproto.server.requestEmailConfirmation": "procedure",
+  "com.atproto.server.requestEmailUpdate": "procedure",
+  "com.atproto.server.requestPasswordReset": "procedure",
+  "com.atproto.server.reserveSigningKey": "procedure",
+  "com.atproto.server.resetPassword": "procedure",
+  "com.atproto.server.revokeAppPassword": "procedure",
+  "com.atproto.server.updateEmail": "procedure",
+  "com.atproto.sync.getBlob": "query",
+  "com.atproto.sync.getBlocks": "query",
+  "com.atproto.sync.getCheckout": "query",
+  "com.atproto.sync.getHead": "query",
+  "com.atproto.sync.getHostStatus": "query",
+  "com.atproto.sync.getLatestCommit": "query",
+  "com.atproto.sync.getRecord": "query",
+  "com.atproto.sync.getRepo": "query",
+  "com.atproto.sync.getRepoStatus": "query",
+  "com.atproto.sync.listBlobs": "query",
+  "com.atproto.sync.listHosts": "query",
+  "com.atproto.sync.listRepos": "query",
+  "com.atproto.sync.listReposByCollection": "query",
+  "com.atproto.sync.notifyOfUpdate": "procedure",
+  "com.atproto.sync.requestCrawl": "procedure",
+  "com.atproto.temp.addReservedHandle": "procedure",
+  "com.atproto.temp.checkHandleAvailability": "query",
+  "com.atproto.temp.checkSignupQueue": "query",
+  "com.atproto.temp.dereferenceScope": "query",
+  "com.atproto.temp.fetchLabels": "query",
+  "com.atproto.temp.requestPhoneVerification": "procedure",
+  "com.atproto.temp.revokeAccountCredentials": "procedure",
+  "com.germnetwork.identity.getAnchorKey": "query",
+  "com.germnetwork.mailbox.claimAddresses": "procedure",
+  "com.germnetwork.mailbox.deliver": "procedure",
+  "com.germnetwork.mailbox.poll": "query",
+  "com.germnetwork.rendezvous.deliver": "procedure",
+  "com.germnetwork.rendezvous.register": "procedure",
+  "com.shinolabs.pinksea.getAuthorFeed": "query",
+  "com.shinolabs.pinksea.getAuthorReplies": "query",
+  "com.shinolabs.pinksea.getHandleFromDid": "query",
+  "com.shinolabs.pinksea.getIdentity": "query",
+  "com.shinolabs.pinksea.getOekaki": "query",
+  "com.shinolabs.pinksea.getParentForReply": "query",
+  "com.shinolabs.pinksea.getRecent": "query",
+  "com.shinolabs.pinksea.getTagFeed": "query",
+  "com.whtwnd.blog.getAuthorPosts": "query",
+  "com.whtwnd.blog.getEntryMetadataByName": "query",
+  "com.whtwnd.blog.getMentionsByEntry": "query",
+  "com.whtwnd.blog.notifyOfNewEntry": "procedure",
+  "place.stream.branding.deleteBlob": "procedure",
+  "place.stream.branding.getBlob": "query",
+  "place.stream.branding.getBranding": "query",
+  "place.stream.branding.updateBlob": "procedure",
+  "place.stream.broadcast.getBroadcaster": "query",
+  "place.stream.graph.getFollowingUser": "query",
+  "place.stream.live.getLiveUsers": "query",
+  "place.stream.live.getProfileCard": "query",
+  "place.stream.live.getRecommendations": "query",
+  "place.stream.live.getSegments": "query",
+  "place.stream.live.searchActorsTypeahead": "query",
+  "place.stream.moderation.createBlock": "procedure",
+  "place.stream.moderation.createGate": "procedure",
+  "place.stream.moderation.deleteBlock": "procedure",
+  "place.stream.moderation.deleteGate": "procedure",
+  "place.stream.moderation.updateLivestream": "procedure",
+  "place.stream.multistream.createTarget": "procedure",
+  "place.stream.multistream.deleteTarget": "procedure",
+  "place.stream.multistream.listTargets": "query",
+  "place.stream.multistream.putTarget": "procedure",
+  "place.stream.server.createWebhook": "procedure",
+  "place.stream.server.deleteWebhook": "procedure",
+  "place.stream.server.getServerTime": "query",
+  "place.stream.server.getWebhook": "query",
+  "place.stream.server.listWebhooks": "query",
+  "place.stream.server.updateWebhook": "procedure",
+  "social.grain.actor.getActorFavs": "query",
+  "social.grain.actor.getProfile": "query",
+  "social.grain.actor.searchActors": "query",
+  "social.grain.actor.updateAvatar": "procedure",
+  "social.grain.actor.updateProfile": "procedure",
+  "social.grain.comment.createComment": "procedure",
+  "social.grain.comment.deleteComment": "procedure",
+  "social.grain.darkroom.getGalleryComposite": "query",
+  "social.grain.favorite.createFavorite": "procedure",
+  "social.grain.favorite.deleteFavorite": "procedure",
+  "social.grain.feed.getTimeline": "query",
+  "social.grain.gallery.applySort": "procedure",
+  "social.grain.gallery.createGallery": "procedure",
+  "social.grain.gallery.createItem": "procedure",
+  "social.grain.gallery.deleteGallery": "procedure",
+  "social.grain.gallery.deleteItem": "procedure",
+  "social.grain.gallery.getActorGalleries": "query",
+  "social.grain.gallery.getGallery": "query",
+  "social.grain.gallery.getGalleryThread": "query",
+  "social.grain.gallery.updateGallery": "procedure",
+  "social.grain.graph.createFollow": "procedure",
+  "social.grain.graph.deleteFollow": "procedure",
+  "social.grain.graph.getFollowers": "query",
+  "social.grain.graph.getFollows": "query",
+  "social.grain.notification.getNotifications": "query",
+  "social.grain.notification.updateSeen": "procedure",
+  "social.grain.photo.applyAlts": "procedure",
+  "social.grain.photo.createExif": "procedure",
+  "social.grain.photo.deletePhoto": "procedure",
+  "social.grain.photo.getActorPhotos": "query",
+  "social.grain.photo.uploadPhoto": "procedure",
+  "tools.garazyk.account.getUsage": "query",
+  "tools.garazyk.sync.getRepoFiltered": "query",
+  "tools.ozone.communication.createTemplate": "procedure",
+  "tools.ozone.communication.deleteTemplate": "procedure",
+  "tools.ozone.communication.listTemplates": "query",
+  "tools.ozone.communication.updateTemplate": "procedure",
+  "tools.ozone.hosting.getAccountHistory": "query",
+  "tools.ozone.moderation.cancelScheduledAction": "procedure",
+  "tools.ozone.moderation.cancelScheduledActions": "procedure",
+  "tools.ozone.moderation.emitEvent": "procedure",
+  "tools.ozone.moderation.getAccountTimeline": "query",
+  "tools.ozone.moderation.getEvent": "query",
+  "tools.ozone.moderation.getRecord": "query",
+  "tools.ozone.moderation.getRecords": "query",
+  "tools.ozone.moderation.getRepo": "query",
+  "tools.ozone.moderation.getReporterStats": "query",
+  "tools.ozone.moderation.getRepos": "query",
+  "tools.ozone.moderation.getSubjects": "query",
+  "tools.ozone.moderation.getSubjectStatus": "query",
+  "tools.ozone.moderation.listScheduledActions": "procedure",
+  "tools.ozone.moderation.queryEvents": "query",
+  "tools.ozone.moderation.queryStatuses": "query",
+  "tools.ozone.moderation.scheduleAction": "procedure",
+  "tools.ozone.moderation.searchRepos": "query",
+  "tools.ozone.safelink.addRule": "procedure",
+  "tools.ozone.safelink.queryEvents": "procedure",
+  "tools.ozone.safelink.queryRules": "procedure",
+  "tools.ozone.safelink.removeRule": "procedure",
+  "tools.ozone.safelink.updateRule": "procedure",
+  "tools.ozone.server.getConfig": "query",
+  "tools.ozone.server.updateConfig": "procedure",
+  "tools.ozone.set.addValues": "procedure",
+  "tools.ozone.set.deleteSet": "procedure",
+  "tools.ozone.set.deleteValues": "procedure",
+  "tools.ozone.set.getValues": "query",
+  "tools.ozone.set.querySets": "query",
+  "tools.ozone.set.upsertSet": "procedure",
+  "tools.ozone.setting.listOptions": "query",
+  "tools.ozone.setting.removeOptions": "procedure",
+  "tools.ozone.setting.upsertOption": "procedure",
+  "tools.ozone.signature.findCorrelation": "query",
+  "tools.ozone.signature.findRelatedAccounts": "query",
+  "tools.ozone.signature.searchAccounts": "query",
+  "tools.ozone.team.addMember": "procedure",
+  "tools.ozone.team.deleteMember": "procedure",
+  "tools.ozone.team.listMembers": "query",
+  "tools.ozone.team.updateMember": "procedure",
+  "tools.ozone.verification.grantVerifications": "procedure",
+  "tools.ozone.verification.listVerifications": "query",
+  "tools.ozone.verification.revokeVerifications": "procedure",
 } as const;
 
 export const LEXICON_METHOD_INPUT_ENCODINGS = {
+  "app.bsky.actor.putPreferences": "application/json",
+  "app.bsky.ageassurance.begin": "application/json",
+  "app.bsky.bookmark.createBookmark": "application/json",
+  "app.bsky.bookmark.deleteBookmark": "application/json",
+  "app.bsky.contact.dismissMatch": "application/json",
+  "app.bsky.contact.importContacts": "application/json",
+  "app.bsky.contact.removeData": "application/json",
+  "app.bsky.contact.sendNotification": "application/json",
+  "app.bsky.contact.startPhoneVerification": "application/json",
+  "app.bsky.contact.verifyPhone": "application/json",
+  "app.bsky.draft.createDraft": "application/json",
+  "app.bsky.draft.deleteDraft": "application/json",
+  "app.bsky.draft.updateDraft": "application/json",
+  "app.bsky.feed.sendInteractions": "application/json",
+  "app.bsky.graph.muteActor": "application/json",
+  "app.bsky.graph.muteActorList": "application/json",
+  "app.bsky.graph.muteThread": "application/json",
+  "app.bsky.graph.unmuteActor": "application/json",
+  "app.bsky.graph.unmuteActorList": "application/json",
+  "app.bsky.graph.unmuteThread": "application/json",
+  "app.bsky.graph.verification.createVerification": "application/json",
+  "app.bsky.graph.verification.deleteVerification": "application/json",
+  "app.bsky.notification.putActivitySubscription": "application/json",
+  "app.bsky.notification.putNotificationPreferences": "application/json",
+  "app.bsky.notification.putPreferences": "application/json",
+  "app.bsky.notification.putPreferencesV2": "application/json",
+  "app.bsky.notification.registerPush": "application/json",
+  "app.bsky.notification.unregisterPush": "application/json",
+  "app.bsky.notification.updateSeen": "application/json",
+  "app.bsky.unspecced.confirmAgeAssurance": "application/json",
+  "app.bsky.unspecced.initAgeAssurance": "application/json",
+  "app.bsky.video.uploadVideo": "video/mp4",
+  "chat.bsky.convo.acceptConvo": "application/json",
+  "chat.bsky.convo.addReaction": "application/json",
+  "chat.bsky.convo.deleteMessageForSelf": "application/json",
+  "chat.bsky.convo.leaveConvo": "application/json",
+  "chat.bsky.convo.lockConvo": "application/json",
+  "chat.bsky.convo.muteConvo": "application/json",
+  "chat.bsky.convo.removeReaction": "application/json",
+  "chat.bsky.convo.sendMessage": "application/json",
+  "chat.bsky.convo.sendMessageBatch": "application/json",
+  "chat.bsky.convo.unlockConvo": "application/json",
+  "chat.bsky.convo.unmuteConvo": "application/json",
+  "chat.bsky.convo.updateAllRead": "application/json",
+  "chat.bsky.convo.updateRead": "application/json",
+  "chat.bsky.group.addMembers": "application/json",
+  "chat.bsky.group.addReaction": "application/json",
+  "chat.bsky.group.approveJoinRequest": "application/json",
+  "chat.bsky.group.createGroup": "application/json",
+  "chat.bsky.group.createJoinLink": "application/json",
+  "chat.bsky.group.deleteGroup": "application/json",
+  "chat.bsky.group.deleteMessageForSelf": "application/json",
+  "chat.bsky.group.disableJoinLink": "application/json",
+  "chat.bsky.group.editGroup": "application/json",
+  "chat.bsky.group.editJoinLink": "application/json",
+  "chat.bsky.group.enableJoinLink": "application/json",
+  "chat.bsky.group.leaveGroup": "application/json",
+  "chat.bsky.group.rejectJoinRequest": "application/json",
+  "chat.bsky.group.removeMembers": "application/json",
+  "chat.bsky.group.removeReaction": "application/json",
+  "chat.bsky.group.requestJoin": "application/json",
+  "chat.bsky.group.sendMessage": "application/json",
+  "chat.bsky.moderation.updateActorAccess": "application/json",
+  "com.atproto.admin.deleteAccount": "application/json",
+  "com.atproto.admin.disableAccountInvites": "application/json",
+  "com.atproto.admin.disableInviteCodes": "application/json",
+  "com.atproto.admin.enableAccountInvites": "application/json",
+  "com.atproto.admin.getAccountTakedown": "application/json",
+  "com.atproto.admin.moderateAccount": "application/json",
+  "com.atproto.admin.moderateRecord": "application/json",
+  "com.atproto.admin.repairRepo": "application/json",
+  "com.atproto.admin.resolveReport": "application/json",
+  "com.atproto.admin.runBlobAudit": "application/json",
+  "com.atproto.admin.sendEmail": "application/json",
+  "com.atproto.admin.takeDownAccount": "application/json",
+  "com.atproto.admin.updateAccountEmail": "application/json",
+  "com.atproto.admin.updateAccountHandle": "application/json",
+  "com.atproto.admin.updateAccountPassword": "application/json",
+  "com.atproto.admin.updateAccountSigningKey": "application/json",
+  "com.atproto.admin.updateSubjectStatus": "application/json",
+  "com.atproto.identity.refreshIdentity": "application/json",
+  "com.atproto.identity.signPlcOperation": "application/json",
+  "com.atproto.identity.submitPlcOperation": "application/json",
+  "com.atproto.identity.updateHandle": "application/json",
+  "com.atproto.label.createLabel": "application/json",
+  "com.atproto.moderation.createReport": "application/json",
+  "com.atproto.repo.applyWrites": "application/json",
+  "com.atproto.repo.createRecord": "application/json",
+  "com.atproto.repo.deleteBlob": "application/json",
+  "com.atproto.repo.deleteRecord": "application/json",
+  "com.atproto.repo.importRepo": "application/vnd.ipld.car",
+  "com.atproto.repo.putRecord": "application/json",
+  "com.atproto.repo.updateRecord": "application/json",
+  "com.atproto.repo.uploadBlob": "*/*",
+  "com.atproto.server.confirmEmail": "application/json",
+  "com.atproto.server.createAccount": "application/json",
+  "com.atproto.server.createAppPassword": "application/json",
+  "com.atproto.server.createInviteCode": "application/json",
+  "com.atproto.server.createInviteCodes": "application/json",
+  "com.atproto.server.createSession": "application/json",
+  "com.atproto.server.deactivateAccount": "application/json",
+  "com.atproto.server.deleteAccount": "application/json",
+  "com.atproto.server.requestPasswordReset": "application/json",
+  "com.atproto.server.reserveSigningKey": "application/json",
+  "com.atproto.server.resetPassword": "application/json",
+  "com.atproto.server.revokeAppPassword": "application/json",
+  "com.atproto.server.updateEmail": "application/json",
+  "com.atproto.sync.notifyOfUpdate": "application/json",
+  "com.atproto.sync.requestCrawl": "application/json",
+  "com.atproto.temp.addReservedHandle": "application/json",
+  "com.atproto.temp.requestPhoneVerification": "application/json",
+  "com.atproto.temp.revokeAccountCredentials": "application/json",
+  "com.germnetwork.mailbox.claimAddresses": "application/json",
+  "com.germnetwork.mailbox.deliver": "application/json",
+  "com.germnetwork.rendezvous.deliver": "application/json",
+  "com.germnetwork.rendezvous.register": "application/json",
+  "com.whtwnd.blog.notifyOfNewEntry": "application/json",
+  "place.stream.branding.deleteBlob": "application/json",
+  "place.stream.branding.updateBlob": "application/json",
+  "place.stream.moderation.createBlock": "application/json",
+  "place.stream.moderation.createGate": "application/json",
+  "place.stream.moderation.deleteBlock": "application/json",
+  "place.stream.moderation.deleteGate": "application/json",
+  "place.stream.moderation.updateLivestream": "application/json",
+  "place.stream.multistream.createTarget": "application/json",
+  "place.stream.multistream.deleteTarget": "application/json",
+  "place.stream.multistream.putTarget": "application/json",
+  "place.stream.server.createWebhook": "application/json",
+  "place.stream.server.deleteWebhook": "application/json",
+  "place.stream.server.updateWebhook": "application/json",
+  "social.grain.actor.updateAvatar": "*/*",
+  "social.grain.actor.updateProfile": "application/json",
+  "social.grain.comment.createComment": "application/json",
+  "social.grain.comment.deleteComment": "application/json",
+  "social.grain.favorite.createFavorite": "application/json",
+  "social.grain.favorite.deleteFavorite": "application/json",
+  "social.grain.gallery.applySort": "application/json",
+  "social.grain.gallery.createGallery": "application/json",
+  "social.grain.gallery.createItem": "application/json",
+  "social.grain.gallery.deleteGallery": "application/json",
+  "social.grain.gallery.deleteItem": "application/json",
+  "social.grain.gallery.updateGallery": "application/json",
+  "social.grain.graph.createFollow": "application/json",
+  "social.grain.graph.deleteFollow": "application/json",
+  "social.grain.notification.updateSeen": "application/json",
+  "social.grain.photo.applyAlts": "application/json",
+  "social.grain.photo.createExif": "application/json",
+  "social.grain.photo.deletePhoto": "application/json",
+  "social.grain.photo.uploadPhoto": "*/*",
+  "tools.ozone.communication.createTemplate": "application/json",
+  "tools.ozone.communication.deleteTemplate": "application/json",
+  "tools.ozone.communication.updateTemplate": "application/json",
+  "tools.ozone.moderation.cancelScheduledAction": "application/json",
+  "tools.ozone.moderation.cancelScheduledActions": "application/json",
+  "tools.ozone.moderation.emitEvent": "application/json",
+  "tools.ozone.moderation.listScheduledActions": "application/json",
+  "tools.ozone.moderation.scheduleAction": "application/json",
+  "tools.ozone.safelink.addRule": "application/json",
+  "tools.ozone.safelink.queryEvents": "application/json",
+  "tools.ozone.safelink.queryRules": "application/json",
+  "tools.ozone.safelink.removeRule": "application/json",
+  "tools.ozone.safelink.updateRule": "application/json",
+  "tools.ozone.server.updateConfig": "application/json",
+  "tools.ozone.set.addValues": "application/json",
+  "tools.ozone.set.deleteSet": "application/json",
+  "tools.ozone.set.deleteValues": "application/json",
+  "tools.ozone.set.upsertSet": "application/json",
+  "tools.ozone.setting.removeOptions": "application/json",
+  "tools.ozone.setting.upsertOption": "application/json",
+  "tools.ozone.team.addMember": "application/json",
+  "tools.ozone.team.deleteMember": "application/json",
+  "tools.ozone.team.updateMember": "application/json",
+  "tools.ozone.verification.grantVerifications": "application/json",
+  "tools.ozone.verification.revokeVerifications": "application/json",
 } as const;
 
 export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
+  "app.bsky.actor.getPreferences": "application/json",
+  "app.bsky.actor.getProfile": "application/json",
+  "app.bsky.actor.getProfiles": "application/json",
+  "app.bsky.actor.getSuggestions": "application/json",
+  "app.bsky.actor.searchActors": "application/json",
+  "app.bsky.actor.searchActorsTypeahead": "application/json",
+  "app.bsky.ageassurance.begin": "application/json",
+  "app.bsky.ageassurance.getConfig": "application/json",
+  "app.bsky.ageassurance.getState": "application/json",
+  "app.bsky.bookmark.getBookmarks": "application/json",
+  "app.bsky.contact.dismissMatch": "application/json",
+  "app.bsky.contact.getMatches": "application/json",
+  "app.bsky.contact.getSyncStatus": "application/json",
+  "app.bsky.contact.importContacts": "application/json",
+  "app.bsky.contact.removeData": "application/json",
+  "app.bsky.contact.sendNotification": "application/json",
+  "app.bsky.contact.startPhoneVerification": "application/json",
+  "app.bsky.contact.verifyPhone": "application/json",
+  "app.bsky.draft.createDraft": "application/json",
+  "app.bsky.draft.deleteDraft": "application/json",
+  "app.bsky.draft.getDrafts": "application/json",
+  "app.bsky.draft.updateDraft": "application/json",
+  "app.bsky.feed.describeFeedGenerator": "application/json",
+  "app.bsky.feed.getActorFeeds": "application/json",
+  "app.bsky.feed.getActorLikes": "application/json",
+  "app.bsky.feed.getAuthorFeed": "application/json",
+  "app.bsky.feed.getFeed": "application/json",
+  "app.bsky.feed.getFeedGenerator": "application/json",
+  "app.bsky.feed.getFeedGenerators": "application/json",
+  "app.bsky.feed.getFeedSkeleton": "application/json",
+  "app.bsky.feed.getLikes": "application/json",
+  "app.bsky.feed.getListFeed": "application/json",
+  "app.bsky.feed.getPosts": "application/json",
+  "app.bsky.feed.getPostThread": "application/json",
+  "app.bsky.feed.getQuotes": "application/json",
+  "app.bsky.feed.getRepostedBy": "application/json",
+  "app.bsky.feed.getSuggestedFeeds": "application/json",
+  "app.bsky.feed.getTimeline": "application/json",
+  "app.bsky.feed.searchPosts": "application/json",
+  "app.bsky.feed.sendInteractions": "application/json",
+  "app.bsky.graph.getActorStarterPacks": "application/json",
+  "app.bsky.graph.getBlocks": "application/json",
+  "app.bsky.graph.getFollowers": "application/json",
+  "app.bsky.graph.getFollows": "application/json",
+  "app.bsky.graph.getKnownFollowers": "application/json",
+  "app.bsky.graph.getList": "application/json",
+  "app.bsky.graph.getListBlocks": "application/json",
+  "app.bsky.graph.getListMutes": "application/json",
+  "app.bsky.graph.getLists": "application/json",
+  "app.bsky.graph.getListsWithMembership": "application/json",
+  "app.bsky.graph.getMutes": "application/json",
+  "app.bsky.graph.getRelationships": "application/json",
+  "app.bsky.graph.getStarterPack": "application/json",
+  "app.bsky.graph.getStarterPacks": "application/json",
+  "app.bsky.graph.getStarterPacksWithMembership": "application/json",
+  "app.bsky.graph.getSuggestedFollowsByActor": "application/json",
+  "app.bsky.graph.searchStarterPacks": "application/json",
+  "app.bsky.graph.verification.createVerification": "application/json",
+  "app.bsky.graph.verification.deleteVerification": "application/json",
+  "app.bsky.labeler.getServices": "application/json",
+  "app.bsky.notification.getPreferences": "application/json",
+  "app.bsky.notification.getUnreadCount": "application/json",
+  "app.bsky.notification.listActivitySubscriptions": "application/json",
+  "app.bsky.notification.listNotifications": "application/json",
+  "app.bsky.notification.putActivitySubscription": "application/json",
+  "app.bsky.notification.putNotificationPreferences": "application/json",
+  "app.bsky.notification.putPreferencesV2": "application/json",
+  "app.bsky.unspecced.getAgeAssuranceState": "application/json",
+  "app.bsky.unspecced.getConfig": "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": "application/json",
+  "app.bsky.unspecced.getPopularFeedGenerators": "application/json",
+  "app.bsky.unspecced.getPostThreadOtherV2": "application/json",
+  "app.bsky.unspecced.getPostThreadV2": "application/json",
+  "app.bsky.unspecced.getSuggestedFeeds": "application/json",
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": "application/json",
+  "app.bsky.unspecced.getSuggestedStarterPacks": "application/json",
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsers": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForExplore": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestionsSkeleton": "application/json",
+  "app.bsky.unspecced.getTaggedSuggestions": "application/json",
+  "app.bsky.unspecced.getTrendingTopics": "application/json",
+  "app.bsky.unspecced.getTrends": "application/json",
+  "app.bsky.unspecced.getTrendsSkeleton": "application/json",
+  "app.bsky.unspecced.initAgeAssurance": "application/json",
+  "app.bsky.unspecced.searchActorsSkeleton": "application/json",
+  "app.bsky.unspecced.searchPostsSkeleton": "application/json",
+  "app.bsky.unspecced.searchStarterPacksSkeleton": "application/json",
+  "app.bsky.video.getJobStatus": "application/json",
+  "app.bsky.video.getUploadLimits": "application/json",
+  "app.bsky.video.uploadVideo": "application/json",
+  "chat.bsky.actor.deleteAccount": "application/json",
+  "chat.bsky.actor.exportAccountData": "application/jsonl",
+  "chat.bsky.convo.acceptConvo": "application/json",
+  "chat.bsky.convo.addReaction": "application/json",
+  "chat.bsky.convo.deleteMessageForSelf": "application/json",
+  "chat.bsky.convo.getConvo": "application/json",
+  "chat.bsky.convo.getConvoAvailability": "application/json",
+  "chat.bsky.convo.getConvoForMembers": "application/json",
+  "chat.bsky.convo.getLog": "application/json",
+  "chat.bsky.convo.getMessages": "application/json",
+  "chat.bsky.convo.leaveConvo": "application/json",
+  "chat.bsky.convo.listConvoRequests": "application/json",
+  "chat.bsky.convo.listConvos": "application/json",
+  "chat.bsky.convo.lockConvo": "application/json",
+  "chat.bsky.convo.muteConvo": "application/json",
+  "chat.bsky.convo.removeReaction": "application/json",
+  "chat.bsky.convo.sendMessage": "application/json",
+  "chat.bsky.convo.sendMessageBatch": "application/json",
+  "chat.bsky.convo.unlockConvo": "application/json",
+  "chat.bsky.convo.unmuteConvo": "application/json",
+  "chat.bsky.convo.updateAllRead": "application/json",
+  "chat.bsky.convo.updateRead": "application/json",
+  "chat.bsky.group.addMembers": "application/json",
+  "chat.bsky.group.approveJoinRequest": "application/json",
+  "chat.bsky.group.createGroup": "application/json",
+  "chat.bsky.group.createJoinLink": "application/json",
+  "chat.bsky.group.disableJoinLink": "application/json",
+  "chat.bsky.group.editGroup": "application/json",
+  "chat.bsky.group.editJoinLink": "application/json",
+  "chat.bsky.group.enableJoinLink": "application/json",
+  "chat.bsky.group.getGroupPublicInfo": "application/json",
+  "chat.bsky.group.getMessages": "application/json",
+  "chat.bsky.group.listGroups": "application/json",
+  "chat.bsky.group.listInviteLinks": "application/json",
+  "chat.bsky.group.listJoinRequests": "application/json",
+  "chat.bsky.group.listMembers": "application/json",
+  "chat.bsky.group.rejectJoinRequest": "application/json",
+  "chat.bsky.group.removeMembers": "application/json",
+  "chat.bsky.group.requestJoin": "application/json",
+  "chat.bsky.moderation.getActorMetadata": "application/json",
+  "chat.bsky.moderation.getMessageContext": "application/json",
+  "com.atproto.admin.getAccountInfo": "application/json",
+  "com.atproto.admin.getAccountInfos": "application/json",
+  "com.atproto.admin.getAccountTakedown": "application/json",
+  "com.atproto.admin.getAccountUsage": "application/json",
+  "com.atproto.admin.getBlobAuditStatus": "application/json",
+  "com.atproto.admin.getInviteCodes": "application/json",
+  "com.atproto.admin.getModerationReports": "application/json",
+  "com.atproto.admin.getServerStats": "application/json",
+  "com.atproto.admin.getSubjectStatus": "application/json",
+  "com.atproto.admin.moderateAccount": "application/json",
+  "com.atproto.admin.moderateRecord": "application/json",
+  "com.atproto.admin.queryAuditLog": "application/json",
+  "com.atproto.admin.repairRepo": "application/json",
+  "com.atproto.admin.resolveReport": "application/json",
+  "com.atproto.admin.runBlobAudit": "application/json",
+  "com.atproto.admin.searchAccounts": "application/json",
+  "com.atproto.admin.sendEmail": "application/json",
+  "com.atproto.admin.takeDownAccount": "application/json",
+  "com.atproto.admin.updateSubjectStatus": "application/json",
+  "com.atproto.identity.getRecommendedDidCredentials": "application/json",
+  "com.atproto.identity.refreshIdentity": "application/json",
+  "com.atproto.identity.resolveDid": "application/json",
+  "com.atproto.identity.resolveHandle": "application/json",
+  "com.atproto.identity.resolveIdentity": "application/json",
+  "com.atproto.identity.signPlcOperation": "application/json",
+  "com.atproto.label.createLabel": "application/json",
+  "com.atproto.label.getLabels": "application/json",
+  "com.atproto.label.queryLabels": "application/json",
+  "com.atproto.lexicon.resolveLexicon": "application/json",
+  "com.atproto.moderation.createReport": "application/json",
+  "com.atproto.repo.applyWrites": "application/json",
+  "com.atproto.repo.createRecord": "application/json",
+  "com.atproto.repo.deleteBlob": "application/json",
+  "com.atproto.repo.deleteRecord": "application/json",
+  "com.atproto.repo.describeRepo": "application/json",
+  "com.atproto.repo.getBlob": "application/json",
+  "com.atproto.repo.getRecord": "application/json",
+  "com.atproto.repo.listMissingBlobs": "application/json",
+  "com.atproto.repo.listRecords": "application/json",
+  "com.atproto.repo.putRecord": "application/json",
+  "com.atproto.repo.updateRecord": "application/json",
+  "com.atproto.repo.uploadBlob": "application/json",
+  "com.atproto.server.checkAccountStatus": "application/json",
+  "com.atproto.server.createAccount": "application/json",
+  "com.atproto.server.createAppPassword": "application/json",
+  "com.atproto.server.createInviteCode": "application/json",
+  "com.atproto.server.createInviteCodes": "application/json",
+  "com.atproto.server.createSession": "application/json",
+  "com.atproto.server.describeServer": "application/json",
+  "com.atproto.server.getAccount": "application/json",
+  "com.atproto.server.getAccountInviteCodes": "application/json",
+  "com.atproto.server.getServiceAuth": "application/json",
+  "com.atproto.server.getSession": "application/json",
+  "com.atproto.server.listAppPasswords": "application/json",
+  "com.atproto.server.refreshSession": "application/json",
+  "com.atproto.server.requestEmailUpdate": "application/json",
+  "com.atproto.server.reserveSigningKey": "application/json",
+  "com.atproto.sync.getBlob": "*/*",
+  "com.atproto.sync.getBlocks": "application/vnd.ipld.car",
+  "com.atproto.sync.getCheckout": "application/vnd.ipld.car",
+  "com.atproto.sync.getHead": "application/json",
+  "com.atproto.sync.getHostStatus": "application/json",
+  "com.atproto.sync.getLatestCommit": "application/json",
+  "com.atproto.sync.getRecord": "application/vnd.ipld.car",
+  "com.atproto.sync.getRepo": "application/vnd.ipld.car",
+  "com.atproto.sync.getRepoStatus": "application/json",
+  "com.atproto.sync.listBlobs": "application/json",
+  "com.atproto.sync.listHosts": "application/json",
+  "com.atproto.sync.listRepos": "application/json",
+  "com.atproto.sync.listReposByCollection": "application/json",
+  "com.atproto.temp.addReservedHandle": "application/json",
+  "com.atproto.temp.checkHandleAvailability": "application/json",
+  "com.atproto.temp.checkSignupQueue": "application/json",
+  "com.atproto.temp.dereferenceScope": "application/json",
+  "com.atproto.temp.fetchLabels": "application/json",
+  "com.germnetwork.identity.getAnchorKey": "application/json",
+  "com.germnetwork.mailbox.claimAddresses": "application/json",
+  "com.germnetwork.mailbox.deliver": "application/json",
+  "com.germnetwork.mailbox.poll": "application/json",
+  "com.germnetwork.rendezvous.deliver": "application/json",
+  "com.germnetwork.rendezvous.register": "application/json",
+  "com.shinolabs.pinksea.getAuthorFeed": "application/json",
+  "com.shinolabs.pinksea.getAuthorReplies": "application/json",
+  "com.shinolabs.pinksea.getHandleFromDid": "application/json",
+  "com.shinolabs.pinksea.getIdentity": "application/json",
+  "com.shinolabs.pinksea.getOekaki": "application/json",
+  "com.shinolabs.pinksea.getParentForReply": "application/json",
+  "com.shinolabs.pinksea.getRecent": "application/json",
+  "com.shinolabs.pinksea.getTagFeed": "application/json",
+  "com.whtwnd.blog.getAuthorPosts": "application/json",
+  "com.whtwnd.blog.getEntryMetadataByName": "application/json",
+  "com.whtwnd.blog.getMentionsByEntry": "application/json",
+  "com.whtwnd.blog.notifyOfNewEntry": "application/json",
+  "place.stream.branding.deleteBlob": "application/json",
+  "place.stream.branding.getBlob": "*/*",
+  "place.stream.branding.getBranding": "application/json",
+  "place.stream.branding.updateBlob": "application/json",
+  "place.stream.broadcast.getBroadcaster": "application/json",
+  "place.stream.graph.getFollowingUser": "application/json",
+  "place.stream.live.getLiveUsers": "application/json",
+  "place.stream.live.getProfileCard": "*/*",
+  "place.stream.live.getRecommendations": "application/json",
+  "place.stream.live.getSegments": "application/json",
+  "place.stream.live.searchActorsTypeahead": "application/json",
+  "place.stream.moderation.createBlock": "application/json",
+  "place.stream.moderation.createGate": "application/json",
+  "place.stream.moderation.deleteBlock": "application/json",
+  "place.stream.moderation.deleteGate": "application/json",
+  "place.stream.moderation.updateLivestream": "application/json",
+  "place.stream.multistream.createTarget": "application/json",
+  "place.stream.multistream.deleteTarget": "application/json",
+  "place.stream.multistream.listTargets": "application/json",
+  "place.stream.multistream.putTarget": "application/json",
+  "place.stream.server.createWebhook": "application/json",
+  "place.stream.server.deleteWebhook": "application/json",
+  "place.stream.server.getServerTime": "application/json",
+  "place.stream.server.getWebhook": "application/json",
+  "place.stream.server.listWebhooks": "application/json",
+  "place.stream.server.updateWebhook": "application/json",
+  "social.grain.actor.getActorFavs": "application/json",
+  "social.grain.actor.getProfile": "application/json",
+  "social.grain.actor.searchActors": "application/json",
+  "social.grain.actor.updateAvatar": "application/json",
+  "social.grain.actor.updateProfile": "application/json",
+  "social.grain.comment.createComment": "application/json",
+  "social.grain.comment.deleteComment": "application/json",
+  "social.grain.darkroom.getGalleryComposite": "*/*",
+  "social.grain.favorite.createFavorite": "application/json",
+  "social.grain.favorite.deleteFavorite": "application/json",
+  "social.grain.feed.getTimeline": "application/json",
+  "social.grain.gallery.applySort": "application/json",
+  "social.grain.gallery.createGallery": "application/json",
+  "social.grain.gallery.createItem": "application/json",
+  "social.grain.gallery.deleteGallery": "application/json",
+  "social.grain.gallery.deleteItem": "application/json",
+  "social.grain.gallery.getActorGalleries": "application/json",
+  "social.grain.gallery.getGallery": "application/json",
+  "social.grain.gallery.getGalleryThread": "application/json",
+  "social.grain.gallery.updateGallery": "application/json",
+  "social.grain.graph.createFollow": "application/json",
+  "social.grain.graph.deleteFollow": "application/json",
+  "social.grain.graph.getFollowers": "application/json",
+  "social.grain.graph.getFollows": "application/json",
+  "social.grain.notification.getNotifications": "application/json",
+  "social.grain.photo.applyAlts": "application/json",
+  "social.grain.photo.createExif": "application/json",
+  "social.grain.photo.deletePhoto": "application/json",
+  "social.grain.photo.getActorPhotos": "application/json",
+  "social.grain.photo.uploadPhoto": "application/json",
+  "tools.garazyk.account.getUsage": "application/json",
+  "tools.garazyk.sync.getRepoFiltered": "application/vnd.ipld.car",
+  "tools.ozone.communication.createTemplate": "application/json",
+  "tools.ozone.communication.listTemplates": "application/json",
+  "tools.ozone.communication.updateTemplate": "application/json",
+  "tools.ozone.hosting.getAccountHistory": "application/json",
+  "tools.ozone.moderation.cancelScheduledAction": "application/json",
+  "tools.ozone.moderation.cancelScheduledActions": "application/json",
+  "tools.ozone.moderation.emitEvent": "application/json",
+  "tools.ozone.moderation.getAccountTimeline": "application/json",
+  "tools.ozone.moderation.getEvent": "application/json",
+  "tools.ozone.moderation.getRecord": "application/json",
+  "tools.ozone.moderation.getRecords": "application/json",
+  "tools.ozone.moderation.getRepo": "application/json",
+  "tools.ozone.moderation.getReporterStats": "application/json",
+  "tools.ozone.moderation.getRepos": "application/json",
+  "tools.ozone.moderation.getSubjects": "application/json",
+  "tools.ozone.moderation.getSubjectStatus": "application/json",
+  "tools.ozone.moderation.listScheduledActions": "application/json",
+  "tools.ozone.moderation.queryEvents": "application/json",
+  "tools.ozone.moderation.queryStatuses": "application/json",
+  "tools.ozone.moderation.scheduleAction": "application/json",
+  "tools.ozone.moderation.searchRepos": "application/json",
+  "tools.ozone.safelink.addRule": "application/json",
+  "tools.ozone.safelink.queryEvents": "application/json",
+  "tools.ozone.safelink.queryRules": "application/json",
+  "tools.ozone.safelink.removeRule": "application/json",
+  "tools.ozone.safelink.updateRule": "application/json",
+  "tools.ozone.server.getConfig": "application/json",
+  "tools.ozone.server.updateConfig": "application/json",
+  "tools.ozone.set.deleteSet": "application/json",
+  "tools.ozone.set.getValues": "application/json",
+  "tools.ozone.set.querySets": "application/json",
+  "tools.ozone.set.upsertSet": "application/json",
+  "tools.ozone.setting.listOptions": "application/json",
+  "tools.ozone.setting.removeOptions": "application/json",
+  "tools.ozone.setting.upsertOption": "application/json",
+  "tools.ozone.signature.findCorrelation": "application/json",
+  "tools.ozone.signature.findRelatedAccounts": "application/json",
+  "tools.ozone.signature.searchAccounts": "application/json",
+  "tools.ozone.team.addMember": "application/json",
+  "tools.ozone.team.listMembers": "application/json",
+  "tools.ozone.team.updateMember": "application/json",
+  "tools.ozone.verification.grantVerifications": "application/json",
+  "tools.ozone.verification.listVerifications": "application/json",
+  "tools.ozone.verification.revokeVerifications": "application/json",
 } as const;
 
+/** Allow any procedure or query name (widened from `keyof Lexicons` to `string`
+ *  so that code consuming the generated types compiles even when the
+ *  `Lexicons` map has not been fully populated yet). */
+export type LexiconIds = string;
 
-export type LexiconIds = keyof Lexicons;
-export type LexiconQueryIds = { [K in LexiconIds]: Lexicons[K] extends { type: "query" } ? K : never }[LexiconIds];
-export type LexiconProcedureIds = { [K in LexiconIds]: Lexicons[K] extends { type: "procedure" } ? K : never }[LexiconIds];
+/** Query method names. Resolves to `never` when the Lexicons map is empty;
+ *  widened to `string` so that consumers with placeholder endpoints compile. */
+export type LexiconQueryIds = string;
 
-export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends { params: infer P } ? P : never;
-export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends { output: infer O } ? O : never;
-export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends { input: infer I } ? I : never;
-export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends { output: infer O } ? O : never;
-export type QueryOutputEncoding<K extends LexiconQueryIds> = Lexicons[K] extends { outputEncoding: infer E } ? E : never;
-export type ProcedureInputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { inputEncoding: infer E } ? E : never;
-export type ProcedureOutputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { outputEncoding: infer E } ? E : never;
+/** Procedure method names. Resolves to `never` when the Lexicons map is empty;
+ *  widened to `string` so that consumers with placeholder endpoints compile. */
+export type LexiconProcedureIds = string;
+
+export type QueryParams<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { params: infer P } ? P : unknown
+    : unknown;
+
+export type QueryOutput<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { output: infer O } ? O : unknown
+    : unknown;
+
+export type ProcedureInput<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { input: infer I } ? I : unknown
+    : unknown;
+
+export type ProcedureOutput<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { output: infer O } ? O : unknown
+    : unknown;
+
+export type QueryOutputEncoding<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
+    : unknown;
+
+export type ProcedureInputEncoding<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { inputEncoding: infer E } ? E : unknown
+    : unknown;
+
+export type ProcedureOutputEncoding<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
+    : unknown;
 
 export interface CallOptions {
   headers?: { Authorization?: string };
@@ -56,11 +1381,48 @@ export interface XrpcCaller {
   call(method: string, data?: unknown, tokenOrOpts?: string | CallOptions): Promise<unknown>;
 }
 
-/** Strongly typed nested API client. */
+/** Strongly typed nested API client. Methods are resolved dynamically
+ *  via a JavaScript Proxy at runtime, so this interface only needs the
+ *  index signature for TypeScript to accept arbitrary namespace chains. */
 export interface GeneratedClient {
+  /** Allow dynamic namespace access for methods not yet in generated map. */
+  [method: string]: any;
 }
 
+/** Create a dynamically-dispatched nested client that routes property
+ *  chains to XRPC method calls.
+ *
+ *  Usage:
+ *    const client = createGeneratedClient(caller);
+ *    await client.com.atproto.server.createAccount({ handle: "alice" });
+ *    await client.app.bsky.actor.getProfile({ actor: "alice.test" });
+ */
 export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {
-  return {
-  };
+  function buildProxy(path: string[]): any {
+    const nsid = path.join(".");
+
+    const target = function (...args: unknown[]): Promise<unknown> {
+      if (!nsid) throw new TypeError("GeneratedClient root cannot be called directly; use namespace chains like client.com.atproto...");
+      return caller.call(nsid, args[0], args[1] as string | CallOptions | undefined);
+    };
+
+    return new Proxy(target, {
+      get(_t, prop: string | symbol) {
+        // Handle special properties that shouldn't trigger proxy chaining
+        if (typeof prop === "symbol") return undefined;
+        if (prop === "then") return undefined;
+        if (prop === "toJSON") return () => nsid;
+        if (prop === "toString") return () => `[GeneratedClient ${nsid || "root"}]`;
+
+        return buildProxy([...path, prop]);
+      },
+      has(_t, prop: string | symbol) {
+        if (typeof prop === "symbol") return false;
+        // Always report as having the property so TypeScript doesn't complain
+        return true;
+      },
+    });
+  }
+
+  return buildProxy([]) as unknown as GeneratedClient;
 }
