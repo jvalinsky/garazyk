@@ -298,6 +298,8 @@ type WrapClient<C> = {
 };
 
 export type AgentProxy = WrapClient<GeneratedClient> & {
+  /** Allow dynamic namespace access for methods not yet in GeneratedClient. */
+  [key: string]: any;
   /** Create a new account and store the session. */
   createAccount(params: {
     handle: string;

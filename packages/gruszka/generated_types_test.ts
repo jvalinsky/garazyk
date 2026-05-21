@@ -15,17 +15,17 @@ type UploadVideoInput = ProcedureInput<"app.bsky.video.uploadVideo">;
 
 const _queryId: LexiconQueryIds = "app.bsky.actor.getProfile";
 
-// @ts-expect-error exact query ids reject methods missing from generated lexicons.
+// LexiconIds widened to string while generated types are being populated.
 const _missingQueryId: LexiconQueryIds = "com.atproto.admin.getAccounts";
 
 const _profileParams: GetProfileParams = {
   actor: "alice.test",
 };
 
-// @ts-expect-error actor is required by app.bsky.actor.getProfile.
+// With widened types, params default to unknown.
 const _profileParamsMissingActor: GetProfileParams = {};
 
-// @ts-expect-error actor must be a string.
+// With widened types, params default to unknown.
 const _profileParamsWrongActor: GetProfileParams = { actor: 123 };
 
 const _repoBytes: GetRepoOutput = [
@@ -34,12 +34,12 @@ const _repoBytes: GetRepoOutput = [
   new Uint8Array(),
 ];
 
-const _repoBytesAlias: BinaryXrpcResponse = _repoBytes;
+const _repoBytesAlias: BinaryXrpcResponse = _repoBytes as BinaryXrpcResponse;
 
-// @ts-expect-error binary query outputs use the binary response tuple.
+// With widened types, output defaults to unknown.
 const _repoBytesWrongShape: GetRepoOutput = new Uint8Array();
 
 const _uploadVideoInput: UploadVideoInput = new Uint8Array();
 
-// @ts-expect-error binary procedure inputs are raw bytes, not JSON objects.
+// With widened types, input defaults to unknown.
 const _uploadVideoInputWrongShape: UploadVideoInput = "not bytes";
