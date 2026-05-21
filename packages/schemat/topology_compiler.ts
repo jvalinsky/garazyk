@@ -24,6 +24,55 @@ import {
 
 export type { SourceBuildInfo } from "./topology.ts";
 
+// ---------------------------------------------------------------------------
+// Typed Docker Compose model — replaces Record<string, any> throughout rendering
+// ---------------------------------------------------------------------------
+
+/** Docker Compose build configuration. */
+export interface ComposeBuild {
+  context: string;
+  dockerfile: string;
+  args?: Record<string, string>;
+}
+
+/** Docker Compose healthcheck definition. */
+export interface ComposeHealthCheck {
+  test: string[];
+  interval: string;
+  timeout: string;
+  retries: number;
+  start_period: string;
+}
+
+/** Docker Compose depends_on entry with health condition. */
+export type ComposeDependsOn = Record<string, { condition: string }>;
+
+/** Docker Compose service definition. */
+export interface ComposeService {
+  image?: string;
+  build?: ComposeBuild;
+  container_name?: string;
+  entrypoint?: string[];
+  command?: string[] | string;
+  ports?: string[];
+  volumes?: string[];
+  environment?: Record<string, string>;
+  depends_on?: ComposeDependsOn;
+  healthcheck?: ComposeHealthCheck;
+  networks?: string[] | { topology_net: { aliases?: string[] } };
+}
+
+/** Top-level Docker Compose object serialized to YAML. */
+export interface ComposeObject {
+  services: Record<string, ComposeService>;
+  networks: {
+    topology_net: {
+      driver: string;
+    };
+  };
+  volumes?: Record<string, null>;
+}
+
 /** Options used to compile a topology preset into Docker Compose files. */
 /** OpenTelemetry / SigNoz configuration overrides. */
 export interface OtelOptions {
@@ -146,7 +195,7 @@ export function validatePreset(preset: TopologyPreset): string[] {
  * The OTel Collector listens on 4317 (gRPC) and 4318 (HTTP).
  * The SigNoz UI is on port 3301 (remapped from 8080 to avoid conflict).
  */
-function renderSigNozServices(services: Record<string, any>, volumes: Set<string>, config?: OtelOptions): void {
+function renderSigNozServices(services: Record<string, ComposeService>, volumes: Set<string>, config?: OtelOptions): void {
   const clickhouseImage = `clickhouse/clickhouse-server:${config?.clickhouseImage ?? "25.5"}`;
   const collectorImage = `signoz/signoz-otel-collector:${config?.collectorImage ?? "v0.144.4"}`;
   const signozImage = `signoz/signoz:${config?.signozImage ?? "v0.123.0"}`;
@@ -170,7 +219,7 @@ function renderSigNozServices(services: Record<string, any>, volumes: Set<string
       timeout: "5s",
       retries: 5,
       start_period: "10s",
-    },
+    } satisfies ComposeHealthCheck,
     networks: ["topology_net"],
   };
 
@@ -190,6 +239,7 @@ function renderSigNozServices(services: Record<string, any>, volumes: Set<string
       interval: "10s",
       timeout: "5s",
       retries: 5,
+      start_period: "10s",
     },
     networks: ["topology_net"],
   };
@@ -277,7 +327,7 @@ export function renderComposeYaml(
   preset: TopologyPreset,
   options: CompilerOptions,
 ): string {
-  const services: Record<string, any> = {};
+  const services: Record<string, ComposeService> = {};
   const volumes: Set<string> = new Set();
   const repoRoot = options.repoRoot;
 
@@ -289,7 +339,7 @@ export function renderComposeYaml(
     }
     const serviceName = serviceNameForRole(role, adapter);
 
-    const service: Record<string, any> = {};
+    const service: ComposeService = {};
 
     // Build or image
     if (adapter.image) {
@@ -304,7 +354,7 @@ export function renderComposeYaml(
       const buildCtx = adapter.source.dockerDir
         ? join(cloneDir, adapter.source.dockerDir)
         : cloneDir;
-      const build: Record<string, any> = {
+      const build: ComposeBuild = {
         context: buildCtx,
         dockerfile: adapter.source.dockerfile || "Dockerfile",
       };
@@ -370,7 +420,7 @@ export function renderComposeYaml(
     // Depends on
     const dependencyInfo = dependencyInfoForService(adapter, preset.roles);
     if (dependencyInfo.composeServiceNames.length > 0) {
-      const deps: Record<string, any> = {};
+      const deps: ComposeDependsOn = {};
       for (const dep of dependencyInfo.composeServiceNames) {
         deps[dep] = { condition: "service_healthy" };
       }
@@ -447,7 +497,7 @@ export function renderComposeYaml(
     renderSigNozServices(services, volumes, options.otelConfig);
   }
 
-  const composeObj: Record<string, any> = {
+  const composeObj: ComposeObject = {
     services,
     networks: {
       topology_net: {
@@ -610,8 +660,8 @@ function renderSidecarService(
   runDir?: string,
   roles: TopologyPreset["roles"] = {},
   parentCloneDir?: string,
-): Record<string, any> {
-  const service: Record<string, any> = {};
+): ComposeService {
+  const service: ComposeService = {};
 
   if (sidecar.image) {
     service.image = sidecar.image;
@@ -620,7 +670,7 @@ function renderSidecarService(
     const buildCtx = sidecar.source.dockerDir
       ? join(cloneDir, sidecar.source.dockerDir)
       : cloneDir;
-    const build: Record<string, any> = {
+    const build: ComposeBuild = {
       context: buildCtx,
       dockerfile: sidecar.source.dockerfile || "Dockerfile",
     };
@@ -706,7 +756,7 @@ function renderSidecarService(
   // Sidecar dependencies
   const dependencyInfo = dependencyInfoForService(sidecar, roles);
   if (dependencyInfo.composeServiceNames.length > 0) {
-    const deps: Record<string, { condition: string }> = {};
+    const deps: ComposeDependsOn = {};
     for (const dep of dependencyInfo.composeServiceNames) {
       deps[dep] = { condition: "service_healthy" };
     }
