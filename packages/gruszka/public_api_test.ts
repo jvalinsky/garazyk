@@ -15,7 +15,8 @@ import { AccountsClient } from "./legacy_clients.ts";
 Deno.test("gruszka root exposes generated and raw XRPC client primitives", () => {
   const client = new XrpcClient("http://localhost:2583");
   const generated: GeneratedClient = client.api;
-  assertEquals(typeof generated, "object");
+  // createGeneratedClient returns a Proxy wrapping a function target
+  assertEquals(typeof generated, "function");
   assertEquals(typeof generated.app.bsky.actor.getProfile, "function");
   assertEquals(typeof client.query, "function");
   assertEquals(typeof client.procedure, "function");
