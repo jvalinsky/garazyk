@@ -60,10 +60,7 @@ export type {
 } from "./repo_docs.ts";
 export {
   checkBoundaries,
-  lineForOffset,
-  lineStartOffsets,
   main as boundaryCheckMain,
-  walkTypeScriptFiles,
 } from "./boundary_check.ts";
 export type { BoundaryRule, PackageName, Violation } from "./boundary_check.ts";
 export {
