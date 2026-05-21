@@ -1,3 +1,4 @@
+import { fromFileUrl, resolve } from "@std/path";
 import type { WebClientTopology } from "./topology_types.ts";
 import {
   defineTopology,
@@ -10,6 +11,11 @@ import {
 } from "./topology_authoring.ts";
 import type { RegisteredTopologyPreset } from "./topology_authoring.ts";
 import { Cap, Role } from "./topology_registry.ts";
+
+/** Absolute path to the hamownia package for sidecar bind mounts. */
+const HAMOWNIA_PATH = resolve(
+  fromFileUrl(new URL("../../packages/hamownia", import.meta.url)),
+);
 
 /**
  * Central registry for ATProto network topologies.
@@ -323,7 +329,7 @@ function localPdsEnv() {
     TWILIO_ACCOUNT_SID: "AC00000000000000000000000000000000",
     TWILIO_AUTH_TOKEN: "SK00000000000000000000000000000000",
     TWILIO_VERIFY_SERVICE_SID: "VA00000000000000000000000000000000",
-    TWILIO_API_BASE_URL: "http://host.docker.internal:8081",
+    TWILIO_API_BASE_URL: "http://local-mock-twilio:8081",
   };
 }
 
@@ -371,6 +377,18 @@ const GARAZYK_DEFAULT = defineTopology({
       health: topologyHealth.http("/xrpc/com.atproto.server.describeServer"),
       capabilities: pdsCoreCaps,
       dependsOnRoles: [Role.plc],
+      sidecars: {
+        "local-mock-twilio": {
+          source: source.image("denoland/deno:alpine"),
+          entrypoint: ["deno", "run", "-A"],
+          command: ["/scripts/mock_twilio_server.ts", "--port=8081"],
+          ports: [port(8081)],
+          volumes: [volume.bind(HAMOWNIA_PATH, "/scripts", "ro")],
+          health: topologyHealth.command([
+            "CMD-SHELL", "wget -qO- http://localhost:8081/__control/health || exit 1",
+          ]),
+        },
+      },
     }),
     [Role.pds2]: role.pds2({
       name: "kaszlak-pds2",

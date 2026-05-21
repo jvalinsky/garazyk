@@ -34,21 +34,32 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   // ── Connect to or start mock Twilio server ──────────────────────────────
-  let twilio: MockTwilioServer = new MockTwilioServer("http://127.0.0.1:8081");
+  const twilioUrls = [
+    "http://local-mock-twilio:8081",
+    "http://127.0.0.1:8081",
+  ];
+  let twilio: MockTwilioServer | null = null;
   let owned = false;
-  try {
-    if (await twilio.getHealth()) {
-      result.stepPassed("Connect to existing mock Twilio server", "port=8081");
-    } else {
+  for (const url of twilioUrls) {
+    const candidate = new MockTwilioServer(url);
+    if (await candidate.getHealth()) {
+      twilio = candidate;
+      result.stepPassed("Connect to existing mock Twilio server", `url=${url}`);
+      break;
+    }
+  }
+  if (!twilio) {
+    twilio = new MockTwilioServer("http://127.0.0.1:8081");
+    try {
       await twilio.startProcess();
       await twilio.waitForHealth();
       owned = true;
       result.stepPassed("Start mock Twilio server", "port=8081");
+    } catch (e: any) {
+      result.stepFailed("Initialize mock Twilio server", e.message || String(e));
+      result.finish();
+      return result;
     }
-  } catch (e: any) {
-    result.stepFailed("Initialize mock Twilio server", e.message || String(e));
-    result.finish();
-    return result;
   }
 
   const pds = new XrpcClient(PDS1);
