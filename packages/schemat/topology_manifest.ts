@@ -160,7 +160,7 @@ function sourceInfo(
 // Manifest creation
 // ---------------------------------------------------------------------------
 
-/** Create a topology manifest from a resolved preset. @param preset - Resolved topology preset. @param options - Manifest output options. @returns A normalized topology manifest. */
+/** Create a topology manifest from a resolved preset. @param preset - Resolved topology preset. @param options - Manifest output options. @returns A normalized v2 topology manifest. */
 export function createTopologyManifest(
   preset: TopologyPreset,
   options: {
@@ -168,7 +168,7 @@ export function createTopologyManifest(
     repoRoot: string;
     composeFile?: string;
   },
-): TopologyManifest {
+): TopologyManifestV2 {
   const serviceUrls: Record<string, string> = {};
   const internalUrls: Record<string, string> = {};
   const serviceNames: Record<string, string> = {};

@@ -12,7 +12,7 @@ import {
   serviceNameForRole,
   SidecarAdapter,
   SourceBuildInfo,
-  TopologyManifest,
+  TopologyManifestV2,
   TopologyPreset,
   writeTopologyManifest,
 } from "./topology.ts";
@@ -75,7 +75,7 @@ export interface CompilerResult {
   /** Path to rendered topology-manifest.json */
   manifestFile: string;
   /** Resolved manifest used by setup, diagnostics, and runners */
-  manifest: TopologyManifest;
+  manifest: TopologyManifestV2;
   /** Capabilities grouped by role */
   capabilitiesByRole: Record<string, string[]>;
 }
