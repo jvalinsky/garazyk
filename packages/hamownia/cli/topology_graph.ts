@@ -5,7 +5,7 @@ import {
   type BinaryServiceStatus,
 } from "../binary_services.ts";
 import { initRunDir, serviceUrl } from "@garazyk/schemat/runtime";
-import type { RegisteredTopologyPreset, TopologyManifest } from "@garazyk/schemat";
+import type { RegisteredTopologyPreset, TopologyManifest, TopologyManifestV2 } from "@garazyk/schemat";
 import { DEFAULT_PORTS, DEFAULT_SERVICE_NAMES } from "@garazyk/schemat";
 
 export type ConnectionType = "firehose" | "xrpc" | "did" | "depends";
@@ -95,7 +95,9 @@ export async function buildManifestTopology(
 ): Promise<TopologyTree> {
   const ctx = initRunDir();
   const binStatus = await getBinaryServiceStatus(ctx);
-  const manifestRoles = Object.keys(manifest.services ?? {});
+  const manifestRoles = manifest.version === 2
+    ? Object.keys(manifest.services)
+    : [];
   const roles = manifestRoles.length > 0
     ? manifestRoles
     : Object.keys(manifest.serviceUrls);
