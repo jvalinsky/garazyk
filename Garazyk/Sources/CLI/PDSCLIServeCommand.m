@@ -133,10 +133,7 @@
         port = config.serverPort;
       }
       // Update data directory from config if not overridden by CLI
-      if (config.dataDirectory.length > 0 &&
-          (context.dataDir == nil ||
-           [context.dataDir
-               isEqualToString:[ATProtoServiceConfiguration defaultDataDirectory]])) {
+      if (config.dataDirectory.length > 0 && !context.dataDirExplicitlySet) {
         context.dataDir = config.dataDirectory;
       }
     }

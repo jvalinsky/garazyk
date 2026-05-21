@@ -174,6 +174,11 @@ typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
 @property (nonatomic, copy, nullable) NSString *adminPassword;
 
 /**
+ * @brief Whether the data directory was explicitly set via command-line arguments.
+ */
+@property (nonatomic, assign) BOOL dataDirExplicitlySet;
+
+/**
  * @brief Initializes a new command context with default values.
  *
  * @return A newly initialized PDSCLICommandContext.
