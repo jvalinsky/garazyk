@@ -118,3 +118,33 @@ export type {
   MockVerificationState,
 } from "./mock_twilio.ts";
 export { runSmoke } from "./smoke_command.ts";
+
+// ---------------------------------------------------------------------------
+// Lexicon resolution (re-exported from @garazyk/gruszka/lexicon-resolution)
+// ---------------------------------------------------------------------------
+
+/**
+ * Dynamically resolve an AT Protocol lexicon at scenario runtime.
+ *
+ * Uses the sans-IO resolution pipeline from `@garazyk/gruszka` to resolve
+ * an NSID through DNS → DID → record fetch.  Scenarios can call this to
+ * fetch lexicons on-the-fly rather than shipping pre-bundled copies.
+ *
+ * @example
+ * ```ts
+ * import { resolveLexicon } from "@garazyk/hamownia";
+ * import { DenoDnsResolver, HttpDidResolver, HttpRecordFetcher }
+ *   from "@garazyk/gruszka/lexicon-resolution";
+ *
+ * const result = await resolveLexicon("app.bsky.feed.post", {
+ *   dns: new DenoDnsResolver(),
+ *   did: new HttpDidResolver(),
+ *   record: new HttpRecordFetcher(),
+ * });
+ * if (result.ok) {
+ *   console.log("Resolved:", result.value.id);
+ * }
+ * ```
+ */
+export { resolveLexicon } from "@garazyk/gruszka/lexicon-resolution";
+export type { ResolutionPorts } from "@garazyk/gruszka/lexicon-resolution";

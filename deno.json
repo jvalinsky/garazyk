@@ -32,6 +32,7 @@
     "@garazyk/hamownia/": "./packages/hamownia/",
     "@garazyk/gruszka": "./packages/gruszka/mod.ts",
     "@garazyk/gruszka/": "./packages/gruszka/",
+    "@garazyk/gruszka/lexicon-resolution": "./packages/gruszka/lexicon_resolution/mod.ts",
     "@garazyk/schemat": "./packages/schemat/mod.ts",
     "@garazyk/narzedzia": "./packages/narzedzia/mod.ts",
     "@garazyk/tui": "./packages/tui/mod.ts",
