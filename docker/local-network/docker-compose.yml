@@ -81,20 +81,28 @@ services:
 
   local-mock-twilio:
     image: denoland/deno:alpine
-    entrypoint: ["deno", "run", "-A"]
+    entrypoint:
+      - "deno"
+      - "run"
+      - "-A"
+      - "--config"
+      - "/workspace/deno.json"
     command:
-      - "/scripts/mock_twilio_server.ts"
+      - "/workspace/packages/hamownia/mock_twilio_server.ts"
       - "--port=8081"
     ports:
       - "8081:8081"
     volumes:
-      - ../../packages/hamownia:/scripts:ro
+      - ../../:/workspace:ro
+      - deno_cache:/deno-dir
+    environment:
+      - DENO_DIR=/deno-dir
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8081/__control/health || exit 1"]
       interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 120s
     networks:
       - local_net
 
@@ -389,3 +397,4 @@ volumes:
   local_chat_data:
   local_germ_data:
   local_video_data:
+  deno_cache:
