@@ -419,36 +419,46 @@ function createAgentProxy(
   const caller = new AgentCaller(client.rawTransport, session);
   const baseClient = createGeneratedClient(caller);
   
-  return Object.assign(baseClient, {
-    createAccount: async (params: {
-      handle: string;
-      email: string;
-      password: string;
-    }) => {
-      const data = await (client.accounts as AccountsClient).createAccount(
-        params.handle,
-        params.email,
-        params.password,
-      );
-      session.accessJwt = data.accessJwt;
-      session.refreshJwt = data.refreshJwt;
-      session.did = data.did;
-      session.handle = data.handle;
-      return { data };
+  return new Proxy(baseClient, {
+    get(target, prop, receiver) {
+      if (prop === "createAccount") {
+        return async (params: {
+          handle: string;
+          email: string;
+          password: string;
+        }) => {
+          const data = await (client.accounts as AccountsClient).createAccount(
+            params.handle,
+            params.email,
+            params.password,
+          );
+          session.accessJwt = data.accessJwt;
+          session.refreshJwt = data.refreshJwt;
+          session.did = data.did;
+          session.handle = data.handle;
+          return { data };
+        };
+      }
+      if (prop === "login") {
+        return async (params: {
+          identifier: string;
+          password: string;
+        }) => {
+          const data = await (client.accounts as AccountsClient).createSession(
+            params.identifier,
+            params.password,
+          );
+          session.accessJwt = data.accessJwt;
+          session.refreshJwt = data.refreshJwt;
+          session.did = data.did;
+          session.handle = data.handle;
+          return { data };
+        };
+      }
+      return Reflect.get(target, prop, receiver);
     },
-    login: async (params: {
-      identifier: string;
-      password: string;
-    }) => {
-      const data = await (client.accounts as AccountsClient).createSession(
-        params.identifier,
-        params.password,
-      );
-      session.accessJwt = data.accessJwt;
-      session.refreshJwt = data.refreshJwt;
-      session.did = data.did;
-      session.handle = data.handle;
-      return { data };
+    has(target, prop) {
+      return prop === "createAccount" || prop === "login" || Reflect.has(target, prop);
     }
   }) as unknown as AgentProxy;
 }

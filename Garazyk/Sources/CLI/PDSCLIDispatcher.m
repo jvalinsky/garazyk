@@ -29,6 +29,7 @@
         _configPath = @"./config.json";
         _verbose = NO;
         _jsonOutput = NO;
+        _dataDirExplicitlySet = NO;
     }
     return self;
 }
