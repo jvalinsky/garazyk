@@ -329,7 +329,7 @@ export function serveMockTwilio(config: MockTwilioServerConfig): void {
   }
 
   void Deno.serve(
-    { port: config.port, hostname: "127.0.0.1" },
+    { port: config.port, hostname: "0.0.0.0" },
     (req) => handleMockTwilioRequest(req, config, state),
   );
 }
