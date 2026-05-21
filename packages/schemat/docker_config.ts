@@ -21,9 +21,53 @@ export const SERVICE_PORTS: Record<string, number> = {
   ui: 2590,
 };
 
-/** Build the HTTP URL for a service from env vars or SERVICE_PORTS defaults. */
-export function serviceUrl(key: string): string {
-  const port = Deno.env.get(`${key.toUpperCase()}_PORT`) ||
+// ---------------------------------------------------------------------------
+// Environment source interface (for DI / testing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Environment variable source — abstracts `Deno.env` for dependency injection.
+ *
+ * Use this to pass a mock environment in tests instead of mutating the real
+ * process environment.
+ */
+export interface EnvSource {
+  /** Get an environment variable value. */
+  get(key: string): string | undefined;
+}
+
+/** Process metadata source — abstracts `Deno.pid` for dependency injection. */
+export interface ProcessInfo {
+  /** Current process ID. */
+  pid: number;
+}
+
+/** Filesystem operations — abstracts `Deno.mkdirSync` for dependency injection. */
+export interface FileSystemOps {
+  /** Create a directory synchronously. */
+  mkdirSync(path: string, options?: { recursive?: boolean }): void;
+}
+
+/** Clock source — abstracts `Date.now` for dependency injection. */
+export interface ClockSource {
+  /** Current timestamp in milliseconds. */
+  now(): number;
+}
+
+// ---------------------------------------------------------------------------
+// Service URL helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the HTTP URL for a service from env vars or SERVICE_PORTS defaults.
+ *
+ * @param key - Service name (e.g., "pds", "relay").
+ * @param env - Optional environment source. Defaults to `Deno.env`.
+ * @returns The HTTP URL for the service.
+ */
+export function serviceUrl(key: string, env?: EnvSource): string {
+  const source = env ?? Deno.env;
+  const port = source.get(`${key.toUpperCase()}_PORT`) ||
     String(SERVICE_PORTS[key] || 0);
   return `http://127.0.0.1:${port}`;
 }
@@ -78,45 +122,45 @@ export interface TopologyRunContext {
   };
 }
 
-function sanitizeRunId(id: string): string {
-  return id.toLowerCase().replace(/[^a-z0-9_.-]/g, "-");
-}
-
-function defaultRunId(): string {
-  const ts = new Date().toISOString().replace(/[:.]/g, "").slice(0, 15) + "Z";
-  return `${ts}-${Deno.pid}`;
+/** Options for computing run directory paths (pure function). */
+export interface ComputeRunDirOptions {
+  /** Environment source for reading config. Defaults to Deno.env. */
+  env?: EnvSource;
+  /** Process info for default run ID. Defaults to { pid: Deno.pid }. */
+  proc?: ProcessInfo;
+  /** Clock for default run ID timestamp. Defaults to Date. */
+  clock?: ClockSource;
 }
 
 /**
- * Initialize the run directory tree and related environment variables.
+ * Compute run directory paths without side effects.
+ *
+ * This is the pure core — it reads from the injected sources and returns
+ * a data object. The caller decides whether to mutate env and create dirs.
  *
  * @param requestedId - Optional requested run identifier.
- * @returns The initialized run context.
+ * @param opts - Dependency injection options.
+ * @returns The computed run context (no side effects).
  */
-export function initRunDir(requestedId?: string): TopologyRunContext {
-  const runId = sanitizeRunId(requestedId || defaultRunId());
-  const baseDir = Deno.env.get("ATPROTO_E2E_BASE_DIR") ||
+export function computeRunDir(
+  requestedId?: string,
+  opts?: ComputeRunDirOptions,
+): TopologyRunContext {
+  const env = opts?.env ?? Deno.env;
+  const proc = opts?.proc ?? { pid: Deno.pid };
+  const clock = opts?.clock ?? Date;
+
+  const runId = sanitizeRunId(requestedId || defaultRunId(proc, clock));
+  const baseDir = env.get("ATPROTO_E2E_BASE_DIR") ||
     "/tmp/garazyk-atproto-e2e";
-  const runDir = Deno.env.get("ATPROTO_E2E_RUN_DIR") || `${baseDir}/${runId}`;
-  const diagnosticsDir = Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") ||
+  const runDir = env.get("ATPROTO_E2E_RUN_DIR") || `${baseDir}/${runId}`;
+  const diagnosticsDir = env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") ||
     `${runDir}/diagnostics`;
-  const logDir = Deno.env.get("ATPROTO_E2E_LOG_DIR") || `${runDir}/logs`;
-  const pidFile = Deno.env.get("ATPROTO_E2E_PID_FILE") || `${runDir}/pids.txt`;
+  const logDir = env.get("ATPROTO_E2E_LOG_DIR") || `${runDir}/logs`;
+  const pidFile = env.get("ATPROTO_E2E_PID_FILE") || `${runDir}/pids.txt`;
   const composeRunId = runId.replace(/[._]/g, "-").replace(/[^a-z0-9-]/g, "-");
-  const composeProject = Deno.env.get("ATPROTO_E2E_COMPOSE_PROJECT") ||
+  const composeProject = env.get("ATPROTO_E2E_COMPOSE_PROJECT") ||
     `garazyk-e2e-${composeRunId}`;
-
-  Deno.env.set("ATPROTO_E2E_RUN_ID", runId);
-  Deno.env.set("ATPROTO_E2E_BASE_DIR", baseDir);
-  Deno.env.set("ATPROTO_E2E_RUN_DIR", runDir);
-  Deno.env.set("ATPROTO_E2E_DIAGNOSTICS_DIR", diagnosticsDir);
-  Deno.env.set("ATPROTO_E2E_LOG_DIR", logDir);
-  Deno.env.set("ATPROTO_E2E_PID_FILE", pidFile);
-  Deno.env.set("ATPROTO_E2E_COMPOSE_PROJECT", composeProject);
-
-  Deno.mkdirSync(runDir, { recursive: true });
-  Deno.mkdirSync(diagnosticsDir, { recursive: true });
-  Deno.mkdirSync(logDir, { recursive: true });
 
   return {
     runId,
@@ -127,6 +171,63 @@ export function initRunDir(requestedId?: string): TopologyRunContext {
     composeProject,
     baseDir,
   };
+}
+
+/** Options for initializing run directory (with side effects). */
+export interface InitRunDirOptions extends ComputeRunDirOptions {
+  /** Filesystem operations. Defaults to Deno. */
+  fs?: FileSystemOps;
+  /** Whether to mutate environment variables. Defaults to true. */
+  mutateEnv?: boolean;
+}
+
+function sanitizeRunId(id: string): string {
+  return id.toLowerCase().replace(/[^a-z0-9_.-]/g, "-");
+}
+
+function defaultRunId(proc: ProcessInfo, clock: ClockSource): string {
+  const ts = new Date(clock.now()).toISOString().replace(/[:.]/g, "").slice(0, 15) + "Z";
+  return `${ts}-${proc.pid}`;
+}
+
+/**
+ * Initialize the run directory tree and related environment variables.
+ *
+ * This function has side effects:
+ * - Creates directories (run, diagnostics, logs)
+ * - Mutates environment variables (unless `mutateEnv: false`)
+ *
+ * For testing, use `computeRunDir` instead — it's pure and has no side effects.
+ *
+ * @param requestedId - Optional requested run identifier.
+ * @param opts - Dependency injection options.
+ * @returns The initialized run context.
+ */
+export function initRunDir(
+  requestedId?: string,
+  opts?: InitRunDirOptions,
+): TopologyRunContext {
+  const ctx = computeRunDir(requestedId, opts);
+  const fs = opts?.fs ?? Deno;
+  const mutateEnv = opts?.mutateEnv ?? true;
+
+  // Create directories
+  fs.mkdirSync(ctx.runDir, { recursive: true });
+  fs.mkdirSync(ctx.diagnosticsDir, { recursive: true });
+  fs.mkdirSync(ctx.logDir, { recursive: true });
+
+  // Mutate environment (default behavior for backward compatibility)
+  if (mutateEnv && typeof Deno.env.set === "function") {
+    Deno.env.set("ATPROTO_E2E_RUN_ID", ctx.runId);
+    Deno.env.set("ATPROTO_E2E_BASE_DIR", ctx.baseDir);
+    Deno.env.set("ATPROTO_E2E_RUN_DIR", ctx.runDir);
+    Deno.env.set("ATPROTO_E2E_DIAGNOSTICS_DIR", ctx.diagnosticsDir);
+    Deno.env.set("ATPROTO_E2E_LOG_DIR", ctx.logDir);
+    Deno.env.set("ATPROTO_E2E_PID_FILE", ctx.pidFile);
+    Deno.env.set("ATPROTO_E2E_COMPOSE_PROJECT", ctx.composeProject);
+  }
+
+  return ctx;
 }
 
 // ---------------------------------------------------------------------------
