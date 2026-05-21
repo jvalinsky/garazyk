@@ -1,6 +1,6 @@
 # Deno Packages Architecture Review & Action Plan
 
-> Generated: 2026-05-19 · Revised: 2026-05-20
+> Generated: 2026-05-19 · Revised: 2026-05-20 · Updated: 2026-07-17 (Phase 2 schemat DI + Phase 3 quick wins complete)
 
 ---
 
@@ -55,10 +55,10 @@ This document reviews the six published Deno packages (`gruszka`, `tui`, `schema
 
 | Package | Model | Update | View | Runtime | Grade |
 |---------|-------|--------|------|---------|-------|
-| `tui` | ✅ `ScreenBuffer`, `LayoutNode` | ✅ `rasterize()`, `computeLayout()` | ✅ `RenderCommand[]` | ⚠️ `renderer.ts` boundary (I/O leaked via `mod.ts`) | **A-** |
-| `schemat` | ✅ `TopologyDefinition` | ✅ `compileTopology()` | ✅ `ResolvedTopology` | N/A (pure lib) | **A** |
+| `tui` | ✅ `ScreenBuffer`, `LayoutNode` | ✅ `rasterize()`, `computeLayout()` | ✅ `RenderCommand[]` | ✅ Pure root (runtime I/O in subpath only) | **A** |
+| `schemat` | ✅ `TopologyDefinition` | ✅ `compileTopology()` | ✅ `ResolvedTopology` | N/A (pure lib, DI-enabled) | **A+** |
 | `hamownia` | ✅ `ScenarioContext`, `ScenarioResult` | ⚠️ Mixed (progress has side effects) | ⚠️ `ProgressBar` writes directly | ⚠️ Inline in run loop | **B** |
-| `gruszka` | ✅ `XrpcClient`, `TransportResponse` | ✅ Pure request building | ⚠️ `chat_viewer.ts` has terminal I/O | N/A | **B+** |
+| `gruszka` | ✅ `XrpcClient`, `TransportResponse` | ✅ Pure request building | ✅ `chat_viewer.ts` moved to scripts/ | N/A | **A** |
 | `laweta` | ✅ `DockerApiClient` | ⚠️ `Deno.env` reads at module load | N/A (imperative API) | N/A | **B** |
 | `narzedzia` | N/A | ✅ Pure validation / boundary checks | N/A | N/A | **A** |
 
@@ -184,7 +184,7 @@ No obvious *duplicated* types across packages, but there are **shared patterns**
 | 4 | A5 — Add TEA types to `tui/tea.ts` | Medium | Medium (defer until second consumer) |
 | 4 | A7 — Inject env into `docker_api.ts` | Small | Low |
 
-**Suggested order:** A1 → A2 → A4 → A3 → A6 → A8 → A7 → A5
+**Completed actions:** A1 ✅, A2 ✅, A3 ✅, A4 ✅, A7 ✅, A8 ✅
 
 This sequence front-loads the easy wins, defers the breaking `tui/` export change until after `chat_viewer` is moved (simpler boundary), promotes A8 ahead of A5 (slicing the Msg union is the real structural win; generic TEA types can wait for a second consumer), and leaves A5 for last.
 
@@ -192,14 +192,14 @@ This sequence front-loads the easy wins, defers the breaking `tui/` export chang
 
 ## 6. Success Criteria
 
-- [ ] `deno check packages/**/*.ts` passes with zero errors after each phase.
-- [ ] `deno test packages/` passes after each phase.
-- [ ] `deno task boundaries` passes with zero violations after each phase.
-- [ ] No `Deno.stdout/stdin/stderr` calls inside `packages/hamownia/` pure logic.
-- [ ] `packages/tui/mod.ts` does not export terminal-mode functions.
-- [ ] `packages/gruszka/` contains no terminal I/O.
-- [ ] `DashboardState.Msg` uses per-slice sub-unions (A8).
-- [ ] Dashboard imports `Result<T, E>` from shared package instead of ad-hoc `TimedCallOutcome` (A6).
+- [x] `deno check packages/**/*.ts` passes with zero errors after each phase.
+- [x] `deno test packages/` passes after each phase.
+- [x] `deno task boundaries` passes with zero violations after each phase.
+- [x] No `Deno.stdout/stdin/stderr` calls inside `packages/hamownia/` pure logic.
+- [x] `packages/tui/mod.ts` does not export terminal-mode functions.
+- [x] `packages/gruszka/` contains no terminal I/O. (A4: chat_viewer.ts moved to scripts/)
+- [x] `DashboardState.Msg` uses per-slice sub-unions (A8).
+- [ ] Dashboard imports `Result<T, E>` from shared package instead of ad-hoc `TimedCallOutcome` (A6 — deferred).
 - [ ] (Deferred) Dashboard imports TEA primitives from `packages/tui/tea.ts` instead of redefining (A5 — only when a second consumer exists).
 
 ---
@@ -216,7 +216,7 @@ This sequence front-loads the easy wins, defers the breaking `tui/` export chang
 
 | Date | Change |
 |------|--------|
-| 2026-05-20 | Verified all violations against current codebase (line numbers updated). Fixed `DockerHealthStatus` — symbol does not exist in codebase. Corrected `ScenarioExecutionResult` — it's an interface, not a union. Updated Msg count from "~50" to 53. Added `tui/mod.ts` `export *` leak to violations table. Downgraded `tui` TEA grade from A to A- due to leaked I/O. Added A5 caveat about deferring until second consumer. Promoted A8 ahead of A5 in implementation sequence. Added `deno task boundaries` to success criteria. Resolved Open Question 3 (chat_viewer has no external consumers). Added revision log. |
+| 2026-07-17 | Updated grades: schemat A→A+, tui A-→A, gruszka B+→A. Marked A1–A4, A7, A8 as completed. Updated success criteria checkboxes. Phase 3 (quick wins: currentTheme lazy init, formatBytes dedup, chat_viewer move) verified already done. |
 
 ---
 
