@@ -20,7 +20,7 @@ import { waitForHttp } from "@garazyk/laweta";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import { ScenarioResult } from "./runner.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
-import type { Topology } from "@garazyk/schemat";
+import type { Topology, TopologyManifestV2 } from "@garazyk/schemat";
 
 /** Result returned by the scenario execution loop. */
 export interface ScenarioExecutionResult {
@@ -231,7 +231,7 @@ export async function runScenarioLoop(
         allow_hybrid_network: args.allowHybridNetwork,
         scenario_id: scenario.id,
         binary_mode: args.binary,
-        pds2: topology.manifest?.env?.scenario?.ATPROTO_TOPOLOGY_CAPABILITIES
+        pds2: (topology.manifest as TopologyManifestV2 | undefined)?.env?.scenario?.ATPROTO_TOPOLOGY_CAPABILITIES
           ?.includes("pds2") ||
           false,
         topology: topology.manifest?.name || null,
