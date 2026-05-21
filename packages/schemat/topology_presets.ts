@@ -395,7 +395,7 @@ const GARAZYK_DEFAULT = defineTopology({
             volume.named("deno_cache", "/deno-dir"),
           ],
           health: topologyHealth.command([
-            "CMD-SHELL", "wget -qO- http://localhost:8081/__control/health || exit 1",
+            "CMD-SHELL", "wget -qO- http://127.0.0.1:8081/__control/health || exit 1",
           ]),
         },
       },

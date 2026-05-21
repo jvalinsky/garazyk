@@ -31,3 +31,8 @@ export {
   type DashboardState,
 } from "./mcp_server.ts";
 
+export {
+  TuiSessionRecorder,
+  type AsciicastFrame,
+} from "./recorder.ts";
+
