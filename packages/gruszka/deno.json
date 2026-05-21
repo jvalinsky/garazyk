@@ -7,6 +7,7 @@
     "./doc-links": "./doc_links.ts",
     "./legacy-clients": "./legacy_clients.ts",
     "./lexicons": "./lexicons.ts",
+    "./lexicon-resolution": "./lexicon_resolution/mod.ts",
     "./seed": "./seed.ts",
     "./account-ops": "./account_ops.ts",
     "./format": "./format.ts"
