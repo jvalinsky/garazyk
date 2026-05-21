@@ -53,7 +53,12 @@ export function fetchRun(db: Database, runId: string): Run | undefined {
       exit_code as exitCode,
       stopped_at as stoppedAt,
       stop_reason as stopReason,
-      scenario_params_json as scenarioParamsJson
+      scenario_params_json as scenarioParamsJson,
+      allow_hybrid_network as allowHybridNetwork,
+      otel,
+      verbose,
+      timeout,
+      no_setup as noSetup
     FROM runs
     WHERE id = ?
   `).get(runId) as Run | undefined;
@@ -91,7 +96,12 @@ export function fetchRuns(db: Database, limit = 10): Run[] {
       exit_code as exitCode,
       stopped_at as stoppedAt,
       stop_reason as stopReason,
-      scenario_params_json as scenarioParamsJson
+      scenario_params_json as scenarioParamsJson,
+      allow_hybrid_network as allowHybridNetwork,
+      otel,
+      verbose,
+      timeout,
+      no_setup as noSetup
     FROM runs
     ORDER BY started_at DESC
     LIMIT ?

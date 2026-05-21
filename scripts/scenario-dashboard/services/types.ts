@@ -82,6 +82,16 @@ export interface RunConfig {
   clientFlow?: string;
   /** Scenario parameter overrides keyed by scenario id */
   scenarioParams?: Record<string, ScenarioParamValue>;
+  /** Allow hybrid host and container networking */
+  allowHybridNetwork?: boolean;
+  /** Enable OpenTelemetry tracing */
+  otel?: boolean;
+  /** Enable verbose logging */
+  verbose?: boolean;
+  /** Scenario execution timeout */
+  timeout?: number;
+  /** Skip setup lifecycle phase */
+  noSetup?: boolean;
 }
 
 /** A run record, in progress or historical
@@ -138,6 +148,16 @@ export interface Run {
   stopReason?: string;
   /** Scenario parameter overrides keyed by scenario id */
   scenarioParams?: Record<string, ScenarioParamValue>;
+  /** Allow hybrid host and container networking */
+  allowHybridNetwork?: boolean;
+  /** Enable OpenTelemetry tracing */
+  otel?: boolean;
+  /** Enable verbose logging */
+  verbose?: boolean;
+  /** Scenario execution timeout */
+  timeout?: number;
+  /** Skip setup lifecycle phase */
+  noSetup?: boolean;
 }
 
 // ---------------------------------------------------------------------------
