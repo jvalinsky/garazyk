@@ -196,6 +196,11 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     }
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
+    GZ_LOG_INFO(@"[DEBUG] createAccountForEmail: databasePool: %p, sharedConfiguration: %p, masterSecret length: %lu",
+                self.databasePool,
+                [ATProtoServiceConfiguration sharedConfiguration],
+                (unsigned long)[ATProtoServiceConfiguration sharedConfiguration].masterSecret.length);
+
     if (self.databasePool && [ATProtoServiceConfiguration sharedConfiguration].masterSecret.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.server"
