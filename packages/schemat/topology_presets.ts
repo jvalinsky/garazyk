@@ -305,9 +305,9 @@ function generateHex(bytes = 32): string {
 const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") ??
   generateHex();
 const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ??
-  generateHex(8);
+  "admin-localdev";
 const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ??
-  generateHex(8);
+  "localdevadmin";
 
 function localPdsEnv() {
   return {
@@ -319,6 +319,11 @@ function localPdsEnv() {
     PDS_RATELIMIT_ENABLED: "false",
     PDS_MASTER_SECRET,
     PDS_ADMIN_PASSWORD,
+    PDS_PHONE_VERIFICATION_PROVIDER: "twilio",
+    TWILIO_ACCOUNT_SID: "AC00000000000000000000000000000000",
+    TWILIO_AUTH_TOKEN: "SK00000000000000000000000000000000",
+    TWILIO_VERIFY_SERVICE_SID: "VA00000000000000000000000000000000",
+    TWILIO_API_BASE_URL: "http://host.docker.internal:8081",
   };
 }
 
@@ -377,7 +382,7 @@ const GARAZYK_DEFAULT = defineTopology({
         "--foreground",
       ],
       env: localPdsEnv(),
-      ports: [port({ host: 2587, container: 2587 })],
+      ports: [port({ host: 2587, container: 2585 })],
       volumes: pdsVolumes("local_pds2", "./pds2-config.json"),
       health: topologyHealth.http("/xrpc/com.atproto.server.describeServer"),
       capabilities: pds2CoreCaps,
@@ -394,6 +399,9 @@ const GARAZYK_DEFAULT = defineTopology({
         "--port",
         "2584",
       ],
+      env: {
+        HOME: "/var/lib/atprotopds",
+      },
       ports: [port(2584)],
       volumes: [volume.named("local_relay_data", "/var/lib/atprotopds")],
       health: topologyHealth.http("/api/relay/health"),
