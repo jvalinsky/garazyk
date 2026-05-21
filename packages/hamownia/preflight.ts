@@ -6,8 +6,10 @@
  */
 
 import { join } from "@std/path";
-import { repoRoot } from "@garazyk/schemat/runtime";
-import { brightRed, yellow } from "@std/fmt/colors";
+import { repoRoot, serviceUrl } from "@garazyk/schemat/runtime";
+import { neededPorts } from "@garazyk/schemat/runtime";
+import { brightRed, green, yellow } from "@std/fmt/colors";
+import { waitForHttp } from "@garazyk/laweta";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 
 /** Results of a preflight check. */
@@ -80,12 +82,109 @@ export async function checkPlaywright(required: boolean): Promise<PreflightResul
   }
 }
 
+/** Kill host processes blocking ports needed by the local network. */
+export async function checkHostPorts(
+  opts: { withPds2?: boolean; otel?: boolean },
+): Promise<void> {
+  const ports = neededPorts(opts);
+  const knownBinaries = new Set([
+    "kaszlak", "garazyk-ui", "campagnola",
+    "zuk", "syrena", "syrena-chat", "jelcz",
+  ]);
+  for (const port of ports) {
+    try {
+      const lsofProc = new Deno.Command("lsof", {
+        args: ["-ti", `:${port}`],
+        stdout: "piped", stderr: "piped",
+      });
+      const { code, stdout } = await lsofProc.output();
+      if (code !== 0) continue;
+      const pids = new TextDecoder().decode(stdout).trim().split("\n").filter(Boolean);
+      for (const pid of pids) {
+        const psProc = new Deno.Command("ps", {
+          args: ["-p", pid, "-o", "comm="],
+          stdout: "piped",
+        });
+        const { code: pc, stdout: pout } = await psProc.output();
+        if (pc !== 0) continue;
+        const cmd = new TextDecoder().decode(pout).trim();
+        if (knownBinaries.has(cmd) || cmd.startsWith("garazyk") || cmd.startsWith("atproto")) {
+          console.warn(yellow(`[WARN]  Stale process on port ${port} (PID: ${pid}, ${cmd}) — killing`));
+          await new Deno.Command("kill", { args: ["-9", pid] }).output();
+        }
+      }
+    } catch { /* skip */ }
+  }
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+
+/** Health probe config for a single service. */
+interface HealthProbe {
+  key: string;
+  path: string;
+  timeoutSeconds: number;
+}
+
+const DEFAULT_PROBES: HealthProbe[] = [
+  { key: "plc", path: "/", timeoutSeconds: 5 },
+  { key: "pds", path: "/xrpc/_health", timeoutSeconds: 5 },
+  { key: "relay", path: "/xrpc/_health", timeoutSeconds: 5 },
+  { key: "appview", path: "/xrpc/_health", timeoutSeconds: 10 },
+  { key: "chat", path: "/xrpc/_health", timeoutSeconds: 5 },
+];
+
+const PDS2_PROBE: HealthProbe = { key: "pds2", path: "/xrpc/_health", timeoutSeconds: 5 };
+
+/** Verify that all expected ATProto services respond to health probes.
+ *
+ * Intended for --no-setup runs where the network is expected to already be
+ * running. Exits with code 1 if any required service is unreachable.
+ */
+export async function verifyNetworkHealth(opts: {
+  withPds2?: boolean;
+}): Promise<void> {
+  const probes = [...DEFAULT_PROBES];
+  if (opts.withPds2) probes.push(PDS2_PROBE);
+
+  console.log(yellow("\n[PREFLIGHT] Verifying network health..."));
+  let allOk = true;
+  for (const probe of probes) {
+    const url = `${serviceUrl(probe.key)}${probe.path}`;
+    const ok = await waitForHttp(url, probe.key, probe.timeoutSeconds);
+    if (!ok) {
+      allOk = false;
+      console.error(
+        brightRed(`[FAIL]  ${probe.key} not reachable at ${url}`),
+      );
+    }
+  }
+
+  if (!allOk) {
+    console.error(
+      brightRed(
+        "\n[PREFLIGHT] Network health check failed — ensure services are running before using --no-setup\n",
+      ),
+    );
+    Deno.exit(1);
+  }
+
+  console.log(green("[PREFLIGHT] All services healthy\n"));
+}
+
 /** Run all relevant preflight checks based on runner configuration. */
 export async function runPreflight(options: {
   useBinary: boolean;
   clientFlow: string;
   selectedScenarios: ScenarioInfo[];
+  withPds2?: boolean;
+  noSetup?: boolean;
 }): Promise<void> {
+  await checkHostPorts({ withPds2: options.withPds2 });
+
+  if (options.noSetup) {
+    await verifyNetworkHealth({ withPds2: options.withPds2 });
+  }
+
   if (!options.useBinary) {
     const staged = await checkStagedBinaries();
     if (!staged.ok) {
