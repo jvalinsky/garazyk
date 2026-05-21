@@ -64,9 +64,11 @@ services:
       - TWILIO_ACCOUNT_SID=AC00000000000000000000000000000000
       - TWILIO_AUTH_TOKEN=SK00000000000000000000000000000000
       - TWILIO_VERIFY_SERVICE_SID=VA00000000000000000000000000000000
-      - TWILIO_API_BASE_URL=http://host.docker.internal:8081
+      - TWILIO_API_BASE_URL=http://local-mock-twilio:8081
     depends_on:
       local-plc:
+        condition: service_healthy
+      local-mock-twilio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2583/xrpc/com.atproto.server.describeServer"]
@@ -74,6 +76,25 @@ services:
       timeout: 3s
       retries: 10
       start_period: 15s
+    networks:
+      - local_net
+
+  local-mock-twilio:
+    image: denoland/deno:alpine
+    entrypoint: ["deno", "run", "-A"]
+    command:
+      - "/scripts/mock_twilio_server.ts"
+      - "--port=8081"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ../../packages/hamownia:/scripts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/__control/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     networks:
       - local_net
 
