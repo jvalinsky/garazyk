@@ -27,6 +27,7 @@ export class VirtualTuiHarness {
   private renderCallback: (buf: ScreenBuffer) => void;
   private keyCallback?: (key: Key) => void;
   private resizeListeners: (() => void)[] = [];
+  private renderListeners: ((ansi: string) => void)[] = [];
 
   constructor(
     width: number,
@@ -43,6 +44,15 @@ export class VirtualTuiHarness {
   render(): void {
     this.buffer.clear();
     this.renderCallback(this.buffer);
+    const frameAnsi = this.buffer.fullRedraw();
+    for (const listener of this.renderListeners) {
+      listener(frameAnsi);
+    }
+  }
+
+  /** Register hooks to intercept every visual rendering frame. */
+  onRender(listener: (ansi: string) => void): void {
+    this.renderListeners.push(listener);
   }
 
   /** Register keyboard input callback hooks. */
