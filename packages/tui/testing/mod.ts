@@ -23,3 +23,11 @@ export {
   extractTextFromBounds,
   type TdomElement,
 } from "./tdom.ts";
+
+export {
+  startMcpServer,
+  createDashboardHarness,
+  handleMcpMessage,
+  type DashboardState,
+} from "./mcp_server.ts";
+
