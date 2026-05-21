@@ -36,6 +36,8 @@
     "@garazyk/schemat": "./packages/schemat/mod.ts",
     "@garazyk/narzedzia": "./packages/narzedzia/mod.ts",
     "@garazyk/tui": "./packages/tui/mod.ts",
+    "@garazyk/tui/testing": "./packages/tui/testing/mod.ts",
+    "@garazyk/tui/testing/": "./packages/tui/testing/",
     "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
     "@cliffy/prompt": "jsr:@cliffy/prompt@^1.1.0",
     "@cliffy/table": "jsr:@cliffy/table@^1.1.0"
