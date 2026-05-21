@@ -19,7 +19,8 @@
       "LICENSE",
       "deno.json",
       "*.ts",
-      "clients/**/*.ts"
+      "clients/**/*.ts",
+      "lexicon_resolution/**/*.ts"
     ],
     "exclude": [
       "**/*.test.ts",
