@@ -24,6 +24,7 @@ The canonical entry point for all project documentation. Organized per the
 - [Admin UI Documentation](11-reference/admin-ui-documentation.md) — AdminUI architecture and integration
 - [Deno Scenario Framework](11-reference/deno-scenario-framework.md) — scenario authoring reference
 - [Deno Packages](11-reference/deno-packages.md) — all 6 Deno packages (gruszka, schemat, laweta, hamownia, narzedzia, tui)
+- [Lexicon Resolution Pipeline](11-reference/lexicon-resolution.md) — 5-layer sans-IO architecture for ATProto lexicon resolution
 
 ## Explanation
 
