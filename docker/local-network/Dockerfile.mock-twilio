@@ -1,0 +1,13 @@
+FROM denoland/deno:alpine AS deps
+WORKDIR /deps
+COPY packages/hamownia/mock_twilio_server.ts .
+COPY packages/hamownia/mock_twilio.ts .
+RUN deno cache --deny-import mapping.mock_twilio_server.ts
+
+FROM denoland/deno:alpine
+COPY --from=deps /deno-dir/ /deno-dir/
+ENV DENO_DIR=/deno-dir
+COPY packages/hamownia/mock_twilio_server.ts /scripts/mock_twilio_server.ts
+COPY packages/hamownia/mock_twilio.ts /scripts/mock_twilio.ts
+ENTRYPOINT ["deno", "run", "-A"]
+CMD ["/scripts/mock_twilio_server.ts", "--port=8081"]
