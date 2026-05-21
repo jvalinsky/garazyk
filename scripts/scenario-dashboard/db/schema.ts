@@ -33,8 +33,12 @@ CREATE TABLE IF NOT EXISTS runs (
   child_pid INTEGER,
   exit_code INTEGER,
   stopped_at INTEGER,
-  stop_reason TEXT,
-  scenario_params_json TEXT
+  scenario_params_json TEXT,
+  allow_hybrid_network INTEGER DEFAULT 0,
+  otel INTEGER DEFAULT 0,
+  verbose INTEGER DEFAULT 0,
+  timeout INTEGER DEFAULT 120,
+  no_setup INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS scenario_results (

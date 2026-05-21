@@ -77,6 +77,24 @@ export function runMigrations(db: Database) {
       throw e;
     }
   }
+
+  // Migration 4: Add new run option tracking columns
+  if (currentVersion < 4) {
+    console.log("[db] Applying migration v4: Add option columns to runs table...");
+    try {
+      addColumns(db, "runs", [
+        "allow_hybrid_network INTEGER DEFAULT 0",
+        "otel INTEGER DEFAULT 0",
+        "verbose INTEGER DEFAULT 0",
+        "timeout INTEGER DEFAULT 120",
+        "no_setup INTEGER DEFAULT 0",
+      ]);
+      recordMigration(db, 4);
+    } catch (e) {
+      console.error("[db] Migration v4 failed:", e);
+      throw e;
+    }
+  }
 }
 
 function getCurrentVersion(db: Database): number {
