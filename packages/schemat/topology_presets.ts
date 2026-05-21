@@ -12,9 +12,9 @@ import {
 import type { RegisteredTopologyPreset } from "./topology_authoring.ts";
 import { Cap, Role } from "./topology_registry.ts";
 
-/** Absolute path to the hamownia package for sidecar bind mounts. */
-const HAMOWNIA_PATH = resolve(
-  fromFileUrl(new URL("../../packages/hamownia", import.meta.url)),
+/** Absolute path to the repo root for sidecar bind mounts. */
+const REPO_ROOT = resolve(
+  fromFileUrl(new URL("../..", import.meta.url)),
 );
 
 /**
@@ -380,10 +380,20 @@ const GARAZYK_DEFAULT = defineTopology({
       sidecars: {
         "local-mock-twilio": {
           source: source.image("denoland/deno:alpine"),
-          entrypoint: ["deno", "run", "-A"],
-          command: ["/scripts/mock_twilio_server.ts", "--port=8081"],
+          entrypoint: [
+            "deno", "run", "-A",
+            "--config", "/workspace/deno.json",
+          ],
+          command: [
+            "/workspace/packages/hamownia/mock_twilio_server.ts",
+            "--port=8081",
+          ],
+          env: { DENO_DIR: "/deno-dir" },
           ports: [port(8081)],
-          volumes: [volume.bind(HAMOWNIA_PATH, "/scripts", "ro")],
+          volumes: [
+            volume.bind(REPO_ROOT, "/workspace", "ro"),
+            volume.named("deno_cache", "/deno-dir"),
+          ],
           health: topologyHealth.command([
             "CMD-SHELL", "wget -qO- http://localhost:8081/__control/health || exit 1",
           ]),
