@@ -311,8 +311,9 @@ class RunManagerImpl implements RunManager {
       INSERT INTO runs (
         id, started_at, status, total_scenarios, pds2, binary_mode,
         topology, runner, web_client, client_flow, scenario_ids_json,
-        run_dir, reports_dir, log_path, scenario_params_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        run_dir, reports_dir, log_path, scenario_params_json,
+        allow_hybrid_network, otel, verbose, timeout, no_setup
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       run.id,
       run.startedAt,
@@ -329,6 +330,11 @@ class RunManagerImpl implements RunManager {
       run.reportsDir,
       run.logPath,
       run.scenarioParams ? JSON.stringify(run.scenarioParams) : null,
+      run.allowHybridNetwork ? 1 : 0,
+      run.otel ? 1 : 0,
+      run.verbose ? 1 : 0,
+      run.timeout ?? 120,
+      run.noSetup ? 1 : 0,
     );
   }
 
@@ -538,6 +544,17 @@ class RunManagerImpl implements RunManager {
   // ---------------------------------------------------------------------------
 
   private async spawnRunner(run: Run) {
+    let isNetworkActive = false;
+    try {
+      const { networkManager } = await import("./network_manager.ts");
+      const statusMap = networkManager.getStatus();
+      isNetworkActive = Object.values(statusMap).some((s) =>
+        s.status === "running" || s.status === "starting"
+      );
+    } catch (e) {
+      console.warn(`[run-manager] Failed to check network status: ${e}`);
+    }
+
     const args = [
       "run",
       "-A",
@@ -558,6 +575,12 @@ class RunManagerImpl implements RunManager {
       args.push("--web-client", run.webClient);
       if (run.clientFlow) args.push("--client-flow", run.clientFlow);
     }
+
+    if (run.allowHybridNetwork) args.push("--allow-hybrid-network");
+    if (run.otel) args.push("--otel");
+    if (run.verbose) args.push("--verbose");
+    if (run.timeout !== undefined) args.push("--timeout", String(run.timeout));
+    if (run.noSetup || isNetworkActive) args.push("--no-setup");
 
     args.push(...(run.scenarioIds || []));
 
@@ -714,6 +737,16 @@ class RunManagerImpl implements RunManager {
       binaryMode: !!run.binaryMode,
       webClient: run.webClient,
       clientFlow: run.clientFlow,
+      scenarioParams: run.scenarioParams
+        ? run.scenarioParams
+        : ((run as any).scenarioParamsJson
+          ? JSON.parse((run as any).scenarioParamsJson)
+          : undefined),
+      allowHybridNetwork: !!run.allowHybridNetwork,
+      otel: !!run.otel,
+      verbose: !!run.verbose,
+      timeout: run.timeout,
+      noSetup: !!run.noSetup,
     };
 
     // 2. Stop active run if it matches

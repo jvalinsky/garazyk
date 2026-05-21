@@ -284,6 +284,7 @@ export async function executeRunnerArgs(
   args: RunnerArgs,
   options: RunCommandOptions,
 ): Promise<void> {
+  const startTime = Date.now();
   if (args.otel && shouldReexecForOtel()) {
     const status = await reexecWithOtel(options.scriptPath);
     Deno.exit(status.code);
@@ -314,6 +315,11 @@ export async function executeRunnerArgs(
     }
     console.log("");
     return;
+  }
+
+  const baseReportsDir = join(options.repoRoot, "scripts", "scenarios", "reports");
+  if (await pathExists(baseReportsDir)) {
+    Deno.env.set("ATPROTO_E2E_BASE_DIR", join(baseReportsDir, "runs"));
   }
 
   const context = await createRunContext(args.runId, args.diagnosticsDir);
@@ -384,6 +390,51 @@ export async function executeRunnerArgs(
 
     selected = selectScenarios(scenarios, args, topology);
     withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
+
+    // Try to register the run start in SQLite
+    const dbPath = join(options.repoRoot, "scripts", "scenarios", "reports", "dashboard.db");
+    try {
+      const stat = await Deno.stat(dbPath);
+      if (stat.isFile) {
+        const { Database } = await import("https://deno.land/x/sqlite3@0.12.0/mod.ts");
+        const db = new Database(dbPath);
+        try {
+          db.prepare(`
+            INSERT OR REPLACE INTO runs (
+              id, started_at, status, total_scenarios, pds2, binary_mode,
+              topology, runner, web_client, client_flow, scenario_ids_json,
+              run_dir, reports_dir, log_path, scenario_params_json,
+              allow_hybrid_network, otel, verbose, timeout, no_setup
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            context.runId,
+            startTime,
+            "running",
+            selected.length,
+            withPds2 ? 1 : 0,
+            args.binary ? 1 : 0,
+            args.topology || "default",
+            "host",
+            args.webClient || null,
+            args.clientFlow || null,
+            JSON.stringify(selected.map((s) => s.id)),
+            context.runDir,
+            reportsDir,
+            context.runDir ? join(context.runDir, "run.log") : null,
+            null,
+            args.allowHybridNetwork ? 1 : 0,
+            args.otel ? 1 : 0,
+            args.verbose ? 1 : 0,
+            args.timeout ?? 120,
+            args.noSetup ? 1 : 0,
+          );
+        } finally {
+          db.close();
+        }
+      }
+    } catch {
+      // Gracefully ignore if not in repository or sqlite3 is unavailable
+    }
 
     await runPreflight({
       useBinary: args.binary,
@@ -480,6 +531,8 @@ export async function executeRunnerArgs(
     withPds2,
   });
 
+  await tryRecordRunInDatabase(options.repoRoot, context.runId, reportsDir, startTime);
+
   if (isOtelEnabled()) {
     await shutdownTracing();
   }
@@ -502,4 +555,98 @@ export async function runScenarioCommand(
 ): Promise<void> {
   const args = parseRunnerArgs(argv);
   await executeRunnerArgs(args, options);
+}
+
+async function tryRecordRunInDatabase(
+  repoRoot: string,
+  runId: string,
+  reportsDir: string,
+  startTime: number,
+) {
+  const dbPath = join(repoRoot, "scripts", "scenarios", "reports", "dashboard.db");
+  try {
+    const stat = await Deno.stat(dbPath);
+    if (!stat.isFile) return;
+
+    const { Database } = await import("https://deno.land/x/sqlite3@0.12.0/mod.ts");
+    const db = new Database(dbPath);
+
+    const reports: Array<{ filename: string; report: any }> = [];
+    try {
+      for await (const entry of Deno.readDir(reportsDir)) {
+        if (!entry.isFile || !entry.name.endsWith(".json")) continue;
+        if (entry.name === "overall-summary.json" || entry.name.endsWith("-progress.json")) continue;
+        const content = await Deno.readTextFile(join(reportsDir, entry.name));
+        reports.push({ filename: entry.name, report: JSON.parse(content) });
+      }
+    } catch {
+      // reports dir might not exist or empty
+    }
+
+    let totalPassed = 0;
+    let totalFailed = 0;
+    let totalSkipped = 0;
+    let finishedAt = startTime;
+
+    db.exec("BEGIN TRANSACTION");
+    try {
+      db.prepare("DELETE FROM scenario_results WHERE run_id = ?").run(runId);
+
+      for (const { filename, report } of reports) {
+        const match = filename.match(/^(\d+)/);
+        const scenarioId = String(report.metadata?.scenario_id ?? (match ? match[1] : "00"));
+        totalPassed += report.summary?.passed ?? 0;
+        totalFailed += report.summary?.failed ?? 0;
+        totalSkipped += report.summary?.skipped ?? 0;
+
+        const reportFinishedAt = report.finished_at < 10_000_000_000
+          ? report.finished_at * 1000
+          : report.finished_at;
+        if (reportFinishedAt > finishedAt) finishedAt = reportFinishedAt;
+
+        db.prepare(
+          `INSERT INTO scenario_results (run_id, scenario_id, scenario_name, status, passed, failed, skipped, duration_ms, steps_json, artifacts_json, started_at, finished_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          runId,
+          scenarioId,
+          report.scenario || filename,
+          report.ok ? "passed" : "failed",
+          report.summary?.passed ?? 0,
+          report.summary?.failed ?? 0,
+          report.summary?.skipped ?? 0,
+          Math.round((report.duration_s || 0) * 1000),
+          JSON.stringify(report.steps || []),
+          JSON.stringify(report.artifacts ?? {}),
+          report.started_at < 10_000_000_000 ? report.started_at * 1000 : report.started_at,
+          reportFinishedAt,
+        );
+      }
+
+      const durationS = (finishedAt - startTime) / 1000;
+      const status = totalFailed > 0 ? "error" : "completed";
+
+      db.prepare(
+        `UPDATE runs SET finished_at=?, total_scenarios=?, passed=?, failed=?, skipped=?, duration_s=?, status=? WHERE id=?`
+      ).run(
+        finishedAt,
+        reports.length,
+        totalPassed,
+        totalFailed,
+        totalSkipped,
+        durationS,
+        status,
+        runId,
+      );
+
+      db.exec("COMMIT");
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
+    } finally {
+      db.close();
+    }
+  } catch (e) {
+    console.warn(`[hamownia] Failed to record run results to SQLite: ${e}`);
+  }
 }
