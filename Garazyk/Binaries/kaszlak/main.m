@@ -178,6 +178,7 @@ static BOOL parse_global_options(NSMutableArray<NSString *> *commandArgs,
                 return NO;
             }
             context.dataDir = commandArgs[i + 1];
+            context.dataDirExplicitlySet = YES;
             [commandArgs removeObjectsInRange:NSMakeRange(i, 2)];
             continue;
         }

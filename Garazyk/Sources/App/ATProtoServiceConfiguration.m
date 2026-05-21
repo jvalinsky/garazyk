@@ -73,7 +73,10 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
   NSDictionary *env = [[NSProcessInfo processInfo] environment];
   if ([env[@"XCTestConfigurationFilePath"] length] > 0 ||
       [env[@"XCTestBundlePath"] length] > 0 ||
-      [env[@"PDS_RUNNING_TESTS"] length] > 0) {
+      [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+      getenv("XCTestConfigurationFilePath") != NULL ||
+      getenv("XCTestBundlePath") != NULL ||
+      getenv("PDS_RUNNING_TESTS") != NULL) {
     return YES;
   }
 
@@ -408,10 +411,22 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _issuer = envIssuer;
   }
 
+  NSDictionary *auth = config[@"auth"];
+  GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: auth class: %@, auth dictionary: %@", NSStringFromClass([auth class]), auth);
+  if (auth && [auth isKindOfClass:[NSDictionary class]]) {
+    NSString *secretVal = auth[@"master_secret"];
+    GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: master_secret: %@", secretVal);
+    if ([secretVal isKindOfClass:[NSString class]]) {
+      _masterSecret = [self resolveSecretValue:secretVal];
+      GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: _masterSecret set to length: %lu", (unsigned long)_masterSecret.length);
+    }
+  }
+
   NSString *envMasterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
+  GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: envMasterSecret: %@", envMasterSecret);
   if (envMasterSecret.length > 0) {
     _masterSecret = envMasterSecret;
-    GZ_LOG_AUTH_DEBUG(@"Master secret resolved from environment (length: %lu)", (unsigned long)_masterSecret.length);
+    GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: env override set _masterSecret to length: %lu", (unsigned long)_masterSecret.length);
   }
 
   if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
@@ -458,8 +473,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
   }
 
   // Allow env overrides even when plc section is missing.
-  NSString *envPlcURL =
-      [[NSProcessInfo processInfo] environment][@"PDS_PLC_URL"];
+  NSString *envPlcURL = [self resolveEnvOverrideForKey:@"PDS_PLC_URL" default:nil];
   if (envPlcURL.length > 0) {
     _plcURL = envPlcURL;
   }
@@ -784,8 +798,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     }
 
     if ([self dictionary:logging hasValueForKey:@"max_file_size_mb"]) {
-      NSString *envValue =
-          [[NSProcessInfo processInfo] environment][@"GZ_LOG_MAX_SIZE_MB"];
+      NSString *envValue = [self resolveEnvOverrideForKey:@"GZ_LOG_MAX_SIZE_MB" default:nil];
       NSUInteger sizeMB =
           envValue ? [envValue integerValue]
                    : [logging[@"max_file_size_mb"] unsignedIntegerValue];
@@ -793,8 +806,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     }
 
     if ([self dictionary:logging hasValueForKey:@"max_files"]) {
-      NSString *envValue =
-          [[NSProcessInfo processInfo] environment][@"GZ_LOG_MAX_FILES"];
+      NSString *envValue = [self resolveEnvOverrideForKey:@"GZ_LOG_MAX_FILES" default:nil];
       _maxLogFiles = envValue ? [envValue integerValue]
                               : [logging[@"max_files"] unsignedIntegerValue];
     }
@@ -805,8 +817,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     }
 
     if (logging[@"components"]) {
-      NSString *envValue =
-          [[NSProcessInfo processInfo] environment][@"GZ_LOG_COMPONENTS"];
+      NSString *envValue = [self resolveEnvOverrideForKey:@"GZ_LOG_COMPONENTS" default:nil];
       if (envValue) {
         _enabledComponents = [envValue componentsSeparatedByString:@","];
       } else {
@@ -878,13 +889,11 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
 
   // Also check environment variables if no config file logging section
   if (!logging) {
-    NSString *logFile =
-        [[NSProcessInfo processInfo] environment][@"GZ_LOG_FILE"];
+    NSString *logFile = [self resolveEnvOverrideForKey:@"GZ_LOG_FILE" default:nil];
     if (logFile)
       _logFilePath = logFile;
 
-    NSString *logLevel = [[[NSProcessInfo processInfo]
-        environment][@"GZ_LOG_LEVEL"] lowercaseString];
+    NSString *logLevel = [[self resolveEnvOverrideForKey:@"GZ_LOG_LEVEL" default:nil] lowercaseString];
     if (logLevel) {
       if ([logLevel isEqualToString:@"debug"])
         _logLevel = GZLogLevelDebug;
@@ -896,8 +905,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
         _logLevel = GZLogLevelError;
     }
 
-    NSString *logFormat = [[[NSProcessInfo processInfo]
-        environment][@"GZ_LOG_FORMAT"] lowercaseString];
+    NSString *logFormat = [[self resolveEnvOverrideForKey:@"GZ_LOG_FORMAT" default:nil] lowercaseString];
     if (logFormat) {
       if ([logFormat isEqualToString:@"json"])
         _logFormat = GZLogFormatJSON;
@@ -1053,11 +1061,17 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
 - (NSString *)resolveEnvOverrideForKey:(NSString *)envKey
                                default:(NSString *)defaultValue {
   NSString *envValue = [[NSProcessInfo processInfo] environment][envKey];
+  if (!envValue) {
+    char *val = getenv([envKey UTF8String]);
+    if (val) {
+      envValue = [NSString stringWithUTF8String:val];
+    }
+  }
   return envValue ?: defaultValue;
 }
 
 - (BOOL)boolFromEnv:(NSString *)envKey default:(BOOL)defaultValue {
-  NSString *envValue = [[NSProcessInfo processInfo] environment][envKey];
+  NSString *envValue = [self resolveEnvOverrideForKey:envKey default:nil];
   if (!envValue)
     return defaultValue;
   return [@"true" isEqualToString:envValue.lowercaseString] ||
@@ -1222,7 +1236,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     if ([value hasPrefix:@"env:"]) {
         NSString *envVar = [value substringFromIndex:4];
         if (envVar.length == 0) return nil;
-        NSString *envValue = [[NSProcessInfo processInfo].environment objectForKey:envVar];
+        NSString *envValue = [self resolveEnvOverrideForKey:envVar default:nil];
         return envValue;
     }
 

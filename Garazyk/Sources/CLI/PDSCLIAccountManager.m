@@ -32,7 +32,7 @@
     NSString *dataDir = config[@"server"][@"data_dir"] ?: [ATProtoServiceConfiguration defaultDataDirectory];
     
     // Command line flag should override config file
-    if (context.dataDir && ![context.dataDir isEqualToString:[ATProtoServiceConfiguration defaultDataDirectory]] && ![context.dataDir isEqualToString:@"./data"]) {
+    if (context.dataDirExplicitlySet && context.dataDir) {
         dataDir = context.dataDir;
     }
     return dataDir;
