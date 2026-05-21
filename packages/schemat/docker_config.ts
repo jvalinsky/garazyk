@@ -87,6 +87,7 @@ export function neededPorts(
     SERVICE_PORTS.relay,
     SERVICE_PORTS.appview,
     8080,
+    8081,
   ];
   if (opts.withPds2) ports.push(SERVICE_PORTS.pds2);
   if (opts.otel) ports.push(4317, 4318, 3301);

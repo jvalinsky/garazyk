@@ -16,7 +16,7 @@ import type {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const basePorts = [2582, 2583, 2584, 3200, 8080];
+const basePorts = [2582, 2583, 2584, 3200, 8080, 8081];
 
 /** Build a mock EnvSource from a plain record. */
 function mockEnv(
@@ -42,7 +42,7 @@ class MockFs implements FileSystemOps {
 
 Deno.test("neededPorts: returns the base set of ports when no options are given", () => {
   const ports = neededPorts({});
-  assertEquals(ports.length, 5);
+  assertEquals(ports.length, 6);
   for (const p of basePorts) assert(ports.includes(p), `expected ${p} in ports`);
 });
 
@@ -69,7 +69,7 @@ Deno.test("neededPorts: returns a new array each time", () => {
   const b = neededPorts({});
   assertEquals(a, b);
   a.push(9999);
-  assertEquals(neededPorts({}).length, 5);
+  assertEquals(neededPorts({}).length, 6);
 });
 
 // ---------------------------------------------------------------------------

@@ -389,6 +389,8 @@ export async function executeRunnerArgs(
       useBinary: args.binary,
       clientFlow: args.clientFlow,
       selectedScenarios: selected,
+      withPds2: args.pds2 || selected.some((s) => s.needsPds2),
+      noSetup: args.noSetup,
     });
 
     if (args.setupOnly) {
