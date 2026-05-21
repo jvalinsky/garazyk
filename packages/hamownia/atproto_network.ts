@@ -161,6 +161,12 @@ export async function startLocalNetwork(
       }
     }
 
+    // Export admin credentials so scenario config picks them up
+    Deno.env.set("PDS_ADMIN_PASSWORD",
+      Deno.env.get("PDS_ADMIN_PASSWORD") ?? "admin-localdev");
+    Deno.env.set("APPVIEW_ADMIN_SECRET",
+      Deno.env.get("APPVIEW_ADMIN_SECRET") ?? "localdevadmin");
+
     if (!options.waitOnly) {
       console.log("[INFO]  Starting local network (Docker)...");
 
