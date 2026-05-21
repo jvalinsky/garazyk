@@ -1,13 +1,15 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertThrows } from "@std/assert";
 import {
   addCounts,
   classifyDoc,
   countDocumentation,
+  createSubsystemReport,
   emptyCounts,
   inferCanonicalTarget,
   inferOwner,
   inferStatus,
   missingCounts,
+  parseArgs,
   pct,
   summarize,
   subsystemForPath,
@@ -303,4 +305,142 @@ Deno.test("countDocumentation leaves unmarked symbols undocumented", () => {
   assertEquals(counts.enums, { total: 1, documented: 0 });
   assertEquals(counts.properties, { total: 1, documented: 0 });
   assertEquals(counts.methods, { total: 1, documented: 0 });
+});
+
+// ---------------------------------------------------------------------------
+// createSubsystemReport tests
+// ---------------------------------------------------------------------------
+
+Deno.test("createSubsystemReport: returns an entry for every subsystem with zero values", () => {
+  const report = createSubsystemReport();
+
+  const subsystems = [
+    "Core", "Database", "Blob", "Chat", "AppView", "Services",
+    "AdminUIServer", "Other",
+  ] as const;
+
+  for (const subsystem of subsystems) {
+    const entry = report[subsystem];
+    assert(entry !== undefined, `missing subsystem: ${subsystem}`);
+    assertEquals(entry.filesAnalyzed, 0);
+    assertEquals(entry.overall.total, 0);
+    assertEquals(entry.overall.documented, 0);
+    assertEquals(entry.overall.percent, 100);
+  }
+});
+
+Deno.test("createSubsystemReport: each entry has independent counters", () => {
+  const report = createSubsystemReport();
+
+  report.Core.filesAnalyzed = 3;
+  report.Core.totals.classes.total = 5;
+  report.Core.overall.total = 10;
+
+  // Other subsystems should be unaffected
+  assertEquals(report.Database.filesAnalyzed, 0);
+  assertEquals(report.Database.totals.classes.total, 0);
+  assertEquals(report.AppView.overall.total, 0);
+});
+
+// ---------------------------------------------------------------------------
+// parseArgs tests
+// ---------------------------------------------------------------------------
+
+Deno.test("parseArgs: returns defaults when no arguments are provided", async () => {
+  const options = await parseArgs([]);
+
+  assertEquals(options.searchDir, "Garazyk/Sources");
+  assertEquals(options.json, false);
+  assertEquals(options.bySubsystem, false);
+  assertEquals(options.files, false);
+  assertEquals(options.includeFrameworks, false);
+  assertEquals(options.minOverall, undefined);
+  assertEquals(options.minSubsystems.size, 0);
+});
+
+Deno.test("parseArgs: accepts a custom search directory as the first positional argument", async () => {
+  const options = await parseArgs(["Garazyk/Tests"]);
+
+  assertEquals(options.searchDir, "Garazyk/Tests");
+});
+
+Deno.test("parseArgs: sets json flag when --json is passed", async () => {
+  const options = await parseArgs(["--json"]);
+
+  assertEquals(options.json, true);
+});
+
+Deno.test("parseArgs: sets bySubsystem flag and min-subsystem threshold", async () => {
+  const options = await parseArgs([
+    "--by-subsystem",
+    "--min-subsystem", "Chat=60",
+  ]);
+
+  assertEquals(options.bySubsystem, true);
+  assertEquals(options.minSubsystems.get("Chat"), 60);
+});
+
+Deno.test("parseArgs: sets minOverall threshold", async () => {
+  const options = await parseArgs(["--min-overall", "80"]);
+
+  assertEquals(options.minOverall, 80);
+});
+
+Deno.test("parseArgs: sets subsystem focus", async () => {
+  const options = await parseArgs(["--subsystem", "Chat"]);
+
+  assertEquals(options.subsystem, "Chat");
+  assertEquals(options.bySubsystem, true);
+});
+
+Deno.test("parseArgs: sets files and includeFrameworks flags", async () => {
+  const options = await parseArgs(["--files", "--include-frameworks"]);
+
+  assertEquals(options.files, true);
+  assertEquals(options.includeFrameworks, true);
+});
+
+Deno.test("parseArgs: throws on unknown subsystem", async () => {
+  try {
+    await parseArgs(["--subsystem", "InvalidName"]);
+    assert(false, "Expected parseArgs to throw");
+  } catch (error) {
+    assert((error as Error).message.includes("--subsystem must be one of"));
+  }
+});
+
+Deno.test("parseArgs: throws on unknown option", async () => {
+  try {
+    await parseArgs(["--unknown-flag"]);
+    assert(false, "Expected parseArgs to throw");
+  } catch (error) {
+    assert((error as Error).message.includes("Unknown option"));
+  }
+});
+
+Deno.test("parseArgs: throws on minOverall without a value", async () => {
+  try {
+    await parseArgs(["--min-overall"]);
+    assert(false, "Expected parseArgs to throw");
+  } catch {
+    // Expected
+  }
+});
+
+Deno.test("parseArgs: throws on minOverall with non-numeric value", async () => {
+  try {
+    await parseArgs(["--min-overall", "abc"]);
+    assert(false, "Expected parseArgs to throw");
+  } catch {
+    // Expected
+  }
+});
+
+Deno.test("parseArgs: throws on extra positional argument", async () => {
+  try {
+    await parseArgs(["dir1", "dir2"]);
+    assert(false, "Expected parseArgs to throw");
+  } catch (error) {
+    assert((error as Error).message.includes("Unexpected extra argument"));
+  }
 });
