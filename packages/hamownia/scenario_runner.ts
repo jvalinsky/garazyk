@@ -2,7 +2,7 @@
 import { dirname, fromFileUrl } from "@std/path";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
-import type { Topology } from "@garazyk/schemat";
+import type { Topology, TopologyManifestV2 } from "@garazyk/schemat";
 import { roleEnvKey } from "@garazyk/schemat";
 import { type ScenarioReport, ScenarioResult } from "./runner.ts";
 import {
@@ -118,14 +118,14 @@ export function buildDockerScenarioRunnerOptions(
       ? `${composeProject}_${topology.manifest.networkName}`
       : `${composeProject}_local_net`,
     internalUrls: topology.internalUrls,
-    dockerRunnerEnv: topology.manifest?.env?.dockerRunner,
+    dockerRunnerEnv: (topology.manifest as TopologyManifestV2 | undefined)?.env?.dockerRunner,
     capabilities: topology.capabilities,
     scenarioPath: scenario.path,
     timeoutSeconds,
     roleEnvMapper: roleEnvKey,
     env: {
       ...(topology.manifest?.scenarioEnv || {}),
-      ...(topology.manifest?.env?.scenario || {}),
+      ...((topology.manifest as TopologyManifestV2 | undefined)?.env?.scenario || {}),
       ATPROTO_CLIENT_FLOW: args.clientFlow,
       ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
       ...(args.webClient ? { ATPROTO_WEB_CLIENT: args.webClient } : {}),
@@ -148,9 +148,10 @@ function buildHostScenarioEnv(
   if (args.webClient) env.ATPROTO_WEB_CLIENT = args.webClient;
   if (args.topology) env.ATPROTO_TOPOLOGY = args.topology;
   if (topology.manifest) {
-    const runnerEnv = topology.manifest.env?.hostRunner ||
+    const manifestV2 = topology.manifest as TopologyManifestV2;
+    const runnerEnv = manifestV2.env?.hostRunner ||
       topology.manifest.scenarioEnv;
-    const scenarioEnv = topology.manifest.env?.scenario || {};
+    const scenarioEnv = manifestV2.env?.scenario || {};
     for (
       const [key, value] of Object.entries({ ...runnerEnv, ...scenarioEnv })
     ) {
