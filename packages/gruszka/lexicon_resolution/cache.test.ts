@@ -151,10 +151,16 @@ Deno.test("InMemoryCache: cache stores complex objects", async () => {
 // DiskCache
 // =============================================================================
 
-const diskCacheDir = await Deno.makeTempDir({ prefix: "gruszka-disk-cache-test-" });
+let _diskCacheDir: string | undefined;
+function getDiskCacheDir(): string {
+  if (!_diskCacheDir) {
+    _diskCacheDir = Deno.makeTempDirSync({ prefix: "gruszka-disk-cache-test-" });
+  }
+  return _diskCacheDir;
+}
 
 function makeDiskCache<T>(ttlMs?: number): DiskCache<T> {
-  const subdir = `${diskCacheDir}/${crypto.randomUUID()}`;
+  const subdir = `${getDiskCacheDir()}/${crypto.randomUUID()}`;
   return new DiskCache<T>({ directory: subdir, ttlMs });
 }
 
@@ -192,7 +198,7 @@ Deno.test("DiskCache: set with explicit TTL overrides default", async () => {
 
 Deno.test("DiskCache: default 24h TTL when not specified", async () => {
   const cache = new DiskCache<string>({
-    directory: `${diskCacheDir}/${crypto.randomUUID()}`,
+    directory: `${getDiskCacheDir()}/${crypto.randomUUID()}`,
   });
   await cache.set("persistent", "value");
   // Should still be present (TTL is 24h).
@@ -252,7 +258,7 @@ Deno.test("InMemoryCache satisfies KeyValueCache", () => {
 
 Deno.test("DiskCache satisfies KeyValueCache", () => {
   const _cache: KeyValueCache<string> = new DiskCache<string>({
-    directory: diskCacheDir,
+    directory: getDiskCacheDir(),
   });
   assert(_cache !== undefined);
 });

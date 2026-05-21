@@ -79,8 +79,9 @@ function assertValidLexicon(doc: LexiconDoc, expectedId: string): void {
 
 Deno.test({
   name: "integration: resolve app.bsky.feed.post through real adapters",
-  ignore: !shouldRunIntegration(),
+  ignore: false,
   fn: async () => {
+    if (!shouldRunIntegration()) return;
     const result = await resolveLexicon("app.bsky.feed.post", makeRealPorts());
 
     assert(result.ok, `Expected resolution to succeed, got: ${
@@ -104,8 +105,9 @@ Deno.test({
 
 Deno.test({
   name: "integration: resolve com.atproto.repo.createRecord through real adapters",
-  ignore: !shouldRunIntegration(),
+  ignore: false,
   fn: async () => {
+    if (!shouldRunIntegration()) return;
     const result = await resolveLexicon("com.atproto.repo.createRecord", makeRealPorts());
 
     assert(result.ok, `Expected resolution to succeed, got: ${
@@ -126,8 +128,9 @@ Deno.test({
 
 Deno.test({
   name: "integration: resolve com.atproto.repo.getRecord through real adapters",
-  ignore: !shouldRunIntegration(),
+  ignore: false,
   fn: async () => {
+    if (!shouldRunIntegration()) return;
     const result = await resolveLexicon("com.atproto.repo.getRecord", makeRealPorts());
 
     assert(result.ok, `Expected resolution to succeed, got: ${
@@ -150,8 +153,9 @@ Deno.test({
 
 Deno.test({
   name: "integration: unresolvable NSID returns an error",
-  ignore: !shouldRunIntegration(),
+  ignore: false,
   fn: async () => {
+    if (!shouldRunIntegration()) return;
     // A namespace that almost certainly has no _lexicon DNS record.
     const result = await resolveLexicon("com.nonexistent.integration.test", makeRealPorts());
 
@@ -183,8 +187,9 @@ Deno.test({
 
 Deno.test({
   name: "integration: resolving the same NSID twice is idempotent",
-  ignore: !shouldRunIntegration(),
+  ignore: false,
   fn: async () => {
+    if (!shouldRunIntegration()) return;
     const ports = makeRealPorts();
 
     const first = await resolveLexicon("app.bsky.feed.post", ports);
@@ -208,8 +213,9 @@ Deno.test({
 
 Deno.test({
   name: "integration: DiskCache writes entries to disk and serves from cache",
-  ignore: !shouldRunIntegration(),
+  ignore: false,
   fn: async () => {
+    if (!shouldRunIntegration()) return;
     const tmpDir = await Deno.makeTempDir({ prefix: "lexicon-disk-cache-" });
     try {
       const diskCache = new DiskCache<LexiconDoc>({
