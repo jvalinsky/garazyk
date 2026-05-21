@@ -42,6 +42,7 @@ export type {
   TopologyDiagnosticProbe,
   TopologyHealthProbe,
   TopologyManifest,
+  TopologyManifestV2,
   TopologyPreset,
   TopologyResolveOptions,
   WebClientTopology,
