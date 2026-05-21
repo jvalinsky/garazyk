@@ -1,11 +1,5 @@
-/**
- * Tests for the ProgressBar and DurationCache.
- *
- * @module progress_test
- */
-
 import { assertEquals, assertMatch } from "@std/assert";
-import { ProgressBar } from "./progress.ts";
+import { DurationCache, ProgressBar } from "./progress.ts";
 
 // Strip ANSI escape sequences for deterministic assertions.
 function stripAnsi(s: string): string {
@@ -91,4 +85,33 @@ Deno.test("ProgressBar: formatDuration via finish output", () => {
   const output = bar.finish();
   const plain = stripAnsi(output);
   assertMatch(plain, /\d+s/); // matches "0s", "1s", etc.
+});
+
+// ---------------------------------------------------------------------------
+// DurationCache
+// ---------------------------------------------------------------------------
+
+Deno.test("DurationCache: get returns null for unknown scenario", () => {
+  const cache = new DurationCache("/nonexistent/path/that/does/not/exist");
+  assertEquals(cache.get("unknown-scenario"), null);
+});
+
+Deno.test("DurationCache: set and get round-trips a duration", () => {
+  const cache = new DurationCache("/nonexistent/path/that/does/not/exist");
+  cache.set("01", 5000);
+  assertEquals(cache.get("01"), 5000);
+});
+
+Deno.test("DurationCache: set applies EMA on subsequent calls (0.3 old + 0.7 new)", () => {
+  const cache = new DurationCache("/nonexistent/path/that/does/not/exist");
+  cache.set("01", 1000);
+  cache.set("01", 2000);
+  // EMA: Math.round(1000 * 0.3 + 2000 * 0.7) = Math.round(300 + 1400) = 1700
+  assertEquals(cache.get("01"), 1700);
+});
+
+Deno.test("DurationCache: constructor with nonexistent path does not throw", () => {
+  // Should silently initialize with empty cache
+  const cache = new DurationCache("/nonexistent/path/that/does/not/exist");
+  assertEquals(cache.get("anything"), null);
 });
