@@ -124,7 +124,7 @@ plan_*.txt
 scratchpad_*.md
 
 # CTest artifacts
-Testing/
+/Testing/
 
 Garazyk/Tests/Blob/debug_blob_test.txt
 
