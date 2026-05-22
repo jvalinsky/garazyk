@@ -42,6 +42,9 @@
     if (self) {
         _eventBuffer = buffer;
         _subscribeReposHandler = handler;
+        if (_subscribeReposHandler && !_subscribeReposHandler.eventBuffer) {
+            _subscribeReposHandler.eventBuffer = buffer;
+        }
         _metrics = nil;
         _currentSequence = 0;
         _downstreamConnections = [NSMutableArray array];
@@ -63,6 +66,7 @@
         // Extract sequence number and event type
         int64_t seq = 0;
 
+        GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event of class %@", NSStringFromClass([event class]));
         if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
             FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
             
@@ -70,9 +74,11 @@
             if (self.subscribeReposHandler) {
                 [self.subscribeReposHandler broadcastCommitEvent:commitEvent];
                 seq = (int64_t)commitEvent.seq;
+            } else if (self.eventBuffer) {
+                seq = (int64_t)commitEvent.seq;
+                [self.eventBuffer appendEvent:commitEvent seq:seq];
             }
 
-            [self.eventBuffer appendEvent:commitEvent seq:seq];
             GZ_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
         }
         else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
@@ -81,9 +87,11 @@
             if (self.subscribeReposHandler) {
                 [self.subscribeReposHandler broadcastIdentityChange:identityEvent.did handle:identityEvent.handle];
                 seq = (int64_t)identityEvent.seq;
+            } else if (self.eventBuffer) {
+                seq = (int64_t)identityEvent.seq;
+                [self.eventBuffer appendEvent:identityEvent seq:seq];
             }
 
-            [self.eventBuffer appendEvent:identityEvent seq:seq];
             GZ_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
         }
         else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
@@ -92,9 +100,11 @@
             if (self.subscribeReposHandler) {
                 [self.subscribeReposHandler broadcastAccountStatus:accountEvent.did active:accountEvent.active status:accountEvent.status];
                 seq = (int64_t)accountEvent.seq;
+            } else if (self.eventBuffer) {
+                seq = (int64_t)accountEvent.seq;
+                [self.eventBuffer appendEvent:accountEvent seq:seq];
             }
 
-            [self.eventBuffer appendEvent:accountEvent seq:seq];
             GZ_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
         }
         else if ([event isKindOfClass:[FirehoseErrorEvent class]]) {
