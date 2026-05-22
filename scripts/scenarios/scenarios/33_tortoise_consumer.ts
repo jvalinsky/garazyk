@@ -114,18 +114,22 @@ export async function run(): Promise<ScenarioResult> {
   let closed = false;
   const deadline = Date.now() + 90000;
 
+  // Don't read - let TCP buffer fill so PDS detects backpressure
   while (Date.now() < deadline) {
-    try {
-      const n = await conn.read(buf);
-      if (n === null) {
-        closed = true;
-        break;
-      }
-    } catch {
-      closed = true;
-      break;
-    }
     await new Promise((r) => setTimeout(r, 1000));
+  }
+
+  // Try a read to detect if connection was closed
+  try {
+    const n = await Promise.race([
+      conn.read(buf),
+      new Promise<number>((resolve) => setTimeout(() => resolve(-1), 2000)),
+    ]);
+    if (n === null) {
+      closed = true;
+    }
+  } catch {
+    closed = true;
   }
 
   if (closed) {

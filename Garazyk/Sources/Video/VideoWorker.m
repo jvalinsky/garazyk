@@ -188,15 +188,6 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                 return;
             }
 
-            NSData *videoData = [self.blobProvider retrieveBlobDataForCID:cid error:&blobError];
-            if (!videoData) {
-                GZ_LOG_ERROR(@"Failed to retrieve blob %@: %@", blobCid, blobError);
-                [self failJob:jobId error:blobError ?: [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
-                                                                           code:ATProtoVideoWorkerErrorBlobProviderUnavailable
-                                                                       userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve video blob"}]];
-                return;
-            }
-
             [self updateJobState:jobId state:@"PROCESSING" progress:15 message:@"Writing video to temp file"];
 
             NSString *tempDir = NSTemporaryDirectory();
@@ -206,11 +197,58 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
             NSURL *inputURL = [NSURL fileURLWithPath:tempInputPath];
             NSURL *outputURL = [NSURL fileURLWithPath:tempOutputPath];
 
-            BOOL written = [videoData writeToURL:inputURL options:NSDataWritingAtomic error:&blobError];
-            if (!written) {
-                GZ_LOG_ERROR(@"Failed to write temp file: %@", blobError);
-                [self failJob:jobId error:blobError];
-                return;
+            BOOL hasLocalFile = NO;
+            if ([self.blobProvider respondsToSelector:@selector(blobFileURLForCID:error:)]) {
+                NSURL *fileURL = [self.blobProvider blobFileURLForCID:cid error:nil];
+                if (fileURL) {
+                    [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
+                    if ([[NSFileManager defaultManager] copyItemAtURL:fileURL toURL:inputURL error:&blobError]) {
+                        hasLocalFile = YES;
+                    } else {
+                        GZ_LOG_WARN(@"Failed to copy direct file URL, falling back to streaming: %@", blobError);
+                    }
+                }
+            }
+
+            if (!hasLocalFile) {
+                NSInputStream *inputStream = [self.blobProvider retrieveBlobStreamForCID:cid error:&blobError];
+                if (!inputStream) {
+                    GZ_LOG_ERROR(@"Failed to open stream for blob %@: %@", blobCid, blobError);
+                    [self failJob:jobId error:blobError ?: [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
+                                                                               code:ATProtoVideoWorkerErrorBlobProviderUnavailable
+                                                                           userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve video blob stream"}]];
+                    return;
+                }
+                NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:inputURL append:NO];
+                [outputStream open];
+                [inputStream open];
+                uint8_t buffer[65536];
+                BOOL streamErrorOccurred = NO;
+                while ([inputStream hasBytesAvailable]) {
+                    NSInteger bytesRead = [inputStream read:buffer maxLength:sizeof(buffer)];
+                    if (bytesRead < 0) {
+                        blobError = [inputStream streamError];
+                        streamErrorOccurred = YES;
+                        break;
+                    }
+                    if (bytesRead == 0) break;
+                    
+                    NSInteger bytesWritten = [outputStream write:buffer maxLength:bytesRead];
+                    if (bytesWritten < 0) {
+                        blobError = [outputStream streamError];
+                        streamErrorOccurred = YES;
+                        break;
+                    }
+                }
+                [inputStream close];
+                [outputStream close];
+                if (streamErrorOccurred) {
+                    GZ_LOG_ERROR(@"Stream pipe failed: %@", blobError);
+                    [self failJob:jobId error:blobError ?: [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
+                                                                               code:ATProtoVideoWorkerErrorProcessingFailed
+                                                                           userInfo:@{NSLocalizedDescriptionKey: @"Stream pipe write failed"}]];
+                    return;
+                }
             }
 
             [self updateJobProgress:jobId progress:20 message:@"Inspecting video metadata"];
@@ -359,9 +397,10 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                     // Upload the ORIGINAL video to the PDS (matching Bluesky reference architecture).
                     // The PDS stores the original as the source of truth; the transcoded version
                     // is kept on disk for HLS generation.
-                    if (videoData) {
+                    NSData *originalVideoData = [NSData dataWithContentsOfURL:inputURL options:0 error:&storeError];
+                    if (originalVideoData) {
                         // Check 100MB input limit (matches lexicon app.bsky.embed.video#main maxSize)
-                        if (videoData.length > 100 * 1024 * 1024) {
+                        if (originalVideoData.length > 100 * 1024 * 1024) {
                             GZ_LOG_ERROR(@"Original video exceeds 100MB limit for job %@", jobId);
                             [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                             [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
@@ -374,10 +413,10 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                         if (self.blobUploader) {
                             // Upload via the blob uploader protocol (remote or local)
                             NSString *serviceToken = job[@"service_auth_token"];
-                            NSDictionary *uploadResult = [self.blobUploader uploadBlob:videoData
+                            NSDictionary *uploadResult = [self.blobUploader uploadBlob:originalVideoData
                                                                                mimeType:@"video/mp4"
                                                                             serviceAuth:serviceToken
-                                                                                  error:&storeError];
+                                                                                   error:&storeError];
                             if (uploadResult) {
                                 // PDS uploadBlob returns {"blob": {"ref": {"$link": "cid..."}}}
                                 NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
@@ -391,8 +430,8 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                             }
                         } else if (self.blobProvider) {
                             // Direct blob store (legacy in-process mode)
-                            originalCid = [CID sha256:videoData];
-                            [self.blobProvider storeBlobData:videoData forCID:originalCid error:&storeError];
+                            originalCid = [CID sha256:originalVideoData];
+                            [self.blobProvider storeBlobData:originalVideoData forCID:originalCid error:&storeError];
                         }
                     }
 
