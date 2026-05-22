@@ -28,6 +28,7 @@ import { ScenarioResult } from "./runner.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 
 const OTEL_REEXEC_GUARD = "GARAZYK_OTEL_REEXEC";
+const DEFAULT_LOCAL_TOPOLOGY = "garazyk-default";
 
 /** Append loop execution output into the CLI-level accumulators. */
 export function appendScenarioLoopResult(
@@ -317,7 +318,12 @@ export async function executeRunnerArgs(
     return;
   }
 
-  const baseReportsDir = join(options.repoRoot, "scripts", "scenarios", "reports");
+  const baseReportsDir = join(
+    options.repoRoot,
+    "scripts",
+    "scenarios",
+    "reports",
+  );
   if (await pathExists(baseReportsDir)) {
     Deno.env.set("ATPROTO_E2E_BASE_DIR", join(baseReportsDir, "runs"));
   }
@@ -356,7 +362,8 @@ export async function executeRunnerArgs(
   let withPds2 = false;
 
   try {
-    topology = resolveTopology(args.webClient, args.topology, {
+    const resolvedTopologyName = args.topology ?? DEFAULT_LOCAL_TOPOLOGY;
+    topology = resolveTopology(args.webClient, resolvedTopologyName, {
       manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
     });
 
@@ -392,11 +399,19 @@ export async function executeRunnerArgs(
     withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
 
     // Try to register the run start in SQLite
-    const dbPath = join(options.repoRoot, "scripts", "scenarios", "reports", "dashboard.db");
+    const dbPath = join(
+      options.repoRoot,
+      "scripts",
+      "scenarios",
+      "reports",
+      "dashboard.db",
+    );
     try {
       const stat = await Deno.stat(dbPath);
       if (stat.isFile) {
-        const { Database } = await import("https://deno.land/x/sqlite3@0.12.0/mod.ts");
+        const { Database } = await import(
+          "https://deno.land/x/sqlite3@0.12.0/mod.ts"
+        );
         const db = new Database(dbPath);
         try {
           db.prepare(`
@@ -481,7 +496,7 @@ export async function executeRunnerArgs(
       if (topologyManifestPath) {
         Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
       }
-      topology = resolveTopology(args.webClient, args.topology, {
+      topology = resolveTopology(args.webClient, resolvedTopologyName, {
         manifestPath: topologyManifestPath,
         includePds2: withPds2,
       });
@@ -531,7 +546,12 @@ export async function executeRunnerArgs(
     withPds2,
   });
 
-  await tryRecordRunInDatabase(options.repoRoot, context.runId, reportsDir, startTime);
+  await tryRecordRunInDatabase(
+    options.repoRoot,
+    context.runId,
+    reportsDir,
+    startTime,
+  );
 
   if (isOtelEnabled()) {
     await shutdownTracing();
@@ -563,19 +583,30 @@ async function tryRecordRunInDatabase(
   reportsDir: string,
   startTime: number,
 ) {
-  const dbPath = join(repoRoot, "scripts", "scenarios", "reports", "dashboard.db");
+  const dbPath = join(
+    repoRoot,
+    "scripts",
+    "scenarios",
+    "reports",
+    "dashboard.db",
+  );
   try {
     const stat = await Deno.stat(dbPath);
     if (!stat.isFile) return;
 
-    const { Database } = await import("https://deno.land/x/sqlite3@0.12.0/mod.ts");
+    const { Database } = await import(
+      "https://deno.land/x/sqlite3@0.12.0/mod.ts"
+    );
     const db = new Database(dbPath);
 
     const reports: Array<{ filename: string; report: any }> = [];
     try {
       for await (const entry of Deno.readDir(reportsDir)) {
         if (!entry.isFile || !entry.name.endsWith(".json")) continue;
-        if (entry.name === "overall-summary.json" || entry.name.endsWith("-progress.json")) continue;
+        if (
+          entry.name === "overall-summary.json" ||
+          entry.name.endsWith("-progress.json")
+        ) continue;
         const content = await Deno.readTextFile(join(reportsDir, entry.name));
         reports.push({ filename: entry.name, report: JSON.parse(content) });
       }
@@ -594,7 +625,9 @@ async function tryRecordRunInDatabase(
 
       for (const { filename, report } of reports) {
         const match = filename.match(/^(\d+)/);
-        const scenarioId = String(report.metadata?.scenario_id ?? (match ? match[1] : "00"));
+        const scenarioId = String(
+          report.metadata?.scenario_id ?? (match ? match[1] : "00"),
+        );
         totalPassed += report.summary?.passed ?? 0;
         totalFailed += report.summary?.failed ?? 0;
         totalSkipped += report.summary?.skipped ?? 0;
@@ -606,7 +639,7 @@ async function tryRecordRunInDatabase(
 
         db.prepare(
           `INSERT INTO scenario_results (run_id, scenario_id, scenario_name, status, passed, failed, skipped, duration_ms, steps_json, artifacts_json, started_at, finished_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).run(
           runId,
           scenarioId,
@@ -618,7 +651,9 @@ async function tryRecordRunInDatabase(
           Math.round((report.duration_s || 0) * 1000),
           JSON.stringify(report.steps || []),
           JSON.stringify(report.artifacts ?? {}),
-          report.started_at < 10_000_000_000 ? report.started_at * 1000 : report.started_at,
+          report.started_at < 10_000_000_000
+            ? report.started_at * 1000
+            : report.started_at,
           reportFinishedAt,
         );
       }
@@ -627,7 +662,7 @@ async function tryRecordRunInDatabase(
       const status = totalFailed > 0 ? "error" : "completed";
 
       db.prepare(
-        `UPDATE runs SET finished_at=?, total_scenarios=?, passed=?, failed=?, skipped=?, duration_s=?, status=? WHERE id=?`
+        `UPDATE runs SET finished_at=?, total_scenarios=?, passed=?, failed=?, skipped=?, duration_s=?, status=? WHERE id=?`,
       ).run(
         finishedAt,
         reports.length,
