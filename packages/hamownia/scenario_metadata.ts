@@ -126,6 +126,9 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
   "37": { requires: [requireCapability(Role.chat, Cap.chat.chat)] },
   "42": { requires: [requireCapability(Role.plc, Cap.plc.didResolution)] },
   "47": { requires: [requireCapability(Role.chat, Cap.chat.groupChat)] },
+  "67": {
+    requires: [requireCapability(Role.plc, Cap.plc.didResolution)],
+  },
   "59": {
     browserFlows: ["smoke", "login", "deep"],
     parameters: {

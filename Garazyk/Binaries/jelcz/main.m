@@ -100,9 +100,7 @@ void handleSignal(int sig) {
     exit(0);
 }
 
-void print_usage(void) {
-    JelczPrintUsage();
-}
+
 
 /// Queries `/_health` on a running Jelcz instance.
 static int run_status(int argc, const char *argv[]) {
@@ -283,7 +281,7 @@ int main(int argc, const char *argv[]) {
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
     @autoreleasepool {
-        if (argc < 2) { print_usage(); return 1; }
+        if (argc < 2) { JelczPrintUsage(); return 1; }
         NSString *command = [NSString stringWithUTF8String:argv[1]];
         if ([command isEqualToString:@"serve"])
             return run_serve(argc, argv);
@@ -293,9 +291,9 @@ int main(int argc, const char *argv[]) {
         } else if ([command isEqualToString:@"status"])
             return run_status(argc, argv);
         else if ([command isEqualToString:@"help"] || [command isEqualToString:@"-h"] || [command isEqualToString:@"--help"]) {
-            print_usage(); return 0;
+            JelczPrintUsage(); return 0;
         } else {
-            printf("Unknown command: %s\n\n", argv[1]); print_usage(); return 1;
+            printf("Unknown command: %s\n\n", argv[1]); JelczPrintUsage(); return 1;
         }
     }
     return 0;
