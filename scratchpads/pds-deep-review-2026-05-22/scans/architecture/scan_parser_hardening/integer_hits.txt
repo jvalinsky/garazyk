@@ -1,0 +1,517 @@
+./Garazyk/Sources/Repository/MST.m:22:@property (nonatomic, assign, readwrite) uint32_t level;
+./Garazyk/Sources/Repository/MST.m:28:- (instancetype)initWithLevel:(uint32_t)level;
+./Garazyk/Sources/Repository/MST.m:32:- (NSInteger)binarySearchIndexForKey:(NSString *)key;
+./Garazyk/Sources/Repository/MST.m:33:- (MSTNode *)subtreeAtIndex:(NSInteger)idx;
+./Garazyk/Sources/Repository/MST.m:60:- (NSUInteger)keyLength {
+./Garazyk/Sources/Repository/MST.m:67:    uint16_t keyLen = htons((uint16_t)[self keyLength]);
+./Garazyk/Sources/Repository/MST.m:74:    uint16_t cidLen = htons((uint16_t)cidBytes.length);
+./Garazyk/Sources/Repository/MST.m:124:+ (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
+./Garazyk/Sources/Repository/MST.m:149:    uint8_t p = (uint8_t)self.prefixLen;
+./Garazyk/Sources/Repository/MST.m:152:    uint16_t kLen = htons((uint16_t)self.keySuffix.length);
+./Garazyk/Sources/Repository/MST.m:157:    uint16_t vLen = htons((uint16_t)vBytes.length);
+./Garazyk/Sources/Repository/MST.m:162:    uint16_t tLen = tCID ? htons((uint16_t)[tCID bytes].length) : 0;
+./Garazyk/Sources/Repository/MST.m:177:- (instancetype)initWithLevel:(uint32_t)level {
+./Garazyk/Sources/Repository/MST.m:186:- (instancetype)initWithLevel:(uint32_t)level left:(MSTNode *)left entries:(NSArray<MSTNodeEntry *> *)entries {
+./Garazyk/Sources/Repository/MST.m:199:- (NSInteger)binarySearchIndexForKey:(NSString *)key {
+./Garazyk/Sources/Repository/MST.m:200:    NSInteger left = 0, right = (NSInteger)self.internalEntries.count;
+./Garazyk/Sources/Repository/MST.m:202:        NSInteger mid = left + (right - left) / 2;
+./Garazyk/Sources/Repository/MST.m:213:- (MSTNode *)subtreeAtIndex:(NSInteger)idx {
+./Garazyk/Sources/Repository/MST.m:217:    if (idx - 1 < (NSInteger)self.internalEntries.count) {
+./Garazyk/Sources/Repository/MST.m:253:        NSUInteger p = 0;
+./Garazyk/Sources/Repository/MST.m:254:        NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
+./Garazyk/Sources/Repository/MST.m:256:        const uint8_t *prevBytes = prevKeyData.bytes;
+./Garazyk/Sources/Repository/MST.m:257:        const uint8_t *currBytes = fullKeyData.bytes;
+./Garazyk/Sources/Repository/MST.m:259:        for (NSUInteger i = 0; i < minLen; i++) {
+./Garazyk/Sources/Repository/MST.m:315:    NSInteger idx = [self binarySearchIndexForKey:key];
+./Garazyk/Sources/Repository/MST.m:394:    uint32_t level = (kind == MSTNodeKindLeaf) ? 0 : 1;
+./Garazyk/Sources/Repository/MST.m:450:+ (uint32_t)keyDepthFromBytes:(const uint8_t *)bytes length:(NSUInteger)len {
+./Garazyk/Sources/Repository/MST.m:454:    uint32_t depth = 0;
+./Garazyk/Sources/Repository/MST.m:456:        uint8_t byte = hash[i];
+./Garazyk/Sources/Repository/MST.m:475:+ (NSUInteger)keyDepthString:(NSString *)key {
+./Garazyk/Sources/Repository/MST.m:480:+ (uint32_t)keyDepth:(NSString *)key {
+./Garazyk/Sources/Repository/MST.m:484:+ (NSUInteger)keyDepthBytes:(NSData *)keyBytes {
+./Garazyk/Sources/Repository/MST.m:499:    NSInteger idx = [node binarySearchIndexForKey:key];
+./Garazyk/Sources/Repository/MST.m:501:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Repository/MST.m:515:    uint32_t depth = [MST keyDepth:fullKey];
+./Garazyk/Sources/Repository/MST.m:519:- (MSTNode *)addRecursive:(MSTNode *)node key:(NSString *)key value:(CID *)value depth:(uint32_t)depth {
+./Garazyk/Sources/Repository/MST.m:527:        uint32_t currentLevel = node.level;
+./Garazyk/Sources/Repository/MST.m:531:        for (uint32_t i = currentLevel + 1; i < depth; i++) {
+./Garazyk/Sources/Repository/MST.m:540:    NSInteger idx = [node binarySearchIndexForKey:key];
+./Garazyk/Sources/Repository/MST.m:542:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Repository/MST.m:601:    NSInteger idx = [node binarySearchIndexForKey:key];
+./Garazyk/Sources/Repository/MST.m:603:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Repository/MST.m:653:        for (NSUInteger i = 0; i < left.internalEntries.count - 1; i++) {
+./Garazyk/Sources/Repository/MST.m:731:    NSUInteger queueHead = 0;
+./Garazyk/Sources/Repository/MST.m:822:        NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
+./Garazyk/Sources/Repository/MST.m:823:        NSUInteger safePrefixLen = MIN(prefixLen, prevKeyData.length);
+./Garazyk/Sources/Repository/MST.m:867:    uint32_t level = 0;
+./Garazyk/Sources/Repository/MST.m:895:    NSUInteger entryCount = 0;
+./Garazyk/Sources/Repository/MST.m:896:    NSUInteger maxDepth = 0;
+./Garazyk/Sources/Repository/MST.m:898:    NSUInteger queueHead = 0;
+./Garazyk/Sources/Repository/MST.m:989:    NSUInteger nodeCount = 0;
+./Garazyk/Sources/Repository/MST.m:990:    NSUInteger entryCount = 0;
+./Garazyk/Sources/Repository/MST.m:991:    NSUInteger leafNodeCount = 0;
+./Garazyk/Sources/Repository/MST.m:992:    NSUInteger internalNodeCount = 0;
+./Garazyk/Sources/Repository/MST.m:993:    NSUInteger maxDepth = 0;
+./Garazyk/Sources/Repository/MST.m:994:    NSUInteger totalDepth = 0;
+./Garazyk/Sources/Repository/MST.m:996:    NSUInteger queueHead = 0;
+./Garazyk/Sources/Repository/MST.m:1073:    NSUInteger queueHead = 0;
+./Garazyk/Sources/Repository/MST.m:1104:        for (NSUInteger i = 0; i < node.internalEntries.count; i++) {
+./Garazyk/Sources/Repository/MST.m:1135:- (void)enumerateNodesDepthFirstUsingBlock:(void (^)(MSTNode *node, NSUInteger depth, BOOL *stop))block {
+./Garazyk/Sources/Repository/MST.m:1142:                           depth:(NSUInteger)depth
+./Garazyk/Sources/Repository/MST.m:1143:                           block:(void (^)(MSTNode *, NSUInteger, BOOL *))block
+./Garazyk/Sources/Repository/MST.m:1309:    NSInteger idx = [node binarySearchIndexForKey:key];
+./Garazyk/Sources/Repository/MST.m:1312:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Core/CID.h:34:@property (readonly, nonatomic) NSUInteger version;
+./Garazyk/Sources/Core/CID.h:37:@property (readonly, nonatomic) NSUInteger codec;
+./Garazyk/Sources/Core/CID.h:49:+ (nullable instancetype)cidWithDigest:(NSData *)digest codec:(NSUInteger)codec;
+./Garazyk/Sources/Core/CID.h:58:+ (nullable instancetype)cidWithMultihash:(NSData *)multihash codec:(NSUInteger)codec;
+./Garazyk/Sources/Core/CID.h:92:+ (nullable instancetype)cidFromBuffer:(const uint8_t *)bytes
+./Garazyk/Sources/Core/CID.h:93:                                length:(NSUInteger)length
+./Garazyk/Sources/Core/CID.h:94:                              consumed:(nullable NSUInteger *)consumed;
+./Garazyk/Sources/Repository/MSTPersistence.m:11:typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
+./Garazyk/Sources/Repository/MSTPersistence.m:19:- (instancetype)initWithLevel:(uint32_t)level left:(nullable MSTNode *)left entries:(NSArray<MSTNodeEntry *> *)entries;
+./Garazyk/Sources/Repository/MSTPersistence.m:32:                       computedLevel:(uint32_t *)computedLevel
+./Garazyk/Sources/Repository/MSTPersistence.m:248:                       computedLevel:(uint32_t *)computedLevel
+./Garazyk/Sources/Repository/MSTPersistence.m:287:    uint32_t nodeLevel = 0;
+./Garazyk/Sources/Repository/MSTPersistence.m:294:        NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
+./Garazyk/Sources/Repository/MSTPersistence.m:295:        NSUInteger safeLen = MIN(prefixLen, prevKey.length);
+./Garazyk/Sources/Repository/MSTPersistence.m:308:        uint32_t treeLevel = 0;
+./Garazyk/Sources/Repository/MSTPersistence.m:328:    uint32_t leftLevel = 0;
+./Garazyk/Sources/Core/TID.h:33:@property (readonly, nonatomic) uint64_t timestamp;
+./Garazyk/Sources/Core/TID.h:56:+ (instancetype)tidWithTimestamp:(uint64_t)timestamp;
+./Garazyk/Sources/Repository/STAR.h:45:typedef NS_ENUM(NSUInteger, STARVariant) {
+./Garazyk/Sources/Repository/STAR.h:54:typedef NS_ENUM(NSUInteger, STARItemType) {
+./Garazyk/Sources/Repository/STAR.h:70:@property (nonatomic, assign) NSInteger version;
+./Garazyk/Sources/Repository/STAR.h:80:                      version:(NSInteger)version
+./Garazyk/Sources/Repository/STAR.h:110:@property (nonatomic, assign) NSUInteger prefixLen;
+./Garazyk/Sources/Repository/STAR.h:120:+ (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
+./Garazyk/Sources/Repository/STAR.h:447:typedef NS_ENUM(NSUInteger, PDSRepoFormat) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:9:static const NSUInteger kMaxDecodeDepth = 64;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:33:    NSUInteger index = 0;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:163:        uint8_t byte = 0xF6;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:199:        uint8_t byte = number.boolValue ? 0xF5 : 0xF4;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:216:            uint64_t val = (uint64_t)(-intValue - 1);
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:220:            return [self _encodeInteger:(uint64_t)intValue majorType:0 toData:data];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:233:+ (BOOL)_encodeInteger:(uint64_t)value majorType:(uint8_t)majorType toData:(NSMutableData *)data {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:234:    uint8_t initialByte = (majorType << 5);
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:237:        initialByte |= (uint8_t)value;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:241:        uint8_t bytes[2] = { initialByte, (uint8_t)value };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:245:        uint8_t bytes[3] = { initialByte, (value >> 8) & 0xFF, value & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:249:        uint8_t bytes[5] = { initialByte, (value >> 24) & 0xFF, (value >> 16) & 0xFF, 
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:254:        uint8_t bytes[9] = { initialByte };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:275:    NSUInteger length = utf8.length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:276:    uint8_t initialByte = 0x60; // Major type 3
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:279:        initialByte |= (uint8_t)length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:283:        uint8_t bytes[2] = { initialByte, (uint8_t)length };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:287:        uint8_t bytes[3] = { initialByte, (length >> 8) & 0xFF, length & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:291:        uint8_t bytes[5] = { initialByte, (length >> 24) & 0xFF, (length >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:301:    NSUInteger length = bytes.length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:302:    uint8_t initialByte = 0x40; // Major type 2
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:305:        initialByte |= (uint8_t)length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:309:        uint8_t header[2] = { initialByte, (uint8_t)length };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:313:        uint8_t header[3] = { initialByte, (length >> 8) & 0xFF, length & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:317:        uint8_t header[5] = { initialByte, (length >> 24) & 0xFF, (length >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:327:    NSUInteger count = array.count;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:328:    uint8_t initialByte = 0x80; // Major type 4
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:331:        initialByte |= (uint8_t)count;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:335:        uint8_t bytes[2] = { initialByte, (uint8_t)count };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:339:        uint8_t bytes[3] = { initialByte, (count >> 8) & 0xFF, count & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:343:        uint8_t bytes[5] = { initialByte, (count >> 24) & 0xFF, (count >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:358:    NSUInteger count = dict.count;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:359:    uint8_t initialByte = 0xA0; // Major type 5
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:362:        initialByte |= (uint8_t)count;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:366:        uint8_t bytes[2] = { initialByte, (uint8_t)count };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:370:        uint8_t bytes[3] = { initialByte, (count >> 8) & 0xFF, count & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:374:        uint8_t bytes[5] = { initialByte, (count >> 24) & 0xFF, (count >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:436:    uint8_t marker = 0x00;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:441:    uint8_t tagByte = 0xD8; // Major type 6, additional info 24
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:442:    uint8_t tagValue = 42;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:452:+ (nullable id)_decodeFromBytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:471:    uint8_t initialByte = bytes[*index];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:474:    uint8_t majorType = (initialByte >> 5) & 0x7;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:475:    uint8_t additionalInfo = initialByte & 0x1F;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:520:+ (nullable NSNumber *)_decodeLength:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:521:    uint64_t value = 0;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:537:        value = ((uint64_t)bytes[*index] << 8) | bytes[*index + 1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:544:        value = ((uint64_t)bytes[*index] << 24) | ((uint64_t)bytes[*index + 1] << 16) |
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:545:                ((uint64_t)bytes[*index + 2] << 8) | bytes[*index + 3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:569:+ (nullable NSNumber *)_decodeUnsignedInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:573:+ (nullable NSNumber *)_decodeNegativeInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:579:+ (nullable NSData *)_decodeByteString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:583:    uint64_t len = byteLength.unsignedLongLongValue;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:598:+ (nullable NSString *)_decodeTextString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:611:+ (nullable NSArray *)_decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:615:    uint64_t count = arrayLength.unsignedLongLongValue;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:618:    for (uint64_t i = 0; i < count; i++) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:634:+ (nullable NSDictionary *)_decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:638:    uint64_t count = mapLength.unsignedLongLongValue;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:641:    for (uint64_t i = 0; i < count; i++) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:668:+ (nullable id)_decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:672:    uint64_t tag = tagNumber.unsignedLongLongValue;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:699:        const uint8_t *cidBytes = cidData.bytes;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:724:+ (nullable id)_decodeSpecial:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Repository/CAR.m:54:static NSUInteger ReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+./Garazyk/Sources/Repository/CAR.m:59:    uint64_t result = 0;
+./Garazyk/Sources/Repository/CAR.m:60:    NSUInteger shift = 0;
+./Garazyk/Sources/Repository/CAR.m:61:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CAR.m:64:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Repository/CAR.m:65:        result |= ((uint64_t)(byte & 0x7F)) << shift;
+./Garazyk/Sources/Repository/CAR.m:104:    const uint8_t *bytes = cidBytes.bytes;
+./Garazyk/Sources/Repository/CAR.m:118:static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
+./Garazyk/Sources/Repository/CAR.m:119:    NSUInteger consumed = 0;
+./Garazyk/Sources/Repository/CAR.m:173:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CAR.m:174:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CAR.m:175:    uint64_t headerLength = 0;
+./Garazyk/Sources/Repository/CAR.m:176:    NSUInteger headerSize = ReadVarint(bytes + offset, data.length - offset, &headerLength);
+./Garazyk/Sources/Repository/CAR.m:232:        uint64_t blockLen = 0;
+./Garazyk/Sources/Repository/CAR.m:233:        NSUInteger blockSize = ReadVarint(bytes + offset, data.length - offset, &blockLen);
+./Garazyk/Sources/Repository/CAR.m:253:        NSData *blockBytes = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)blockLen)];
+./Garazyk/Sources/Repository/CAR.m:254:        offset += (NSUInteger)blockLen;
+./Garazyk/Sources/Repository/CAR.m:257:        NSUInteger cidLength = 0;
+./Garazyk/Sources/Repository/CAR.m:289:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CAR.m:290:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CAR.m:292:    uint32_t version;
+./Garazyk/Sources/Repository/CAR.m:306:    uint32_t rootCidLength;
+./Garazyk/Sources/Repository/CAR.m:342:        uint32_t blockLen;
+./Garazyk/Sources/Repository/CAR.m:412:static NSUInteger WriteVarint(uint64_t value, uint8_t *buffer) {
+./Garazyk/Sources/Repository/CAR.m:413:    NSUInteger bytesWritten = 0;
+./Garazyk/Sources/Repository/CAR.m:415:        buffer[bytesWritten++] = (uint8_t)((value & 0x7F) | 0x80);
+./Garazyk/Sources/Repository/CAR.m:418:    buffer[bytesWritten++] = (uint8_t)(value & 0x7F);
+./Garazyk/Sources/Repository/CAR.m:428:    uint8_t marker = 0x00;
+./Garazyk/Sources/Repository/CAR.m:442:    uint8_t headerLenBuffer[16];
+./Garazyk/Sources/Repository/CAR.m:443:    NSUInteger headerLenSize = WriteVarint(headerCBOR.length, headerLenBuffer);
+./Garazyk/Sources/Repository/CAR.m:457:    NSUInteger totalLength = cidBytes.length + block.data.length;
+./Garazyk/Sources/Repository/CAR.m:459:    uint8_t blockLenBuffer[16];
+./Garazyk/Sources/Repository/CAR.m:460:    NSUInteger blockLenSize = WriteVarint(totalLength, blockLenBuffer);
+./Garazyk/Sources/Repository/RepoCommit.h:31:@property (nonatomic, assign) NSInteger version;
+./Garazyk/Sources/Core/Base58.m:24:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Core/Base58.m:25:    NSUInteger length = data.length;
+./Garazyk/Sources/Core/Base58.m:28:    NSUInteger zeros = 0;
+./Garazyk/Sources/Core/Base58.m:34:    NSUInteger size = (length - zeros) * 138 / 100 + 1;
+./Garazyk/Sources/Core/Base58.m:35:    uint8_t *buf = calloc(size, sizeof(uint8_t));
+./Garazyk/Sources/Core/Base58.m:38:    NSUInteger i = zeros, high = size - 1;
+./Garazyk/Sources/Core/Base58.m:40:        NSUInteger j = size - 1;
+./Garazyk/Sources/Core/Base58.m:41:        NSUInteger carry = bytes[i];
+./Garazyk/Sources/Core/Base58.m:54:    NSUInteger j = 0;
+./Garazyk/Sources/Core/Base58.m:60:    for (NSUInteger k = 0; k < zeros; k++) {
+./Garazyk/Sources/Core/Base58.m:77:    NSUInteger length = string.length;
+./Garazyk/Sources/Core/Base58.m:80:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/Base58.m:86:    NSUInteger zeros = 0;
+./Garazyk/Sources/Core/Base58.m:92:    NSUInteger size = (length - zeros) * 733 / 1000 + 1;
+./Garazyk/Sources/Core/Base58.m:93:    uint8_t *buf = calloc(size, sizeof(uint8_t));
+./Garazyk/Sources/Core/Base58.m:94:    NSUInteger high = size - 1;
+./Garazyk/Sources/Core/Base58.m:96:    NSUInteger i = zeros;
+./Garazyk/Sources/Core/Base58.m:98:        NSUInteger j = size - 1;
+./Garazyk/Sources/Core/Base58.m:99:        NSUInteger carry = kBase58Map[chars[i]];
+./Garazyk/Sources/Core/Base58.m:112:    NSUInteger j = 0;
+./Garazyk/Sources/Repository/CBOR.m:22:+ (instancetype)unsignedInteger:(NSUInteger)value {
+./Garazyk/Sources/Repository/CBOR.m:27:+ (instancetype)negativeInteger:(NSInteger)value {
+./Garazyk/Sources/Repository/CBOR.m:48:+ (instancetype)tag:(NSUInteger)tag value:(CBORValue *)value {
+./Garazyk/Sources/Repository/CBOR.m:52:+ (instancetype)simple:(NSUInteger)value {
+./Garazyk/Sources/Repository/CBOR.m:202:- (NSUInteger)hash {
+./Garazyk/Sources/Repository/CBOR.m:274:+ (void)encodeCount:(NSUInteger)count withMajorType:(uint8_t)majorType toData:(NSMutableData *)data {
+./Garazyk/Sources/Repository/CBOR.m:275:    uint8_t major = majorType;
+./Garazyk/Sources/Repository/CBOR.m:277:        uint8_t byte = major | (uint8_t)count;
+./Garazyk/Sources/Repository/CBOR.m:282:        uint8_t len = (uint8_t)count;
+./Garazyk/Sources/Repository/CBOR.m:287:        uint16_t be = OSSwapHostToBigInt16((uint16_t)count);
+./Garazyk/Sources/Repository/CBOR.m:292:        uint32_t be = OSSwapHostToBigInt32((uint32_t)count);
+./Garazyk/Sources/Repository/CBOR.m:297:+ (void)encodeUnsignedInteger:(NSUInteger)value toData:(NSMutableData *)data {
+./Garazyk/Sources/Repository/CBOR.m:299:        uint8_t byte = (uint8_t)value;
+./Garazyk/Sources/Repository/CBOR.m:302:        uint8_t major = 0x18;
+./Garazyk/Sources/Repository/CBOR.m:304:        uint8_t byte = (uint8_t)value;
+./Garazyk/Sources/Repository/CBOR.m:307:        uint8_t major = 0x19;
+./Garazyk/Sources/Repository/CBOR.m:309:        uint16_t be = OSSwapHostToBigInt16((uint16_t)value);
+./Garazyk/Sources/Repository/CBOR.m:312:        uint8_t major = 0x1A;
+./Garazyk/Sources/Repository/CBOR.m:314:        uint32_t be = OSSwapHostToBigInt32((uint32_t)value);
+./Garazyk/Sources/Repository/CBOR.m:317:        uint8_t major = 0x1B;
+./Garazyk/Sources/Repository/CBOR.m:319:        uint64_t be = OSSwapHostToBigInt64(value);
+./Garazyk/Sources/Repository/CBOR.m:324:+ (void)encodeNegativeInteger:(NSInteger)value toData:(NSMutableData *)data {
+./Garazyk/Sources/Repository/CBOR.m:325:    NSUInteger unsignedValue;
+./Garazyk/Sources/Repository/CBOR.m:326:    if (value == NSIntegerMin) {
+./Garazyk/Sources/Repository/CBOR.m:329:        unsignedValue = (NSUInteger)(-(value + 1));
+./Garazyk/Sources/Repository/CBOR.m:332:    uint8_t base = 0x20;
+./Garazyk/Sources/Repository/CBOR.m:334:        uint8_t byte = base | (uint8_t)unsignedValue;
+./Garazyk/Sources/Repository/CBOR.m:337:        uint8_t bytes[2] = { base | 24, (uint8_t)unsignedValue };
+./Garazyk/Sources/Repository/CBOR.m:340:        uint8_t bytes[3] = { base | 25 };
+./Garazyk/Sources/Repository/CBOR.m:341:        uint16_t be = OSSwapHostToBigInt16((uint16_t)unsignedValue);
+./Garazyk/Sources/Repository/CBOR.m:345:        uint8_t major = 0x3A;
+./Garazyk/Sources/Repository/CBOR.m:347:        uint32_t be = OSSwapHostToBigInt32((uint32_t)unsignedValue);
+./Garazyk/Sources/Repository/CBOR.m:350:        uint8_t major = 0x3B;
+./Garazyk/Sources/Repository/CBOR.m:352:        uint64_t be = OSSwapHostToBigInt64(unsignedValue);
+./Garazyk/Sources/Repository/CBOR.m:358:    NSUInteger length = data.length;
+./Garazyk/Sources/Repository/CBOR.m:365:    NSUInteger length = utf8.length;
+./Garazyk/Sources/Repository/CBOR.m:371:    NSUInteger count = array.count;
+./Garazyk/Sources/Repository/CBOR.m:379:    NSUInteger count = map.count;
+./Garazyk/Sources/Repository/CBOR.m:401:+ (void)encodeTag:(NSUInteger)tag value:(CBORValue *)value toData:(NSMutableData *)data {
+./Garazyk/Sources/Repository/CBOR.m:406:+ (void)encodeSimpleValue:(NSUInteger)value toData:(NSMutableData *)data {
+./Garazyk/Sources/Repository/CBOR.m:407:    uint8_t byte = 0xE0 | (uint8_t)value;
+./Garazyk/Sources/Repository/CBOR.m:412:    uint8_t major = 0xFB;
+./Garazyk/Sources/Repository/CBOR.m:414:    uint64_t bits;
+./Garazyk/Sources/Repository/CBOR.m:416:    uint64_t be = OSSwapHostToBigInt64(bits);
+./Garazyk/Sources/Repository/CBOR.m:427:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CBOR.m:431:+ (CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:436:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CBOR.m:437:    uint8_t initial = bytes[(*offset)++];
+./Garazyk/Sources/Repository/CBOR.m:438:    uint8_t majorType = (initial & 0xE0) >> 5;
+./Garazyk/Sources/Repository/CBOR.m:439:    uint8_t additional = initial & 0x1F;
+./Garazyk/Sources/Repository/CBOR.m:456:+ (CBORValue *)decodeUnsignedInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:457:    NSUInteger value = 0;
+./Garazyk/Sources/Repository/CBOR.m:461:        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+./Garazyk/Sources/Repository/CBOR.m:469:+ (CBORValue *)decodeNegativeInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:472:    NSInteger value = -(NSInteger)(unsignedValue.unsignedInteger.unsignedIntegerValue + 1);
+./Garazyk/Sources/Repository/CBOR.m:476:+ (CBORValue *)decodeByteString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:477:    NSUInteger length = 0;
+./Garazyk/Sources/Repository/CBOR.m:481:        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+./Garazyk/Sources/Repository/CBOR.m:492:+ (CBORValue *)decodeTextString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:493:    NSUInteger length = 0;
+./Garazyk/Sources/Repository/CBOR.m:497:        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+./Garazyk/Sources/Repository/CBOR.m:509:+ (CBORValue *)decodeArray:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:510:    NSUInteger count = 0;
+./Garazyk/Sources/Repository/CBOR.m:514:        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+./Garazyk/Sources/Repository/CBOR.m:527:    for (NSUInteger i = 0; i < count; i++) {
+./Garazyk/Sources/Repository/CBOR.m:535:+ (CBORValue *)decodeMap:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:536:    NSUInteger count = 0;
+./Garazyk/Sources/Repository/CBOR.m:540:        NSUInteger bytesToRead = [self bytesToReadForAdditional:additional];
+./Garazyk/Sources/Repository/CBOR.m:553:    for (NSUInteger i = 0; i < count; i++) {
+./Garazyk/Sources/Repository/CBOR.m:562:+ (CBORValue *)decodeTag:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:570:+ (CBORValue *)decodeSimpleOrFloat:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:575:+ (NSUInteger)bytesToReadForAdditional:(uint8_t)additional {
+./Garazyk/Sources/Repository/CBOR.m:583:+ (NSUInteger)readIntegerFromData:(NSData *)data offset:(NSUInteger *)offset bytesToRead:(NSUInteger)bytesToRead {
+./Garazyk/Sources/Repository/CBOR.m:584:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CBOR.m:585:    uint64_t val = 0;
+./Garazyk/Sources/Repository/CBOR.m:586:    for (NSUInteger i = 0; i < bytesToRead; i++) {
+./Garazyk/Sources/Repository/CBOR.m:589:    return (NSUInteger)val;
+./Garazyk/Sources/Core/ATProtoBase32.m:14:    NSUInteger length = data.length;
+./Garazyk/Sources/Core/ATProtoBase32.m:15:    NSUInteger bits = 0;
+./Garazyk/Sources/Core/ATProtoBase32.m:18:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/ATProtoBase32.m:44:    for (NSUInteger i = 0; i < string.length; i++) {
+./Garazyk/Sources/Core/ATProtoBase32.m:54:            uint8_t byte = (buffer >> bits) & 0xFF;
+./Garazyk/Sources/Repository/MSTWalker.h:41:    NSUInteger index;
+./Garazyk/Sources/Repository/MSTWalker.h:48:typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
+./Garazyk/Sources/Repository/MSTWalker.h:73:                            index:(NSUInteger)index
+./Garazyk/Sources/Repository/MSTWalker.h:83:- (NSUInteger)index;
+./Garazyk/Sources/Repository/MSTWalker.h:131:- (NSUInteger)layer;
+./Garazyk/Sources/Core/DID.h:31:typedef NS_ENUM(NSInteger, DIDErrorCode) {
+./Garazyk/Sources/Core/DID.h:46:typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
+./Garazyk/Sources/Repository/MST.h:24:typedef NS_ENUM(NSUInteger, MSTNodeKind) {
+./Garazyk/Sources/Repository/MST.h:34:typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
+./Garazyk/Sources/Repository/MST.h:100:- (NSUInteger)keyLength;
+./Garazyk/Sources/Repository/MST.h:112:@property(nonatomic, assign) NSUInteger prefixLen;
+./Garazyk/Sources/Repository/MST.h:124:+ (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
+./Garazyk/Sources/Repository/MST.h:232:+ (NSUInteger)keyDepthString:(NSString *)key;
+./Garazyk/Sources/Repository/MST.h:239:+ (NSUInteger)keyDepthBytes:(NSData *)keyBytes;
+./Garazyk/Sources/Repository/MST.h:246:+ (uint32_t)keyDepth:(NSString *)key;
+./Garazyk/Sources/Repository/MST.h:263:- (void)enumerateNodesDepthFirstUsingBlock:(void (^)(MSTNode *node, NSUInteger depth, BOOL *stop))block;
+./Garazyk/Sources/Core/ATProtoValidator.m:35:        for (NSUInteger i = 0; i < identifier.length; i++) {
+./Garazyk/Sources/Core/ATProtoValidator.m:93:    for (NSUInteger i = 1; i < cid.length; i++) {
+./Garazyk/Sources/Core/ATProtoValidator.m:122:    for (NSUInteger i = 0; i < tid.length; i++) {
+./Garazyk/Sources/Core/ATProtoValidator.m:147:    for (NSUInteger i = 0; i < components.count; i++) {
+./Garazyk/Sources/Repository/MSTInternal.h:27:@property (nonatomic, assign, readonly) uint32_t level;
+./Garazyk/Sources/Repository/STAR.m:21:@property (nonatomic, assign, readwrite) uint32_t level;
+./Garazyk/Sources/Repository/STAR.m:32:static NSUInteger STARReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+./Garazyk/Sources/Repository/STAR.m:34:    uint64_t result = 0;
+./Garazyk/Sources/Repository/STAR.m:35:    NSUInteger shift = 0;
+./Garazyk/Sources/Repository/STAR.m:36:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/STAR.m:38:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Repository/STAR.m:39:        result |= ((uint64_t)(byte & 0x7F)) << shift;
+./Garazyk/Sources/Repository/STAR.m:50:static NSUInteger STARWriteVarint(uint64_t value, uint8_t *buffer) {
+./Garazyk/Sources/Repository/STAR.m:51:    NSUInteger bytesWritten = 0;
+./Garazyk/Sources/Repository/STAR.m:53:        buffer[bytesWritten++] = (uint8_t)((value & 0x7F) | 0x80);
+./Garazyk/Sources/Repository/STAR.m:56:    buffer[bytesWritten++] = (uint8_t)(value & 0x7F);
+./Garazyk/Sources/Repository/STAR.m:60:static NSData *STARVarintData(uint64_t value) {
+./Garazyk/Sources/Repository/STAR.m:61:    uint8_t buffer[10];
+./Garazyk/Sources/Repository/STAR.m:62:    NSUInteger len = STARWriteVarint(value, buffer);
+./Garazyk/Sources/Repository/STAR.m:73:    uint8_t zero = 0x00;
+./Garazyk/Sources/Repository/STAR.m:85:static NSError *STARError(NSInteger code, NSString *format, ...) NS_FORMAT_FUNCTION(2,3);
+./Garazyk/Sources/Repository/STAR.m:86:static NSError *STARError(NSInteger code, NSString *format, ...) {
+./Garazyk/Sources/Repository/STAR.m:103:                      version:(NSInteger)version
+./Garazyk/Sources/Repository/STAR.m:150:+ (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
+./Garazyk/Sources/Repository/STAR.m:239:@property (nonatomic, assign, readonly) uint32_t level;
+./Garazyk/Sources/Repository/STAR.m:307:    uint8_t magic = 0x2A;
+./Garazyk/Sources/Repository/STAR.m:310:    NSData *lenVarint = STARVarintData((uint64_t)commitCBOR.length);
+./Garazyk/Sources/Repository/STAR.m:328:    NSData *lenVarint = STARVarintData((uint64_t)nodeCBOR.length);
+./Garazyk/Sources/Repository/STAR.m:340:    NSData *lenVarint = STARVarintData((uint64_t)recordData.length);
+./Garazyk/Sources/Repository/STAR.m:356:                depth:(NSUInteger)depth
+./Garazyk/Sources/Repository/STAR.m:371:        NSUInteger prefixLen = 0;
+./Garazyk/Sources/Repository/STAR.m:372:        NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
+./Garazyk/Sources/Repository/STAR.m:373:        const uint8_t *prevBytes = prevKeyData.bytes;
+./Garazyk/Sources/Repository/STAR.m:374:        const uint8_t *currBytes = fullKeyData.bytes;
+./Garazyk/Sources/Repository/STAR.m:375:        for (NSUInteger i = 0; i < minLen; i++) {
+./Garazyk/Sources/Repository/STAR.m:552:    uint8_t magic = 0x2A;
+./Garazyk/Sources/Repository/STAR.m:558:    NSData *lenVarint = STARVarintData((uint64_t)commitCBOR.length);
+./Garazyk/Sources/Repository/STAR.m:569:    NSData *keyLenVarint = STARVarintData((uint64_t)keyData.length);
+./Garazyk/Sources/Repository/STAR.m:573:    NSData *dataLenVarint = STARVarintData((uint64_t)recordData.length);
+./Garazyk/Sources/Repository/STAR.m:642:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/STAR.m:643:    NSUInteger length = data.length;
+./Garazyk/Sources/Repository/STAR.m:644:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/STAR.m:654:    uint64_t version = 0;
+./Garazyk/Sources/Repository/STAR.m:655:    NSUInteger verLen = STARReadVarint(bytes + offset, length - offset, &version);
+./Garazyk/Sources/Repository/STAR.m:673:    uint64_t commitLen = 0;
+./Garazyk/Sources/Repository/STAR.m:674:    NSUInteger commitLenSize = STARReadVarint(bytes + offset, length - offset, &commitLen);
+./Garazyk/Sources/Repository/STAR.m:687:    NSData *commitData = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)commitLen)];
+./Garazyk/Sources/Repository/STAR.m:692:    offset += (NSUInteger)commitLen;
+./Garazyk/Sources/Repository/STAR.m:756:- (BOOL)parseL0Body:(const uint8_t *)bytes
+./Garazyk/Sources/Repository/STAR.m:757:              length:(NSUInteger)length
+./Garazyk/Sources/Repository/STAR.m:758:               offset:(NSUInteger)offset
+./Garazyk/Sources/Repository/STAR.m:764:    typedef NS_ENUM(NSUInteger, StackItemType) {
+./Garazyk/Sources/Repository/STAR.m:773:        NSUInteger implicitIndex; // for layer-0 records with omitted v
+./Garazyk/Sources/Repository/STAR.m:790:        uint64_t blockLen = 0;
+./Garazyk/Sources/Repository/STAR.m:791:        NSUInteger lenSize = STARReadVarint(bytes + offset, length - offset, &blockLen);
+./Garazyk/Sources/Repository/STAR.m:803:        NSData *blockData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)blockLen];
+./Garazyk/Sources/Repository/STAR.m:804:        offset += (NSUInteger)blockLen;
+./Garazyk/Sources/Repository/STAR.m:826:- (BOOL)parseLiteBody:(const uint8_t *)bytes
+./Garazyk/Sources/Repository/STAR.m:827:               length:(NSUInteger)length
+./Garazyk/Sources/Repository/STAR.m:828:                offset:(NSUInteger)offset
+./Garazyk/Sources/Repository/STAR.m:834:        uint64_t keyLen = 0;
+./Garazyk/Sources/Repository/STAR.m:835:        NSUInteger keyLenSize = STARReadVarint(bytes + offset, length - offset, &keyLen);
+./Garazyk/Sources/Repository/STAR.m:848:        offset += (NSUInteger)keyLen;
+./Garazyk/Sources/Repository/STAR.m:851:        uint64_t dataLen = 0;
+./Garazyk/Sources/Repository/STAR.m:852:        NSUInteger dataLenSize = STARReadVarint(bytes + offset, length - offset, &dataLen);
+./Garazyk/Sources/Repository/STAR.m:864:        NSData *recordData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)dataLen];
+./Garazyk/Sources/Repository/STAR.m:865:        offset += (NSUInteger)dataLen;
+./Garazyk/Sources/Repository/STAR.m:1072:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/STAR.m:1082:    const uint8_t *bytes = header.bytes;
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:32:typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
+./Garazyk/Sources/Repository/CBOR.h:35:typedef NS_ENUM(NSInteger, CBORType) {
+./Garazyk/Sources/Repository/CBOR.h:98:+ (instancetype)unsignedInteger:(NSUInteger)value;
+./Garazyk/Sources/Repository/CBOR.h:100:+ (instancetype)negativeInteger:(NSInteger)value;
+./Garazyk/Sources/Repository/CBOR.h:110:+ (instancetype)tag:(NSUInteger)tag value:(CBORValue *)value;
+./Garazyk/Sources/Repository/CBOR.h:112:+ (instancetype)simple:(NSUInteger)value;
+./Garazyk/Sources/Repository/CBOR.h:147:- (NSUInteger)hash;
+./Garazyk/Sources/Repository/CBOR.h:174:+ (nullable CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset;
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:180:    NSUInteger attempt = 0;
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:256:                NSInteger httpStatus = [requestError.userInfo[@"statusCode"] integerValue];
+./Garazyk/Sources/Repository/MSTWalker.m:27:                            index:(NSUInteger)index
+./Garazyk/Sources/Repository/MSTWalker.m:59:- (NSUInteger)index {
+./Garazyk/Sources/Repository/MSTWalker.m:82:@property (nonatomic, assign) NSUInteger flatIndex;
+./Garazyk/Sources/Repository/MSTWalker.m:121:- (NSUInteger)layer {
+./Garazyk/Sources/Repository/MSTWalker.m:171:    NSUInteger nextIndex = (self.status.index == NSNotFound) ? 0 : self.status.index + 1;
+./Garazyk/Sources/Core/Repositories/PDSSQLiteAccountRepository.m:76:- (NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:28:typedef NS_ENUM(NSInteger, PDSProviderHTTPClientErrorCode) {
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:58:@property (nonatomic, assign) NSUInteger maxRetries;
+./Garazyk/Sources/Core/PDSErrorRegistry.h:25:typedef NS_ENUM(NSInteger, PDSErrorCode) {
+./Garazyk/Sources/Core/Repositories/PDSBlobRepository.h:34:                                               limit:(NSInteger)limit 
+./Garazyk/Sources/Core/Repositories/PDSBlobRepository.h:35:                                              offset:(NSInteger)offset 
+./Garazyk/Sources/Core/Repositories/PDSBlobRepository.h:39:- (NSInteger)blobCountForDid:(NSString *)did error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:69:        uint8_t identityPrefix = 0x00;
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:136:          return [CBORValue unsignedInteger:(NSUInteger)l];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:138:          return [CBORValue negativeInteger:(NSInteger)l];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:146:        return [CBORValue unsignedInteger:(NSUInteger)l];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:148:        return [CBORValue negativeInteger:(NSInteger)l];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:201:        const uint8_t *payloadBytes = tagPayload.bytes;
+./Garazyk/Sources/Core/CID.m:14:static const uint64_t kCIDv1Multicodec = 0x01;
+./Garazyk/Sources/Core/CID.m:17:static const NSUInteger kMaxVarintSize = 9;
+./Garazyk/Sources/Core/CID.m:23:+ (nullable instancetype)cidWithDigest:(NSData *)digest codec:(NSUInteger)codec {
+./Garazyk/Sources/Core/CID.m:30:    uint8_t header[] = {0x12, (uint8_t)digest.length};
+./Garazyk/Sources/Core/CID.m:37:+ (nullable instancetype)cidWithMultihash:(NSData *)multihash codec:(NSUInteger)codec {
+./Garazyk/Sources/Core/CID.m:96:    for (NSUInteger i = 0; i < hex.length; i += 2) {
+./Garazyk/Sources/Core/CID.m:100:        uint8_t byte = (uint8_t)value;
+./Garazyk/Sources/Core/CID.m:133:    NSUInteger consumed = 0;
+./Garazyk/Sources/Core/CID.m:141:+ (nullable instancetype)cidFromBuffer:(const uint8_t *)bytes
+./Garazyk/Sources/Core/CID.m:142:                                length:(NSUInteger)length
+./Garazyk/Sources/Core/CID.m:143:                              consumed:(nullable NSUInteger *)consumed {
+./Garazyk/Sources/Core/CID.m:160:    NSUInteger offset = 0;
+./Garazyk/Sources/Core/CID.m:162:    uint64_t versionMulticodec = 0;
+./Garazyk/Sources/Core/CID.m:163:    NSUInteger versionSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:177:        NSUInteger innerSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:190:    uint64_t codec = 0;
+./Garazyk/Sources/Core/CID.m:191:    NSUInteger codecSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:201:    NSUInteger multihashStart = offset;
+./Garazyk/Sources/Core/CID.m:203:    uint64_t mhCode = 0;
+./Garazyk/Sources/Core/CID.m:204:    NSUInteger mhCodeSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:212:    uint64_t mhLen = 0;
+./Garazyk/Sources/Core/CID.m:213:    NSUInteger mhLenSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:228:    if (mhLen > 128 || mhLen > (uint64_t)(length - offset)) {
+./Garazyk/Sources/Core/CID.m:232:    NSUInteger digestLen = (NSUInteger)mhLen;
+./Garazyk/Sources/Core/CID.m:233:    NSUInteger multihashLen = (offset - multihashStart) + digestLen;
+./Garazyk/Sources/Core/CID.m:236:    CID *cid = [self cidWithMultihash:multihash codec:(NSUInteger)codec];
+./Garazyk/Sources/Core/CID.m:273:- (NSUInteger)hash {
+./Garazyk/Sources/Core/CID.m:289:+ (NSData *)encodeVarint:(uint64_t)value {
+./Garazyk/Sources/Core/CID.m:291:    uint64_t v = value;
+./Garazyk/Sources/Core/CID.m:293:        uint8_t byte = v & 0x7F;
+./Garazyk/Sources/Core/CID.m:303:+ (NSUInteger)readVarint:(const uint8_t *)bytes 
+./Garazyk/Sources/Core/CID.m:304:               maxLength:(NSUInteger)maxLength 
+./Garazyk/Sources/Core/CID.m:305:                   value:(uint64_t *)value {
+./Garazyk/Sources/Core/CID.m:309:    uint64_t result = 0;
+./Garazyk/Sources/Core/CID.m:310:    NSUInteger shift = 0;
+./Garazyk/Sources/Core/CID.m:311:    NSUInteger offset = 0;
+./Garazyk/Sources/Core/CID.m:313:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Core/CID.m:314:        result |= ((uint64_t)(byte & 0x7F)) << shift;
+./Garazyk/Sources/Core/CID.m:333:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Core/CID.m:334:    NSUInteger length = data.length;
+./Garazyk/Sources/Core/CID.m:336:    uint64_t buffer = 0;
+./Garazyk/Sources/Core/CID.m:338:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/CID.m:359:    NSUInteger length = cleanString.length;
+./Garazyk/Sources/Core/CID.m:361:    uint64_t buffer = 0;
+./Garazyk/Sources/Core/CID.m:362:    NSUInteger bitsLeft = 0;
+./Garazyk/Sources/Core/CID.m:363:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/CID.m:371:        uint8_t value = (uint8_t)(ptr - kBase32Alphabet);
+./Garazyk/Sources/Core/CID.m:375:            NSUInteger byteShift = bitsLeft - 8;
+./Garazyk/Sources/Core/CID.m:376:            uint8_t byte = (buffer >> byteShift) & 0xFF;
+./Garazyk/Sources/Core/CID.m:378:            uint64_t mask = (1ULL << byteShift) - 1;
+./Garazyk/Sources/Core/CID.m:395:    NSUInteger length = string.length;
+./Garazyk/Sources/Core/CID.m:397:    uint64_t buffer = 0;
+./Garazyk/Sources/Core/CID.m:399:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/CID.m:402:        uint8_t value = c - '0';
+./Garazyk/Sources/Core/CID.m:406:            uint8_t byte = (buffer >> (bitsLeft - 8)) & 0xFF;
+./Garazyk/Sources/Core/CID.m:450:    NSUInteger version = [coder decodeIntegerForKey:@"version"];
+./Garazyk/Sources/Core/CID.m:451:    NSUInteger codec = [coder decodeIntegerForKey:@"codec"];
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:126:- (instancetype)initWithConcurrencyLimit:(NSUInteger)concurrencyLimit
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:146:            uint64_t intervalNs = (uint64_t)(_idleEvictionSeconds * NSEC_PER_SEC);
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:361:- (NSUInteger)activeDidCount {
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:362:    __block NSUInteger count = 0;
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:373:- (NSUInteger)pendingWriteCount {
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:374:    __block NSUInteger count = 0;
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:385:- (NSUInteger)totalDidCount {
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:386:    __block NSUInteger count = 0;
+./Garazyk/Sources/Core/TID.m:9:@property (nonatomic) uint64_t internalTimestamp;
+./Garazyk/Sources/Core/TID.m:18:+ (instancetype)tidWithTimestamp:(uint64_t)timestamp {
+./Garazyk/Sources/Core/TID.m:23:    static uint64_t lastTimestamp = 0;
+./Garazyk/Sources/Core/TID.m:24:    static uint32_t timestampCount = 0;
+./Garazyk/Sources/Core/TID.m:25:    static uint8_t clockid = 0;
+./Garazyk/Sources/Core/TID.m:28:    uint64_t ts;
+./Garazyk/Sources/Core/TID.m:33:        uint64_t nowMs = (uint64_t)([[NSDate date] timeIntervalSince1970] * 1000.0);
+./Garazyk/Sources/Core/TID.m:43:        ts = nowMs * 1000ULL + (uint64_t)timestampCount;
+./Garazyk/Sources/Core/TID.m:47:        uint8_t rnd = 0;
+./Garazyk/Sources/Core/TID.m:49:            rnd = (uint8_t)arc4random();
+./Garazyk/Sources/Core/TID.m:51:        clockid = (uint8_t)(rnd % 32);
+./Garazyk/Sources/Core/TID.m:61:    uint64_t nowMs = (uint64_t)([date timeIntervalSince1970] * 1000.0);
+./Garazyk/Sources/Core/TID.m:71:    uint64_t timestamp = [self decodeTimestamp:normalized];
+./Garazyk/Sources/Core/TID.m:96:    for (NSUInteger i = 0; i < normalized.length; i++) {
+./Garazyk/Sources/Core/TID.m:107:+ (NSString *)encodeBase32Sortable:(uint64_t)value {
+./Garazyk/Sources/Core/TID.m:112:    uint64_t remaining = value;
+./Garazyk/Sources/Core/TID.m:116:        uint32_t c = (uint32_t)(remaining % 32);
+./Garazyk/Sources/Core/TID.m:121:    NSMutableString *result = [NSMutableString stringWithCapacity:(NSUInteger)idx];
+./Garazyk/Sources/Core/TID.m:128:+ (uint64_t)decodeBase32Sortable:(NSString *)string {
+./Garazyk/Sources/Core/TID.m:129:    uint64_t result = 0;
+./Garazyk/Sources/Core/TID.m:132:    for (NSUInteger i = 0; i < string.length; i++) {
+./Garazyk/Sources/Core/TID.m:139:        uint32_t index = (uint32_t)(pos - alphabet);
+./Garazyk/Sources/Core/TID.m:140:        result = result * 32ULL + (uint64_t)index;
+./Garazyk/Sources/Core/TID.m:146:+ (NSString *)encodeTimestamp:(uint64_t)timestamp clockid:(uint8_t)clockid {
+./Garazyk/Sources/Core/TID.m:166:+ (uint64_t)decodeTimestamp:(NSString *)string {
+./Garazyk/Sources/Core/TID.m:178:- (uint64_t)timestamp {
+./Garazyk/Sources/Core/TID.m:230:- (NSUInteger)hash {
+./Garazyk/Sources/Core/PDSProviderRegistry.m:38:typedef NS_ENUM(NSInteger, PDSProviderRegistryErrorCode) {
+./Garazyk/Sources/Core/ATProtoError.h:28:typedef NS_ENUM(NSInteger, ATProtoErrorCode) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:66:- (NSArray<PDSDatabaseBlock *> *)blocksForRepo:(NSString *)repoDid limit:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:74:- (NSInteger)blockCountForRepo:(NSString *)repoDid error:(NSError **)error {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:75:    __block NSInteger count = 0;
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:67:                                               limit:(NSInteger)limit 
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:68:                                              offset:(NSInteger)offset 
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:90:- (NSInteger)blobCountForDid:(NSString *)did error:(NSError **)error {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:91:    __block NSInteger count = 0;
+./Garazyk/Sources/Core/Repositories/PDSAccountRepository.h:87:- (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.h:78:- (instancetype)initWithConcurrencyLimit:(NSUInteger)concurrencyLimit
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.h:109:@property (nonatomic, readonly) NSUInteger activeDidCount;
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.h:118:@property (nonatomic, readonly) NSUInteger pendingWriteCount;
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.h:128:@property (nonatomic, readonly) NSUInteger totalDidCount;
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.h:135:@property (nonatomic, readonly) NSUInteger concurrencyLimit;
+./Garazyk/Sources/Core/DID.m:184:    __block NSUInteger remaining = dids.count;
+./Garazyk/Sources/Core/DID.m:415:                    const uint8_t *bytes = keyBytes.bytes;
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:113:        NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime | AT_NSISO8601DateFormatWithFractionalSeconds;
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:136:        NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime;
+./Garazyk/Sources/Core/Repositories/PDSBlockRepository.h:53:                                                  limit:(NSInteger)limit 
+./Garazyk/Sources/Core/Repositories/PDSBlockRepository.h:54:                                                 offset:(NSInteger)offset 
+./Garazyk/Sources/Core/Repositories/PDSBlockRepository.h:63:- (NSInteger)blockCountForRepo:(NSString *)repoDid error:(NSError **)error;
+./Garazyk/Sources/Core/Repositories/PDSLegacyAccountRepository.m:56:- (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {

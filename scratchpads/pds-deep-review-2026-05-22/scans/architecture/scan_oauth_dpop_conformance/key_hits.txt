@@ -1,0 +1,412 @@
+./Garazyk/Sources/Security/PDSAuthzManager.m:155:    // Admin access is granted only from JWT scope validation in XrpcMethodRegistry.
+./Garazyk/Sources/Security/PDSAuthzManager.m:157:    // through the JWT scope claim ("admin") to prevent privilege escalation.
+./Garazyk/Sources/Security/PDSAuthzManager.m:178:    // Account exists. Authorization is verified through JWT scope validation.
+./Garazyk/Sources/Security/PDSAuthzManager.m:179:    // Caller must check JWT "admin" scope before calling this method.
+./Garazyk/Sources/Security/PDSAuthzManager.m:184:                                 userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (verify JWT 'admin' scope)"}];
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:47:/** Security.framework private key reference, when backed by SecKey. */
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:48:@property (nonatomic, assign, nullable) SecKeyRef privateKey;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:49:/** Security.framework public key reference, when backed by SecKey. */
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:50:@property (nonatomic, assign, nullable) SecKeyRef publicKey;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:63:+ (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:64:                                      publicKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:85:/** Security.framework signing algorithm used for SecKey-backed signatures. */
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:86:@property (nonatomic, assign) SecKeyAlgorithm signingAlgorithm;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:118:               withKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Auth/PDSSecondFactorService.h:17:    /** The account requires a second factor before sign-in can complete. */
+./Garazyk/Sources/Auth/PDSSecondFactorService.h:28: * @abstract Coordinates WebAuthn second-factor challenges for account sign-in.
+./Garazyk/Sources/Auth/OAuth2.h:287:/*! The DPoP proof JWT. */
+./Garazyk/Sources/Auth/OAuth2.h:379: @abstract Creates a DPoP proof JWT for a request.
+./Garazyk/Sources/Auth/OAuth2.h:383: @param key The JWK to sign the proof with.
+./Garazyk/Sources/Auth/OAuth2.h:385: @return The DPoP proof JWT string.
+./Garazyk/Sources/Auth/OAuth2.h:398: @abstract Verifies a DPoP proof JWT and validates its claims.
+./Garazyk/Sources/Auth/OAuth2.h:400: @param dpopJwt The proof JWT from the DPoP header.
+./Garazyk/Sources/Auth/OAuth2.h:424: @param dpopJwt The proof JWT from the DPoP header.
+./Garazyk/Sources/Auth/OAuth2.h:451: It integrates with JWT minting, key management, and identity resolution.
+./Garazyk/Sources/Auth/OAuth2.h:496:/*! JWT minting service. */
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:10: and used for JWT signing and DPoP proof generation.
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:16:#import "Auth/JWT.h"
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:35:+ (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:36:                                      publicKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:70:    // We don't create SecKeyRef for secp256k1 keys since Apple Security doesn't support them
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:89:        jwk[@"kid"] = self.keyID;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:112:    jwk[@"kid"] = self.keyID;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:155:- (nullable NSData *)exportPublicKeyData:(SecKeyRef)key {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:157:    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &error));
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:184:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:201:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:219:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:236:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:286:            GZ_LOG_AUTH_WARN(@"Failed to save ES256K JWT signing key to database: %@", saveError);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:321:    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:335:    SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:362:        GZ_LOG_AUTH_WARN(@"Failed to save JWT signing key to database: %@", saveError);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:510:    // Select the correct SecKeyAlgorithm based on the key pair's algorithm
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:511:    SecKeyAlgorithm alg = self.signingAlgorithm;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:513:        alg = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:515:        alg = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:519:    NSData *signature = CFBridgingRelease(SecKeyCreateSignature(keyPair.privateKey,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:546:    header[@"typ"] = @"JWT";
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:547:    header[@"kid"] = keyID;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:552:    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:555:    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:558:    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:578:               withKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:580:    BOOL isValid = SecKeyVerifySignature(publicKey,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:626:        GZ_LOG_AUTH_ERROR(@"Failed to load JWT signing keys from database: %@", error);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:639:            SecKeyRef privateKey = NULL;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:640:            SecKeyRef publicKey = NULL;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:670:                    continue;  // Skip SecKeyRef creation for ES256K keys
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:679:                privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:693:            publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:745:                privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:759:            publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &pubExportError));
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:61:        @"kid": self.keyID,
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:286:    // Basic JWT construction
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:292:    header[@"typ"] = @"JWT";
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:293:    header[@"kid"] = keyID;
+./Garazyk/Sources/Auth/PDSKeyProtocol.h:8://  macOS: Uses Apple Security framework (SecKey)
+./Garazyk/Sources/Auth/PDSKeyProtocol.h:68:/** YES when the key contains private material and can sign. */
+./Garazyk/Sources/Auth/PDSKeyProtocol.h:141: * @param data The data to sign (will be hashed internally).
+./Garazyk/Sources/Auth/PDS/PDSAuth.h:64: @discussion Uses JWTMinter for JWT signing and provides JWKS.
+./Garazyk/Sources/Auth/PDS/PDSAuth.h:69: @brief Initialize with JWT minter.
+./Garazyk/Sources/Auth/secp256k1_wrapper_c.h:105: * @param hash32 32-byte hash to sign (e.g., SHA-256).
+./Garazyk/Sources/Auth/secp256k1_wrapper_c.h:118: * @param signature 64-byte signature to verify.
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:13:#import "Auth/JWT.h"
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:298:    JWT *jwt = [JWT jwtWithToken:token error:error];
+./Garazyk/Sources/Auth/WebAuthnVerifier.m:294:        // Hash the signed data and verify
+./Garazyk/Sources/Auth/DPoPUtil.m:7://  DPoP utility wrapper. This file uses SecKeyRef which is only available on macOS.
+./Garazyk/Sources/Auth/DPoPUtil.m:97:                                         key:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/DPoPUtil.m:109:    // Use AuthCryptoJWK to get the JWK representation from SecKeyRef
+./Garazyk/Sources/Auth/DPoPUtil.m:110:    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:privateKey error:error];
+./Garazyk/Sources/Auth/DPoPUtil.m:113:    // AuthCryptoDPoP expects the full JWK including private material if it's going to sign
+./Garazyk/Sources/Auth/DPoPUtil.m:116:    // and handles SecKey creation internally from it.
+./Garazyk/Sources/Auth/DPoPUtil.m:118:    // To maintain DPoPUtil's API (which takes SecKeyRef), we'll do a slightly different path
+./Garazyk/Sources/Auth/DPoPUtil.m:131:    // Build JWT
+./Garazyk/Sources/Auth/DPoPUtil.m:148:    NSData *derSignature = CFBridgingRelease(SecKeyCreateSignature(privateKey,
+./Garazyk/Sources/Auth/DPoPUtil.m:149:                                                                 kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+./Garazyk/Sources/Auth/DPoPUtil.m:169:     withPublicKey:(nullable SecKeyRef)publicKey
+./Garazyk/Sources/Auth/DPoPUtil.m:184:    // AuthCryptoDPoP handles verification. If publicKey is nil, it can still verify structure
+./Garazyk/Sources/Auth/DPoPUtil.m:204:        NSString *expectedThumbprint = [AuthCryptoJWK thumbprintForSecKey:publicKey error:error];
+./Garazyk/Sources/Auth/DPoPUtil.m:223:// DPoPUtil uses SecKeyRef from compat headers on GNUstep.
+./Garazyk/Sources/Auth/DPoPUtil.m:227:#import "Security/SecKey.h"  // Compat SecKeyRef definition
+./Garazyk/Sources/Auth/DPoPUtil.m:244:+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(SecKeyRef)privateKey error:(NSError **)error {
+./Garazyk/Sources/Auth/DPoPUtil.m:253:+ (BOOL)verifyDPoP:(NSString *)dpopJwt withPublicKey:(nullable SecKeyRef)publicKey method:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+./Garazyk/Sources/Auth/JWT.h:8: @header JWT.h
+./Garazyk/Sources/Auth/JWT.h:10: @abstract JWT (JSON Web Token) handling for ATProto authentication.
+./Garazyk/Sources/Auth/JWT.h:13: and verifying JWT tokens. It includes JWTHeader, JWTPayload, JWT,
+./Garazyk/Sources/Auth/JWT.h:30: @abstract Error codes for JWT operations.
+./Garazyk/Sources/Auth/JWT.h:33: @constant JWTErrorInvalidHeader The JWT header is malformed.
+./Garazyk/Sources/Auth/JWT.h:34: @constant JWTErrorInvalidPayload The JWT payload is malformed.
+./Garazyk/Sources/Auth/JWT.h:53:    /** The token does not contain the expected compact JWT parts. */
+./Garazyk/Sources/Auth/JWT.h:55:    /** The JWT header is malformed. */
+./Garazyk/Sources/Auth/JWT.h:57:    /** The JWT payload is malformed. */
+./Garazyk/Sources/Auth/JWT.h:59:    /** The JWT signature is invalid. */
+./Garazyk/Sources/Auth/JWT.h:90: @abstract Represents the header portion of a JWT.
+./Garazyk/Sources/Auth/JWT.h:92: @discussion The JWT header contains metadata about the token including
+./Garazyk/Sources/Auth/JWT.h:100:/*! The token type (typically "JWT"). */
+./Garazyk/Sources/Auth/JWT.h:104:@property (nonatomic, copy, nullable) NSString *kid;
+./Garazyk/Sources/Auth/JWT.h:134: @abstract Represents the claims portion of a JWT.
+./Garazyk/Sources/Auth/JWT.h:136: @discussion The JWT payload contains the claims about the token subject,
+./Garazyk/Sources/Auth/JWT.h:207: @class JWT
+./Garazyk/Sources/Auth/JWT.h:209: @abstract Represents a complete JWT token.
+./Garazyk/Sources/Auth/JWT.h:211: @discussion JWT provides methods for parsing, encoding, and accessing
+./Garazyk/Sources/Auth/JWT.h:212: JWT tokens. It combines header, payload, and signature components.
+./Garazyk/Sources/Auth/JWT.h:215: // Parse a JWT token
+./Garazyk/Sources/Auth/JWT.h:216: JWT *jwt = [JWT jwtWithToken:tokenString error:nil];
+./Garazyk/Sources/Auth/JWT.h:227: * @abstract Declares the JWT public API.
+./Garazyk/Sources/Auth/JWT.h:229:@interface JWT : NSObject
+./Garazyk/Sources/Auth/JWT.h:252: @abstract Parses a JWT token string.
+./Garazyk/Sources/Auth/JWT.h:254: @param token The JWT token string (three base64URL parts separated by dots).
+./Garazyk/Sources/Auth/JWT.h:256: @return A new JWT instance, or nil on failure.
+./Garazyk/Sources/Auth/JWT.h:263: @abstract Creates a JWT from components.
+./Garazyk/Sources/Auth/JWT.h:265: @param header The JWT header.
+./Garazyk/Sources/Auth/JWT.h:266: @param payload The JWT payload.
+./Garazyk/Sources/Auth/JWT.h:269: @return A new JWT instance.
+./Garazyk/Sources/Auth/JWT.h:306: @return The JWT token string (header.payload.signature).
+./Garazyk/Sources/Auth/JWT.h:324: @abstract Verifies JWT tokens.
+./Garazyk/Sources/Auth/JWT.h:326: @discussion JWTVerifier validates JWT signatures and claims including
+./Garazyk/Sources/Auth/JWT.h:355: @abstract Verifies a JWT's signature and claims.
+./Garazyk/Sources/Auth/JWT.h:357: @param jwt The JWT to verify.
+./Garazyk/Sources/Auth/JWT.h:361:- (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error;
+./Garazyk/Sources/Auth/JWT.h:366: @abstract Validates specific claims of a JWT.
+./Garazyk/Sources/Auth/JWT.h:369: @param jwt The JWT containing the payload.
+./Garazyk/Sources/Auth/JWT.h:373:- (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error;
+./Garazyk/Sources/Auth/JWT.h:380: @abstract Creates and signs JWT tokens.
+./Garazyk/Sources/Auth/JWT.h:415: @param payload The payload dictionary to sign.
+./Garazyk/Sources/Auth/JWT.h:418: @return The signed JWT string.
+./Garazyk/Sources/Auth/JWT.h:427: @param payload The payload dictionary to sign.
+./Garazyk/Sources/Auth/JWT.h:430: @return The signed JWT string.
+./Garazyk/Sources/Auth/JWT.h:438: @abstract Signs a payload and returns a JWT string.
+./Garazyk/Sources/Auth/JWT.h:440: @param payload The payload dictionary to sign.
+./Garazyk/Sources/Auth/JWT.h:442: @return The signed JWT string.
+./Garazyk/Sources/Auth/JWT.h:455: @return A new access token JWT.
+./Garazyk/Sources/Auth/JWT.h:460:- (JWT *)mintAccessTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.h:472:- (JWT *)mintAccessTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.h:483:- (JWT *)mintAccessTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.h:497: @return A new refresh token JWT.
+./Garazyk/Sources/Auth/JWT.h:502:- (JWT *)mintRefreshTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.h:510: @abstract Mints a service-to-service auth JWT per AT Protocol spec.
+./Garazyk/Sources/Auth/JWT.h:512: @discussion Creates a short-lived JWT signed with the user's repo signing
+./Garazyk/Sources/Auth/JWT.h:520: - Header: { typ: "JWT", alg: "ES256K" }
+./Garazyk/Sources/Auth/JWT.h:527: @return The signed JWT string, or nil on failure.
+./Garazyk/Sources/Auth/JWT.m:4: @file JWT.m
+./Garazyk/Sources/Auth/JWT.m:6: @abstract JWT (JSON Web Token) implementation for ATProto authentication.
+./Garazyk/Sources/Auth/JWT.m:8: @discussion This file provides concrete implementations for JWT token parsing,
+./Garazyk/Sources/Auth/JWT.m:9: encoding, verification, and minting. It includes JWTHeader, JWTPayload, JWT,
+./Garazyk/Sources/Auth/JWT.m:15:#import "Auth/JWT.h"
+./Garazyk/Sources/Auth/JWT.m:25:/*! Base64URL character set for JWT encoding. */
+./Garazyk/Sources/Auth/JWT.m:42:    header.kid = dictionary[@"kid"];
+./Garazyk/Sources/Auth/JWT.m:51:    if (self.kid) dict[@"kid"] = self.kid;
+./Garazyk/Sources/Auth/JWT.m:113:@interface JWT ()
+./Garazyk/Sources/Auth/JWT.m:122:@implementation JWT
+./Garazyk/Sources/Auth/JWT.m:130:                                     userInfo:@{NSLocalizedDescriptionKey: @"JWT must have exactly 3 parts"}];
+./Garazyk/Sources/Auth/JWT.m:150:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT header JSON"}];
+./Garazyk/Sources/Auth/JWT.m:160:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT payload JSON"}];
+./Garazyk/Sources/Auth/JWT.m:171:    JWT *jwt = [[JWT alloc] init];
+./Garazyk/Sources/Auth/JWT.m:186:    JWT *jwt = [[JWT alloc] init];
+./Garazyk/Sources/Auth/JWT.m:272:- (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error {
+./Garazyk/Sources/Auth/JWT.m:283:    NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
+./Garazyk/Sources/Auth/JWT.m:296:            NSString *kid = jwt.header.kid;
+./Garazyk/Sources/Auth/JWT.m:297:            if (kid) {
+./Garazyk/Sources/Auth/JWT.m:298:                verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
+./Garazyk/Sources/Auth/JWT.m:300:                // Legacy path for ES256K without kid (standard for actor keys)
+./Garazyk/Sources/Auth/JWT.m:301:                // Use the first available key if no kid is present
+./Garazyk/Sources/Auth/JWT.m:324:        // Extract kid from header
+./Garazyk/Sources/Auth/JWT.m:325:        NSString *kid = jwt.header.kid;
+./Garazyk/Sources/Auth/JWT.m:326:        if (!kid) {
+./Garazyk/Sources/Auth/JWT.m:330:                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing 'kid' in header"}];
+./Garazyk/Sources/Auth/JWT.m:335:        verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
+./Garazyk/Sources/Auth/JWT.m:342:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT signature"}];
+./Garazyk/Sources/Auth/JWT.m:356:- (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error {
+./Garazyk/Sources/Auth/JWT.m:434:    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+./Garazyk/Sources/Auth/JWT.m:439:    header[@"typ"] = @"JWT";
+./Garazyk/Sources/Auth/JWT.m:440:    header[@"kid"] = activeKey.keyID;
+./Garazyk/Sources/Auth/JWT.m:445:    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+./Garazyk/Sources/Auth/JWT.m:454:    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
+./Garazyk/Sources/Auth/JWT.m:464:    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+./Garazyk/Sources/Auth/JWT.m:469:    header[@"typ"] = @"JWT";
+./Garazyk/Sources/Auth/JWT.m:474:    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+./Garazyk/Sources/Auth/JWT.m:483:    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
+./Garazyk/Sources/Auth/JWT.m:533:    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+./Garazyk/Sources/Auth/JWT.m:538:    header[@"typ"] = @"JWT";
+./Garazyk/Sources/Auth/JWT.m:543:    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+./Garazyk/Sources/Auth/JWT.m:551:    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
+./Garazyk/Sources/Auth/JWT.m:588:- (JWT *)mintAccessTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.m:618:    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+./Garazyk/Sources/Auth/JWT.m:624:    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+./Garazyk/Sources/Auth/JWT.m:630:    NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
+./Garazyk/Sources/Auth/JWT.m:633:    return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
+./Garazyk/Sources/Auth/JWT.m:636:- (JWT *)mintAccessTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.m:644:- (JWT *)mintAccessTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.m:651:- (JWT *)mintRefreshTokenForDID:(NSString *)did
+./Garazyk/Sources/Auth/JWT.m:674:    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+./Garazyk/Sources/Auth/JWT.m:680:    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+./Garazyk/Sources/Auth/JWT.m:686:    NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
+./Garazyk/Sources/Auth/JWT.m:689:    return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
+./Garazyk/Sources/Auth/JWT.m:704:            NSString *xStr = [JWT base64URLEncodeData:xData error:nil];
+./Garazyk/Sources/Auth/JWT.m:705:            NSString *yStr = [JWT base64URLEncodeData:yData error:nil];
+./Garazyk/Sources/Auth/JWT.m:712:                @"kid": @"server-key", // Static kid for now
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:214: @brief Gets client ID for a given JWT assertion.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:215: @param assertion The client JWT assertion (private_key_jwt).
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:228: @abstract Interface for JWT signing and JWKS management.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:248: @return Signed JWT string, or nil on error.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:257: @return Signed JWT string, or nil on error.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:264: @param token The JWT string to verify.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:275: @param token The JWT string to verify.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:290: @discussion Used by the authorization server to verify user credentials
+./Garazyk/Sources/Auth/PDSActorKeyManagerProtocol.h:49: @param data Payload to sign.
+./Garazyk/Sources/Auth/PDSKeyManagerProtocol.h:28:    Used for JWT signing and verification in OAuth 2.0 flows.
+./Garazyk/Sources/Auth/PDSKeyManagerProtocol.h:150: @param data The raw data to sign.
+./Garazyk/Sources/Auth/PDSKeyManagerProtocol.h:162: @abstract Sign a JSON payload (creates a JWT).
+./Garazyk/Sources/Auth/PDSKeyManagerProtocol.h:164: @param payload The JSON payload to sign.
+./Garazyk/Sources/Auth/PDSKeyManagerProtocol.h:167: @return The signed JWT as a dictionary, or nil on failure.
+./Garazyk/Sources/Auth/PDSKeyManagerProtocol.h:178: @param string The string to sign.
+./Garazyk/Sources/Auth/PDSKeyManagerProtocol.h:192: @param signature The DER-encoded signature to verify.
+./Garazyk/Sources/Auth/OAuth2Handler.h:19:#import "Auth/JWT.h"
+./Garazyk/Sources/Auth/OAuth2Handler.h:47:    - POST /oauth/authorize/sign-in - Sign-in credential validation
+./Garazyk/Sources/Auth/OAuth2Handler.h:48:    - POST /oauth/authorize/passkey/challenge - Passkey sign-in challenge
+./Garazyk/Sources/Auth/OAuth2Handler.h:49:    - POST /oauth/authorize/passkey - Passkey sign-in assertion validation
+./Garazyk/Sources/Auth/OAuth2Handler.h:67:/*! JWT minting service for token generation. */
+./Garazyk/Sources/Auth/OAuth2Handler.h:73:/*! Account service for sign-in credential validation. */
+./Garazyk/Sources/Auth/OAuth2Handler.h:114:    - POST /oauth/authorize/sign-in
+./Garazyk/Sources/Auth/OAuth2Handler.h:156: @abstract Handles sign-in credential validation.
+./Garazyk/Sources/Auth/OAuth2Handler.h:158: @param request The HTTP request containing sign-in credentials.
+./Garazyk/Sources/Auth/OAuth2Handler.h:163:/** Handles username and password sign-in during authorization. */
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:270:                                                      keyID:keyID ?: jwk[@"kid"] ?: [[NSUUID UUID] UUIDString]
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:373:    NSString *kid = _keyID;
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:376:        kid = jkt;  // Use thumbprint as kid if available
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:384:        @"kid": kid
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:585:        _keyID = [keyID copy] ?: jwk[@"kid"] ?: [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:729:    NSString *kid = _keyID;
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:732:        kid = jkt;
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:740:        @"kid": kid
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:911:                                                    keyID:keyID ?: jwk[@"kid"]
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:919:                                                   keyID:keyID ?: jwk[@"kid"]
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:23: - OAuthProviderTokenSigner: JWT signing and JWKS management
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:224: @param tokenSigner JWT signing and JWKS.
+./Garazyk/Sources/Auth/OAuthSession.h:91:/*! DPoP JWT proof. */
+./Garazyk/Sources/Auth/OAuthSession.h:149:/*! Client assertion JWT for authentication. */
+./Garazyk/Sources/Auth/OAuthSession.h:158:/*! DPoP proof JWT. */
+./Garazyk/Sources/Auth/OAuthSession.h:191:/*! Client assertion JWT for authentication. */
+./Garazyk/Sources/Auth/OAuthSession.h:194:/*! DPoP proof JWT for token binding. */
+./Garazyk/Sources/Auth/Session.h:65:/*! The token value (JWT for access tokens, opaque string for refresh tokens). */
+./Garazyk/Sources/Auth/Session.h:216: @param minter The JWT minter to use for access tokens.
+./Garazyk/Sources/Auth/Session.h:274: @param minter The JWT minter to use for access tokens.
+./Garazyk/Sources/Auth/WebAuthnVerifier.h:26: origin, signature, and sign count.
+./Garazyk/Sources/Auth/WebAuthnVerifier.h:59: Checks challenge, origin, signature, and sign count. Sign count must increase
+./Garazyk/Sources/Auth/WebAuthnVerifier.h:66: @param storedSignCount Previously stored sign count.
+./Garazyk/Sources/Auth/WebAuthnVerifier.h:67: @param outSignCount Pointer to receive new sign count.
+./Garazyk/Sources/Auth/PDSReplayCache.h:9:    Provides persistent storage for JWT IDs (JTI) and nonces to detect
+./Garazyk/Sources/Auth/PDSReplayCache.h:27:    Maintains a cache of seen JWT IDs (JTI) to detect replay attacks.
+./Garazyk/Sources/Auth/PDSReplayCache.h:28:    When a JWT is received, its JTI is checked against the cache. If
+./Garazyk/Sources/Auth/PDSReplayCache.h:81: @param jti The JWT ID to check (unique identifier from the JWT).
+./Garazyk/Sources/Auth/PDSReplayCache.h:82: @param expiration The expiration time of the JWT.
+./Garazyk/Sources/Auth/OAuth2Handler.m:1043:                                     @"Invalid JWT assertion format"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1050:  JWT *jwt = [JWT jwtWithToken:assertion error:&parseError];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1057:                                     @"Failed to parse JWT assertion"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1073:                                     @"Invalid JWT payload"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1148:                                     @"JWT assertion has expired"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1173:                                     @"JWT assertion 'jti' has been replayed"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1201:  NSString *kid = jwt.header.kid;
+./Garazyk/Sources/Auth/OAuth2Handler.m:1207:        NSString *keyID = key[@"kid"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1208:        if (kid.length == 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1212:        } else if ([keyID isEqualToString:kid]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1272:  NSData *xData = [JWT base64URLDecode:xB64 error:&parseError];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1273:  NSData *yData = [JWT base64URLDecode:yB64 error:&parseError];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1286:  SecKeyRef publicKey = [self createECPublicKeyFromX:xData Y:yData];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1302:  NSData *signatureData = [JWT base64URLDecode:parts[2] error:&parseError];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1323:      SecKeyVerifySignature(publicKey, kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+./Garazyk/Sources/Auth/OAuth2Handler.m:1336:                                     @"Invalid JWT signature"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1345:- (SecKeyRef)createECPublicKeyFromX:(NSData *)xData Y:(NSData *)yData {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1359:  SecKeyRef publicKey = SecKeyCreateWithData(
+./Garazyk/Sources/Auth/OAuth2Handler.m:1565:                  path:@"/oauth/authorize/sign-in"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2411:      @"error" : updateError.localizedDescription ?: @"Failed to update passkey sign count"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2658:  // or JWT assertion (private_key_jwt)
+./Garazyk/Sources/Auth/OAuth2Handler.m:2668:  // JWT assertion authentication (private_key_jwt)
+./Garazyk/Sources/Auth/OAuth2Handler.m:2673:    // JWT assertion provided - validate it
+./Garazyk/Sources/Auth/OAuth2Handler.m:2700:        @"JWT assertion validation passed (client_id=%@)", clientID ?: @"");
+./Garazyk/Sources/Auth/OAuth2Handler.m:2931:  // Try to parse as JWT access token first
+./Garazyk/Sources/Auth/OAuth2Handler.m:2933:  JWT *jwt = [JWT jwtWithToken:token error:&jwtError];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2936:    // Verify JWT signature
+./Garazyk/Sources/Auth/OAuth2Handler.m:2991:  // Not a valid JWT - check if it's a refresh token in active sessions
+./Garazyk/Sources/Auth/OAuth2Handler.m:3014:  // Also check for access token match in sessions (non-JWT tokens)
+./Garazyk/Sources/Auth/OAuth2Handler.m:3123:  // JWT assertion authentication (private_key_jwt)
+./Garazyk/Sources/Auth/OAuth2Handler.m:3133:    // JWT assertion provided - validate it
+./Garazyk/Sources/Auth/OAuth2Handler.m:3160:        @"PAR JWT assertion validation passed (client_id=%@)", clientID ?: @"");
+./Garazyk/Sources/Auth/OAuth2.m:17:#import "Auth/JWT.h"
+./Garazyk/Sources/Auth/OAuth2.m:86:    GZ_LOG_AUTH_INFO(@"Using in-memory secp256k1 OAuth2 JWT signing key in test mode (keychain disabled).");
+./Garazyk/Sources/Auth/OAuth2.m:248:    return [JWT base64URLDecode:value error:error];
+./Garazyk/Sources/Auth/OAuth2.m:267:+ (nullable SecKeyRef)createPrivateKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/OAuth2.m:324:        SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+./Garazyk/Sources/Auth/OAuth2.m:353:+ (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/OAuth2.m:396:    SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+./Garazyk/Sources/Auth/OAuth2.m:510:                GZ_LOG_AUTH_WARN(@"Test-mode ephemeral OAuth2 JWT key generation failed; falling back to key manager path: %@",
+./Garazyk/Sources/Auth/OAuth2.m:532:                        GZ_LOG_AUTH_WARN(@"Using in-memory secp256k1 OAuth2 JWT signing key fallback because key manager provisioning failed (%@).",
+./Garazyk/Sources/Auth/OAuth2.m:535:                        GZ_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@ (fallback error: %@)",
+./Garazyk/Sources/Auth/OAuth2.m:540:                    GZ_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError.localizedDescription ?: @"unknown error");
+./Garazyk/Sources/Auth/OAuth2.m:958:    // 3. Verify token_use claim if it's a JWT (H3)
+./Garazyk/Sources/Auth/OAuth2.m:960:    JWT *refreshTokenJWT = [JWT jwtWithToken:request.refreshToken error:&jwtError];
+./Garazyk/Sources/Auth/DPoPUtil.h:11: NOTE: This class uses SecKeyRef which is only available on macOS.
+./Garazyk/Sources/Auth/DPoPUtil.h:24:// GNUstep: Use compat SecKey header for SecKeyRef definition
+./Garazyk/Sources/Auth/DPoPUtil.h:25:#import "Security/SecKey.h"
+./Garazyk/Sources/Auth/DPoPUtil.h:33: @abstract Represents a DPoP proof JWT.
+./Garazyk/Sources/Auth/DPoPUtil.h:39:/*! The signed DPoP proof JWT. */
+./Garazyk/Sources/Auth/DPoPUtil.h:69:/*! Returns the JWT header claims. */
+./Garazyk/Sources/Auth/DPoPUtil.h:72:/*! Returns the JWT payload claims. */
+./Garazyk/Sources/Auth/DPoPUtil.h:93: @param privateKey SecKeyRef private key (macOS only)
+./Garazyk/Sources/Auth/DPoPUtil.h:105:                                         key:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/DPoPUtil.h:109: @brief Verifies a DPoP proof JWT.
+./Garazyk/Sources/Auth/DPoPUtil.h:111: @param dpopJwt The proof JWT string
+./Garazyk/Sources/Auth/DPoPUtil.h:112: @param publicKey Optional SecKeyRef to verify against (macOS only)
+./Garazyk/Sources/Auth/DPoPUtil.h:125:      withPublicKey:(nullable SecKeyRef)publicKey
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:10: - JWT access tokens (signature, expiration, issuer, audience)
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:33:@class JWT;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:67:/*! The access token JWT (for audit logging). */
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:155:  @param token The JWT access token string.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:163: @brief Extract authorization header and verify request.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:185: @brief Set the JWT verification key for local issuer.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:12:#import "Auth/JWT.h"
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:235:    JWT *jwt = [JWT jwtWithToken:token error:nil];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:240:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT format"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:288:                                                        userInfo:@{NSLocalizedDescriptionKey: @"JWT verification failed"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:307:        NSString *kid = jwt.header.kid;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:312:                if (!kid || [key[@"kid"] isEqualToString:kid]) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:342:        NSData *signature = [JWT base64URLDecode:jwt.encodedSignature error:nil];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:347:                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT signature verification failed for remote issuer"}];
+./Garazyk/Sources/Auth/Session.m:16:#import "Auth/JWT.h"
+./Garazyk/Sources/Auth/Session.m:150:        JWT *jwt = [self.minter mintAccessTokenForDID:self.did
+./Garazyk/Sources/Auth/Session.m:160:            GZ_LOG_AUTH_WARN(@"Failed to mint JWT access token (falling back to UUID): %@", error);
+./Garazyk/Sources/Auth/Session.m:179:        JWT *jwt = [self.minter mintRefreshTokenForDID:self.did
+./Garazyk/Sources/Auth/Session.m:186:            GZ_LOG_AUTH_WARN(@"Failed to mint JWT refresh token (falling back to UUID): %@", error);
+./Garazyk/Sources/Auth/Session.m:644:    if (dpopJWK[@"kid"]) {
+./Garazyk/Sources/Auth/Session.m:645:        session.dpopKeyThumbprint = dpopJWK[@"kid"];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:61:#pragma mark - SecKeyRef Operations (macOS only, deprecated)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:73:/*! Creates a SecKeyRef public key from an EC P-256 JWK. Caller must CFRelease. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:74:+ (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:77:/*! Creates a SecKeyRef private key from an EC P-256 JWK. Caller must CFRelease. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:78:+ (nullable SecKeyRef)createPrivateKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:81:/*! Returns a public JWK dictionary representation of a SecKeyRef. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:82:+ (nullable NSDictionary *)publicJWKFromSecKey:(SecKeyRef)key error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:85:/*! Returns a JWK dictionary representation of a SecKeyRef. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:86:+ (nullable NSDictionary *)jwkFromSecKey:(SecKeyRef)key error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:89:/*! Computes RFC 7638 thumbprint directly from a SecKeyRef. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:90:+ (nullable NSString *)thumbprintForSecKey:(SecKeyRef)key error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:35:#pragma mark - SecKey Adapter Class (macOS only)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:40: * Adapter class wrapping SecKeyRef to conform to PDSKeyProtocol.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:43:@interface PDSSecKeyAdapter : NSObject <PDSPrivateKeyProtocol, PDSPublicKeyProtocol>
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:44:@property (nonatomic, assign) SecKeyRef secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:47:- (instancetype)initWithSecKey:(SecKeyRef)secKey isPrivateKey:(BOOL)isPrivateKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:50:@implementation PDSSecKeyAdapter
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:52:- (instancetype)initWithSecKey:(SecKeyRef)secKey isPrivateKey:(BOOL)isPrivateKey {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:71:    PDSSecKeyAdapter *copy = [[PDSSecKeyAdapter alloc] initWithSecKey:_secKey isPrivateKey:_isPrivateKey];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:83:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:87:    NSData *data = CFBridgingRelease(SecKeyCopyExternalRepresentation(pubKey, &error));
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:101:    NSString *kid = self.thumbprint ?: _keyID;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:107:        @"kid": kid
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:146:    CFDataRef signature = SecKeyCreateSignature(_secKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:147:                                                 kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:237:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:248:    // Apple's SecKeyVerifySignature may have produced a high-S signature that was
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:252:    BOOL valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:253:                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:266:                valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:267:                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:335:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:346:    // Note: kSecKeyAlgorithmECDSASignatureDigestX962SHA256 expects the digest (not the message)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:347:    BOOL valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:348:                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:355:    // Apple's SecKeyVerifySignature may only accept the original form
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:362:                valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:363:                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:388:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:391:    PDSSecKeyAdapter *adapter = [[PDSSecKeyAdapter alloc] initWithSecKey:pubKey isPrivateKey:NO];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:400:    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(_secKey, &error));
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:518:    SecKeyRef secKey = [self createPublicKeyFromJWK:jwk error:&secError];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:525:    PDSSecKeyAdapter *adapter = [[PDSSecKeyAdapter alloc] initWithSecKey:secKey isPrivateKey:NO];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:530:    NSString *keyID = jwk[@"kid"] ?: [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:550:    SecKeyRef secKey = [self createPrivateKeyFromJWK:jwk error:&secError];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:557:    PDSSecKeyAdapter *adapter = [[PDSSecKeyAdapter alloc] initWithSecKey:secKey isPrivateKey:YES];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:562:    NSString *keyID = jwk[@"kid"] ?: [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:607:#pragma mark - SecKeyRef Operations (macOS only)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:611:+ (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:657:    SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:674:+ (nullable SecKeyRef)createPrivateKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:742:    SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:759:+ (nullable NSDictionary *)publicJWKFromSecKey:(SecKeyRef)key error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:760:    NSDictionary *jwk = [self jwkFromSecKey:key error:error];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:765:+ (nullable NSDictionary *)jwkFromSecKey:(SecKeyRef)key error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:767:    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &cfError));
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:783:        SecKeyRef publicKey = SecKeyCopyPublicKey(key);
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:829:            SecKeyRef publicKey = SecKeyCopyPublicKey(key);
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:831:                NSDictionary *publicJWK = [self jwkFromSecKey:publicKey error:error];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:844:+ (nullable NSString *)thumbprintForSecKey:(SecKeyRef)key error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:845:    NSDictionary *jwk = [self jwkFromSecKey:key error:error];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:86:/*! Verifies a DPoP proof JWT against request parameters.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:87:    @param dpopJwt The DPoP proof JWT string.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:89:    @param url Request URL to verify against.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:110:/*! Creates a signed DPoP proof JWT.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:115:    @return Signed DPoP JWT string, or nil on error. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:384:                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to sign DPoP proof"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.h:9: DER is used by Security framework, raw is used in JWS/JWT (RFC 7515 §A.3).
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.h:58:    Used during verification because Apple's SecKeyVerifySignature may only
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.h:59:    accept the original (high-S) form produced by SecKeyCreateSignature.

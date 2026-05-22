@@ -1,0 +1,808 @@
+./Garazyk/Sources/Debug/GZLogger.m:381:    unsigned long long fileSize = [attrs fileSize];
+./Garazyk/Sources/Debug/GZLogger.m:383:    if (fileSize >= self.maxLogFileSize) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:205:    if (hasStoredHead && storedCommitIsSigned && storedCommitCID.stringValue.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:451:        if (record.collection.length > 0 && record.rkey.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:467:        if (cidString.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:485:    if (storedCommitCID.stringValue.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:646:    if (commitCID.stringValue.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:940:        if (chunk.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1014:            if (cidBytes.length > 1) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1022:            if (cidBytes.length > 1) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1087:    if (storedRev.length == 0 && storedCommitRev.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1095:        if (latestMutationRev.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1101:    NSString *defaultRecordRev = (storedRev.length > 0) ? storedRev : currentRev;
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1103:    BOOL hasSince = (sinceRev.length > 0);
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1133:            if (cid.stringValue.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1153:        BOOL blockChangedSince = (deltaMode && record.cid.length > 0 && [changedBlockCIDSet containsObject:record.cid]);
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1154:        if (recordChangedSince && record.collection.length > 0 && record.rkey.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1192:            if (cidString.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1254:    if (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned && storedDataCID && [storedDataCID isEqual:mstRootCID]) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1260:        CID *prevCommitCID = (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned) ? storedCommitCID : nil;
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1265:        if (freshRev.length > 0 && [freshRev compare:revCandidate] == NSOrderedDescending) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1268:        if (storedRev.length > 0 && [storedRev compare:revCandidate] == NSOrderedDescending) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1271:        if (latestMutationRev.length > 0 && [latestMutationRev compare:revCandidate] == NSOrderedDescending) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1408:        (did.length > 0 && ![commitDid isEqualToString:did])) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1422:    if ([sigVal isKindOfClass:[NSData class]] && ((NSData *)sigVal).length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1690:            if (blockData.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1749:    if (existingRoot && existingRoot.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:123:        if (encoded.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:150:    NSString *issuer = self.minter.issuer.length > 0 ? self.minter.issuer : @"http://localhost";
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:152:    fallbackMinter.audience = self.minter.audience.length > 0 ? self.minter.audience : issuer;
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:166:    if (fallbackToken.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:901:            if (data.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:903:                if (bodyString.length > 2048) {
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:909:                NSLocalizedDescriptionKey: bodyString.length > 0 ? [message stringByAppendingFormat:@": %@", bodyString] : message,
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:912:            if (bodyString.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:961:                if (responseStr.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:59:            NSString *childContext = context.length > 0
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:555:                                   existingRecord.cid.length > 0)
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:559:        previousRecordCID.length > 0 ? @"update" : @"create";
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:704:                                   existingRecord.cid.length > 0)
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1122:                 existingRecord.cid.length > 0)
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1210:                 existingRecord.cid.length > 0)
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1260:                CID *recordCID = dbRecord.cid.length > 0 ? [CID cidFromString:dbRecord.cid] : nil;
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1261:                if (recordCBOR.length > 0 && recordCID) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1282:                CID *recordCID = dbRecord.cid.length > 0 ? [CID cidFromString:dbRecord.cid] : nil;
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1283:                if (recordCBOR.length > 0 && recordCID) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1382:        if (uri.length > 0 && cid.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1400:        if (!recordCBOR && rec.value.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1408:        if (recordCBOR.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1428:        NSString *resultCID = (uri.length > 0) ? resultCIDByURI[uri] : nil;
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1433:        NSData *recordCBOR = (![normalizedAction isEqualToString:@"delete"] && uri.length > 0)
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1470:            collection.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1479:    if (commitCID.length > 0 && commitRev.length > 0) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1669:        CID *recordCID = (cidString.length > 0) ? [CID cidFromString:cidString] : nil;
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1756:        if (cid && data.length > 0) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:56:    return trimmed.length > 0 ? trimmed : nil;
+./Garazyk/Sources/Services/Core/PDSAdminService.m:625:    if (reason.length > 0 && note.length > 0) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:627:    } else if (reason.length > 0) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:629:    } else if (note.length > 0) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.m:111:    constraints.maxLength = json[@"maxLength"];
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.m:156:    constraints.maxLength = json[@"maxLength"];
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.m:166:    constraints.maxLength = json[@"maxItems"] ?: json[@"maxLength"];
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.m:208:    constraints.maxSize = json[@"maxSize"];
+./Garazyk/Sources/Security/PDSInputValidator.m:46:    if (nsid.length > 512) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:55:    if (did.length > 1024) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:64:    if (handle.length > 253) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:114:    if (rkey.length > 512) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:135:    if (uri.length > 2048) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:157:- (nullable NSString *)validateCursorParameter:(NSString *)cursor maxLength:(NSInteger)maxLength {
+./Garazyk/Sources/Security/PDSInputValidator.m:162:    if (cursor.length > maxLength) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:294:    if (constraints.maxLength || constraints.minLength) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:297:        if (constraints.maxLength && byteLength > [constraints.maxLength unsignedIntegerValue]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:299:                *error = [ATProtoLexiconError constraintError:@"maxLength"
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:302:                                                     expected:[NSString stringWithFormat:@"%@", constraints.maxLength]];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:471:        if (str.length == 0 || str.length > 512) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:663:    if (constraints.maxLength && length > [constraints.maxLength unsignedIntegerValue]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:665:            *error = [ATProtoLexiconError constraintError:@"maxLength"
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:668:                                                 expected:[NSString stringWithFormat:@"%@", constraints.maxLength]];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:708:    if (constraints.maxLength && length > [constraints.maxLength unsignedIntegerValue]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:713:                                                 expected:[NSString stringWithFormat:@"%@", constraints.maxLength]];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:904:    if (constraints.maxSize && size && [size unsignedIntegerValue] > [constraints.maxSize unsignedIntegerValue]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:906:            *error = [ATProtoLexiconError constraintError:@"maxSize"
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:909:                                                 expected:[NSString stringWithFormat:@"%@", constraints.maxSize]];
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:306:            if (signingKey.length > 1) {
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:316:                if (keyBytes.length > 2) {
+./Garazyk/Sources/Video/VideoXrpcPack.m:66:    if (request.body.length > 100 * 1024 * 1024) {
+./Garazyk/Sources/Video/VideoXrpcPack.m:89:    NSNumber *fileSize = @(request.body.length);
+./Garazyk/Sources/Video/VideoXrpcPack.m:111:        authHeader.length > 7 &&
+./Garazyk/Sources/Video/VideoXrpcPack.m:120:                                           fileSize:fileSize
+./Garazyk/Sources/Security/PDSInputValidator.h:100:- (nullable NSString *)validateCursorParameter:(NSString *)cursor maxLength:(NSInteger)maxLength;
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:169:    if (overridePath.length > 0) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:174:    if (bundlePath.length > 0) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:200:    if (dataDirectory.length > 0) {
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:81:                if (data && data.length > 0) {
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:99:                if (data && data.length > 0) {
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:109:                        if (resendName.length > 0) userInfo[@"resendErrorName"] = resendName;
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:110:                        if (resendMessage.length > 0) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.m:94:        if (str.length > 50) {
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceConfiguration.m:40:    return val.length > 0 ? val.integerValue : def;
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceConfiguration.m:45:    return val.length > 0 ? val.doubleValue : def;
+./Garazyk/Sources/Video/JelczDatabase.m:38:    if (dir.length > 0) {
+./Garazyk/Sources/Video/JelczDatabase.m:148:                    fileSize:(NSNumber *)fileSize
+./Garazyk/Sources/Video/JelczDatabase.m:168:        sqlite3_bind_int64(stmt, 5, fileSize.integerValue);
+./Garazyk/Sources/Video/JelczDatabase.m:412:        if (state.length > 0) {
+./Garazyk/Sources/Video/VideoWorker.m:228:                    NSInteger bytesRead = [inputStream read:buffer maxLength:sizeof(buffer)];
+./Garazyk/Sources/Video/VideoWorker.m:236:                    NSInteger bytesWritten = [outputStream write:buffer maxLength:bytesRead];
+./Garazyk/Sources/Video/VideoWorker.m:402:                        // Check 100MB input limit (matches lexicon app.bsky.embed.video#main maxSize)
+./Garazyk/Sources/Video/VideoWorker.m:403:                        if (originalVideoData.length > 100 * 1024 * 1024) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:34:@property (nonatomic, strong, nullable) NSNumber *maxLength;
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:109:@property (nonatomic, strong, nullable) NSNumber *maxLength;
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:127:@property (nonatomic, strong, nullable) NSNumber *maxLength;
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:160:@property (nonatomic, strong, nullable) NSNumber *maxSize;
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:90:                     data.length > 0  ? bytes[0] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:91:                     data.length > 1  ? bytes[1] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:92:                     data.length > 2  ? bytes[2] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:93:                     data.length > 3  ? bytes[3] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:94:                     data.length > 4  ? bytes[4] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:95:                     data.length > 5  ? bytes[5] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:96:                     data.length > 6  ? bytes[6] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:97:                     data.length > 7  ? bytes[7] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:98:                     data.length > 8  ? bytes[8] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:99:                     data.length > 9  ? bytes[9] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:100:                     data.length > 10 ? bytes[10] : 0,
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:101:                     data.length > 11 ? bytes[11] : 0);
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:221:            if (outputDirectory.length > 0) {
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:44:    if (getJobStatusNSID.length > 0) {
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:63:    if (uploadNSID.length > 0) {
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:69:            if (request.body.length > 100 * 1024 * 1024) {
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:89:            NSNumber *fileSize = @(request.body.length);
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:107:            if (workerToken.length == 0 && authHeader.length > 7 && [[authHeader substringToIndex:7] isEqualToString:@"Bearer "]) {
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:111:            BOOL created = [jobStore createJobWithId:jobId did:did blobCid:blobCid mimeType:mimeType fileSize:fileSize serviceAuthToken:workerToken error:&error];
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:124:    if (getUploadLimitsNSID.length > 0) {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:30:@property (nonatomic, strong) NSDictionary<NSNumber *, NSNumber *> *maxSizesByCategory;
+./Garazyk/Sources/Blob/MimeTypeValidator.m:260:    _maxSizesByCategory = @{
+./Garazyk/Sources/Blob/MimeTypeValidator.m:403:- (BOOL)validateSize:(NSUInteger)fileSize forMimeType:(NSString *)mimeType error:(NSError **)error {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:404:    NSUInteger maxSize = [self maxSizeForMimeType:mimeType];
+./Garazyk/Sources/Blob/MimeTypeValidator.m:406:    if (fileSize > maxSize) {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:412:                NSLocalizedDescriptionKey: [NSString stringWithFormat:@"File size %lu bytes exceeds maximum for %@ (%lu bytes)", (unsigned long)fileSize, category, (unsigned long)maxSize],
+./Garazyk/Sources/Blob/MimeTypeValidator.m:413:                @"maxSize": @(maxSize),
+./Garazyk/Sources/Blob/MimeTypeValidator.m:414:                @"actualSize": @(fileSize)
+./Garazyk/Sources/Blob/MimeTypeValidator.m:423:- (NSUInteger)maxSizeForMimeType:(NSString *)mimeType {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:425:    NSNumber *maxSize = _maxSizesByCategory[@(category)];
+./Garazyk/Sources/Blob/MimeTypeValidator.m:426:    return maxSize ? maxSize.unsignedIntegerValue : kMaxOtherSize;
+./Garazyk/Sources/Blob/MimeTypeValidator.m:652:    if ([normalizedAccept hasSuffix:@"/*"] && normalizedAccept.length > 2) {
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:26:                     fileSize:(NSNumber *)fileSize
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:33:                                       fileSize:fileSize
+./Garazyk/Sources/Video/VideoJobStore.h:27: * @param fileSize The source file size in bytes.
+./Garazyk/Sources/Video/VideoJobStore.h:39:                     fileSize:(NSNumber *)fileSize
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:104:    if (self.configuration.pdsUrl.length > 0) {
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:109:    if (self.configuration.plcUrl.length > 0) {
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:268:    if (self.keyPrefix && self.keyPrefix.length > 0) {
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:343:    NSString *uri = components.percentEncodedPath.length > 0 ? components.percentEncodedPath : @"/";
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:348:    [lines addObject:query.length > 0 ? query : @""];
+./Garazyk/Sources/PLC/PLCAuditor.m:134:    if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
+./Garazyk/Sources/PLC/PLCAuditor.m:249:        if (expectedDid.length > 0 && ![expectedDid isEqualToString:op.did]) {
+./Garazyk/Sources/PLC/PLCAuditor.m:497:    if (op.cid.length > 0) {
+./Garazyk/Sources/MediaCore/ATProtoMediaWorker.m:177:                    NSInteger bytesRead = [inputStream read:buffer maxLength:sizeof(buffer)];
+./Garazyk/Sources/MediaCore/ATProtoMediaWorker.m:180:                    if ([outputStream write:buffer maxLength:bytesRead] < 0) {
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:118:    if (self.serviceDID.length > 0 && ![aud isEqualToString:self.serviceDID]) {
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:146:    if (expectedLxm.length > 0 && ![lxm isEqualToString:expectedLxm]) {
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:147:        NSString *message = lxm.length > 0
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:195:        if (jwt.payload.sub.length > 0 && [jwt.payload.sub hasPrefix:@"did:"]) {
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:314:    if (self.pdsUrl.length > 0) {
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:316:        if (pdsDid.length > 0) {
+./Garazyk/Sources/Blob/MimeTypeValidator.h:86:@property (nonatomic, readonly) NSDictionary<NSNumber *, NSNumber *> *maxSizesByCategory;
+./Garazyk/Sources/Blob/MimeTypeValidator.h:122:- (BOOL)validateSize:(NSUInteger)fileSize forMimeType:(NSString *)mimeType error:(NSError **)error;
+./Garazyk/Sources/Blob/MimeTypeValidator.h:125:- (NSUInteger)maxSizeForMimeType:(NSString *)mimeType;
+./Garazyk/Sources/PLC/PLCOperation.m:50:    if (!cborData || cborData.length > 7500) {
+./Garazyk/Sources/PLC/PLCOperation.m:75:    if (base32.length > 24) {
+./Garazyk/Sources/PLC/PLCOperation.m:87:    if (!cborData || cborData.length > 7500) {
+./Garazyk/Sources/PLC/PLCOperation.m:109:    if (base32.length > 24) {
+./Garazyk/Sources/PLC/PLCOperation.m:154:    if (cborData.length > 7500) {
+./Garazyk/Sources/Blob/BlobStorage.m:224:        if (fileURL.path.length > 0) {
+./Garazyk/Sources/Blob/BlobStorage.m:413:    if ([filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
+./Garazyk/Sources/Blob/BlobStorage.m:462:  return trimmed.length > 0 ? trimmed : nil;
+./Garazyk/Sources/Blob/BlobStorage.m:554:  if (startPart.length > 0) {
+./Garazyk/Sources/Blob/BlobStorage.m:564:    if (endPart.length > 0) {
+./Garazyk/Sources/PLC/PLCDIDKey.m:11:static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+./Garazyk/Sources/PLC/PLCDIDKey.m:12:    if (bytes == NULL || value == NULL || maxLength == 0) {
+./Garazyk/Sources/PLC/PLCDIDKey.m:18:    for (NSUInteger i = 0; i < maxLength && i < 10; i++) {
+./Garazyk/Sources/PLC/PLCDIDKey.m:32:    // Incomplete varint (reached maxLength or 10-byte limit with MSB still set)
+./Garazyk/Sources/Ozone/Services/ModerationService.m:57:    if (newState && subjectDid.length > 0) {
+./Garazyk/Sources/Ozone/Services/ModerationService.m:345:    if (cursor && cursor.length > 0) {
+./Garazyk/Sources/Ozone/Services/ModerationService.m:380:    if (namePrefix && namePrefix.length > 0) {
+./Garazyk/Sources/Ozone/Services/ModerationService.m:384:    if (cursor && cursor.length > 0) {
+./Garazyk/Sources/Ozone/Services/ModerationService.m:550:    NSTimeInterval executeAtInterval = executeAt.length > 0 ? [[formatter dateFromString:executeAt] timeIntervalSince1970] : 0;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:551:    NSTimeInterval executeAfterInterval = executeAfter.length > 0 ? [[formatter dateFromString:executeAfter] timeIntervalSince1970] : 0;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:552:    NSTimeInterval executeUntilInterval = executeUntil.length > 0 ? [[formatter dateFromString:executeUntil] timeIntervalSince1970] : 0;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:553:    NSTimeInterval strikeExpiresInterval = strikeExpiresAt.length > 0 ? [[formatter dateFromString:strikeExpiresAt] timeIntervalSince1970] : 0;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:704:    if (action && action.length > 0) {
+./Garazyk/Sources/App/PDSController.m:238:  if ([createdDid isKindOfClass:[NSString class]] && createdDid.length > 0) {
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:117:    if (handle.length > 253) {
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:184:        if (label.length > 63) {
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:250:    if (email.length > 254) {
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:280:    if (localPart.length == 0 || localPart.length > 64 ||
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:295:    if (domainPart.length == 0 || domainPart.length > 253 ||
+./Garazyk/Sources/Repository/MST.m:847:            if (tCidBytes.length > 1) {
+./Garazyk/Sources/Repository/MST.m:861:        if (lCidBytes.length > 1) {
+./Garazyk/Sources/Repository/MST.m:1111:                    if (entryKey.length > 20) {
+./Garazyk/Sources/Repository/MST.m:1176:        if (entry.key.length > 0 && entry.valueCID) {
+./Garazyk/Sources/Repository/MST.m:1183:        if (entry.key.length > 0 && entry.valueCID) {
+./Garazyk/Sources/Repository/MST.m:1248:        if (entry.fullKey.length > 0 && entry.value) {
+./Garazyk/Sources/Repository/MST.m:1270:        if (entry.fullKey.length > 0 && entry.value) {
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:22:    if (envDataDirectory.length > 0) {
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:28:    if (homeDir.length > 0) {
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:46:    if (explicitKeysDirectory.length > 0) {
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:119:        } else if (keyData.length > 32) {
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:97:    if (event.message.length > 0) {
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:109:    NSString *errorCode = event.error.length > 0 ? event.error : event.message;
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:110:    errorFrame[@"error"] = errorCode.length > 0 ? errorCode : @"UnknownError";
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:111:    if (event.message.length > 0) {
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:152:    if (result.length > 1024 * 1024) {
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:416:        if (cidBytes.length > 1 && ((const uint8_t *)cidBytes.bytes)[0] == 0x00) {
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m:125:        NSUInteger limit = limitStr.length > 0 ? (NSUInteger)limitStr.integerValue : 25;
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m:128:        NSUInteger offset = cursorStr.length > 0 ? (NSUInteger)cursorStr.integerValue : 0;
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m:183:    if (origin.length > 0) {
+./Garazyk/Sources/Repository/CAR.m:54:static NSUInteger ReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+./Garazyk/Sources/Repository/CAR.m:55:    if (maxLength == 0) {
+./Garazyk/Sources/Repository/CAR.m:63:    while (offset < maxLength) {
+./Garazyk/Sources/Repository/CAR.m:105:    if (cidBytes.length > 0 && bytes[0] == 0x00) {
+./Garazyk/Sources/MediaCore/ATProtoMediaJobStore.h:47:               fileSize:(NSNumber *)fileSize
+./Garazyk/Sources/Admin/PDSInstallerCommand.m:522:        if (output.length > 0) {
+./Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.m:47:        while ([host hasSuffix:@"."] && host.length > 1) {
+./Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.m:72:        return host.length > 0 ? host : nil;
+./Garazyk/Sources/Admin/PDSAdminAuth.m:92:    if (issuer.length > 0) {
+./Garazyk/Sources/Admin/PDSAdminAuth.m:106:    if (configIssuer.length > 0) {
+./Garazyk/Sources/Admin/PDSAdminAuth.m:170:    if (configuredAlgorithm.length > 0) {
+./Garazyk/Sources/Admin/PDSAdminAuth.m:420:    if (passwordFile.length > 0) {
+./Garazyk/Sources/Sync/Relay/RelayConfiguration.m:109:    if (upstreamEnv.length > 0) {
+./Garazyk/Sources/App/MSTViewer/MSTViewerHandler.m:230:            @"handle": handle.length > 0 ? handle : did
+./Garazyk/Sources/Network/HttpServer.m:228:  if (self.host.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:541:            requestRef.queryString.length > 0
+./Garazyk/Sources/Network/HttpServer.m:596:    if (oldest.deleteBodyFileAfterSend && oldest.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:626:              queueItem.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:635:        if (queueItem.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:656:  if (bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:660:    NSNumber *fileSize = attributes[NSFileSize];
+./Garazyk/Sources/Network/HttpServer.m:662:        fileSize ? (NSUInteger)fileSize.unsignedLongLongValue : 0;
+./Garazyk/Sources/Network/HttpServer.m:730:        queueItem.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:749:          queueItem.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:815:                        queueItem.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:849:      if (pendingChunk.length > 0 &&
+./Garazyk/Sources/Network/HttpServer.m:945:static BOOL ParseHttpRangeHeader(NSString *rangeHeader, NSUInteger fileSize, NSUInteger *outStart, NSUInteger *outLength) {
+./Garazyk/Sources/Network/HttpServer.m:969:    if (startStr.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:972:    if (endStr.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:986:            finalEnd = MIN((NSUInteger)end, fileSize - 1);
+./Garazyk/Sources/Network/HttpServer.m:988:            finalEnd = fileSize - 1;
+./Garazyk/Sources/Network/HttpServer.m:993:        if (suffix >= fileSize) {
+./Garazyk/Sources/Network/HttpServer.m:996:            finalStart = fileSize - suffix;
+./Garazyk/Sources/Network/HttpServer.m:998:        finalEnd = fileSize - 1;
+./Garazyk/Sources/Network/HttpServer.m:1001:    if (finalStart >= fileSize) {
+./Garazyk/Sources/Network/HttpServer.m:1018:  if (response.statusCode == HttpStatusOK && response.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpServer.m:1022:          NSNumber *fileSizeAttr = attributes[NSFileSize];
+./Garazyk/Sources/Network/HttpServer.m:1023:          if (fileSizeAttr) {
+./Garazyk/Sources/Network/HttpServer.m:1024:              NSUInteger fileSize = fileSizeAttr.unsignedLongLongValue;
+./Garazyk/Sources/Network/HttpServer.m:1027:              if (ParseHttpRangeHeader(rangeHeader, fileSize, &start, &length)) {
+./Garazyk/Sources/Network/HttpServer.m:1037:                                            (unsigned long)fileSize];
+./Garazyk/Sources/App/PDSApplication.m:318:    _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
+./Garazyk/Sources/App/PDSApplication.m:404:    if (_configuration && _configuration.emailProviderType.length > 0 &&
+./Garazyk/Sources/App/PDSApplication.m:522:    if (_configuration.chatServiceURL.length > 0) {
+./Garazyk/Sources/PLC/PLCPersistentStore.m:564:        if (createdString.length > 0) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:71:    return trimmed.length > 0 ? trimmed : nil;
+./Garazyk/Sources/Network/XrpcRepoPack.m:586:        if (limitParam.length > 0) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:596:        if (cursor.length > 0) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:623:        NSString *blobDid = didParam.length > 0 ? didParam : did;
+./Garazyk/Sources/Network/XrpcRepoPack.m:633:        if (cdnURL && cdnURL.length > 0) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:711:        if (contentType.length > 0 && !isCAR && !isSTAR) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:935:            NSString *accountHandle = localAccount.handle.length > 0 ? [localAccount.handle lowercaseString] : @"handle.invalid";
+./Garazyk/Sources/Network/XrpcRepoPack.m:938:                @"alsoKnownAs": accountHandle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", accountHandle]] : @[]
+./Garazyk/Sources/Network/XrpcRepoPack.m:943:        NSString *accountHandle = localAccount.handle.length > 0 ? [localAccount.handle lowercaseString] : @"handle.invalid";
+./Garazyk/Sources/Network/XrpcRepoPack.m:944:        BOOL handleIsCorrect = (handleFromDidDoc.length > 0 && [handleFromDidDoc isEqualToString:accountHandle]) || (doc == nil && localAccount.handle.length > 0);
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:31:  return normalized.length > 0 ? normalized : nil;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:333:  if (data.length > 10 * 1024 * 1024) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:378:    if (envHost.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:401:    if (envDomains.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:414:  if (envIssuer.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:431:  if (envMasterSecret.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:481:  if (envPlcURL.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:552:      if (trimmed.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:577:  if (envPolicy.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:585:  if (envAllowed.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:589:  if (envTrusted.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:602:      if ([emailType isKindOfClass:[NSString class]] && emailType.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:611:      if ([phoneType isKindOfClass:[NSString class]] && phoneType.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:620:      if ([captchaType isKindOfClass:[NSString class]] && captchaType.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:641:      if (trimmed.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:923:  if (envRelays.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:967:  if (envAppViewURL.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:973:  if (envAppViewDID.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:989:  if (envOzoneURL.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:995:  if (envOzoneDID.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1001:  if (envChatURL.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1006:  if (envChatDID.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1051:  if (envBlobStorageType.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1055:  if (envVideoMode.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1059:  if (envS3Bucket.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1063:  if (envS3Region.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1067:  if (envS3Endpoint.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1071:  if (envS3KeyPrefix.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1075:  if (envS3AccessKeyId.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1079:  if (envS3SecretAccessKey.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1083:  if (envCdnURL.length > 0)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1167:  if (configuredIssuer.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1209:  if (host.length > 0) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1224:  return fallbackHost.length > 0 ? fallbackHost : @"localhost";
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1247:  return trimmed.length > 0 ? trimmed : @"none";
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:25:    if (limitParam.length > 0) {
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:785:    if (depthParam.length > 0)
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1260:    if (bodyData && bodyData.length > 0)
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1526:    if (data && data.length > 0)
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:36:    if (dir.length > 0) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:131:               fileSize:(NSNumber *)fileSize
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:145:        sqlite3_bind_int64(stmt, 5, fileSize.integerValue);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:287:        if (state.length > 0) {
+./Garazyk/Sources/Network/RateLimiter.m:113:    NSString *normalizedPath = path.length > 0 ? [path copy] : nil;
+./Garazyk/Sources/Network/RateLimiter.m:135:    if (dbDirectory.length > 0) {
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:68:  if ([nsid hasPrefix:@"app.bsky."] && configuration.appViewURL.length > 0) {
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:231:      if (segment.length > 0) {
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:239:      if (did.length > 0 && [did hasPrefix:@"did:"]) {
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:267:    if (endpoint.length > 0) {
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:623:        if (limitParam.length > 0) {
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:647:        if (limitParam.length > 0) {
+./Garazyk/Sources/PLC/PLCServer.m:657:        if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
+./Garazyk/Sources/Network/HttpRequestDispatcher.m:29:  NSString *logPath = request.queryString.length > 0
+./Garazyk/Sources/Network/HttpChunkedBodyParser.m:25:@property (nonatomic, assign) NSUInteger maxSize;
+./Garazyk/Sources/Network/HttpChunkedBodyParser.m:42:- (instancetype)initWithMaxSize:(NSUInteger)maxSize {
+./Garazyk/Sources/Network/HttpChunkedBodyParser.m:45:        _maxSize = maxSize;
+./Garazyk/Sources/Network/HttpChunkedBodyParser.m:63:    while (self.workingBuffer.length > 0) {
+./Garazyk/Sources/Network/HttpChunkedBodyParser.m:71:                    if (self.workingBuffer.length > 256) {
+./Garazyk/Sources/Network/HttpChunkedBodyParser.m:127:                    if (self.maxSize > 0 && self.outputData.length + self.currentChunkSize > self.maxSize) {
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobReferenceScanOperation.m:56:                    if (cidString.length > 0) {
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:42:        if (candidate.length > 0) {
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:53:    return docHandle.length > 0 && [docHandle isEqualToString:normalizedHandle];
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:194:    if (data.length > 2 && bytes[0] == 0xE7 && bytes[1] == 0x01) {
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:239:    if (account && account.handle.length > 0) {
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:320:            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:323:                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:334:            NSString *handle = account.handle.length > 0 ? [account.handle lowercaseString] : @"handle.invalid";
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:337:                @"alsoKnownAs": handle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", handle]] : @[]
+./Garazyk/Sources/Network/HttpRouter.m:216:        if (component.length > 0) {
+./Garazyk/Sources/Network/HttpRouter.m:224:        if (component.length > 0) {
+./Garazyk/Sources/Core/Base58.m:22:    if (data.length > 64 * 1024) return nil;
+./Garazyk/Sources/Core/Base58.m:74:    if (string.length > 64 * 1024) return nil;
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:143:  if ([ATProtoServiceConfiguration sharedConfiguration].appViewURL.length > 0) {
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobOrphanScanOperation.m:66:                    if (cidString.length > 0) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:298:  if (request.remoteAddress.length > 0) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:389:      ([action isKindOfClass:[NSString class]] && action.length > 0)
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:429:        previousRecordCIDString.length > 0) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:819:  __block BOOL hasCursor = (cursor.length > 0);
+./Garazyk/Sources/PLC/DIDPLCResolver.m:254:                if (line.length > 0) {
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:25:    return decoded.length > 0 ? decoded : value;
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:233:        NSUInteger limit = limitStr.length > 0 ? (NSUInteger)limitStr.integerValue : 25;
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:237:        NSUInteger offset = cursorStr.length > 0 ? (NSUInteger)cursorStr.integerValue : 0;
+./Garazyk/Sources/Core/ATProtoValidator.m:22:    if (did.length > 2048) {
+./Garazyk/Sources/Core/ATProtoValidator.m:53:    if (handle.length > 253) {
+./Garazyk/Sources/Core/ATProtoValidator.m:136:    if (nsid.length > 317) {
+./Garazyk/Sources/Core/ATProtoValidator.m:153:        if (comp.length > 63) {
+./Garazyk/Sources/Core/ATProtoValidator.m:236:    if (rkey.length < 1 || rkey.length > 512) {
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.m:41:            CID *cid = candidate.length > 0 ? [CID cidFromString:candidate] : nil;
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.m:42:            if (cid.stringValue.length > 0) {
+./Garazyk/Sources/Repository/STAR.m:32:static NSUInteger STARReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+./Garazyk/Sources/Repository/STAR.m:33:    if (maxLength == 0) return 0;
+./Garazyk/Sources/Repository/STAR.m:37:    while (offset < maxLength) {
+./Garazyk/Sources/Repository/STAR.m:727:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:742:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:949:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:957:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:1029:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:1037:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:138:        if (data && data.length > 0) {
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:25:  if (commitBlockData.length > 0) {
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:51:  if (commit.rev.length > 0 && revBlockListProvider) {
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:58:      if (blockData.length > 0) {
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:106:  if (commitBlockData.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:136:      if (config.dataDirectory.length > 0 && !context.dataDirExplicitlySet) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:230:  if (chatConfig.chatServiceURL.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:236:      if (chatDID.length > 0 && ![chatDID containsString:@"#"]) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:354:         if (publicKey.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:368:          if (svgConfig.chatServiceURL.length > 0) {
+./Garazyk/Sources/Core/ATURI.m:39:    if (collection && collection.length > 0 && ![self isValidCollection:collection]) {
+./Garazyk/Sources/Core/ATURI.m:45:    if (rkey && rkey.length > 0 && ![self isValidRkey:rkey]) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:117:        if (resolvedDid.length > 0) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:245:                @"endpoint": issuer.length > 0 ? issuer : @""
+./Garazyk/Sources/Network/XrpcIdentityPack.m:280:        if (emailProvider && account.email.length > 0) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:430:            if (account.handle.length > 0) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:506:        if (operationDid.length > 0 && ![operationDid isEqualToString:did]) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:563:        if (account.handle.length > 0) {
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:204:                if (data && data.length > 0) {
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:222:                if (data && data.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:365:    if (method.length > 0) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportMac.m:133:- (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+./Garazyk/Sources/Network/ATProtoNetworkTransportMac.m:138:    nw_connection_receive(_connection, (uint32_t)minLength, (uint32_t)maxLength, ^(dispatch_data_t content, nw_content_context_t context, bool isComplete, nw_error_t receiveError) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportMac.m:193:        if (host.length > 0) {
+./Garazyk/Sources/Network/XrpcServerPack.m:371:        NSArray *availableUserDomains = config.availableUserDomains ?: (hostname.length > 0 ? @[hostname] : @[]);
+./Garazyk/Sources/Network/XrpcServerPack.m:449:        if (did.length > 0) {
+./Garazyk/Sources/Network/XrpcServerPack.m:490:        if (enforceDidWebServiceAuth && did.length > 0 && [did hasPrefix:@"did:web:"]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:685:        NSString *targetDid = forAccount.length > 0 ? forAccount : did;
+./Garazyk/Sources/Network/XrpcServerPack.m:751:                if (code.length > 0) {
+./Garazyk/Sources/Network/XrpcServerPack.m:782:        if (code.length > 0) {
+./Garazyk/Sources/Network/XrpcServerPack.m:984:        if (!isLikelyEmail(email) || (account.email.length > 0 && ![[account.email lowercaseString] isEqualToString:[email lowercaseString]])) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1111:        if (did.length > 0) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1168:        if (lxm.length > 0) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1179:        BOOL hasRequestedExp = expParam.length > 0;
+./Garazyk/Sources/Network/XrpcServerPack.m:1242:        if (lxm.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIReplCommand.m:163:            if (current.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIReplCommand.m:172:    if (current.length > 0) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketCodec.m:55:    if (data.length > 0) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketCodec.m:196:                if (payload.length > 2) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketCodec.m:282:    if (reason.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:107:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:161:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:185:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:243:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:283:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:318:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
+./Garazyk/Sources/Core/CID.m:55:    if (string.length > 256) {
+./Garazyk/Sources/Core/CID.m:129:    if (!data || data.length < 2 || data.length > 256) {
+./Garazyk/Sources/Core/CID.m:164:                                    maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:178:                                      maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:192:                                  maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:205:                                   maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:214:                                  maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:304:               maxLength:(NSUInteger)maxLength 
+./Garazyk/Sources/Core/CID.m:306:    if (maxLength == 0) {
+./Garazyk/Sources/Core/CID.m:312:    while (offset < maxLength) {
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:77:    if (filter.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:50:    if (issuer.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:52:        if (c.host.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:69:    if (issuer.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:118:        if (filter.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:261:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:10];
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:371:    NSString *serviceEndpoint = pdsEndpoint.length > 0 ? pdsEndpoint : [NSString stringWithFormat:@"http://%@", pdsHost];
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:504:                if (responseStr.length > 0) {
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:690:    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:10];
+./Garazyk/Sources/Network/XrpcErrorHelper.m:60:    if (allowedMethod.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:25:  return trimmed.length > 0 ? trimmed : nil;
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:73:  if (serviceFragment.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:140:  if (directURL.scheme.length > 0 && directURL.host.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:180:    if (appViewURL.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:186:  if (config.plcURL.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:210:          serviceFragment.length > 0
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:224:      endpoint.length > 0 ? [NSURL URLWithString:endpoint] : nil;
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:249:  while (path.length > 1 && [path hasSuffix:@"/"]) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:264:  components.percentEncodedQuery = queryString.length > 0 ? queryString : nil;
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:271:  if (envDescriptor.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:277:  if (envURL.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:282:  if (appViewDID.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:287:  if (appViewURL.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:343:  if (request.body.length > 0 && request.method != HttpMethodGET &&
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:381:      if (did.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:411:          if (serviceToken.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:479:  if (request.method != HttpMethodHEAD && upstreamBody.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:502:        if (explicitProxyTarget.length > 0) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:525:            if (fallbackDescriptor.length > 0 &&
+./Garazyk/Sources/CLI/main.m:115:    if (errorMessage.length > 0) {
+./Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.m:32:  if (dataDirectory.length > 0) {
+./Garazyk/Sources/Network/HttpStreamingBody.m:132:    if (self.memoryBuffer.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:192:        if (token.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:208:        return token.length > 0 ? token : nil;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:137:                                @"q": query.length > 0 ? query : @""
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:234:    if (status.length > 0) params[@"status"] = status;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:235:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:417:    if (after && after.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:559:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:573:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:588:    if (action.length > 0) body[@"action"] = action;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:616:    if (collection.length > 0) params[@"collection"] = collection;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:618:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:648:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:664:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:692:    if (state.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:698:    if (cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:782:    if (cursor && cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:818:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:834:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:882:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:921:    if (cursor && cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1235:    if (cursor.length > 0) params[@"cursor"] = cursor;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1541:    while ([basePath hasSuffix:@"/"] && basePath.length > 1) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1549:        combinedPath = appendPath.length > 0 ? [@"/" stringByAppendingString:appendPath] : @"/";
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1551:        combinedPath = appendPath.length > 0 ? [basePath stringByAppendingFormat:@"/%@", appendPath] : basePath;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1589:    if (statusCode && *statusCode == 401 && self.configuration.pdsAdminPassword.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1610:    if (token && token.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1709:    if (token && token.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1777:                if (text.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1802:    if (token && token.length > 0) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:59:    if (trimmed.length < 7 || trimmed.length > 32) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:119:    if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 250)) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:139:    if (cursor.length > 0) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:144:    if (collection.length > 0) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:149:    if (since.length > 0) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:287:        if (cursorParam.length > 0) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:315:        if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 250)) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:324:        if (sinceParam.length > 0) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:416:        if (sessionID.length > 0) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:478:        if (email.length > 0 && ![email containsString:@"@"]) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:499:                NSString *stem = parts.firstObject.length > 0 ? parts.firstObject : @"user";
+./Garazyk/Sources/AppView/Services/GroupService.m:484:    if (expiresAt && expiresAt.length > 0) {
+./Garazyk/Sources/AppView/Services/GroupService.m:817:    if (deletedForJson && deletedForJson.length > 0) {
+./Garazyk/Sources/Core/TID.m:148:    if (timePart.length > 11) {
+./Garazyk/Sources/Core/TID.m:157:    if (clockPart.length > 2) {
+./Garazyk/Sources/AppView/Services/NotificationService.m:164:        if (self.actorService && authorDID.length > 0) {
+./Garazyk/Sources/AppView/Services/NotificationService.m:167:        if (!author && authorDID.length > 0) {
+./Garazyk/Sources/AppView/Services/NotificationService.m:176:            if (cid && authorDID.length > 0) {
+./Garazyk/Sources/AppView/Services/NotificationService.m:394:        if (prefsJson && prefsJson.length > 0) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.m:168:    if (account.did.length > 0) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.m:173:    if (normalized.length > 0 && ![normalized isEqualToString:actorIdentifier]) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.m:176:        if (account.did.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:106:        if (configuration.pdsAdminPassword.length > 0 && configuration.pdsAdminToken.length == 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:405:        NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchBlobsForDID:did limit:25 cursor:cursor] : @{@"blobs": @[]};
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:779:        NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchHostingHistoryForDID:did] : @{@"entries": @[]};
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1508:    "const dids=input.split('\\n').map(d=>d.trim()).filter(d=>d.length>0);"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1762:    if (did && did.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1783:        if (cursor && cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1822:    if (cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1845:    if (cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1956:    if (cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1990:    while (filename.length > 0 && [filename hasPrefix:@"/"]) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2027:    if (!attrs || attrs.fileSize > 10 * 1024 * 1024) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2076:    if (cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2096:    if (cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2155:        if (content.length > 80) content = [[content substringToIndex:80] stringByAppendingString:@"..."];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2252:                if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2256:            if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2266:    if (cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2290:        if ([sender hasPrefix:@"did:plc:"] && sender.length > 20) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2519:    if (checkedAt.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2585:    if (cursor && cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2615:    if (cursor && cursor.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2709:    if (did && did.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2881:        NSString *shortJobId = jobId.length > 8 ? [NSString stringWithFormat:@"%@...", [jobId substringToIndex:8]] : jobId;
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2884:        if ([did hasPrefix:@"did:plc:"] && did.length > 20) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2899:        NSNumber *fileSizeNum = [job[@"file_size"] isKindOfClass:[NSNumber class]] ? job[@"file_size"] : nil;
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2900:        NSString *fileSize = @"-";
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2901:        if (fileSizeNum) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2902:            long long bytes = [fileSizeNum longLongValue];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2903:            if (bytes >= 1048576) fileSize = [NSString stringWithFormat:@"%.1f MB", bytes / 1048576.0];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2904:            else if (bytes >= 1024) fileSize = [NSString stringWithFormat:@"%.1f KB", bytes / 1024.0];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2905:            else fileSize = [NSString stringWithFormat:@"%lld B", bytes];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2921:            UIEscaped(fileSize),
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2933:    if (cursor.length > 0) {
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:36:        if (clean.length > 0) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:735:        if (cursor.length > 0) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:835:        if (cursor.length > 0) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:841:        if (cursor.length > 0) [args addObject:cursor];
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:9:    return value.length > 0 ? value : fallback;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:26:    return value.length > 0 ? value : nil;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:102:        if (value.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:104:            if (url.scheme.length > 0 && url.host.length > 0) {
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:115:        self.pdsAdminToken = updates[@"pdsToken"].length > 0 ? updates[@"pdsToken"] : nil;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:118:        self.plcAdminToken = updates[@"plcToken"].length > 0 ? updates[@"plcToken"] : nil;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:121:        self.relayAdminToken = updates[@"relayToken"].length > 0 ? updates[@"relayToken"] : nil;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:124:        self.appViewAdminToken = updates[@"appviewToken"].length > 0 ? updates[@"appviewToken"] : nil;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:127:        self.appViewAdminToken = updates[@"appViewToken"].length > 0 ? updates[@"appViewToken"] : nil;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:130:        self.chatAdminToken = updates[@"chatToken"].length > 0 ? updates[@"chatToken"] : nil;
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:133:        self.videoAdminToken = updates[@"videoToken"].length > 0 ? updates[@"videoToken"] : nil;
+./Garazyk/Sources/Network/XrpcAuthHelper.m:84:    if (existingNonce.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:88:    if (nextNonce.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:105:        if (forwardedProto.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:120:        } else if (issuerURL.scheme.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:128:    if (hostHeader.length > 0 && (trustForwarded || localHostHeader)) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:130:    } else if (issuerURL.host.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:145:    if (request.queryString.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:208:        if ([request headerForKey:@"DPoP"].length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:249:                    if (nonce.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:471:    if (configuredAlgorithm.length > 0) {
+./Garazyk/Sources/AppView/Services/GraphService.m:41:    NSDictionary *record = cid.length > 0 ? [self getRecordBodyFromCID:cid did:did error:error] : nil;
+./Garazyk/Sources/AppView/Services/GraphService.m:61:    if (cid.length > 0) listView[@"cid"] = cid;
+./Garazyk/Sources/AppView/Services/GraphService.m:703:        if (uri.length > 0) [seenURIs addObject:uri];
+./Garazyk/Sources/AppView/Services/GraphService.m:841:    if (items.count == 0 && creatorDID.length > 0) {
+./Garazyk/Sources/Database/Pool/DatabasePool.h:60:@property (nonatomic, assign, readonly) NSUInteger maxSize;
+./Garazyk/Sources/Database/Pool/DatabasePool.h:71:- (instancetype)initWithDbDirectory:(NSString *)dbDirectory maxSize:(NSUInteger)maxSize;
+./Garazyk/Sources/AppView/Services/FeedService.m:277:        if (subject.length > 0) {
+./Garazyk/Sources/AppView/Services/FeedService.m:324:        if (did.length > 0) {
+./Garazyk/Sources/AppView/Services/FeedService.m:359:        if (subject.length > 0) {
+./Garazyk/Sources/AppView/Services/FeedService.m:368:        if (subject.length > 0) {
+./Garazyk/Sources/AppView/Services/ActorService.m:200:        if ([handle isKindOfClass:[NSString class]] && handle.length > 0) {
+./Garazyk/Sources/AppView/Services/ActorService.m:230:        if ([did isKindOfClass:[NSString class]] && did.length > 0) {
+./Garazyk/Sources/Database/Pool/DatabasePool.m:25:@property (nonatomic, assign, readwrite) NSUInteger maxSize;
+./Garazyk/Sources/Database/Pool/DatabasePool.m:43:- (instancetype)initWithDbDirectory:(NSString *)dbDirectory maxSize:(NSUInteger)maxSize {
+./Garazyk/Sources/Database/Pool/DatabasePool.m:47:        _maxSize = maxSize;
+./Garazyk/Sources/Database/Pool/DatabasePool.m:102:    if (method.length > 0 && identifier.length > 0) {
+./Garazyk/Sources/Database/Pool/DatabasePool.m:132:        if (self.stores.count >= self.maxSize) {
+./Garazyk/Sources/Database/Pool/DatabasePool.m:343:        m[@"max_size"] = @(self.maxSize);
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:47:                                                      expectedMethod:methodNSID.length > 0 ? methodNSID : nil];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:667:            if (adminSecret && adminSecret.length > 0 && [token isEqualToString:adminSecret]) {
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:760:            if (!(adminSecret && adminSecret.length > 0 && [token isEqualToString:adminSecret])) {
+./Garazyk/Sources/Core/DID.m:404:            if (signingKey.length > 1) {
+./Garazyk/Sources/Core/DID.m:414:                if (keyBytes.length > 2) {
+./Garazyk/Sources/Core/DID.m:611:        if (!error && response.statusCode == 200 && data.length > 0) {
+./Garazyk/Sources/Core/DID.m:637:                if (curlData.length > 0) {
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:404:        if ([keychainTag isKindOfClass:[NSString class]] && keychainTag.length > 0) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:42:        if (limitParam && limitParam.length > 0) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:511:        if (cursor.length > 0) {
+./Garazyk/Sources/AppView/Services/DraftService.m:117:        if (contentJSON && contentJSON.length > 0) {
+./Garazyk/Sources/Network/HttpChunkedBodyParser.h:36: @param maxSize Maximum allowed body size in bytes (0 = unlimited).
+./Garazyk/Sources/Network/HttpChunkedBodyParser.h:40:- (instancetype)initWithMaxSize:(NSUInteger)maxSize;
+./Garazyk/Sources/Network/XrpcHandler.m:207:    if (authHeader.length > 0) {
+./Garazyk/Sources/Network/XrpcHandler.m:209:        if (did.length > 0) {
+./Garazyk/Sources/Network/XrpcHandler.m:519:    if (directURL.scheme.length > 0 && directURL.host.length > 0) {
+./Garazyk/Sources/Network/XrpcHandler.m:542:    if (config.plcURL.length > 0) {
+./Garazyk/Sources/Network/XrpcHandler.m:553:    if (serviceFragment.length > 0) {
+./Garazyk/Sources/Network/XrpcHandler.m:595:        if (serviceId.length > 0) {
+./Garazyk/Sources/Network/Http1Parser.m:198:        if (transferEncoding.length > 0 && contentLengthHeader.length > 0) {
+./Garazyk/Sources/Network/Http1Parser.m:395:        if (part.length > 0) {
+./Garazyk/Sources/Network/Http1Parser.m:577:        if (transferEncoding.length > 0 && contentLengthHeader.length > 0) {
+./Garazyk/Sources/Network/HttpProtocolSession.m:74:    if (unconsumed.length > 0) {
+./Garazyk/Sources/Network/HttpProtocolSession.m:116:  if (self.parser.remoteAddress.length == 0 && remoteAddress.length > 0) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:372:    if (audience && self.expectedAudience.length > 0 && ![PDSSecurityCompare constantTimeEqualString:audience string:self.expectedAudience]) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:445:    if (forwardedProto.length > 0) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:456:    if (request.queryString.length > 0) {
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:200:      if (tagPayload.length > 1) {
+./Garazyk/Sources/Network/HttpRouteTrie.m:189:        if (part.length > 0) {
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:133:    if (limitParam.length > 0)
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:148:    if (cursorParam.length > 0)
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:173:        if (rootCid.length > 0)
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:348:        if (rev && rev.length > 0)
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:490:    if (limitParam.length > 0)
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:506:    if (cursorParam.length > 0)
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:976:    if (sinceParam.length > 0)
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:83:        if (hasJWKS || hasJWKSURI || signingAlg.length > 0) {
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:107:    if (![self legacyOAuthEnabled] && clientSecret.length > 0) {
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:121:        if (clientAssertion.length > 0) {
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:289:    if (self.issuer.length > 0) {
+./Garazyk/Sources/Network/ATProtoNetworkTransport.h:118: @param maxLength Maximum bytes to receive in a single callback.
+./Garazyk/Sources/Network/ATProtoNetworkTransport.h:131:                  maximumLength:(NSUInteger)maxLength
+./Garazyk/Sources/Auth/OAuth2.m:626:                       @(request.codeChallenge.length > 0),
+./Garazyk/Sources/Auth/OAuth2.m:628:                       @(request.loginHint.length > 0));
+./Garazyk/Sources/Auth/OAuth2.m:645:    if (self.issuer.length > 0) {
+./Garazyk/Sources/Auth/OAuth2.m:700:                       @(request.code.length > 0),
+./Garazyk/Sources/Auth/OAuth2.m:701:                       @(request.codeVerifier.length > 0));
+./Garazyk/Sources/Auth/OAuth2.m:897:    if (expectedDPoPJKT.length > 0 &&
+./Garazyk/Sources/Auth/OAuth2.m:1236:        GZ_LOG_AUTH_DEBUG(@"Handle resolution completed (resolved_did_present=%@)", @(resolvedDID.length > 0));
+./Garazyk/Sources/Network/XrpcServiceAuthHelper.m:36:    if (canonicalHost.length > 0) {
+./Garazyk/Sources/Network/HttpResponse.m:202:    if (self.bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpResponse.m:212:    if (_bodyFilePath.length > 0) {
+./Garazyk/Sources/Network/HttpResponse.m:264:    if (serverHeader.length > 0 && ![self headerForKey:@"Server"]) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:95:        if (pubKeyData.length > 1 && ((const uint8_t *)pubKeyData.bytes)[0] == 0x04) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:125:        if (publicKeyData.length > 1 && ((const uint8_t *)publicKeyData.bytes)[0] == 0x04) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:796:    NSString *service = self.serviceIdentifier.length > 0 ? self.serviceIdentifier : @"com.atproto.pds.keys";
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:57:        if (secret.length > 0 && [TOTPService verifyCode:authFactorToken secret:secret]) {
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:323:    if (stored.length > 0 && [Base32Utils dataFromBase32String:stored]) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:44:@property (nonatomic, assign) NSUInteger maxLength;
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:503:        if (_inputBuffer.length >= request.minLength || (isComplete && _inputBuffer.length > 0)) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:504:            NSUInteger length = MIN(_inputBuffer.length, request.maxLength);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:618:    if (_writeBuffer.length > 0 || _writeOffset > 0) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:649:- (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:653:            [self receiveWithMinimumLength:minLength maximumLength:maxLength completion:copiedCompletion];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:667:    request.maxLength = maxLength;
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:718:        if (_bindHost.length > 0) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:113:        if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 100)) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:121:        if (cursorParam.length > 0 && (!parseStrictIntegerString(cursorParam, &offset) || offset < 0)) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:138:            if (emailQuery.length > 0) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:197:        if ([subject isKindOfClass:[NSString class]] && subject.length > 500) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:743:        if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 500)) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:751:        if (cursorParam.length > 0 && (!parseStrictIntegerString(cursorParam, &offset) || offset < 0)) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1249:    if (account.email.length > 0) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1275:            if (trimmed.length > 0) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1285:            if (trimmed.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:45:  return trimmed.length > 0 ? trimmed : nil;
+./Garazyk/Sources/Network/XrpcSyncPack.m:418:    if (limitParam.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:432:    if (cursorParam.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:468:    if (limitParam.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:482:    if (cursorParam.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:512:      if (account.did.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:526:        if (head.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:573:    if (limitParam.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:587:    if (cursorParam.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:617:      if (account.did.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:703:    if (cdnURL && cdnURL.length > 0) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:736:        filePath.length > 0) {
+./Garazyk/Sources/Database/PDSDatabase+Records.m:41:    if (collection.length > 0) {
+./Garazyk/Sources/Network/HttpRequest.m:108:    if (normalizedQueryParams.count == 0 && normalizedQueryString.length > 0) {
+./Garazyk/Sources/Network/HttpRequest.m:131:      if (forwardedFor.length > 0) {
+./Garazyk/Sources/Network/HttpRequest.m:137:        if (first.length > 0) {
+./Garazyk/Sources/Auth/WebAuthnVerifier.m:255:        if (signature.length > 8) {
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.h:17:                      fileSize:(NSNumber *)fileSize
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:344:    BOOL hasRev = (rev.length > 0);
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:415:    BOOL hasRev = (rev.length > 0);
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.m:152:    while (r.length > 0 && ((const uint8_t *)r.bytes)[0] == 0x00) {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.m:161:    while (s.length > 0 && ((const uint8_t *)s.bytes)[0] == 0x00) {
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:56:    if (cursor.length > 0) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:37:            if (trimmed.length > 0) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:58:        if (part.length > 0) {
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:91:    if (next.length > 0) body[@"cursor"] = next;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:120:    if (next.length > 0) body[@"cursor"] = next;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:169:    if (next.length > 0) body[@"cursor"] = next;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:201:    if (next.length > 0) body[@"cursor"] = next;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:320:    if (limitParam.length > 0) {
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:369:    if (local.length > 0) return local;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:382:    if (resolved.length > 0) {
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:398:        if (candidate.length > 0) return [candidate lowercaseString];
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:408:        if (endpoint.length > 0) return endpoint;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:425:        if (fallback.length > 0) return fallback;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:431:        if (atproto.length > 0) return atproto;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:464:    if (cid.length > 0) [items addObject:[NSURLQueryItem queryItemWithName:@"cid" value:cid]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:744:    unsigned long long fileSize = [attrs fileSize];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:746:    return (NSUInteger)(fileSize / (1024 * 1024));
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:31:    if (relays.length > 0) config.relayURLs = [self splitCSV:relays];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:34:    if (dataDir.length > 0) config.dataDirectory = dataDir;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:43:    if (ingest.length > 0) config.ingestEnabled = [ingest boolValue];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:46:    if (rlEnabled.length > 0) config.rateLimitEnabled = [rlEnabled boolValue];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:66:    if (dataDir.length > 0) self.dataDirectory = dataDir;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:129:        if (trimmed.length > 0) [items addObject:trimmed];
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:24:                     fileSize:(NSNumber *)fileSize
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:35:        fileSize ?: [NSNull null],
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:109:    if (state.length > 0) {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:99:        if (directory.length > 0) {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:290:    if (cursor.length > 0 && !cursorDict) return nil;
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:358:    if (cursor.length > 0 && !cursorDict) return nil;
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:392:        if (did.length > 0) [dids addObject:did];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:426:    if (cursor.length > 0 && !cursorDict) return nil;
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:501:    if (cursor.length > 0 && !cursorDict) return nil;
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:565:    if (cid.length > 0 && storedCID.length > 0 && ![storedCID isEqualToString:cid]) {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:574:    if ([json isKindOfClass:[NSString class]] && json.length > 0) {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:582:    if (storedCID.length > 0) result[@"cid"] = storedCID;
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:99:    if (dpopHeader.length > 0) {
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:109:    } else if (tokenJkt.length > 0) {
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:134:    return token.length > 0 ? token : nil;
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:185:    if (tokenJkt.length > 0) {
+./Garazyk/Sources/Mikrus/MikrusLinkExtractor.m:63:            NSString *childPath = path.length > 0 ? [path stringByAppendingFormat:@".%@", key] : key;
+./Garazyk/Sources/Mikrus/MikrusLinkExtractor.m:70:        NSString *arrayPath = path.length > 0 ? [path stringByAppendingString:@"[]"] : @"[]";
+./Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m:464:        [event.since isKindOfClass:[NSString class]] && event.since.length > 0 &&
+./Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m:465:        [syncState.lastRev isKindOfClass:[NSString class]] && syncState.lastRev.length > 0 &&
+./Garazyk/Sources/AppView/Server/Indexers/AppViewNotificationIndexer.m:64:    if (collection.length > 100) {
+./Garazyk/Sources/AppView/Server/Indexers/AppViewNotificationIndexer.m:89:    if (recipientDID && recipientDID.length > 0 && recipientDID.length < 200) {
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:58:    if (relayEnv.length > 0) {
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:64:    if (dataDir.length > 0) config.dataDirectory = dataDir;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:72:    if (secret.length > 0) config.adminSecret = secret;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:76:    if (master.length > 0) config.masterSecret = master;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:84:    if (plcUrl.length > 0) config.plcURL = plcUrl;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:101:    if (seedDIDs.length > 0) config.partialSeedDIDs = [seedDIDs componentsSeparatedByString:@","];
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:104:    if (allowlist.length > 0) config.partialAllowlist = [allowlist componentsSeparatedByString:@","];
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:116:    if (fallbackURL.length > 0) config.partialProxyFallbackURL = fallbackURL;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:120:    if (videoServiceURL.length > 0) config.videoServiceURL = videoServiceURL;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:138:    if (dataDir.length > 0) _dataDirectory = dataDir;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:147:    if (secret.length > 0) _adminSecret = secret;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:151:    if (master.length > 0) _masterSecret = master;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:160:    if (plcUrl.length > 0) _plcURL = plcUrl;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:192:    if (fallbackURL.length > 0) _partialProxyFallbackURL = fallbackURL;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:196:    if (videoURL.length > 0) _videoServiceURL = videoURL;
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:201:    if (config.videoServiceURL.length > 0) {
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:292:    if (config.masterSecret.length > 0) {
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:77:    if (sinceRev.length > 0) {
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:162:    if (envOverride.length > 0) {
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:218:        if ([type isEqualToString:@"AtprotoPersonalDataServer"] && endpoint.length > 0) {
+./Garazyk/Sources/AppView/Server/Indexers/AppViewActorIndexer.m:60:    if (displayName.length > 640) displayName = [displayName substringToIndex:640];
+./Garazyk/Sources/AppView/Server/Indexers/AppViewActorIndexer.m:61:    if (description.length > 2560) description = [description substringToIndex:2560];
+./Garazyk/Sources/AppView/AppViewIdentityHelper.m:90:            if (candidate.length > 0) {
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m:370:    if (cursor.length > 0) {
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:72:            if (memberDid.length > 0) {
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:88:            if (roleDid.length > 0) {
+./Garazyk/Sources/AppView/Server/Hooks/AppViewSearchIndexHook.m:82:            if (text.length > 0) [text appendString:@" "];
+./Garazyk/Sources/Auth/OAuth2Handler.m:165:    if (envIssuer.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:571:        if (part.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:693:      if (part.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:842:  BOOL hasJWKSURI = (jwksURI.length > 0);
+./Garazyk/Sources/Auth/OAuth2Handler.m:884:    if (hasJWKS || hasJWKSURI || signingAlg.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:941:  if (jwksURI.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1765:  if (requestURI.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1997:    if (sessionTokenForDeny.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2003:    if (redirectUri.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2039:      if (state.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2043:      if (self.oauthServer.issuer.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2536:  NSString *sessionHandle = handle.length > 0 ? handle : did;
+./Garazyk/Sources/Auth/OAuth2Handler.m:2664:  BOOL hasDpopProof = (dpopProof.length > 0);
+./Garazyk/Sources/Auth/OAuth2Handler.m:2672:  if (clientAssertion.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3132:  if (clientAssertion.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3182:    if (!clientSecret && expectedSecret.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3280:  if (dpopThumbprint.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3348:  if (nextNonce.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3441:  if (clientID.length > 0 && storedClientID.length > 0 &&
+./Garazyk/Sources/Auth/OAuth2Handler.m:3455:  if (consumedAt.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3557:  if (storedClientID.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3669:    if (forwardedProto.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3686:    } else if (issuerURL.scheme.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3694:  if (hostHeader.length > 0 && (trustedForwarded || localHostHeader)) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3696:  } else if (issuerURL.host.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3717:  if (request.queryString.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3738:    if (forwardedProto.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3755:    } else if (issuerURL.scheme.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3763:  if (hostHeader.length > 0 && (trustedForwarded || localHostHeader)) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3765:  } else if (issuerURL.host.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3788:  if (existingNonce.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3793:  if (nextNonce.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3838:      if (nonce.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3864:  if (dpopThumbprint.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3865:    NSString *prefix = dpopThumbprint.length > 8
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:423:    if (![path isEqualToString:@":memory:"] && dbDir.length > 0 && ![fm fileExistsAtPath:dbDir]) {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1276:    if (value && value.length > 0) {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1306:    if (did.length > 0) {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1311:    if (cursor.length > 0) {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1340:        if (data && data.length > 0) {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1372:    if (did.length > 0) {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1393:        if (collection.length > 0) {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:105:    if (uri.length > 0) {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:225:        if (bodyData && bodyData.length > 0) {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:361:        if (value.length > 0) {
+./Garazyk/Sources/Network/XrpcHandlerContext.m:64:                                                                 expectedMethod:methodNSID.length > 0 ? methodNSID : nil];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:111:        _servicePool = [[PDSDatabasePool alloc] initWithDbDirectory:_serviceDbPath maxSize:serviceMaxSize];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:112:        _didCachePool = [[PDSDatabasePool alloc] initWithDbDirectory:_didCacheDbPath maxSize:didCacheMaxSize];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:113:        _sequencerPool = [[PDSDatabasePool alloc] initWithDbDirectory:_sequencerDbPath maxSize:sequencerMaxSize];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:114:        _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:directory maxSize:100]; // Base directory for user shards
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:143:    if (dpopHeader.length > 0) {
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:200:    if (responseData && responseData.length > 0) {
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:217:    if ([recordType isKindOfClass:[NSString class]] && recordType.length > 0) {
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:251:    if (envOverride.length > 0) {
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:266:                    if (endpoint.length > 0) {

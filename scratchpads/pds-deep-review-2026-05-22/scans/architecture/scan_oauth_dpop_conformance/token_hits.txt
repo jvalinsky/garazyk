@@ -1,0 +1,163 @@
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:51:/** Creation timestamp for key rotation and audit decisions. */
+./Garazyk/Sources/Auth/OAuth2.h:138: @abstract Completion handler for token refresh requests.
+./Garazyk/Sources/Auth/OAuth2.h:140: @param accessToken The new access token.
+./Garazyk/Sources/Auth/OAuth2.h:141: @param error An error if the refresh failed.
+./Garazyk/Sources/Auth/OAuth2.h:262: requests including grant type, authorization code, and refresh tokens.
+./Garazyk/Sources/Auth/OAuth2.h:281:/*! The refresh token for refreshing access. */
+./Garazyk/Sources/Auth/OAuth2.h:284:/*! The access token for DPoP-bound requests. */
+./Garazyk/Sources/Auth/OAuth2.h:323:/*! The issued access token. */
+./Garazyk/Sources/Auth/OAuth2.h:329:/*! The refresh token for obtaining new access tokens. */
+./Garazyk/Sources/Auth/OAuth2.h:332:/*! Lifetime of the access token in seconds. */
+./Garazyk/Sources/Auth/OAuth2.h:450: including authorization requests, token issuance, and token refresh.
+./Garazyk/Sources/Auth/OAuth2.h:555: @abstract Refreshes an access token.
+./Garazyk/Sources/Auth/OAuth2.h:557: @param refreshToken The refresh token to use.
+./Garazyk/Sources/Auth/OAuth2.h:560: @param completion Completion handler with new access token or error.
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:92:                path:@"/admin/api/accounts/:did/sessions/revoke"
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:110:            [response setJsonBody:@{@"error": @"SessionRevokeFailed", @"message": error.localizedDescription ?: @"Failed to revoke session"}];
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:191:                path:@"/admin/api/accounts/:did/app-passwords/revoke"
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:209:            [response setJsonBody:@{@"error": @"AppPasswordRevokeFailed", @"message": error.localizedDescription ?: @"Failed to revoke app password"}];
+./Garazyk/Sources/Auth/JWT.m:662:    payload.token_use = @"refresh";
+./Garazyk/Sources/Auth/JWT.m:669:    header.typ = @"refresh+jwt";
+./Garazyk/Sources/Auth/JWT.h:178:/*! The token use (typically "access" or "refresh"). */
+./Garazyk/Sources/Auth/JWT.h:346:/*! Optional key rotation manager for verifying with multiple keys. */
+./Garazyk/Sources/Auth/JWT.h:382: @discussion JWTMinter handles minting access tokens and refresh tokens
+./Garazyk/Sources/Auth/JWT.h:407:/*! Optional key rotation manager for signing with rotated keys. */
+./Garazyk/Sources/Auth/JWT.h:449: @abstract Mints an access token for a user.
+./Garazyk/Sources/Auth/JWT.h:455: @return A new access token JWT.
+./Garazyk/Sources/Auth/JWT.h:470: @abstract Mints an access token with a DPoP key thumbprint but without a session ID.
+./Garazyk/Sources/Auth/JWT.h:481: @abstract Mints an access token without a DPoP key thumbprint.
+./Garazyk/Sources/Auth/JWT.h:491: @abstract Mints a refresh token for a user.
+./Garazyk/Sources/Auth/JWT.h:497: @return A new refresh token JWT.
+./Garazyk/Sources/Auth/OAuth2Handler.h:42:    endpoints: authorize, token, and revoke. It integrates with the OAuth2Server
+./Garazyk/Sources/Auth/OAuth2Handler.h:52:    - POST /oauth/revoke - Token revocation
+./Garazyk/Sources/Auth/OAuth2Handler.h:119:    - POST /oauth/revoke
+./Garazyk/Sources/Auth/OAuth2Handler.h:189: @param request The HTTP request containing the token to revoke.
+./Garazyk/Sources/Auth/OAuthSession.h:171: @discussion Exchanges authorization code for access/refresh tokens.
+./Garazyk/Sources/Auth/OAuthSession.h:197:/*! Refresh token for token refresh grant. */
+./Garazyk/Sources/Auth/OAuthSession.h:232: DPoP, issues access/refresh tokens, and handles token refresh.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:10: - JWT access tokens (signature, expiration, issuer, audience)
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:11: - DPoP proofs (binding to access token)
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:67:/*! The access token JWT (for audit logging). */
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:98: It supports both Bearer tokens and DPoP-bound access tokens.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:113: @brief The expected audience for access tokens.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:119: @brief Allowed issuers for access tokens.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:154:  @abstract Verify an access token (without DPoP).
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:155:  @param token The JWT access token string.
+./Garazyk/Sources/Network/XrpcIdentityPack.m:82:                @"message": error.localizedDescription ?: @"Failed to refresh identity"
+./Garazyk/Sources/Network/XrpcIdentityPack.m:349:            [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": keyLoadError.localizedDescription ?: @"Failed to load PLC rotation key"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:354:        // Load per-DID rotation key if it exists
+./Garazyk/Sources/Network/XrpcIdentityPack.m:465:            GZ_LOG_INFO(@"Signing PLC operation with per-DID rotation key for %@", did);
+./Garazyk/Sources/Network/XrpcIdentityPack.m:468:            GZ_LOG_INFO(@"Signing PLC operation with server rotation key for %@", did);
+./Garazyk/Sources/Network/XrpcIdentityPack.m:524:            [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": @"Server rotation key not available"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:537:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Server rotation key must be included in rotationKeys"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:790:                    GZ_LOG_ERROR(@"Failed to load rotation key for DID %@: %@", did, keyError);
+./Garazyk/Sources/Network/XrpcIdentityPack.m:792:                    [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to load rotation key"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:796:                // Load per-DID rotation key if it exists
+./Garazyk/Sources/Network/XrpcIdentityPack.m:885:                        GZ_LOG_INFO(@"Signing handle update with per-DID rotation key for %@", did);
+./Garazyk/Sources/Network/XrpcIdentityPack.m:888:                        GZ_LOG_INFO(@"Signing handle update with server rotation key for %@", did);
+./Garazyk/Sources/Auth/YubiKeyOATH.m:46:    GZ_LOG_AUTH_INFO(@"YubiKey OATH connection refresh requested (software-only mode)");
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:44: @param expiresAt When this PAR expires and should be rejected.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:77: @param expiresAt When this code expires.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:98: @brief Stores a refresh token.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:109: @brief Retrieves refresh token data.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:118: @brief Rotates a refresh token (invalidates old, creates new).
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:131: @brief Revokes a refresh token.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:132: @param tokenID The token ID to revoke.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:245: @brief Mints a new access token.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:254: @brief Mints a new refresh token.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:263: @brief Verifies an access token.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:274: @brief Verifies a refresh token.
+./Garazyk/Sources/Network/XrpcServerPack.m:624:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing refresh token in Authorization header"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:909:            [response setJsonBody:@{@"error": @"AppPasswordRevokeFailed", @"message": error.localizedDescription ?: @"Failed to revoke app password"}];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:209:            self.inMemoryPARs[requestURI] = [@{@"data": parData, @"expires": expiresAt} mutableCopy];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:277:            self.inMemoryCodes[code] = [@{@"data": codeData, @"expires": expiresAt} mutableCopy];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:342:                NSDate *expires = stored[@"expires"];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:343:                if ([expires compare:[NSDate date]] == NSOrderedDescending) {
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:410:                                              description:@"Invalid refresh token"]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:475:                                             description:@"Failed to mint access token"]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:556:    metadata[@"revocation_endpoint"] = [NSString stringWithFormat:@"%@/oauth/revoke", self.issuer ?: @"https://example.com"];
+./Garazyk/Sources/Auth/OAuth2.m:10: PKCE support, and token refresh. Follows ATProto OAuth 2.0 specification.
+./Garazyk/Sources/Auth/OAuth2.m:235:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing access token"}];
+./Garazyk/Sources/Auth/OAuth2.m:912:    // Store refresh token in database (H3)
+./Garazyk/Sources/Auth/OAuth2.m:949:            GZ_LOG_AUTH_WARN(@"Invalid or expired refresh token (not found in memory or DB): %@", [GZLogRedactor maskToken:request.refreshToken]);
+./Garazyk/Sources/Auth/OAuth2.m:952:                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired refresh token"}];
+./Garazyk/Sources/Auth/OAuth2.m:962:        if (![PDSSecurityCompare constantTimeEqualString:refreshTokenJWT.payload.token_use string:@"refresh"]) {
+./Garazyk/Sources/Auth/OAuth2.m:963:            GZ_LOG_AUTH_ERROR(@"Token usage mismatch: expected 'refresh', got '%@'", refreshTokenJWT.payload.token_use ?: @"none");
+./Garazyk/Sources/Auth/OAuth2.m:1005:    // 6. Store new refresh token (H3)
+./Garazyk/Sources/Auth/OAuth2.m:1023:                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired access token"}];
+./Garazyk/Sources/Auth/OAuth2.m:1085:    // Find session with this refresh token
+./Garazyk/Sources/Auth/OAuth2.m:1097:                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid refresh token"}];
+./Garazyk/Sources/Auth/OAuth2.m:1113:    // Issue new access token and rotate refresh token
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:16: - Refresh token rotation
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:274: @param token The token to revoke (access or refresh).
+./Garazyk/Sources/Auth/Session.h:60: @discussion SessionToken encapsulates both access tokens and refresh tokens
+./Garazyk/Sources/Auth/Session.h:65:/*! The token value (JWT for access tokens, opaque string for refresh tokens). */
+./Garazyk/Sources/Auth/Session.h:71:/*! The date and time when the token expires. */
+./Garazyk/Sources/Auth/Session.h:77:/*! YES if this is a refresh token, NO for an access token. */
+./Garazyk/Sources/Auth/Session.h:86: @param expiresIn Time in seconds until the token expires.
+./Garazyk/Sources/Auth/Session.h:88: @param isRefreshToken YES if this is a refresh token.
+./Garazyk/Sources/Auth/Session.h:157:/*! The current access token value. */
+./Garazyk/Sources/Auth/Session.h:160:/*! The refresh token for obtaining new access tokens. */
+./Garazyk/Sources/Auth/Session.h:172:/*! The date when the access token expires. */
+./Garazyk/Sources/Auth/Session.h:175:/*! The date when the refresh token expires, if applicable. */
+./Garazyk/Sources/Auth/Session.h:181:/*! Minter used for creating access tokens. */
+./Garazyk/Sources/Auth/Session.h:216: @param minter The JWT minter to use for access tokens.
+./Garazyk/Sources/Auth/Session.h:274: @param minter The JWT minter to use for access tokens.
+./Garazyk/Sources/Auth/Session.h:321:  @abstract Generates a new access token for the session.
+./Garazyk/Sources/Auth/Session.h:323:  @return The new access token value.
+./Garazyk/Sources/Auth/Session.h:330: @abstract Returns YES if the access token is currently valid (not expired).
+./Garazyk/Sources/Auth/Session.h:337: @abstract Returns YES if the refresh token is currently valid (not expired).
+./Garazyk/Sources/Auth/Session.h:386: @abstract Retrieves a session by its access token.
+./Garazyk/Sources/Auth/Session.h:388: @param token The access token to search for.
+./Garazyk/Sources/Auth/Session.h:392:/** Looks up a session by access token. */
+./Garazyk/Sources/Auth/Session.h:398: @abstract Retrieves a session by its refresh token.
+./Garazyk/Sources/Auth/Session.h:400: @param token The refresh token to search for.
+./Garazyk/Sources/Auth/Session.h:404:/** Looks up a session by refresh token. */
+./Garazyk/Sources/Auth/Session.h:424: @param sessionID The session identifier to revoke.
+./Garazyk/Sources/Auth/Session.h:478:/*! Lifetime of access tokens in seconds (default: 3600). */
+./Garazyk/Sources/Auth/Session.h:481:/*! Lifetime of refresh tokens in seconds (default: 2592000). */
+./Garazyk/Sources/Auth/Session.h:487:/*! Minter used for creating access tokens. */
+./Garazyk/Sources/Auth/Session.h:539: @abstract Retrieves a session by its access token.
+./Garazyk/Sources/Auth/Session.h:541: @param accessToken The access token to look up.
+./Garazyk/Sources/Auth/Session.h:550: @abstract Retrieves a session by its refresh token.
+./Garazyk/Sources/Auth/Session.h:552: @param refreshToken The refresh token to look up.
+./Garazyk/Sources/Auth/Session.h:574: @param sessionID The ID of the session to revoke.
+./Garazyk/Sources/Auth/Session.h:585: @param sessionID The ID of the session to refresh.
+./Garazyk/Sources/Auth/Session.h:589: @param error On return, contains an error if refresh failed.
+./Garazyk/Sources/Auth/PDS/PDSAuth.h:30: refresh tokens, and user consents.
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:54:        self.inMemoryPARs[requestURI] = @{@"data": par, @"expires": expiresAt};
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:65:            NSDate *expires = stored[@"expires"];
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:66:            if ([expires compare:[NSDate date]] == NSOrderedDescending) {
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:87:        self.inMemoryCodes[code] = @{@"data": data, @"expires": expiresAt};
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:98:            NSDate *expires = stored[@"expires"];
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:99:            if ([expires compare:[NSDate date]] == NSOrderedDescending) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:740:  // ATProto clients must request DPoP-bound access tokens.
+./Garazyk/Sources/Auth/OAuth2Handler.m:1590:                  path:@"/oauth/revoke"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1661:                  path:@"/oauth/revoke"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2100:  NSDate *expires = consentSession[@"expires"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2101:  if ([expires compare:[NSDate date]] == NSOrderedAscending) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2232:  NSDate *expires = [NSDate dateWithTimeIntervalSinceNow:kPasskeyChallengeTTLSeconds];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2238:      @"expires" : expires
+./Garazyk/Sources/Auth/OAuth2Handler.m:2544:      @"expires" :
+./Garazyk/Sources/Auth/OAuth2Handler.m:2562:    NSDate *expires = challenge[@"expires"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2563:    if (![expires isKindOfClass:[NSDate class]] ||
+./Garazyk/Sources/Auth/OAuth2Handler.m:2564:        [expires compare:now] != NSOrderedDescending) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2931:  // Try to parse as JWT access token first
+./Garazyk/Sources/Auth/OAuth2Handler.m:2957:      // Build introspection response for valid access token
+./Garazyk/Sources/Auth/OAuth2Handler.m:2991:  // Not a valid JWT - check if it's a refresh token in active sessions
+./Garazyk/Sources/Auth/OAuth2Handler.m:2995:      // Found refresh token in active sessions
+./Garazyk/Sources/Auth/OAuth2Handler.m:3014:  // Also check for access token match in sessions (non-JWT tokens)
+./Garazyk/Sources/Auth/OAuth2Handler.m:3574:        NSDate *expires = session[@"expires"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3575:        if (![expires isKindOfClass:[NSDate class]] ||
+./Garazyk/Sources/Auth/OAuth2Handler.m:3576:            [expires compare:now] != NSOrderedDescending) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3591:        NSDate *created1 = obj1[@"created"] ?: obj1[@"expires"] ?: [NSDate distantPast];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3592:        NSDate *created2 = obj2[@"created"] ?: obj2[@"expires"] ?: [NSDate distantPast];
+./Garazyk/Sources/Network/XrpcLabelPack.m:632:            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot revoke credentials for other accounts"}];
+./Garazyk/Sources/Network/XrpcLabelPack.m:639:            [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": deleteError.localizedDescription ?: @"Failed to revoke sessions"}];
+./Garazyk/Sources/Network/XrpcLabelPack.m:661:                [response setJsonBody:@{@"error": @"CredentialRevocationFailed", @"message": revokeError.localizedDescription ?: @"Failed to revoke app passwords"}];
+./Garazyk/Sources/Auth/Session.m:9: minting, validation, storage, and refresh. Sessions are created with both
+./Garazyk/Sources/Auth/Session.m:10: access tokens (short-lived) and refresh tokens (long-lived).
+./Garazyk/Sources/Auth/Session.m:160:            GZ_LOG_AUTH_WARN(@"Failed to mint JWT access token (falling back to UUID): %@", error);
+./Garazyk/Sources/Auth/Session.m:186:            GZ_LOG_AUTH_WARN(@"Failed to mint JWT refresh token (falling back to UUID): %@", error);
+./Garazyk/Sources/Auth/Session.m:674:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired access token"}];
+./Garazyk/Sources/Auth/Session.m:701:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid refresh token"}];

@@ -1,0 +1,548 @@
+./Garazyk/Sources/Repository/MST.m:61:    return [self keyBytes].length;
+./Garazyk/Sources/Repository/MST.m:68:    [data appendBytes:&keyLen length:2];
+./Garazyk/Sources/Repository/MST.m:74:    uint16_t cidLen = htons((uint16_t)cidBytes.length);
+./Garazyk/Sources/Repository/MST.m:75:    [data appendBytes:&cidLen length:2];
+./Garazyk/Sources/Repository/MST.m:150:    [data appendBytes:&p length:1];
+./Garazyk/Sources/Repository/MST.m:152:    uint16_t kLen = htons((uint16_t)self.keySuffix.length);
+./Garazyk/Sources/Repository/MST.m:153:    [data appendBytes:&kLen length:2];
+./Garazyk/Sources/Repository/MST.m:157:    uint16_t vLen = htons((uint16_t)vBytes.length);
+./Garazyk/Sources/Repository/MST.m:158:    [data appendBytes:&vLen length:2];
+./Garazyk/Sources/Repository/MST.m:162:    uint16_t tLen = tCID ? htons((uint16_t)[tCID bytes].length) : 0;
+./Garazyk/Sources/Repository/MST.m:163:    [data appendBytes:&tLen length:2];
+./Garazyk/Sources/Repository/MST.m:254:        NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
+./Garazyk/Sources/Repository/MST.m:267:        NSData *kSuffix = [fullKeyData subdataWithRange:NSMakeRange(p, fullKeyData.length - p)];
+./Garazyk/Sources/Repository/MST.m:276:            NSMutableData *tData = [NSMutableData dataWithBytes:"\x00" length:1];
+./Garazyk/Sources/Repository/MST.m:280:            NSMutableData *tData = [NSMutableData dataWithBytes:"\x00" length:1];
+./Garazyk/Sources/Repository/MST.m:287:        NSMutableData *vData = [NSMutableData dataWithBytes:"\x00" length:1];
+./Garazyk/Sources/Repository/MST.m:300:        NSMutableData *lData = [NSMutableData dataWithBytes:"\x00" length:1];
+./Garazyk/Sources/Repository/MST.m:304:        NSMutableData *lData = [NSMutableData dataWithBytes:"\x00" length:1];
+./Garazyk/Sources/Repository/MST.m:369:    if (!cbor || cbor.length == 0) return [NSData data];
+./Garazyk/Sources/Repository/MST.m:372:    CC_SHA256(cbor.bytes, (CC_LONG)cbor.length, hash);
+./Garazyk/Sources/Repository/MST.m:373:    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+./Garazyk/Sources/Repository/MST.m:450:+ (uint32_t)keyDepthFromBytes:(const uint8_t *)bytes length:(NSUInteger)len {
+./Garazyk/Sources/Repository/MST.m:477:    return [self keyDepthFromBytes:keyData.bytes length:keyData.length];
+./Garazyk/Sources/Repository/MST.m:485:    return [self keyDepthFromBytes:keyBytes.bytes length:keyBytes.length];
+./Garazyk/Sources/Repository/MST.m:823:        NSUInteger safePrefixLen = MIN(prefixLen, prevKeyData.length);
+./Garazyk/Sources/Repository/MST.m:833:        if (!valueBytes || valueBytes.type != CBORTypeByteString || valueBytes.byteString.length <= 1) {
+./Garazyk/Sources/Repository/MST.m:837:        NSData *vCidBytes = [valueBytes.byteString subdataWithRange:NSMakeRange(1, valueBytes.byteString.length - 1)];
+./Garazyk/Sources/Repository/MST.m:847:            if (tCidBytes.length > 1) {
+./Garazyk/Sources/Repository/MST.m:848:                treeCID = [CID cidFromBytes:[tCidBytes subdataWithRange:NSMakeRange(1, tCidBytes.length - 1)]];
+./Garazyk/Sources/Repository/MST.m:861:        if (lCidBytes.length > 1) {
+./Garazyk/Sources/Repository/MST.m:862:            leftCID = [CID cidFromBytes:[lCidBytes subdataWithRange:NSMakeRange(1, lCidBytes.length - 1)]];
+./Garazyk/Sources/Repository/MST.m:1081:        NSString *nodeID = [cidString substringToIndex:MIN(12, cidString.length)];
+./Garazyk/Sources/Repository/MST.m:1096:                NSString *leftID = [[leftCID stringValue] substringToIndex:MIN(12, [[leftCID stringValue] length])];
+./Garazyk/Sources/Repository/MST.m:1109:                    NSString *treeID = [[treeCID stringValue] substringToIndex:MIN(12, [[treeCID stringValue] length])];
+./Garazyk/Sources/Repository/MST.m:1111:                    if (entryKey.length > 20) {
+./Garazyk/Sources/Repository/MST.m:1176:        if (entry.key.length > 0 && entry.valueCID) {
+./Garazyk/Sources/Repository/MST.m:1183:        if (entry.key.length > 0 && entry.valueCID) {
+./Garazyk/Sources/Repository/MST.m:1211:/// Consume all remaining entries from walker as additions
+./Garazyk/Sources/Repository/MST.m:1224:/// Consume all remaining entries from walker as deletions
+./Garazyk/Sources/Repository/MST.m:1248:        if (entry.fullKey.length > 0 && entry.value) {
+./Garazyk/Sources/Repository/MST.m:1270:        if (entry.fullKey.length > 0 && entry.value) {
+./Garazyk/Sources/Repository/MSTPersistence.m:71:    if (!repoInfo || repoInfo.rootCid.length == 0) {
+./Garazyk/Sources/Repository/MSTPersistence.m:154:    block.size = nodeData.length;
+./Garazyk/Sources/Repository/MSTPersistence.m:223:    if (!bytes || bytes.length <= 1) {
+./Garazyk/Sources/Repository/MSTPersistence.m:233:    NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
+./Garazyk/Sources/Repository/MSTPersistence.m:295:        NSUInteger safeLen = MIN(prefixLen, prevKey.length);
+./Garazyk/Sources/Repository/CAR.m:61:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CAR.m:63:    while (offset < maxLength) {
+./Garazyk/Sources/Repository/CAR.m:64:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Repository/CAR.m:70:            return offset;
+./Garazyk/Sources/Repository/CAR.m:92:    if (!taggedCIDBytes || taggedCIDBytes.length == 0) {
+./Garazyk/Sources/Repository/CAR.m:105:    if (cidBytes.length > 0 && bytes[0] == 0x00) {
+./Garazyk/Sources/Repository/CAR.m:106:        cidBytes = [cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)];
+./Garazyk/Sources/Repository/CAR.m:118:static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
+./Garazyk/Sources/Repository/CAR.m:120:    CID *cid = [CID cidFromBuffer:bytes length:length consumed:&consumed];
+./Garazyk/Sources/Repository/CAR.m:169:    if (data.length < 2) {
+./Garazyk/Sources/Repository/CAR.m:174:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CAR.m:176:    NSUInteger headerSize = ReadVarint(bytes + offset, data.length - offset, &headerLength);
+./Garazyk/Sources/Repository/CAR.m:180:    offset += headerSize;
+./Garazyk/Sources/Repository/CAR.m:182:    if (offset + headerLength > data.length) {
+./Garazyk/Sources/Repository/CAR.m:191:    NSData *headerData = [data subdataWithRange:NSMakeRange(offset, headerLength)];
+./Garazyk/Sources/Repository/CAR.m:192:    offset += headerLength;
+./Garazyk/Sources/Repository/CAR.m:231:    while (offset < data.length) {
+./Garazyk/Sources/Repository/CAR.m:233:        NSUInteger blockSize = ReadVarint(bytes + offset, data.length - offset, &blockLen);
+./Garazyk/Sources/Repository/CAR.m:238:                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR block length"}];
+./Garazyk/Sources/Repository/CAR.m:242:        offset += blockSize;
+./Garazyk/Sources/Repository/CAR.m:244:        if (offset + blockLen > data.length) {
+./Garazyk/Sources/Repository/CAR.m:253:        NSData *blockBytes = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)blockLen)];
+./Garazyk/Sources/Repository/CAR.m:254:        offset += (NSUInteger)blockLen;
+./Garazyk/Sources/Repository/CAR.m:258:        if (!DecodeCIDFromBlock(blockBytes.bytes, blockBytes.length, &blockCID, &cidLength)) {
+./Garazyk/Sources/Repository/CAR.m:267:        NSData *blockData = [blockBytes subdataWithRange:NSMakeRange(cidLength, blockBytes.length - cidLength)];
+./Garazyk/Sources/Repository/CAR.m:280:    if (data.length < 8) {
+./Garazyk/Sources/Repository/CAR.m:290:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CAR.m:293:    memcpy(&version, bytes + offset, 4);
+./Garazyk/Sources/Repository/CAR.m:295:    offset += 4;
+./Garazyk/Sources/Repository/CAR.m:307:    memcpy(&rootCidLength, bytes + offset, 4);
+./Garazyk/Sources/Repository/CAR.m:309:    offset += 4;
+./Garazyk/Sources/Repository/CAR.m:311:    if (offset + rootCidLength > data.length) {
+./Garazyk/Sources/Repository/CAR.m:320:    NSData *rootCidData = [data subdataWithRange:NSMakeRange(offset, rootCidLength)];
+./Garazyk/Sources/Repository/CAR.m:321:    offset += rootCidLength;
+./Garazyk/Sources/Repository/CAR.m:337:    while (offset < data.length) {
+./Garazyk/Sources/Repository/CAR.m:338:        if (offset + 4 > data.length) {
+./Garazyk/Sources/Repository/CAR.m:343:        memcpy(&blockLen, bytes + offset, 4);
+./Garazyk/Sources/Repository/CAR.m:345:        offset += 4;
+./Garazyk/Sources/Repository/CAR.m:347:        if (offset + blockLen > data.length) {
+./Garazyk/Sources/Repository/CAR.m:356:        NSData *blockData = [data subdataWithRange:NSMakeRange(offset, blockLen)];
+./Garazyk/Sources/Repository/CAR.m:357:        offset += blockLen;
+./Garazyk/Sources/Repository/CAR.m:427:    NSMutableData *taggedCIDBytes = [NSMutableData dataWithCapacity:1 + rootCID.bytes.length];
+./Garazyk/Sources/Repository/CAR.m:429:    [taggedCIDBytes appendBytes:&marker length:1];
+./Garazyk/Sources/Repository/CAR.m:443:    NSUInteger headerLenSize = WriteVarint(headerCBOR.length, headerLenBuffer);
+./Garazyk/Sources/Repository/CAR.m:445:    NSMutableData *encodedHeader = [NSMutableData dataWithCapacity:headerLenSize + headerCBOR.length];
+./Garazyk/Sources/Repository/CAR.m:446:    [encodedHeader appendBytes:headerLenBuffer length:headerLenSize];
+./Garazyk/Sources/Repository/CAR.m:457:    NSUInteger totalLength = cidBytes.length + block.data.length;
+./Garazyk/Sources/Repository/CAR.m:463:    [entry appendBytes:blockLenBuffer length:blockLenSize];
+./Garazyk/Sources/Repository/CBOR.m:278:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Repository/CBOR.m:281:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:283:        [data appendBytes:&len length:1];
+./Garazyk/Sources/Repository/CBOR.m:286:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:288:        [data appendBytes:&be length:2];
+./Garazyk/Sources/Repository/CBOR.m:291:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:293:        [data appendBytes:&be length:4];
+./Garazyk/Sources/Repository/CBOR.m:300:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Repository/CBOR.m:303:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:305:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Repository/CBOR.m:308:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:310:        [data appendBytes:&be length:2];
+./Garazyk/Sources/Repository/CBOR.m:313:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:315:        [data appendBytes:&be length:4];
+./Garazyk/Sources/Repository/CBOR.m:318:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:320:        [data appendBytes:&be length:8];
+./Garazyk/Sources/Repository/CBOR.m:335:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Repository/CBOR.m:338:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Repository/CBOR.m:343:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Repository/CBOR.m:346:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:348:        [data appendBytes:&be length:4];
+./Garazyk/Sources/Repository/CBOR.m:351:        [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:353:        [data appendBytes:&be length:8];
+./Garazyk/Sources/Repository/CBOR.m:358:    NSUInteger length = data.length;
+./Garazyk/Sources/Repository/CBOR.m:359:    [self encodeCount:length withMajorType:0x40 toData:output];
+./Garazyk/Sources/Repository/CBOR.m:365:    NSUInteger length = utf8.length;
+./Garazyk/Sources/Repository/CBOR.m:366:    [self encodeCount:length withMajorType:0x60 toData:data];
+./Garazyk/Sources/Repository/CBOR.m:387:        if (d1.length < d2.length) return NSOrderedAscending;
+./Garazyk/Sources/Repository/CBOR.m:388:        if (d1.length > d2.length) return NSOrderedDescending;
+./Garazyk/Sources/Repository/CBOR.m:389:        int cmp = memcmp(d1.bytes, d2.bytes, d1.length);
+./Garazyk/Sources/Repository/CBOR.m:408:    [data appendBytes:&byte length:1];
+./Garazyk/Sources/Repository/CBOR.m:413:    [data appendBytes:&major length:1];
+./Garazyk/Sources/Repository/CBOR.m:417:    [data appendBytes:&be length:8];
+./Garazyk/Sources/Repository/CBOR.m:427:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/CBOR.m:428:    return [self decode:data offset:&offset];
+./Garazyk/Sources/Repository/CBOR.m:431:+ (CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:432:    if (*offset >= data.length) {
+./Garazyk/Sources/Repository/CBOR.m:437:    uint8_t initial = bytes[(*offset)++];
+./Garazyk/Sources/Repository/CBOR.m:443:        case 0: result = [self decodeUnsignedInteger:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:444:        case 1: result = [self decodeNegativeInteger:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:445:        case 2: result = [self decodeByteString:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:446:        case 3: result = [self decodeTextString:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:447:        case 4: result = [self decodeArray:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:448:        case 5: result = [self decodeMap:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:449:        case 6: result = [self decodeTag:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:450:        case 7: result = [self decodeSimpleOrFloat:additional data:data offset:offset]; break;
+./Garazyk/Sources/Repository/CBOR.m:456:+ (CBORValue *)decodeUnsignedInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:462:        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
+./Garazyk/Sources/Repository/CBOR.m:463:        value = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:464:        *offset += bytesToRead;
+./Garazyk/Sources/Repository/CBOR.m:469:+ (CBORValue *)decodeNegativeInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:470:    CBORValue *unsignedValue = [self decodeUnsignedInteger:additional data:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:476:+ (CBORValue *)decodeByteString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:477:    NSUInteger length = 0;
+./Garazyk/Sources/Repository/CBOR.m:479:        length = additional;
+./Garazyk/Sources/Repository/CBOR.m:482:        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
+./Garazyk/Sources/Repository/CBOR.m:483:        length = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:484:        *offset += bytesToRead;
+./Garazyk/Sources/Repository/CBOR.m:486:    if (*offset + length > data.length) return nil;
+./Garazyk/Sources/Repository/CBOR.m:487:    NSData *value = [data subdataWithRange:NSMakeRange(*offset, length)];
+./Garazyk/Sources/Repository/CBOR.m:488:    *offset += length;
+./Garazyk/Sources/Repository/CBOR.m:492:+ (CBORValue *)decodeTextString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:493:    NSUInteger length = 0;
+./Garazyk/Sources/Repository/CBOR.m:495:        length = additional;
+./Garazyk/Sources/Repository/CBOR.m:498:        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
+./Garazyk/Sources/Repository/CBOR.m:499:        length = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:500:        *offset += bytesToRead;
+./Garazyk/Sources/Repository/CBOR.m:502:    if (*offset + length > data.length) return nil;
+./Garazyk/Sources/Repository/CBOR.m:503:    NSData *valueData = [data subdataWithRange:NSMakeRange(*offset, length)];
+./Garazyk/Sources/Repository/CBOR.m:504:    *offset += length;
+./Garazyk/Sources/Repository/CBOR.m:509:+ (CBORValue *)decodeArray:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:515:        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
+./Garazyk/Sources/Repository/CBOR.m:516:        count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:517:        *offset += bytesToRead;
+./Garazyk/Sources/Repository/CBOR.m:520:    // Security check: Ensure we have enough data remaining to satisfy the count.
+./Garazyk/Sources/Repository/CBOR.m:522:    if (data.length - *offset < count) {
+./Garazyk/Sources/Repository/CBOR.m:528:        CBORValue *value = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:535:+ (CBORValue *)decodeMap:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:541:        if (bytesToRead == 0 || *offset + bytesToRead > data.length) return nil;
+./Garazyk/Sources/Repository/CBOR.m:542:        count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:543:        *offset += bytesToRead;
+./Garazyk/Sources/Repository/CBOR.m:546:    // Security check: Ensure we have enough data remaining to satisfy the count.
+./Garazyk/Sources/Repository/CBOR.m:548:    if (data.length - *offset < count * 2) {
+./Garazyk/Sources/Repository/CBOR.m:554:        CBORValue *key = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:555:        CBORValue *value = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:562:+ (CBORValue *)decodeTag:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:563:    CBORValue *tagValue = [self decodeUnsignedInteger:additional data:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:565:    CBORValue *value = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:570:+ (CBORValue *)decodeSimpleOrFloat:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:583:+ (NSUInteger)readIntegerFromData:(NSData *)data offset:(NSUInteger *)offset bytesToRead:(NSUInteger)bytesToRead {
+./Garazyk/Sources/Repository/CBOR.m:587:        val = (val << 8) | bytes[*offset + i];
+./Garazyk/Sources/Core/CID.h:77: @method cidFromBuffer:length:consumed:
+./Garazyk/Sources/Core/CID.h:83: @param length Maximum number of bytes the parser may read.
+./Garazyk/Sources/Core/CID.h:93:                                length:(NSUInteger)length
+./Garazyk/Sources/Repository/MST.h:120:/** @abstract The full key reconstructed from prefix length and suffix. */
+./Garazyk/Sources/Repository/CAR.h:218: @abstract Encodes one CAR block entry (length varint + CID + block data).
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:24:    if (data.length == 0) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:34:    return [self _decodeFromBytes:data.bytes length:data.length index:&index depth:0 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:164:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:200:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:238:        [data appendBytes:&initialByte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:242:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:246:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:251:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:258:        [data appendBytes:bytes length:9];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:275:    NSUInteger length = utf8.length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:278:    if (length < 24) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:279:        initialByte |= (uint8_t)length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:280:        [data appendBytes:&initialByte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:281:    } else if (length < 256) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:283:        uint8_t bytes[2] = { initialByte, (uint8_t)length };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:284:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:285:    } else if (length < 65536) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:287:        uint8_t bytes[3] = { initialByte, (length >> 8) & 0xFF, length & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:288:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:291:        uint8_t bytes[5] = { initialByte, (length >> 24) & 0xFF, (length >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:292:                             (length >> 8) & 0xFF, length & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:293:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:301:    NSUInteger length = bytes.length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:304:    if (length < 24) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:305:        initialByte |= (uint8_t)length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:306:        [data appendBytes:&initialByte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:307:    } else if (length < 256) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:309:        uint8_t header[2] = { initialByte, (uint8_t)length };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:310:        [data appendBytes:header length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:311:    } else if (length < 65536) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:313:        uint8_t header[3] = { initialByte, (length >> 8) & 0xFF, length & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:314:        [data appendBytes:header length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:317:        uint8_t header[5] = { initialByte, (length >> 24) & 0xFF, (length >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:318:                              (length >> 8) & 0xFF, length & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:319:        [data appendBytes:header length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:332:        [data appendBytes:&initialByte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:336:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:340:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:345:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:363:        [data appendBytes:&initialByte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:367:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:371:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:376:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:408:    // Sort by encoded bytes (length-first, then lexicographic)
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:414:        if (data1.length < data2.length) return NSOrderedAscending;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:415:        if (data1.length > data2.length) return NSOrderedDescending;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:417:        // Same length: byte-wise comparison
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:418:        int cmp = memcmp(data1.bytes, data2.bytes, data1.length);
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:435:    NSMutableData *cidBytes = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:437:    [cidBytes appendBytes:&marker length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:443:    [data appendBytes:&tagByte length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:444:    [data appendBytes:&tagValue length:1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:452:+ (nullable id)_decodeFromBytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:462:    if (*index >= length) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:479:            return [self _decodeUnsignedInteger:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:482:            return [self _decodeNegativeInteger:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:485:            return [self _decodeByteString:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:488:            return [self _decodeTextString:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:491:            return [self _decodeArray:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:494:            return [self _decodeMap:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:497:            return [self _decodeTag:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:500:            return [self _decodeSpecial:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:520:+ (nullable NSNumber *)_decodeLength:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:526:        if (*index >= length) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:527:            [self _setDecodingError:error message:@"Truncated CBOR length"];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:533:        if (*index + 1 >= length) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:534:            [self _setDecodingError:error message:@"Truncated CBOR length"];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:540:        if (*index + 3 >= length) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:541:            [self _setDecodingError:error message:@"Truncated CBOR length"];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:548:        if (*index + 7 >= length) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:549:            [self _setDecodingError:error message:@"Truncated CBOR length"];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:569:+ (nullable NSNumber *)_decodeUnsignedInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:570:    return [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:573:+ (nullable NSNumber *)_decodeNegativeInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:574:    NSNumber *unsignedValue = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:579:+ (nullable NSData *)_decodeByteString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:580:    NSNumber *byteLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:584:    if (*index > length || *index + len > length) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:588:                                     userInfo:@{NSLocalizedDescriptionKey: @"Byte string length exceeds data"}];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:593:    NSData *result = [NSData dataWithBytes:bytes + *index length:len];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:598:+ (nullable NSString *)_decodeTextString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:599:    NSData *byteData = [self _decodeByteString:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:611:+ (nullable NSArray *)_decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:612:    NSNumber *arrayLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:619:        id item = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:634:+ (nullable NSDictionary *)_decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:635:    NSNumber *mapLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:642:        id key = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:652:        id value = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:668:+ (nullable id)_decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:669:    NSNumber *tagNumber = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:675:    id taggedValue = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:690:        if (cidData.length < 1) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:709:        NSData *pureCIDBytes = [cidData subdataWithRange:NSMakeRange(1, cidData.length - 1)];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:724:+ (nullable id)_decodeSpecial:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Repository/STAR.m:36:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/STAR.m:37:    while (offset < maxLength) {
+./Garazyk/Sources/Repository/STAR.m:38:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Repository/STAR.m:43:            return offset;
+./Garazyk/Sources/Repository/STAR.m:63:    return [NSData dataWithBytes:buffer length:len];
+./Garazyk/Sources/Repository/STAR.m:72:    NSMutableData *tagged = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
+./Garazyk/Sources/Repository/STAR.m:74:    [tagged appendBytes:&zero length:1];
+./Garazyk/Sources/Repository/STAR.m:308:    NSData *headerMagic = [NSData dataWithBytes:&magic length:1];
+./Garazyk/Sources/Repository/STAR.m:310:    NSData *lenVarint = STARVarintData((uint64_t)commitCBOR.length);
+./Garazyk/Sources/Repository/STAR.m:328:    NSData *lenVarint = STARVarintData((uint64_t)nodeCBOR.length);
+./Garazyk/Sources/Repository/STAR.m:340:    NSData *lenVarint = STARVarintData((uint64_t)recordData.length);
+./Garazyk/Sources/Repository/STAR.m:372:        NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
+./Garazyk/Sources/Repository/STAR.m:379:        NSData *keySuffix = [fullKeyData subdataWithRange:NSMakeRange(prefixLen, fullKeyData.length - prefixLen)];
+./Garazyk/Sources/Repository/STAR.m:553:    [self.outputData appendBytes:&magic length:1];
+./Garazyk/Sources/Repository/STAR.m:558:    NSData *lenVarint = STARVarintData((uint64_t)commitCBOR.length);
+./Garazyk/Sources/Repository/STAR.m:569:    NSData *keyLenVarint = STARVarintData((uint64_t)keyData.length);
+./Garazyk/Sources/Repository/STAR.m:573:    NSData *dataLenVarint = STARVarintData((uint64_t)recordData.length);
+./Garazyk/Sources/Repository/STAR.m:637:    if (data.length < 2) {
+./Garazyk/Sources/Repository/STAR.m:643:    NSUInteger length = data.length;
+./Garazyk/Sources/Repository/STAR.m:644:    NSUInteger offset = 0;
+./Garazyk/Sources/Repository/STAR.m:651:    offset += 1;
+./Garazyk/Sources/Repository/STAR.m:655:    NSUInteger verLen = STARReadVarint(bytes + offset, length - offset, &version);
+./Garazyk/Sources/Repository/STAR.m:660:    offset += verLen;
+./Garazyk/Sources/Repository/STAR.m:672:    // Read commit length
+./Garazyk/Sources/Repository/STAR.m:674:    NSUInteger commitLenSize = STARReadVarint(bytes + offset, length - offset, &commitLen);
+./Garazyk/Sources/Repository/STAR.m:676:        if (error) *error = STARError(5, @"Failed to read commit length");
+./Garazyk/Sources/Repository/STAR.m:679:    offset += commitLenSize;
+./Garazyk/Sources/Repository/STAR.m:681:    if (offset + commitLen > length) {
+./Garazyk/Sources/Repository/STAR.m:687:    NSData *commitData = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)commitLen)];
+./Garazyk/Sources/Repository/STAR.m:692:    offset += (NSUInteger)commitLen;
+./Garazyk/Sources/Repository/STAR.m:696:        return [self parseL0Body:bytes length:length offset:offset error:error];
+./Garazyk/Sources/Repository/STAR.m:698:        return [self parseLiteBody:bytes length:length offset:offset error:error];
+./Garazyk/Sources/Repository/STAR.m:727:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:728:            commit.data = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:742:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:743:            commit.prev = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:757:              length:(NSUInteger)length
+./Garazyk/Sources/Repository/STAR.m:758:               offset:(NSUInteger)offset
+./Garazyk/Sources/Repository/STAR.m:788:    while (offset < length) {
+./Garazyk/Sources/Repository/STAR.m:789:        // Read varint length
+./Garazyk/Sources/Repository/STAR.m:791:        NSUInteger lenSize = STARReadVarint(bytes + offset, length - offset, &blockLen);
+./Garazyk/Sources/Repository/STAR.m:793:            if (error) *error = STARError(8, @"Failed to read block length at offset %lu", (unsigned long)offset);
+./Garazyk/Sources/Repository/STAR.m:796:        offset += lenSize;
+./Garazyk/Sources/Repository/STAR.m:798:        if (offset + blockLen > length) {
+./Garazyk/Sources/Repository/STAR.m:799:            if (error) *error = STARError(9, @"Block data truncated at offset %lu", (unsigned long)offset);
+./Garazyk/Sources/Repository/STAR.m:803:        NSData *blockData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)blockLen];
+./Garazyk/Sources/Repository/STAR.m:804:        offset += (NSUInteger)blockLen;
+./Garazyk/Sources/Repository/STAR.m:827:               length:(NSUInteger)length
+./Garazyk/Sources/Repository/STAR.m:828:                offset:(NSUInteger)offset
+./Garazyk/Sources/Repository/STAR.m:832:    while (offset < length) {
+./Garazyk/Sources/Repository/STAR.m:833:        // Read key length
+./Garazyk/Sources/Repository/STAR.m:835:        NSUInteger keyLenSize = STARReadVarint(bytes + offset, length - offset, &keyLen);
+./Garazyk/Sources/Repository/STAR.m:837:            if (error) *error = STARError(10, @"Failed to read key length");
+./Garazyk/Sources/Repository/STAR.m:840:        offset += keyLenSize;
+./Garazyk/Sources/Repository/STAR.m:842:        if (offset + keyLen > length) {
+./Garazyk/Sources/Repository/STAR.m:848:        offset += (NSUInteger)keyLen;
+./Garazyk/Sources/Repository/STAR.m:850:        // Read data length
+./Garazyk/Sources/Repository/STAR.m:852:        NSUInteger dataLenSize = STARReadVarint(bytes + offset, length - offset, &dataLen);
+./Garazyk/Sources/Repository/STAR.m:854:            if (error) *error = STARError(12, @"Failed to read record data length");
+./Garazyk/Sources/Repository/STAR.m:857:        offset += dataLenSize;
+./Garazyk/Sources/Repository/STAR.m:859:        if (offset + dataLen > length) {
+./Garazyk/Sources/Repository/STAR.m:864:        NSData *recordData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)dataLen];
+./Garazyk/Sources/Repository/STAR.m:865:        offset += (NSUInteger)dataLen;
+./Garazyk/Sources/Repository/STAR.m:949:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:950:            dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:957:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:958:            prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:1029:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:1030:            dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:1037:        if (cidBytes.length > 1) {
+./Garazyk/Sources/Repository/STAR.m:1038:            prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:1071:    if (data.length < 1) return NO;
+./Garazyk/Sources/Repository/STAR.m:1081:    if (header.length < 1) return NO;
+./Garazyk/Sources/Repository/STAR.m:1095:    if (!acceptHeader || acceptHeader.length == 0) {
+./Garazyk/Sources/Core/Base58.m:21:    if (data.length == 0) return @"";
+./Garazyk/Sources/Core/Base58.m:22:    if (data.length > 64 * 1024) return nil;
+./Garazyk/Sources/Core/Base58.m:25:    NSUInteger length = data.length;
+./Garazyk/Sources/Core/Base58.m:29:    while (zeros < length && bytes[zeros] == 0) {
+./Garazyk/Sources/Core/Base58.m:34:    NSUInteger size = (length - zeros) * 138 / 100 + 1;
+./Garazyk/Sources/Core/Base58.m:39:    while (i < length) {
+./Garazyk/Sources/Core/Base58.m:73:    if (string.length == 0) return [NSData data];
+./Garazyk/Sources/Core/Base58.m:74:    if (string.length > 64 * 1024) return nil;
+./Garazyk/Sources/Core/Base58.m:77:    NSUInteger length = string.length;
+./Garazyk/Sources/Core/Base58.m:80:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/Base58.m:87:    while (zeros < length && chars[zeros] == kBase58Alphabet[0]) {
+./Garazyk/Sources/Core/Base58.m:92:    NSUInteger size = (length - zeros) * 733 / 1000 + 1;
+./Garazyk/Sources/Core/Base58.m:97:    while (i < length) {
+./Garazyk/Sources/Core/Base58.m:122:        [result appendBytes:&buf[j] length:size - j];
+./Garazyk/Sources/Core/ATProtoBase32.m:8:    if (data.length == 0) return @"";
+./Garazyk/Sources/Core/ATProtoBase32.m:11:    NSMutableString *result = [NSMutableString stringWithCapacity:(data.length * 8 + 4) / 5];
+./Garazyk/Sources/Core/ATProtoBase32.m:14:    NSUInteger length = data.length;
+./Garazyk/Sources/Core/ATProtoBase32.m:18:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/ATProtoBase32.m:36:    if (string.length == 0) return [NSData data];
+./Garazyk/Sources/Core/ATProtoBase32.m:39:    NSMutableData *result = [NSMutableData dataWithCapacity:string.length * 5 / 8];
+./Garazyk/Sources/Core/ATProtoBase32.m:44:    for (NSUInteger i = 0; i < string.length; i++) {
+./Garazyk/Sources/Core/ATProtoBase32.m:55:            [result appendBytes:&byte length:1];
+./Garazyk/Sources/Core/ATProtoValidator.m:16:    if ([regex numberOfMatchesInString:did options:0 range:NSMakeRange(0, did.length)] == 0) {
+./Garazyk/Sources/Core/ATProtoValidator.m:21:    // Check length (max 2048 per DID spec)
+./Garazyk/Sources/Core/ATProtoValidator.m:22:    if (did.length > 2048) {
+./Garazyk/Sources/Core/ATProtoValidator.m:30:        if (identifier.length != 24) {
+./Garazyk/Sources/Core/ATProtoValidator.m:35:        for (NSUInteger i = 0; i < identifier.length; i++) {
+./Garazyk/Sources/Core/ATProtoValidator.m:37:            if ([plcAlphabet rangeOfString:[NSString stringWithCharacters:&c length:1]].location == NSNotFound) {
+./Garazyk/Sources/Core/ATProtoValidator.m:53:    if (handle.length > 253) {
+./Garazyk/Sources/Core/ATProtoValidator.m:60:    if ([regex numberOfMatchesInString:handle options:0 range:NSMakeRange(0, handle.length)] == 0) {
+./Garazyk/Sources/Core/ATProtoValidator.m:74:    if (cid.length < 8) {
+./Garazyk/Sources/Core/ATProtoValidator.m:93:    for (NSUInteger i = 1; i < cid.length; i++) {
+./Garazyk/Sources/Core/ATProtoValidator.m:95:        if ([base32Alphabet rangeOfString:[NSString stringWithCharacters:&c length:1]].location == NSNotFound) {
+./Garazyk/Sources/Core/ATProtoValidator.m:110:    if (tid.length != 13) {
+./Garazyk/Sources/Core/ATProtoValidator.m:118:    if ([allowedFirstChars rangeOfString:[NSString stringWithCharacters:&first length:1]].location == NSNotFound) {
+./Garazyk/Sources/Core/ATProtoValidator.m:122:    for (NSUInteger i = 0; i < tid.length; i++) {
+./Garazyk/Sources/Core/ATProtoValidator.m:124:        if ([alphabet rangeOfString:[NSString stringWithCharacters:&c length:1]].location == NSNotFound) {
+./Garazyk/Sources/Core/ATProtoValidator.m:136:    if (nsid.length > 317) {
+./Garazyk/Sources/Core/ATProtoValidator.m:149:        if (comp.length == 0) {
+./Garazyk/Sources/Core/ATProtoValidator.m:153:        if (comp.length > 63) {
+./Garazyk/Sources/Core/ATProtoValidator.m:180:        if ([regex numberOfMatchesInString:comp options:0 range:NSMakeRange(0, comp.length)] == 0) {
+./Garazyk/Sources/Core/ATProtoValidator.m:209:    if ([regex numberOfMatchesInString:datetime options:0 range:NSMakeRange(0, datetime.length)] == 0) {
+./Garazyk/Sources/Core/ATProtoValidator.m:223:        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:24 userInfo:@{NSLocalizedDescriptionKey: @"Negative zero timezone offset is prohibited"}];
+./Garazyk/Sources/Core/ATProtoValidator.m:236:    if (rkey.length < 1 || rkey.length > 512) {
+./Garazyk/Sources/Core/ATProtoValidator.m:237:        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:31 userInfo:@{NSLocalizedDescriptionKey: @"rkey length must be between 1 and 512 characters"}];
+./Garazyk/Sources/Core/ATProtoValidator.m:252:    if ([rkeyRegex numberOfMatchesInString:rkey options:0 range:NSMakeRange(0, rkey.length)] == 0) {
+./Garazyk/Sources/Core/MSTCacheManager.m:126:    if (!dataCIDBytes || dataCIDBytes.length <= 1) {
+./Garazyk/Sources/Core/MSTCacheManager.m:132:    CID *dataCID = [CID cidFromBytes:[dataCIDBytes subdataWithRange:NSMakeRange(1, dataCIDBytes.length - 1)]];
+./Garazyk/Sources/Core/Repositories/PDSBlobRepository.h:35:                                              offset:(NSInteger)offset 
+./Garazyk/Sources/Core/ATURI.m:26:    if (stripped.length == 0) {
+./Garazyk/Sources/Core/ATURI.m:39:    if (collection && collection.length > 0 && ![self isValidCollection:collection]) {
+./Garazyk/Sources/Core/ATURI.m:45:    if (rkey && rkey.length > 0 && ![self isValidRkey:rkey]) {
+./Garazyk/Sources/Core/ATURI.m:59:    if (authority.length == 0) return NO;
+./Garazyk/Sources/Core/ATURI.m:62:        return parts.count >= 3 && [parts[1] length] > 0 && [parts[2] length] > 0;
+./Garazyk/Sources/Core/ATURI.m:69:    if (collection.length == 0) return NO;
+./Garazyk/Sources/Core/ATURI.m:73:        if (part.length == 0) return NO;
+./Garazyk/Sources/Core/ATURI.m:79:    if (rkey.length == 0) return NO;
+./Garazyk/Sources/Core/ATURI.m:83:    return [[rkey stringByTrimmingCharactersInSet:allowed] length] == 0;
+./Garazyk/Sources/Core/ATProtoDataPaths.m:54:        NSRange rest = NSMakeRange(firstColon.location + 1, did.length - firstColon.location - 1);
+./Garazyk/Sources/Core/ATProtoDataPaths.m:60:            NSString *prefix = [identifier substringToIndex:MIN(2, identifier.length)];
+./Garazyk/Sources/Core/ATProtoDataPaths.m:69:    NSString *prefix = [did substringToIndex:MIN(2, did.length)];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:204:                if (data && data.length > 0) {
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:222:                if (data && data.length > 0) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:60:            block.size = blockData.length;
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:66:- (NSArray<PDSDatabaseBlock *> *)blocksForRepo:(NSString *)repoDid limit:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:69:        blocks = [reader listBlocksForDid:repoDid limit:limit offset:offset error:blockError];
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:10: - Canonical map key ordering (by encoded key bytes, length-first)
+./Garazyk/Sources/Core/Repositories/PDSBlockRepository.h:48: * @param offset Pagination offset.
+./Garazyk/Sources/Core/Repositories/PDSBlockRepository.h:54:                                                 offset:(NSInteger)offset 
+./Garazyk/Sources/Core/DID.m:184:    __block NSUInteger remaining = dids.count;
+./Garazyk/Sources/Core/DID.m:199:                remaining--;
+./Garazyk/Sources/Core/DID.m:200:                if (remaining == 0) {
+./Garazyk/Sources/Core/DID.m:404:            if (signingKey.length > 1) {
+./Garazyk/Sources/Core/DID.m:414:                if (keyBytes.length > 2) {
+./Garazyk/Sources/Core/DID.m:417:                        keyBytes = [keyBytes subdataWithRange:NSMakeRange(2, keyBytes.length - 2)];
+./Garazyk/Sources/Core/DID.m:443:    if (!did || did.length == 0) {
+./Garazyk/Sources/Core/DID.m:555:    if (!data || data.length == 0) {
+./Garazyk/Sources/Core/DID.m:611:        if (!error && response.statusCode == 200 && data.length > 0) {
+./Garazyk/Sources/Core/DID.m:637:                if (curlData.length > 0) {
+./Garazyk/Sources/Core/DID.m:658:    if (!handle || handle.length == 0) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:34:        sqlite3_bind_blob(stmt, 1, blob.cid.bytes, (int)blob.cid.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:56:        sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:68:                                              offset:(NSInteger)offset 
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:79:        sqlite3_bind_int(stmt, 3, (int)offset);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:115:        sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:141:        sqlite3_bind_blob(stmt, 1, cidBytes.bytes, (int)cidBytes.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:175:        blob.cid = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) length:blobBytes];
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:296:        GZ_LOG_DEBUG(@"[WriteDispatcher] Dequeued next write for did=%@ (remaining=%lu)",
+./Garazyk/Sources/Core/Repositories/PDSSQLiteRecordRepository.m:54:        records = [reader listRecordsForDid:did collection:collection limit:1000 offset:0 error:blockError];
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:177:    if (!string || string.length == 0) return nil;
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:213:            int offset = (offset_hr * 3600) + (offset_min * 60);
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:214:            if (tz_sign == '-') offset = -offset;
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:215:            date = [date dateByAddingTimeInterval:-offset];
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:223:    if (!string || string.length == 0) return nil;
+./Garazyk/Sources/Core/CID.m:24:    if (!digest || digest.length == 0 || codec > UINT32_MAX) {
+./Garazyk/Sources/Core/CID.m:28:    // Construct full multihash: 0x12 (sha2-256) + 0x20 (length 32) + digest
+./Garazyk/Sources/Core/CID.m:29:    NSMutableData *multihash = [NSMutableData dataWithCapacity:2 + digest.length];
+./Garazyk/Sources/Core/CID.m:30:    uint8_t header[] = {0x12, (uint8_t)digest.length};
+./Garazyk/Sources/Core/CID.m:31:    [multihash appendBytes:header length:2];
+./Garazyk/Sources/Core/CID.m:38:    if (!multihash || multihash.length == 0 || codec > UINT32_MAX) {
+./Garazyk/Sources/Core/CID.m:52:    if (![string isKindOfClass:[NSString class]] || string.length == 0) {
+./Garazyk/Sources/Core/CID.m:55:    if (string.length > 256) {
+./Garazyk/Sources/Core/CID.m:94:    if (hex.length % 2 != 0) return nil;
+./Garazyk/Sources/Core/CID.m:95:    NSMutableData *data = [NSMutableData dataWithCapacity:hex.length / 2];
+./Garazyk/Sources/Core/CID.m:96:    for (NSUInteger i = 0; i < hex.length; i += 2) {
+./Garazyk/Sources/Core/CID.m:101:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Core/CID.m:109:    [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
+./Garazyk/Sources/Core/CID.m:110:    [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
+./Garazyk/Sources/Core/CID.m:111:    while (base64.length % 4 != 0) {
+./Garazyk/Sources/Core/CID.m:122:    while (base64.length % 4 != 0) {
+./Garazyk/Sources/Core/CID.m:129:    if (!data || data.length < 2 || data.length > 256) {
+./Garazyk/Sources/Core/CID.m:134:    CID *cid = [self cidFromBuffer:data.bytes length:data.length consumed:&consumed];
+./Garazyk/Sources/Core/CID.m:135:    if (!cid || consumed != data.length) {
+./Garazyk/Sources/Core/CID.m:142:                                length:(NSUInteger)length
+./Garazyk/Sources/Core/CID.m:144:    if (!bytes || length < 2) {
+./Garazyk/Sources/Core/CID.m:148:    // CIDv0 fast-path: sha2-256 (0x12) + length 32 (0x20) + 32-byte digest.
+./Garazyk/Sources/Core/CID.m:149:    if (length >= 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
+./Garazyk/Sources/Core/CID.m:154:            cid->_multihash = [NSData dataWithBytes:bytes length:34];
+./Garazyk/Sources/Core/CID.m:160:    NSUInteger offset = 0;
+./Garazyk/Sources/Core/CID.m:163:    NSUInteger versionSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:164:                                    maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:169:    offset += versionSize;
+./Garazyk/Sources/Core/CID.m:174:        if (offset >= length) {
+./Garazyk/Sources/Core/CID.m:177:        NSUInteger innerSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:178:                                      maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:183:        offset += innerSize;
+./Garazyk/Sources/Core/CID.m:191:    NSUInteger codecSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:192:                                  maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:197:    offset += codecSize;
+./Garazyk/Sources/Core/CID.m:199:    // Remember where the multihash (code + length + digest) begins so we can
+./Garazyk/Sources/Core/CID.m:200:    // slice it out once the digest length is known.
+./Garazyk/Sources/Core/CID.m:201:    NSUInteger multihashStart = offset;
+./Garazyk/Sources/Core/CID.m:204:    NSUInteger mhCodeSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:205:                                   maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:210:    offset += mhCodeSize;
+./Garazyk/Sources/Core/CID.m:213:    NSUInteger mhLenSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:214:                                  maxLength:length - offset
+./Garazyk/Sources/Core/CID.m:219:    offset += mhLenSize;
+./Garazyk/Sources/Core/CID.m:228:    if (mhLen > 128 || mhLen > (uint64_t)(length - offset)) {
+./Garazyk/Sources/Core/CID.m:233:    NSUInteger multihashLen = (offset - multihashStart) + digestLen;
+./Garazyk/Sources/Core/CID.m:234:    NSData *multihash = [NSData dataWithBytes:(bytes + multihashStart) length:multihashLen];
+./Garazyk/Sources/Core/CID.m:241:    if (consumed) *consumed = offset + digestLen;
+./Garazyk/Sources/Core/CID.m:298:        [data appendBytes:&byte length:1];
+./Garazyk/Sources/Core/CID.m:311:    NSUInteger offset = 0;
+./Garazyk/Sources/Core/CID.m:312:    while (offset < maxLength) {
+./Garazyk/Sources/Core/CID.m:313:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Core/CID.m:318:            return offset;
+./Garazyk/Sources/Core/CID.m:330:    if (!data || data.length == 0) {
+./Garazyk/Sources/Core/CID.m:334:    NSUInteger length = data.length;
+./Garazyk/Sources/Core/CID.m:335:    NSMutableString *result = [NSMutableString stringWithCapacity:((length * 8) + 4) / 5];
+./Garazyk/Sources/Core/CID.m:338:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/CID.m:355:    if (!string || string.length == 0) {
+./Garazyk/Sources/Core/CID.m:359:    NSUInteger length = cleanString.length;
+./Garazyk/Sources/Core/CID.m:360:    NSMutableData *result = [NSMutableData dataWithCapacity:((length * 5) + 7) / 8];
+./Garazyk/Sources/Core/CID.m:363:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/CID.m:377:            [result appendBytes:&byte length:1];
+./Garazyk/Sources/Core/CID.m:395:    NSUInteger length = string.length;
+./Garazyk/Sources/Core/CID.m:396:    NSMutableData *result = [NSMutableData dataWithCapacity:(length * 3 + 7) / 8];
+./Garazyk/Sources/Core/CID.m:399:    for (NSUInteger i = 0; i < length; i++) {
+./Garazyk/Sources/Core/CID.m:407:            [result appendBytes:&byte length:1];
+./Garazyk/Sources/Core/CID.m:423:    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
+./Garazyk/Sources/Core/CID.m:424:    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:13:    [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:14:    [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:15:    while (base64.length % 4 != 0) {
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:68:            [NSMutableData dataWithCapacity:1 + cidBytes.length];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:70:        [tagPayload appendBytes:&identityPrefix length:1];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:200:      if (tagPayload.length > 1) {
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:204:              subdataWithRange:NSMakeRange(1, tagPayload.length - 1)];
+./Garazyk/Sources/Core/TID.m:80:    if (!normalized || normalized.length != 13) {
+./Garazyk/Sources/Core/TID.m:96:    for (NSUInteger i = 0; i < normalized.length; i++) {
+./Garazyk/Sources/Core/TID.m:112:    uint64_t remaining = value;
+./Garazyk/Sources/Core/TID.m:115:    while (remaining > 0 && idx < (int)sizeof(tmp)) {
+./Garazyk/Sources/Core/TID.m:116:        uint32_t c = (uint32_t)(remaining % 32);
+./Garazyk/Sources/Core/TID.m:118:        remaining /= 32;
+./Garazyk/Sources/Core/TID.m:132:    for (NSUInteger i = 0; i < string.length; i++) {
+./Garazyk/Sources/Core/TID.m:148:    if (timePart.length > 11) {
+./Garazyk/Sources/Core/TID.m:149:        // Extremely large timestamp; keep last 11 chars to maintain length.
+./Garazyk/Sources/Core/TID.m:150:        timePart = [timePart substringFromIndex:timePart.length - 11];
+./Garazyk/Sources/Core/TID.m:151:    } else if (timePart.length < 11) {
+./Garazyk/Sources/Core/TID.m:152:        // Left pad with '2' (zero) to 11 chars to maintain invariant length.
+./Garazyk/Sources/Core/TID.m:153:        timePart = [[@"" stringByPaddingToLength:(11 - timePart.length) withString:@"2" startingAtIndex:0] stringByAppendingString:timePart];
+./Garazyk/Sources/Core/TID.m:157:    if (clockPart.length > 2) {
+./Garazyk/Sources/Core/TID.m:158:        clockPart = [clockPart substringFromIndex:clockPart.length - 2];
+./Garazyk/Sources/Core/TID.m:159:    } else if (clockPart.length < 2) {
+./Garazyk/Sources/Core/TID.m:160:        clockPart = [[@"" stringByPaddingToLength:(2 - clockPart.length) withString:@"2" startingAtIndex:0] stringByAppendingString:clockPart];
+./Garazyk/Sources/Core/TID.m:167:    if (string.length != 13) {
+./Garazyk/Sources/Repository/CBOR.h:173:/*! Decodes CBOR data starting at offset, updates offset after decoding. */
+./Garazyk/Sources/Repository/CBOR.h:174:+ (nullable CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset;

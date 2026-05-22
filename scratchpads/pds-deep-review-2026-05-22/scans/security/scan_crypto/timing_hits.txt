@@ -1,0 +1,46 @@
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:469:    } else if ([format isEqualToString:@"record-key"]) {
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:193:        if ([source isEqualToString:@"keychain"]) {
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m:150:        } else if ([arg isEqualToString:@"--password"] || [arg isEqualToString:@"-p"]) {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:613:        if (memcmp(bytes, "RIFF", 4) == 0) {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:614:            if (memcmp(bytes + 8, "WEBP", 4) == 0) return @"image/webp";
+./Garazyk/Sources/Blob/MimeTypeValidator.m:615:            if (memcmp(bytes + 8, "AVI ", 4) == 0) return @"video/avi";
+./Garazyk/Sources/Blob/MimeTypeValidator.m:616:            if (memcmp(bytes + 8, "WAVE", 4) == 0) return @"audio/wav";
+./Garazyk/Sources/CLI/PDSCLIInputHelper.m:17:    if (nonInteractive && (strcmp(nonInteractive, "1") == 0 || strcmp(nonInteractive, "true") == 0)) {
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:222:        } else if ([arg isEqualToString:@"--password"] || [arg isEqualToString:@"-p"]) {
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:98:        } else if ([arg isEqualToString:@"--secret"] || [arg isEqualToString:@"-s"]) {
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:304:        if ([key isEqualToString:[self.commands[key] name]]) {
+./Garazyk/Sources/AppView/Services/ContactService.m:112:    if ([token isEqualToString:@"test-import-token"] && ([allowHTTP isEqualToString:@"1"] || [allowHTTP isEqualToString:@"true"])) {
+./Garazyk/Sources/Core/DID.m:393:            if (!selectedMethod && [methodType isKindOfClass:[NSString class]] && [methodType isEqualToString:@"Multikey"]) {
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:120:    if (strcmp(objCType, @encode(float)) == 0 ||
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:121:        strcmp(objCType, @encode(double)) == 0) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:418:        int cmp = memcmp(data1.bytes, data2.bytes, data1.length);
+./Garazyk/Sources/Network/XrpcAuthHelper.m:314:                if ([tokenAud isEqualToString:didWebHost] || (didWebHostPort && [tokenAud isEqualToString:didWebHostPort])) {
+./Garazyk/Sources/AppView/Services/GraphService.m:76:    if (![collection isEqualToString:@"app.bsky.graph.list"] || did.length == 0 || rkey.length == 0) {
+./Garazyk/Sources/Core/ATURI.m:80:    if ([rkey isEqualToString:@"."] || [rkey isEqualToString:@".."]) return NO;
+./Garazyk/Sources/Core/ATProtoValidator.m:241:    if ([rkey isEqualToString:@"."] || [rkey isEqualToString:@".."]) {
+./Garazyk/Sources/Network/SSRFValidator.m:44:    if (memcmp(&ip6, &in6addr_loopback, sizeof(struct in6_addr)) == 0) return YES;
+./Garazyk/Sources/Network/SSRFValidator.m:49:    if (memcmp(bytes, (uint8_t[]){0,0,0,0,0,0,0,0,0,0,0xFF,0xFF,0,0,0,0}, 12) == 0) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1268:        if (![decodedKey isEqualToString:key]) {
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:295:            if (!selectedMethod && [methodType isKindOfClass:[NSString class]] && [methodType isEqualToString:@"Multikey"]) {
+./Garazyk/Sources/Compat/PlatformShims/CoreFoundation/CFBase.h:32:        if (type != NULL && (strcmp(type, @encode(BOOL)) == 0 || strcmp(type, "c") == 0 || strcmp(type, "B") == 0)) {
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.h:63:        if (strcmp(objCType, @encode(double)) == 0 ||
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.h:64:            strcmp(objCType, @encode(float)) == 0) {
+./Garazyk/Sources/Repository/MST.m:501:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Repository/MST.m:542:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Repository/MST.m:603:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Repository/MST.m:1312:    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+./Garazyk/Sources/Repository/CBOR.m:389:        int cmp = memcmp(d1.bytes, d2.bytes, d1.length);
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:220:        if ([self.currentKeyID isEqualToString:keyID]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:856:  if ([tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2670:      [tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3130:      [tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:4067:  if (envAllowPrivate && (strcmp(envAllowPrivate, "1") == 0 || strcmp(envAllowPrivate, "true") == 0)) {
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:73:    if ([authMethod isEqualToString:@"private_key_jwt"]) {
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:112:    if ([authMethod isEqualToString:@"private_key_jwt"]) {
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:309:    } else if ([request.grantType isEqualToString:@"refresh_token"]) {
+./Garazyk/Sources/Auth/OAuth2.m:673:    } else if ([request.grantType isEqualToString:@"refresh_token"]) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:503:    if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:512:    if ([keyPair.algorithm isEqualToString:@"ES256"] || [keyPair.algorithm isEqualToString:@"ECDSA-P256"]) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:732:    if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:824:    if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:169:    return memcmp(data.bytes, kPDSKeyEnvelopeMagic, kPDSKeyEnvelopeMagicLength) == 0;
