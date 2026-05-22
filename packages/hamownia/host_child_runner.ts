@@ -1,5 +1,5 @@
 /** Host subprocess entry point for isolated scenario execution. @module host_child_runner */
-import { dirname, toFileUrl } from "@std/path";
+import { dirname } from "@std/path";
 import { createScenarioContext } from "./scenario_context.ts";
 import type { ScenarioContext } from "./scenario_context.ts";
 import { ScenarioResult } from "./runner.ts";
@@ -11,7 +11,7 @@ interface HostChildArgs {
   scenarioName: string;
 }
 
-interface ScenarioModule {
+export interface ScenarioModule {
   run?: (ctx: ScenarioContext) => Promise<ScenarioResult> | ScenarioResult;
 }
 
@@ -47,14 +47,12 @@ async function writeResult(
   );
 }
 
-async function runChild(): Promise<number> {
+export async function runChildWithModule(
+  module: ScenarioModule,
+): Promise<number> {
   const args = parseArgs(Deno.args);
   const result = new ScenarioResult(args.scenarioName);
   try {
-    // deno-lint-ignore unanalyzable-dynamic-import
-    const module = await import(
-      `${toFileUrl(args.scenarioPath).href}?run=${Date.now()}`
-    ) as ScenarioModule;
     if (typeof module.run !== "function") {
       result.start();
       result.stepFailed(
@@ -93,8 +91,4 @@ async function runChild(): Promise<number> {
     await writeResult(args.outputPath, result);
     return 1;
   }
-}
-
-if (import.meta.main) {
-  Deno.exit(await runChild());
 }

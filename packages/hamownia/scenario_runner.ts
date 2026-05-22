@@ -1,5 +1,5 @@
 /** Scenario execution — host runner and Docker runner modes with timeout support. @module scenario_runner */
-import { dirname, fromFileUrl } from "@std/path";
+import { dirname, fromFileUrl, join, toFileUrl } from "@std/path";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology, TopologyManifestV2 } from "@garazyk/schemat";
@@ -176,6 +176,18 @@ async function runHostScenarioInChild(
   const childRunnerPath = fromFileUrl(
     new URL("./host_child_runner.ts", import.meta.url),
   );
+  
+  // Write a temporary bootstrap script that statically imports the host runner and
+  // scenario. This eliminates dynamic runtime import warnings during package publication.
+  const bootstrapPath = join(tempDir, "bootstrap.ts");
+  const bootstrapContent = `// Generated bootstrap for isolated scenario execution
+import { runChildWithModule } from "${toFileUrl(childRunnerPath).href}";
+import * as scenarioModule from "${toFileUrl(scenario.path).href}";
+const exitCode = await runChildWithModule(scenarioModule);
+Deno.exit(exitCode);
+`;
+  await Deno.writeTextFile(bootstrapPath, bootstrapContent);
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutSeconds * 1000);
 
@@ -183,7 +195,9 @@ async function runHostScenarioInChild(
     args: [
       "run",
       "-A",
-      childRunnerPath,
+      "--config",
+      join(dirname(childRunnerPath), "deno.json"),
+      bootstrapPath,
       "--scenario",
       scenario.path,
       "--output",
