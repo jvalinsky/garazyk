@@ -294,6 +294,13 @@ const appviewSocialCaps = [
   Cap.appview.feeds,
 ] as const;
 
+const uiBasicCaps = [
+  Cap.ui.admin,
+  Cap.ui.login,
+  Cap.ui.oauth,
+  Cap.ui.smoke,
+] as const;
+
 function pdsVolumes(name: string, config: string) {
   return [
     volume.named(`${name}_data`, "/var/lib/atprotopds"),
@@ -314,6 +321,9 @@ const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ??
   "admin-localdev";
 const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ??
   "localdevadmin";
+const UI_ADMIN_PASSWORD = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
+  Deno.env.get("UI_ADMIN_PASSWORD") ??
+  "admin-localdev";
 
 function localPdsEnv() {
   return {
@@ -381,8 +391,11 @@ const GARAZYK_DEFAULT = defineTopology({
         "local-mock-twilio": {
           source: source.image("denoland/deno:alpine"),
           entrypoint: [
-            "deno", "run", "-A",
-            "--config", "/workspace/deno.json",
+            "deno",
+            "run",
+            "-A",
+            "--config",
+            "/workspace/deno.json",
           ],
           command: [
             "/workspace/packages/hamownia/mock_twilio_server.ts",
@@ -395,7 +408,8 @@ const GARAZYK_DEFAULT = defineTopology({
             volume.named("deno_cache", "/deno-dir"),
           ],
           health: topologyHealth.command([
-            "CMD-SHELL", "wget -qO- http://127.0.0.1:8081/__control/health || exit 1",
+            "CMD-SHELL",
+            "wget -qO- http://127.0.0.1:8081/__control/health || exit 1",
           ]),
         },
       },
@@ -483,6 +497,38 @@ const GARAZYK_DEFAULT = defineTopology({
       health: topologyHealth.http("/_health"),
       capabilities: [Cap.video.uploadVideo, Cap.video.getVideoStatus],
       dependsOnRoles: [Role.pds],
+    }),
+    [Role.ui]: role.ui({
+      name: "garazyk-ui",
+      source: localBuild,
+      entrypoint: ["/usr/local/bin/garazyk-ui"],
+      command: [
+        "serve",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "2590",
+      ],
+      env: {
+        TZ: "UTC",
+        GARAZYK_UI_PORT: "2590",
+        GARAZYK_UI_ADMIN_PASSWORD: UI_ADMIN_PASSWORD,
+        GARAZYK_UI_PDS_URL: "http://local-pds:2583",
+        GARAZYK_UI_PDS_PASSWORD: PDS_ADMIN_PASSWORD,
+        GARAZYK_UI_PLC_URL: "http://local-plc:2582",
+        GARAZYK_UI_RELAY_URL: "http://local-relay:2584",
+        GARAZYK_UI_APPVIEW_URL: "http://local-appview:3200",
+        GARAZYK_UI_APPVIEW_TOKEN: APPVIEW_ADMIN_SECRET,
+        GARAZYK_UI_CHAT_URL: "http://local-chat:2585",
+        GARAZYK_UI_VIDEO_URL: "http://local-video:2586",
+      },
+      ports: [port(2590)],
+      health: topologyHealth.http("/lab"),
+      capabilities: uiBasicCaps,
+      dependsOnRoles: [Role.pds, Role.appview],
+      scenarioEnv: {
+        GARAZYK_UI_ADMIN_PASSWORD: UI_ADMIN_PASSWORD,
+      },
     }),
   },
   networkAliases: {

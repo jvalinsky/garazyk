@@ -1,6 +1,6 @@
 {
   "name": "garazyk-default",
-  "description": "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Chat (syrena-chat), Video (jelcz). Built from local source.",
+  "description": "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Chat (syrena-chat), Video (jelcz), UI (garazyk-ui). Built from local source.",
   "roles": {
     "plc": {
       "name": "campagnola",
@@ -258,6 +258,41 @@
       },
       "capabilities": ["uploadVideo", "getVideoStatus", "healthCheck"],
       "dependsOn": ["local-pds"]
+    },
+    "ui": {
+      "name": "garazyk-ui",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/garazyk-ui"],
+      "command": [
+        "serve",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "2590"
+      ],
+      "env": {
+        "TZ": "UTC",
+        "GARAZYK_UI_PORT": "2590",
+        "GARAZYK_UI_ADMIN_PASSWORD": "admin-localdev",
+        "GARAZYK_UI_PDS_URL": "http://local-pds:2583",
+        "GARAZYK_UI_PDS_PASSWORD": "admin-localdev",
+        "GARAZYK_UI_PLC_URL": "http://local-plc:2582",
+        "GARAZYK_UI_RELAY_URL": "http://local-relay:2584",
+        "GARAZYK_UI_APPVIEW_URL": "http://local-appview:3200",
+        "GARAZYK_UI_APPVIEW_TOKEN": "localdevadmin",
+        "GARAZYK_UI_CHAT_URL": "http://local-chat:2585",
+        "GARAZYK_UI_VIDEO_URL": "http://local-video:2586"
+      },
+      "ports": ["2590:2590"],
+      "healthCheck": {
+        "path": "/lab"
+      },
+      "capabilities": ["admin", "login", "oauth", "smoke"],
+      "dependsOn": ["local-pds", "local-appview"],
+      "scenarioEnv": {
+        "GARAZYK_UI_ADMIN_PASSWORD": "admin-localdev"
+      }
     }
   },
   "networkAliases": {

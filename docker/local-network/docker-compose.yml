@@ -343,12 +343,19 @@ services:
       - GARAZYK_UI_ADMIN_PASSWORD=admin-localdev
       - GARAZYK_UI_PDS_URL=http://local-pds:2583
       - GARAZYK_UI_PDS_PASSWORD=admin-localdev
+      - GARAZYK_UI_PLC_URL=http://local-plc:2582
+      - GARAZYK_UI_RELAY_URL=http://local-relay:2584
       - GARAZYK_UI_APPVIEW_URL=http://local-appview:3200
+      - GARAZYK_UI_APPVIEW_TOKEN=localdevadmin
+      - GARAZYK_UI_CHAT_URL=http://local-chat:2585
+      - GARAZYK_UI_VIDEO_URL=http://local-video:2586
     depends_on:
       local-pds:
         condition: service_healthy
+      local-appview:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2590/admin"]
+      test: ["CMD", "curl", "-f", "http://localhost:2590/lab"]
       interval: 5s
       timeout: 3s
       retries: 10
