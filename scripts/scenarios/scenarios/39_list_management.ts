@@ -28,6 +28,26 @@ function now() {
   return new Date().toISOString();
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Retry a predicate function with timeout. Throws if not fulfilled within deadline. */
+async function waitFor(
+  predicate: () => Promise<boolean>,
+  timeoutMs = 15000,
+  intervalMs = 500,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await predicate()) return;
+    await delay(intervalMs);
+  }
+  if (!(await predicate())) {
+    throw new Error(`Condition not met within ${timeoutMs}ms`);
+  }
+}
+
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("List Management");
   result.start();
@@ -91,23 +111,40 @@ export async function run(): Promise<ScenarioResult> {
       );
     });
 
-    await new Promise((r) => setTimeout(r, 2000));
-
     await timedCall(result, "Get lists for Luna", async () => {
-      // Note: appview.graph.getLists doesn't exist yet, I'll use raw
-      return await appview.raw.xrpcGet(
-        "app.bsky.graph.getLists",
-        { actor: luna.did, limit: 10 },
-        luna.accessJwt,
-      );
+      let lastCount = 0;
+      await waitFor(async () => {
+        try {
+          const res = await appview.raw.xrpcGet(
+            "app.bsky.graph.getLists",
+            { actor: luna.did, limit: 10 },
+            luna.accessJwt,
+          );
+          lastCount = res.lists?.length || 0;
+          return lastCount > 0;
+        } catch {
+          return false;
+        }
+      });
+      return { lists: lastCount };
     });
 
     await timedCall(result, "Get list items", async () => {
-      return await appview.raw.xrpcGet(
-        "app.bsky.graph.getList",
-        { list: listUri, limit: 10 },
-        luna.accessJwt,
-      );
+      let lastCount = 0;
+      await waitFor(async () => {
+        try {
+          const res = await appview.raw.xrpcGet(
+            "app.bsky.graph.getList",
+            { list: listUri, limit: 10 },
+            luna.accessJwt,
+          );
+          lastCount = res.items?.length || 0;
+          return true; // getList succeeded (list is indexed)
+        } catch {
+          return false;
+        }
+      });
+      return { items: lastCount };
     });
 
     await timedCall(result, "Remove Marcus from list", async () => {
