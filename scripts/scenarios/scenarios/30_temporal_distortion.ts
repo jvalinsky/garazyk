@@ -62,7 +62,7 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   const repoHead = await client.raw.xrpcGet("com.atproto.sync.getHead", { did: luna.did });
-  assert.isTrue(repoHead.root, "Missing root in getHead");
+  assert.isTrue(typeof repoHead.root === "string" && repoHead.root.length > 0, "Missing root in getHead");
 
   // Monotonicity burst
   for (let i = 0; i < 10; i++) {

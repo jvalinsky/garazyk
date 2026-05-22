@@ -55,7 +55,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const labelerRecord = {
     $type: "app.bsky.labeler.service",
-    policies: { labelValueDefinitions: [] },
+    policies: { labelValues: [], labelValueDefinitions: [] },
     createdAt: now(),
   };
 

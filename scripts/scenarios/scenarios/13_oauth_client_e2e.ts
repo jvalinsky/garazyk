@@ -75,7 +75,7 @@ export async function run(): Promise<ScenarioResult> {
       const pdsEndpoint = services.find((s: any) =>
         s.id === "#atproto_pds" || s.id.includes("atproto_pds")
       )?.serviceEndpoint;
-      assert.isTrue(pdsEndpoint, "PDS serviceEndpoint not found in DID doc");
+      assert.isTrue(typeof pdsEndpoint === "string" && pdsEndpoint.length > 0, "PDS serviceEndpoint not found in DID doc");
       return { pdsEndpoint };
     },
     (r) => `serviceEndpoint=${r.pdsEndpoint}`,

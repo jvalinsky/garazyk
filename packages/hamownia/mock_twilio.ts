@@ -193,9 +193,9 @@ export async function handleMockTwilioRequest(
 
   // ── Twilio Verify API ────────────────────────────────────────────────────
 
-  // Match: /v2/Service/{serviceSID}/Verifications
+  // Match: /v2/Service/{serviceSID}/Verifications or /{serviceSID}/Verifications
   const verificationsMatch = path.match(
-    /^\/v2\/Service\/([^/]+)\/Verifications$/,
+    /^(?:\/v2\/Service)?\/([^/]+)\/Verifications$/,
   );
   if (verificationsMatch && req.method === "POST") {
     await maybeLatency(config.latency ?? 0);
@@ -246,8 +246,8 @@ export async function handleMockTwilioRequest(
     });
   }
 
-  // Match: /v2/Service/{serviceSID}/VerificationCheck
-  const checkMatch = path.match(/^\/v2\/Service\/([^/]+)\/VerificationCheck$/);
+  // Match: /v2/Service/{serviceSID}/VerificationCheck or /{serviceSID}/VerificationCheck
+  const checkMatch = path.match(/^(?:\/v2\/Service)?\/([^/]+)\/VerificationCheck$/);
   if (checkMatch && req.method === "POST") {
     await maybeLatency(config.latency ?? 0);
     if (await maybeFail(config.failRate ?? 0)) {
