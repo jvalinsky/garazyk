@@ -6,6 +6,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpProtocolDriver.h"
 #import "Network/HttpResponse.h"
+#import "Network/HttpRequest.h"
 #import "Network/ATProtoNetworkTransport.h"
 
 typedef id<ATProtoNetworkListener> (^PDSListenerFactory)(NSUInteger port);
@@ -59,6 +60,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 
 @interface HttpServer (Testing)
 - (void)sendResponse:(HttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection;
+- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
 @end
 
 @interface PDSFakeConnection : NSObject <ATProtoNetworkConnection>
@@ -356,6 +358,73 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
                   [errorDescription containsString:@"Transfer-Encoding"] ||
                   [errorDescription containsString:@"Content-Length"],
                   @"Expected explicit framing error in: %@", errorDescription);
+}
+
+- (void)testHttpRangeRequestSuccessfulParsing {
+    // Create a temporary file of size 1000
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"range_test.txt"];
+    NSMutableData *fileData = [NSMutableData dataWithLength:1000];
+    memset(fileData.mutableBytes, 'a', 1000);
+    [fileData writeToFile:tempPath atomically:YES];
+
+    HttpServer *server = [HttpServer serverWithPort:0];
+    [server addRoute:@"GET" path:@"/test_range" handler:^(HttpRequest *req, HttpResponse *resp) {
+        resp.statusCode = 200;
+        [resp setBodyFileAtPath:tempPath deleteAfterSend:NO];
+    }];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/test_range"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{@"Range": @"bytes=100-199"}
+                                                          body:nil
+                                                 remoteAddress:@"127.0.0.1"];
+
+    HttpResponse *response = [server dispatchRequest:request];
+
+    XCTAssertEqual(response.statusCode, 206);
+    XCTAssertTrue(response.isRangeRequest);
+    XCTAssertEqual(response.rangeStart, (NSUInteger)100);
+    XCTAssertEqual(response.rangeLength, (NSUInteger)100);
+    XCTAssertEqualObjects([response headerForKey:@"Content-Range"], @"bytes 100-199/1000");
+
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+}
+
+- (void)testHttpRangeRequestSuffixByteParsing {
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"range_test_suffix.txt"];
+    NSMutableData *fileData = [NSMutableData dataWithLength:1000];
+    memset(fileData.mutableBytes, 'b', 1000);
+    [fileData writeToFile:tempPath atomically:YES];
+
+    HttpServer *server = [HttpServer serverWithPort:0];
+    [server addRoute:@"GET" path:@"/test_range_suffix" handler:^(HttpRequest *req, HttpResponse *resp) {
+        resp.statusCode = 200;
+        [resp setBodyFileAtPath:tempPath deleteAfterSend:NO];
+    }];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/test_range_suffix"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{@"Range": @"bytes=-300"}
+                                                          body:nil
+                                                 remoteAddress:@"127.0.0.1"];
+
+    HttpResponse *response = [server dispatchRequest:request];
+
+    XCTAssertEqual(response.statusCode, 206);
+    XCTAssertTrue(response.isRangeRequest);
+    XCTAssertEqual(response.rangeStart, (NSUInteger)700);
+    XCTAssertEqual(response.rangeLength, (NSUInteger)300);
+    XCTAssertEqualObjects([response headerForKey:@"Content-Range"], @"bytes 700-999/1000");
+
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
 }
 
 @end

@@ -71,6 +71,9 @@ NS_ASSUME_NONNULL_END
         _contentType = @"application/json; charset=utf-8";
         _deleteBodyFileAfterSend = NO;
         _chunkedTransferEncoding = NO;
+        _isRangeRequest = NO;
+        _rangeStart = 0;
+        _rangeLength = 0;
         [[self class] applySecurityHeaders:_headers];
     }
     return self;
@@ -79,6 +82,7 @@ NS_ASSUME_NONNULL_END
 + (NSString *)defaultMessageForCode:(HttpStatusCode)code {
     switch (code) {
         case HttpStatusOK: return @"OK";
+        case HttpStatusPartialContent: return @"Partial Content";
         case HttpStatusCreated: return @"Created";
         case HttpStatusAccepted: return @"Accepted";
         case HttpStatusNoContent: return @"No Content";

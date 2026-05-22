@@ -430,8 +430,7 @@ int run_serve(int argc, const char *argv[]) {
             return;
         }
 
-        NSData *fileData = [NSData dataWithContentsOfFile:filePath];
-        if (!fileData) {
+        if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
             response.statusCode = 404;
             [response setJsonBody:@{@"error": @"NotFound", @"message": @"HLS file not found on disk"}];
             return;
@@ -442,7 +441,7 @@ int run_serve(int argc, const char *argv[]) {
         // Cache HLS files for 1 hour (they're immutable once generated)
         [response setHeader:@"public, max-age=3600" forKey:@"Cache-Control"];
         [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
-        [response setBodyData:fileData];
+        [response setBodyFileAtPath:filePath deleteAfterSend:NO];
     };
     [gServer addRoute:@"OPTIONS" path:@"/watch" handler:watchHandler];
     [gServer addRoute:@"OPTIONS" path:@"/watch/*" handler:watchHandler];
