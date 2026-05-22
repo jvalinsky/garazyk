@@ -266,9 +266,9 @@ export class FirehoseClient {
     try {
       const fe = firehoseEventFromFrame(parseFirehoseFrame(data));
 
-      // Track cursor
+      // Track cursor (strictly monotonic high-water mark)
       if (fe.seq > 0) {
-        this.lastSeq = fe.seq;
+        this.lastSeq = Math.max(this.lastSeq ?? 0, fe.seq);
       }
 
       if (callback) callback(fe);
