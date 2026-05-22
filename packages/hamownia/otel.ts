@@ -295,7 +295,9 @@ export async function shutdownTracing(): Promise<void> {
         (provider as unknown as SdkProvider).forceFlush(),
         new Promise<void>((resolve) => setTimeout(resolve, 2000)),
       ]);
-    } else if (typeof (provider as unknown as SdkProvider).shutdown === "function") {
+    } else if (
+      typeof (provider as unknown as SdkProvider).shutdown === "function"
+    ) {
       await Promise.race([
         (provider as unknown as SdkProvider).shutdown(),
         new Promise<void>((resolve) => setTimeout(resolve, 2000)),
@@ -431,7 +433,9 @@ const noopTracer = {
       addEvent() {},
       recordException() {},
       end() {},
-      isRecording() { return false; },
+      isRecording() {
+        return false;
+      },
       updateName() {},
       getContext() {
         return { traceId: "", spanId: "", traceFlags: 0, isRemote: false };

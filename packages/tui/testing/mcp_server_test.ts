@@ -7,8 +7,12 @@
  * @module tui/testing/mcp_server_test
  */
 
-import { assertEquals, assert } from "@std/assert";
-import { createDashboardHarness, handleMcpMessage, DASHBOARD_LAYOUT } from "./mcp_server.ts";
+import { assert, assertEquals } from "@std/assert";
+import {
+  createDashboardHarness,
+  DASHBOARD_LAYOUT,
+  handleMcpMessage,
+} from "./mcp_server.ts";
 
 // ---------------------------------------------------------------------------
 // 1. JSON-RPC Protocol Handling Tests
@@ -16,23 +20,27 @@ import { createDashboardHarness, handleMcpMessage, DASHBOARD_LAYOUT } from "./mc
 
 Deno.test("MCP Server: handles invalid JSON-RPC payload errors gracefully", () => {
   const { harness } = createDashboardHarness();
-  
+
   // Test completely broken JSON
   const brokenJson = "{broken json";
-  const res1 = JSON.parse(handleMcpMessage(brokenJson, harness, DASHBOARD_LAYOUT));
+  const res1 = JSON.parse(
+    handleMcpMessage(brokenJson, harness, DASHBOARD_LAYOUT),
+  );
   assert(res1.error);
   assertEquals(res1.error.code, -32700);
 
   // Test missing version
   const badVersion = JSON.stringify({ id: 1, method: "tools/list" });
-  const res2 = JSON.parse(handleMcpMessage(badVersion, harness, DASHBOARD_LAYOUT));
+  const res2 = JSON.parse(
+    handleMcpMessage(badVersion, harness, DASHBOARD_LAYOUT),
+  );
   assert(res2.error);
   assertEquals(res2.error.code, -32600);
 });
 
 Deno.test("MCP Server: supports initialize handshakes", () => {
   const { harness } = createDashboardHarness();
-  
+
   const initMsg = JSON.stringify({
     jsonrpc: "2.0",
     id: 100,
@@ -48,7 +56,7 @@ Deno.test("MCP Server: supports initialize handshakes", () => {
 
 Deno.test("MCP Server: listTools returns schemas for inspect, action, and assert", () => {
   const { harness } = createDashboardHarness();
-  
+
   const listMsg = JSON.stringify({
     jsonrpc: "2.0",
     id: 101,
@@ -59,7 +67,7 @@ Deno.test("MCP Server: listTools returns schemas for inspect, action, and assert
   assertEquals(res.id, 101);
   const tools = res.result.tools;
   assertEquals(tools.length, 3);
-  
+
   const names = tools.map((t: any) => t.name);
   assert(names.includes("tui_inspect"));
   assert(names.includes("tui_action"));
@@ -72,7 +80,7 @@ Deno.test("MCP Server: listTools returns schemas for inspect, action, and assert
 
 Deno.test("MCP Server: tui_inspect retrieves layout XML and text screens", () => {
   const { harness } = createDashboardHarness();
-  
+
   const inspectMsg = JSON.stringify({
     jsonrpc: "2.0",
     id: 102,
@@ -82,10 +90,12 @@ Deno.test("MCP Server: tui_inspect retrieves layout XML and text screens", () =>
     },
   });
 
-  const res = JSON.parse(handleMcpMessage(inspectMsg, harness, DASHBOARD_LAYOUT));
+  const res = JSON.parse(
+    handleMcpMessage(inspectMsg, harness, DASHBOARD_LAYOUT),
+  );
   assertEquals(res.id, 102);
   assert(!res.error);
-  
+
   const textVal = res.result.content[0].text;
   // Assert both flat text and XML structure are outputted
   assert(textVal.includes("=== TDOM XML LAYOUT ==="));
@@ -97,7 +107,7 @@ Deno.test("MCP Server: tui_inspect retrieves layout XML and text screens", () =>
 
 Deno.test("MCP Server: tui_action drives component state updates interactively", () => {
   const { harness, state } = createDashboardHarness();
-  
+
   // 1. Initial assertion - selected item should be index 0
   assertEquals(state.selectedIdx, 0);
   assertEquals(state.isRunning, false);
@@ -135,7 +145,9 @@ Deno.test("MCP Server: tui_action drives component state updates interactively",
     },
   });
 
-  const res2 = JSON.parse(handleMcpMessage(enterMsg, harness, DASHBOARD_LAYOUT));
+  const res2 = JSON.parse(
+    handleMcpMessage(enterMsg, harness, DASHBOARD_LAYOUT),
+  );
   assert(!res2.result.isError);
   assertEquals(state.isRunning, true);
   assertEquals(state.runCount, 1);
@@ -148,7 +160,7 @@ Deno.test("MCP Server: tui_action drives component state updates interactively",
 
 Deno.test("MCP Server: tui_assert executes validations correctly", () => {
   const { harness } = createDashboardHarness();
-  
+
   // 1. Full visual screen assertion
   const screenAssertMsg = JSON.stringify({
     jsonrpc: "2.0",
@@ -164,7 +176,9 @@ Deno.test("MCP Server: tui_assert executes validations correctly", () => {
     },
   });
 
-  const res1 = JSON.parse(handleMcpMessage(screenAssertMsg, harness, DASHBOARD_LAYOUT));
+  const res1 = JSON.parse(
+    handleMcpMessage(screenAssertMsg, harness, DASHBOARD_LAYOUT),
+  );
   assert(!res1.result.isError);
   assertEquals(res1.result.content[0].text, "Assertion passed successfully.");
 
@@ -183,7 +197,9 @@ Deno.test("MCP Server: tui_assert executes validations correctly", () => {
     },
   });
 
-  const res2 = JSON.parse(handleMcpMessage(componentAssertMsg, harness, DASHBOARD_LAYOUT));
+  const res2 = JSON.parse(
+    handleMcpMessage(componentAssertMsg, harness, DASHBOARD_LAYOUT),
+  );
   assert(!res2.result.isError);
   assertEquals(res2.result.content[0].text, "Assertion passed successfully.");
 
@@ -202,7 +218,9 @@ Deno.test("MCP Server: tui_assert executes validations correctly", () => {
     },
   });
 
-  const res3 = JSON.parse(handleMcpMessage(failingAssertMsg, harness, DASHBOARD_LAYOUT));
+  const res3 = JSON.parse(
+    handleMcpMessage(failingAssertMsg, harness, DASHBOARD_LAYOUT),
+  );
   assert(res3.result.isError);
   assert(res3.result.content[0].text.includes("does not match expected"));
 });

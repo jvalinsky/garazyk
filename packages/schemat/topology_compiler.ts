@@ -195,9 +195,17 @@ export function validatePreset(preset: TopologyPreset): string[] {
  * The OTel Collector listens on 4317 (gRPC) and 4318 (HTTP).
  * The SigNoz UI is on port 3301 (remapped from 8080 to avoid conflict).
  */
-function renderSigNozServices(services: Record<string, ComposeService>, volumes: Set<string>, config?: OtelOptions): void {
-  const clickhouseImage = `clickhouse/clickhouse-server:${config?.clickhouseImage ?? "25.5"}`;
-  const collectorImage = `signoz/signoz-otel-collector:${config?.collectorImage ?? "v0.144.4"}`;
+function renderSigNozServices(
+  services: Record<string, ComposeService>,
+  volumes: Set<string>,
+  config?: OtelOptions,
+): void {
+  const clickhouseImage = `clickhouse/clickhouse-server:${
+    config?.clickhouseImage ?? "25.5"
+  }`;
+  const collectorImage = `signoz/signoz-otel-collector:${
+    config?.collectorImage ?? "v0.144.4"
+  }`;
   const signozImage = `signoz/signoz:${config?.signozImage ?? "v0.123.0"}`;
   const signozPort = config?.signozPort ?? 3301;
   const grpcPort = config?.grpcPort ?? 4317;
@@ -651,7 +659,6 @@ function renderVolume(
   return [resolvedSource, ...parts.slice(1)].join(":");
 }
 
-
 /** Render a sidecar as a compose service object */
 function renderSidecarService(
   name: string,
@@ -713,7 +720,7 @@ function renderSidecarService(
         sourceRelPath,
         resolvedHost,
         resolvedClone,
-        "Config file path escapes clone directory"
+        "Config file path escapes clone directory",
       );
       allVolumes.push(`${hostPath}:${containerPath}:ro`);
     }

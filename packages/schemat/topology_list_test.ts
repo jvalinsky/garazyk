@@ -28,7 +28,11 @@ Deno.test("listTopologyPresets: returns preset summaries sorted by name", async 
 Deno.test("listTopologyPresets: returns unique preset names", async () => {
   const presets = await listTopologyPresets();
   const names = presets.map((p) => p.name);
-  assertEquals(names, [...new Set(names)].sort(), "preset names should be unique");
+  assertEquals(
+    names,
+    [...new Set(names)].sort(),
+    "preset names should be unique",
+  );
 });
 
 Deno.test("listTopologyPresets: known presets are included", async () => {

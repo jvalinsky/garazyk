@@ -6,33 +6,22 @@
  * @module tui/testing
  */
 
-export {
-  VirtualTuiHarness,
-  type HarnessOptions,
-} from "./harness.ts";
+export { type HarnessOptions, VirtualTuiHarness } from "./harness.ts";
+
+export { getByRole, getByText, Locator } from "./locators.ts";
 
 export {
-  Locator,
-  getByText,
-  getByRole,
-} from "./locators.ts";
-
-export {
-  serializeTdom,
-  renderTdomToXml,
   extractTextFromBounds,
+  renderTdomToXml,
+  serializeTdom,
   type TdomElement,
 } from "./tdom.ts";
 
 export {
-  startMcpServer,
   createDashboardHarness,
-  handleMcpMessage,
   type DashboardState,
+  handleMcpMessage,
+  startMcpServer,
 } from "./mcp_server.ts";
 
-export {
-  TuiSessionRecorder,
-  type AsciicastFrame,
-} from "./recorder.ts";
-
+export { type AsciicastFrame, TuiSessionRecorder } from "./recorder.ts";

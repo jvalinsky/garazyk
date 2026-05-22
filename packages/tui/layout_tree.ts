@@ -37,7 +37,12 @@ export interface LayoutNode {
   /** Space between children (default: 0). */
   gap?: number;
   /** Padding inside the node (default: 0). */
-  padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
+  padding?: number | {
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+  };
   /** Child nodes. */
   children?: LayoutNode[];
 }
@@ -71,7 +76,12 @@ export function solveLayout(
 
   // Resolve padding
   const p = typeof root.padding === "number"
-    ? { top: root.padding, right: root.padding, bottom: root.padding, left: root.padding }
+    ? {
+      top: root.padding,
+      right: root.padding,
+      bottom: root.padding,
+      left: root.padding,
+    }
     : {
       top: root.padding?.top || 0,
       right: root.padding?.right || 0,
@@ -226,7 +236,10 @@ export function solveLayout(
  * @param id - The ID to search for
  * @returns The found node or undefined
  */
-export function findResolvedNode(root: ResolvedNode, id: string): ResolvedNode | undefined {
+export function findResolvedNode(
+  root: ResolvedNode,
+  id: string,
+): ResolvedNode | undefined {
   if (root.id === id) return root;
   for (const child of root.children) {
     const found = findResolvedNode(child, id);

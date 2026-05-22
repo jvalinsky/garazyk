@@ -112,10 +112,18 @@ export function parseKey(bytes: number[]): [Key, number] | null {
   if (b0 >= 1 && b0 <= 26) {
     const char = String.fromCharCode(b0 + 96); // 1→a, 2→b, ...
     // Special cases
-    if (b0 === 9) return [{ key: Keys.TAB, ctrl: false, alt: false, shift: false }, 1];
-    if (b0 === 13) return [{ key: Keys.ENTER, ctrl: false, alt: false, shift: false }, 1];
-    if (b0 === 10) return [{ key: Keys.ENTER, ctrl: false, alt: false, shift: false }, 1]; // LF
-    if (b0 === 27) return [{ key: Keys.ESCAPE, ctrl: false, alt: false, shift: false }, 1]; // won't reach, escape handled below
+    if (b0 === 9) {
+      return [{ key: Keys.TAB, ctrl: false, alt: false, shift: false }, 1];
+    }
+    if (b0 === 13) {
+      return [{ key: Keys.ENTER, ctrl: false, alt: false, shift: false }, 1];
+    }
+    if (b0 === 10) {
+      return [{ key: Keys.ENTER, ctrl: false, alt: false, shift: false }, 1]; // LF
+    }
+    if (b0 === 27) {
+      return [{ key: Keys.ESCAPE, ctrl: false, alt: false, shift: false }, 1]; // won't reach, escape handled below
+    }
     return [{ key: char, ctrl: true, alt: false, shift: false }, 1];
   }
 
@@ -173,7 +181,10 @@ function parseEscapeSequence(bytes: number[]): [Key, number] | null {
   // Alt + key (ESC followed by printable char)
   if (b1 >= 32 && b1 <= 126 && b1 !== 91 && b1 !== 79) {
     const char = String.fromCharCode(b1).toLowerCase();
-    return [{ key: char, ctrl: false, alt: true, shift: b1 >= 65 && b1 <= 90 }, 2];
+    return [
+      { key: char, ctrl: false, alt: true, shift: b1 >= 65 && b1 <= 90 },
+      2,
+    ];
   }
 
   // CSI sequences: ESC [ ...
@@ -202,10 +213,16 @@ function parseCsiSequence(bytes: number[]): [Key, number] | null {
   // Bracketed paste: ESC [ 2 0 0 ~ (start) and ESC [ 2 0 1 ~ (end)
   if (b2 === 50 && bytes.length >= 6) { // '2'
     if (bytes[3] === 48 && bytes[4] === 48 && bytes[5] === 126) { // '0', '0', '~'
-      return [{ key: Keys.PASTE_START, ctrl: false, alt: false, shift: false }, 6];
+      return [
+        { key: Keys.PASTE_START, ctrl: false, alt: false, shift: false },
+        6,
+      ];
     }
     if (bytes[3] === 48 && bytes[4] === 49 && bytes[5] === 126) { // '0', '1', '~'
-      return [{ key: Keys.PASTE_END, ctrl: false, alt: false, shift: false }, 6];
+      return [
+        { key: Keys.PASTE_END, ctrl: false, alt: false, shift: false },
+        6,
+      ];
     }
   }
 
@@ -267,7 +284,10 @@ function parseCsiSequence(bytes: number[]): [Key, number] | null {
     for (let i = 3; i < Math.min(bytes.length, 12); i++) {
       if (bytes[i] === 59 && semicolonIdx === -1) semicolonIdx = i; // ';'
       if (bytes[i]! >= 65 && bytes[i]! <= 90 && finalIdx === -1) finalIdx = i; // A-Z
-      if (bytes[i] === 126) { finalIdx = i; break; } // '~'
+      if (bytes[i] === 126) {
+        finalIdx = i;
+        break;
+      } // '~'
     }
 
     if (finalIdx === -1) {
@@ -367,7 +387,12 @@ function parseKittySequence(bytes: number[], uIdx: number): [Key, number] {
   // Regular Unicode codepoint
   if (codepoint >= 32 && codepoint <= 0x10FFFF) {
     const char = String.fromCodePoint(codepoint);
-    return [{ key: char.toLowerCase(), ctrl, alt, shift: shift || (codepoint >= 65 && codepoint <= 90) }, consumed];
+    return [{
+      key: char.toLowerCase(),
+      ctrl,
+      alt,
+      shift: shift || (codepoint >= 65 && codepoint <= 90),
+    }, consumed];
   }
 
   return [{ key: Keys.UNKNOWN, ctrl, alt, shift }, consumed];
@@ -379,16 +404,16 @@ function parseSs3Sequence(bytes: number[]): [Key, number] | null {
 
   const b2 = bytes[2]!;
   const mapping: Record<number, string> = {
-    65: Keys.UP,    // A
-    66: Keys.DOWN,  // B
+    65: Keys.UP, // A
+    66: Keys.DOWN, // B
     67: Keys.RIGHT, // C
-    68: Keys.LEFT,  // D
-    72: Keys.HOME,  // H
-    70: Keys.END,   // F
-    80: Keys.F1,    // P
-    81: Keys.F2,    // Q
-    82: Keys.F3,    // R
-    83: Keys.F4,    // S
+    68: Keys.LEFT, // D
+    72: Keys.HOME, // H
+    70: Keys.END, // F
+    80: Keys.F1, // P
+    81: Keys.F2, // Q
+    82: Keys.F3, // R
+    83: Keys.F4, // S
   };
 
   const key = mapping[b2];
@@ -398,15 +423,19 @@ function parseSs3Sequence(bytes: number[]): [Key, number] | null {
 }
 
 /** Map CSI final byte (A-Z) to key name. */
-function csiFinalToKey(final: number, _param: number, _isTilde: boolean): Key | null {
+function csiFinalToKey(
+  final: number,
+  _param: number,
+  _isTilde: boolean,
+): Key | null {
   const mapping: Record<number, string> = {
-    65: Keys.UP,    // A
-    66: Keys.DOWN,  // B
+    65: Keys.UP, // A
+    66: Keys.DOWN, // B
     67: Keys.RIGHT, // C
-    68: Keys.LEFT,  // D
-    69: Keys.END,   // E
-    72: Keys.HOME,  // H
-    70: Keys.END,   // F
+    68: Keys.LEFT, // D
+    69: Keys.END, // E
+    72: Keys.HOME, // H
+    70: Keys.END, // F
   };
   const key = mapping[final];
   if (key) return { key, ctrl: false, alt: false, shift: false };

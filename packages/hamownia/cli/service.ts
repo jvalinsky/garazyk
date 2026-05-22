@@ -4,10 +4,10 @@ import { initRunDir, repoRoot } from "@garazyk/schemat/runtime";
 import { initLogger, logInfo, logOk } from "@garazyk/schemat";
 import {
   BINARY_SERVICES,
+  type BinaryServiceName,
   printBinaryStatusReport,
   startBinaryServices,
   stopBinaryServices,
-  type BinaryServiceName,
 } from "../binary_services.ts";
 import { psCommand } from "./ps.ts";
 import { topologyCommand } from "./topology.ts";
@@ -41,7 +41,9 @@ const startCmd = new Command()
   .description("Start services.")
   .alias("up")
   .type("service", serviceType)
-  .option("-s, --service <name:service>", "Target specific service.", { collect: true })
+  .option("-s, --service <name:service>", "Target specific service.", {
+    collect: true,
+  })
   .action(async ({ service, verbose, quiet }: StartStopActionOptions) => {
     const ctx = init({ verbose, quiet });
     await startBinaryServices(ctx, { services: resolveServices(service) });
@@ -51,7 +53,9 @@ const stopCmd = new Command()
   .description("Stop services.")
   .alias("down")
   .type("service", serviceType)
-  .option("-s, --service <name:service>", "Target specific service.", { collect: true })
+  .option("-s, --service <name:service>", "Target specific service.", {
+    collect: true,
+  })
   .action(async ({ service, verbose, quiet }: StartStopActionOptions) => {
     init({ verbose, quiet });
     const ctx = initRunDir();
@@ -61,7 +65,9 @@ const stopCmd = new Command()
 const restartCmd = new Command()
   .description("Restart services.")
   .type("service", serviceType)
-  .option("-s, --service <name:service>", "Target specific service.", { collect: true })
+  .option("-s, --service <name:service>", "Target specific service.", {
+    collect: true,
+  })
   .action(async ({ service, verbose, quiet }: StartStopActionOptions) => {
     const ctx = init({ verbose, quiet });
     const targets = resolveServices(service);
@@ -81,7 +87,9 @@ const statusCmd = new Command()
 const logsCmd = new Command()
   .description("Follow service logs.")
   .type("service", serviceType)
-  .option("-s, --service <name:service>", "Service to tail.", { default: "plc" })
+  .option("-s, --service <name:service>", "Service to tail.", {
+    default: "plc",
+  })
   .action(async ({ service, verbose, quiet }: LogsActionOptions) => {
     init({ verbose, quiet });
     const ctx = initRunDir();
@@ -98,7 +106,9 @@ const logsCmd = new Command()
 const reseedCmd = new Command()
   .description("Wipe data and restart with fresh seed.")
   .type("service", serviceType)
-  .option("-s, --service <name:service>", "Target specific service.", { collect: true })
+  .option("-s, --service <name:service>", "Target specific service.", {
+    collect: true,
+  })
   .action(async ({ service, verbose, quiet }: StartStopActionOptions) => {
     const ctx = init({ verbose, quiet });
     const root = await repoRoot();
@@ -128,9 +138,11 @@ const reseedCmd = new Command()
   });
 
 export const serviceCommand = new Command()
-  .description("Manage local ATProto service lifecycle.\n\n" +
-    "Start, stop, restart, and monitor local binary services " +
-    "(PLC, PDS, Relay, AppView, Chat, Video).")
+  .description(
+    "Manage local ATProto service lifecycle.\n\n" +
+      "Start, stop, restart, and monitor local binary services " +
+      "(PLC, PDS, Relay, AppView, Chat, Video).",
+  )
   .command("start", startCmd)
   .command("stop", stopCmd)
   .command("restart", restartCmd)

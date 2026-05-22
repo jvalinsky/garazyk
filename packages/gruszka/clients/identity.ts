@@ -16,7 +16,9 @@ export class IdentityClient {
    * @throws XrpcError if the request fails
    */
   async resolveHandle(handle: string): Promise<any> {
-    return await this.transport.get("com.atproto.identity.resolveHandle", { handle });
+    return await this.transport.get("com.atproto.identity.resolveHandle", {
+      handle,
+    });
   }
 
   /**
@@ -27,6 +29,8 @@ export class IdentityClient {
    * @throws XrpcError if the request fails
    */
   async updateHandle(handle: string, token: string): Promise<any> {
-    return await this.transport.post("com.atproto.identity.updateHandle", { handle }, token);
+    return await this.transport.post("com.atproto.identity.updateHandle", {
+      handle,
+    }, token);
   }
 }

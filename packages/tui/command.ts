@@ -11,48 +11,75 @@ import type { CellStyle } from "./renderer.ts";
 
 /** A 2D rectangular bounding box. */
 export interface BoundingBox {
+  /** The x-coordinate of the top-left corner. */
   x: number;
+  /** The y-coordinate of the top-left corner. */
   y: number;
+  /** The width of the bounding box. */
   width: number;
+  /** The height of the bounding box. */
   height: number;
 }
 
 /** Renders a string of text within a bounding box. */
 export interface TextCommand {
+  /** The command type identifier. */
   type: "text";
+  /** The starting x-coordinate inside the parent container. */
   x: number;
+  /** The starting y-coordinate inside the parent container. */
   y: number;
+  /** The string of text to render. */
   text: string;
+  /** The styling configuration applied to the text cells. */
   style?: CellStyle;
+  /** An optional rectangular clipping boundary. */
   clip?: BoundingBox;
 }
 
 /** Fills a rectangular region with a single character. */
 export interface RectCommand {
+  /** The command type identifier. */
   type: "rect";
+  /** The bounding box of the rectangular region to fill. */
   box: BoundingBox;
+  /** The single character used to fill the region. */
   char: string;
+  /** The styling configuration applied to the filled cells. */
   style?: CellStyle;
+  /** An optional rectangular clipping boundary. */
   clip?: BoundingBox;
 }
 
 /** Draws a line-drawing border around a rectangular region. */
 export interface BoxCommand {
+  /** The command type identifier. */
   type: "box";
+  /** The bounding box of the bordered region. */
   box: BoundingBox;
+  /** The styling configuration applied to the border cells. */
   style?: CellStyle;
+  /** An optional title text rendered on the top border. */
   title?: string;
+  /** Whether the box has keyboard focus (typically highlights the border). */
   focused?: boolean;
+  /** An optional rectangular clipping boundary. */
   clip?: BoundingBox;
 }
 
 /** Scrollable content container with nested commands and viewport offset. */
 export interface ScrollBoxCommand {
+  /** The command type identifier. */
   type: "scrollbox";
+  /** The viewport bounding box of the scrollable container. */
   box: BoundingBox;
+  /** The list of nested child render commands. */
   content: RenderCommand[];
+  /** The current vertical scroll offset in character cells. */
   scrollOffset: number;
+  /** The total height of all content inside the scrollbox. */
   totalHeight: number;
+  /** An optional rectangular clipping boundary. */
   clip?: BoundingBox;
 }
 
@@ -177,7 +204,11 @@ export function rasterize(commands: RenderCommand[], buffer: {
         // then clip to the scrollbox viewport (intersected with any existing child clip).
         const scrollClip = cmd.clip ?? cmd.box;
         for (const subCmd of cmd.content) {
-          const translated = translateCommand(subCmd, cmd.box.x, cmd.box.y - cmd.scrollOffset);
+          const translated = translateCommand(
+            subCmd,
+            cmd.box.x,
+            cmd.box.y - cmd.scrollOffset,
+          );
           const clipped = applyClipIntersection(translated, scrollClip);
           rasterize([clipped], buffer);
         }

@@ -28,7 +28,9 @@ Deno.test("redactDiagnosticText redacts bearer tokens and env-style secrets", ()
 // ---------------------------------------------------------------------------
 
 Deno.test("redactDiagnosticText: redacts refreshJwt field", () => {
-  const input = JSON.stringify({ refreshJwt: "eyJhbGciOiJIUzI1NiJ9.payload.sig" });
+  const input = JSON.stringify({
+    refreshJwt: "eyJhbGciOiJIUzI1NiJ9.payload.sig",
+  });
   const redacted = redactDiagnosticText(input);
   const parsed = JSON.parse(redacted);
   assertEquals(parsed.refreshJwt, "[REDACTED]");
@@ -86,7 +88,14 @@ async function withTempRunContext<T>(
 Deno.test("createRunContext: creates all required directories", async () => {
   await withTempRunContext(async () => {
     const ctx = await createRunContext();
-    for (const path of [ctx.runDir, ctx.logsDir, ctx.reportsDir, ctx.diagnosticsDir]) {
+    for (
+      const path of [
+        ctx.runDir,
+        ctx.logsDir,
+        ctx.reportsDir,
+        ctx.diagnosticsDir,
+      ]
+    ) {
       const stat = await Deno.stat(path);
       assertEquals(stat.isDirectory, true);
     }

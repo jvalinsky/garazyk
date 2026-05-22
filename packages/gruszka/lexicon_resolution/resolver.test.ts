@@ -8,7 +8,7 @@
  * @module lexicon_resolution
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assert, assertEquals } from "jsr:@std/assert";
 
 import { init, update } from "./resolver.ts";
 import {
@@ -54,7 +54,10 @@ function didDoc(id: string, pdsUrl: string): DidDocument {
 }
 
 /** DnsPendingState fixture. */
-function dnsPending(nsid = brandedNsid, domain = expectedDomain): DnsPendingState {
+function dnsPending(
+  nsid = brandedNsid,
+  domain = expectedDomain,
+): DnsPendingState {
   return { status: "dnsPending", nsid, domain };
 }
 
@@ -175,14 +178,19 @@ Deno.test("failed: ignores all message types", () => {
 Deno.test("init state: any message → failed + done", () => {
   const initState: ResolverState = { status: "init" };
 
-  for (const msg of [
-    { type: "dnsSuccess" as const, records: [] },
-    { type: "dnsFailed" as const, reason: "e" },
-    { type: "didSuccess" as const, document: didDoc("did:plc:x", "https://p.example") },
-    { type: "didFailed" as const, reason: "e" },
-    { type: "recordSuccess" as const, lexicon: lexicon("x.y.z") },
-    { type: "recordFailed" as const, reason: "e" },
-  ]) {
+  for (
+    const msg of [
+      { type: "dnsSuccess" as const, records: [] },
+      { type: "dnsFailed" as const, reason: "e" },
+      {
+        type: "didSuccess" as const,
+        document: didDoc("did:plc:x", "https://p.example"),
+      },
+      { type: "didFailed" as const, reason: "e" },
+      { type: "recordSuccess" as const, lexicon: lexicon("x.y.z") },
+      { type: "recordFailed" as const, reason: "e" },
+    ]
+  ) {
     const [next, cmd] = update(initState, msg);
     assertEquals(next.status, "failed");
     assertEquals(cmd.type, "done");

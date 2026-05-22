@@ -16,17 +16,15 @@
 export {
   enterTerminalMode,
   exitTerminalMode,
-  writeToTerminal,
-  isTerminal,
-  getTerminalSize,
   getCurrentTheme,
+  getTerminalSize,
+  isTerminal,
   setCurrentTheme,
+  writeToTerminal,
 } from "./renderer.ts";
 
 /** Whether the NO_COLOR environment variable is set. */
 export const NO_COLOR: boolean = Deno.env.get("NO_COLOR") !== undefined;
 
 // Key reading — from input.ts
-export {
-  readKeys,
-} from "./input.ts";
+export { readKeys } from "./input.ts";

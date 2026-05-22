@@ -8,10 +8,10 @@
  * @module tui/testing/mcp_server
  */
 
-import { ScreenBuffer, DEFAULT_STYLE } from "../renderer.ts";
+import { DEFAULT_STYLE, ScreenBuffer } from "../renderer.ts";
 import { VirtualTuiHarness } from "./harness.ts";
-import { serializeTdom, renderTdomToXml, type TdomElement } from "./tdom.ts";
-import { getByText, getByRole } from "./locators.ts";
+import { renderTdomToXml, serializeTdom, type TdomElement } from "./tdom.ts";
+import { getByRole, getByText } from "./locators.ts";
 import type { ResolvedNode } from "../layout_tree.ts";
 
 /** Internal state structure for the mounted Scenario Dashboard component. */
@@ -90,30 +90,58 @@ export const DASHBOARD_LAYOUT: ResolvedNode = {
 };
 
 /** Render function for the Scenario Dashboard component. */
-export function renderDashboard(buf: ScreenBuffer, state: DashboardState): void {
+export function renderDashboard(
+  buf: ScreenBuffer,
+  state: DashboardState,
+): void {
   // Clear and fill base background
   buf.fillRect(0, 0, buf.width, buf.height, " ", DEFAULT_STYLE);
 
   // 1. Header (y: 0-2)
-  buf.fillRect(0, 0, 80, 3, " ", { ...DEFAULT_STYLE, fg: 7, bg: 4, bold: true });
-  buf.write(2, 1, "GARAZYK SCENARIO RUNNER DASHBOARD", { ...DEFAULT_STYLE, fg: 7, bg: 4, bold: true });
-  buf.write(60, 1, `Runs Executed: ${state.runCount}`, { ...DEFAULT_STYLE, fg: 7, bg: 4 });
+  buf.fillRect(0, 0, 80, 3, " ", {
+    ...DEFAULT_STYLE,
+    fg: 7,
+    bg: 4,
+    bold: true,
+  });
+  buf.write(2, 1, "GARAZYK SCENARIO RUNNER DASHBOARD", {
+    ...DEFAULT_STYLE,
+    fg: 7,
+    bg: 4,
+    bold: true,
+  });
+  buf.write(60, 1, `Runs Executed: ${state.runCount}`, {
+    ...DEFAULT_STYLE,
+    fg: 7,
+    bg: 4,
+  });
 
   // 2. Search Panel (y: 3-5)
   buf.fillRect(0, 3, 80, 3, " ", { ...DEFAULT_STYLE, fg: 7, bg: 0 });
-  buf.write(2, 4, `Search: [${state.filterTerm || "Type to filter..."}]`, DEFAULT_STYLE);
+  buf.write(
+    2,
+    4,
+    `Search: [${state.filterTerm || "Type to filter..."}]`,
+    DEFAULT_STYLE,
+  );
 
   // 3. Scenarios List (y: 6-20, x: 0-39)
   buf.fillRect(0, 6, 40, 15, " ", { ...DEFAULT_STYLE, fg: 7, bg: 0 });
-  buf.write(2, 7, "AVAILABLE SCENARIOS:", { ...DEFAULT_STYLE, bold: true, underline: true });
-  
+  buf.write(2, 7, "AVAILABLE SCENARIOS:", {
+    ...DEFAULT_STYLE,
+    bold: true,
+    underline: true,
+  });
+
   const filtered = state.scenarios.filter((s) =>
     s.toLowerCase().includes(state.filterTerm.toLowerCase())
   );
 
   for (let i = 0; i < filtered.length; i++) {
     const isSelected = i === state.selectedIdx;
-    const style = isSelected ? { ...DEFAULT_STYLE, fg: 2, bg: 0, bold: true } : DEFAULT_STYLE;
+    const style = isSelected
+      ? { ...DEFAULT_STYLE, fg: 2, bg: 0, bold: true }
+      : DEFAULT_STYLE;
     const prefix = isSelected ? "> " : "  ";
     buf.write(2, 9 + i, `${prefix}${filtered[i]}`, style);
   }
@@ -121,10 +149,19 @@ export function renderDashboard(buf: ScreenBuffer, state: DashboardState): void 
   // 4. Details Card (y: 6-20, x: 40-79)
   buf.fillRect(40, 6, 40, 15, " ", { ...DEFAULT_STYLE, fg: 7, bg: 0 });
   const activeScenario = filtered[state.selectedIdx] || "None Selected";
-  buf.write(42, 7, "SCENARIO DETAILS:", { ...DEFAULT_STYLE, bold: true, underline: true });
+  buf.write(42, 7, "SCENARIO DETAILS:", {
+    ...DEFAULT_STYLE,
+    bold: true,
+    underline: true,
+  });
   buf.write(42, 9, `Name: ${activeScenario}`, DEFAULT_STYLE);
-  buf.write(42, 11, `Status: ${state.isRunning ? "RUNNING" : "STOPPED"}`, DEFAULT_STYLE);
-  
+  buf.write(
+    42,
+    11,
+    `Status: ${state.isRunning ? "RUNNING" : "STOPPED"}`,
+    DEFAULT_STYLE,
+  );
+
   const btnStyle = state.isRunning
     ? { ...DEFAULT_STYLE, fg: 7, bg: 1, bold: true }
     : { ...DEFAULT_STYLE, fg: 7, bg: 2, bold: true };
@@ -133,22 +170,35 @@ export function renderDashboard(buf: ScreenBuffer, state: DashboardState): void 
 
   // 5. Status Bar (y: 21-23)
   buf.fillRect(0, 21, 80, 3, " ", { ...DEFAULT_STYLE, fg: 7, bg: 8 });
-  buf.write(2, 22, `Status: ${state.statusMessage}`, { ...DEFAULT_STYLE, fg: 7, bg: 8, bold: true });
+  buf.write(2, 22, `Status: ${state.statusMessage}`, {
+    ...DEFAULT_STYLE,
+    fg: 7,
+    bg: 8,
+    bold: true,
+  });
 }
 
-
 /** Configures and returns a live VirtualTuiHarness for the Scenario Dashboard. */
-export function createDashboardHarness(initialState = DEFAULT_DASHBOARD_STATE): {
+export function createDashboardHarness(
+  initialState = DEFAULT_DASHBOARD_STATE,
+): {
   harness: VirtualTuiHarness;
   state: DashboardState;
 } {
   const state = { ...initialState };
-  const harness = new VirtualTuiHarness(80, 24, (buf) => renderDashboard(buf, state));
+  const harness = new VirtualTuiHarness(
+    80,
+    24,
+    (buf) => renderDashboard(buf, state),
+  );
 
   harness.onKey((key) => {
     // Process list navigation
     if (key.key === "down" || key.key === "j") {
-      state.selectedIdx = Math.min(state.selectedIdx + 1, state.scenarios.length - 1);
+      state.selectedIdx = Math.min(
+        state.selectedIdx + 1,
+        state.scenarios.length - 1,
+      );
       state.statusMessage = `Highlighted ${state.scenarios[state.selectedIdx]}`;
     } else if (key.key === "up" || key.key === "k") {
       state.selectedIdx = Math.max(state.selectedIdx - 1, 0);
@@ -158,9 +208,13 @@ export function createDashboardHarness(initialState = DEFAULT_DASHBOARD_STATE): 
       state.isRunning = !state.isRunning;
       if (state.isRunning) {
         state.runCount += 1;
-        state.statusMessage = `Started run of ${state.scenarios[state.selectedIdx]}!`;
+        state.statusMessage = `Started run of ${
+          state.scenarios[state.selectedIdx]
+        }!`;
       } else {
-        state.statusMessage = `Stopped run of ${state.scenarios[state.selectedIdx]}.`;
+        state.statusMessage = `Stopped run of ${
+          state.scenarios[state.selectedIdx]
+        }.`;
       }
     } else if (key.key.length === 1) {
       // Direct typing simulates filtering
@@ -205,7 +259,10 @@ export function handleMcpMessage(
     return JSON.stringify({
       jsonrpc: "2.0",
       id: null,
-      error: { code: -32700, message: `Parse error: ${(err as Error).message}` },
+      error: {
+        code: -32700,
+        message: `Parse error: ${(err as Error).message}`,
+      },
     });
   }
 
@@ -213,7 +270,10 @@ export function handleMcpMessage(
     return JSON.stringify({
       jsonrpc: "2.0",
       id: request.id ?? null,
-      error: { code: -32600, message: "Invalid Request: missing jsonrpc version '2.0'" },
+      error: {
+        code: -32600,
+        message: "Invalid Request: missing jsonrpc version '2.0'",
+      },
     });
   }
 
@@ -245,7 +305,8 @@ export function handleMcpMessage(
           tools: [
             {
               name: "tui_inspect",
-              description: "Returns the current visual flat text screen buffer and hierarchical TDOM XML layout tree representation.",
+              description:
+                "Returns the current visual flat text screen buffer and hierarchical TDOM XML layout tree representation.",
               inputSchema: {
                 type: "object",
                 properties: {},
@@ -253,18 +314,21 @@ export function handleMcpMessage(
             },
             {
               name: "tui_action",
-              description: "Simulates interactive keystrokes or mouse click coordinate events to drive state changes.",
+              description:
+                "Simulates interactive keystrokes or mouse click coordinate events to drive state changes.",
               inputSchema: {
                 type: "object",
                 properties: {
                   action: {
                     type: "string",
                     enum: ["press_key", "type", "click"],
-                    description: "Simulation type: press_key for control keys, type for characters, click for click coordinate zones.",
+                    description:
+                      "Simulation type: press_key for control keys, type for characters, click for click coordinate zones.",
                   },
                   value: {
                     type: "string",
-                    description: "Key name (e.g. 'down', 'enter', 'backspace'), text content to type, or component layout ID to click.",
+                    description:
+                      "Key name (e.g. 'down', 'enter', 'backspace'), text content to type, or component layout ID to click.",
                   },
                 },
                 required: ["action", "value"],
@@ -272,13 +336,15 @@ export function handleMcpMessage(
             },
             {
               name: "tui_assert",
-              description: "Semantic assertions over specific components or visible screen coordinates.",
+              description:
+                "Semantic assertions over specific components or visible screen coordinates.",
               inputSchema: {
                 type: "object",
                 properties: {
                   selector: {
                     type: "string",
-                    description: "TDOM component ID (e.g. 'status-bar') or 'screen' for the full buffer.",
+                    description:
+                      "TDOM component ID (e.g. 'status-bar') or 'screen' for the full buffer.",
                   },
                   condition: {
                     type: "string",
@@ -317,7 +383,8 @@ export function handleMcpMessage(
             const xml = renderTdomToXml(tdom);
             const flatScreen = harness.dumpScreen();
 
-            const payloadText = `=== TDOM XML LAYOUT ===\n${xml}\n\n=== SCREEN BUFFER DUMP ===\n${flatScreen}`;
+            const payloadText =
+              `=== TDOM XML LAYOUT ===\n${xml}\n\n=== SCREEN BUFFER DUMP ===\n${flatScreen}`;
 
             return JSON.stringify({
               jsonrpc: "2.0",
@@ -342,8 +409,11 @@ export function handleMcpMessage(
             } else if (act === "click") {
               // Click resolves bounding centers in TDOM
               const tdom = serializeTdom(harness.buffer, layout);
-              
-              const findNode = (el: TdomElement, targetId: string): TdomElement | undefined => {
+
+              const findNode = (
+                el: TdomElement,
+                targetId: string,
+              ): TdomElement | undefined => {
                 if (el.id === targetId) return el;
                 for (const c of el.children) {
                   const found = findNode(c, targetId);
@@ -354,7 +424,9 @@ export function handleMcpMessage(
 
               const node = findNode(tdom, val);
               if (!node) {
-                throw new Error(`Failed to find clickable component with ID: ${val}`);
+                throw new Error(
+                  `Failed to find clickable component with ID: ${val}`,
+                );
               }
               // Clicking centers simulation: dispatches enter/action mapping
               harness.emitKey("enter");
@@ -374,7 +446,8 @@ export function handleMcpMessage(
                 content: [
                   {
                     type: "text",
-                    text: `Action executed successfully.\n\n=== NEW TDOM LAYOUT ===\n${updatedXml}\n\n=== NEW SCREEN BUFFER ===\n${updatedScreen}`,
+                    text:
+                      `Action executed successfully.\n\n=== NEW TDOM LAYOUT ===\n${updatedXml}\n\n=== NEW SCREEN BUFFER ===\n${updatedScreen}`,
                   },
                 ],
                 isError: false,
@@ -391,11 +464,16 @@ export function handleMcpMessage(
               const text = harness.dumpScreen();
               const passed = text.includes(expected);
               if (!passed) {
-                throw new Error(`Screen assertion failed. Expected text "${expected}" to be visible, but got screen:\n${text}`);
+                throw new Error(
+                  `Screen assertion failed. Expected text "${expected}" to be visible, but got screen:\n${text}`,
+                );
               }
             } else {
               const tdom = serializeTdom(harness.buffer, layout);
-              const findNode = (el: TdomElement, targetId: string): TdomElement | undefined => {
+              const findNode = (
+                el: TdomElement,
+                targetId: string,
+              ): TdomElement | undefined => {
                 if (el.id === targetId) return el;
                 for (const c of el.children) {
                   const found = findNode(c, targetId);
@@ -406,16 +484,26 @@ export function handleMcpMessage(
 
               const node = findNode(tdom, selector);
               if (!node) {
-                throw new Error(`Assertion failed. Target selector element ID not found: ${selector}`);
+                throw new Error(
+                  `Assertion failed. Target selector element ID not found: ${selector}`,
+                );
               }
 
               if (cond === "visible") {
                 // If found in tree, it is active
                 const passed = node.width > 0 && node.height > 0;
-                if (!passed) throw new Error(`Element "${selector}" is not visible (dimensions ${node.width}x${node.height}).`);
+                if (!passed) {
+                  throw new Error(
+                    `Element "${selector}" is not visible (dimensions ${node.width}x${node.height}).`,
+                  );
+                }
               } else if (cond === "contains_text") {
                 const passed = node.text.includes(expected);
-                if (!passed) throw new Error(`Element "${selector}" contains text "${node.text}", which does not match expected "${expected}".`);
+                if (!passed) {
+                  throw new Error(
+                    `Element "${selector}" contains text "${node.text}", which does not match expected "${expected}".`,
+                  );
+                }
               }
             }
 
@@ -423,7 +511,10 @@ export function handleMcpMessage(
               jsonrpc: "2.0",
               id,
               result: {
-                content: [{ type: "text", text: `Assertion passed successfully.` }],
+                content: [{
+                  type: "text",
+                  text: `Assertion passed successfully.`,
+                }],
                 isError: false,
               },
             });
@@ -442,7 +533,10 @@ export function handleMcpMessage(
           jsonrpc: "2.0",
           id,
           result: {
-            content: [{ type: "text", text: `Error: ${(err as Error).message}` }],
+            content: [{
+              type: "text",
+              text: `Error: ${(err as Error).message}`,
+            }],
             isError: true,
           },
         });

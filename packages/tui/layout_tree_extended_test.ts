@@ -12,8 +12,8 @@ Deno.test("solveLayout: respects maxWidth", () => {
   const bounds = { x: 0, y: 0, width: 100, height: 10 };
   const resolved = solveLayout(root, bounds);
 
-  const left = resolved.children.find(c => c.id === "left")!;
-  const right = resolved.children.find(c => c.id === "right")!;
+  const left = resolved.children.find((c) => c.id === "left")!;
+  const right = resolved.children.find((c) => c.id === "right")!;
 
   assertEquals(left.width, 10);
   assertEquals(right.width, 90);
@@ -30,14 +30,18 @@ Deno.test("solveLayout: respects minWidth", () => {
   const bounds = { x: 0, y: 0, width: 100, height: 10 };
   const resolved = solveLayout(root, bounds);
 
-  const left = resolved.children.find(c => c.id === "left")!;
+  const left = resolved.children.find((c) => c.id === "left")!;
   assertEquals(left.width, 20);
 });
 
 Deno.test("solveLayout: respects padding (number)", () => {
   const root = {
     padding: 2,
-    children: [{ id: "child", width: "grow" as const, height: "grow" as const }],
+    children: [{
+      id: "child",
+      width: "grow" as const,
+      height: "grow" as const,
+    }],
   };
   const bounds = { x: 0, y: 0, width: 100, height: 100 };
   const resolved = solveLayout(root, bounds);
@@ -52,7 +56,11 @@ Deno.test("solveLayout: respects padding (number)", () => {
 Deno.test("solveLayout: respects padding (object)", () => {
   const root = {
     padding: { top: 1, left: 2, right: 3, bottom: 4 },
-    children: [{ id: "child", width: "grow" as const, height: "grow" as const }],
+    children: [{
+      id: "child",
+      width: "grow" as const,
+      height: "grow" as const,
+    }],
   };
   const bounds = { x: 0, y: 0, width: 10, height: 10 };
   const resolved = solveLayout(root, bounds);

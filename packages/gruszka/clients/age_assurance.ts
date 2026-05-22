@@ -30,7 +30,11 @@ export class AgeAssuranceClient {
       countryCode,
     };
     if (options.regionCode) body.regionCode = options.regionCode;
-    return await this.transport.post("app.bsky.ageassurance.begin", body, options.token);
+    return await this.transport.post(
+      "app.bsky.ageassurance.begin",
+      body,
+      options.token,
+    );
   }
 
   /**
@@ -40,7 +44,11 @@ export class AgeAssuranceClient {
    * @throws XrpcError if the request fails
    */
   async getAgeAssuranceConfig(token?: string): Promise<any> {
-    return await this.transport.get("app.bsky.ageassurance.getConfig", undefined, token);
+    return await this.transport.get(
+      "app.bsky.ageassurance.getConfig",
+      undefined,
+      token,
+    );
   }
 
   /**
@@ -56,6 +64,10 @@ export class AgeAssuranceClient {
   ): Promise<any> {
     const params: Record<string, any> = { countryCode };
     if (options.regionCode) params.regionCode = options.regionCode;
-    return await this.transport.get("app.bsky.ageassurance.getState", params, options.token);
+    return await this.transport.get(
+      "app.bsky.ageassurance.getState",
+      params,
+      options.token,
+    );
   }
 }
