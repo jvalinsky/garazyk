@@ -78,16 +78,16 @@ static NSSet<NSString *> *graphCollections(void) {
     
     if ([collection isEqualToString:@"app.bsky.graph.list"]) {
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        [_graphService indexList:record did:did uri:uri cid:cid error:error];
+        return [_graphService indexList:record did:did uri:uri cid:cid error:error];
     }
 
     if ([collection isEqualToString:@"app.bsky.graph.listitem"]) {
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        [_graphService indexListitem:record did:did uri:uri cid:cid error:error];
+        return [_graphService indexListitem:record did:did uri:uri cid:cid error:error];
     }
 
     if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
-        [_graphService indexStarterPack:record did:did rkey:rkey cid:cid error:error];
+        return [_graphService indexStarterPack:record did:did rkey:rkey cid:cid error:error];
     }
 
     GZ_LOG_DEBUG(@"[AppViewGraphIndexer] Indexed %@ for %@", collection, did);
