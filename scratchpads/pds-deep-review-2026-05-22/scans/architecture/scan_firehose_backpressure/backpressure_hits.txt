@@ -1,0 +1,87 @@
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:39:- (instancetype)initWithEventBuffer:(RelayEventBuffer *)buffer
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:43:        _eventBuffer = buffer;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:46:            _subscribeReposHandler.eventBuffer = buffer;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:64:    // Process on handler queue for thread safety
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:12:    - Events received, validated, forwarded, dropped
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:54:/** Records that an event was dropped. */
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:116:/** Total events dropped before forwarding. */
+./Garazyk/Sources/Sync/Relay/RelayClient.h:96: @abstract Pauses reading from the relay. TCP backpressure propagates.
+./Garazyk/Sources/Sync/Relay/RelayClient.h:98: @discussion When paused, the OS socket buffer fills, the TCP window
+./Garazyk/Sources/Sync/Relay/RelayClient.h:100: Used by the AppView ingest engine for backpressure.
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.m:102:            // Only forward valid events, drop invalid
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:18:@property (nonatomic, strong) NSMutableArray<BufferedEvent *> *buffer;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:44:        _bufferQueue = dispatch_queue_create("com.atproto.relay.buffer", DISPATCH_QUEUE_SERIAL);
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:73:        [self.buffer addObject:e];
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:76:        if (self.buffer.count > self.maxEvents) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:77:            [self.buffer removeObjectAtIndex:0];
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:78:            if (self.buffer.count > 0) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:79:                self.oldestSeq = ((BufferedEvent *)self.buffer[0]).seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:88:        for (BufferedEvent *e in self.buffer) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:103:        for (BufferedEvent *e in self.buffer) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:132:        count = self.buffer.count;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:142:        for (BufferedEvent *e in self.buffer) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:148:        [self.buffer removeObjectsInArray:toRemove];
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:150:        if (self.buffer.count > 0) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:151:            self.oldestSeq = ((BufferedEvent *)self.buffer[0]).seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:161:        [self.buffer removeAllObjects];
+./Garazyk/Sources/Sync/Relay/RelayMetrics.m:187:        [metrics appendString:@"# HELP relay_events_dropped_total Total events dropped (validation failure in strict mode)\n"];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:71: @param buffer Event buffer for storing recent events.
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:76:- (instancetype)initWithEventBuffer:(RelayEventBuffer *)buffer
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:16:    - Strict: drop events that fail validation  
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:6: @abstract Event buffer with configurable retention window for the relay.
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:12:    - Circular buffer with timestamp-based eviction
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:34: * @abstract Creates an event buffer with the supplied retention window and capacity.
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:43: * @abstract Creates a buffer using the relay default retention policy.
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:87:/*! In-memory event buffer for relay-mode replay when serviceDatabases is nil. */
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:78:  NSMutableArray<NSData *> *queue = [NSMutableArray arrayWithObject:[rootCID bytes]];
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:81:  while (queue.count > 0) {
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:82:    NSData *cidBytes = queue.firstObject;
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:83:    [queue removeObjectAtIndex:0];
+./Garazyk/Sources/Sync/Firehose/Firehose.h:314: TCP backpressure to the server.
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:142:    // Initialize backpressure rate limiter (100 events/sec)
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:784:        GZ_LOG_SYNC_WARN(@"[Firehose] Subscriber %@ has high backpressure: "
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:834:  GZ_LOG_SYNC_INFO(@"Queuing initial state worker for connection %@ (queue: %p)", connection.remoteAddress, self.syncQueue);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:964:        // Fallback: use in-memory event buffer (Relay mode)
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:992:        GZ_LOG_SYNC_WARN(@"Cannot replay events: no service databases or event buffer");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1012:    GZ_LOG_SYNC_WARN(@"Skipping unknown event type in buffer replay: %@", NSStringFromClass([event class]));
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1164:                       message:@"connection output queue exceeded server limit"
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketTransport.h:61: Invoked on the transport's event queue (typically a background queue).
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketTransport.h:69: Invoked once per connection, after all pending operations complete.
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:77:/*! Called when backpressure warning threshold is reached. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:82:/*! Called when backpressure critical threshold is reached. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:87:/*! Called when backpressure is cleared (queue drops below warning threshold). */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:90:/*! Called when connection is about to be closed due to queue overflow. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:137:/*! Maximum bytes allowed in outbound queue. Default: 10MB. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:140:/*! Threshold percentage (0.0-1.0) for backpressure warning. Default: 0.7 (70%). */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:141:@property(nonatomic, assign) double backpressureWarningThreshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:143:/*! Threshold percentage (0.0-1.0) for backpressure critical. Default: 0.9 (90%). */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:144:@property(nonatomic, assign) double backpressureCriticalThreshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:199: @abstract Suspends the read loop, causing TCP backpressure to propagate.
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:203: socket buffer fills, the TCP window shrinks, and the remote peer
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:27:  /** Notify that outbound queue usage crossed the warning threshold. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:29:  /** Notify that outbound queue usage crossed the critical threshold. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:31:  /** Notify that outbound queue usage returned below pressure thresholds. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:48: * @abstract Coordinates WebSocket framing, heartbeat, and backpressure without owning socket I/O.
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:57:/** Maximum outbound queue size before backpressure actions become critical. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:60:@property(nonatomic, assign) double backpressureWarningThreshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:62:@property(nonatomic, assign) double backpressureCriticalThreshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:72:/** Records an outbound frame enqueue and emits any resulting backpressure action. */
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:70: Invoked on an internal dispatch queue; the handler should not perform
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.m:28:    _backpressureWarningThreshold = 0.7;
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.m:29:    _backpressureCriticalThreshold = 0.9;
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.m:90:  if (fillPercentage >= self.backpressureCriticalThreshold) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.m:92:  } else if (fillPercentage >= self.backpressureWarningThreshold) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.m:107:  if (self.isUnderBackpressure && fillPercentage < self.backpressureWarningThreshold) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:123:- (double)backpressureWarningThreshold {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:124:  return self.session.backpressureWarningThreshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:128:  self.session.backpressureWarningThreshold = threshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:131:- (double)backpressureCriticalThreshold {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:132:  return self.session.backpressureCriticalThreshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:136:  self.session.backpressureCriticalThreshold = threshold;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:326:  // The OS socket buffer fills, causing TCP backpressure to propagate.
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:567:    // Check overflow
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:573:        [self closeWithCode:1009 reason:@"Outbound queue limit exceeded"];
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:725:  GZ_LOG_SYNC_WARN(@"[%@] WebSocket backpressure warning: queue %.1f%% full (%lu/%lu bytes)",
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:740:  GZ_LOG_SYNC_WARN(@"[%@] WebSocket backpressure critical: queue %.1f%% full (%lu/%lu bytes)",
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:754:  GZ_LOG_SYNC_INFO(@"[%@] WebSocket backpressure cleared: queue now %.1f%% full (%lu/%lu bytes)",
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:766:  GZ_LOG_SYNC_ERROR(@"[%@] WebSocket queue overflow: %lu bytes exceeds limit %lu, closing connection",

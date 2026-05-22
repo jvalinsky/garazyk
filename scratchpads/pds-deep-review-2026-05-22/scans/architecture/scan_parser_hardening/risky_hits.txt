@@ -1,0 +1,280 @@
+./Garazyk/Sources/Repository/MST.m:73:    NSData *cidBytes = [self.valueCID bytes];
+./Garazyk/Sources/Repository/MST.m:156:    NSData *vBytes = [self.value bytes];
+./Garazyk/Sources/Repository/MST.m:162:    uint16_t tLen = tCID ? htons((uint16_t)[tCID bytes].length) : 0;
+./Garazyk/Sources/Repository/MST.m:165:        [data appendData:[tCID bytes]];
+./Garazyk/Sources/Repository/MST.m:256:        const uint8_t *prevBytes = prevKeyData.bytes;
+./Garazyk/Sources/Repository/MST.m:257:        const uint8_t *currBytes = fullKeyData.bytes;
+./Garazyk/Sources/Repository/MST.m:267:        NSData *kSuffix = [fullKeyData subdataWithRange:NSMakeRange(p, fullKeyData.length - p)];
+./Garazyk/Sources/Repository/MST.m:277:            [tData appendData:tCID.bytes];
+./Garazyk/Sources/Repository/MST.m:281:            [tData appendData:entry.treeCID.bytes];
+./Garazyk/Sources/Repository/MST.m:288:        [vData appendData:entry.value.bytes];
+./Garazyk/Sources/Repository/MST.m:301:        [lData appendData:lCID.bytes];
+./Garazyk/Sources/Repository/MST.m:305:        [lData appendData:self.leftCID.bytes];
+./Garazyk/Sources/Repository/MST.m:372:    CC_SHA256(cbor.bytes, (CC_LONG)cbor.length, hash);
+./Garazyk/Sources/Repository/MST.m:450:+ (uint32_t)keyDepthFromBytes:(const uint8_t *)bytes length:(NSUInteger)len {
+./Garazyk/Sources/Repository/MST.m:452:    CC_SHA256(bytes, (CC_LONG)len, hash);
+./Garazyk/Sources/Repository/MST.m:477:    return [self keyDepthFromBytes:keyData.bytes length:keyData.length];
+./Garazyk/Sources/Repository/MST.m:485:    return [self keyDepthFromBytes:keyBytes.bytes length:keyBytes.length];
+./Garazyk/Sources/Repository/MST.m:825:        NSMutableData *fullKeyData = [NSMutableData dataWithData:[prevKeyData subdataWithRange:NSMakeRange(0, safePrefixLen)]];
+./Garazyk/Sources/Repository/MST.m:837:        NSData *vCidBytes = [valueBytes.byteString subdataWithRange:NSMakeRange(1, valueBytes.byteString.length - 1)];
+./Garazyk/Sources/Repository/MST.m:848:                treeCID = [CID cidFromBytes:[tCidBytes subdataWithRange:NSMakeRange(1, tCidBytes.length - 1)]];
+./Garazyk/Sources/Repository/MST.m:862:            leftCID = [CID cidFromBytes:[lCidBytes subdataWithRange:NSMakeRange(1, lCidBytes.length - 1)]];
+./Garazyk/Sources/Core/CID.h:45: @param digest The raw digest bytes (e.g., 32 bytes for SHA-256).
+./Garazyk/Sources/Core/CID.h:54: @param multihash The multihash bytes (algorithm + digest).
+./Garazyk/Sources/Core/CID.h:79: bytes were consumed. Unlike cidFromBytes:, this accepts trailing data
+./Garazyk/Sources/Core/CID.h:82: @param bytes Pointer to the buffer.
+./Garazyk/Sources/Core/CID.h:83: @param length Maximum number of bytes the parser may read.
+./Garazyk/Sources/Core/CID.h:84: @param consumed On success, set to the number of bytes the CID occupied.
+./Garazyk/Sources/Core/CID.h:92:+ (nullable instancetype)cidFromBuffer:(const uint8_t *)bytes
+./Garazyk/Sources/Core/CID.h:145: @method bytes
+./Garazyk/Sources/Core/CID.h:146: @abstract Get the raw bytes representation.
+./Garazyk/Sources/Core/CID.h:147: @return The raw CID bytes.
+./Garazyk/Sources/Core/CID.h:149:- (NSData *)bytes;
+./Garazyk/Sources/Core/CID.h:161:  @abstract Compute raw SHA-256 digest (32 bytes).
+./Garazyk/Sources/Core/CID.h:169: @abstract Compute raw SHA-256 digest (32 bytes).
+./Garazyk/Sources/Repository/MSTPersistence.m:105:    NSData *rootData = mst.rootCID ? [mst.rootCID bytes] : [NSData data];
+./Garazyk/Sources/Repository/MSTPersistence.m:150:    block.cid = [cid bytes];
+./Garazyk/Sources/Repository/MSTPersistence.m:222:    NSData *bytes = value.tagValue.byteString;
+./Garazyk/Sources/Repository/MSTPersistence.m:223:    if (!bytes || bytes.length <= 1) {
+./Garazyk/Sources/Repository/MSTPersistence.m:233:    NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
+./Garazyk/Sources/Repository/MSTPersistence.m:260:    PDSDatabaseBlock *block = [database getBlockWithCid:cid.bytes repoDid:repoDid error:error];
+./Garazyk/Sources/Repository/STAR.h:422: @param data The first bytes of the data to check.
+./Garazyk/Sources/Repository/CAR.m:54:static NSUInteger ReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+./Garazyk/Sources/Repository/CAR.m:64:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Repository/CAR.m:96:                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header CID bytes are empty"}];
+./Garazyk/Sources/Repository/CAR.m:102:    // followed by the raw CID bytes.
+./Garazyk/Sources/Repository/CAR.m:104:    const uint8_t *bytes = cidBytes.bytes;
+./Garazyk/Sources/Repository/CAR.m:105:    if (cidBytes.length > 0 && bytes[0] == 0x00) {
+./Garazyk/Sources/Repository/CAR.m:106:        cidBytes = [cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)];
+./Garazyk/Sources/Repository/CAR.m:118:static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
+./Garazyk/Sources/Repository/CAR.m:120:    CID *cid = [CID cidFromBuffer:bytes length:length consumed:&consumed];
+./Garazyk/Sources/Repository/CAR.m:173:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CAR.m:176:    NSUInteger headerSize = ReadVarint(bytes + offset, data.length - offset, &headerLength);
+./Garazyk/Sources/Repository/CAR.m:191:    NSData *headerData = [data subdataWithRange:NSMakeRange(offset, headerLength)];
+./Garazyk/Sources/Repository/CAR.m:233:        NSUInteger blockSize = ReadVarint(bytes + offset, data.length - offset, &blockLen);
+./Garazyk/Sources/Repository/CAR.m:253:        NSData *blockBytes = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)blockLen)];
+./Garazyk/Sources/Repository/CAR.m:258:        if (!DecodeCIDFromBlock(blockBytes.bytes, blockBytes.length, &blockCID, &cidLength)) {
+./Garazyk/Sources/Repository/CAR.m:267:        NSData *blockData = [blockBytes subdataWithRange:NSMakeRange(cidLength, blockBytes.length - cidLength)];
+./Garazyk/Sources/Repository/CAR.m:289:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CAR.m:293:    memcpy(&version, bytes + offset, 4);
+./Garazyk/Sources/Repository/CAR.m:307:    memcpy(&rootCidLength, bytes + offset, 4);
+./Garazyk/Sources/Repository/CAR.m:320:    NSData *rootCidData = [data subdataWithRange:NSMakeRange(offset, rootCidLength)];
+./Garazyk/Sources/Repository/CAR.m:343:        memcpy(&blockLen, bytes + offset, 4);
+./Garazyk/Sources/Repository/CAR.m:356:        NSData *blockData = [data subdataWithRange:NSMakeRange(offset, blockLen)];
+./Garazyk/Sources/Repository/CAR.m:427:    NSMutableData *taggedCIDBytes = [NSMutableData dataWithCapacity:1 + rootCID.bytes.length];
+./Garazyk/Sources/Repository/CAR.m:430:    [taggedCIDBytes appendData:rootCID.bytes];
+./Garazyk/Sources/Repository/CAR.m:456:    NSData *cidBytes = [block.cid bytes];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:34:    return [self _decodeFromBytes:data.bytes length:data.length index:&index depth:0 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:82:        // Check for $bytes wrapper
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:83:        if (dict.count == 1 && dict[@"$bytes"]) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:84:            NSString *base64String = dict[@"$bytes"];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:89:                                             userInfo:@{NSLocalizedDescriptionKey: @"$bytes value must be a string"}];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:93:            NSData *bytes = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:94:            if (!bytes) {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:98:                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid base64 in $bytes"}];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:102:            return bytes;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:139:        return @{@"$bytes": [data base64EncodedStringWithOptions:0]};
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:241:        uint8_t bytes[2] = { initialByte, (uint8_t)value };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:242:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:245:        uint8_t bytes[3] = { initialByte, (value >> 8) & 0xFF, value & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:246:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:249:        uint8_t bytes[5] = { initialByte, (value >> 24) & 0xFF, (value >> 16) & 0xFF, 
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:251:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:254:        uint8_t bytes[9] = { initialByte };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:256:            bytes[8 - i] = (value >> (i * 8)) & 0xFF;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:258:        [data appendBytes:bytes length:9];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:283:        uint8_t bytes[2] = { initialByte, (uint8_t)length };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:284:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:287:        uint8_t bytes[3] = { initialByte, (length >> 8) & 0xFF, length & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:288:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:291:        uint8_t bytes[5] = { initialByte, (length >> 24) & 0xFF, (length >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:293:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:300:+ (BOOL)_encodeByteString:(NSData *)bytes toData:(NSMutableData *)data error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:301:    NSUInteger length = bytes.length;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:322:    [data appendData:bytes];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:335:        uint8_t bytes[2] = { initialByte, (uint8_t)count };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:336:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:339:        uint8_t bytes[3] = { initialByte, (count >> 8) & 0xFF, count & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:340:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:343:        uint8_t bytes[5] = { initialByte, (count >> 24) & 0xFF, (count >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:345:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:366:        uint8_t bytes[2] = { initialByte, (uint8_t)count };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:367:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:370:        uint8_t bytes[3] = { initialByte, (count >> 8) & 0xFF, count & 0xFF };
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:371:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:374:        uint8_t bytes[5] = { initialByte, (count >> 24) & 0xFF, (count >> 16) & 0xFF,
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:376:        [data appendBytes:bytes length:5];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:408:    // Sort by encoded bytes (length-first, then lexicographic)
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:418:        int cmp = memcmp(data1.bytes, data2.bytes, data1.length);
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:434:    // CID-link: tag 42 with byte string containing 0x00 || CID bytes
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:435:    NSMutableData *cidBytes = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:438:    [cidBytes appendData:cid.bytes];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:452:+ (nullable id)_decodeFromBytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:471:    uint8_t initialByte = bytes[*index];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:479:            return [self _decodeUnsignedInteger:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:482:            return [self _decodeNegativeInteger:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:485:            return [self _decodeByteString:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:488:            return [self _decodeTextString:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:491:            return [self _decodeArray:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:494:            return [self _decodeMap:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:497:            return [self _decodeTag:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:500:            return [self _decodeSpecial:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:520:+ (nullable NSNumber *)_decodeLength:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:530:        value = bytes[*index];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:537:        value = ((uint64_t)bytes[*index] << 8) | bytes[*index + 1];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:544:        value = ((uint64_t)bytes[*index] << 24) | ((uint64_t)bytes[*index + 1] << 16) |
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:545:                ((uint64_t)bytes[*index + 2] << 8) | bytes[*index + 3];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:554:            value = (value << 8) | bytes[*index + i];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:569:+ (nullable NSNumber *)_decodeUnsignedInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:570:    return [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:573:+ (nullable NSNumber *)_decodeNegativeInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:574:    NSNumber *unsignedValue = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:579:+ (nullable NSData *)_decodeByteString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:580:    NSNumber *byteLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:593:    NSData *result = [NSData dataWithBytes:bytes + *index length:len];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:598:+ (nullable NSString *)_decodeTextString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:599:    NSData *byteData = [self _decodeByteString:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:611:+ (nullable NSArray *)_decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:612:    NSNumber *arrayLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:619:        id item = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:634:+ (nullable NSDictionary *)_decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:635:    NSNumber *mapLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:642:        id key = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:652:        id value = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:668:+ (nullable id)_decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:669:    NSNumber *tagNumber = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:675:    id taggedValue = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:699:        const uint8_t *cidBytes = cidData.bytes;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:709:        NSData *pureCIDBytes = [cidData subdataWithRange:NSMakeRange(1, cidData.length - 1)];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:714:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID bytes in tag 42"}];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:724:+ (nullable id)_decodeSpecial:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+./Garazyk/Sources/Repository/RepoCommit.h:90: * @param privateKey Raw secp256k1 private key (32 bytes).
+./Garazyk/Sources/Repository/CBOR.m:337:        uint8_t bytes[2] = { base | 24, (uint8_t)unsignedValue };
+./Garazyk/Sources/Repository/CBOR.m:338:        [data appendBytes:bytes length:2];
+./Garazyk/Sources/Repository/CBOR.m:340:        uint8_t bytes[3] = { base | 25 };
+./Garazyk/Sources/Repository/CBOR.m:342:        memcpy(bytes + 1, &be, 2);
+./Garazyk/Sources/Repository/CBOR.m:343:        [data appendBytes:bytes length:3];
+./Garazyk/Sources/Repository/CBOR.m:389:        int cmp = memcmp(d1.bytes, d2.bytes, d1.length);
+./Garazyk/Sources/Repository/CBOR.m:415:    memcpy(&bits, &value, sizeof(bits));
+./Garazyk/Sources/Repository/CBOR.m:436:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CBOR.m:437:    uint8_t initial = bytes[(*offset)++];
+./Garazyk/Sources/Repository/CBOR.m:487:    NSData *value = [data subdataWithRange:NSMakeRange(*offset, length)];
+./Garazyk/Sources/Repository/CBOR.m:503:    NSData *valueData = [data subdataWithRange:NSMakeRange(*offset, length)];
+./Garazyk/Sources/Repository/CBOR.m:547:    // Minimum size of a map entry is 2 bytes (1 key + 1 value).
+./Garazyk/Sources/Repository/CBOR.m:584:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/CBOR.m:587:        val = (val << 8) | bytes[*offset + i];
+./Garazyk/Sources/Core/Base58.m:24:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Core/Base58.m:29:    while (zeros < length && bytes[zeros] == 0) {
+./Garazyk/Sources/Core/Base58.m:37:    // Process the bytes
+./Garazyk/Sources/Core/Base58.m:41:        NSUInteger carry = bytes[i];
+./Garazyk/Sources/Repository/MST.h:97:/** @abstract Serialized key bytes. */
+./Garazyk/Sources/Repository/MST.h:235: * @abstract Computes the depth of a key based on its hash bytes.
+./Garazyk/Sources/Repository/MST.h:236: * @param keyBytes The key as raw bytes.
+./Garazyk/Sources/Core/ATProtoBase32.m:13:    const unsigned char *input = data.bytes;
+./Garazyk/Sources/Repository/CAR.h:211: @return Encoded header bytes or nil on failure.
+./Garazyk/Sources/Repository/CAR.h:222: @return Encoded block entry bytes or nil on failure.
+./Garazyk/Sources/Core/MSTCacheManager.m:100:        GZ_LOG_ERROR(@"MSTCacheManager: invalid root CID bytes for %@", did);
+./Garazyk/Sources/Core/MSTCacheManager.m:105:    NSData *commitBlockData = [store getBlockForCID:rootCID.bytes forDid:did error:nil];
+./Garazyk/Sources/Core/MSTCacheManager.m:124:    // The data field is a CID link: tag(42) wrapping a byte string with CID bytes
+./Garazyk/Sources/Core/MSTCacheManager.m:127:        GZ_LOG_ERROR(@"MSTCacheManager: data CID bytes too short for %@", did);
+./Garazyk/Sources/Core/MSTCacheManager.m:131:    // Skip the multibase prefix byte (0x00) to get raw CID bytes
+./Garazyk/Sources/Core/MSTCacheManager.m:132:    CID *dataCID = [CID cidFromBytes:[dataCIDBytes subdataWithRange:NSMakeRange(1, dataCIDBytes.length - 1)]];
+./Garazyk/Sources/Core/MSTCacheManager.m:139:    NSData *mstBlockData = [store getBlockForCID:dataCID.bytes forDid:did error:nil];
+./Garazyk/Sources/Repository/STAR.m:32:static NSUInteger STARReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
+./Garazyk/Sources/Repository/STAR.m:38:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Repository/STAR.m:72:    NSMutableData *tagged = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
+./Garazyk/Sources/Repository/STAR.m:75:    [tagged appendData:cid.bytes];
+./Garazyk/Sources/Repository/STAR.m:373:        const uint8_t *prevBytes = prevKeyData.bytes;
+./Garazyk/Sources/Repository/STAR.m:374:        const uint8_t *currBytes = fullKeyData.bytes;
+./Garazyk/Sources/Repository/STAR.m:379:        NSData *keySuffix = [fullKeyData subdataWithRange:NSMakeRange(prefixLen, fullKeyData.length - prefixLen)];
+./Garazyk/Sources/Repository/STAR.m:642:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/STAR.m:647:    if (bytes[0] != 0x2A) {
+./Garazyk/Sources/Repository/STAR.m:648:        if (error) *error = STARError(2, @"Invalid STAR magic byte: 0x%02X", bytes[0]);
+./Garazyk/Sources/Repository/STAR.m:655:    NSUInteger verLen = STARReadVarint(bytes + offset, length - offset, &version);
+./Garazyk/Sources/Repository/STAR.m:674:    NSUInteger commitLenSize = STARReadVarint(bytes + offset, length - offset, &commitLen);
+./Garazyk/Sources/Repository/STAR.m:687:    NSData *commitData = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)commitLen)];
+./Garazyk/Sources/Repository/STAR.m:696:        return [self parseL0Body:bytes length:length offset:offset error:error];
+./Garazyk/Sources/Repository/STAR.m:698:        return [self parseLiteBody:bytes length:length offset:offset error:error];
+./Garazyk/Sources/Repository/STAR.m:728:            commit.data = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:743:            commit.prev = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:756:- (BOOL)parseL0Body:(const uint8_t *)bytes
+./Garazyk/Sources/Repository/STAR.m:791:        NSUInteger lenSize = STARReadVarint(bytes + offset, length - offset, &blockLen);
+./Garazyk/Sources/Repository/STAR.m:803:        NSData *blockData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)blockLen];
+./Garazyk/Sources/Repository/STAR.m:826:- (BOOL)parseLiteBody:(const uint8_t *)bytes
+./Garazyk/Sources/Repository/STAR.m:835:        NSUInteger keyLenSize = STARReadVarint(bytes + offset, length - offset, &keyLen);
+./Garazyk/Sources/Repository/STAR.m:852:        NSUInteger dataLenSize = STARReadVarint(bytes + offset, length - offset, &dataLen);
+./Garazyk/Sources/Repository/STAR.m:864:        NSData *recordData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)dataLen];
+./Garazyk/Sources/Repository/STAR.m:950:            dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:958:            prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:1030:            dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:1038:            prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+./Garazyk/Sources/Repository/STAR.m:1072:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Repository/STAR.m:1073:    return bytes[0] == 0x2A;
+./Garazyk/Sources/Repository/STAR.m:1082:    const uint8_t *bytes = header.bytes;
+./Garazyk/Sources/Repository/STAR.m:1083:    return bytes[0] == 0x2A;
+./Garazyk/Sources/Repository/CBOR.h:60: Supports encoding to bytes and decoding from bytes.
+./Garazyk/Sources/Repository/CBOR.h:140:/*! Encodes this value to CBOR bytes. */
+./Garazyk/Sources/Repository/CBOR.h:143:/*! Decodes CBOR bytes to a value. */
+./Garazyk/Sources/Repository/CBOR.h:154: @abstract Encodes CBORValue objects to bytes.
+./Garazyk/Sources/Repository/CBOR.h:166: @abstract Decodes CBOR bytes to CBORValue objects.
+./Garazyk/Sources/Core/ATProtoDataPaths.m:52:    NSRange firstColon = [did rangeOfString:@":"];
+./Garazyk/Sources/Core/ATProtoDataPaths.m:54:        NSRange rest = NSMakeRange(firstColon.location + 1, did.length - firstColon.location - 1);
+./Garazyk/Sources/Core/ATProtoDataPaths.m:55:        NSRange secondColon = [did rangeOfString:@":" options:0 range:rest];
+./Garazyk/Sources/Core/DID.m:415:                    const uint8_t *bytes = keyBytes.bytes;
+./Garazyk/Sources/Core/DID.m:416:                    if (bytes[0] == 0xE7 && bytes[1] == 0x01) {
+./Garazyk/Sources/Core/DID.m:417:                        keyBytes = [keyBytes subdataWithRange:NSMakeRange(2, keyBytes.length - 2)];
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:10: - Canonical map key ordering (by encoded key bytes, length-first)
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:12: - JSON $link/$bytes wrapper conversion
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:44: - Encoding Foundation objects to DAG-CBOR bytes
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:45: - Decoding DAG-CBOR bytes to Foundation objects
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:47: - JSON wrapper conversion ($link, $bytes)
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:56: Encode a Foundation object to canonical DAG-CBOR bytes.
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:60: @return DAG-CBOR encoded bytes, or nil on error
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:72: Dictionaries with `$bytes` keys are converted to byte strings.
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:82: Decode DAG-CBOR bytes to a Foundation object.
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:84: @param data DAG-CBOR encoded bytes
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:95: @param jsonObject A JSON-compatible object (may contain $link/$bytes wrappers)
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:97: @return DAG-CBOR encoded bytes, or nil on error
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:100: the JSON→DAG-CBOR conversion including $link and $bytes wrappers.
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:105: Decode DAG-CBOR bytes to a JSON-compatible object.
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:107: @param data DAG-CBOR encoded bytes
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:112: Byte strings are decoded as `{"$bytes": "base64..."}` dictionaries where needed.
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:64:        NSData *cidBytes = [cid bytes];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:66:        // bytes
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:76:    // ATProto lex-to-IPLD: convert {"$bytes": "base64..."} to CBOR byte string
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:77:    if (json.count == 1 && [json[@"$bytes"] isKindOfClass:[NSString class]]) {
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:78:      NSString *b64 = json[@"$bytes"];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:79:      NSData *bytes = CBORBase64URLDecode(b64);
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:80:      return [CBORValue byteString:bytes ?: [NSData data]];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:165:    // ATProto IPLD-to-lex: convert CBOR byte string to {"$bytes": "base64..."}
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:167:    return @{@"$bytes" : b64 ?: @""};
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:201:        const uint8_t *payloadBytes = tagPayload.bytes;
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:204:              subdataWithRange:NSMakeRange(1, tagPayload.length - 1)];
+./Garazyk/Sources/Core/Base58.h:23: @abstract Encodes raw bytes as a Base58BTC string.
+./Garazyk/Sources/Core/Base58.h:25: @param data Input bytes.
+./Garazyk/Sources/Core/Base58.h:33: @abstract Decodes Base58BTC text to raw bytes.
+./Garazyk/Sources/Core/Base58.h:36: @result Decoded bytes, or nil when input contains invalid characters.
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:34:        sqlite3_bind_blob(stmt, 1, blob.cid.bytes, (int)blob.cid.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:56:        sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:115:        sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:141:        sqlite3_bind_blob(stmt, 1, cidBytes.bytes, (int)cidBytes.length, SQLITE_TRANSIENT);
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:167:    return cid.bytes;
+./Garazyk/Sources/Core/CID.m:16:/// Maximum varint size (9 bytes for 64-bit values)
+./Garazyk/Sources/Core/CID.m:134:    CID *cid = [self cidFromBuffer:data.bytes length:data.length consumed:&consumed];
+./Garazyk/Sources/Core/CID.m:141:+ (nullable instancetype)cidFromBuffer:(const uint8_t *)bytes
+./Garazyk/Sources/Core/CID.m:144:    if (!bytes || length < 2) {
+./Garazyk/Sources/Core/CID.m:149:    if (length >= 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
+./Garazyk/Sources/Core/CID.m:154:            cid->_multihash = [NSData dataWithBytes:bytes length:34];
+./Garazyk/Sources/Core/CID.m:163:    NSUInteger versionSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:177:        NSUInteger innerSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:191:    NSUInteger codecSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:204:    NSUInteger mhCodeSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:213:    NSUInteger mhLenSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:227:    // multihashes never exceed 64 bytes and we reject hostile oversized values.
+./Garazyk/Sources/Core/CID.m:234:    NSData *multihash = [NSData dataWithBytes:(bytes + multihashStart) length:multihashLen];
+./Garazyk/Sources/Core/CID.m:279:- (NSData *)bytes {
+./Garazyk/Sources/Core/CID.m:303:+ (NSUInteger)readVarint:(const uint8_t *)bytes 
+./Garazyk/Sources/Core/CID.m:313:        uint8_t byte = bytes[offset++];
+./Garazyk/Sources/Core/CID.m:333:    const uint8_t *bytes = data.bytes;
+./Garazyk/Sources/Core/CID.m:339:        buffer = (buffer << 8) | bytes[i];
+./Garazyk/Sources/Core/CID.m:423:    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);

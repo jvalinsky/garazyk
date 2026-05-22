@@ -1,0 +1,4 @@
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:38:    kCCBlockSizeAES128 = 16,
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:23:static const NSUInteger kPDSKeyEnvelopeIVLength = kCCBlockSizeAES128;
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:65:    size_t bufferSize = data.length + kCCBlockSizeAES128;
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:140:    size_t bufferSize = ciphertext.length + kCCBlockSizeAES128;

@@ -1,0 +1,113 @@
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1723:            @"computedAt": [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]]
+./Garazyk/Sources/Auth/OAuth2.h:374:@property (nonatomic, strong) NSDate *iat;
+./Garazyk/Sources/Auth/OAuth2.h:481:/*! Allowed clock skew in seconds for validation. */
+./Garazyk/Sources/Network/XrpcProxyHandler.h:34: with iss=userDID, aud=serviceDID#fragment, lxm=method, exp=60s, jti=nonce.
+./Garazyk/Sources/Network/XrpcAdminPack.m:1403:    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcAdminPack.m:1490:    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcAdminPack.m:1535:    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:407:    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:330:                       NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+./Garazyk/Sources/Network/XrpcServerPack.m:176:    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcServerPack.m:198:    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcServerPack.m:1091:        account.updatedAt = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcServerPack.m:1177:        NSString *expParam = [request queryParamForKey:@"exp"];
+./Garazyk/Sources/Network/XrpcServerPack.m:1184:                [response setJsonBody:@{@"error": @"BadExpiration", @"message": @"Invalid exp parameter"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1227:        long long nowSeconds = (long long)[[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcServerPack.m:1230:            [response setJsonBody:@{@"error": @"BadExpiration", @"message": @"exp must be in the future"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1239:        payload[@"iat"] = @((long long)nowSeconds);
+./Garazyk/Sources/Network/XrpcServerPack.m:1240:        payload[@"exp"] = @(hasRequestedExp ? requestedExp : (long long)(nowSeconds + 60));
+./Garazyk/Sources/Network/XrpcLabelPack.m:92:        rows = [db executeParameterizedQuery:@"SELECT src, uri, cid, val, neg, cts, exp FROM labels "
+./Garazyk/Sources/Network/XrpcLabelPack.m:98:        rows = [db executeParameterizedQuery:@"SELECT src, uri, cid, val, neg, cts, exp FROM labels "
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:178:                                                  [[NSDate date] timeIntervalSince1970]]
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:192:                                                [[NSDate date] timeIntervalSince1970]]
+./Garazyk/Sources/Network/RateLimiter.m:259:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:349:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:395:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:462:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:579:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Auth/DPoPUtil.m:46:    token.iat = [NSDate date];
+./Garazyk/Sources/Auth/DPoPUtil.m:47:    token.exp = [NSDate dateWithTimeIntervalSinceNow:300];
+./Garazyk/Sources/Auth/DPoPUtil.m:72:    payload[@"iat"] = @([self.iat timeIntervalSince1970]);
+./Garazyk/Sources/Auth/DPoPUtil.m:75:    if (self.exp) {
+./Garazyk/Sources/Auth/DPoPUtil.m:76:        payload[@"exp"] = @([self.exp timeIntervalSince1970]);
+./Garazyk/Sources/Auth/DPoPUtil.m:126:    token.iat = [NSDate date];
+./Garazyk/Sources/Auth/DPoPUtil.m:129:    token.exp = [NSDate dateWithTimeIntervalSinceNow:300];
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:396:          long long nowSeconds = (long long)[[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:402:            @"iat" : @(nowSeconds),
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:403:            @"exp" : @(nowSeconds + 60),
+./Garazyk/Sources/Auth/JWT.m:74:    id expValue = dictionary[@"exp"];
+./Garazyk/Sources/Auth/JWT.m:76:        payload.exp = [NSDate dateWithTimeIntervalSince1970:[expValue doubleValue]];
+./Garazyk/Sources/Auth/JWT.m:79:    id iatValue = dictionary[@"iat"];
+./Garazyk/Sources/Auth/JWT.m:81:        payload.iat = [NSDate dateWithTimeIntervalSince1970:[iatValue doubleValue]];
+./Garazyk/Sources/Auth/JWT.m:105:    if (self.exp) dict[@"exp"] = @([self.exp timeIntervalSince1970]);
+./Garazyk/Sources/Auth/JWT.m:106:    if (self.iat) dict[@"iat"] = @([self.iat timeIntervalSince1970]);
+./Garazyk/Sources/Auth/JWT.m:107:    if (self.nbf) dict[@"nbf"] = @([self.nbf timeIntervalSince1970]);
+./Garazyk/Sources/Auth/JWT.m:359:    if (payload.exp && [payload.exp compare:now] == NSOrderedAscending) {
+./Garazyk/Sources/Auth/JWT.m:494:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Auth/JWT.m:517:    payload[@"iat"] = @((NSInteger)now);
+./Garazyk/Sources/Auth/JWT.m:518:    payload[@"exp"] = @((NSInteger)(now + 60)); // 60 seconds per spec
+./Garazyk/Sources/Auth/JWT.m:602:    payload.iat = [NSDate date];
+./Garazyk/Sources/Auth/JWT.m:603:    payload.exp = [NSDate dateWithTimeIntervalSinceNow:self.defaultExpiration];
+./Garazyk/Sources/Auth/JWT.m:663:    payload.iat = [NSDate date];
+./Garazyk/Sources/Auth/JWT.m:664:    payload.exp = [NSDate dateWithTimeIntervalSinceNow:86400 * 30];
+./Garazyk/Sources/Network/XrpcProxyHandler.m:68:    //    signed with user's repo signing key, exp = 60s, jti = random nonce.
+./Garazyk/Sources/Network/XrpcProxyHandler.m:92:        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcProxyHandler.m:97:            @"iat": @((NSInteger)now),
+./Garazyk/Sources/Network/XrpcProxyHandler.m:98:            @"exp": @((NSInteger)(now + 300)),
+./Garazyk/Sources/Network/HttpStreamingBody.m:105:    NSString *fileName = [NSString stringWithFormat:@"http_body_%llu.tmp", (unsigned long long)[[NSDate date] timeIntervalSince1970] * 1000000 + arc4random_uniform(1000000)];
+./Garazyk/Sources/Auth/PDSReplayCache.m:78:    NSTimeInterval expiresAt = [expiration timeIntervalSince1970];
+./Garazyk/Sources/Auth/PDSReplayCache.m:94:        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Auth/PDSReplayCache.m:147:            sqlite3_bind_double(stmt, 1, [[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/JWT.h:137: including standard claims (iss, sub, aud, exp, iat, nbf) and ATProto-specific
+./Garazyk/Sources/Auth/JWT.h:152:@property (nonatomic, strong, nullable) NSDate *exp;
+./Garazyk/Sources/Auth/JWT.h:155:@property (nonatomic, strong, nullable) NSDate *iat;
+./Garazyk/Sources/Auth/JWT.h:517: - iat: issued-at timestamp
+./Garazyk/Sources/Auth/JWT.h:518: - exp: expiration (iat + 60 seconds)
+./Garazyk/Sources/Auth/OAuth2.m:620:    codeData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuth2.m:703:    NSTimeInterval codeAge = [[NSDate date] timeIntervalSince1970] - [codeData[@"created_at"] doubleValue];
+./Garazyk/Sources/Auth/Session.m:471:    sqlite3_bind_double(stmt, 7, session.accessTokenExpiresAt.timeIntervalSince1970);
+./Garazyk/Sources/Auth/Session.m:473:    if (session.refreshTokenExpiresAt) sqlite3_bind_double(stmt, 8, session.refreshTokenExpiresAt.timeIntervalSince1970);
+./Garazyk/Sources/Auth/Session.m:480:    sqlite3_bind_double(stmt, 11, session.createdAt.timeIntervalSince1970);
+./Garazyk/Sources/Auth/Session.m:583:    sqlite3_bind_double(stmt, 1, [[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuth2Handler.m:1083:  NSNumber *exp = payload[@"exp"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1128:  if (!exp || ![exp isKindOfClass:[NSNumber class]]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1134:                                     @"Missing 'exp' claim"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1140:  NSTimeInterval expTime = [exp doubleValue];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2943:      if (payload.exp && [payload.exp compare:now] == NSOrderedAscending) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2972:      if (payload.iat)
+./Garazyk/Sources/Auth/OAuth2Handler.m:2973:        introspection[@"iat"] = @((long long)[payload.iat timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuth2Handler.m:2974:      if (payload.exp)
+./Garazyk/Sources/Auth/OAuth2Handler.m:2975:        introspection[@"exp"] = @((long long)[payload.exp timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuth2Handler.m:2977:        introspection[@"nbf"] = @((long long)[payload.nbf timeIntervalSince1970]);
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:244:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:295:    if ([[NSDate date] timeIntervalSince1970] > expiresAt) {
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:301:                                           params:@[@([[NSDate date] timeIntervalSince1970]), matched[@"id"] ?: @""]
+./Garazyk/Sources/Auth/Session.h:105: A small clock skew tolerance may be applied.
+./Garazyk/Sources/Auth/Session.h:484:/*! Clock skew tolerance in seconds for token validation. */
+./Garazyk/Sources/Auth/Session.h:625: @abstract Sets the clock skew tolerance for token validation.
+./Garazyk/Sources/Auth/Session.h:627: @param clockSkew Maximum acceptable clock difference in seconds.
+./Garazyk/Sources/Auth/DPoPUtil.h:55:@property (nonatomic, strong) NSDate *iat;
+./Garazyk/Sources/Auth/DPoPUtil.h:58:@property (nonatomic, strong, nullable) NSDate *exp;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:174:    NSNumber *iat = payload[@"iat"];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:198:    if (!iat) {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:202:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP payload missing iat"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:208:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:209:    if (fabs(now - iat.doubleValue) > 300) {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:259:        NSDate *jtiExpiration = [NSDate dateWithTimeIntervalSince1970:iat.doubleValue + 300];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:357:        @"iat": @([[NSDate date] timeIntervalSince1970])
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:273:    payload[@"iat"] = @([[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:274:    if (!payload[@"exp"]) {
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:275:        payload[@"exp"] = @([[NSDate date] timeIntervalSince1970] + 3600);
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:284:    payload[@"iat"] = @([[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/TOTPGenerator.m:42:    NSTimeInterval timestamp = [date timeIntervalSince1970];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:246: @param claims Token claims (sub, aud, scope, etc.). The implementation adds iat, exp.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:255: @param claims Token claims (sub, aud, scope, client_id, etc.). The implementation adds iat.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:194:    parData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:268:    codeData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:459:    accessClaims[@"iat"] = @([[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:460:    accessClaims[@"exp"] = @([[NSDate date] timeIntervalSince1970] + 3600);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:481:    refreshClaims[@"iat"] = @([[NSDate date] timeIntervalSince1970]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:531:        result[@"exp"] = claims[@"exp"];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:532:        result[@"iat"] = claims[@"iat"];
+./Garazyk/Sources/Auth/WebAuthnRegistrationHandler.m:91:            @"expiresAt": @([[NSDate date] timeIntervalSince1970] + kChallengeTimeoutSeconds)
+./Garazyk/Sources/Auth/WebAuthnRegistrationHandler.m:239:            if ([[NSDate date] timeIntervalSince1970] > expiresAt) {

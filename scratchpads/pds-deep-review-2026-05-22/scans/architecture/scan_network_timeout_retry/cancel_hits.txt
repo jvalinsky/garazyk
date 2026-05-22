@@ -1,0 +1,66 @@
+./Garazyk/Sources/Network/HttpResponse.m:228:            [self setHeader:@"close" forKey:@"Connection"];
+./Garazyk/Sources/Network/HttpServer.m:381:            [coord close];
+./Garazyk/Sources/Network/HttpServer.m:409:          [strongConnection cancel];
+./Garazyk/Sources/Network/HttpServer.m:457:                  [priorCoordinator close];
+./Garazyk/Sources/Network/HttpServer.m:458:                  [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:461:                [priorCoordinator close];
+./Garazyk/Sources/Network/HttpServer.m:552:        if ([connectionHeader isEqualToString:@"close"] ||
+./Garazyk/Sources/Network/HttpServer.m:631:          [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:710:    [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:734:    [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:753:      [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:820:                    [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:870:          [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:885:                    [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:931:                    [connection cancel];
+./Garazyk/Sources/Network/HttpServer.m:1050:    [self.listener cancel];
+./Garazyk/Sources/Network/HttpServer.m:1065:      [conn cancel];
+./Garazyk/Sources/Network/XrpcAdminPack.m:1345:    [db close];
+./Garazyk/Sources/Network/XrpcAdminPack.m:1418:        [db close];
+./Garazyk/Sources/Network/XrpcAdminPack.m:1435:            [db close];
+./Garazyk/Sources/Network/XrpcAdminPack.m:1441:    [db close];
+./Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m:111:                          [connection cancel];
+./Garazyk/Sources/Network/HttpProtocolDriver.h:33:    HttpProtocolEventConnectionClose    // Connection should close
+./Garazyk/Sources/Network/HttpProtocolDriver.h:124: @return YES if reading should continue, NO if should pause or close.
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:388:            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to cancel action"];
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:38:    close(sockfd);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:125:// On GNUstep, NSURLSession (libcurl backend) does not properly close
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:269:        headers = curl_slist_append(headers, "Connection: close");
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:272:        // Track socket FDs so we can force-close any that cleanup leaks
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:372:        // Force-close any sockets that the cleanup path didn't close.
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:374:            close([fdNum intValue]);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:649:        [task cancel];
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:78:- (void)close {
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:95:        [self close];
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:144:            [self close];
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:185:                [self close];
+./Garazyk/Sources/Network/XrpcLabelPack.m:104:    [db close];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:332:            close(fd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:370:        close(fd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:388:    close(_sockfd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:408:            close(_sockfd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:444:        [self cancel];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:451:        [self cancel];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:495:            // (completion may call cancel → failPendingReadRequestsWithError)
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:517:            // (completion may call cancel → failPendingReadRequestsWithError)
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:524:            // (completion may call [connection cancel] → failPendingReadRequestsWithError)
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:571:        close(_sockfd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:580:- (void)cancel {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:733:                close(_listenfd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:745:            close(_listenfd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:794:        close(clientfd);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:802:    [self cancel];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:805:- (void)cancel {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:811:        close(_listenfd);
+./Garazyk/Sources/Network/Http1PipelinePolicy.h:26:    Http1PipelineActionClose          // connection should close
+./Garazyk/Sources/Network/XrpcProxyHandler.m:187:        [task cancel];
+./Garazyk/Sources/Network/ATProtoNetworkTransportMac.m:114:- (void)cancel {
+./Garazyk/Sources/Network/ATProtoNetworkTransportMac.m:249:- (void)cancel {
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:145: @method close
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:151:- (void)close;
+./Garazyk/Sources/Network/ATProtoNetworkTransport.h:13: - Transport: Base cancel/start lifecycle
+./Garazyk/Sources/Network/ATProtoNetworkTransport.h:69:- (void)cancel;
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:687:        [serviceDatabase close];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:739:        [serviceDatabase close];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:803:        [serviceDatabase close];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:894:        [serviceDatabase close];

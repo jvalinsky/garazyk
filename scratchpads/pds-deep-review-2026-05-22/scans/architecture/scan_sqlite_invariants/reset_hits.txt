@@ -1,0 +1,2 @@
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:50:            sqlite3_reset(stmt);
+./Garazyk/Sources/Database/PDSDatabase.m:224:            sqlite3_reset(stmt);

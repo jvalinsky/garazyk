@@ -1,0 +1,88 @@
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:628:        int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:668:    int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:126:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:158:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:203:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:243:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:284:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:317:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:351:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:381:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:414:            rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Video/JelczDatabase.m:424:            rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:146:        int rc = sqlite3_prepare_v2(gKeychainDB, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:197:        int rc = sqlite3_prepare_v2(gKeychainDB, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:280:        int rc = sqlite3_prepare_v2(gKeychainDB, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:327:        int rc = sqlite3_prepare_v2(gKeychainDB, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:367:        int rc = sqlite3_prepare_v2(gKeychainDB, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.m:166:    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.m:240:    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.m:282:    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.m:317:    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Network/RateLimiter.m:272:    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:311:    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:354:    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:401:    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:430:    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:467:    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:587:    int result = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:618:    int result = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:101:    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA integrity_check", -1, &stmt, NULL);
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:145:    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA foreign_key_check", -1, &stmt, NULL);
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:172:        if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], 
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:199:    if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) FROM dbstat WHERE name = 'accounts'", -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:115:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:139:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:172:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:211:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:241:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:266:        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:289:            rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:296:            rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:15:    if (sqlite3_prepare_v2(db, "PRAGMA table_info(oauth_clients)", -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:82:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:152:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:215:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:261:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:239:    int prepareResult = sqlite3_prepare_v2(self.db, "PRAGMA table_info(plc_operations);", -1, &stmt, NULL);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:324:    int result = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &cachedStmt, &pzTail);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:497:            int updateResult = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &updateStmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:33:        if (sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:73:        if (sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:556:        if (sqlite3_prepare_v2(db, checkSQL, -1, &checkStmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:571:        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:613:    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:959:        if (sqlite3_prepare_v2(db, recordSQL, -1, &stmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1027:        if (sqlite3_prepare_v2(db, removeSQL, -1, &stmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1074:    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1104:    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1187:    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1240:    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1312:    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1533:    int rc = sqlite3_prepare_v2(db, checkSQL, -1, &stmt, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1560:    rc = sqlite3_prepare_v2(db, hasAppliedAtSQL, -1, &hasColStmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:41:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:96:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:164:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:203:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:240:    int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:48:        if (sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase.m:230:        if (sqlite3_prepare_v2(_db, [query UTF8String], -1, &stmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase.m:256:    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase.m:1004:    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase.m:1064:    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase.m:1128:    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1043:        int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1083:        int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Database/Utils/PDSSQLiteUtils.h:30: sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:63:    int rc = sqlite3_prepare_v2((sqlite3 *)self.database.internalSQLiteHandle, sql.UTF8String, -1, &stmt, NULL);
+./Garazyk/Sources/Auth/PDSReplayCache.m:99:        if (sqlite3_prepare_v2(_db, selectSQL, -1, &selectStmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Auth/PDSReplayCache.m:119:        if (sqlite3_prepare_v2(_db, insertSQL, -1, &insertStmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Auth/PDSReplayCache.m:146:        if (sqlite3_prepare_v2(_db, deleteSQL, -1, &stmt, NULL) == SQLITE_OK) {
+./Garazyk/Sources/Auth/Session.m:460:    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return NO;
+./Garazyk/Sources/Auth/Session.m:519:    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
+./Garazyk/Sources/Auth/Session.m:531:    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
+./Garazyk/Sources/Auth/Session.m:543:    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
+./Garazyk/Sources/Auth/Session.m:555:    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return NO;
+./Garazyk/Sources/Auth/Session.m:567:    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return @[];
+./Garazyk/Sources/Auth/Session.m:581:    if (sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL) != SQLITE_OK) return @[];

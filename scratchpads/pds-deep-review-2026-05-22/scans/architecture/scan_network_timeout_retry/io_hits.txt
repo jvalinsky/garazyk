@@ -1,0 +1,56 @@
+./Garazyk/Sources/Network/HttpServer.m:624:          GZ_LOG_HTTP_ERROR(@"Failed to send pipelined response: %@", error);
+./Garazyk/Sources/Network/HttpServer.m:717:    // The coordinator handles all read scheduling for new connections.
+./Garazyk/Sources/Network/XrpcRepoPack.m:420:        NSDictionary *write = @{
+./Garazyk/Sources/Network/XrpcRepoPack.m:428:        NSDictionary *result = [recordService applyWrites:@[write]
+./Garazyk/Sources/Network/XrpcRepoPack.m:487:        NSDictionary *write = @{
+./Garazyk/Sources/Network/XrpcRepoPack.m:495:        NSDictionary *result = [recordService applyWrites:@[write]
+./Garazyk/Sources/Network/XrpcRepoPack.m:678:                [response setJsonBody:@{@"error": @"BlobReadFailed", @"message": @"Failed to send blob"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:1006:        NSDictionary *write = @{
+./Garazyk/Sources/Network/XrpcRepoPack.m:1015:        NSDictionary *result = [recordService applyWrites:@[write]
+./Garazyk/Sources/Network/XrpcSyncPack.m:290:  // Public per AT Proto sync spec: relays must be able to read repo heads
+./Garazyk/Sources/Network/XrpcSyncPack.m:759:                                @"message" : @"Failed to send blob"}];
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:112:                                         @"Failed to read lexicon file"
+./Garazyk/Sources/Network/HttpConnectionDriver.m:8: @discussion Drives read/parse/dispatch/write sequencing for a single connection, including lifecycle transitions and failure handling paths. Delegates parsing and routing details to specialized components.
+./Garazyk/Sources/Network/HttpProtocolDriver.h:118: @abstract Determines whether more data should be read from the network.
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:235:    NSString *message = [NSString stringWithFormat:@"Failed to connect to %@:%lu after %lu candidate(s)",
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:336:        int result = connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:437:    ssize_t received = recv(_sockfd, buffer, sizeof(buffer), 0);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:463:    ssize_t sent = send(_sockfd, _writeBuffer.bytes + _writeOffset, _writeBuffer.length - _writeOffset, 0);
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:623:    ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:42:// libcurl write callback — receives response body data
+./Garazyk/Sources/Network/HttpProtocolSession.h:97: * @param response The HTTP response to send.
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:8: @discussion Orchestrates read/write coordination between connection drivers and protocol/session components, including ordering and lifecycle transitions for connection I/O events.
+./Garazyk/Sources/Network/HttpStreamingBody.h:87: @abstract Create an input stream to read the body data.
+./Garazyk/Sources/Network/HttpResponseSender.m:6: @abstract Implements response emission behavior for HTTP connection write paths.
+./Garazyk/Sources/Network/HttpResponseSender.m:8: @discussion Handles serialization and write-side response delivery behavior after handler execution, including output framing expectations for the HTTP layer. Does not decide routing or endpoint business results.
+./Garazyk/Sources/Network/HttpResponse.h:75:/*! When YES and bodyFilePath is set, the file is removed after send completes. */
+./Garazyk/Sources/Network/ATProtoNetworkTransport.h:14: - Connection: Bidirectional data transfer (send/receive)
+./Garazyk/Sources/Network/ATProtoNetworkTransport.h:207: @param host The hostname or IP address to connect to.
+./Garazyk/Sources/Network/ATProtoNetworkTransport.h:209: @param port The port number to connect to.
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:7: Implements conversation management, messaging, reactions, read state,
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:179:        // query parameters. Some clients send ?members=a&members=b, others
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:403:            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:429:        // Mark all as read by updating last read to current time
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:436:            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:541:            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message batch"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:880:            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message"];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:286:                GZ_LOG_ERROR(@"Failed to send PLC operation email to %@: %@", account.email, emailError);
+./Garazyk/Sources/Network/XrpcIdentityPack.m:288:                [response setJsonBody:@{@"error": @"EmailFailed", @"message": @"Failed to send confirmation email"}];
+./Garazyk/Sources/Network/XrpcProxyHandler.m:154:                GZ_LOG_ERROR(@"Proxy request timed out (NSURLConnection): %@", request.path);
+./Garazyk/Sources/Network/HttpStreamingBody.m:88:        self.errorMessage = @"Failed to write to temp file";
+./Garazyk/Sources/Network/XrpcAuthHelper.m:209:            isDPoP = YES; // Some clients send Bearer but attach a DPoP header
+./Garazyk/Sources/Network/Http1PipelinePolicy.h:24:    Http1PipelineActionReadMore,      // connection idle, read more data
+./Garazyk/Sources/Network/HttpResponseSender.h:50: @abstract Threshold for backpressure alert (read limiting).
+./Garazyk/Sources/Network/HttpResponseSender.h:67: @discussion Used for read flow control: if true, pause reading.
+./Garazyk/Sources/Network/HttpResponseSender.h:102: @discussion Used by HTTP driver to decide whether to read more data.
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:9: HTTP protocol driver, and response sender. Manages the read loop,
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:56: @discussion Manages the read loop from the network, feeds data to the
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:88: The coordinator calls this before scheduling the next read to check whether
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:98: @param connection The network connection to read from.
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:119: @abstract Begins the read loop and event processing.
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:121: @discussion After calling this method, the coordinator will read from the
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:129: @abstract Pauses the read loop.
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:138: @abstract Resumes the read loop after a pause.
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:140: @discussion Restarts read scheduling if currently paused.
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.h:149: @discussion Stops the read loop and closes the underlying connection.
+./Garazyk/Sources/Network/HttpProtocolDriver.m:88:    // Check output queue backpressure (if queue is full, don't read)

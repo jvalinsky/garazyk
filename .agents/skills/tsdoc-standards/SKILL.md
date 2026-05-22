@@ -1,3 +1,8 @@
+---
+name: tsdoc-standards
+description: Use when writing, reviewing, or linting TypeScript API documentation against this repository's TSDoc house standards.
+---
+
 # TSDoc House Standards
 
 This project uses [TSDoc](https://tsdoc.org/) for code documentation. All public-facing TypeScript code must be documented according to these rules.
