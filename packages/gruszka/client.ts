@@ -117,6 +117,7 @@ export class XrpcClient {
 
   /**
    * Invoke a typed XRPC query.
+   * @typeParam K - The lexicon query ID type.
    * @param method The XRPC query method id.
    * @param params Query parameters.
    * @param token Optional auth token.
@@ -128,11 +129,22 @@ export class XrpcClient {
     params?: QueryParams<K>,
     token?: string,
   ): Promise<QueryOutput<K>>;
+
+  /**
+   * Invoke an untyped generic XRPC query by method string.
+   * @param method The XRPC query method string.
+   * @param params Query parameters.
+   * @param token Optional auth token.
+   */
   async query(
     method: string,
     params?: Record<string, unknown>,
     token?: string,
   ): Promise<unknown>;
+
+  /**
+   * Main query execution implementation.
+   */
   async query(
     method: string,
     params?: Record<string, unknown>,
@@ -143,6 +155,7 @@ export class XrpcClient {
 
   /**
    * Invoke a typed XRPC procedure.
+   * @typeParam K - The lexicon procedure ID type.
    * @param method The XRPC procedure method id.
    * @param input Procedure input payload.
    * @param token Optional auth token.
@@ -154,11 +167,22 @@ export class XrpcClient {
     input?: ProcedureInput<K>,
     token?: string,
   ): Promise<ProcedureOutput<K>>;
+
+  /**
+   * Invoke an untyped generic XRPC procedure by method string.
+   * @param method The XRPC procedure method string.
+   * @param input Procedure input payload.
+   * @param token Optional auth token.
+   */
   async procedure(
     method: string,
     input?: unknown,
     token?: string,
   ): Promise<unknown>;
+
+  /**
+   * Main procedure execution implementation.
+   */
   async procedure(
     method: string,
     input?: unknown,
@@ -297,6 +321,10 @@ type WrapClient<C> = {
     : WrapClient<C[K]>;
 };
 
+/**
+ * Dynamic proxy type wrapping the generated client to provide both standard
+ * schema methods and custom session-helper operations (like createAccount and login).
+ */
 export type AgentProxy = WrapClient<GeneratedClient> & {
   /** Allow dynamic namespace access for methods not yet in GeneratedClient. */
   [key: string]: any;
