@@ -81,6 +81,7 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 - (void)sendInfoEvent:(NSString *)kind
                message:(NSString *)message
           toConnection:(WebSocketConnection *)connection;
+- (void)bufferRelayEventData:(NSData *)eventData seq:(NSUInteger)seq;
 
 @end
 
@@ -528,6 +529,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                          data:eventData
                                         error:nil];
         }
+        [strongSelf bufferRelayEventData:eventData
+                                     seq:strongSelf.session.sequenceNumber];
         [strongSelf broadcastEventData:eventData];
       } else {
         GZ_LOG_SYNC_ERROR(@"[Relay] broadcastCommitEvent: encodeCommitEvent returned nil for repo=%@", event.repo);
@@ -603,13 +606,18 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       eventType = @"sync";
     }
 
-    NSError *persistError = nil;
-    if (![strongSelf.serviceDatabases persistEvent:strongSelf.session.sequenceNumber
-                                        type:eventType
-                                        data:eventData
-                                       error:&persistError]) {
-      GZ_LOG_SYNC_ERROR(@"Failed to persist %@ event: %@", eventType,
-                         persistError);
+    if (strongSelf.serviceDatabases) {
+      NSError *persistError = nil;
+      if (![strongSelf.serviceDatabases persistEvent:strongSelf.session.sequenceNumber
+                                          type:eventType
+                                          data:eventData
+                                         error:&persistError]) {
+        GZ_LOG_SYNC_ERROR(@"Failed to persist %@ event: %@", eventType,
+                           persistError);
+      }
+    } else {
+      [strongSelf bufferRelayEventData:eventData
+                                   seq:strongSelf.session.sequenceNumber];
     }
 
     [strongSelf broadcastEventData:eventData];
@@ -660,6 +668,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
           GZ_LOG_SYNC_ERROR(@"Failed to persist identity event: %@", persistError);
         }
       }
+      [strongSelf bufferRelayEventData:eventData
+                                   seq:strongSelf.session.sequenceNumber];
 
       [strongSelf broadcastEventData:eventData];
       [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
@@ -704,6 +714,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
           GZ_LOG_SYNC_ERROR(@"Failed to persist account event: %@", persistError);
         }
       }
+      [strongSelf bufferRelayEventData:eventData
+                                   seq:strongSelf.session.sequenceNumber];
 
       [strongSelf broadcastEventData:eventData];
       [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
@@ -984,6 +996,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (nullable NSData *)_encodeBufferedEvent:(id)event {
+    if ([event isKindOfClass:[NSData class]]) {
+        return (NSData *)event;
+    }
     if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
         return [self.session encodeCommitEvent:(FirehoseCommitEvent *)event];
     } else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
@@ -996,6 +1011,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
     GZ_LOG_SYNC_WARN(@"Skipping unknown event type in buffer replay: %@", NSStringFromClass([event class]));
     return nil;
+}
+
+- (void)bufferRelayEventData:(NSData *)eventData seq:(NSUInteger)seq {
+  if (self.serviceDatabases || !self.eventBuffer || !eventData || seq == 0) {
+    return;
+  }
+  [self.eventBuffer appendEvent:eventData seq:(int64_t)seq];
 }
 
 - (void)sendInfoEvent:(NSString *)kind

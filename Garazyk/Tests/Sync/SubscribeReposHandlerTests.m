@@ -7,7 +7,9 @@
 #import "Repository/RepoCommit.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
 #import "Sync/WebSocket/WebSocketServer.h"
+#import "Sync/Relay/RelayDownstreamHandler.h"
 #import "Sync/Relay/EventFormatter.h"
+#import "Sync/Relay/RelayEventBuffer.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Database/Pool/DatabasePool.h"
@@ -117,6 +119,44 @@
         return;
     }
     XCTAssertTrue([handler waitForIdleWithTimeout:timeout], @"Timed out waiting for subscribeRepos queues to drain");
+}
+
+- (FirehoseCommitEvent *)relayTestCommitEventWithRepo:(NSString *)repo {
+    CID *commitCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    CID *recordCID = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 42;
+    event.rebase = NO;
+    event.tooBig = NO;
+    event.repo = repo;
+    event.commit = commitCID;
+    event.rev = @"3l66k7pp33p";
+    event.since = nil;
+    event.blocks = [NSData data];
+    event.ops = @[
+        @{
+            @"action": @"create",
+            @"path": @"app.bsky.graph.list/relay-replay-test",
+            @"cid": recordCID
+        }
+    ];
+    event.blobs = @[];
+    event.time = @"2026-05-22T14:00:00.000Z";
+    return event;
+}
+
+- (void)waitForRelayBuffer:(RelayEventBuffer *)buffer
+                eventCount:(NSUInteger)eventCount
+                   handler:(SubscribeReposHandler *)handler {
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:2.0];
+    while (buffer.eventCount < eventCount &&
+           [deadline timeIntervalSinceNow] > 0) {
+        [handler waitForIdleWithTimeout:0.1];
+        [[NSRunLoop currentRunLoop]
+            runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+    }
+    XCTAssertGreaterThanOrEqual(buffer.eventCount, eventCount);
 }
 
 - (void)testBroadcastCommitWithOpsValidatesMaxSeqIsGreater {
@@ -264,6 +304,97 @@
         XCTAssertEqualObjects(type2, @"#identity");
         XCTAssertEqualObjects(msg1[@"did"], @"did:plc:replay2");
         XCTAssertEqualObjects(msg2[@"did"], @"did:plc:replay3");
+    }
+}
+#endif
+
+#ifndef GNUSTEP
+- (void)testRelayReplayUsesBroadcastFrameWithoutAdvancingSequence {
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    RelayEventBuffer *buffer =
+        [[RelayEventBuffer alloc] initWithRetentionHours:1 maxEvents:10];
+    SubscribeReposHandler *relayHandler =
+        [[SubscribeReposHandler alloc] initWithServiceDatabases:nil];
+    relayHandler.eventBuffer = buffer;
+    RelayDownstreamHandler *downstreamHandler =
+        [[RelayDownstreamHandler alloc] initWithEventBuffer:buffer
+                                      subscribeReposHandler:relayHandler];
+    MockWebSocketConnection *liveConn =
+        [[MockWebSocketConnection alloc] init];
+    NSMutableSet *attached = [relayHandler valueForKey:@"attachedConnections"];
+    [attached addObject:liveConn];
+
+    @try {
+        FirehoseCommitEvent *commitEvent =
+            [self relayTestCommitEventWithRepo:@"did:plc:relay-replay"];
+        RelayUpstreamManager *manager =
+            [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds.example"]];
+
+        [downstreamHandler upstreamManager:manager
+                           didReceiveEvent:commitEvent
+                              fromUpstream:@"wss://pds.example/xrpc/com.atproto.sync.subscribeRepos"];
+
+        [self waitForRelayBuffer:buffer eventCount:1 handler:relayHandler];
+        [self waitForHandler:relayHandler idleWithTimeout:1.0];
+
+        XCTAssertEqual(liveConn.sentMessages.count, 1U);
+        NSInteger liveCommitOp = 0;
+        NSString *liveCommitType = nil;
+        NSError *liveCommitDecodeError = nil;
+        NSDictionary *liveCommitPayload =
+            [formatter decodeEventFromData:liveConn.sentMessages.firstObject
+                                        op:&liveCommitOp
+                                   msgType:&liveCommitType
+                                     error:&liveCommitDecodeError];
+        XCTAssertNil(liveCommitDecodeError);
+        XCTAssertEqual(liveCommitOp, 1);
+        XCTAssertEqualObjects(liveCommitType, @"#commit");
+        XCTAssertEqualObjects(liveCommitPayload[@"repo"], @"did:plc:relay-replay");
+        XCTAssertEqual([liveCommitPayload[@"seq"] longLongValue], 1LL);
+
+        MockWebSocketConnection *replayConn =
+            [[MockWebSocketConnection alloc] init];
+        [relayHandler sendInitialRepositoryStateToConnection:replayConn
+                                                      cursor:@"0"];
+        [self waitForHandler:relayHandler idleWithTimeout:1.0];
+
+        XCTAssertEqual(replayConn.sentMessages.count, 1U);
+        XCTAssertEqualObjects(replayConn.sentMessages.firstObject,
+                              liveConn.sentMessages.firstObject);
+        NSInteger commitOp = 0;
+        NSString *commitType = nil;
+        NSError *commitDecodeError = nil;
+        NSDictionary *commitPayload =
+            [formatter decodeEventFromData:replayConn.sentMessages.firstObject
+                                        op:&commitOp
+                                   msgType:&commitType
+                                     error:&commitDecodeError];
+        XCTAssertNil(commitDecodeError);
+        XCTAssertEqual(commitOp, 1);
+        XCTAssertEqualObjects(commitType, @"#commit");
+        XCTAssertEqualObjects(commitPayload[@"repo"], @"did:plc:relay-replay");
+        XCTAssertEqual([commitPayload[@"seq"] longLongValue], 1LL);
+
+        [relayHandler broadcastIdentityChange:@"did:plc:relay-replay"
+                                       handle:@"relay-replay.test"];
+        [self waitForHandler:relayHandler idleWithTimeout:1.0];
+
+        XCTAssertEqual(liveConn.sentMessages.count, 2U);
+        NSInteger identityOp = 0;
+        NSString *identityType = nil;
+        NSError *identityDecodeError = nil;
+        NSDictionary *identityPayload =
+            [formatter decodeEventFromData:liveConn.sentMessages.lastObject
+                                        op:&identityOp
+                                   msgType:&identityType
+                                     error:&identityDecodeError];
+        XCTAssertNil(identityDecodeError);
+        XCTAssertEqual(identityOp, 1);
+        XCTAssertEqualObjects(identityType, @"#identity");
+        XCTAssertEqualObjects(identityPayload[@"did"], @"did:plc:relay-replay");
+        XCTAssertEqual([identityPayload[@"seq"] longLongValue], 2LL);
+    } @finally {
+        [relayHandler stop];
     }
 }
 #endif
