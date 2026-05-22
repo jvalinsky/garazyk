@@ -1,0 +1,247 @@
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:93:                                                                            rateLimiter:nil];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:59:@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t eventRateLimiter;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:143:    _eventRateLimiter = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _syncQueue);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:144:    if (_eventRateLimiter) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:146:      dispatch_source_set_timer(_eventRateLimiter,
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:148:      dispatch_source_set_event_handler(_eventRateLimiter, ^{
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:151:      dispatch_resume(_eventRateLimiter);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:239:  if (_eventRateLimiter) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:240:    dispatch_source_cancel(_eventRateLimiter);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:241:    _eventRateLimiter = nil;
+./Garazyk/Sources/Identity/HandleResolver.h:61:@property (nonatomic, assign) NSUInteger rateLimitPerMinute;
+./Garazyk/Sources/Identity/HandleResolver.m:45:    dispatch_queue_t _rateLimitQueue;
+./Garazyk/Sources/Identity/HandleResolver.m:71:        _rateLimitPerMinute = 100;
+./Garazyk/Sources/Identity/HandleResolver.m:74:            _rateLimitPerMinute = [envLimit integerValue];
+./Garazyk/Sources/Identity/HandleResolver.m:81:        _rateLimitQueue = dispatch_queue_create("com.atproto.handle.ratelimit", DISPATCH_QUEUE_SERIAL);
+./Garazyk/Sources/Identity/HandleResolver.m:91:        NSError *rateLimitError = [NSError errorWithDomain:HandleErrorDomain
+./Garazyk/Sources/Identity/HandleResolver.m:94:        completion(nil, rateLimitError);
+./Garazyk/Sources/Identity/HandleResolver.m:499:    dispatch_sync(_rateLimitQueue, ^{
+./Garazyk/Sources/Identity/HandleResolver.m:516:        if (self.requestTimestamps.count >= self.rateLimitPerMinute) {
+./Garazyk/Sources/App/PDSController.m:34:#import "Network/RateLimiter.h"
+./Garazyk/Sources/App/PDSController.m:69:  RateLimiter *_rateLimiter;
+./Garazyk/Sources/App/PDSController.m:94:- (RateLimiter *)rateLimiter {
+./Garazyk/Sources/App/PDSController.m:96:    return _backingApplication.rateLimiter;
+./Garazyk/Sources/App/PDSController.m:98:  return _rateLimiter;
+./Garazyk/Sources/App/PDSApplication.h:13:@class RateLimiter;
+./Garazyk/Sources/App/PDSApplication.h:120:@property (nonatomic, strong, readonly) RateLimiter *rateLimiter;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:237:@property (nonatomic, readonly) BOOL rateLimitEnabled;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:271:@property (nonatomic, readonly) NSUInteger rateLimitRequestsPerMinute;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:274:@property (nonatomic, readonly) NSUInteger rateLimitBurstSize;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:277:@property (nonatomic, readonly) NSUInteger rateLimitDidLimit;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:280:@property (nonatomic, readonly) NSTimeInterval rateLimitDidWindowSeconds;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:283:@property (nonatomic, readonly) NSUInteger rateLimitIpLimit;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:286:@property (nonatomic, readonly) NSTimeInterval rateLimitIpWindowSeconds;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:289:@property (nonatomic, readonly) NSUInteger rateLimitBlobLimit;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:292:@property (nonatomic, readonly) NSTimeInterval rateLimitBlobWindowSeconds;
+./Garazyk/Sources/App/PDSApplication.m:40:#import "Network/RateLimiter.h"
+./Garazyk/Sources/App/PDSApplication.m:169:        _rateLimiter = [RateLimiter sharedLimiter];
+./Garazyk/Sources/App/PDSApplication.m:176:        [self configureRateLimiter];
+./Garazyk/Sources/App/PDSApplication.m:247:- (void)configureRateLimiter {
+./Garazyk/Sources/App/PDSApplication.m:250:    RateLimiter *limiter = self.rateLimiter;
+./Garazyk/Sources/App/PDSApplication.m:251:    NSString *rateLimitPath = [[_dataDirectory stringByAppendingPathComponent:@"service"]
+./Garazyk/Sources/App/PDSApplication.m:253:    [limiter reconfigureDatabasePath:rateLimitPath];
+./Garazyk/Sources/App/PDSApplication.m:254:    limiter.enabled = _configuration.rateLimitEnabled;
+./Garazyk/Sources/App/PDSApplication.m:255:    limiter.didLimit = _configuration.rateLimitDidLimit;
+./Garazyk/Sources/App/PDSApplication.m:256:    limiter.didWindowSeconds = _configuration.rateLimitDidWindowSeconds;
+./Garazyk/Sources/App/PDSApplication.m:257:    limiter.ipLimit = _configuration.rateLimitIpLimit;
+./Garazyk/Sources/App/PDSApplication.m:258:    limiter.ipWindowSeconds = _configuration.rateLimitIpWindowSeconds;
+./Garazyk/Sources/App/PDSApplication.m:259:    limiter.blobLimit = _configuration.rateLimitBlobLimit;
+./Garazyk/Sources/App/PDSApplication.m:260:    limiter.blobWindowSeconds = _configuration.rateLimitBlobWindowSeconds;
+./Garazyk/Sources/App/PDSController.h:47:@class RateLimiter;
+./Garazyk/Sources/App/PDSController.h:110:@property(nonatomic, strong, readonly) RateLimiter *rateLimiter;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:208:    _rateLimitEnabled = YES;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:209:    _rateLimitRequestsPerMinute = 1000;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:210:    _rateLimitDidLimit = 5000;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:211:    _rateLimitDidWindowSeconds = 3600;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:212:    _rateLimitIpLimit = 1000; // Increased default as 100/min is low for tests
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:213:    _rateLimitIpWindowSeconds = 60;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:214:    _rateLimitBlobLimit = 50;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:215:    _rateLimitBlobWindowSeconds = 3600;
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:737:  NSDictionary *rateLimit = config[@"rate_limit"];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:738:  if (rateLimit) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:739:    if ([self dictionary:rateLimit hasValueForKey:@"enabled"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:740:      _rateLimitEnabled = [rateLimit[@"enabled"] boolValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:741:    if ([self dictionary:rateLimit hasValueForKey:@"requests_per_minute"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:742:      _rateLimitRequestsPerMinute =
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:743:          [rateLimit[@"requests_per_minute"] unsignedIntegerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:744:    if ([self dictionary:rateLimit hasValueForKey:@"burst_size"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:745:      _rateLimitBurstSize = [rateLimit[@"burst_size"] unsignedIntegerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:747:    if ([self dictionary:rateLimit hasValueForKey:@"did_limit"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:748:      _rateLimitDidLimit = [rateLimit[@"did_limit"] unsignedIntegerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:749:    if ([self dictionary:rateLimit hasValueForKey:@"did_window"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:750:      _rateLimitDidWindowSeconds = [rateLimit[@"did_window"] doubleValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:751:    if ([self dictionary:rateLimit hasValueForKey:@"ip_limit"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:752:      _rateLimitIpLimit = [rateLimit[@"ip_limit"] unsignedIntegerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:753:    if ([self dictionary:rateLimit hasValueForKey:@"ip_window"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:754:      _rateLimitIpWindowSeconds = [rateLimit[@"ip_window"] doubleValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:755:    if ([self dictionary:rateLimit hasValueForKey:@"blob_limit"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:756:      _rateLimitBlobLimit = [rateLimit[@"blob_limit"] unsignedIntegerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:757:    if ([self dictionary:rateLimit hasValueForKey:@"blob_window"])
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:758:      _rateLimitBlobWindowSeconds = [rateLimit[@"blob_window"] doubleValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:763:    _rateLimitEnabled =
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:764:        [self boolFromEnv:@"PDS_RATELIMIT_ENABLED" default:_rateLimitEnabled];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:769:    _rateLimitDidLimit = [envDidLimit integerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:774:    _rateLimitDidWindowSeconds = [envDidWindow doubleValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:779:    _rateLimitIpLimit = [envIpLimit integerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:784:    _rateLimitIpWindowSeconds = [envIpWindow doubleValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:789:    _rateLimitBlobLimit = [envBlobLimit integerValue];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:794:    _rateLimitBlobWindowSeconds = [envBlobWindow doubleValue];
+./Garazyk/Sources/Network/HttpServer.m:25:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/XrpcRepoPack.m:10:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/XrpcRepoPack.m:244:    RateLimiter *rateLimiter = services.rateLimiter;
+./Garazyk/Sources/Network/XrpcRepoPack.m:546:        RateLimitResult *blobRateLimit = [rateLimiter checkBlobUploadRateLimitForDid:did];
+./Garazyk/Sources/Network/RateLimiter.m:4: @file RateLimiter.m
+./Garazyk/Sources/Network/RateLimiter.m:11:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/RateLimiter.m:24:static BOOL _rateLimiterDisabledGlobally = YES;
+./Garazyk/Sources/Network/RateLimiter.m:26:static BOOL _rateLimiterDisabledGlobally = NO;
+./Garazyk/Sources/Network/RateLimiter.m:29:void RateLimiterSetDisabledGlobally(BOOL disabled) {
+./Garazyk/Sources/Network/RateLimiter.m:30:    _rateLimiterDisabledGlobally = disabled;
+./Garazyk/Sources/Network/RateLimiter.m:33:BOOL RateLimiterIsDisabledGlobally(void) {
+./Garazyk/Sources/Network/RateLimiter.m:34:    return _rateLimiterDisabledGlobally;
+./Garazyk/Sources/Network/RateLimiter.m:55:@interface RateLimiter ()
+./Garazyk/Sources/Network/RateLimiter.m:63:@implementation RateLimiter
+./Garazyk/Sources/Network/RateLimiter.m:66:    static RateLimiter *sharedInstance = nil;
+./Garazyk/Sources/Network/RateLimiter.m:69:        sharedInstance = [[RateLimiter alloc] initWithDatabasePath:nil];
+./Garazyk/Sources/Network/RateLimiter.m:70:        GZ_LOG_HTTP_DEBUG(@"RateLimiter singleton created (enabled=%@)", @(sharedInstance.isEnabled));
+./Garazyk/Sources/Network/RateLimiter.m:88:        _enabled = !_rateLimiterDisabledGlobally;
+./Garazyk/Sources/Network/RateLimiter.m:92:        if (config && !config.rateLimitEnabled) {
+./Garazyk/Sources/Network/RateLimiter.m:96:        GZ_LOG_HTTP_DEBUG(@"RateLimiter init (enabled=%@, global_disabled=%@, config_enabled=%@)",
+./Garazyk/Sources/Network/RateLimiter.m:98:                           @(_rateLimiterDisabledGlobally),
+./Garazyk/Sources/Network/RateLimiter.m:99:                           @(config.rateLimitEnabled));
+./Garazyk/Sources/Network/RateLimiter.m:208:    if (!self.isEnabled || _rateLimiterDisabledGlobally) {
+./Garazyk/Sources/Network/RateLimiter.m:501:- (NSDictionary<NSString *, NSString *> *)rateLimitHeadersForDid:(NSString *)did {
+./Garazyk/Sources/Network/RateLimiter.m:513:- (NSDictionary<NSString *, NSString *> *)rateLimitHeadersForIP:(NSString *)ip {
+./Garazyk/Sources/Network/RateLimiter.m:555:        NSDictionary *didHeaders = [self rateLimitHeadersForDid:did];
+./Garazyk/Sources/Network/RateLimiter.m:562:        NSDictionary *ipHeaders = [self rateLimitHeadersForIP:ip];
+./Garazyk/Sources/Network/HttpRequestDispatcher.m:16:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/HttpRequestDispatcher.m:37:  if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
+./Garazyk/Sources/Network/HttpRequestDispatcher.m:38:      [RateLimiter sharedLimiter].isEnabled) {
+./Garazyk/Sources/Network/HttpRequestDispatcher.m:40:        [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:36:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/XrpcIdentityPack.m:670:        RateLimiter *limiter = [RateLimiter sharedLimiter];
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.m:27:                                               rateLimiter:nil];
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m:84:                                                                                      rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcMiddleware.m:14:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/XrpcMiddleware.m:197:@property (nonatomic, strong) RateLimiter *limiter;
+./Garazyk/Sources/Network/XrpcMiddleware.m:211:    middleware.limiter = [RateLimiter sharedLimiter];
+./Garazyk/Sources/Network/XrpcMiddleware.m:220:    middleware.limiter = [RateLimiter sharedLimiter];
+./Garazyk/Sources/Network/XrpcMiddleware.m:384:                                                       rateLimit:(NSInteger)rateLimit {
+./Garazyk/Sources/Network/XrpcMiddleware.m:391:    if (rateLimit > 0) {
+./Garazyk/Sources/Network/XrpcMiddleware.m:393:        [middlewares addObject:[RateLimitMiddleware perUser:rateLimit perWindow:window]];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:35:    JWTMinter *jwtMinter, RateLimiter *rateLimiter, ATProtoServiceConfiguration *config,
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:57:                                               rateLimiter:rateLimiter];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:96:      controller.jwtMinter, controller.rateLimiter, config, nil,
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:111:      application.jwtMinter, application.rateLimiter, application.configuration,
+./Garazyk/Sources/Network/XrpcRoutePackServices.h:30:@class RateLimiter;
+./Garazyk/Sources/Network/XrpcRoutePackServices.h:57:@property (nonatomic, readonly, nullable) RateLimiter *rateLimiter;
+./Garazyk/Sources/Network/XrpcRoutePackServices.h:97:@property (nonatomic, readonly, nullable) RateLimiter *rateLimiter;
+./Garazyk/Sources/Network/XrpcRoutePackServices.h:129:                        rateLimiter:(nullable RateLimiter *)rateLimiter
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:37:                                               rateLimiter:nil];
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:107:        [self _failWithError:fetchErr rateLimitedUntil:nil];
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:127:        [_delegate worker:self didFailForDID:did error:err rateLimitedUntil:retryAfter];
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:147:        [self _failWithError:parseErr rateLimitedUntil:nil];
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:496:- (void)_failWithError:(NSError *)error rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:499:    [_delegate worker:self didFailForDID:_did error:error rateLimitedUntil:rateLimitedUntil];
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:506:    [self _failWithError:err rateLimitedUntil:nil];
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.h:40:rateLimitedUntil:(nullable NSDate *)rateLimitedUntil;
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m:249:rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m:259:        if (rateLimitedUntil) {
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m:260:            self.hostBackoffUntil[host] = rateLimitedUntil;
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:36:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:52:                                                 rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:31:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:52:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:69:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:86:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:35:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:57:                                                 rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcHandler.m:6:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/XrpcHandler.m:185:    RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+./Garazyk/Sources/Network/XrpcHandler.m:186:    if (!rateLimit.allowed) {
+./Garazyk/Sources/Network/XrpcHandler.m:195:        [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.limit] forKey:@"X-RateLimit-Limit"];
+./Garazyk/Sources/Network/XrpcHandler.m:196:        [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
+./Garazyk/Sources/Network/XrpcHandler.m:197:        [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
+./Garazyk/Sources/Network/XrpcHandler.m:198:        [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.retryAfter] forKey:@"Retry-After"];
+./Garazyk/Sources/Network/XrpcHandler.m:210:            RateLimitResult *didRateLimit = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
+./Garazyk/Sources/Network/XrpcRoutePackServices.m:9:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Network/XrpcRoutePackServices.m:22:                        rateLimiter:(RateLimiter *)rateLimiter {
+./Garazyk/Sources/Network/XrpcRoutePackServices.m:32:    _rateLimiter = rateLimiter;
+./Garazyk/Sources/Network/RateLimiter.h:4: @file RateLimiter.h
+./Garazyk/Sources/Network/RateLimiter.h:12: * @file RateLimiter.h
+./Garazyk/Sources/Network/RateLimiter.h:15: * RateLimiter implements sliding window rate limiting for different resource
+./Garazyk/Sources/Network/RateLimiter.h:91: * @class RateLimiter
+./Garazyk/Sources/Network/RateLimiter.h:107: * RateLimiter *limiter = [[RateLimiter alloc] initWithDatabasePath:@"rate_limits.db"];
+./Garazyk/Sources/Network/RateLimiter.h:119: * @abstract Declares the RateLimiter public API.
+./Garazyk/Sources/Network/RateLimiter.h:121:@interface RateLimiter : NSObject
+./Garazyk/Sources/Network/RateLimiter.h:149: * @return Shared RateLimiter instance
+./Garazyk/Sources/Network/RateLimiter.h:157: * @return RateLimiter instance
+./Garazyk/Sources/Network/RateLimiter.h:210:- (NSDictionary<NSString *, NSString *> *)rateLimitHeadersForDid:(NSString *)did;
+./Garazyk/Sources/Network/RateLimiter.h:218:- (NSDictionary<NSString *, NSString *> *)rateLimitHeadersForIP:(NSString *)ip;
+./Garazyk/Sources/Network/RateLimiter.h:273:FOUNDATION_EXPORT void RateLimiterSetDisabledGlobally(BOOL disabled);
+./Garazyk/Sources/Network/RateLimiter.h:274:FOUNDATION_EXPORT BOOL RateLimiterIsDisabledGlobally(void);
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:90:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:107:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:124:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcMiddleware.h:215: * @param rateLimit Requests per minute per user (0 = no rate limit)
+./Garazyk/Sources/Network/XrpcMiddleware.h:219:                                                       rateLimit:(NSInteger)rateLimit;
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:48:                                               rateLimiter:nil];
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:32:                                               rateLimiter:nil];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:99:        [sm rateLimitHistoryTableSchema],
+./Garazyk/Sources/Metrics/PDSMetrics.m:33:@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *rateLimitRejectionsByType;
+./Garazyk/Sources/Metrics/PDSMetrics.m:74:        _rateLimitRejectionsByType = [NSMutableDictionary dictionary];
+./Garazyk/Sources/Metrics/PDSMetrics.m:196:        _rateLimitRejectionsByType[key] = @(_rateLimitRejectionsByType[key].integerValue + 1);
+./Garazyk/Sources/Metrics/PDSMetrics.m:329:    __block NSDictionary *rateLimitSnap;
+./Garazyk/Sources/Metrics/PDSMetrics.m:355:        rateLimitSnap = [_rateLimitRejectionsByType copy];
+./Garazyk/Sources/Metrics/PDSMetrics.m:443:    if (rateLimitSnap.count > 0) {
+./Garazyk/Sources/Metrics/PDSMetrics.m:446:        for (NSString *type in rateLimitSnap) {
+./Garazyk/Sources/Metrics/PDSMetrics.m:447:            [output appendFormat:@"pds_rate_limit_rejections_total{type=\"%@\"} %@\n", type, rateLimitSnap[type]];
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:13:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:51:    RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:52:    if (rateLimit.allowed) return YES;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:59:    [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.limit] forKey:@"X-RateLimit-Limit"];
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:60:    [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:61:    [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:62:    [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.retryAfter] forKey:@"Retry-After"];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:16:    _rateLimitEnabled = YES;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:17:    _rateLimitIpLimit = 200;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:18:    _rateLimitIpWindowSeconds = 60;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:46:    if (rlEnabled.length > 0) config.rateLimitEnabled = [rlEnabled boolValue];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:49:    if (rlIpLimit.integerValue > 0) config.rateLimitIpLimit = rlIpLimit.integerValue;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:52:    if (rlIpWindow.doubleValue > 0) config.rateLimitIpWindowSeconds = rlIpWindow.doubleValue;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:90:    if (rlEnabled) self.rateLimitEnabled = [rlEnabled boolValue];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:94:        self.rateLimitIpLimit = [rlIpLimit integerValue];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:99:        self.rateLimitIpWindowSeconds = [rlIpWindow doubleValue];
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:8:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:96:    RateLimiter *rateLimiter = [RateLimiter sharedLimiter];
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:97:    rateLimiter.enabled = config.rateLimitEnabled;
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:98:    rateLimiter.ipLimit = config.rateLimitIpLimit;
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:99:    rateLimiter.ipWindowSeconds = config.rateLimitIpWindowSeconds;
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:101:    [rateLimiter reconfigureDatabasePath:rlDbPath];
+./Garazyk/Sources/Database/Schema/PDSSchemaManager.m:200:- (NSString *)rateLimitHistoryTableSchema {
+./Garazyk/Sources/Database/Schema/PDSSchemaManager.m:392:    [sql appendString:[self rateLimitHistoryTableSchema]];
+./Garazyk/Sources/Mikrus/MikrusConfiguration.h:31:@property (nonatomic, assign) BOOL rateLimitEnabled;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.h:33:@property (nonatomic, assign) NSInteger rateLimitIpLimit;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.h:35:@property (nonatomic, assign) NSTimeInterval rateLimitIpWindowSeconds;
+./Garazyk/Sources/Database/Schema/PDSSchemaManager.h:170: @method rateLimitHistoryTableSchema
+./Garazyk/Sources/Database/Schema/PDSSchemaManager.h:174:- (NSString *)rateLimitHistoryTableSchema;
+./Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m:53:        NSString *rateLimitPath = [path stringByReplacingOccurrencesOfString:@"/ratelimits"
+./Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m:56:                                                                          path:rateLimitPath
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:4:#import "Network/RateLimiter.h"
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:9:@property (nonatomic, strong) RateLimiter *rateLimiter;
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:26:        _rateLimiter = [RateLimiter sharedLimiter];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:74:    // Query current rate limit status using RateLimiter API
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:75:    RateLimitResult *rateLimitResult = nil;
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:77:        rateLimitResult = [self.rateLimiter checkRateLimitForDid:identifier];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:79:        rateLimitResult = [self.rateLimiter checkRateLimitForIP:identifier];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:81:        rateLimitResult = [self.rateLimiter checkBlobUploadRateLimitForDid:identifier];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:85:    if (rateLimitResult) {
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:86:        NSString *statusStr = rateLimitResult.allowed ? @"ok" : @"limited";
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:90:            @"currentCount": @(rateLimitResult.limit - rateLimitResult.remaining),
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:91:            @"limit": @(rateLimitResult.limit),
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:92:            @"remaining": @(rateLimitResult.remaining),
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:94:            @"windowEnd": [[NSDate dateWithTimeIntervalSinceNow:rateLimitResult.resetSeconds] description],
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:131:    // Query top rate-limited identifiers from RateLimiter
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:132:    NSArray *topUsers = [self.rateLimiter getTopLimitedIdentifiers:limit];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:172:    // Clear rate limit entries from RateLimiter
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:173:    NSInteger clearedCount = [self.rateLimiter clearRateLimitForIdentifier:identifier type:type];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:232:    // RateLimiter doesn't have clearLimitForIdentifier, so we just succeed

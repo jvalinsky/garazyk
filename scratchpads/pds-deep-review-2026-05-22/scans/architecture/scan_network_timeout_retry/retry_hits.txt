@@ -1,0 +1,21 @@
+./Garazyk/Sources/Network/HttpRetryPolicy.m:6: @abstract Implements retry eligibility and backoff decisions for network operations.
+./Garazyk/Sources/Network/HttpRetryPolicy.m:8: @discussion Applies policy rules to status/error signals and returns deterministic retry decisions with delay guidance. Centralizes resilience behavior and avoids embedding retry heuristics across call sites.
+./Garazyk/Sources/Network/HttpRetryPolicy.m:41:                          attemptNumber:(NSInteger)attempt {
+./Garazyk/Sources/Network/HttpRetryPolicy.m:46:        if (attempt < self.maxRetries) {
+./Garazyk/Sources/Network/HttpRetryPolicy.m:47:            NSTimeInterval delay = self.initialDelay * pow(self.backoffMultiplier, attempt);
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:267:                path:@"/admin/api/video/jobs/:jobId/retry"
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:291:            [response setJsonBody:@{@"error": @"VideoJobRetryFailed", @"message": error.localizedDescription ?: @"Failed to retry video job"}];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:705:    for (int attempt = 0; attempt < 2; attempt++) {
+./Garazyk/Sources/Network/RateLimiter.h:79: * @param retryAfter Time to wait before retry
+./Garazyk/Sources/Network/XrpcServerPack.m:109:    for (NSUInteger attempt = 0; attempt < kMaxAttempts; attempt++) {
+./Garazyk/Sources/Network/XrpcProxyHandler.m:89:        // attempt legacy PDS-signed token (for AppView proxying where the
+./Garazyk/Sources/Network/XrpcHandler.m:193:        // Add rate limit headers for client backoff (per reference implementation)
+./Garazyk/Sources/Network/XrpcHandler.m:345:    // 6. Final attempt: Local handler (even if not explicitly protected, e.g. custom lexicons)
+./Garazyk/Sources/Network/XrpcHandler.m:521:        // If it's a URL, we attempt to infer the DID from the host if not provided
+./Garazyk/Sources/Network/WebSocketUpgradeHandler.h:51: @abstract Checks if the request appears to be a WebSocket upgrade attempt.
+./Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m:49:              path:@"/api/relay/upstreams/reconnect-all"
+./Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m:55:              path:@"/api/relay/upstreams/reconnect-all"
+./Garazyk/Sources/Network/HttpRetryPolicy.h:6: @abstract Defines retry-decision policy interfaces for network requests and transient failures.
+./Garazyk/Sources/Network/HttpRetryPolicy.h:8: @discussion Declares policy inputs and outputs used to evaluate whether an operation should retry, fail, or back off based on status codes and error classes. Separates retry semantics from caller transport code.
+./Garazyk/Sources/Network/HttpRetryPolicy.h:17:    HttpRetryDecisionRetryAfter,   // retry after `retryDelay` seconds
+./Garazyk/Sources/Network/HttpRetryPolicy.h:55:                          attemptNumber:(NSInteger)attempt;

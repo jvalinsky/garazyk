@@ -314,6 +314,84 @@
     GZ_LOG_INFO(@"[MST TEST] Deserialize single-node tree completed.");
 }
 
+- (void)testFuzzSequentialKeysLargeScale {
+    // Fuzz test: thousands of sequential keys with randomized patterns.
+    // Each pattern run inserts N keys, verifies all, deletes half, verifies remaining.
+    int count = 1000;
+    NSArray<NSString *> *patterns = @[
+        @"poison%06d",
+        @"key_%07d",
+        @"test/data/record_%05d",
+        @"app.bsky.feed.post/seq%06d",
+        @"com.example.record/%08d",
+        @"user/%d/post/%d",
+        @"org_%d_data_%d",
+    ];
+
+    for (NSString *pattern in patterns) {
+        @autoreleasepool {
+            MST *tree = [[MST alloc] init];
+            NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
+
+            GZ_LOG_INFO(@"[MST FUZZ] Pattern '%@': inserting %d keys...", pattern, count);
+
+            for (int i = 0; i < count; i++) {
+                NSString *key;
+                if ([pattern containsString:@"%d/%d"]) {
+                    key = [NSString stringWithFormat:pattern, i / 10, i % 10];
+                } else if ([pattern containsString:@"%d_%d"]) {
+                    key = [NSString stringWithFormat:pattern, i / 20, i % 20];
+                } else {
+                    key = [NSString stringWithFormat:pattern, i];
+                }
+                // Use a randomized CID rather than SHA-256 of the key
+                uint8_t randomBytes[32];
+                arc4random_buf(randomBytes, 32);
+                NSData *randomData = [NSData dataWithBytes:randomBytes length:32];
+                CID *cid = [CID cidWithDigest:randomData codec:0x71];
+                [tree put:key valueCID:cid];
+                expected[key] = cid;
+            }
+
+            XCTAssertEqual(tree.allEntries.count, (NSUInteger)count,
+                @"Fuzz pattern '%@': should have %d entries after insertion", pattern, count);
+
+            // Verify all entries (check 200 random ones to keep runtime reasonable)
+            GZ_LOG_INFO(@"[MST FUZZ] Pattern '%@': verifying entries...", pattern);
+            NSArray *allKeys = expected.allKeys;
+            for (NSUInteger j = 0; j < MIN(200, allKeys.count); j++) {
+                NSUInteger idx = arc4random_uniform((uint32_t)allKeys.count);
+                NSString *rkey = allKeys[idx];
+                CID *found = [tree get:rkey];
+                XCTAssertEqualObjects(found.stringValue, expected[rkey].stringValue,
+                    @"Fuzz pattern '%@': random key %@ mismatch", pattern, rkey);
+            }
+
+            // Delete every other key
+            GZ_LOG_INFO(@"[MST FUZZ] Pattern '%@': deleting half...", pattern);
+            NSArray *sorted = [allKeys sortedArrayUsingSelector:@selector(compare:)];
+            for (NSUInteger i = 0; i < sorted.count; i += 2) {
+                [tree delete:sorted[i]];
+                [expected removeObjectForKey:sorted[i]];
+            }
+
+            XCTAssertEqual(tree.allEntries.count, (NSUInteger)(count / 2),
+                @"Fuzz pattern '%@': should have %d entries after deletion", pattern, count / 2);
+
+            // Verify remaining entries
+            for (NSString *key in expected) {
+                CID *found = [tree get:key];
+                XCTAssertEqualObjects(found.stringValue, expected[key].stringValue,
+                    @"Fuzz pattern '%@': remaining key %@ mismatch", pattern, key);
+            }
+
+            GZ_LOG_INFO(@"[MST FUZZ] Pattern '%@' completed (%d keys, all OK)", pattern, count);
+        }
+    }
+
+    GZ_LOG_INFO(@"[MST FUZZ] All fuzz patterns completed successfully.");
+}
+
 - (void)testDepthConsistency {
     // Verify that key depth is deterministic and consistent with the spec
     NSString *key1 = @"app.bsky.feed.post/3jzfcijpj2z2a";

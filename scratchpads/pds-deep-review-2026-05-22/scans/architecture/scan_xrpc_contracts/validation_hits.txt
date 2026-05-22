@@ -1,0 +1,1193 @@
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.h:9:    Uses the Vonage Verify API to send and validate phone verification
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.h:12:    to validate.
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.h:56:    Sends verification codes via Vonage Verify and validates them
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.h:9:    Uses the Twilio Verify API to send and validate phone verification
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.h:12:    /VerificationCheck to validate.
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.h:56:    Sends verification codes via Twilio Verify and validates them
+./Garazyk/Sources/PhoneVerification/PDSPlivoPhoneVerificationProvider.h:9:    Uses the Plivo Verify API to send and validate phone verification
+./Garazyk/Sources/PhoneVerification/PDSPlivoPhoneVerificationProvider.h:12:    /Verify/Session/{session_uuid}/ to validate.
+./Garazyk/Sources/PhoneVerification/PDSPlivoPhoneVerificationProvider.h:54:    Sends verification codes via Plivo Verify and validates them
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:9:    Uses the Telegram Gateway API to send and validate phone verification
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:12:    checkVerificationStatus to validate.
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:58:    Sends verification codes via the Telegram Gateway API and validates
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:392:                                     userInfo:@{NSLocalizedDescriptionKey: @"At least one collection is required"}];
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1707:    id jsonObject = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1708:    if (!jsonObject || jsonError) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.m:1713:    NSData *cborData = [ATProtoDagCBOR encodeJSONObject:jsonObject error:&cborError];
+./Garazyk/Sources/Services/PDS/PDSRecordService.h:44:    PDSValidationModeRequired,   /*! Fail if lexicon unknown or validation fails. */
+./Garazyk/Sources/Services/PDS/PDSRecordService.h:129:    @param writes Array of write operations, each a dictionary with keys: action, collection, rkey (required for update/delete), and value (for create/update). Optional key 'swapRecord' (CID string) is supported for update/delete. Legacy key 'record' is also accepted for compatibility.
+./Garazyk/Sources/Services/PDS/PDSRecordService.h:132:    @param validate Whether to apply lexicon validation.
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:194:    if (![ATProtoHandleValidator validateHandle:handle error:error]) {
+./Garazyk/Sources/Admin/PDSInstallerCommand.m:43:           @"  sudo kaszlak install all                 # Install everything (root required)\n"
+./Garazyk/Sources/Admin/PDSAdminAuth.m:97:    // Check if issuer is required before falling back
+./Garazyk/Sources/Admin/PDSAdminAuth.m:515:                                     userInfo:@{NSLocalizedDescriptionKey: @"PDS_ISSUER is required in production mode"}];
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:144:static BOOL validateCreatedAtCoherence(NSString *collection,
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:213:- (BOOL)validateThreadgateForReplyRecord:(NSDictionary *)record
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:273:                                      userInfo:@{NSLocalizedDescriptionKey: @"Authorization required: missing actor or target DID"}];
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:326:- (BOOL)validateThreadgateForReplyRecord:(NSDictionary *)record
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:468:    if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:476:    if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:493:        GZ_LOG_INFO(@"[PDSRecordService] Using lexicon registry: %p (loaded NSIDs: %lu)", registry, (unsigned long)registry.loadedNSIDs.count);
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:513:        if (![validator validateRecord:value
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:526:    if (!validateCreatedAtCoherence(collection, rkey, value, mode, error)) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:533:    if (![self validateThreadgateForReplyRecord:value collection:collection authorDID:did error:error]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:877:    // Pre-validate all writes and build records before entering the transaction
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:905:            // Compatibility fallback for pre-lexicon field names.
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:939:            if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:946:            if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:976:                if (![validator validateRecord:record collection:collection mode:validationMode error:&validationError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:983:            if (!validateCreatedAtCoherence(collection, rkey, record, mode, &coherenceError)) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:988:            if (![self validateThreadgateForReplyRecord:record collection:collection authorDID:did error:error]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1056:            if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1072:            if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1101:                if (![validator validateRecord:record collection:collection mode:validationMode error:&validationError]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1108:            if (!validateCreatedAtCoherence(collection, rkey, record, mode, &coherenceError)) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1113:            if (![self validateThreadgateForReplyRecord:record collection:collection authorDID:did error:error]) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:1199:            if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+./Garazyk/Sources/Services/PDS/PDSRepositoryService.h:276: @discussion Processes a CAR-encoded commit, validates signature and structure,
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.h:21: * @brief Initialize with required dependencies.
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.h:93: * @param reason Reason for clearing (required)
+./Garazyk/Sources/Services/Core/PDSAdminService.m:156:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:170:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:184:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:198:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:254:                                     userInfo:@{NSLocalizedDescriptionKey: @"Account DID is required"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:283:                                     userInfo:@{NSLocalizedDescriptionKey: @"Account DID is required"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:310:        if (error) *error = [NSError errorWithDomain:@"com.atproto.admin" code:400 userInfo:@{NSLocalizedDescriptionKey: @"forAccount is required"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:367:    NSArray<NSString *> *validatedCodes = deduplicatedNonEmptyStringArray(codes);
+./Garazyk/Sources/Services/Core/PDSAdminService.m:369:    if (validatedCodes.count == 0 && accountIdentifiers.count == 0) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:396:    if (validatedCodes.count > 0) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:398:                                                        sqlPlaceholders(validatedCodes.count)];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:399:        if (![_database executeParameterizedUpdate:codeSQL params:validatedCodes error:error]) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:427:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required fields: did, action"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:429:        return @{@"status": @"error", @"message": @"Missing required fields"};
+./Garazyk/Sources/Services/Core/PDSAdminService.m:433:    if (![ATProtoValidator validateDID:did error:&didValidationError]) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:483:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required fields: uri, action"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:485:        return @{@"status": @"error", @"message": @"Missing required fields"};
+./Garazyk/Sources/Services/Core/PDSAdminService.m:526:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required fields: uri, val"}];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:571:    if ([ATProtoValidator validateDID:identifier error:nil]) {
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:21:    /** The selected provider lacks required configuration or credentials. */
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:59:    Vonage Verify, Plivo Verify) should implement this method to validate the
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:111:    configuration dictionary, which are required for built-in providers
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:215:            *error = [NSError errorWithDomain:@"PDSRateLimitAdminHandler" code:400 userInfo:@{NSLocalizedDescriptionKey: @"identifier required"}];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:227:            *error = [NSError errorWithDomain:@"PDSRateLimitAdminHandler" code:400 userInfo:@{NSLocalizedDescriptionKey: @"reason required"}];
+./Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m:244:            *error = [NSError errorWithDomain:@"PDSRateLimitAdminHandler" code:400 userInfo:@{NSLocalizedDescriptionKey: @"identifier required"}];
+./Garazyk/Sources/Admin/PDSAdminController.m:68:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Admin/PDSAdminController.m:80:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Admin/PDSAdminController.m:92:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Admin/PDSAdminController.m:104:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Admin/PDSAdminAuth.h:32: * Authentication is required for all admin endpoints except /admin/login.
+./Garazyk/Sources/Admin/PDSAdminAuth.h:46: * @param headers HTTP headers to validate (case-insensitive keys).
+./Garazyk/Sources/Admin/PDSAdminAuth.h:58: * This method validates the provided password against the configured admin
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h:31: * @brief Initialize with required dependencies.
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditOperation.h:50: * @brief Initialize operation with required dependencies.
+./Garazyk/Sources/Network/XrpcHandlerContext.h:50: @c services, validates the token via @c XrpcAuthHelper. Otherwise only
+./Garazyk/Sources/Network/SSRFValidator.h:42: * @abstract Performs the validateHostResolvesToPublicIP operation.
+./Garazyk/Sources/Network/SSRFValidator.h:44:+ (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error;
+./Garazyk/Sources/Federation/FederationClient.m:142:    // eliminating the validate-before-fetch TOCTOU gap.
+./Garazyk/Sources/Federation/FederationClient.m:280:    // eliminating the validate-before-fetch TOCTOU gap.
+./Garazyk/Sources/Federation/FederationClient.m:339:    // Check the lexicon registry first
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:121:    if ([ATProtoValidator validateDID:identifier error:nil]) {
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:123:    } else if ([ATProtoHandleValidator validateHandle:identifier error:nil]) {
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:442:+ (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:39:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:59:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:79:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:128:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:239:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:264:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:423:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:461:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:497:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:535:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:659:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:717:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:762:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:805:        result[@"lists"] = blocks;  // Per lexicon spec: output key is "lists" not "blocks"
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:888:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:895:            [XrpcErrorHelper setValidationError:response message:@"subject is required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:926:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:933:            [XrpcErrorHelper setValidationError:response message:@"subject is required"];
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:211:            @"message": @"did parameter is required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:244:            @"message": @"did parameter is required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:285:            @"message": @"did parameter is required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:370:            @"message": @"hostname parameter is required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:489:    NSInteger limit = 200; // default per lexicon
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:613:            @"message": @"Request body required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:636:            @"message": @"hostname field required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:690:    // Synchronously validate host with semaphore and timeout
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:695:    [_upstreamManager validateHost:upstreamURL completion:^(BOOL reachable, NSError * _Nullable error) {
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:732:    // Success - return empty response (per lexicon)
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:752:            @"message": @"Authorization header required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:781:            @"message": @"Request body required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:804:            @"message": @"hostname field required"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:854:            @"message": @"did parameter is required"
+./Garazyk/Sources/Admin/AdminMiddleware.m:58:            @"message": @"Valid authentication token required"
+./Garazyk/Sources/Admin/AdminMiddleware.m:88:            @"message": @"Admin access required"
+./Garazyk/Sources/Network/XrpcServerPack.m:47:static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcServerPack.m:225:static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcServerPack.m:458:            if (![registrationGate validateRegistrationRequest:body
+./Garazyk/Sources/Network/XrpcServerPack.m:491:            if (!validateDidWebServiceAuthForAccountCreation(request, response, did, config)) {
+./Garazyk/Sources/Network/XrpcServerPack.m:547:                                        @"message": error.localizedDescription ?: @"Two-factor authentication required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:579:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:647:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:676:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:711:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:768:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:818:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:862:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:892:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:932:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:947:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:962:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1000:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1030:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1068:        if (![ATProtoValidator validateDID:token error:&didError]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1113:            if (![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1170:            if (![ATProtoValidator validateNSID:lxm error:&lxmError]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1196:        if (![ATProtoValidator validateDID:audDid error:&audError]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1274:            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1320:            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1348:            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:1377:            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:82:                    id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&parseError];
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:83:                    if ([jsonObject isKindOfClass:[NSDictionary class]]) {
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:84:                        result = jsonObject;
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:494:            @"message": @"Authentication required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:523:            @"message": @"actor parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:554:            @"message": @"actors parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:655:            @"message": @"Request body required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:678:            @"message": @"preferences field required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:744:            @"message": @"actor parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:778:            @"message": @"uri parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:816:            @"message": @"feed parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:849:            @"message": @"actor parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:882:            @"message": @"uris parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:913:            @"message": @"uris parameter is required"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:944:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:963:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1010:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1018:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"others parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1038:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"uri parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1057:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"uri parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1076:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"uri parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1093:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1112:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1131:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"list parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1154:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Request body required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1164:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor field required in body" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1184:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Request body required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1194:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor field required in body" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1286:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Request body required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1299:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"token required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1349:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Request body required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1359:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"subject required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1408:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Request body required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1424:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"priority field required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1454:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"handle parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1480:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"uri parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1548:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"uris parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1590:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"dids parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1632:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"did or uri parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1655:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"email, language, and countryCode required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1700:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"countryCode parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1800:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"phoneNumber is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1824:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"phoneNumber and code are required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1848:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"contacts and token are required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1886:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"did is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1937:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"q parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1958:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"q parameter is required" }];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1979:        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"q parameter is required" }];
+./Garazyk/Sources/Network/XrpcLabelPack.m:48:        @"message": @"WebSocket upgrade required for subscribeLabels"
+./Garazyk/Sources/Network/XrpcLabelPack.m:174:    // not part of the public AT Protocol lexicon. Use tools.ozone.* for production moderation.
+./Garazyk/Sources/Network/XrpcLabelPack.m:441:        if (![ATProtoHandleValidator validateHandle:handle error:&handleError]) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:470:        if (![ATProtoHandleValidator validateHandle:handle error:&handleError]) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:505:                    if (![ATProtoHandleValidator validateHandle:candidate error:&candidateError]) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:607:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Auth/OAuth2.h:38: @constant OAuth2ErrorInvalidRequest The request is missing required parameters.
+./Garazyk/Sources/Auth/OAuth2.h:51: @constant OAuth2ErrorInteractionRequired Interaction is required.
+./Garazyk/Sources/Auth/OAuth2.h:52: @constant OAuth2ErrorConsentRequired User consent is required.
+./Garazyk/Sources/Auth/OAuth2.h:58:    /** The request is missing required parameters. */
+./Garazyk/Sources/Auth/OAuth2.h:84:    /** User interaction is required before authorization can continue. */
+./Garazyk/Sources/Auth/OAuth2.h:86:    /** User consent is required before authorization can continue. */
+./Garazyk/Sources/Auth/OAuth2.h:185:/*! Whether WebAuthn authentication is required. */
+./Garazyk/Sources/Auth/OAuth2.h:296:/*! The 2FA code (TOTP or backup code) if required. */
+./Garazyk/Sources/Auth/OAuth2.h:398: @abstract Verifies a DPoP proof JWT and validates its claims.
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.h:23:+ (BOOL)validateClientSecret:(nullable NSString *)provided
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.h:27:+ (BOOL)validateClientMetadata:(NSDictionary *)metadata
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.h:31:+ (BOOL)validateRequestParameters:(NSDictionary<NSString *, NSString *> *)parameters
+./Garazyk/Sources/Network/XrpcErrorHelper.h:31: * - AuthRequired: Authentication required but not provided (401)
+./Garazyk/Sources/Network/XrpcErrorHelper.h:49: * @param message Error message (defaults to "Authentication required")
+./Garazyk/Sources/Network/XrpcErrorHelper.h:137: * Set lexicon not found error (404 Not Found with LexiconNotFound code).
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:169:                           [XrpcErrorHelper setValidationError:response message:@"q parameter is required"];
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:198:                           [XrpcErrorHelper setValidationError:response message:@"q parameter is required"];
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:227:                           [XrpcErrorHelper setValidationError:response message:@"q parameter is required"];
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:258:                           [XrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:300:                           [XrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:319:                           [XrpcErrorHelper setValidationError:response message:@"assurance parameter is required"];
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:354:                           [XrpcErrorHelper setValidationError:response message:@"token parameter is required"];
+./Garazyk/Sources/Network/XrpcModerationPack.m:50:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"reasonType is required"}];
+./Garazyk/Sources/Network/XrpcModerationPack.m:56:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"subject is required"}];
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:36:                                 NSLocalizedDescriptionKey : @"Invalid lexicon schema"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:55:                                     @"Failed to compute lexicon CID"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:64:      [NSString stringWithFormat:@"at://%@/com.atproto.lexicon.schema/%@",
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:112:                                         @"Failed to read lexicon file"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:189:                                     @"No lexicon authority TXT record found"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:328:                                value:@"com.atproto.lexicon.schema"],
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:373:                                     @"Empty lexicon record response"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:394:                                     @"Empty lexicon record response"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:412:                                            @"Failed to parse lexicon record JSON"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:441:    GZ_LOG_WARN(@"Failed to create lexicon cache directory: %@",
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:451:    GZ_LOG_WARN(@"Failed to encode fetched lexicon schema for %@: %@", nsid,
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:458:    GZ_LOG_WARN(@"Failed to persist fetched lexicon schema for %@: %@", nsid,
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:505:                                            @"Failed to resolve lexicon authority DID"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:535:  // eliminating the validate-before-fetch TOCTOU gap.
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:560:              : @"Failed to fetch lexicon record from authority repository";
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:581:                                     @"Authority lexicon record has invalid value payload"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:595:                                     @"Authority lexicon ID mismatch"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:668:    if (![ATProtoValidator validateNSID:nsid error:&nsidError]) {
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:696:            ?: @"Failed to resolve lexicon"
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:74:    // For RSA, required members are e, kty, n
+./Garazyk/Sources/Network/SSRFValidator.m:61:+ (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error {
+./Garazyk/Sources/Network/SSRFValidator.m:147:+ (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error {
+./Garazyk/Sources/Auth/PDSKeyProtocol.h:38:    /** A JWK document is missing required fields or contains invalid values. */
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:210:                                                     message:@"actor is required"];
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:237:                                                     message:@"messageId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:262:                                                     message:@"actor is required"];
+./Garazyk/Sources/Network/XrpcAuthHelper.h:39: * @discussion Extracts and validates DIDs from Authorization headers, supports Bearer
+./Garazyk/Sources/Network/XrpcAuthHelper.h:45: * @abstract Extracts and validates a DID from an Authorization header.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:58: * @abstract Extracts and validates a DID with optional response for DPoP nonce handling.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:73: * Extract and validate DID from Authorization header with response object and session repository.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:83: * Extract and validate DID from Authorization header using XrpcRoutePackServices.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:91: * Extract and validate DID from Authorization header using PDSController.
+./Garazyk/Sources/Network/XrpcRepoPack.m:49:static PDSValidationMode validationModeFromValidateParameter(id validateParam) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:50:    if (!validateParam || validateParam == (id)[NSNull null]) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:51:        // Per lexicon: unset -> validate only for known Lexicons.
+./Garazyk/Sources/Network/XrpcRepoPack.m:54:    if ([validateParam isKindOfClass:[NSNumber class]]) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:55:        return [validateParam boolValue] ? PDSValidationModeRequired : PDSValidationModeOff;
+./Garazyk/Sources/Network/XrpcRepoPack.m:57:    if ([validateParam isKindOfClass:[NSString class]]) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:58:        NSString *lower = [(NSString *)validateParam lowercaseString];
+./Garazyk/Sources/Network/XrpcRepoPack.m:394:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:406:        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
+./Garazyk/Sources/Network/XrpcRepoPack.m:463:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:520:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:579:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:610:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:690:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:787:        // Per spec: records must conform to their declared lexicon type
+./Garazyk/Sources/Network/XrpcRepoPack.m:791:        NSMutableArray<PDSDatabaseRecord *> *validatedRecords = [NSMutableArray arrayWithCapacity:records.count];
+./Garazyk/Sources/Network/XrpcRepoPack.m:812:                // No $type - this may be a raw CBOR-style record without lexicon
+./Garazyk/Sources/Network/XrpcRepoPack.m:815:                [validatedRecords addObject:record];
+./Garazyk/Sources/Network/XrpcRepoPack.m:819:            // Validate record against lexicon
+./Garazyk/Sources/Network/XrpcRepoPack.m:820:            // Use ATProtoValidationModeOptimistic: validate if lexicon known, accept if unknown
+./Garazyk/Sources/Network/XrpcRepoPack.m:822:            if (![validator validateRecord:recordValue
+./Garazyk/Sources/Network/XrpcRepoPack.m:834:                                 @"Record %@ failed lexicon validation: %@",
+./Garazyk/Sources/Network/XrpcRepoPack.m:840:            [validatedRecords addObject:record];
+./Garazyk/Sources/Network/XrpcRepoPack.m:844:                      (unsigned long)validatedRecords.count, (unsigned long)records.count);
+./Garazyk/Sources/Network/XrpcRepoPack.m:870:            if (validatedRecords.count > 0 && ![transactor putRecords:validatedRecords forDid:did error:error]) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:892:            @"recordCount": @(validatedRecords.count),
+./Garazyk/Sources/Network/XrpcRepoPack.m:893:            @"skippedCount": @((NSInteger)records.count - (NSInteger)validatedRecords.count)
+./Garazyk/Sources/Network/XrpcRepoPack.m:899:        // Per lexicon: does not require auth.
+./Garazyk/Sources/Network/XrpcRepoPack.m:926:        // Resolve full DID document (required by lexicon).
+./Garazyk/Sources/Network/XrpcRepoPack.m:977:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:989:        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
+./Garazyk/Sources/Network/XrpcRepoPack.m:1098:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcRepoPack.m:1105:        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
+./Garazyk/Sources/Network/XrpcRepoPack.m:1149:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcHandlerContext.m:36:                                    message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcHandlerContext.m:60:  // Use ChatAuthManager to validate the service auth JWT.
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:79:                                                     message:@"email, language, and countryCode are required"];
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:155:                                                     message:@"countryCode is required"];
+./Garazyk/Sources/Network/SSLPinningManager.h:23: @discussion SSLPinningManager validates server certificates against pre-configured
+./Garazyk/Sources/Network/SSLPinningManager.h:36: @discussion When disabled, certificates are validated using standard iOS/macOS trust evaluation
+./Garazyk/Sources/Network/SSLPinningManager.h:92: @method validateChallenge:forDomain:
+./Garazyk/Sources/Network/SSLPinningManager.h:101:- (BOOL)validateChallenge:(NSURLAuthenticationChallenge *)challenge forDomain:(NSString *)domain;
+./Garazyk/Sources/Auth/secp256k1_wrapper_c.h:173: * @param public_key Public key to validate.
+./Garazyk/Sources/Auth/secp256k1_wrapper_c.h:181: * Accepts either 33-byte compressed or 65-byte uncompressed input, validates
+./Garazyk/Sources/Auth/secp256k1_wrapper_c.h:196: * @param signature Signature to validate.
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.h:17:    /** A required input value was empty or invalid. */
+./Garazyk/Sources/Auth/PDSNonceManager.m:59:- (BOOL)validateNonce:(NSString *)nonce {
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:48: All required services are extracted from PDSApplication and passed to domain
+./Garazyk/Sources/Network/XrpcVendorPack.m:72:        if (![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcVendorPack.m:78:        NSMutableArray<NSString *> *validatedCollections = [NSMutableArray arrayWithCapacity:collections.count];
+./Garazyk/Sources/Network/XrpcVendorPack.m:87:            if (![ATProtoValidator validateNSID:collection error:&collectionError]) {
+./Garazyk/Sources/Network/XrpcVendorPack.m:92:            [validatedCollections addObject:collection];
+./Garazyk/Sources/Network/XrpcVendorPack.m:98:                                                                                collections:validatedCollections
+./Garazyk/Sources/Network/XrpcVendorPack.m:122:                                       @"message": @"Authentication required"}];
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:47: * @abstract HTTP client that validates user-supplied URLs before network access.
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:57:+ (BOOL)validateURL:(NSURL *)url
+./Garazyk/Sources/MediaCore/ATProtoMediaJobStore.h:32:@required
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:33:            @"message": @"Admin privileges required"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:56:            [XrpcErrorHelper setValidationError:response message:@"event is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:124:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:147:            [XrpcErrorHelper setValidationError:response message:@"uri is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:171:            [XrpcErrorHelper setValidationError:response message:@"uris is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:194:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:218:            [XrpcErrorHelper setValidationError:response message:@"dids is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:265:            [XrpcErrorHelper setValidationError:response message:@"did or uri is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:288:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:311:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:340:            [XrpcErrorHelper setValidationError:response message:@"action and subjects are required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:381:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:406:            [XrpcErrorHelper setValidationError:response message:@"subjects is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:436:            [XrpcErrorHelper setValidationError:response message:@"subjects is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:461:            [XrpcErrorHelper setValidationError:response message:@"email is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:484:            [XrpcErrorHelper setValidationError:response message:@"email and role are required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:511:            [XrpcErrorHelper setValidationError:response message:@"email is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:554:            [XrpcErrorHelper setValidationError:response message:@"name is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:594:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:617:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:674:            [XrpcErrorHelper setValidationError:response message:@"id and values are required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:699:            [XrpcErrorHelper setValidationError:response message:@"id and values are required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:724:            [XrpcErrorHelper setValidationError:response message:@"name and contentMarkdown are required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:751:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:779:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:822:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:846:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:930:            [XrpcErrorHelper setValidationError:response message:@"url is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:935:            [XrpcErrorHelper setValidationError:response message:@"action is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:962:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:987:            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1016:            [XrpcErrorHelper setValidationError:response message:@"key is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1021:            [XrpcErrorHelper setValidationError:response message:@"value is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1063:            [XrpcErrorHelper setValidationError:response message:@"keys array is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1083:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1111:            [XrpcErrorHelper setValidationError:response message:@"did1 is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1116:            [XrpcErrorHelper setValidationError:response message:@"did2 is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1139:            [XrpcErrorHelper setValidationError:response message:@"query is required"];
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1167:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcMiddleware.h:29: * @discussion Middleware may validate, reject, enrich, or record request state before
+./Garazyk/Sources/Network/XrpcMiddleware.h:158: * Create middleware that validates repo ownership.
+./Garazyk/Sources/Network/XrpcMiddleware.h:160: * Extracts repo parameter from request body or query, validates
+./Garazyk/Sources/Network/XrpcMiddleware.h:165: * @return Middleware that validates repo ownership
+./Garazyk/Sources/Network/XrpcMiddleware.h:170: * Create middleware that validates record ownership.
+./Garazyk/Sources/Network/XrpcMiddleware.h:172: * Extracts AT-URI from parameter, validates that repo part matches auth DID.
+./Garazyk/Sources/Network/XrpcMiddleware.h:175: * @return Middleware that validates record ownership
+./Garazyk/Sources/Network/XrpcMiddleware.h:222: * Admin endpoint: admin authentication required.
+./Garazyk/Sources/MediaCore/ATProtoMediaProcessor.h:23:@required
+./Garazyk/Sources/MediaCore/ATProtoMediaProcessor.h:55: * @abstract Security gate: validates that raw data matches the declared media container signatures.
+./Garazyk/Sources/MediaCore/ATProtoMediaProcessor.h:61:- (BOOL)validateContentSignature:(NSData *)data declaredMimeType:(NSString *)declaredMime;
+./Garazyk/Sources/Network/XrpcHandler.m:22:- (BOOL)validateHTTPMethodForMethodId:(NSString *)methodId
+./Garazyk/Sources/Network/XrpcHandler.m:258:    if (![self validateHTTPMethodForMethodId:methodId request:request response:response]) {
+./Garazyk/Sources/Network/XrpcHandler.m:388:- (BOOL)validateHTTPMethodForMethodId:(NSString *)methodId
+./Garazyk/Sources/Network/XrpcHandler.m:592:    // can validate that the token was intended for it.
+./Garazyk/Sources/Network/XrpcHandler.m:705:    [self registerMethod:@"com.atproto.lexicon.resolveLexicon" handler:handler];
+./Garazyk/Sources/Blob/BlobStorage.h:130: * @param data The blob data to validate.
+./Garazyk/Sources/Blob/BlobStorage.h:135:- (BOOL)validateBlob:(NSData *)data mimeType:(NSString *)mimeType error:(NSError **)error;
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:77:            [XrpcErrorHelper setValidationError:response message:@"name is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:104:            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:112:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:139:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:172:            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:202:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:243:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:280:            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:306:            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:333:            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:365:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:405:            [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:434:            [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:459:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:486:            [XrpcErrorHelper setValidationError:response message:@"requestId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:513:            [XrpcErrorHelper setValidationError:response message:@"requestId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:538:            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:571:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:602:            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:606:            [XrpcErrorHelper setValidationError:response message:@"text is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:637:            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:667:            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:671:            [XrpcErrorHelper setValidationError:response message:@"emoji is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:700:            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:704:            [XrpcErrorHelper setValidationError:response message:@"emoji is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:732:            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:756:            [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
+./Garazyk/Sources/Auth/OAuthSession.m:30:- (BOOL)validateWithError:(NSError **)error {
+./Garazyk/Sources/Auth/OAuthSession.m:98:                                     userInfo:@{NSLocalizedDescriptionKey: @"atproto scope is required"}];
+./Garazyk/Sources/Auth/OAuthSession.m:112:- (BOOL)validateWithError:(NSError **)error {
+./Garazyk/Sources/Auth/OAuthSession.m:207:    if (![request validateWithError:error]) {
+./Garazyk/Sources/Auth/OAuthSession.m:302:    if (![request validateWithError:error]) {
+./Garazyk/Sources/CLI/PDSCLIDispatcher.h:49: * @brief Builds a lightweight payload used when service auth is required.
+./Garazyk/Sources/CLI/PDSCLIDispatcher.h:51: * @param audience The required audience DID string.
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:296:                                           @"message": @"Password required"}];
+./Garazyk/Sources/Blob/MimeTypeValidator.m:403:- (BOOL)validateSize:(NSUInteger)fileSize forMimeType:(NSString *)mimeType error:(NSError **)error {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:503:- (BOOL)validateMagicNumbers:(NSData *)data forMimeType:(NSString *)claimedMimeType error:(NSError **)error {
+./Garazyk/Sources/Blob/MimeTypeValidator.m:508:                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty data cannot be validated"}];
+./Garazyk/Sources/Network/Http1Parser.m:222:            [self setErrorWithStatusCode:411 errorCode:@"LengthRequired" message:@"Content-Length or Transfer-Encoding: chunked required"];
+./Garazyk/Sources/Network/Http1Parser.m:607:            [self setErrorWithStatusCode:411 errorCode:@"LengthRequired" message:@"Content-Length or Transfer-Encoding: chunked required"];
+./Garazyk/Sources/Network/HttpRouter.m:197:        // Exact match required
+./Garazyk/Sources/Network/XrpcAdminPack.m:76:static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
+./Garazyk/Sources/Network/XrpcAdminPack.m:190:            || ![ATProtoValidator validateDID:recipientDid error:&didError]
+./Garazyk/Sources/Network/XrpcAdminPack.m:191:            || ![ATProtoValidator validateDID:senderDid error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:299:        if (![did isKindOfClass:[NSString class]] || ![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:306:        if (![ATProtoHandleValidator validateHandle:handle error:&handleError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:363:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"did and password are required"}];
+./Garazyk/Sources/Network/XrpcAdminPack.m:456:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"did is required"}];
+./Garazyk/Sources/Network/XrpcAdminPack.m:527:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"jobId is required"}];
+./Garazyk/Sources/Network/XrpcAdminPack.m:569:        if (![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:658:        if (![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:702:            if (![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:799:        if (![ATProtoValidator validateDID:accountDid error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:846:        if (![ATProtoValidator validateDID:accountDid error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:987:        if (![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1027:        NSArray<NSString *> *codes = validatedUniqueStringArrayFromJSONValue(body[@"codes"], @"codes", &validationError);
+./Garazyk/Sources/Network/XrpcAdminPack.m:1033:        NSArray<NSString *> *accounts = validatedUniqueStringArrayFromJSONValue(body[@"accounts"], @"accounts", &validationError);
+./Garazyk/Sources/Network/XrpcAdminPack.m:1077:        if (![did isKindOfClass:[NSString class]] || ![ATProtoValidator validateDID:did error:&didError]) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1163:static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m:170:            [context printError:@"Missing required arguments: --email and --handle"];
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m:176:    NSString *normalizedHandle = [ATProtoHandleValidator validateAndNormalizeHandle:handle error:&handleError];
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:41:        @"message": authError.localizedDescription ?: @"Admin authentication required"
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:75:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID is required"}];
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:102:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID and session id are required"}];
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:133:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID is required"}];
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:169:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID and app password name are required"}];
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:201:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID and app password name are required"}];
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:276:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Job ID is required"}];
+./Garazyk/Sources/CLI/PDSCLIRelayCommand.m:108:        [context printError:@"At least one upstream PDS URL required (--upstream)"];
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m:149:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Job ID is required"}];
+./Garazyk/Sources/Network/XrpcSyncPack.m:85:    @"message" : @"WebSocket upgrade required for subscribeRepos"
+./Garazyk/Sources/Network/XrpcSyncPack.m:299:        @"message" : @"Missing required parameter: did"
+./Garazyk/Sources/Network/XrpcSyncPack.m:328:        @"message" : @"Missing required parameter: did"
+./Garazyk/Sources/Network/XrpcSyncPack.m:562:    if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:656:          @"message" : @"Valid authorization required"
+./Garazyk/Sources/Blob/PDSBlobProviderFactory.m:95:    // Validate required configuration
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:253:            [context printError:@"Missing required arguments: --email and --handle"];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:264:    if (![ATProtoHandleValidator validateEmail:email error:&emailError]) {
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:273:    NSString *normalizedHandle = [ATProtoHandleValidator validateAndNormalizeHandle:handle error:&handleError];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:383:    if (![ATProtoHandleValidator validateEmail:email error:&emailError]) {
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:444:    NSString *normalizedHandle = [ATProtoHandleValidator validateAndNormalizeHandle:handle error:&handleError];
+./Garazyk/Sources/Network/WebSocketUpgradeHandler.m:41:            @"message": @"WebSocket upgrade required. Missing Upgrade or Connection header."
+./Garazyk/Sources/Network/XrpcHandler.h:218:/*! Registers handler for com.atproto.lexicon.resolveLexicon. */
+./Garazyk/Sources/Blob/MimeTypeValidator.h:122:- (BOOL)validateSize:(NSUInteger)fileSize forMimeType:(NSString *)mimeType error:(NSError **)error;
+./Garazyk/Sources/Blob/MimeTypeValidator.h:152:- (BOOL)validateMagicNumbers:(NSData *)data forMimeType:(NSString *)claimedMimeType error:(NSError **)error;
+./Garazyk/Sources/Network/XrpcIdentityPack.m:260:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:307:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:319:        if (![XrpcIdentityHelper validatePlcOperationToken:token forDid:did]) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:492:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:664:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcIdentityPack.m:704:        NSError *validateError = nil;
+./Garazyk/Sources/Network/XrpcIdentityPack.m:705:        if (![ATProtoHandleValidator validateHandle:handle error:&validateError]) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:706:            GZ_LOG_DEBUG(@"updateHandle: Validation failed: %@", validateError);
+./Garazyk/Sources/Network/XrpcIdentityPack.m:708:            [response setJsonBody:@{@"error": @"InvalidHandle", @"message": validateError.localizedDescription ?: @"Invalid handle"}];
+./Garazyk/Sources/Auth/JWT.m:347:    if (![self validateClaims:jwt.payload ofJWT:jwt error:error]) {
+./Garazyk/Sources/Auth/JWT.m:356:- (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error {
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:106:        [context printError:@"Missing required argument: --client-id"];
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:110:        [context printError:@"Missing required argument: --redirect-uri"];
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:164:+ (BOOL)validateURL:(NSURL *)url options:(ATProtoSafeHTTPClientOptions *)options error:(NSError **)error {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:209:        if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:233:    if (![[self class] validateURL:request.URL options:effective error:&validationError]) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:354:                if (![[self class] validateURL:finalNSURL options:opts error:&redirectError]) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:505:+ (BOOL)validateURL:(NSURL *)url options:(ATProtoSafeHTTPClientOptions *)options error:(NSError **)error {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:550:        if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:572:    if (![[self class] validateURL:request.URL options:effective error:&validationError]) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:706:    if (![[self class] validateURL:request.URL options:options error:&validationError]) {
+./Garazyk/Sources/Network/XrpcMiddleware.m:136:        // Admin auth: validate JWT + check admin privileges
+./Garazyk/Sources/Network/XrpcMiddleware.m:146:                                         userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required"}];
+./Garazyk/Sources/Network/XrpcMiddleware.m:164:        // User auth: validate JWT, extract DID
+./Garazyk/Sources/Network/XrpcMiddleware.m:173:                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+./Garazyk/Sources/Network/XrpcMiddleware.m:178:                                         userInfo:@{NSLocalizedDescriptionKey: @"Authentication required"}];
+./Garazyk/Sources/Network/XrpcMiddleware.m:311:        [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Authentication required"}];
+./Garazyk/Sources/Network/XrpcMiddleware.m:315:                                     userInfo:@{NSLocalizedDescriptionKey: @"Authentication required"}];
+./Garazyk/Sources/Network/XrpcMiddleware.m:387:    // Auth required
+./Garazyk/Sources/Network/XrpcErrorHelper.m:21:           message:message ?: @"Authentication required"];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:125:            [context printError:@"rkey is required for non-post collections. For app.bsky.feed.post, omit rkey to auto-generate a TID."];
+./Garazyk/Sources/Auth/OAuth2Handler.h:94: @method validateClient:completion:
+./Garazyk/Sources/Auth/OAuth2Handler.h:98: @param clientID The client_id to validate.
+./Garazyk/Sources/Auth/OAuth2Handler.h:102:- (void)validateClient:(NSString *)clientID
+./Garazyk/Sources/Network/XrpcProxyHandler.m:61:            [response setJsonBody:@{@"error": @"AuthenticationRequired", @"message": @"Authentication required for proxying"}];
+./Garazyk/Sources/CLI/PDSCLIDefinitions.h:108: * alias management. Subclasses should override the required properties
+./Garazyk/Sources/Network/SSLPinningManager.m:74:- (BOOL)validateChallenge:(NSURLAuthenticationChallenge *)challenge forDomain:(NSString *)domain {
+./Garazyk/Sources/Network/SSLPinningManager.m:84:        return [self validateServerTrust:serverTrust forDomain:domain];
+./Garazyk/Sources/Network/SSLPinningManager.m:90:- (BOOL)validateServerTrust:(SecTrustRef)serverTrust forDomain:(NSString *)domain {
+./Garazyk/Sources/Network/SSLPinningManager.m:183:        if ([self validateChallenge:challenge forDomain:host]) {
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:122: * @param hostname Host name to validate.
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:125:- (void)validateHost:(NSString *)hostname completion:(void (^)(BOOL reachable, NSError * _Nullable error))completion;
+./Garazyk/Sources/Blob/BlobStorage.m:70:    if (![self validateBlob:data mimeType:mimeType error:error]) {
+./Garazyk/Sources/Blob/BlobStorage.m:287:- (BOOL)validateBlob:(NSData *)data mimeType:(NSString *)mimeType error:(NSError **)error {
+./Garazyk/Sources/Blob/BlobStorage.m:315:    if (![validator validateSize:data.length forMimeType:mimeType error:&mimeError]) {
+./Garazyk/Sources/Blob/BlobStorage.m:327:    if (![validator validateMagicNumbers:data forMimeType:mimeType error:&mimeError]) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:160:            @"message": @"Authentication required"
+./Garazyk/Sources/Network/XrpcAuthHelper.m:257:                        @"message": @"DPoP nonce required"
+./Garazyk/Sources/Network/XrpcAuthHelper.m:434:                                   @"message": @"Admin authentication required"}];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:453:                               @"message": @"Admin privileges required (valid admin token)"}];
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:12:    - Events received, validated, forwarded, dropped
+./Garazyk/Sources/Sync/Firehose/Firehose.h:60: Per com.atproto.sync.subscribeRepos#commit lexicon.
+./Garazyk/Sources/Sync/Firehose/Firehose.h:113: @discussion Per com.atproto.sync.subscribeRepos#sync lexicon.
+./Garazyk/Sources/Network/XrpcRoutePackServices.h:46: @abstract Dependencies commonly required when registering XRPC handlers.
+./Garazyk/Sources/Sync/Relay/RelayAPIHandler.m:176:            response.jsonBody = @{@"error": @"BadRequest", @"message": @"Upstream URL required"};
+./Garazyk/Sources/Sync/Relay/RelayAPIHandler.m:245:        response.jsonBody = @{@"error": @"BadRequest", @"message": @"Upstream URL required in body.url"};
+./Garazyk/Sources/Sync/Relay/RelayAPIHandler.m:416:        response.jsonBody = @{@"error": @"BadRequest", @"message": @"hostname is required in request body"};
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:557:    // Required fields per subscribeRepos lexicon
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:38:        [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:172:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:197:            [XrpcErrorHelper setValidationError:response message:@"At least two members required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:238:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:247:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:267:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:276:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:296:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:313:            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:325:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:335:            [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:354:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:364:            [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:383:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:393:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:416:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:425:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:448:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:457:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:477:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:486:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:506:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:516:            [XrpcErrorHelper setValidationError:response message:@"convoId and messages are required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:553:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:562:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:582:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:591:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:611:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:620:            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:639:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:661:            // Admin fallback: validate admin secret explicitly from config
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:682:        // Reshape to lexicon convoView format
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:711:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:719:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:748:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:768:            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:790:        // Reshape to lexicon messageView format
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:837:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:847:            [XrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:884:        // Reshape to lexicon messageView format
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:908:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:15:    - Lenient: validate but forward all events regardless of result
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:17:    - LogOnly: validate strictly, log failures, forward anyway (default)
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:83: * @abstract Called after an event is validated.
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:109: * @param event Event payload to validate.
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:112:- (RelayValidationOutcome *)validateCommitEvent:(id)event;
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:116: * @param event Event payload to validate.
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:119:- (RelayValidationOutcome *)validateIdentityEvent:(id)event;
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:123: * @param event Event payload to validate.
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:126:- (RelayValidationOutcome *)validateAccountEvent:(id)event;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:179:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP is required"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:353:        // After successful signature check, we still need to validate standard claims
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:358:        if (![claimsVerifier validateClaims:jwt.payload ofJWT:jwt error:&verifyError]) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:65:            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required for timeline"];
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:545:        // per the lexicon spec (response body is empty).
+./Garazyk/Sources/Auth/WebAuthnRegistrationHandler.m:120:        [self respondWithError:response code:400 message:@"Missing required fields"];
+./Garazyk/Sources/Auth/WebAuthnRegistrationHandler.m:173:        [self respondWithError:response code:400 message:@"Missing required fields"];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:69: @abstract Initialize with required components.
+./Garazyk/Sources/Network/XrpcIdentityHelper.h:170: * @param token The token to validate.
+./Garazyk/Sources/Network/XrpcIdentityHelper.h:174:+ (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did;
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:183:- (void)validateHost:(NSString *)hostname completion:(void (^)(BOOL reachable, NSError * _Nullable error))completion {
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.m:64:- (RelayValidationOutcome *)validateCommitEvent:(id)event {
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.m:78:- (RelayValidationOutcome *)validateIdentityEvent:(id)event {
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.m:86:- (RelayValidationOutcome *)validateAccountEvent:(id)event {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:66:                                                     message:@"phoneNumber is required"];
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:102:                                                     message:@"phoneNumber and code are required"];
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:140:                                                     message:@"token and contacts are required"];
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:197:                         [XrpcErrorHelper setValidationError:response message:@"did is required"];
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:277:                                                     message:@"from and to are required"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:57:- (BOOL)validateDPoPForRequest:(HttpRequest *)request
+./Garazyk/Sources/Auth/OAuth2Handler.m:60:- (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
+./Garazyk/Sources/Auth/OAuth2Handler.m:76:- (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient
+./Garazyk/Sources/Auth/OAuth2Handler.m:84:- (BOOL)validateJWTAssertion:(NSString *)assertion
+./Garazyk/Sources/Auth/OAuth2Handler.m:89:- (nullable NSDictionary *)validatedClientForClientID:(NSString *)clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:185:- (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient
+./Garazyk/Sources/Auth/OAuth2Handler.m:187:  if (!validatedClient) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:192:    return validatedClient;
+./Garazyk/Sources/Auth/OAuth2Handler.m:195:  NSMutableDictionary *mutableClient = [validatedClient mutableCopy];
+./Garazyk/Sources/Auth/OAuth2Handler.m:200:- (void)validateClient:(NSString *)clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:247:    NSDictionary *validatedClient =
+./Garazyk/Sources/Auth/OAuth2Handler.m:248:        [self validateClientMetadata:self.clientMetadata error:&metadataError];
+./Garazyk/Sources/Auth/OAuth2Handler.m:250:    if (validatedClient) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:251:      NSString *metadataClientID = [validatedClient[@"client_id"]
+./Garazyk/Sources/Auth/OAuth2Handler.m:253:                                       ? validatedClient[@"client_id"]
+./Garazyk/Sources/Auth/OAuth2Handler.m:267:          @"Client validated successfully via client_metadata: %@", clientID);
+./Garazyk/Sources/Auth/OAuth2Handler.m:268:      completion([self sanitizeClientMetadataIfNeeded:validatedClient clientID:clientID], nil);
+./Garazyk/Sources/Auth/OAuth2Handler.m:306:                              NSDictionary *validatedClient =
+./Garazyk/Sources/Auth/OAuth2Handler.m:307:                                  [strongSelf validateClientMetadata:fetchedMetadata
+./Garazyk/Sources/Auth/OAuth2Handler.m:309:                              if (validatedClient) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:312:                                    validatedClient[@"client_id"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:316:                                         setObject:validatedClient
+./Garazyk/Sources/Auth/OAuth2Handler.m:322:                                  completion([strongSelf sanitizeClientMetadataIfNeeded:validatedClient clientID:clientID], nil);
+./Garazyk/Sources/Auth/OAuth2Handler.m:355:- (nullable NSDictionary *)validatedClientForClientID:(NSString *)clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:361:  [self validateClient:clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:418:- (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
+./Garazyk/Sources/Auth/OAuth2Handler.m:432:  // Validate client_id is HTTPS URL (required by ATProto spec)
+./Garazyk/Sources/Auth/OAuth2Handler.m:440:                                     @"client_id is required in client_metadata"
+./Garazyk/Sources/Auth/OAuth2Handler.m:481:                       @"redirect_uris array is required in client_metadata"
+./Garazyk/Sources/Auth/OAuth2Handler.m:545:  // Extract grant_types (optional, defaults to ATProto-required grants)
+./Garazyk/Sources/Auth/OAuth2Handler.m:703:                                     @"response_types is required in "
+./Garazyk/Sources/Auth/OAuth2Handler.m:765:                       @"token_endpoint_auth_method is required in "
+./Garazyk/Sources/Auth/OAuth2Handler.m:1021:- (BOOL)validateJWTAssertion:(NSString *)assertion
+./Garazyk/Sources/Auth/OAuth2Handler.m:1384:- (BOOL)validateRedirectURI:(NSString *)redirectURI
+./Garazyk/Sources/Auth/OAuth2Handler.m:1414:  // Scheme validation: HTTPS required unless it's a loopback redirect (RFC
+./Garazyk/Sources/Auth/OAuth2Handler.m:1759:          @"request_uri is required; direct authorization requests are not "
+./Garazyk/Sources/Auth/OAuth2Handler.m:1800:  // Store clientMetadata in handler for use by validateClient
+./Garazyk/Sources/Auth/OAuth2Handler.m:1816:  NSDictionary *client = [self validatedClientForClientID:clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:1841:  if (![self validateRedirectURI:redirectURI
+./Garazyk/Sources/Auth/OAuth2Handler.m:1866:      @"error_description" : @"state parameter required for CSRF protection"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1895:      @"error_description" : @"code_challenge required for public clients"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2005:      NSDictionary *client = [self validatedClientForClientID:clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:2016:      if (!client || ![self validateRedirectURI:redirectUri
+./Garazyk/Sources/Auth/OAuth2Handler.m:2119:  NSDictionary *client = [self validatedClientForClientID:clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:2138:  if (![self validateRedirectURI:redirectURI forClient:client error:&redirectError]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2293:      @"error" : @"Session ID, assertion, and did are required"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2469:      @"error" : @"Handle and password are required"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2637:  NSDictionary *client = [self validatedClientForClientID:clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:2673:    // JWT assertion provided - validate it
+./Garazyk/Sources/Auth/OAuth2Handler.m:2688:    if (![self validateJWTAssertion:clientAssertion
+./Garazyk/Sources/Auth/OAuth2Handler.m:2708:          @"client_assertion required for private_key_jwt authentication"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2715:        ![OAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:2724:    // Reject if client_secret is required but not provided and no DPoP binding
+./Garazyk/Sources/Auth/OAuth2Handler.m:2729:        @"error_description" : @"Client authentication required"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2747:    if (![self validateRedirectURI:redirectURI
+./Garazyk/Sources/Auth/OAuth2Handler.m:2765:  if (![self validateDPoPForRequest:request
+./Garazyk/Sources/Auth/OAuth2Handler.m:2795:                  // Check for 2FA required
+./Garazyk/Sources/Auth/OAuth2Handler.m:2853:  NSDictionary *client = [self validatedClientForClientID:clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:2929:  // The token parameter is already validated above
+./Garazyk/Sources/Auth/OAuth2Handler.m:3106:  NSDictionary *client = [self validatedClientForClientID:clientID
+./Garazyk/Sources/Auth/OAuth2Handler.m:3133:    // JWT assertion provided - validate it
+./Garazyk/Sources/Auth/OAuth2Handler.m:3148:    if (![self validateJWTAssertion:clientAssertion
+./Garazyk/Sources/Auth/OAuth2Handler.m:3168:          @"client_assertion required for private_key_jwt authentication"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3174:    if (expectedSecret && ![OAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3186:        @"error_description" : @"Client authentication required"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3213:  if (![self validateRedirectURI:redirectURI
+./Garazyk/Sources/Auth/OAuth2Handler.m:3229:      @"error_description" : @"state parameter required for CSRF protection"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3241:          @"The 'atproto' scope is required for AT Protocol OAuth sessions"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3251:      @"error_description" : @"code_challenge is required (PKCE is mandatory)"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3267:  if (![self validateDPoPForRequest:request
+./Garazyk/Sources/Auth/OAuth2Handler.m:3798:- (BOOL)validateDPoPForRequest:(HttpRequest *)request
+./Garazyk/Sources/Auth/OAuth2Handler.m:3813:    GZ_LOG_AUTH_DEBUG(@"validateDPoPForRequest: Failed to construct DPoP URL");
+./Garazyk/Sources/Auth/OAuth2Handler.m:3849:            ?: @"DPoP nonce required"
+./Garazyk/Sources/Identity/ATProtoHandleValidator.h:26: @method validateHandle:error:
+./Garazyk/Sources/Identity/ATProtoHandleValidator.h:34:+ (BOOL)validateHandle:(NSString *)handle error:(NSError **)error;
+./Garazyk/Sources/Identity/ATProtoHandleValidator.h:47: @method validateAndNormalizeHandle:error:
+./Garazyk/Sources/Identity/ATProtoHandleValidator.h:55:+ (nullable NSString *)validateAndNormalizeHandle:(NSString *)handle error:(NSError **)error;
+./Garazyk/Sources/Identity/ATProtoHandleValidator.h:58: @method validateEmail:error:
+./Garazyk/Sources/Identity/ATProtoHandleValidator.h:66:+ (BOOL)validateEmail:(NSString *)email error:(NSError **)error;
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:392:    // RFC 7638: Canonical JSON with required members only
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:748:    // RFC 7638: Canonical JSON with required members only
+./Garazyk/Sources/Auth/WebAuthnDomain.h:142:/*! User verification requirement ("required", "preferred", "discouraged"). */
+./Garazyk/Sources/PLC/PLCAuditor.m:580:    // Ensure all required fields are present in the reconstruction
+./Garazyk/Sources/Security/PDSAuthzManager.m:63:            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Security/PDSAuthzManager.m:103:            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Security/PDSAuthzManager.m:124:            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Security/PDSAuthzManager.m:156:    // This method validates the requesting DID exists, but authorization must be verified
+./Garazyk/Sources/Security/PDSAuthzManager.m:163:                                     userInfo:@{NSLocalizedDescriptionKey: @"Admin authentication required"}];
+./Garazyk/Sources/Security/PDSAuthzManager.m:184:                                 userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (verify JWT 'admin' scope)"}];
+./Garazyk/Sources/Security/PDSAuthzManager.m:189:- (BOOL)validateWriteAccess:(NSString *)repoDID
+./Garazyk/Sources/Security/PDSAuthzManager.m:208:- (BOOL)validateReadAccess:(NSString *)repoDID
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:34:+ (BOOL)validateClientSecret:(nullable NSString *)provided
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:47:+ (BOOL)validateClientMetadata:(NSDictionary *)metadata error:(NSError **)error {
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:52:        if (error) *error = [self errorWithDescription:@"token_endpoint_auth_method is required" code:400];
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:92:+ (BOOL)validateRequestParameters:(NSDictionary<NSString *, NSString *> *)parameters
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:103:        if (error) *error = [self errorWithDescription:@"DPoP proof is required" code:400];
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:114:            if (error) *error = [self errorWithDescription:@"client_assertion required for private_key_jwt authentication" code:401];
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:137:        if (error) *error = [self errorWithDescription:@"Client authentication required" code:401];
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:104:+ (BOOL)validateHandle:(NSString *)handle error:(NSError **)error {
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:230:+ (nullable NSString *)validateAndNormalizeHandle:(NSString *)handle error:(NSError **)error {
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:231:    if (![self validateHandle:handle error:error]) {
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:237:+ (BOOL)validateEmail:(NSString *)email error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:33:- (BOOL)validateNonce:(NSString *)nonce;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:90:    @param nonce Expected nonce value (may be nil if not required).
+./Garazyk/Sources/Auth/OAuth2.m:579:                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Auth/OAuth2.m:782:                                              userInfo:@{NSLocalizedDescriptionKey: @"Two-factor authentication code required", @"error": @"mfa_required"}];
+./Garazyk/Sources/Auth/OAuth2.m:804:                                      userInfo:@{NSLocalizedDescriptionKey: @"WebAuthn authentication required",
+./Garazyk/Sources/Auth/OAuth2.m:872:                                          userInfo:@{NSLocalizedDescriptionKey: @"Account handle is required"}];
+./Garazyk/Sources/Auth/OAuth2.m:879:    // AT Protocol spec: atproto scope is required for all sessions
+./Garazyk/Sources/Auth/OAuth2.m:883:                                         userInfo:@{NSLocalizedDescriptionKey: @"The 'atproto' scope is required"}];
+./Garazyk/Sources/AppView/Services/FeedService.m:387:    NSMutableArray *validatedDIDs = [NSMutableArray array];
+./Garazyk/Sources/AppView/Services/FeedService.m:392:            [validatedDIDs addObject:author];
+./Garazyk/Sources/AppView/Services/FeedService.m:396:    if (validatedDIDs.count == 0) {
+./Garazyk/Sources/AppView/Services/FeedService.m:407:    NSMutableArray *args = [NSMutableArray arrayWithArray:validatedDIDs];
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.h:28:/// Parses and validates a limit parameter. Returns YES if valid (or empty/default).
+./Garazyk/Sources/Security/PDSInputValidator.m:147:- (NSInteger)validateLimitParameter:(NSInteger)limit maxLimit:(NSInteger)maxLimit {
+./Garazyk/Sources/Security/PDSInputValidator.m:157:- (nullable NSString *)validateCursorParameter:(NSString *)cursor maxLength:(NSInteger)maxLength {
+./Garazyk/Sources/Identity/HandleResolver.m:110:    if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
+./Garazyk/Sources/Identity/HandleResolver.m:119:        during the actual HTTPS request, eliminating the validate-before-fetch
+./Garazyk/Sources/AppView/Services/GroupService.h:94:- (nullable NSDictionary *)validateAndUseInviteLink:(NSString *)linkId
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:224:                                         NSLocalizedDescriptionKey: @"DPoP proof missing required nonce",
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:244:        if (![nonceValidator validateNonce:proofNonce]) {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:325:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:338:        NSLocalizedDescriptionKey: @"Two-factor authentication required",
+./Garazyk/Sources/PLC/PLCServer.h:35:    The server validates incoming operations using the PLCAuditor before
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:70:    // Return default configuration matching the lexicon
+./Garazyk/Sources/PLC/PLCServer.m:306:    // services already validated above
+./Garazyk/Sources/PLC/PLCSyncEngine.m:203:        NSUInteger validCount = [self validateAndIngestOperations:ops];
+./Garazyk/Sources/PLC/PLCSyncEngine.m:277:    NSUInteger validCount = [self validateAndIngestOperations:ops];
+./Garazyk/Sources/PLC/PLCSyncEngine.m:308:    NSUInteger validCount = [self validateAndIngestOperations:ops];
+./Garazyk/Sources/PLC/PLCSyncEngine.m:322:- (NSUInteger)validateAndIngestOperations:(NSArray<PLCOperation *> *)operations {
+./Garazyk/Sources/PLC/PLCSyncEngine.m:327:    // sees the store state that includes all previously validated
+./Garazyk/Sources/Auth/PDS/PDSAuth.h:9: required by OAuthProvider and AuthVerifier. It bridges the generic interfaces
+./Garazyk/Sources/Auth/PDS/PDSAuth.h:47: @discussion Looks up clients in PDSDatabase and validates redirect URIs.
+./Garazyk/Sources/Auth/OAuthSession.h:26: @constant OAuthErrorInvalidRequest Request is missing required parameters.
+./Garazyk/Sources/Auth/OAuthSession.h:109:/*! Whether WebAuthn authentication is required. */
+./Garazyk/Sources/Auth/OAuthSession.h:162:- (BOOL)validateWithError:(NSError **)error;
+./Garazyk/Sources/Auth/OAuthSession.h:201:- (BOOL)validateWithError:(NSError **)error;
+./Garazyk/Sources/Auth/OAuthSession.h:231: @discussion Exchanges authorization codes for tokens, validates PKCE and
+./Garazyk/Sources/AppView/Services/SearchIndexService.h:9: app.bsky.unspecced lexicon schemas. Uses SQLite FTS5 virtual tables
+./Garazyk/Sources/AppView/Services/SearchIndexService.h:31: Results are lightweight (DIDs/URIs only) matching the unspecced skeleton lexicon format.
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:205:- (BOOL)validateRedirectURI:(NSString *)redirectURI
+./Garazyk/Sources/PLC/PLCSyncEngine.h:96: * @abstract Initializes the engine with the required storage, client, and auditor.
+./Garazyk/Sources/Auth/PDSNonceManager.h:26:    Generates and validates nonces for DPoP nonce flows. Nonces are
+./Garazyk/Sources/Auth/PDSNonceManager.h:35:    if ([[PDSNonceManager sharedManager] validateNonce:nonce]) {
+./Garazyk/Sources/Auth/PDSNonceManager.h:72: @method validateNonce:
+./Garazyk/Sources/Auth/PDSNonceManager.h:76: @param nonce The nonce string to validate.
+./Garazyk/Sources/Auth/PDSNonceManager.h:88: * @abstract Performs the validateNonce operation.
+./Garazyk/Sources/Auth/PDSNonceManager.h:90:- (BOOL)validateNonce:(NSString *)nonce;
+./Garazyk/Sources/Security/PDSAuthzManager.h:36:    /** The caller lacks the scope required by the operation. */
+./Garazyk/Sources/Security/PDSAuthzManager.h:136:- (BOOL)validateWriteAccess:(NSString *)repoDID
+./Garazyk/Sources/Security/PDSAuthzManager.h:150:- (BOOL)validateReadAccess:(NSString *)repoDID
+./Garazyk/Sources/Auth/JWT.h:41: @constant JWTErrorMissingRequiredClaim A required claim is missing.
+./Garazyk/Sources/Auth/JWT.h:73:    /** A required claim is missing. */
+./Garazyk/Sources/Auth/JWT.h:175:/*! The lexicon method for Service Auth tokens (ATProto-specific). */
+./Garazyk/Sources/Auth/JWT.h:326: @discussion JWTVerifier validates JWT signatures and claims including
+./Garazyk/Sources/Auth/JWT.h:364: @method validateClaims:ofJWT:error:
+./Garazyk/Sources/Auth/JWT.h:368: @param payload The payload to validate.
+./Garazyk/Sources/Auth/JWT.h:373:- (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error;
+./Garazyk/Sources/Auth/JWT.h:516: - lxm: lexicon method NSID
+./Garazyk/Sources/Auth/JWT.h:524: @param methodNSID The lexicon method NSID (becomes lxm claim).
+./Garazyk/Sources/PLC/PLCDIDKey.h:63: @param didKey The did:key string to validate.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:36:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:180:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:193: @param redirectURI The redirect URI to validate.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:198:- (BOOL)validateRedirectURI:(NSString *)redirectURI
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:232:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:295:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:301: @param tfaCode Optional TOTP/2FA code if required.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:331: @param code The TOTP code to validate.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:334:- (BOOL)validateTOTPCode:(NSString *)code forDID:(NSString *)did;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:348:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:371:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:394:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:428:@required
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:460:@required
+./Garazyk/Sources/Security/PDSInputValidator.h:97:- (NSInteger)validateLimitParameter:(NSInteger)limit maxLimit:(NSInteger)maxLimit;
+./Garazyk/Sources/Security/PDSInputValidator.h:100:- (nullable NSString *)validateCursorParameter:(NSString *)cursor maxLength:(NSInteger)maxLength;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:69:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required client_metadata fields"}];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:167:                                     description:@"Missing required parameters"]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:186:        if (![self.clientRegistry validateRedirectURI:redirectURI forClient:client error:&clientError]) {
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:224:                                     description:@"Missing required parameters"]);
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:242:    if (![self.clientRegistry validateRedirectURI:request.redirectURI forClient:client error:&clientError]) {
+./Garazyk/Sources/PLC/PLCOperation.h:125: @param did The DID string to validate.
+./Garazyk/Sources/PLC/PLCOperation.h:135: @param did The DID string to validate.
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:39:                                     userInfo:@{NSLocalizedDescriptionKey: @"Agent reference is required"}];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:85:                                     userInfo:@{NSLocalizedDescriptionKey: @"Ciphertext and address are required"}];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:132:                                     userInfo:@{NSLocalizedDescriptionKey: @"Agent reference is required"}];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:188:                                     userInfo:@{NSLocalizedDescriptionKey: @"Address and agent reference are required"}];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:216:                                     userInfo:@{NSLocalizedDescriptionKey: @"Ciphertext and address are required"}];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:259:                                     userInfo:@{NSLocalizedDescriptionKey: @"Agent reference is required"}];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:20: Host applications must provide implementations of the required protocols:
+./Garazyk/Sources/PLC/PLCPersistentStore.m:422:                                    userInfo:@{NSLocalizedDescriptionKey: @"Operation is missing required fields"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:31:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group name is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:66:                                              userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:115:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:145:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:195:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI and members are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:220:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI and members are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:242:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:335:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:361:                                             userInfo:@{NSLocalizedDescriptionKey: @"Link ID is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:397:                                             userInfo:@{NSLocalizedDescriptionKey: @"Link ID is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:447:- (nullable NSDictionary *)validateAndUseInviteLink:(NSString *)linkId
+./Garazyk/Sources/AppView/Services/GroupService.m:452:                                             userInfo:@{NSLocalizedDescriptionKey: @"Link ID and member DID are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:456:    // Get link and validate
+./Garazyk/Sources/AppView/Services/GroupService.m:528:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI and requester DID are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:551:                                             userInfo:@{NSLocalizedDescriptionKey: @"Request ID is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:598:                                             userInfo:@{NSLocalizedDescriptionKey: @"Request ID is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:614:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:648:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI and member DID are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:684:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI, sender DID, and text are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:717:                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:758:                                             userInfo:@{NSLocalizedDescriptionKey: @"Message ID, actor DID, and emoji are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:778:                                             userInfo:@{NSLocalizedDescriptionKey: @"Message ID, actor DID, and emoji are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:793:                                             userInfo:@{NSLocalizedDescriptionKey: @"Message ID and member DID are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:848:                                             userInfo:@{NSLocalizedDescriptionKey: @"User DID and group URI are required"}];
+./Garazyk/Sources/AppView/Services/GroupService.m:873:                                             userInfo:@{NSLocalizedDescriptionKey: @"User DID and group URI are required"}];
+./Garazyk/Sources/AppView/Services/NotificationService.m:325:            *error = [NSError errorWithDomain:@"NotificationService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameter"}];
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.m:164:    // ATProto lexicon spec uses minItems/maxItems for arrays
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.m:182:    constraints.required = json[@"required"];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:77:                                     userInfo:@{NSLocalizedDescriptionKey: @"Anchor key wire format is required"}];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:86:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:161:                                     userInfo:@{NSLocalizedDescriptionKey: @"Current key and attestation are required"}];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:280:                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:6: @abstract Error handling for lexicon validation.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:8: @discussion Provides error codes and descriptive error messages for lexicon
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:21: @abstract Error domain for lexicon validation errors.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:27: @abstract Error codes for lexicon validation failures.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:31: @constant ATProtoLexiconErrorMissingTypeField Record missing required $type field.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:59: @abstract Factory for creating descriptive lexicon validation errors.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:104: @abstract Creates an error for a missing required field.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:106: @param field Name of the required field.
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:55:            @"message": @"Request body required for write proxy"
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:104:            @"message": @"Authentication required for write operations"
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.h:8: @discussion Verifies Anchor Key <-> DID bindings, validates succession
+./Garazyk/Sources/AdminUIServer/UIAuthManager.h:28:- (BOOL)validatePassword:(NSString *)password;
+./Garazyk/Sources/AdminUIServer/UIAuthManager.h:60:- (BOOL)validateCSRFForRequest:(HttpRequest *)request;
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:70:- (BOOL)validateRecord:(NSDictionary *)record
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:94:                                                message:@"Record missing required $type field"
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:146:    return [self validateValue:record
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:156:- (BOOL)validateValue:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:175:            return [self validateString:value constraints:def.constraints context:context error:error];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:178:            return [self validateInteger:value constraints:def.constraints context:context error:error];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:181:            return [self validateBoolean:value constraints:def.constraints context:context error:error];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:184:            return [self validateBytes:value constraints:def.constraints context:context error:error];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:187:            return [self validateArray:value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:196:            return [self validateObject:value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:204:            return [self validateBlob:value constraints:def.constraints context:context error:error];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:207:            return [self validateUnion:value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:215:            return [self validateRef:value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:252:- (BOOL)validateString:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:353:        if (![self validateStringFormat:str format:constraints.format context:context error:error]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:361:- (BOOL)validateStringFormat:(NSString *)str
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:368:        if (![ATProtoValidator validateDID:str error:&formatError]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:378:        if (![ATProtoValidator validateHandle:str error:&formatError]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:389:        BOOL validDID = [ATProtoValidator validateDID:str error:nil];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:390:        BOOL validHandle = [ATProtoValidator validateHandle:str error:nil];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:400:        if (![ATProtoValidator validateNSID:str error:&formatError]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:410:        if (![ATProtoValidator validateCID:str error:&formatError]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:420:        if (![ATProtoValidator validateTID:str error:&formatError]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:431:        if (![self validateDatetimeFormat:str]) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:515:- (BOOL)validateDatetimeFormat:(NSString *)str {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:516:    return [ATProtoValidator validateDatetime:str error:nil];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:521:- (BOOL)validateInteger:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:590:- (BOOL)validateBoolean:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:623:- (BOOL)validateBytes:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:688:- (BOOL)validateArray:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:734:            if (![self validateValue:item
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:750:- (BOOL)validateObject:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:768:    // Check required fields
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:769:    if (constraints.required) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:770:        for (NSString *requiredField in constraints.required) {
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:816:            if (![self validateValue:propValue
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:832:- (BOOL)validateBlob:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:849:    // Check required fields
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:863:                                                message:[NSString stringWithFormat:@"Blob missing required 'ref' field in '%@'", context]
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:873:                                                message:[NSString stringWithFormat:@"Blob missing required 'mimeType' field in '%@'", context]
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:932:- (BOOL)validateUnion:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:960:    // Try to validate against each variant
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:976:                    return [self validateValue:value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:1004:- (BOOL)validateRef:(id)value
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:1033:    return [self validateValue:value
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:34:- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:43:                                         NSLocalizedDescriptionKey: @"Phone verification code required"
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:55:                                         NSLocalizedDescriptionKey: @"Phone number required for verification"
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:106:    // but don't validate them server-side.
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.m:16:                                                message:@"Invalid JSON in lexicon file"
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.m:35:    // Validate required fields
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.m:36:    NSNumber *lexiconVersion = json[@"lexicon"];
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.m:42:                                                message:@"Missing or invalid 'lexicon' field"
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.m:60:                                                message:[NSString stringWithFormat:@"Unsupported lexicon version: %@", lexiconVersion]
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.m:100:    schema.lexicon = [lexiconVersion integerValue];
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGraphQueryHandler.m:81:                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameter: uri"}];
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGraphQueryHandler.m:111:                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameter: uris"}];
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGraphQueryHandler.m:136:                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameter: actor"}];
+./Garazyk/Sources/Registration/PDSOAuthOnlyRegistrationGate.m:21:- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:121:- (BOOL)validatePassword:(NSString *)password {
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:224:- (BOOL)validateCSRFForRequest:(HttpRequest *)request {
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:31:        _registryQueue = dispatch_queue_create("com.atproto.pds.lexicon.registry",
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:106:                                                               message:@"Failed to parse lexicon"
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:121:/*! @abstract Whether invite codes are required for registration. */
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:124:/*! @abstract Whether phone verification is required for registration. */
+./Garazyk/Sources/App/ATProtoServiceConfiguration.h:127:/*! @abstract Whether CAPTCHA verification is required for registration. */
+./Garazyk/Sources/Chat/Server/ChatAuthManager.h:23: - lxm: lexicon method NSID
+./Garazyk/Sources/Chat/Server/ChatAuthManager.h:71: * @param expectedLxm The expected lexicon method NSID (e.g., "chat.bsky.convo.listConvos").
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:6: @abstract Registers XRPC routes from loaded lexicon schemas.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:32: @abstract Generates and registers XRPC routes from loaded lexicon schemas.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:39: @abstract Initialize the generator with all required dependencies.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:41: @param registry        The lexicon registry (already loaded with schemas).
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:77: @param schema The lexicon schema to register routes for.
+./Garazyk/Sources/Registration/PDSInviteCodeRegistrationGate.m:30:- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+./Garazyk/Sources/Registration/PDSInviteCodeRegistrationGate.m:39:                                         NSLocalizedDescriptionKey: @"Invite code required"
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:144:    // 4. Validate lexicon method (lxm) if expected
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:148:            ? [NSString stringWithFormat:@"Bad JWT lexicon method (\"lxm\"). must match: %@", expectedLxm]
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:149:            : [NSString stringWithFormat:@"Missing JWT lexicon method (\"lxm\"). must match: %@", expectedLxm];
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:197:            NSString *legacyDID = [self validateLegacyPDSToken:jwt];
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:299:- (nullable NSString *)validateLegacyPDSToken:(JWT *)jwt {
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:315:        NSString *pdsDid = [self validateTokenViaPDS:[jwt encodedToken]];
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:329:- (nullable NSString *)validateTokenViaPDS:(NSString *)token {
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:10:    account creation on the PDS. Each gate validates a registration
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:63: @method validateRegistrationRequest:configuration:error:
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:70:- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.h:6: @abstract Generic query and procedure handler for lexicon-driven endpoints.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.h:9: handler. Validates parameters against the lexicon schema, queries the
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.h:10: records table, and returns results in the lexicon-specified output shape.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.h:34: @abstract Handles generic query and procedure requests for lexicon-driven endpoints.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.h:41: @abstract Initialize with the lexicon registry, database, and custom handler registry.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.h:43: @param registry        The lexicon registry for schema lookups.
+./Garazyk/Sources/Registration/PDSCaptchaRegistrationGate.m:41:- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+./Garazyk/Sources/Registration/PDSCaptchaRegistrationGate.m:50:                                         NSLocalizedDescriptionKey: @"CAPTCHA verification required"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:31: for a lexicon-driven endpoint. The handler receives parsed parameters and
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.h:6: @abstract Type definitions for lexicon schemas.
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.h:20: @abstract Types of lexicon definitions.
+./Garazyk/Sources/Lexicon/ATProtoLexiconDef.h:68: @discussion Represents a single type definition within a lexicon schema.
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:187:        return @{@"error": @"invalid_account", @"message": @"Account DID is required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:248:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:260:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:272:    if (dids.count == 0) return @{@"error": @"invalid_dids", @"message": @"DIDs required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:329:    if (hostname.length == 0) return @{@"error": @"invalid_hostname", @"message": @"Hostname required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:342:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:355:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:435:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:449:    if (did.length == 0 || handle.length == 0) return @{@"error": @"invalid_params", @"message": @"DID and handle required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:462:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:532:        return @{@"error": @"invalid_account", @"message": @"Account DID is required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:585:    if (reportID.length == 0) return @{@"error": @"invalid_report", @"message": @"Report ID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:599:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:613:    if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:631:        return @{@"error": @"invalid_params", @"message": @"DID, collection, and rkey required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:715:        return @{@"error": @"invalid_params", @"message": @"Job ID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:759:        return @{@"error": @"invalid_params", @"message": @"Job ID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:775:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:799:        return @{@"error": @"invalid_params", @"message": @"DID and CID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:850:        return @{@"error": @"invalid_params", @"message": @"Event required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:866:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:941:        return @{@"error": @"invalid_params", @"message": @"Action specification required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:957:        return @{@"error": @"invalid_params", @"message": @"Subject DIDs required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:987:        return @{@"error": @"invalid_params", @"message": @"Verification records required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1004:        return @{@"error": @"invalid_params", @"message": @"DIDs required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1035:        return @{@"error": @"invalid_params", @"message": @"Rule specification required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1051:        return @{@"error": @"invalid_params", @"message": @"URL and pattern required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1085:        return @{@"error": @"invalid_params", @"message": @"Option specification required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1101:        return @{@"error": @"invalid_params", @"message": @"Setting keys required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1118:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1135:        return @{@"error": @"invalid_params", @"message": @"DIDs required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1152:        return @{@"error": @"invalid_params", @"message": @"Search patterns required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1168:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1200:        return @{@"error": @"invalid_params", @"message": @"Member info required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1216:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1251:        return @{@"error": @"invalid_params", @"message": @"Set specification required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1267:        return @{@"error": @"invalid_params", @"message": @"Set name required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1299:        return @{@"error": @"invalid_params", @"message": @"Template required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1315:        return @{@"error": @"invalid_params", @"message": @"Template name required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1347:        return @{@"error": @"invalid_params", @"message": @"Config required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1365:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1381:        return @{@"error": @"invalid_params", @"message": @"DID and session ID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1398:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1414:        return @{@"error": @"invalid_params", @"message": @"DID and name required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1431:        return @{@"error": @"invalid_params", @"message": @"DID and name required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1463:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1479:        return @{@"error": @"invalid_params", @"message": @"DID required"};
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.m:5:NSString * const ATProtoLexiconErrorDomain = @"com.atproto.pds.lexicon";
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.m:54:    NSString *message = [NSString stringWithFormat:@"Missing required field '%@'", field];
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:63:- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:75:        if ([gate validateRegistrationRequest:body
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:105:- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:6: @abstract Validator for lexicon schema compliance.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:8: @discussion Validates records against lexicon schemas, enforcing all
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:25: @constant ATProtoValidationModeRequired Fail if lexicon unknown or validation fails.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:38: @abstract Validates records against lexicon schemas.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:48: @abstract Initializes validator with lexicon registry.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:50: @param registry Registry containing loaded lexicon schemas.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:57: @method validateRecord:collection:mode:error:
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:59: @abstract Validates a record against its lexicon schema.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:63: @param mode Validation mode (required, optimistic, or off).
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:68: @discussion In optimistic mode, returns YES if lexicon is unknown.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:69: In required mode, returns NO if lexicon is unknown.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:73: * @abstract Performs the validateRecord operation.
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.h:75:- (BOOL)validateRecord:(NSDictionary *)record
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:6: @abstract Registry for loading and caching lexicon schemas.
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:8: @discussion Loads lexicon JSON files from directories and provides
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:23: @abstract Singleton registry for lexicon schemas.
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:25: @discussion Loads and caches lexicon schemas from directories.
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:42: @abstract Recursively loads all lexicon JSON files from a directory.
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:60: @abstract Loads a single lexicon file.
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:62: @param filePath Path to lexicon JSON file.
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:81: @abstract Looks up a lexicon schema by NSID.
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:121: @abstract Returns ordered search paths for lexicon directories.
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:6: @abstract Constraint definitions for lexicon validation.
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:8: @discussion Defines constraint objects for all ATProto lexicon data types,
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:141:/*! Array of required property names. */
+./Garazyk/Sources/Lexicon/ATProtoLexiconConstraints.h:142:@property (nonatomic, strong, nullable) NSArray<NSString *> *required;
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:44:- (BOOL)validateRequest:(HttpRequest *)request
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:102:        if (![self validateDPoPProof:request
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:123:    // Cache the validated token
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:137:- (BOOL)validateDPoPProof:(HttpRequest *)request
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:216:        if (![weakSelf.authManager validateCSRFForRequest:request]) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:222:        if (![weakSelf.authManager validatePassword:password]) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:565:    // Lab: Public OAuth2 user self-service portal (no admin auth required)
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:673:            [response setBodyString:@"<div class=\"alert alert-destructive\">DID required</div>"];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1061:            [response setJsonBody:@{@"name": service ?: @"", @"status": @"error", @"error": @"Valid service and URL are required"}];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1216:    [response setBodyString:@"Authentication required\n"];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1232:    "<form id=\"login-form\"><input id=\"password\" type=\"password\" placeholder=\"Admin password\" required/>"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1514:    "if(!did||!name){alert('DID and name required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1519:    "if(!did){alert('DID required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1524:    "if(!name){alert('Set name required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1530:    "if(!name||!subject){alert('Name and subject required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1538:    "if(!reportID||!action){alert('Report ID and action required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1543:    "if(!did){alert('Subject DID required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1552:    "if(!did){alert('DID required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1563:    "if(!url){alert('URL required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1570:    "if(!did){alert('DID required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1574:    "if(!did){alert('DID required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1577:    "if(!did){alert('DID required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1580:    "if(!convoID){alert('Conversation ID required');return;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1589:    "if(!jobId){alert('Job ID required');return;}"
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:59: @method validateRequest:callerDID:error:
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:63: @param request   The HTTP request to validate.
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:70: * @abstract Performs the validateRequest operation.
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:72:- (BOOL)validateRequest:(HttpRequest *)request
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:88: @method validateDPoPProof:token:tokenJkt:outThumbprint:error:
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:106: * @abstract Performs the validateDPoPProof operation.
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:108:- (BOOL)validateDPoPProof:(HttpRequest *)request
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:6: @abstract Root lexicon schema representation.
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:8: @discussion Represents a complete lexicon schema parsed from JSON,
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:23: @abstract Root lexicon schema.
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:25: @discussion Represents a complete lexicon file with all definitions.
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:31:@property (nonatomic, assign) NSInteger lexicon;
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:33:/*! NSID of this lexicon (e.g., "app.bsky.feed.post"). */
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:45: @abstract Parses a lexicon schema from JSON data.
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:47: @param data JSON data representing the lexicon.
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:57: @abstract Parses a lexicon schema from JSON dictionary.
+./Garazyk/Sources/Lexicon/ATProtoLexiconSchema.h:59: @param json JSON dictionary representing the lexicon.
+./Garazyk/Sources/AdminUIServer/UIServiceConfig.m:89:    // Update URLs — validate each one before applying
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.h:152: @method validate:
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.h:154: @abstract Validate the configuration. Returns NO if required values are missing.
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.h:156:- (BOOL)validate:(NSError **)error;
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:199:- (BOOL)validate:(NSError **)error {
+./Garazyk/Sources/AppView/Server/Indexers/AppViewNotificationIndexer.m:59:                                             userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.h:347: @abstract Persist a record that failed lexicon validation or indexing.
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:57:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:67:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:77:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:87:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:97:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:107:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:117:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:127:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:139:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:149:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:161:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:171:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:183:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:195:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:205:                 if (![strongSelf validateAuth:request response:response]) return;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:212:- (BOOL)validateAuth:(HttpRequest *)request response:(HttpResponse *)response {
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:221:        [response setJsonBody:@{@"error": @"AuthenticationRequired", @"message": @"Admin secret required"}];
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:283:        [response setJsonBody:@{@"error": @"BadRequest", @"message": @"Request body required"}];
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:311:        [response setJsonBody:@{@"error": @"BadRequest", @"message": @"DID required in path"}];
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:335:        [response setJsonBody:@{@"error": @"BadRequest", @"message": @"DID required in path"}];
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:508:                                @"message": @"collection parameter required"}];
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:58:    // Only claim collections that have a loaded lexicon with a record definition
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:79:                NSLocalizedDescriptionKey: @"Missing required parameters"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:85:    // Validate against lexicon schema
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:88:        BOOL valid = [self.validator validateRecord:record
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:160:                NSLocalizedDescriptionKey: @"Missing required parameters"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.h:34: @abstract Set the lexicon registry for lexicon admin endpoints.
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.h:55: @abstract Set the lexicon endpoint generator for endpoint admin endpoints.
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:37:+ (nullable NSData *)encodeJSONObject:(id)jsonObject error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:38:    id converted = [self _convertJSONToCBOR:jsonObject error:error];
+./Garazyk/Sources/Core/ATProtoValidator.m:7:+ (BOOL)validateDID:(NSString *)did error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoValidator.m:47:+ (BOOL)validateHandle:(NSString *)handle error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoValidator.m:68:+ (BOOL)validateCID:(NSString *)cid error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoValidator.m:104:+ (BOOL)validateTID:(NSString *)tid error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoValidator.m:133:+ (BOOL)validateNSID:(NSString *)nsid error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoValidator.m:201:+ (BOOL)validateDatetime:(NSString *)datetime error:(NSError **)error {
+./Garazyk/Sources/Core/ATProtoValidator.m:230:+ (BOOL)validateRkey:(NSString *)rkey error:(NSError **)error {
+./Garazyk/Sources/Database/Schema/PDSSchemaManager.h:45: * @abstract Creates and validates the PDS database schema.
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:57:            @"message": @"Valid authorization required"
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:114:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:186:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:245:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:316:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:205:                    id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&parseError];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:206:                    if ([jsonObject isKindOfClass:[NSDictionary class]]) {
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:207:                        result = jsonObject;
+./Garazyk/Sources/Video/VideoXrpcPack.m:55:          @"message" : @"Valid authorization required"
+./Garazyk/Sources/Video/VideoXrpcPack.m:77:    if (![self validateVideoContentType:request.body declaredMimeType:mimeType]) {
+./Garazyk/Sources/Video/VideoXrpcPack.m:232:+ (BOOL)validateVideoContentType:(NSData *)data declaredMimeType:(NSString *)mimeType {
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:118:    return [config validate:error];
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:135:    if (![config validate:&configErr]) {
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:159:    // Load lexicon schemas
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:172:    GZ_LOG_INFO(@"[AppViewRuntime] Loaded %lu lexicon schemas",
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:175:    // Build lexicon validator
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:312:    // Register dynamic lexicon-driven endpoints
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:228: @abstract Estimates the time (in seconds) required to migrate the specified monolithic database.
+./Garazyk/Sources/Database/Migrations/PDSMigration.h:52:@required
+./Garazyk/Sources/Video/VideoWorker.m:402:                        // Check 100MB input limit (matches lexicon app.bsky.embed.video#main maxSize)
+./Garazyk/Sources/Database/ActorStore/ActorStore.h:46: @constant PDSActorStoreErrorKeychainUpgradeRequired Keychain upgrade required.
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:489:        // table is from a hardcoded list, but defensively validate anyway
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:53:- (BOOL)validateContentSignature:(NSData *)data declaredMimeType:(NSString *)declaredMime {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:72:                @"No lexicon schema loaded for %@", nsid]
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:99:    // 4. Parse and validate query parameters
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:146:                @"No lexicon schema loaded for %@", nsid]
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:178:            @"message": @"Request body required for procedure"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:243:                @"message": @"Authentication required for this endpoint"
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:32:    if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:87:    if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:35: @param service Service identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:36: @param account Account identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:48: @param service Service identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:49: @param account Account identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:60: @param service Service identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:61: @param account Account identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:74: @param service Service identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:75: @param account Account identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:86: @param service Service identifier (required)
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.h:87: @param account Account identifier (required)
+./Garazyk/Sources/Ozone/Services/ModerationService.m:28:                                             userInfo:@{NSLocalizedDescriptionKey: @"Event and admin DID are required"}];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:527:        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"action, subjects, and scheduling are required"}];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:672:        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"URL required"}];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:696:        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Safelink ID required"}];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:723:        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Safelink ID required"}];
+./Garazyk/Sources/Mikrus/MikrusLinkExtractor.h:34: * @param value The value to validate.
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGraphIndexer.m:63:    // Follow: validate subject
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:20:        if (error) *error = [self errorWithMessage:@"source is required"];
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:32:    if (![self validateCollection:collection]) {
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:42:+ (BOOL)validatePath:(NSString *)path error:(NSError **)error {
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:48:        if (error) *error = [self errorWithMessage:@"path is required"];
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:61:        if (error) *error = [self errorWithMessage:@"path is required"];
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:67:        if (error) *error = [self errorWithMessage:@"path is required"];
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:88:+ (BOOL)validateCollection:(NSString *)collection {
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:147:    if (![self validatePath:pathToOther response:response]) return;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:180:    if (![self validatePath:pathToOther response:response]) return;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:287:        [self writeInvalidRequest:[NSString stringWithFormat:@"%@ parameter is required", name] response:response];
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:305:- (BOOL)validatePath:(NSString *)path response:(HttpResponse *)response {
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:307:    if (![MikrusSourceSpec validatePath:path error:&error]) {
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.h:6: @abstract Generic record indexer for lexicon-driven collections.
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.h:9: Validates records against the lexicon schema, then stores in the generic
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.h:12: loaded lexicon with a record definition AND no domain-specific indexer
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.h:30: @abstract Generic record indexer for third-party lexicon collections.
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.h:39: @param registry                The lexicon registry for schema lookups.
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.h:41: @param validator               The lexicon validator for record validation.
+./Garazyk/Sources/Mikrus/MikrusConfiguration.m:103:- (BOOL)validate:(NSError **)error {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:93:                                            userInfo:@{NSLocalizedDescriptionKey: @"Database path is required"}];
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:47:    if (![config validate:error]) return NO;
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:59:    if (![config validate:error]) return NO;
+./Garazyk/Sources/Mikrus/MikrusConfiguration.h:58:- (BOOL)validate:(NSError **)error;
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.h:37: * @param path The path string to validate.
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.h:41:+ (BOOL)validatePath:(NSString *)path error:(NSError **)error;
+./Garazyk/Sources/Video/VideoXrpcPack.h:16:+ (BOOL)validateVideoContentType:(NSData *)data declaredMimeType:(NSString *)mimeType;
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:95: @param jsonObject A JSON-compatible object (may contain $link/$bytes wrappers)
+./Garazyk/Sources/Core/ATProtoDagCBOR.h:102:+ (nullable NSData *)encodeJSONObject:(id)jsonObject error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoDataPaths.h:22:   lexicons/                    # lexicon files
+./Garazyk/Sources/Video/VideoJWTAuthProvider.h:16: * @abstract The expected audience (aud) claim for validated JWTs.
+./Garazyk/Sources/Core/ATProtoValidator.h:18: @method validateDID:error:
+./Garazyk/Sources/Core/ATProtoValidator.h:22: @param did The DID string to validate (e.g., "did:plc:123...").
+./Garazyk/Sources/Core/ATProtoValidator.h:26:+ (BOOL)validateDID:(NSString *)did error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoValidator.h:29: @method validateHandle:error:
+./Garazyk/Sources/Core/ATProtoValidator.h:33: @param handle The handle to validate (e.g., "alice.test").
+./Garazyk/Sources/Core/ATProtoValidator.h:37:+ (BOOL)validateHandle:(NSString *)handle error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoValidator.h:40: @method validateCID:error:
+./Garazyk/Sources/Core/ATProtoValidator.h:44: @param cid The CID string to validate.
+./Garazyk/Sources/Core/ATProtoValidator.h:48:+ (BOOL)validateCID:(NSString *)cid error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoValidator.h:51: @method validateTID:error:
+./Garazyk/Sources/Core/ATProtoValidator.h:55: @param tid The TID string to validate.
+./Garazyk/Sources/Core/ATProtoValidator.h:59:+ (BOOL)validateTID:(NSString *)tid error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoValidator.h:62: @method validateDatetime:error:
+./Garazyk/Sources/Core/ATProtoValidator.h:64: @abstract Validates a datetime string according to AT Protocol lexicon.
+./Garazyk/Sources/Core/ATProtoValidator.h:66: @param datetime The datetime string to validate (e.g. "2023-11-23T12:34:56.789Z").
+./Garazyk/Sources/Core/ATProtoValidator.h:70:+ (BOOL)validateDatetime:(NSString *)datetime error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoValidator.h:73: @method validateNSID:error:
+./Garazyk/Sources/Core/ATProtoValidator.h:77: @param nsid The NSID key to validate (e.g., "app.bsky.feed.post").
+./Garazyk/Sources/Core/ATProtoValidator.h:81:+ (BOOL)validateNSID:(NSString *)nsid error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoValidator.h:84: @method validateRkey:error:
+./Garazyk/Sources/Core/ATProtoValidator.h:88: @param rkey The rkey string to validate.
+./Garazyk/Sources/Core/ATProtoValidator.h:92:+ (BOOL)validateRkey:(NSString *)rkey error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoBase32.h:13: "234567abcdefghijklmnopqrstuvwxyz" as required by ATProto TIDs and CIDs.
+./Garazyk/Sources/Repository/RepoCommit.m:176:    // did (required)
+./Garazyk/Sources/Repository/RepoCommit.m:187:    // version (required)
+./Garazyk/Sources/Repository/RepoCommit.m:214:    // rev (required)
+./Garazyk/Sources/Repository/RepoCommit.m:233:    // sig (required for valid repo commits)
+./Garazyk/Sources/Core/DID.m:216:    NSError *validationError = [self validateDID:did];
+./Garazyk/Sources/Core/DID.m:442:- (NSError *)validateDID:(NSString *)did {

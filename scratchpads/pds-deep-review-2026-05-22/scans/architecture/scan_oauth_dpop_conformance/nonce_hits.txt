@@ -1,0 +1,140 @@
+./Garazyk/Sources/Auth/OAuth2.h:177:@property (nonatomic, copy, nullable) NSString *nonce;
+./Garazyk/Sources/Auth/OAuth2.h:396: @method verifyProof:method:url:nonce:outThumbprint:error:
+./Garazyk/Sources/Auth/OAuth2.h:403: @param nonce Optional server-provided nonce.
+./Garazyk/Sources/Auth/OAuth2.h:414:               nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/OAuth2.h:420: @method verifyProof:method:url:nonce:outThumbprint:error:
+./Garazyk/Sources/Auth/OAuth2.h:422: @abstract Verifies a DPoP proof without requiring a server nonce.
+./Garazyk/Sources/Auth/OAuth2.h:427: @param nonce Optional server-provided nonce.
+./Garazyk/Sources/Auth/OAuth2.h:438:               nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/TOTPGenerator.h:23: @discussion Creates time-based one-time passwords using HMAC-SHA algorithms.
+./Garazyk/Sources/Auth/PDSNonceManager.m:38:        GZ_LOG_AUTH_ERROR(@"Failed to generate random bytes for nonce");
+./Garazyk/Sources/Auth/PDSNonceManager.m:42:    NSString *nonce = [data base64EncodedStringWithOptions:0];
+./Garazyk/Sources/Auth/PDSNonceManager.m:45:    nonce = [nonce stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+./Garazyk/Sources/Auth/PDSNonceManager.m:46:    nonce = [nonce stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+./Garazyk/Sources/Auth/PDSNonceManager.m:47:    nonce = [nonce stringByReplacingOccurrencesOfString:@"=" withString:@""];
+./Garazyk/Sources/Auth/PDSNonceManager.m:52:        self.issuedNonces[nonce] = expiration;
+./Garazyk/Sources/Auth/PDSNonceManager.m:56:    return nonce;
+./Garazyk/Sources/Auth/PDSNonceManager.m:59:- (BOOL)validateNonce:(NSString *)nonce {
+./Garazyk/Sources/Auth/PDSNonceManager.m:60:    if (!nonce) return NO;
+./Garazyk/Sources/Auth/PDSNonceManager.m:64:        NSDate *expiration = self.issuedNonces[nonce];
+./Garazyk/Sources/Auth/PDSNonceManager.m:69:        // AT Protocol spec: "Servers may use the same nonce across all client
+./Garazyk/Sources/Auth/PDSNonceManager.m:80:    for (NSString *nonce in self.issuedNonces) {
+./Garazyk/Sources/Auth/PDSNonceManager.m:81:        if ([self.issuedNonces[nonce] timeIntervalSinceDate:now] < 0) {
+./Garazyk/Sources/Auth/PDSNonceManager.m:82:            [toRemove addObject:nonce];
+./Garazyk/Sources/Auth/PDSReplayCache.h:6: @abstract Caches JTI and nonces to prevent replay attacks.
+./Garazyk/Sources/Auth/PDSReplayCache.h:10:    and prevent replay attacks in OAuth 2.0 and DPoP flows. Uses SQLite
+./Garazyk/Sources/Auth/PDSReplayCache.h:24: @abstract Caches JTI and nonces to prevent replay attacks.
+./Garazyk/Sources/Auth/PDSReplayCache.h:27:    Maintains a cache of seen JWT IDs (JTI) to detect replay attacks.
+./Garazyk/Sources/Auth/PDSReplayCache.h:29:    already present, the request is rejected as a replay.
+./Garazyk/Sources/Auth/PDSReplayCache.h:40:        // reject as replay attack
+./Garazyk/Sources/Auth/PDSReplayCache.h:52: @abstract Returns the shared replay cache instance.
+./Garazyk/Sources/Auth/PDSReplayCache.h:61: @abstract Initializes a replay cache with a custom database path.
+./Garazyk/Sources/Auth/PDSReplayCache.h:85:         NO if the JTI was already seen (potential replay attack).
+./Garazyk/Sources/Network/HttpResponse.m:28:        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"GMT"];
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:807:        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+./Garazyk/Sources/Network/XrpcProxyHandler.h:34: with iss=userDID, aud=serviceDID#fragment, lxm=method, exp=60s, jti=nonce.
+./Garazyk/Sources/Auth/PDSReplayCache.m:32:            GZ_LOG_AUTH_ERROR(@"Failed to open replay cache database: %s", sqlite3_errmsg(_db));
+./Garazyk/Sources/Auth/PDSReplayCache.m:35:        _databaseQueue = dispatch_queue_create("com.garazyk.auth.replay-cache.database", DISPATCH_QUEUE_SERIAL);
+./Garazyk/Sources/Auth/OAuth2.m:106:    if (self.nonce) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"nonce" value:self.nonce]];
+./Garazyk/Sources/Auth/OAuth2.m:121:    if (self.nonce) dict[@"nonce"] = self.nonce;
+./Garazyk/Sources/Auth/OAuth2.m:435:               nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/OAuth2.m:441:                       nonce:nonce
+./Garazyk/Sources/Auth/OAuth2.m:450:               nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/OAuth2.m:457:                                 nonce:nonce
+./Garazyk/Sources/Auth/OAuth2.m:600:    if (request.nonce) codeData[@"nonce"] = request.nonce;
+./Garazyk/Sources/Network/XrpcIdentityPack.m:827:                    GZ_LOG_ERROR(@"Failed to replay PLC state for DID %@: %@", did, auditError);
+./Garazyk/Sources/Network/XrpcIdentityPack.m:829:                    [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to replay DID history"}];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1160:                                     @"Missing 'jti' claim for replay protection"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1880:  authRequest.nonce = params[@"nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1947:  NSString *nonce = [self escapeHtml:params[@"nonce"] ?: @""];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1969:      [html stringByReplacingOccurrencesOfString:@"{{nonce}}" withString:nonce];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2157:  authRequest.nonce = params[@"nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3787:  NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3832:                              nonce:requestedNonce
+./Garazyk/Sources/Auth/OAuth2Handler.m:3837:      NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3838:      if (nonce.length > 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3839:        [response setHeader:nonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3849:            ?: @"DPoP nonce required"
+./Garazyk/Sources/Auth/JWT.h:519: - jti: random 16-hex nonce for replay prevention
+./Garazyk/Sources/Network/XrpcProxyHandler.m:68:    //    signed with user's repo signing key, exp = 60s, jti = random nonce.
+./Garazyk/Sources/Auth/DPoPUtil.h:51:/*! Server-provided nonce for freshness. */
+./Garazyk/Sources/Auth/DPoPUtil.h:52:@property (nonatomic, copy, nullable) NSString *nonce;
+./Garazyk/Sources/Auth/DPoPUtil.h:66:                                    nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/DPoPUtil.h:92: @param nonce Server nonce (optional)
+./Garazyk/Sources/Auth/DPoPUtil.h:104:                                       nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/DPoPUtil.h:115: @param nonce Expected nonce
+./Garazyk/Sources/Auth/DPoPUtil.h:128:             nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Network/XrpcAuthHelper.m:241:                                    nonce:nil
+./Garazyk/Sources/Network/XrpcAuthHelper.m:248:                    NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:249:                    if (nonce.length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:250:                        [response setHeader:nonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:257:                        @"message": @"DPoP nonce required"
+./Garazyk/Sources/Auth/DPoPUtil.m:32:                                    nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/DPoPUtil.m:49:    token.nonce = nonce;
+./Garazyk/Sources/Auth/DPoPUtil.m:83:    if (self.nonce) {
+./Garazyk/Sources/Auth/DPoPUtil.m:84:        payload[@"nonce"] = self.nonce;
+./Garazyk/Sources/Auth/DPoPUtil.m:96:                                       nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/DPoPUtil.m:128:    token.nonce = nonce;
+./Garazyk/Sources/Auth/DPoPUtil.m:172:               nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/DPoPUtil.m:194:                                       nonce:nonce
+./Garazyk/Sources/Auth/DPoPUtil.m:233:+ (nullable instancetype)createWithMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+./Garazyk/Sources/Auth/DPoPUtil.m:244:+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(SecKeyRef)privateKey error:(NSError **)error {
+./Garazyk/Sources/Auth/DPoPUtil.m:253:+ (BOOL)verifyDPoP:(NSString *)dpopJwt withPublicKey:(nullable SecKeyRef)publicKey method:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+./Garazyk/Sources/Auth/OAuthSession.h:85:/*! DPoP nonce for replay protection. */
+./Garazyk/Sources/Auth/JWT.m:496:    // Generate 128-bit random nonce (16 hex characters)
+./Garazyk/Sources/Auth/JWT.m:503:                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate jti nonce"}];
+./Garazyk/Sources/Network/XrpcAuthHelper.h:58: * @abstract Extracts and validates a DID with optional response for DPoP nonce handling.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:63: * @param response Optional response for DPoP nonce challenges.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:10: and replay detection are injected via protocols to avoid coupling to
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:32:/*! Returns YES if the nonce is currently valid. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:33:- (BOOL)validateNonce:(NSString *)nonce;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:40: @abstract Detects DPoP proof replay by tracking JTI values.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:90:    @param nonce Expected nonce value (may be nil if not required).
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:91:    @param requireNonce If YES, proof must contain a nonce.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:92:    @param nonceValidator Optional validator for nonce freshness.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:93:    @param replayChecker Optional replay detection.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:103:               nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:62:               nonce:(nullable NSString *)nonce
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:176:    NSString *proofNonce = payload[@"nonce"];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:224:                                         NSLocalizedDescriptionKey: @"DPoP proof missing required nonce",
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:231:    if (nonce && ![PDSSecurityCompare constantTimeEqualString:proofNonce string:nonce]) {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:236:                                         NSLocalizedDescriptionKey: @"DPoP nonce mismatch",
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:249:                                             NSLocalizedDescriptionKey: @"DPoP nonce validation failed",
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:103: - DPoPNonceStore: For DPoP nonce validation (optional)
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:134: @param nonceStore For DPoP nonce validation (optional).
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:203:                                              nonce:nil
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:214:                NSString *nonce = nil;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:217:                    nonce = [self.nonceStore issueNonceForJWKThumbprint:dpopThumbprint ?: @"" error:&nonceError];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:219:                if (!nonce) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:220:                    nonce = [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:222:                [response setHeader:nonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Auth/PDSNonceManager.h:9:    Provides cryptographically secure nonce generation and validation for
+./Garazyk/Sources/Auth/PDSNonceManager.h:10:    DPoP (Demonstrating Proof-of-Possession) nonce flows. Nonces are used
+./Garazyk/Sources/Auth/PDSNonceManager.h:11:    to prevent replay attacks in OAuth 2.0 token requests.
+./Garazyk/Sources/Auth/PDSNonceManager.h:26:    Generates and validates nonces for DPoP nonce flows. Nonces are
+./Garazyk/Sources/Auth/PDSNonceManager.h:33:    NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+./Garazyk/Sources/Auth/PDSNonceManager.h:34:    // ... client provides nonce in DPoP proof ...
+./Garazyk/Sources/Auth/PDSNonceManager.h:35:    if ([[PDSNonceManager sharedManager] validateNonce:nonce]) {
+./Garazyk/Sources/Auth/PDSNonceManager.h:48: @abstract Returns the shared nonce manager instance.
+./Garazyk/Sources/Auth/PDSNonceManager.h:57: @abstract Generates a new cryptographically secure nonce.
+./Garazyk/Sources/Auth/PDSNonceManager.h:59: @return A new 32-character base64url-encoded nonce string.
+./Garazyk/Sources/Auth/PDSNonceManager.h:62:    The nonce is generated using SecRandomCopyBytes on macOS/iOS or
+./Garazyk/Sources/Auth/PDSNonceManager.h:67: * @abstract Returns the generate nonce result.
+./Garazyk/Sources/Auth/PDSNonceManager.h:74: @abstract Validates a nonce provided by a client.
+./Garazyk/Sources/Auth/PDSNonceManager.h:76: @param nonce The nonce string to validate.
+./Garazyk/Sources/Auth/PDSNonceManager.h:77: @return YES if the nonce is valid and has not expired, NO otherwise.
+./Garazyk/Sources/Auth/PDSNonceManager.h:80:    A nonce is valid if:
+./Garazyk/Sources/Auth/PDSNonceManager.h:83:    - It has not been used before (one-time use)
+./Garazyk/Sources/Auth/PDSNonceManager.h:85:    After validation, the nonce is marked as used and cannot be reused.
+./Garazyk/Sources/Auth/PDSNonceManager.h:90:- (BOOL)validateNonce:(NSString *)nonce;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:87: @brief Retrieves and consumes an authorization code (one-time use).
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:388: @abstract Interface for DPoP nonce management.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:397: @brief Issues a new nonce for a DPoP key.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:400: @return A new nonce string, or nil on error.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:406: @brief Consumes a nonce, ensuring it is used only once.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:407: @param nonce The nonce to consume.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:408: @param jkt The JWK thumbprint the nonce was issued for.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:410: @return YES if the nonce was valid and consumed. NO if invalid/already used.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:412:- (BOOL)consumeNonce:(NSString *)nonce
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:256:    if (request.nonce) codeData[@"nonce"] = request.nonce;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:82:@property (nonatomic, copy, nullable) NSString *nonce;

@@ -1,0 +1,6 @@
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:214:        @(ETIMEDOUT)
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:387:    [self recordConnectFailureWithErrno:ETIMEDOUT family:_connectCurrentCandidateFamily index:_connectCurrentCandidateIndex];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:446:        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:466:        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:610:                                           code:ENOTCONN
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:625:        if (errno == EAGAIN || errno == EWOULDBLOCK) {

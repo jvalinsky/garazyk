@@ -1,0 +1,571 @@
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:4: @file PDSTelegramGatewayPhoneVerificationProvider.m
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:11:#import "PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:23:@interface PDSTelegramGatewayPhoneVerificationProvider () {
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:32:@implementation PDSTelegramGatewayPhoneVerificationProvider
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:72:                                             code:PDSTelegramGatewayProviderErrorMissingToken
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:108:                                         code:PDSTelegramGatewayProviderErrorInvalidPhoneNumber
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:147:                                         code:PDSTelegramGatewayProviderErrorRequestFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:163:                                         code:PDSTelegramGatewayProviderErrorRequestFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:190:                                         code:PDSTelegramGatewayProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:201:                                         code:PDSTelegramGatewayProviderErrorInvalidPhoneNumber
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:212:                                         code:PDSTelegramGatewayProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:242:                                         code:PDSTelegramGatewayProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:258:                                         code:PDSTelegramGatewayProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:279:                                     code:PDSTelegramGatewayProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:319:                                         code:PDSTelegramGatewayProviderErrorSendAbilityCheckFailed
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:334:                                         code:PDSTelegramGatewayProviderErrorSendAbilityCheckFailed
+./Garazyk/Sources/PhoneVerification/PDSPlivoPhoneVerificationProvider.m:11:#import "PhoneVerification/PDSPlivoPhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.h:24:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.h:46:    PDSVonageProviderErrorVerificationFailed = 6,
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.h:47:    PDSVonageProviderErrorInvalidPhoneNumber = 7,
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.h:24:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.h:46:    PDSTwilioProviderErrorVerificationFailed = 6,
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.h:47:    PDSTwilioProviderErrorInvalidPhoneNumber = 7,
+./Garazyk/Sources/PhoneVerification/PDSPlivoPhoneVerificationProvider.h:23:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:4: @file PDSTelegramGatewayPhoneVerificationProvider.h
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:27:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:44:    PDSTelegramGatewayProviderErrorNotConfigured = 1,
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:45:    PDSTelegramGatewayProviderErrorMissingToken = 2,
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:46:    PDSTelegramGatewayProviderErrorRequestFailed = 3,
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:47:    PDSTelegramGatewayProviderErrorVerificationFailed = 4,
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:48:    PDSTelegramGatewayProviderErrorInvalidPhoneNumber = 5,
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:49:    PDSTelegramGatewayProviderErrorSendAbilityCheckFailed = 6,
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:53: @class PDSTelegramGatewayPhoneVerificationProvider
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:70: * @abstract Declares the PDSTelegramGatewayPhoneVerificationProvider public API.
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:72:@interface PDSTelegramGatewayPhoneVerificationProvider : NSObject <PDSPhoneVerificationProvider>
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.m:11:#import "PhoneVerification/PDSTwilioPhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.m:145:                                         code:PDSTwilioProviderErrorInvalidPhoneNumber
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.m:198:                                         code:PDSTwilioProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.m:209:                                         code:PDSTwilioProviderErrorInvalidPhoneNumber
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.m:239:                                         code:PDSTwilioProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSTwilioPhoneVerificationProvider.m:257:                                     code:PDSTwilioProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.m:11:#import "PhoneVerification/PDSVonagePhoneVerificationProvider.h"
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.m:123:                                         code:PDSVonageProviderErrorInvalidPhoneNumber
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.m:197:                                         code:PDSVonageProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.m:208:                                         code:PDSVonageProviderErrorInvalidPhoneNumber
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.m:219:                                         code:PDSVonageProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.m:251:                                         code:PDSVonageProviderErrorVerificationFailed
+./Garazyk/Sources/PhoneVerification/PDSVonagePhoneVerificationProvider.m:270:                                     code:PDSVonageProviderErrorVerificationFailed
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:8:#import "Database/ActorStore/PDSActorStoreInternal.h"
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:477:- (nullable NSString *)completeWebAuthnSecondFactorForIdentifier:(NSString *)identifier
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:11:#import "Registration/PDSPhoneOTPRegistrationGate.h"
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:14:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:41:                                         code:PDSRegistrationGateErrorPhoneVerificationRequired
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:53:                                         code:PDSRegistrationGateErrorInvalidPhoneVerification
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:73:                                             code:PDSRegistrationGateErrorInvalidPhoneVerification
+./Garazyk/Sources/Registration/PDSPhoneOTPRegistrationGate.m:93:                                             code:PDSRegistrationGateErrorInvalidPhoneVerification
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:6:#import "Database/ActorStore/PDSActorStoreInternal.h"
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:22:#import "Core/Repositories/PDSSQLiteRecordRepository.h"
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:41:static BOOL PDSRecordServiceValidateJSONShapeAtDepth(id value,
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:62:            if (!PDSRecordServiceValidateJSONShapeAtDepth(dict[key], depth + 1, childContext, error)) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:75:            if (!PDSRecordServiceValidateJSONShapeAtDepth(array[i], depth + 1, childContext, error)) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:86:    return PDSRecordServiceValidateJSONShapeAtDepth(record, 0, @"record", error);
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:101:static NSDictionary *PDSRecordServiceJSONObjectFromRecordValue(id value) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:300:        NSDictionary *value = PDSRecordServiceJSONObjectFromRecordValue(threadgate.value);
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:314:        NSDictionary *value = PDSRecordServiceJSONObjectFromRecordValue(follow.value);
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:367:            NSDictionary *parentValue = PDSRecordServiceJSONObjectFromRecordValue(parentRecord.value);
+./Garazyk/Sources/Registration/PDSOAuthOnlyRegistrationGate.m:11:#import "Registration/PDSOAuthOnlyRegistrationGate.h"
+./Garazyk/Sources/Registration/PDSOAuthOnlyRegistrationGate.m:28:                                     code:PDSRegistrationGateErrorOAuthOnlyRegistration
+./Garazyk/Sources/Admin/Diagnostics/PDSSequencerHealthHandler.m:4:#import "Analytics/PDSSequencerAnalyticsCollector.h"
+./Garazyk/Sources/Services/PDS/PDSBlobService.m:13:#import "Core/Repositories/PDSSQLiteBlobRepository.h"
+./Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.m:5:NSString *const PDSEnvironmentSecretsProviderErrorDomain = @"PDSEnvironmentSecretsProviderErrorDomain";
+./Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.m:29:            *error = [NSError errorWithDomain:PDSEnvironmentSecretsProviderErrorDomain
+./Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.m:30:                                         code:PDSEnvironmentSecretsProviderErrorInvalidKey
+./Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.m:41:            *error = [NSError errorWithDomain:PDSEnvironmentSecretsProviderErrorDomain
+./Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.m:42:                                         code:PDSEnvironmentSecretsProviderErrorKeyNotFound
+./Garazyk/Sources/Registration/PDSInviteCodeRegistrationGate.m:11:#import "Registration/PDSInviteCodeRegistrationGate.h"
+./Garazyk/Sources/Registration/PDSInviteCodeRegistrationGate.m:37:                                         code:PDSRegistrationGateErrorInviteCodeRequired
+./Garazyk/Sources/Registration/PDSInviteCodeRegistrationGate.m:49:                                         code:PDSRegistrationGateErrorInvalidInviteCode
+./Garazyk/Sources/Services/PDS/PDSAccountService.h:125:- (nullable NSString *)completeWebAuthnSecondFactorForIdentifier:(NSString *)identifier
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.h:10:NSSet<NSString *> *PDSBlobAuditBlobReferenceCIDsFromJSONObject(id _Nullable json);
+./Garazyk/Sources/Video/VideoTranscoder.m:92:                                        code:ATProtoVideoTranscoderErrorUnsupportedFormat
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:72:        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$-"];
+./Garazyk/Sources/Mikrus/MikrusSourceSpec.m:93:        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"];
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:31:                                         code:PDSKeychainSecretsProviderErrorInvalidKey
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:51:                                         code:PDSKeychainSecretsProviderErrorItemNotFound
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:60:                                         code:PDSKeychainSecretsProviderErrorKeychainFailure
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:76:                                         code:PDSKeychainSecretsProviderErrorInvalidInput
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:85:                                         code:PDSKeychainSecretsProviderErrorInvalidInput
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:107:                                         code:PDSKeychainSecretsProviderErrorStorageFailed
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:120:                                         code:PDSKeychainSecretsProviderErrorInvalidKey
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:141:                                         code:PDSKeychainSecretsProviderErrorDeletionFailed
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:3:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:4:#import "PhoneVerification/PDSTwilioPhoneVerificationProvider.h"
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:5:#import "PhoneVerification/PDSVonagePhoneVerificationProvider.h"
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:6:#import "PhoneVerification/PDSPlivoPhoneVerificationProvider.h"
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:7:#import "PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h"
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:90:                                         code:PDSPhoneVerificationProviderErrorNotConfigured
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:105:                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:118:                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:131:                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:144:                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:149:        return [[PDSTelegramGatewayPhoneVerificationProvider alloc] initWithSecretsProvider:secretsProvider
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:166:                                         code:PDSPhoneVerificationProviderErrorRequestFailed
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:174:                                     code:PDSPhoneVerificationProviderErrorUnsupportedProvider
+./Garazyk/Sources/Federation/FederationClient.m:154:                NSString *encodedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+./Garazyk/Sources/Federation/FederationClient.m:155:                NSString *encodedValue = [value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+./Garazyk/Sources/Federation/FederationClient.m:292:                NSString *encodedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+./Garazyk/Sources/Federation/FederationClient.m:293:                NSString *encodedValue = [value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:33:    PDSRegistrationGateErrorInviteCodeRequired = 1,
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:34:    PDSRegistrationGateErrorInvalidInviteCode = 2,
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:35:    PDSRegistrationGateErrorPhoneVerificationRequired = 3,
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:36:    PDSRegistrationGateErrorInvalidPhoneVerification = 4,
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:39:    PDSRegistrationGateErrorOAuthOnlyRegistration = 7,
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobConsistencyCheckOperation.m:60:                            NSSet<NSString *> *referencedCIDs = PDSBlobAuditBlobReferenceCIDsFromJSONObject(json);
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobReferenceScanOperation.m:98:                    [referencedCIDs unionSet:PDSBlobAuditBlobReferenceCIDsFromJSONObject(json)];
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:22:    PDSPhoneVerificationProviderErrorNotConfigured = 1,
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:24:    PDSPhoneVerificationProviderErrorUnsupportedProvider = 2,
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:26:    PDSPhoneVerificationProviderErrorRequestFailed = 3,
+./Garazyk/Sources/Compat/PlatformShims/LocalAuthentication/LocalAuthentication.h:17:    LAPolicyDeviceOwnerAuthenticationWithBiometrics = 1,
+./Garazyk/Sources/Compat/PlatformShims/LocalAuthentication/LocalAuthentication.m:20:    if (policy == LAPolicyDeviceOwnerAuthenticationWithBiometrics) {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:9:#import "Database/Connection/ATProtoConnectionManagerPooled.h"
+./Garazyk/Sources/Video/AVFoundationTranscoder.m:37:                                                   code:ATProtoVideoTranscoderErrorAssetNotFound
+./Garazyk/Sources/Video/AVFoundationTranscoder.m:51:                                                       code:ATProtoVideoTranscoderErrorUnsupportedFormat
+./Garazyk/Sources/Video/AVFoundationTranscoder.m:89:                AVMutableVideoCompositionLayerInstruction *layerInstruction =
+./Garazyk/Sources/Video/AVFoundationTranscoder.m:90:                    [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTracks.firstObject];
+./Garazyk/Sources/Video/AVFoundationTranscoder.m:107:            [session exportAsynchronouslyWithCompletionHandler:^{
+./Garazyk/Sources/Video/AVFoundationTranscoder.m:126:                                        code:ATProtoVideoTranscoderErrorUnsupportedFormat
+./Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.h:11:    PDSEnvironmentSecretsProviderErrorInvalidKey = 1,
+./Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.h:12:    PDSEnvironmentSecretsProviderErrorKeyNotFound = 2
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.m:57:NSSet<NSString *> *PDSBlobAuditBlobReferenceCIDsFromJSONObject(id _Nullable json) {
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:23:const CFStringRef kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256 = (CFStringRef)@"kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256";
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:24:const CFStringRef kSecKeyAlgorithmECDSASignatureMessageX962SHA256 = (CFStringRef)@"kSecKeyAlgorithmECDSASignatureMessageX962SHA256";
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:25:const CFStringRef kSecKeyAlgorithmECDSASignatureDigestX962SHA256 = (CFStringRef)@"kSecKeyAlgorithmECDSASignatureDigestX962SHA256";
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:12:#import "Registration/PDSInviteCodeRegistrationGate.h"
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:13:#import "Registration/PDSPhoneOTPRegistrationGate.h"
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:15:#import "Registration/PDSOAuthOnlyRegistrationGate.h"
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:18:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:10:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceConfiguration.m:3:#import "MediaCore/ATProtoMediaServiceConfiguration.h"
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:25:    PDSEmailProviderFactoryErrorNotConfigured = 1,
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:26:    PDSEmailProviderFactoryErrorUnsupportedProvider = 2,
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:27:    PDSEmailProviderFactoryErrorCreationFailed = 3,
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:70:                                         code:PDSEmailProviderFactoryErrorNotConfigured
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:114:                                         code:PDSEmailProviderFactoryErrorCreationFailed
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:125:                                     code:PDSEmailProviderFactoryErrorUnsupportedProvider
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:180:                                         code:PDSEmailProviderFactoryErrorNotConfigured
+./Garazyk/Sources/Compat/PlatformShims/Security/SecAccessControl.h:33:extern const CFStringRef kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
+./Garazyk/Sources/Compat/PlatformShims/Security/SecAccessControl.h:34:extern const CFStringRef kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly;
+./Garazyk/Sources/MediaCore/ATProtoMediaWorker.m:117:                                                                         code:ATProtoMediaWorkerErrorDatabaseUnavailable
+./Garazyk/Sources/MediaCore/ATProtoMediaWorker.m:167:                                                                               code:ATProtoMediaWorkerErrorBlobProviderUnavailable
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.h:30:extern const CFStringRef _Nonnull kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.h:31:extern const CFStringRef _Nonnull kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.h:32:extern const CFStringRef _Nonnull kSecKeyAlgorithmECDSASignatureDigestX962SHA256;
+./Garazyk/Sources/Mikrus/MikrusRuntime.h:9:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/Compat/PlatformShims/Security/SecAccessControl.m:10:const CFStringRef kSecAttrAccessibleWhenUnlockedThisDeviceOnly = (CFStringRef)@"kSecAttrAccessibleWhenUnlockedThisDeviceOnly";
+./Garazyk/Sources/Compat/PlatformShims/Security/SecAccessControl.m:11:const CFStringRef kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly = (CFStringRef)@"kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly";
+./Garazyk/Sources/Video/VideoThumbnailGenerator.m:98:                                                                 code:ATProtoVideoThumbnailErrorGenerationFailed
+./Garazyk/Sources/Video/VideoThumbnailGenerator.m:109:                                                   code:ATProtoVideoThumbnailErrorGenerationFailed
+./Garazyk/Sources/Video/VideoThumbnailGenerator.m:146:                                                   code:ATProtoVideoThumbnailErrorGenerationFailed
+./Garazyk/Sources/Video/VideoThumbnailGenerator.m:162:                                                   code:ATProtoVideoThumbnailErrorGenerationFailed
+./Garazyk/Sources/Video/VideoThumbnailGenerator.m:173:                                                   code:ATProtoVideoThumbnailErrorGenerationFailed
+./Garazyk/Sources/Video/VideoThumbnailGenerator.m:191:    NSDictionary *props = @{(__bridge id)kCGImageDestinationLossyCompressionQuality: @(quality)};
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.h:11:#import "MediaCore/ATProtoMediaServiceConfiguration.h"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:144:  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.h:12:    PDSKeychainSecretsProviderErrorInvalidKey = 1,
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.h:14:    PDSKeychainSecretsProviderErrorItemNotFound = 2,
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.h:16:    PDSKeychainSecretsProviderErrorKeychainFailure = 3,
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.h:18:    PDSKeychainSecretsProviderErrorInvalidInput = 4,
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.h:20:    PDSKeychainSecretsProviderErrorStorageFailed = 5,
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.h:22:    PDSKeychainSecretsProviderErrorDeletionFailed = 6
+./Garazyk/Sources/Video/JelczDatabase.m:4:#import "Database/Connection/ATProtoConnectionManagerSerial.h"
+./Garazyk/Sources/Video/VideoTranscoder.h:20:    ATProtoVideoTranscoderErrorAssetNotFound = 1,
+./Garazyk/Sources/Video/VideoTranscoder.h:22:    ATProtoVideoTranscoderErrorUnsupportedFormat = 3,
+./Garazyk/Sources/Video/VideoWorker.m:169:                                                                       code:ATProtoVideoWorkerErrorDatabaseUnavailable
+./Garazyk/Sources/Video/VideoWorker.m:218:                                                                               code:ATProtoVideoWorkerErrorBlobProviderUnavailable
+./Garazyk/Sources/Video/VideoHLSGenerator.h:19:    ATProtoVideoHLSErrorOutputDirectoryFailed = 4,
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:4:#import "Database/Connection/ATProtoConnectionManagerSerial.h"
+./Garazyk/Sources/MediaCore/ATProtoMediaWorker.h:18:    ATProtoMediaWorkerErrorDatabaseUnavailable   = 1,
+./Garazyk/Sources/MediaCore/ATProtoMediaWorker.h:19:    ATProtoMediaWorkerErrorBlobProviderUnavailable = 2,
+./Garazyk/Sources/Video/VideoWorker.h:21:    ATProtoVideoWorkerErrorDatabaseUnavailable = 1,
+./Garazyk/Sources/Video/VideoWorker.h:22:    ATProtoVideoWorkerErrorBlobProviderUnavailable = 2,
+./Garazyk/Sources/Video/VideoHLSGenerator.m:83:                                          code:ATProtoVideoHLSErrorOutputDirectoryFailed
+./Garazyk/Sources/Video/VideoHLSGenerator.m:236:                                          code:ATProtoVideoHLSErrorOutputDirectoryFailed
+./Garazyk/Sources/Video/VideoThumbnailGenerator.h:20:    ATProtoVideoThumbnailErrorGenerationFailed = 2,
+./Garazyk/Sources/Compat/GNUstepCFNetworkCompat.h:18:#import "Compat/PlatformShims/CoreFoundation/CFNetwork.h"
+./Garazyk/Sources/Repository/MSTPersistence.m:15:    MSTPersistenceErrorCodeSerializationFailed,
+./Garazyk/Sources/Repository/MSTPersistence.m:129:                                         code:MSTPersistenceErrorCodeSerializationFailed
+./Garazyk/Sources/Repository/MSTPersistence.m:143:                                         code:MSTPersistenceErrorCodeSerializationFailed
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:20:#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:276:    NSString *encodedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:277:        [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~/"]];
+./Garazyk/Sources/CLI/main.m:7:#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+./Garazyk/Sources/CLI/main.m:8:#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+./Garazyk/Sources/Repository/MSTWalker.h:9: * https://github.com/bluesky-social/atproto/blob/main/packages/repo/src/mst/walker.ts
+./Garazyk/Sources/Blob/PDSBlobProviderFactory.m:34:        return [self cloudStorageBlobProviderWithConfiguration:configuration error:error];
+./Garazyk/Sources/Blob/PDSBlobProviderFactory.m:76:+ (nullable id<PDSBlobProvider>)cloudStorageBlobProviderWithConfiguration:(ATProtoServiceConfiguration *)configuration
+./Garazyk/Sources/Network/XrpcHandler.h:165:- (void)registerComAtprotoServerCreateInviteCode:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:168:- (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:171:- (void)registerComAtprotoServerGetAccountInviteCodes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:174:- (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:177:- (void)registerComAtprotoServerListAppPasswords:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:180:- (void)registerComAtprotoServerRevokeAppPassword:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:192:- (void)registerComAtprotoServerCheckAccountStatus:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:198:- (void)registerComAtprotoServerDeactivateAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:204:- (void)registerComAtprotoServerRequestAccountDelete:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:207:- (void)registerComAtprotoServerRequestPasswordReset:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:210:- (void)registerComAtprotoServerReserveSigningKey:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:216:- (void)registerComAtprotoTempRevokeAccountCredentials:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:225:- (void)registerComAtprotoServerRequestEmailConfirmation:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:228:- (void)registerComAtprotoServerRequestEmailUpdate:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:310:- (void)registerComAtprotoSyncListReposByCollection:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:330:- (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:336:- (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:339:- (void)registerComAtprotoIdentityRefreshIdentity:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:342:- (void)registerComAtprotoIdentityRequestPlcOperationSignature:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:345:- (void)registerComAtprotoIdentitySignPlcOperation:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:348:- (void)registerComAtprotoIdentitySubmitPlcOperation:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:356:- (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:359:- (void)registerComAtprotoAdminUpdateSubjectStatus:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:365:- (void)registerComAtprotoAdminGetAccountTakedown:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:380:- (void)registerComAtprotoAdminDisableAccountInvites:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:383:- (void)registerComAtprotoAdminEnableAccountInvites:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:386:- (void)registerComAtprotoAdminDisableInviteCodes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:395:- (void)registerComAtprotoAdminUpdateAccountEmail:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:398:- (void)registerComAtprotoAdminUpdateAccountHandle:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:401:- (void)registerComAtprotoAdminUpdateAccountPassword:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:404:- (void)registerComAtprotoAdminUpdateAccountSigningKey:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:413:- (void)registerComAtprotoAdminGetModerationReports:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:471:- (void)registerAppBskyActorSearchActorsTypeahead:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:508:- (void)registerAppBskyNotificationUnregisterPush:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:530:- (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:533:- (void)registerAppBskyGraphVerificationCreateVerification:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:536:- (void)registerAppBskyGraphVerificationDeleteVerification:(XrpcMethodHandler)handler;
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:188:                @"did:key:zQ3shVYhPrMqPfSKzxjf6SbqPk2BB8fnd4ZmDVShn4q2AL8ia",
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:189:                @"did:key:zQ3shrbgWndeXWeFoD4f6Mcjrb3cmQpChVCQj1es4eRDpF88j"
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:192:                @"atproto": @"did:key:zQ3shm52keiDKL496VTbQmTFdpRZJTz4jTwKvFBKdd3hCCkJU"
+./Garazyk/Sources/Network/XrpcIdentityPack.m:63:    [dispatcher registerComAtprotoIdentityRefreshIdentity:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:131:                                                         cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+./Garazyk/Sources/Network/XrpcIdentityPack.m:180:    [dispatcher registerComAtprotoIdentityResolveIdentity:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:235:    [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:254:    [dispatcher registerComAtprotoIdentityRequestPlcOperationSignature:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:301:    [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:486:    [dispatcher registerComAtprotoIdentitySubmitPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Sync/Relay/RelayClient.h:31:extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:234:  [dispatcher registerAppBskyActorSearchActorsTypeahead:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:47:static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcServerPack.m:225:static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcServerPack.m:357:    [self registerAccountAndSessionMethodsWithDispatcher:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:398:+ (void)registerAccountAndSessionMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:403:    [self registerAccountCreationAndSessionEndpoints:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:426:+ (void)registerAccountCreationAndSessionEndpoints:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:466:                        case PDSRegistrationGateErrorInviteCodeRequired:
+./Garazyk/Sources/Network/XrpcServerPack.m:467:                        case PDSRegistrationGateErrorInvalidInviteCode:
+./Garazyk/Sources/Network/XrpcServerPack.m:470:                        case PDSRegistrationGateErrorPhoneVerificationRequired:
+./Garazyk/Sources/Network/XrpcServerPack.m:471:                        case PDSRegistrationGateErrorInvalidPhoneVerification:
+./Garazyk/Sources/Network/XrpcServerPack.m:478:                        case PDSRegistrationGateErrorOAuthOnlyRegistration:
+./Garazyk/Sources/Network/XrpcServerPack.m:491:            if (!validateDidWebServiceAuthForAccountCreation(request, response, did, config)) {
+./Garazyk/Sources/Network/XrpcServerPack.m:670:    [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:705:    [dispatcher registerComAtprotoServerCreateInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:762:    [dispatcher registerComAtprotoServerGetAccountInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:805:    [dispatcher registerComAtprotoServerCreateAppPassword:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:849:    [dispatcher registerComAtprotoServerListAppPasswords:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:879:    [dispatcher registerComAtprotoServerRevokeAppPassword:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:926:    [dispatcher registerComAtprotoServerRequestEmailConfirmation:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:941:    [dispatcher registerComAtprotoServerRequestEmailUpdate:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1024:    [dispatcher registerComAtprotoServerRequestAccountDelete:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1039:    [dispatcher registerComAtprotoServerRequestPasswordReset:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1105:    [dispatcher registerComAtprotoServerReserveSigningKey:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1314:    [dispatcher registerComAtprotoServerCheckAccountStatus:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1371:    [dispatcher registerComAtprotoServerDeactivateAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/PLC/PLCPersistentStore.h:31:    PLCPersistentStoreErrorTransactionRequired,
+./Garazyk/Sources/Network/SSLPinningManager.h:13:    SSLPinningErrorCertificateValidationFailed = 1,
+./Garazyk/Sources/Network/XrpcLexiconResolver.h:23: * @abstract Performs the registerResolveLexiconMethodOnDispatcher operation.
+./Garazyk/Sources/Network/XrpcLexiconResolver.h:25:+ (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Sync/Relay/RelayClient.m:11:NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:427:  [dispatcher registerAppBskyNotificationUnregisterPush:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcModerationPack.m:26:    [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:340:          cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:16:    ATProtoSafeHTTPClientErrorUnsupportedScheme = 2,
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:20:    ATProtoSafeHTTPClientErrorResponseTooLarge = 4,
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:22:    ATProtoSafeHTTPClientErrorRedirectBlocked = 5,
+./Garazyk/Sources/Network/XrpcHandler.m:632:- (void)registerComAtprotoServerCreateInviteCode:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:636:- (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:640:- (void)registerComAtprotoServerGetAccountInviteCodes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:644:- (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:648:- (void)registerComAtprotoServerListAppPasswords:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:652:- (void)registerComAtprotoServerRevokeAppPassword:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:668:- (void)registerComAtprotoServerCheckAccountStatus:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:676:- (void)registerComAtprotoServerDeactivateAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:684:- (void)registerComAtprotoServerRequestAccountDelete:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:688:- (void)registerComAtprotoServerRequestPasswordReset:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:692:- (void)registerComAtprotoServerReserveSigningKey:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:700:- (void)registerComAtprotoTempRevokeAccountCredentials:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:712:- (void)registerComAtprotoServerRequestEmailConfirmation:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:716:- (void)registerComAtprotoServerRequestEmailUpdate:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:820:- (void)registerComAtprotoSyncListReposByCollection:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:840:- (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:848:- (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:852:- (void)registerComAtprotoIdentityRefreshIdentity:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:856:- (void)registerComAtprotoIdentityRequestPlcOperationSignature:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:860:- (void)registerComAtprotoIdentitySignPlcOperation:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:864:- (void)registerComAtprotoIdentitySubmitPlcOperation:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:872:- (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:876:- (void)registerComAtprotoAdminUpdateSubjectStatus:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:884:- (void)registerComAtprotoAdminGetAccountTakedown:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:904:- (void)registerComAtprotoAdminDisableAccountInvites:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:908:- (void)registerComAtprotoAdminEnableAccountInvites:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:912:- (void)registerComAtprotoAdminDisableInviteCodes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:924:- (void)registerComAtprotoAdminUpdateAccountEmail:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:928:- (void)registerComAtprotoAdminUpdateAccountHandle:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:932:- (void)registerComAtprotoAdminUpdateAccountPassword:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:936:- (void)registerComAtprotoAdminUpdateAccountSigningKey:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:948:- (void)registerComAtprotoAdminGetModerationReports:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:992:- (void)registerAppBskyActorSearchActorsTypeahead:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1036:- (void)registerAppBskyNotificationUnregisterPush:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1060:- (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1064:- (void)registerAppBskyGraphVerificationCreateVerification:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1068:- (void)registerAppBskyGraphVerificationDeleteVerification:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:129:             if (![accountService respondsToSelector:@selector(completeWebAuthnSecondFactorForIdentifier:sessionID:assertion:error:)]) {
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:140:                 [(PDSAccountService *)accountService completeWebAuthnSecondFactorForIdentifier:identifier
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:132:                                                     code:PLCRotationKeyManagerErrorKeyStorageFailed
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:159:                                         code:PLCRotationKeyManagerErrorKeyGenerationFailed
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:221:                                         code:PLCRotationKeyManagerErrorKeyStorageFailed
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:286:                                         code:PLCRotationKeyManagerErrorKeyStorageFailed
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:604:    [dispatcher registerAppBskyGraphGetActorStarterPacks:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:884:    [dispatcher registerAppBskyGraphVerificationCreateVerification:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:922:    [dispatcher registerAppBskyGraphVerificationDeleteVerification:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:14:#import "Services/Core/PDSPhoneVerificationProvider.h"
+./Garazyk/Sources/Network/XrpcLabelPack.m:377:                && providerError.code == PDSPhoneVerificationProviderErrorNotConfigured) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:386:                && providerError.code == PDSPhoneVerificationProviderErrorUnsupportedProvider) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:594:    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:192:                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:355:                    redirectBlockError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:384:                NSError *sizeError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorResponseTooLarge
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:480:        config.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:533:                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:619:            NSError *sizeError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorResponseTooLarge
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:707:        NSError *redirectError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
+./Garazyk/Sources/Database/Schema.m:344:NSString * const kPDSOAuthAuthorizationCodesTableCreateSQL =
+./Garazyk/Sources/Auth/DPoPUtil.m:149:                                                                 kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:28:static void registerMethodsWithDispatcherUsingServices(
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:39:  [XrpcLexiconResolver registerResolveLexiconMethodOnDispatcher:dispatcher
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:90:  registerMethodsWithDispatcherUsingServices(
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:105:  registerMethodsWithDispatcherUsingServices(
+./Garazyk/Sources/PLC/PLCRotationKeyManager.h:29: @constant PLCRotationKeyManagerErrorKeyGenerationFailed Failed to generate a new key pair.
+./Garazyk/Sources/PLC/PLCRotationKeyManager.h:30: @constant PLCRotationKeyManagerErrorKeyStorageFailed Failed to store the key pair to disk.
+./Garazyk/Sources/PLC/PLCRotationKeyManager.h:35:    PLCRotationKeyManagerErrorKeyGenerationFailed = 1,
+./Garazyk/Sources/PLC/PLCRotationKeyManager.h:36:    PLCRotationKeyManagerErrorKeyStorageFailed = 2,
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:31:#import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
+./Garazyk/Sources/Auth/JWT.m:30:        NSMutableCharacterSet *mutableSet = [NSMutableCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:31:NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed = 3000;
+./Garazyk/Sources/Network/SSLPinningManager.m:77:        return [challenge.sender respondsToSelector:@selector(performDefaultHandlingForAuthenticationChallenge:)];
+./Garazyk/Sources/Network/SSLPinningManager.m:189:            completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);
+./Garazyk/Sources/Network/SSLPinningManager.m:193:        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:22:#import "Auth/OAuthProvider/OAuthProviderProtocols.h"
+./Garazyk/Sources/Network/XrpcAuthHelper.m:79:static void XrpcAuthAttachDPoPNonceToResponseIfMissing(HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:267:        XrpcAuthAttachDPoPNonceToResponseIfMissing(response);
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:7:#import "Database/ActorStore/PDSActorStoreInternal.h"
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:16:#import "Compat/PlatformShims/CommonCrypto/CommonDigest.h"
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:17:#import "Compat/PlatformShims/CommonCrypto/CommonKeyDerivation.h"
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:640:+ (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:41:extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:83:        [targetDid stringByAddingPercentEncodingWithAllowedCharacters:
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:97:                                cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:8:#import "Database/ActorStore/PDSActorStoreInternal.h"
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:9:#import "Database/ActorStore/PDSActorStore+Account.h"
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:10:#import "Database/ActorStore/PDSActorStore+Session.h"
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:14:    return [segment stringByAddingPercentEncodingWithAllowedCharacters:allowed] ?: @"";
+./Garazyk/Sources/Network/XrpcSyncPack.m:549:  [dispatcher registerComAtprotoSyncListReposByCollection:^(
+./Garazyk/Sources/Auth/TOTPService.m:62:                           [label stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]],
+./Garazyk/Sources/Auth/TOTPService.m:64:                           [issuer stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.h:37:    AppViewWriteProxyErrorDIDResolutionFailed = 1,
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.h:38:    AppViewWriteProxyErrorPDSEndpointNotFound,
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.h:39:    AppViewWriteProxyErrorProxyRequestFailed,
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:105:                           [actorDID stringByAddingPercentEncodingWithAllowedCharacters:
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:124:                                                  cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:26:extern NSInteger const WebSocketConnectionErrorCodeConnectionClosed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:29:extern NSInteger const WebSocketConnectionErrorCodeInvalidFrame;
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1247:    "<script nonce=\"%@\" src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script>"
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:9:#import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:178:                case ATProtoSafeHTTPClientErrorUnsupportedScheme:
+./Garazyk/Sources/Network/XrpcVendorPack.m:21:#import "Database/ActorStore/PDSActorStoreInternal.h"
+./Garazyk/Sources/Auth/PKCEUtil.m:9:static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:51:static const void *kATProtoNetworkConnectionQueueSpecificKey =
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:52:    &kATProtoNetworkConnectionQueueSpecificKey;
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:54:static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:98:        _connectTimeoutMilliseconds = connectTimeoutMillisecondsFromEnvironment();
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:124:        _connectTimeoutMilliseconds = connectTimeoutMillisecondsFromEnvironment();
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:137:    return dispatch_get_specific(kATProtoNetworkConnectionQueueSpecificKey) ==
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:179:                                    kATProtoNetworkConnectionQueueSpecificKey,
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:13:#import "AppView/Server/Config/AppViewConfiguration.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:14:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:15:#import "AppView/Server/Backfill/AppViewBackfillOrchestrator.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:16:#import "AppView/Server/Relevance/AppViewRelevanceSet.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:17:#import "AppView/Server/Indexers/AppViewActorIndexer.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:18:#import "AppView/Server/Indexers/AppViewFeedIndexer.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:19:#import "AppView/Server/Indexers/AppViewGraphIndexer.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:20:#import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:21:#import "AppView/Server/Indexers/AppViewBookmarkIndexer.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:22:#import "AppView/Server/Indexers/AppViewGroupIndexer.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:23:#import "AppView/Server/Indexers/AppViewGenericIndexer.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:24:#import "AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:25:#import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:26:#import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:34:#import "AppView/Server/Lexicon/AppViewGraphQueryHandler.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:36:#import "AppView/Server/Hooks/AppViewIndexHookRegistry.h"
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:40:#import "AppView/Server/Admin/AppViewAdminRoutePack.h"
+./Garazyk/Sources/Database/PDSRepositoryFactory.m:12:#import "Core/Repositories/PDSLegacyAccountRepository.h"
+./Garazyk/Sources/Database/PDSRepositoryFactory.m:13:#import "Core/Repositories/PDSSQLiteAccountRepository.h"
+./Garazyk/Sources/Database/PDSRepositoryFactory.m:14:#import "Core/Repositories/PDSSQLiteSessionRepository.h"
+./Garazyk/Sources/Database/PDSRepositoryFactory.m:15:#import "Core/Repositories/PDSSQLiteRepoRepository.h"
+./Garazyk/Sources/Database/PDSRepositoryFactory.m:16:#import "Core/Repositories/PDSSQLiteRecordRepository.h"
+./Garazyk/Sources/Database/PDSRepositoryFactory.m:17:#import "Core/Repositories/PDSSQLiteBlockRepository.h"
+./Garazyk/Sources/Database/PDSRepositoryFactory.m:18:#import "Core/Repositories/PDSSQLiteBlobRepository.h"
+./Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m:9:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/Network/XrpcAdminPack.m:19:#import "Database/ActorStore/PDSActorStoreInternal.h"
+./Garazyk/Sources/Network/XrpcAdminPack.m:26:#import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
+./Garazyk/Sources/Network/XrpcAdminPack.m:217:    [dispatcher registerComAtprotoAdminUpdateAccountEmail:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:279:    [dispatcher registerComAtprotoAdminUpdateAccountHandle:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:341:    [dispatcher registerComAtprotoAdminUpdateAccountPassword:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:775:    [dispatcher registerComAtprotoAdminDisableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:822:    [dispatcher registerComAtprotoAdminEnableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:869:    [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:954:    [dispatcher registerComAtprotoAdminGetAccountTakedown:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1010:    [dispatcher registerComAtprotoAdminDisableInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1057:    [dispatcher registerComAtprotoAdminUpdateAccountSigningKey:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1139:    [dispatcher registerComAtprotoAdminGetModerationReports:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:9:#import "AppView/Server/Auth/AppViewOAuth2Middleware.h"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.m:9:#import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.m:9:#import "AppView/Server/Hooks/AppViewIndexHookRegistry.h"
+./Garazyk/Sources/Auth/OAuth2.m:655:            NSString *encodedName = [item.name stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+./Garazyk/Sources/Auth/OAuth2.m:656:            NSString *encodedValue = item.value ? [item.value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]] : @"";
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:27:extern NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain;
+./Garazyk/Sources/AppView/Server/Hooks/AppViewSearchIndexHook.m:9:#import "AppView/Server/Hooks/AppViewSearchIndexHook.h"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:3:#import "AppView/Server/Admin/AppViewAdminRoutePack.h"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:4:#import "AppView/Server/Backfill/AppViewBackfillOrchestrator.h"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:5:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:8:#import "AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:9:#import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:10:#import "AppView/Server/Hooks/AppViewIndexHookRegistry.h"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:9:#import "AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:10:#import "AppView/Server/Lexicon/AppViewGenericQueryHandler.h"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:11:#import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:21:NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:125:            *error = [NSError errorWithDomain:AppViewLexiconEndpointGeneratorErrorDomain
+./Garazyk/Sources/AppView/Server/Relevance/AppViewRelevanceSet.m:9:#import "AppView/Server/Relevance/AppViewRelevanceSet.h"
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:9:#import "AppView/Server/Backfill/AppViewBackfillWorker.h"
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:75:                        [did stringByAddingPercentEncodingWithAllowedCharacters:
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:79:                  [sinceRev stringByAddingPercentEncodingWithAllowedCharacters:
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:181:                        [did stringByAddingPercentEncodingWithAllowedCharacters:
+./Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m:9:#import "AppView/Server/Config/AppViewConfiguration.h"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:9:#import "AppView/Server/Lexicon/AppViewGenericQueryHandler.h"
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:10:#import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m:9:#import "AppView/Server/Backfill/AppViewBackfillOrchestrator.h"
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m:13:#import "AppView/Server/Backfill/AppViewBackfillWorker.h"
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:40:static inline void PDSActorStoreEnsureCategoryObjectsLinked(void) {
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:96:    PDSActorStoreEnsureCategoryObjectsLinked();
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:184:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:201:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:219:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:236:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:513:        alg = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:515:        alg = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:3:#import "Database/Connection/ATProtoConnectionManagerPooled.h"
+./Garazyk/Sources/Database/ActorStore/ActorStore.h:45: @constant PDSActorStoreErrorAccessControlCreationFailed Failed to create access control.
+./Garazyk/Sources/Database/ActorStore/ActorStore.h:46: @constant PDSActorStoreErrorKeychainUpgradeRequired Keychain upgrade required.
+./Garazyk/Sources/Database/ActorStore/ActorStore.h:61:    PDSActorStoreErrorAccessControlCreationFailed,
+./Garazyk/Sources/Database/ActorStore/ActorStore.h:62:    PDSActorStoreErrorKeychainUpgradeRequired,
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:3:#import "Database/Connection/ATProtoConnectionManagerSerial.h"
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.h:4:#import "Database/Connection/ATProtoConnectionManager.h"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewNotificationIndexer.m:9:#import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewNotificationIndexer.m:11:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:17:NSInteger const WebSocketConnectionErrorCodeConnectionClosed = 2000;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:18:NSInteger const WebSocketConnectionErrorCodeInvalidFrame = 2001;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:185:                              code:WebSocketConnectionErrorCodeConnectionClosed
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:265:                               code:WebSocketConnectionErrorCodeConnectionClosed
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:421:                                                  code:WebSocketConnectionErrorCodeConnectionClosed 
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:447:                                              code:WebSocketConnectionErrorCodeConnectionClosed 
+./Garazyk/Sources/Auth/PDS/PDSAuth.h:16:#import "Auth/OAuthProvider/OAuthProviderProtocols.h"
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:28:extern NSInteger const WebSocketServerErrorCodeInvalidHandshake;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:31:extern NSInteger const WebSocketServerErrorCodeConnectionFailed;
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.h:4:#import "Database/Connection/ATProtoConnectionManager.h"
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:12:NSInteger const WebSocketServerErrorCodeInvalidHandshake = 1001;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:13:NSInteger const WebSocketServerErrorCodeConnectionFailed = 1002;
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:9:#import "AppView/Server/Indexers/AppViewGenericIndexer.h"
+./Garazyk/Sources/Auth/DPoPUtil.h:13: the protocol-based key interfaces (PDSPrivateKeyProtocol/PDSPublicKeyProtocol).
+./Garazyk/Sources/Auth/OAuth2Handler.m:1323:      SecKeyVerifySignature(publicKey, kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+./Garazyk/Sources/Auth/OAuth2Handler.m:2052:          NSString *encodedName = [item.name stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2053:          NSString *encodedValue = item.value ? [item.value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]] : @"";
+./Garazyk/Sources/Auth/OAuth2Handler.m:4089:      } else if (err.code == ATProtoSafeHTTPClientErrorUnsupportedScheme) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:4092:      } else if (err.code == ATProtoSafeHTTPClientErrorRedirectBlocked) {
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:50:    OAuthProviderErrorUnsupportedResponseType = -3,
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:53:    OAuthProviderErrorTemporarilyUnavailable = -6,
+./Garazyk/Sources/AppView/Server/Indexers/AppViewBookmarkIndexer.m:9:#import "AppView/Server/Indexers/AppViewBookmarkIndexer.h"
+./Garazyk/Sources/Security/PDSInputValidator.m:37:        NSMutableCharacterSet *allowed = [NSMutableCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-"];
+./Garazyk/Sources/Security/PDSInputValidator.m:120:    NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-./"];
+./Garazyk/Sources/Security/PDSInputValidator.m:166:    NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/="];
+./Garazyk/Sources/AppView/Server/Indexers/AppViewActorIndexer.m:9:#import "AppView/Server/Indexers/AppViewActorIndexer.h"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewActorIndexer.m:12:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:18:    PDSBiometricKeychainErrorBiometryNotAvailable,
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:20:    PDSBiometricKeychainErrorBiometryNotEnrolled,
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:22:    PDSBiometricKeychainErrorAccessControlCreationFailed,
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:24:    PDSBiometricKeychainErrorKeyAlreadyExists,
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:32:    PDSBiometricKeychainErrorUpgradeRequired,
+./Garazyk/Sources/AppView/Server/Indexers/AppViewFeedIndexer.m:9:#import "AppView/Server/Indexers/AppViewFeedIndexer.h"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewFeedIndexer.m:11:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:172:        completion(nil, nil, [self errorWithCode:OAuthProviderErrorUnsupportedResponseType
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:229:        completion(nil, nil, [self errorWithCode:OAuthProviderErrorUnsupportedResponseType
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:36: @constant ATProtoLexiconErrorUnionValidationFailed Union value doesn't match any variant.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:37: @constant ATProtoLexiconErrorRecursionLimitExceeded Nested object depth exceeds limit.
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:51:    ATProtoLexiconErrorUnionValidationFailed,
+./Garazyk/Sources/Lexicon/ATProtoLexiconError.h:52:    ATProtoLexiconErrorRecursionLimitExceeded,
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGraphIndexer.m:9:#import "AppView/Server/Indexers/AppViewGraphIndexer.h"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGraphIndexer.m:12:#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGraphIndexer.m:13:#import "AppView/Server/Relevance/AppViewRelevanceSet.h"
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:154:        if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil]) {
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:165:                                     code:PDSBiometricKeychainErrorBiometryNotAvailable
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:209:        return [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:242:        return (__bridge id)kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:244:    return (__bridge id)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly;
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:258:                                                                         kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:287:            code = PDSBiometricKeychainErrorKeyAlreadyExists;
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:295:            code = PDSBiometricKeychainErrorBiometryNotAvailable;
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:50:            @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_~.:-"];
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:165:            *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorRecursionLimitExceeded
+./Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m:991:            *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorUnionValidationFailed
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:147:                                                 kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:253:                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:267:                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:346:    // Note: kSecKeyAlgorithmECDSASignatureDigestX962SHA256 expects the digest (not the message)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:348:                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:363:                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/App/server_main.m:25:#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+./Garazyk/Sources/App/server_main.m:26:#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:9:#import "AppView/Server/Indexers/AppViewGroupIndexer.h"
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:29:    PDSProviderHTTPClientErrorSerializationFailed = 1,
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:32:    PDSProviderHTTPClientErrorMaxRetriesExceeded = 4,
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:31:#define AT_NSISO8601DateFormatWithFractionalSeconds 2048
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:113:        NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime | AT_NSISO8601DateFormatWithFractionalSeconds;
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:125:+ (id)atproto_iso8601FormatterInternalNoFractionalSeconds {
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:232:            id isoFormatterNoFrac = [self atproto_iso8601FormatterInternalNoFractionalSeconds];
+./Garazyk/Sources/Core/PDSProviderRegistry.m:40:    PDSProviderRegistryErrorProviderCreationFailed = 2,
+./Garazyk/Sources/Core/PDSProviderRegistry.m:119:                                                          code:PDSProviderRegistryErrorProviderCreationFailed
+./Garazyk/Sources/Core/Repositories/PDSSQLiteSessionRepository.m:6:#import "Database/ActorStore/PDSActorStore+Session.h"
+./Garazyk/Sources/Identity/ATProtoHandleValidator.m:23:            NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"];
+./Garazyk/Sources/Core/Repositories/PDSSQLiteAccountRepository.m:6:#import "Database/ActorStore/PDSActorStore+Account.h"
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:8:#import "Chat/Server/Services/ChatModerationService.h"
+./Garazyk/Sources/Core/Base58.m:6:static const char *const kBase58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:6:#import "Database/ActorStore/PDSActorStoreInternal.h"
+./Garazyk/Sources/Identity/HandleResolver.m:234:                error.code == ATProtoSafeHTTPClientErrorRedirectBlocked) {
+./Garazyk/Sources/Identity/HandleResolver.m:244:            if (error.code == ATProtoSafeHTTPClientErrorUnsupportedScheme) {
+./Garazyk/Sources/App/PDSApplication.m:20:#import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
+./Garazyk/Sources/App/PDSApplication.m:42:#import "Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.h"
+./Garazyk/Sources/App/PDSApplication.m:43:#import "Admin/Diagnostics/PDSSequencerHealthHandler.h"
+./Garazyk/Sources/App/PDSApplication.m:52:#import "Admin/Diagnostics/PDSSystemDiagnosticsHandler.h"
+./Garazyk/Sources/App/PDSApplication.m:87:static BOOL PDSApplicationShouldUseEphemeralJWTKeyForTests(void) {
+./Garazyk/Sources/App/PDSApplication.m:106:static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
+./Garazyk/Sources/App/PDSApplication.m:339:    if (PDSApplicationShouldUseEphemeralJWTKeyForTests()) {
+./Garazyk/Sources/App/PDSApplication.m:348:            PDSApplicationLogEphemeralJWTKeyModeOnce();
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:93:                                         code:PDSProviderHTTPClientErrorSerializationFailed
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:101:                                                      code:PDSProviderHTTPClientErrorSerializationFailed
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:140:        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:141:    return [string stringByAddingPercentEncodingWithAllowedCharacters:allowed];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:273:                                          code:PDSProviderHTTPClientErrorMaxRetriesExceeded
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:343:                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+./Garazyk/Sources/Germ/Server/XrpcGermIdentityPack.m:4:#import "Germ/Server/Identity/GermIdentityService.h"
+./Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m:4:#import "Germ/Server/Config/GermMailboxSchemaManager.h"
+./Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m:6:#import "Germ/Server/Identity/GermIdentityService.h"
+./Garazyk/Sources/Core/ATURI.m:82:    NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:34:static NSString *ATProtoServiceConfigCanonicalizedIssuerString(NSString *issuer) {
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:1166:  NSString *configuredIssuer = ATProtoServiceConfigCanonicalizedIssuerString(self.issuer);
