@@ -45,21 +45,21 @@ export async function run(): Promise<ScenarioResult> {
   await timedCall(result, "Jelcz /_health endpoint", async () => {
     const url = new URL("/_health", videoUrl);
     const resp = await fetch(url.toString());
-    assert(resp.ok, `/_health returned HTTP ${resp.status}`);
+    assert.isTrue(resp.ok, `/_health returned HTTP ${resp.status}`);
     const body = await resp.json();
-    assert(body.status === "ok", `Expected status "ok", got "${body.status}"`);
-    assert(typeof body.service === "string", "Expected service field to be a string");
-    assert(body.service.length > 0, "Expected non-empty service field");
+    assert.isTrue(body.status === "ok", `Expected status "ok", got "${body.status}"`);
+    assert.isTrue(typeof body.service === "string", "Expected service field to be a string");
+    assert.isTrue(body.service.length > 0, "Expected non-empty service field");
   });
 
   // Check admin jobs list endpoint returns valid structure
   await timedCall(result, "Jelcz admin jobs endpoint", async () => {
     const url = new URL("/admin/api/media/jobs", videoUrl);
     const resp = await fetch(url.toString());
-    assert(resp.ok, `admin jobs returned HTTP ${resp.status}`);
+    assert.isTrue(resp.ok, `admin jobs returned HTTP ${resp.status}`);
     const body = await resp.json();
-    assert(body.jobs !== undefined, "Expected jobs field in response");
-    assert(Array.isArray(body.jobs), "Expected jobs to be an array");
+    assert.isTrue(body.jobs !== undefined, "Expected jobs field in response");
+    assert.isTrue(Array.isArray(body.jobs), "Expected jobs to be an array");
   });
 
   // Get upload limits via XRPC
@@ -83,10 +83,10 @@ export async function run(): Promise<ScenarioResult> {
       undefined,
       luna.accessJwt,
     );
-    assert(limits !== undefined, "Expected upload limits response");
+    assert.isTrue(limits !== undefined, "Expected upload limits response");
     // Should have at least one of: remaining, maxBytesPerUpload, etc.
     const keys = Object.keys(limits || {});
-    assert(keys.length > 0, "Expected at least one field in upload limits");
+    assert.isTrue(keys.length > 0, "Expected at least one field in upload limits");
   });
 
   // getJobStatus with a dummy jobId should gracefully error, not crash
