@@ -242,6 +242,18 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                      [self handleGetStarterPacks:request response:response];
                  }];
 
+        [server addRoute:@"GET"
+                    path:@"/xrpc/app.bsky.graph.getLists"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleGetLists:request response:response];
+                 }];
+
+        [server addRoute:@"GET"
+                    path:@"/xrpc/app.bsky.graph.getList"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleGetList:request response:response];
+                 }];
+
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.graph.muteActor"
                  handler:^(HttpRequest *request, HttpResponse *response) {
@@ -1089,6 +1101,45 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }]; return; }
     response.statusCode = 200;
     [response setJsonBody:result ?: @{ @"starterPacks": @[] }];
+}
+
+- (void)handleGetLists:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *actor = [request queryParamForKey:@"actor"];
+    if (!actor || actor.length == 0)
+    {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
+        return;
+    }
+
+    NSInteger limit = parseLimitParam(request, 50, 100);
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+    NSError *error = nil;
+    NSDictionary *result = [_graphService getListsForActor:actor limit:limit cursor:cursor error:&error];
+    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }]; return; }
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{ @"lists": @[] }];
+}
+
+- (void)handleGetList:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *list = [request queryParamForKey:@"list"];
+    if (!list || list.length == 0)
+    {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"list parameter is required" }];
+        return;
+    }
+
+    NSInteger limit = parseLimitParam(request, 50, 100);
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+    NSError *error = nil;
+    NSDictionary *result = [_graphService getList:list limit:limit cursor:cursor error:&error];
+    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }]; return; }
+    if (!result) { response.statusCode = 404; [response setJsonBody:@{ @"error": @"NotFound", @"message": @"List not found" }]; return; }
+    response.statusCode = 200;
+    [response setJsonBody:result];
 }
 
 - (void)handleMuteActor:(HttpRequest *)request response:(HttpResponse *)response

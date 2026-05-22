@@ -129,11 +129,50 @@ NS_ASSUME_NONNULL_BEGIN
                                did:(NSString *)did
                              error:(NSError **)error;
 
+#pragma mark - Lists
+
+/*! Get lists created by an actor. */
+- (nullable NSDictionary *)getListsForActor:(NSString *)actorDID
+                                      limit:(NSInteger)limit
+                                     cursor:(nullable NSString *)cursor
+                                      error:(NSError **)error;
+
+/*! Get a specific list with its items. */
+- (nullable NSDictionary *)getList:(NSString *)listURI
+                             limit:(NSInteger)limit
+                            cursor:(nullable NSString *)cursor
+                             error:(NSError **)error;
+
 #pragma mark - Indexing
 
+/**
+ * @abstract Indexes a new list record in the search and query views.
+ * @param record The list record payload.
+ * @param did The actor DID who owns the list.
+ * @param uri The AT Protocol URI of the list.
+ * @param cid The CID of the list record.
+ * @param error Receives details when indexing fails.
+ * @return YES if indexing succeeds; otherwise NO.
+ */
 - (BOOL)indexList:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+
+/**
+ * @abstract Removes a list record from the indexing database.
+ * @param uri The AT Protocol URI of the list to unindex.
+ * @param error Receives details when unindexing fails.
+ * @return YES if unindexing succeeds; otherwise NO.
+ */
 - (BOOL)unindexListWithURI:(NSString *)uri error:(NSError **)error;
 
+/**
+ * @abstract Indexes a new list item record representing a member of a list.
+ * @param record The list item record payload.
+ * @param did The actor DID who added the item.
+ * @param uri The AT Protocol URI of the list item record.
+ * @param cid The CID of the list item record.
+ * @param error Receives details when indexing fails.
+ * @return YES if indexing succeeds; otherwise NO.
+ */
 - (BOOL)indexListitem:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
 /**
  * @abstract Performs the unindexListitemWithURI operation.
