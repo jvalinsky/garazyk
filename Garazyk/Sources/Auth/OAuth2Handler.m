@@ -1527,10 +1527,10 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     [response setHeader: @"true" forKey: @"Access-Control-Allow-Private-Network"];
   }
 
-  NSString *allowedMethods = [config stringForKey:@"cors.allowed_methods"]
-                                 ?: @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
-  NSString *allowedHeaders = [config stringForKey:@"cors.allowed_headers"]
-                                 ?: @"DPoP, Authorization, Content-Type, *";
+  NSArray *methodsArr = [config arrayForKey:@"cors.allowed_methods"];
+  NSString *allowedMethods = methodsArr ? [methodsArr componentsJoinedByString:@", "] : @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
+  NSArray *headersArr = [config arrayForKey:@"cors.allowed_headers"];
+  NSString *allowedHeaders = headersArr ? [headersArr componentsJoinedByString:@", "] : @"DPoP, Authorization, Content-Type, *";
   NSInteger maxAge = [config integerForKey:@"cors.max_age"] ?: 86400;
 
   [response setHeader:allowedMethods forKey:@"Access-Control-Allow-Methods"];

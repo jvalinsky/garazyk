@@ -37,15 +37,16 @@
     "url": "https://plc.directory",
     "retry_count": 5,
     "retry_delay_ms": 2000
+    /* Example PLC replica config (not enabled in production):
+    ,
+    "replica": {
+      "enabled": false,
+      "upstream_url": "https://plc.directory",
+      "bind_address": "0.0.0.0:2584",
+      "data_dir": "/var/lib/plc-replica"
+    }
+    */
   },
-  /* Example PLC replica config (not enabled in production):
-  "plc_replica": {
-    "enabled": false,
-    "upstream_url": "https://plc.directory",
-    "bind_address": "0.0.0.0:2584",
-    "data_dir": "/var/lib/plc-replica"
-  },
-  */
   "cors": {
     "allowed_origins": [
       "https://witchsky.app",
