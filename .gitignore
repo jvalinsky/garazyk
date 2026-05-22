@@ -67,6 +67,7 @@ docs/.vitepress/cache/
 
 # AI / Agentic Development Tools
 # Per github/gitignore PR #4719: ignore user-local config, keep project-level config
+.antigravitycli/
 
 # Claude Code — local user settings only (project commands/skills/hooks are committed)
 .claude/settings.local.json
@@ -220,6 +221,7 @@ tooling/test-audit-validator/.artifacts/
 
 # Deciduous database (local)
 .deciduous/
+plc/
 plc_data/
 .letta/
 
