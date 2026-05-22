@@ -134,7 +134,10 @@ Deno.test("renderComposeYaml: image-based adapter", () => {
   });
 
   const parsed = parse(yaml) as any;
-  assertEquals(parsed.services["local-pds"].image, "ghcr.io/bluesky-social/atproto/pds:latest");
+  assertEquals(
+    parsed.services["local-pds"].image,
+    "ghcr.io/bluesky-social/atproto/pds:latest",
+  );
   assertEquals(parsed.services["local-pds"].build, undefined);
 });
 
@@ -194,6 +197,43 @@ Deno.test("compileTopology: writes compose file and returns URLs", async () => {
     // Verify the file was written
     const stat = await Deno.stat(result.composeFile);
     assertEquals(stat.isFile, true);
+  } finally {
+    await Deno.remove(runDir, { recursive: true });
+  }
+});
+
+Deno.test("compileTopology: garazyk-default includes garazyk-ui on port 2590", async () => {
+  const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
+  try {
+    const result = await compileTopology({
+      preset: "garazyk-default",
+      runDir,
+      repoRoot: "/Users/jack/Software/garazyk",
+      composeProject: "test",
+    });
+
+    const parsed = parse(await Deno.readTextFile(result.composeFile)) as any;
+    const ui = parsed.services["local-ui"];
+    assertEquals(result.serviceUrls.ui, "http://localhost:2590");
+    assertEquals(result.internalUrls.ui, "http://local-ui:2590");
+    assertEquals(
+      result.manifest.env?.hostRunner.GARAZYK_UI_URL,
+      "http://localhost:2590",
+    );
+    assertEquals(
+      result.manifest.env?.scenario.GARAZYK_UI_ADMIN_PASSWORD,
+      Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
+        Deno.env.get("UI_ADMIN_PASSWORD") ??
+        "admin-localdev",
+    );
+    assertEquals(ui.entrypoint, ["/usr/local/bin/garazyk-ui"]);
+    assertEquals(ui.ports.includes("2590:2590"), true);
+    assertEquals(
+      ui.healthcheck.test.includes("http://localhost:2590/lab"),
+      true,
+    );
+    assertEquals(ui.depends_on["local-pds"].condition, "service_healthy");
+    assertEquals(ui.depends_on["local-appview"].condition, "service_healthy");
   } finally {
     await Deno.remove(runDir, { recursive: true });
   }
@@ -262,8 +302,16 @@ Deno.test("renderComposeYaml: sidecars rendered as separate services", () => {
   assertEquals(!!parsed.services["local-plc"], true);
   assertEquals(!!parsed.services["local-plc-db"], true);
   assertEquals(parsed.services["local-plc-db"].image, "postgres:16-alpine");
-  assertEquals(parsed.services["local-plc-db"].healthcheck.test.join(" "), "CMD-SHELL pg_isready -U plc");
-  assertEquals(parsed.services["local-plc-db"].volumes.includes("ref_plc_pg_data:/var/lib/postgresql/data"), true);
+  assertEquals(
+    parsed.services["local-plc-db"].healthcheck.test.join(" "),
+    "CMD-SHELL pg_isready -U plc",
+  );
+  assertEquals(
+    parsed.services["local-plc-db"].volumes.includes(
+      "ref_plc_pg_data:/var/lib/postgresql/data",
+    ),
+    true,
+  );
 });
 
 Deno.test("renderComposeYaml: customTest health check", () => {
@@ -595,10 +643,27 @@ Deno.test("compileTopology: typed port and volume objects survive registry loadi
 
     const yaml = await Deno.readTextFile(result.composeFile);
     const parsed = parse(yaml) as any;
-    assertEquals(parsed.services["local-appview"].ports.includes("3300:3000"), true);
-    assertEquals(parsed.services["local-appview"].volumes.includes("object_appview_data:/data"), true);
-    assertEquals(parsed.services["local-appview"].volumes.includes("/repo/fixtures:/fixtures:ro"), true);
-    assertEquals(parsed.volumes !== undefined && parsed.volumes["object_appview_data"] !== undefined, true);
+    assertEquals(
+      parsed.services["local-appview"].ports.includes("3300:3000"),
+      true,
+    );
+    assertEquals(
+      parsed.services["local-appview"].volumes.includes(
+        "object_appview_data:/data",
+      ),
+      true,
+    );
+    assertEquals(
+      parsed.services["local-appview"].volumes.includes(
+        "/repo/fixtures:/fixtures:ro",
+      ),
+      true,
+    );
+    assertEquals(
+      parsed.volumes !== undefined &&
+        parsed.volumes["object_appview_data"] !== undefined,
+      true,
+    );
     assertEquals(result.serviceUrls.appview, "http://localhost:3300");
     assertEquals(result.internalUrls.appview, "http://local-appview:3000");
     assertEquals(result.manifest.serviceUrls.appview, "http://localhost:3300");
