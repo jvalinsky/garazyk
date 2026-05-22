@@ -13,7 +13,13 @@ export { XrpcClient, XrpcError } from "./client.ts";
 export type { AgentProxy, TransportResponse } from "./client.ts";
 export { TransportError, TransportLayer } from "./transport.ts";
 export type { RequestOptions } from "./transport.ts";
-export { FirehoseClient, FirehoseEvent } from "./firehose.ts";
+export {
+  FirehoseClient,
+  FirehoseEvent,
+  FirehoseFrameParseError,
+  firehoseEventFromFrame,
+  parseFirehoseFrame,
+} from "./firehose.ts";
 export { RawClient } from "./clients/raw.ts";
 export type {
   DynamicXrpcResponse,
