@@ -73,6 +73,26 @@ static HttpRequest *MikrusRequest(NSDictionary *queryParams) {
     [super tearDown];
 }
 
+- (void)testRateLimitConfigurationDefaults {
+    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    XCTAssertTrue(config.rateLimitEnabled, @"rate limiting should be enabled by default");
+    XCTAssertEqual(config.rateLimitIpLimit, 200, @"default IP limit should be 200");
+    XCTAssertEqual(config.rateLimitIpWindowSeconds, 60, @"default IP window should be 60s");
+}
+
+- (void)testRateLimitConfigurationFromDictionary {
+    // Simulate env var overrides via loadFromDictionary (same code path)
+    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    [config loadFromDictionary:@{
+        @"rate_limit_enabled": @NO,
+        @"rate_limit_ip_limit": @500,
+        @"rate_limit_ip_window": @120
+    }];
+    XCTAssertFalse(config.rateLimitEnabled, @"rate limiting should be disabled");
+    XCTAssertEqual(config.rateLimitIpLimit, 500, @"IP limit should be 500");
+    XCTAssertEqual(config.rateLimitIpWindowSeconds, 120, @"IP window should be 120s");
+}
+
 - (void)testRuntimeHealthEndpoint {
     NSDictionary *config = @{
         @"data_directory": self.tempDir,

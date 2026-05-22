@@ -5,6 +5,7 @@
 #import "Mikrus/MikrusConfiguration.h"
 #import "Mikrus/MikrusDatabase.h"
 #import "Mikrus/MikrusXrpcRoutePack.h"
+#import "Network/RateLimiter.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Debug/GZLogger.h"
@@ -88,6 +89,16 @@
             @"ingest": strongSelf.ingestEngine.isRunning ? @"running" : @"stopped"
         }];
     }];
+
+    // Configure per-IP rate limiting for Mikrus endpoints.
+    // Defaults: 200 req/min per IP (more generous than PDS default of 100).
+    // Override via MIKRUS_RATELIMIT_IP_LIMIT, MIKRUS_RATELIMIT_IP_WINDOW, MIKRUS_RATELIMIT_ENABLED.
+    RateLimiter *rateLimiter = [RateLimiter sharedLimiter];
+    rateLimiter.enabled = config.rateLimitEnabled;
+    rateLimiter.ipLimit = config.rateLimitIpLimit;
+    rateLimiter.ipWindowSeconds = config.rateLimitIpWindowSeconds;
+    NSString *rlDbPath = [config.dataDirectory stringByAppendingPathComponent:@"ratelimits.db"];
+    [rateLimiter reconfigureDatabasePath:rlDbPath];
 
     MikrusXrpcRoutePack *routes = [[MikrusXrpcRoutePack alloc] initWithDatabase:self.database];
     [routes registerRoutesWithServer:self.httpServer];

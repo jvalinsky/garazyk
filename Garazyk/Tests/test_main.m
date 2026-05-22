@@ -1234,7 +1234,7 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
-      // --gated
+      // --gated [MODE] or --gated=MODE
       if ([arg isEqualToString:@"--gated"] && i + 1 < argc) {
         NSString *mode = [NSString stringWithUTF8String:argv[i + 1]];
         if ([mode isEqualToString:@"run"]) {
@@ -1245,6 +1245,17 @@ int main(int argc, char *argv[]) {
           gatedMode = PDSGatedModeSkip;
         }
         i++;
+        continue;
+      }
+      if ([arg hasPrefix:@"--gated="]) {
+        NSString *mode = [arg substringFromIndex:8];
+        if ([mode isEqualToString:@"run"]) {
+          gatedMode = PDSGatedModeRun;
+        } else if ([mode isEqualToString:@"include"]) {
+          gatedMode = PDSGatedModeMarkSkip;
+        } else {
+          gatedMode = PDSGatedModeSkip;
+        }
         continue;
       }
 
@@ -1260,7 +1271,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "  -XCTest FILTER           Legacy XCTest filter (ClassName[/method])\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "Execution:\n");
-        fprintf(stderr, "      --gated=MODE         Gated test mode: skip (default), run, include\n");
+        fprintf(stderr, "      --gated MODE         Gated test mode: skip (default), run, include\n");
+        fprintf(stderr, "      --gated=MODE         Equivalent to --gated MODE\n");
         fprintf(stderr, "  -t, --timeout SECS       Per-test timeout in seconds (0 = none)\n");
         fprintf(stderr, "      --shuffle            Randomize test order\n");
         fprintf(stderr, "      --seed N             Set shuffle seed for reproducibility\n");
