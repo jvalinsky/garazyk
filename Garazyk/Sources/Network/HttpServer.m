@@ -45,6 +45,9 @@
 @property(nonatomic, strong, nullable) NSData *pendingGeneratedChunk;
 @property(nonatomic, assign) NSUInteger pendingGeneratedChunkOffset;
 @property(nonatomic, assign) NSUInteger queueByteSize;
+@property(nonatomic, assign) BOOL isRangeRequest;
+@property(nonatomic, assign) NSUInteger rangeStart;
+@property(nonatomic, assign) NSUInteger rangeLength;
 @end
 
 @interface HttpConnectionState : NSObject
@@ -657,7 +660,14 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     NSNumber *fileSize = attributes[NSFileSize];
     NSUInteger bodyLength =
         fileSize ? (NSUInteger)fileSize.unsignedLongLongValue : 0;
-    queueItem.headerData = [response serializeHeadersForBodyLength:bodyLength];
+    if (response.isRangeRequest) {
+      queueItem.isRangeRequest = YES;
+      queueItem.rangeStart = response.rangeStart;
+      queueItem.rangeLength = response.rangeLength;
+      queueItem.headerData = [response serializeHeadersForBodyLength:response.rangeLength];
+    } else {
+      queueItem.headerData = [response serializeHeadersForBodyLength:bodyLength];
+    }
     queueItem.bodyFilePath = bodyFilePath;
     queueItem.deleteBodyFileAfterSend = response.deleteBodyFileAfterSend;
     queueItem.closeAfterSend = !response.keepAlive;
@@ -725,6 +735,26 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     return;
   }
 
+  __block NSUInteger remainingBytes = queueItem.isRangeRequest ? queueItem.rangeLength : NSUIntegerMax;
+  if (queueItem.isRangeRequest) {
+    @try {
+      [fileHandle seekToFileOffset:queueItem.rangeStart];
+    } @catch (__unused NSException *exception) {
+      GZ_LOG_HTTP_ERROR(@"Seek failed on file path %@", queueItem.bodyFilePath);
+      @try {
+        [fileHandle closeFile];
+      } @catch (__unused NSException *e) {
+      }
+      if (queueItem.deleteBodyFileAfterSend &&
+          queueItem.bodyFilePath.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath
+                                                   error:nil];
+      }
+      [connection cancel];
+      return;
+    }
+  }
+
   __weak typeof(self) weakSelf = self;
   __block void (^sendNextChunk)(void) = nil;
   sendNextChunk = ^{
@@ -739,7 +769,23 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     }
 
     @autoreleasepool {
-      NSData *chunk = [fileHandle readDataOfLength:kHttpFileSendChunkSize];
+      NSUInteger chunkToRead = kHttpFileSendChunkSize;
+      if (queueItem.isRangeRequest) {
+        if (remainingBytes == 0) {
+          @try {
+            [fileHandle closeFile];
+          } @catch (__unused NSException *exception) {
+          }
+          [strongSelf finalizeQueuedResponseSend:queueItem
+                                         forState:state
+                                       connection:connection];
+          sendNextChunk = nil;
+          return;
+        }
+        chunkToRead = MIN(kHttpFileSendChunkSize, remainingBytes);
+      }
+
+      NSData *chunk = [fileHandle readDataOfLength:chunkToRead];
       if (chunk.length == 0) {
         @try {
           [fileHandle closeFile];
@@ -750,6 +796,10 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                                      connection:connection];
         sendNextChunk = nil;
         return;
+      }
+
+      if (queueItem.isRangeRequest) {
+        remainingBytes -= chunk.length;
       }
 
       [connection sendData:chunk
@@ -892,9 +942,106 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   sendNextChunk();
 }
 
+static BOOL ParseHttpRangeHeader(NSString *rangeHeader, NSUInteger fileSize, NSUInteger *outStart, NSUInteger *outLength) {
+    if (!rangeHeader || ![rangeHeader hasPrefix:@"bytes="]) {
+        return NO;
+    }
+    
+    NSString *bytesSpecifier = [rangeHeader substringFromIndex:6];
+    NSArray *ranges = [bytesSpecifier componentsSeparatedByString:@","];
+    if (ranges.count != 1) {
+        // Multi-range is not supported for simplicity
+        return NO;
+    }
+    
+    NSString *rangeStr = [ranges[0] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    NSRange dashRange = [rangeStr rangeOfString:@"-"];
+    if (dashRange.location == NSNotFound) {
+        return NO;
+    }
+    
+    NSString *startStr = [rangeStr substringToIndex:dashRange.location];
+    NSString *endStr = [rangeStr substringFromIndex:dashRange.location + 1];
+    
+    NSInteger start = -1;
+    NSInteger end = -1;
+    
+    if (startStr.length > 0) {
+        start = (NSInteger)startStr.longLongValue;
+    }
+    if (endStr.length > 0) {
+        end = (NSInteger)endStr.longLongValue;
+    }
+    
+    if (start < 0 && end < 0) {
+        return NO;
+    }
+    
+    NSUInteger finalStart = 0;
+    NSUInteger finalEnd = 0;
+    
+    if (start >= 0) {
+        finalStart = (NSUInteger)start;
+        if (end >= 0) {
+            finalEnd = MIN((NSUInteger)end, fileSize - 1);
+        } else {
+            finalEnd = fileSize - 1;
+        }
+    } else {
+        // suffix-byte-range-spec: e.g. -500 (last 500 bytes)
+        NSUInteger suffix = (NSUInteger)end;
+        if (suffix >= fileSize) {
+            finalStart = 0;
+        } else {
+            finalStart = fileSize - suffix;
+        }
+        finalEnd = fileSize - 1;
+    }
+    
+    if (finalStart >= fileSize) {
+        return NO;
+    }
+    
+    if (finalStart > finalEnd) {
+        return NO;
+    }
+    
+    *outStart = finalStart;
+    *outLength = finalEnd - finalStart + 1;
+    return YES;
+}
+
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {
   self.requestDispatcher.requestHandler = self.requestHandler;
-  return [self.requestDispatcher dispatchRequest:request];
+  HttpResponse *response = [self.requestDispatcher dispatchRequest:request];
+  
+  if (response.statusCode == HttpStatusOK && response.bodyFilePath.length > 0) {
+      NSString *rangeHeader = [request headerForKey:@"Range"];
+      if (rangeHeader) {
+          NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:response.bodyFilePath error:nil];
+          NSNumber *fileSizeAttr = attributes[NSFileSize];
+          if (fileSizeAttr) {
+              NSUInteger fileSize = fileSizeAttr.unsignedLongLongValue;
+              NSUInteger start = 0;
+              NSUInteger length = 0;
+              if (ParseHttpRangeHeader(rangeHeader, fileSize, &start, &length)) {
+                  response.isRangeRequest = YES;
+                  response.rangeStart = start;
+                  response.rangeLength = length;
+                  response.statusCode = HttpStatusPartialContent;
+                  
+                  // Set Content-Range header
+                  NSString *contentRange = [NSString stringWithFormat:@"bytes %lu-%lu/%lu", 
+                                            (unsigned long)start, 
+                                            (unsigned long)(start + length - 1), 
+                                            (unsigned long)fileSize];
+                  [response setHeader:contentRange forKey:@"Content-Range"];
+              }
+          }
+      }
+  }
+  
+  return response;
 }
 
 - (void)stop {

@@ -96,7 +96,7 @@ export async function run(): Promise<ScenarioResult> {
       }
 
       assert.isTrue(res.status === 200, `status=${res.status}`);
-      assert.isTrue(metadata.client_id, "missing client_id");
+      assert.isTrue(typeof metadata.client_id === "string" && metadata.client_id.length > 0, "missing client_id");
       assert.isTrue(
         metadata.grant_types?.includes("authorization_code"),
         "missing auth_code grant",

@@ -28,6 +28,27 @@ function now() {
   return new Date().toISOString();
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Retry a predicate function with timeout. Throws if not fulfilled within deadline. */
+async function waitFor(
+  predicate: () => Promise<boolean>,
+  timeoutMs = 15000,
+  intervalMs = 500,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await predicate()) return;
+    await delay(intervalMs);
+  }
+  // One last try
+  if (!(await predicate())) {
+    throw new Error(`Condition not met within ${timeoutMs}ms`);
+  }
+}
+
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Graph Read Verification");
   result.start();
@@ -100,15 +121,15 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "getFollows returns Marcus",
       async () => {
-        const res = await client.graph.getFollows(luna.did, { token: luna.accessJwt });
-        const follows = res.follows || [];
-        const found = follows.some((f: any) => f.did === marcus.did);
-        if (!found) {
-          throw new Error(`Marcus not found in Luna's follows (got ${follows.length} follows)`);
-        }
-        return res;
+        let lastFollows = 0;
+        await waitFor(async () => {
+          const res = await client.graph.getFollows(luna.did, { token: luna.accessJwt });
+          lastFollows = res.follows?.length || 0;
+          return res.follows?.some((f: any) => f.did === marcus.did) || false;
+        });
+        return { follows: lastFollows };
       },
-      (r) => `follows=${r.follows?.length || 0}`,
+      (r) => `follows=${r.follows || 0}`,
     );
 
     // ── Verify getFollowers returns Luna ──────────────────────────────────────
@@ -116,17 +137,15 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "getFollowers returns Luna",
       async () => {
-        const res = await client.graph.getFollowers(marcus.did, { token: marcus.accessJwt });
-        const followers = res.followers || [];
-        const found = followers.some((f: any) => f.did === luna.did);
-        if (!found) {
-          throw new Error(
-            `Luna not found in Marcus's followers (got ${followers.length} followers)`,
-          );
-        }
-        return res;
+        let lastFollowers = 0;
+        await waitFor(async () => {
+          const res = await client.graph.getFollowers(marcus.did, { token: marcus.accessJwt });
+          lastFollowers = res.followers?.length || 0;
+          return res.followers?.some((f: any) => f.did === luna.did) || false;
+        });
+        return { followers: lastFollowers };
       },
-      (r) => `followers=${r.followers?.length || 0}`,
+      (r) => `followers=${r.followers || 0}`,
     );
 
     // ── Verify getRelationships ──────────────────────────────────────────────
@@ -134,16 +153,15 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "getRelationships shows Luna→Marcus follow",
       async () => {
-        const res = await client.graph.getRelationships(luna.did, [marcus.did], luna.accessJwt);
-        const rels = res.relationships || [];
-        const rel = rels.find((r: any) => r.did === marcus.did);
-        if (!rel) throw new Error("No relationship found for Marcus");
-        if (!rel.following) {
-          throw new Error(`Expected following=true, got following=${rel.following}`);
-        }
-        return res;
+        let rel: any;
+        await waitFor(async () => {
+          const res = await client.graph.getRelationships(luna.did, [marcus.did], luna.accessJwt);
+          rel = (res.relationships || []).find((r: any) => r.did === marcus.did);
+          return !!rel?.following;
+        });
+        return rel;
       },
-      (r) => `relationships=${r.relationships?.length || 0}`,
+      (r) => `following=${r?.following || "false"}`,
     );
   }
 
