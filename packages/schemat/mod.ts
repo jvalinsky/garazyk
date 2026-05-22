@@ -92,6 +92,7 @@ export type {
   TopologyDiagnosticProbe,
   TopologyHealthProbe,
   TopologyManifest,
+  TopologyManifestV1,
   TopologyManifestV2,
   TopologyPreset,
   TopologyResolveOptions,
@@ -99,11 +100,13 @@ export type {
   WebClientTopology,
 } from "./topology.ts";
 export type {
+  InheritedServiceSpec,
+  NormalizedTopologyPreset,
   ResolvedTopologyService,
   ResourceHints,
   SourceBuildSpec,
 } from "./topology_schema.ts";
-export type { CompilerOptions, CompilerResult } from "./topology_compiler.ts";
+export type { CompilerOptions, CompilerResult, OtelOptions } from "./topology_compiler.ts";
 export type {
   AnyCapability,
   CapabilityForRole,
@@ -133,6 +136,7 @@ export type {
   PortValue,
   RegisteredTopologyPreset,
   ScenarioRequirement,
+  serviceRefBrand,
   ServiceRef,
   ServiceSource,
   TopologyDefinition,

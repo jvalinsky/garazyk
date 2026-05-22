@@ -352,6 +352,7 @@ export class ContainerStatsSampler {
     });
   }
 
+  /** Run a scheduled stat collection sampling cycle. */
   private runScheduledSample(): void {
     if (this.sampleInFlight !== null) return;
     const sample = this.sample().catch((e) => {
@@ -366,6 +367,7 @@ export class ContainerStatsSampler {
     });
   }
 
+  /** Compute and record the delta value for a counter metric. */
   private recordCounterDelta(
     metricName: string,
     containerId: string,

@@ -27,6 +27,7 @@ export type {
   ContainerLogsOptions,
   ContainerStats,
   ContainerSummary,
+  DockerApiClientOptions,
   DockerEvent,
   DockerVersion,
   PortConflict,
