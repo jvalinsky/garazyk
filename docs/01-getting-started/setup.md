@@ -45,8 +45,8 @@ cmake --build build-linux -j
 ## Run a Scenario
 
 ```bash
-# Start Docker services
-docker compose up -d
+# Start Docker services via the local network script
+./scripts/scenarios/setup_local_network.sh
 
 # Run the scenario suite
 deno task hamownia
