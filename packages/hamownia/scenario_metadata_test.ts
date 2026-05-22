@@ -103,6 +103,16 @@ Deno.test("getRequires: returns multiple requirements for scenario 09", () => {
   assertEquals(reqs.length >= 3, true);
 });
 
+Deno.test("getRequires: scenario 11 requires the garazyk-ui role", () => {
+  const reqs = getRequires("11");
+  assertEquals(reqs, [
+    requires(Role.ui, Cap.ui.smoke),
+    requires(Role.ui, Cap.ui.login),
+    requires(Role.ui, Cap.ui.oauth),
+    requires(Role.ui, Cap.ui.admin),
+  ]);
+});
+
 // ---------------------------------------------------------------------------
 // getTimeout
 // ---------------------------------------------------------------------------
@@ -130,7 +140,9 @@ Deno.test("formatRequirement: formats role:capability as string", () => {
 // hasRequirement
 // ---------------------------------------------------------------------------
 
-function makeTopology(roleCapMap: Record<string, string[]>): import("@garazyk/schemat").Topology {
+function makeTopology(
+  roleCapMap: Record<string, string[]>,
+): import("@garazyk/schemat").Topology {
   const capabilitiesByRole: Record<string, Set<string>> = {};
   const allCaps = new Set<string>();
   for (const [role, caps] of Object.entries(roleCapMap)) {
@@ -184,7 +196,9 @@ Deno.test("missingRequirements: returns empty when all requirements are met", ()
     plc: [Cap.plc.didResolution],
     relay: [Cap.relay.subscribeRepos],
   });
-  const scenario = makeScenarioInfo("test", [requires(Role.plc, Cap.plc.didResolution)]);
+  const scenario = makeScenarioInfo("test", [
+    requires(Role.plc, Cap.plc.didResolution),
+  ]);
   assertEquals(missingRequirements(scenario, topo), []);
 });
 
@@ -205,13 +219,17 @@ Deno.test("missingRequirements: returns missing requirements", () => {
 
 Deno.test("isScenarioCompatible: returns true when all requirements are met", () => {
   const topo = makeTopology({ plc: [Cap.plc.didResolution] });
-  const scenario = makeScenarioInfo("01", [requires(Role.plc, Cap.plc.didResolution)]);
+  const scenario = makeScenarioInfo("01", [
+    requires(Role.plc, Cap.plc.didResolution),
+  ]);
   assertEquals(isScenarioCompatible(scenario, topo), true);
 });
 
 Deno.test("isScenarioCompatible: returns false when a requirement is missing", () => {
   const topo = makeTopology({});
-  const scenario = makeScenarioInfo("09", [requires(Role.relay, Cap.relay.subscribeRepos)]);
+  const scenario = makeScenarioInfo("09", [
+    requires(Role.relay, Cap.relay.subscribeRepos),
+  ]);
   assertEquals(isScenarioCompatible(scenario, topo), false);
 });
 
@@ -223,6 +241,8 @@ Deno.test("isScenarioCompatible: scenario with no requirements is always compati
 
 Deno.test("isScenarioCompatible: returns false when pds2 scenario but topology lacks pds2", () => {
   const topo = makeTopology({ plc: [Cap.plc.didResolution] }); // no pds2 key
-  const scenario = makeScenarioInfo("05", [requires(Role.plc, Cap.plc.didResolution)], true);
+  const scenario = makeScenarioInfo("05", [
+    requires(Role.plc, Cap.plc.didResolution),
+  ], true);
   assertEquals(isScenarioCompatible(scenario, topo), false);
 });
