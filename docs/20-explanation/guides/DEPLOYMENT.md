@@ -68,6 +68,51 @@ Under the `oauth` configuration map in JSON configuration:
 > Database-registered clients are implicitly trusted and allowed under both policies.
 > Dynamic untrusted client metadata will automatically have their display names (`client_name`) sanitized to their raw client ID HTTPS URLs to protect against phishing/spoofing attacks.
 
+## JSON Configuration
+
+Garazyk services are configured via JSON files (such as `config/production.json`). The system parses these configs strictly with strong-type verification while providing convenient compatibility fallbacks.
+
+### Key Blocks
+
+#### 1. Remote AppView Block (`appview`)
+The remote AppView query and validation block is defined using lowercase keys:
+```json
+"appview": {
+  "url": "https://api.bsky.app",
+  "did": "did:web:api.bsky.app"
+}
+```
+* **Fallback compatibility**: The PDS config parser supports lookup compatibility with camelCase `"appView"` should downstream environments define it.
+
+#### 2. CORS Block (`cors`)
+Configure CORS headers using native JSON arrays and integers. The type-safe parser extracts arrays and joins elements properly under the hood:
+```json
+"cors": {
+  "allowed_origins": ["https://witchsky.app", "*"],
+  "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+  "allowed_headers": ["DPoP", "Authorization", "Content-Type", "*"],
+  "max_age": 86400
+}
+```
+
+#### 3. PLC Replica Nested Configuration (`plc`)
+To enable local replica lookup, nest the replica configuration block directly inside the `"plc"` block under the `"replica"` key:
+```json
+"plc": {
+  "url": "https://plc.directory",
+  "replica": {
+    "enabled": false,
+    "upstream_url": "https://plc.directory",
+    "bind_address": "0.0.0.0:2584",
+    "data_dir": "/var/lib/plc-replica"
+  }
+}
+```
+
+### AppView Scenario Key Fallbacks
+In scenario and test configurations, the AppView configuration parser supports both standard **dotted namespace** keys (`plc.url`, `backfill.enabled`, etc.) and flat **snake_case fallbacks** (`plc_url`, `backfill_enabled`, etc.) for seamless configuration of local end-to-end testing topologies.
+
+
 ## Database Backups
 
 SQLite databases are stored in the data directory. Use `sqlite3 .backup` or file-level
