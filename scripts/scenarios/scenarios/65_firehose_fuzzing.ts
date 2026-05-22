@@ -12,7 +12,7 @@
  */
 
 import { encode } from "cborg";
-import { FirehoseClient } from "../../lib/deno/firehose.ts";
+import { FirehoseClient, FirehoseEvent } from "../../lib/deno/firehose.ts";
 import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -50,14 +50,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const troll = getCharacter("troll");
   const session = await timedCall(result, "Create troll account", async () => {
-    try {
-      return await client.accounts.createAccount(troll.handle, troll.email, troll.password);
-    } catch (e: any) {
-      if (e.message?.includes("already exists")) {
-        return await client.accounts.createSession(troll.handle, troll.password);
-      }
-      throw e;
-    }
+    return await client.accounts.createAccount(troll.handle, troll.email, troll.password);
   });
 
   if (!session) {
@@ -69,8 +62,8 @@ export async function run(): Promise<ScenarioResult> {
   troll.accessJwt = session.accessJwt;
 
   const fh = new FirehoseClient();
-  const events: any[] = [];
-  const cb = (e: any) => { events.push(e); };
+  const events: FirehoseEvent[] = [];
+  const cb = (e: FirehoseEvent) => { events.push(e); };
 
   // ── Phase A: Gap fuzzing ──────────────────────────────────────────────────
   await timedCall(result, "Phase A: Gap frames (seq=100, seq=1e12)", async () => {
@@ -121,7 +114,7 @@ export async function run(): Promise<ScenarioResult> {
   // ── Verify event tracking consistency ─────────────────────────────────────
   await timedCall(result, "Verify event tracking consistency", async () => {
     assert.isTrue(events.length > 0, "Expected events to be collected");
-    const seqs = events.map((e: any) => e.seq);
+    const seqs = events.map((e: FirehoseEvent) => e.seq);
     assert.isTrue(seqs.length >= 4, `Expected at least 4 events, got ${seqs.length}`);
   });
 
