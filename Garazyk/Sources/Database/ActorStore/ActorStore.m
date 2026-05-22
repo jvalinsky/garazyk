@@ -590,10 +590,40 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 static BOOL isValidTableName(NSString *n) { return [@[@"actor_status", @"records", @"blocks", @"blobs", @"migrations", @"account", @"repo", @"cid_index", @"collection_index"] containsObject:n]; }
 static BOOL isValidColumnName(NSString *n) { return [@[@"did", @"collection", @"rkey", @"cid", @"value", @"created_at", @"indexed_at", @"takedown_ref", @"blob_data", @"mimeType", @"size", @"height", @"rev", @"handle"] containsObject:n]; }
-static BOOL isValidColumnType(NSString *t) { return YES; } // Simplified for now since we whitelist usage
+static BOOL isValidColumnType(NSString *t) {
+    static NSSet<NSString *> *allowedTypes;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        allowedTypes = [NSSet setWithArray:@[
+            @"TEXT",
+            @"INTEGER",
+            @"REAL",
+            @"BLOB",
+            @"NUMERIC",
+            @"TEXT NOT NULL",
+            @"INTEGER NOT NULL",
+            @"REAL NOT NULL",
+            @"BLOB NOT NULL",
+            @"NUMERIC NOT NULL",
+            @"TEXT DEFAULT ''",
+            @"INTEGER DEFAULT 0",
+            @"REAL DEFAULT 0",
+            @"NUMERIC DEFAULT 0",
+            @"TEXT NOT NULL DEFAULT ''",
+            @"INTEGER NOT NULL DEFAULT 0",
+            @"REAL NOT NULL DEFAULT 0",
+            @"NUMERIC NOT NULL DEFAULT 0",
+        ]];
+    });
+    NSString *normalized = [[t ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
+    while ([normalized containsString:@"  "]) {
+        normalized = [normalized stringByReplacingOccurrencesOfString:@"  " withString:@" "];
+    }
+    return [allowedTypes containsObject:normalized];
+}
 
 - (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type {
-    if (!isValidTableName(tableName) || !isValidColumnName(columnName)) return NO;
+    if (!isValidTableName(tableName) || !isValidColumnName(columnName) || !isValidColumnType(type)) return NO;
     NSArray *results = [self.database executeParameterizedQuery:@"SELECT name FROM sqlite_master WHERE type='table' AND name=?" params:@[tableName] error:nil];
     if (results.count == 0) return YES;
     NSArray *info = [self.database executeUnsafeRawQuery:[NSString stringWithFormat:@"PRAGMA table_info(%@)", tableName] error:nil];

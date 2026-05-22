@@ -4,6 +4,7 @@
 #import "Compat/PDSTypes.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Core/ATProtoValidator.h"
 #import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
@@ -82,6 +83,11 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
     if ([did isEqualToString:@"__service__"]) {
         return [self.dbDirectory stringByAppendingPathComponent:@"service.db"];
     }
+    NSError *didError = nil;
+    if (![ATProtoValidator validateDID:did error:&didError]) {
+        GZ_LOG_DB_ERROR(@"Refusing to derive actor store path for invalid DID %@: %@", did, didError.localizedDescription);
+        return nil;
+    }
 
     // Shard by DID method and 2-char prefix of the method-specific identifier:
     // did:plc:z72i7h... → {dbDir}/plc/z7/did:plc:z72i7h...
@@ -134,6 +140,12 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         }
 
         dbPath = [self dbPathForDid:did];
+        if (dbPath.length == 0) {
+            blockError = [NSError errorWithDomain:PDSDatabasePoolErrorDomain
+                                             code:1001
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID for actor store path"}];
+            return;
+        }
         GZ_LOG_DB_DEBUG(@"Opening store at path: %@ (exists: %d)", dbPath,
                          [[NSFileManager defaultManager] fileExistsAtPath:dbPath]);
 

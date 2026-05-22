@@ -74,20 +74,26 @@
 
 - (void)testActorStorePathForStandardDidShardsByMethodAndPrefix {
     ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
-    NSString *result = [paths actorStorePathForDid:@"did:plc:abcdef1234"];
-    XCTAssertEqualObjects(result, @"/var/pds/plc/ab/did:plc:abcdef1234");
+    NSString *result = [paths actorStorePathForDid:@"did:plc:abcdefghijklmnopqrstuvwx"];
+    XCTAssertEqualObjects(result, @"/var/pds/plc/ab/did:plc:abcdefghijklmnopqrstuvwx");
 }
 
-- (void)testActorStorePathEqualsResultForNonStandardDid {
+- (void)testActorStorePathRejectsNonDidInput {
     ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
     NSString *result = [paths actorStorePathForDid:@"abc"];
-    XCTAssertEqualObjects(result, @"/var/pds/ab/abc");
+    XCTAssertNil(result);
 }
 
-- (void)testActorStorePathEqualsResultForEmptyDid {
+- (void)testActorStorePathRejectsEmptyDid {
     ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
     NSString *result = [paths actorStorePathForDid:@""];
-    XCTAssertEqualObjects(result, @"/var/pds");
+    XCTAssertNil(result);
+}
+
+- (void)testActorStorePathRejectsTraversalDid {
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
+    NSString *result = [paths actorStorePathForDid:@"did:plc:../../service"];
+    XCTAssertNil(result);
 }
 
 - (void)testKeyPathForDid {
