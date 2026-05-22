@@ -784,16 +784,44 @@
 }
 
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data {
+    return [self deserializeFromCBOR:data blockProvider:nil];
+}
+
++ (nullable instancetype)deserializeFromCBOR:(NSData *)data
+                               blockProvider:(nullable MSTBlockProvider)blockProvider {
     if (!data) return nil;
     
-    MSTNode *rootNode = [self deserializeNodeFromCBOR:data];
+    MSTNode *rootNode = [self deserializeNodeFromCBOR:data blockProvider:blockProvider];
     if (!rootNode) return nil;
     
-    // Store original CBOR and compute CID to preserve it
-    rootNode.originalCBOR = data;
-    rootNode.originalCID = [CID cidWithDigest:[CID sha256Digest:data] codec:0x71];
-    
     return [[MST alloc] initWithRootNode:rootNode];
+}
+
++ (nullable MSTNode *)deserializeNodeFromCBOR:(NSData *)data
+                                blockProvider:(nullable MSTBlockProvider)blockProvider {
+    MSTNode *node = [self deserializeNodeFromCBOR:data];
+    if (!node) return nil;
+    
+    // Recursively resolve left subtree CID
+    if (node.leftCID && blockProvider) {
+        NSData *leftData = blockProvider(node.leftCID);
+        if (leftData) {
+            node.internalLeft = [self deserializeNodeFromCBOR:leftData blockProvider:blockProvider];
+        }
+    }
+    
+    // Recursively resolve each entry's subtree CID
+    for (NSUInteger i = 0; i < node.internalEntries.count; i++) {
+        MSTNodeEntry *entry = node.internalEntries[i];
+        if (entry.treeCID && blockProvider) {
+            NSData *childData = blockProvider(entry.treeCID);
+            if (childData) {
+                entry.internalTree = [self deserializeNodeFromCBOR:childData blockProvider:blockProvider];
+            }
+        }
+    }
+    
+    return node;
 }
 
 + (nullable MSTNode *)deserializeNodeFromCBOR:(NSData *)data {
