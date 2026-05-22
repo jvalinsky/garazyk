@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ATProtoDataPaths.h"
+#import "Core/ATProtoValidator.h"
 
 @implementation ATProtoDataPaths
 
@@ -47,6 +48,14 @@
 }
 
 - (NSString *)actorStorePathForDid:(NSString *)did {
+    if ([did isEqualToString:@"__service__"]) {
+        return [[self.baseDirectory stringByAppendingPathComponent:@"service"]
+                stringByAppendingPathComponent:@"service.db"];
+    }
+    if (![ATProtoValidator validateDID:did error:nil]) {
+        return nil;
+    }
+
     // Parse did:<method>:<method-specific-id>
     // Shard into {base}/{method}/{2-char-prefix}/{did}
     NSRange firstColon = [did rangeOfString:@":"];
