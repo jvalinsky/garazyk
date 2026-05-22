@@ -1,5 +1,5 @@
 import { encode } from "cborg";
-import { parseFirehoseFrame, FirehoseFrameParseError } from "@garazyk/gruszka/firehose.ts";
+import { parseFirehoseFrame, FirehoseFrameParseError } from "../../lib/deno/firehose.ts";
 import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
