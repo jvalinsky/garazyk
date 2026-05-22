@@ -64,7 +64,7 @@ Inbound links: **15**
 
 ## `docs/11-reference/deno-packages.md`
 
-Inbound links: **5**
+Inbound links: **6**
 
 - [README.md](../../README.md)
 - [docs/index.md](../index.md)
@@ -87,6 +87,14 @@ Inbound links: **8**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/root-entrypoints.md](root-entrypoints.md)
 - [scripts/docs/README.md](../../scripts/docs/README.md)
+
+## `docs/11-reference/lexicon-resolution.md`
+
+Inbound links: **4**
+
+- [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md)
+- [docs/index.md](../index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
 
 ## `docs/11-reference/source-adjacent-documentation.md`
 
@@ -133,7 +141,7 @@ Inbound links: **2**
 
 ## `docs/archive/planning/README.md`
 
-Inbound links: **8**
+Inbound links: **40**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -156,7 +164,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **76**
+Inbound links: **79**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -175,12 +183,139 @@ Inbound links: **5**
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/plans/e2e-006-chat-allow-incoming.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-026-appview-ingest-load.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-030-temporal-distortion.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-033-firehose-backpressure.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-039-list-management-handlers.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-043-multi-device-sessions.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-045-labeler-subscription.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-051-blob-gc-keepalive.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-053-twilio-path-fix.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-054-suspension-enforcement.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-055-takedown-enforcement.md`
+
+Inbound links: **6**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-058-account-delete-cascade.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-060-mikrus-service.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-061-graph-read-verification.md`
+
+Inbound links: **4**
+
+- [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/e2e-failure-remediation.md`
+
+Inbound links: **16**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/plans/next-steps.md`
 
 Inbound links: **4**
 
 - [docs/plans/deno-packages-next-steps.md](../plans/deno-packages-next-steps.md)
 - [docs/plans/tsdoc-revision-plan.md](../plans/tsdoc-revision-plan.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/remaining-scenario-failures.md`
+
+Inbound links: **2**
+
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
@@ -280,6 +415,13 @@ Inbound links: **3**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 - [docs/repo-index/index.md](index.md)
+
+## `docs/reports/2026-05-21-e2e-run.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/reports/docs/link-graph-report.md`
 
