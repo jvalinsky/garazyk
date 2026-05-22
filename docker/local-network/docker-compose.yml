@@ -64,6 +64,7 @@ services:
       - PDS_RUNNING_TESTS=1
       - PDS_USE_KEYCHAIN=false
       - PDS_ADMIN_PASSWORD=admin-localdev
+      - GARAZYK_OAUTH_HOST_MAP=http://127.0.0.1:8080=http://oauth-client:8080
       - PDS_PHONE_VERIFICATION_PROVIDER=twilio
       - TWILIO_ACCOUNT_SID=AC00000000000000000000000000000000
       - TWILIO_AUTH_TOKEN=SK00000000000000000000000000000000
@@ -348,6 +349,30 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2590/admin"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - local_net
+
+  oauth-client:
+    build:
+      context: ./oauth-client
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      local-pds:
+        condition: service_healthy
+      local-plc:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "python3"
+        - "-c"
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/client-metadata.json', timeout=2).read()"
       interval: 5s
       timeout: 3s
       retries: 10

@@ -17,7 +17,11 @@
  */
 
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export {
+  ScenarioResult,
+  StepResult,
+  StepStatus,
+} from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -27,6 +31,52 @@ import { chromium } from "npm:playwright";
 
 const PDS_URL = SERVICE_URLS.pds;
 const PLC_URL = SERVICE_URLS.plc;
+
+function recent(items: string[], limit = 12): string {
+  return items.slice(-limit).join("\n");
+}
+
+async function pageState(page: any): Promise<string> {
+  let status = "<unavailable>";
+  try {
+    status = await page.locator("#status").innerText({ timeout: 1000 });
+  } catch {
+    // The browser may be on the PDS authorization page or a failed navigation.
+  }
+
+  return `url=${page.url()}\nstatus=${status}`;
+}
+
+async function waitForOAuthClientOutcome(
+  page: any,
+): Promise<"profile" | "failure"> {
+  const profilePromise = page.locator("#profile").waitFor({
+    state: "visible",
+    timeout: 10000,
+  }).then(() => "profile" as const).catch(() => "failure" as const);
+  const failurePromise = (async () => {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      try {
+        const status = await page.locator("#status").innerText({
+          timeout: 500,
+        });
+        if (
+          status.includes("Authorization failed") ||
+          status.includes("Sign in failed")
+        ) {
+          return "failure" as const;
+        }
+      } catch {
+        // Page may still be navigating between the PDS and client.
+      }
+      await page.waitForTimeout(250);
+    }
+    return "failure" as const;
+  })();
+
+  return await Promise.race([profilePromise, failurePromise]);
+}
 
 /**
  * Executes the scenario logic.
@@ -43,7 +93,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create account",
     async () => {
-      return await pds.accounts.createAccount(luna.handle, luna.email, luna.password);
+      return await pds.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -59,7 +113,10 @@ export async function run(): Promise<ScenarioResult> {
     "Verify account resolution",
     async () => {
       const res = await pds.identity.resolveHandle(luna.handle);
-      assert.isTrue(res.did === luna.did, `DID mismatch: expected ${luna.did}, got ${res.did}`);
+      assert.isTrue(
+        res.did === luna.did,
+        `DID mismatch: expected ${luna.did}, got ${res.did}`,
+      );
       return res;
     },
     (r) => `handle ${luna.handle} -> ${r.did}`,
@@ -75,7 +132,10 @@ export async function run(): Promise<ScenarioResult> {
       const pdsEndpoint = services.find((s: any) =>
         s.id === "#atproto_pds" || s.id.includes("atproto_pds")
       )?.serviceEndpoint;
-      assert.isTrue(typeof pdsEndpoint === "string" && pdsEndpoint.length > 0, "PDS serviceEndpoint not found in DID doc");
+      assert.isTrue(
+        typeof pdsEndpoint === "string" && pdsEndpoint.length > 0,
+        "PDS serviceEndpoint not found in DID doc",
+      );
       return { pdsEndpoint };
     },
     (r) => `serviceEndpoint=${r.pdsEndpoint}`,
@@ -85,12 +145,21 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Protected resource metadata",
     async () => {
-      const res = await fetch(`${PDS_URL}/.well-known/oauth-protected-resource`, {
-        headers: { "Accept": "application/json", "Origin": SERVICE_URLS.oauthClient },
-      });
+      const res = await fetch(
+        `${PDS_URL}/.well-known/oauth-protected-resource`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "Origin": SERVICE_URLS.oauthClient,
+          },
+        },
+      );
       const body = await res.json();
       assert.isTrue(res.status === 200, `status=${res.status}`);
-      assert.isTrue(body.resource === PDS_URL, `unexpected resource: ${body.resource}`);
+      assert.isTrue(
+        body.resource === PDS_URL,
+        `unexpected resource: ${body.resource}`,
+      );
     },
   );
 
@@ -98,12 +167,21 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Authorization server metadata",
     async () => {
-      const res = await fetch(`${PDS_URL}/.well-known/oauth-authorization-server`, {
-        headers: { "Accept": "application/json", "Origin": SERVICE_URLS.oauthClient },
-      });
+      const res = await fetch(
+        `${PDS_URL}/.well-known/oauth-authorization-server`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "Origin": SERVICE_URLS.oauthClient,
+          },
+        },
+      );
       const body = await res.json();
       assert.isTrue(res.status === 200, `status=${res.status}`);
-      assert.isTrue(body.issuer === PDS_URL, `unexpected issuer: ${body.issuer}`);
+      assert.isTrue(
+        body.issuer === PDS_URL,
+        `unexpected issuer: ${body.issuer}`,
+      );
     },
   );
 
@@ -132,6 +210,23 @@ export async function run(): Promise<ScenarioResult> {
     const context = await browser.newContext();
     const page = await context.newPage();
     const publicNetworkLeaks = attachPublicNetworkLeakGuard(page);
+    const consoleMessages: string[] = [];
+    const pageErrors: string[] = [];
+    const failedRequests: string[] = [];
+
+    page.on("console", (message) => {
+      consoleMessages.push(`[${message.type()}] ${message.text()}`);
+    });
+    page.on("pageerror", (error) => {
+      pageErrors.push(error.message);
+    });
+    page.on("requestfailed", (request) => {
+      failedRequests.push(
+        `${request.method()} ${request.url()} :: ${
+          request.failure()?.errorText ?? "unknown"
+        }`,
+      );
+    });
 
     await page.goto(clientUrl);
     result.stepPassed("Step 1: Navigate to client app");
@@ -142,7 +237,9 @@ export async function run(): Promise<ScenarioResult> {
 
     try {
       await page.waitForSelector("#auth-handle", { timeout: 30000 });
-      result.stepPassed("Step 3: Redirected to PDS authorize page (PAR completed)");
+      result.stepPassed(
+        "Step 3: Redirected to PDS authorize page (PAR completed)",
+      );
     } catch (e) {
       const screenshotPath = `/tmp/oauth_failure_${Date.now()}.png`;
       await page.screenshot({ path: screenshotPath });
@@ -160,16 +257,38 @@ export async function run(): Promise<ScenarioResult> {
     await page.click("#auth-signin-btn");
     result.stepPassed("PDS Sign-in successful");
 
-    await page.waitForSelector("button[type='submit'].btn-primary", { timeout: 5000 });
+    await page.waitForSelector("button[type='submit'].btn-primary", {
+      timeout: 5000,
+    });
     await page.click("button[type='submit'].btn-primary");
     result.stepPassed("Consent granted");
 
-    await page.waitForSelector("#profile", { timeout: 10000 });
+    const profileResult = await waitForOAuthClientOutcome(page);
+    if (profileResult !== "profile") {
+      const screenshotPath = `/tmp/oauth_failure_${Date.now()}.png`;
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      throw new Error(
+        [
+          "OAuth callback did not display a profile.",
+          await pageState(page),
+          `screenshot=${screenshotPath}`,
+          `pageErrors:\n${recent(pageErrors)}`,
+          `failedRequests:\n${recent(failedRequests)}`,
+          `console:\n${recent(consoleMessages, 20)}`,
+        ].join("\n"),
+      );
+    }
     const displayName = await page.innerText("#display-name");
-    assert.isTrue(displayName.includes("did:plc:"), `Unexpected display name: ${displayName}`);
+    assert.isTrue(
+      displayName.includes("did:plc:"),
+      `Unexpected display name: ${displayName}`,
+    );
     result.stepPassed("Profile displayed", `Logged in as ${displayName}`);
     if (publicNetworkLeaks.length > 0) {
-      result.stepFailed("Public network leak guard", publicNetworkLeaks.slice(0, 5).join(", "));
+      result.stepFailed(
+        "Public network leak guard",
+        publicNetworkLeaks.slice(0, 5).join(", "),
+      );
     } else {
       result.stepPassed("Public network leak guard");
     }
