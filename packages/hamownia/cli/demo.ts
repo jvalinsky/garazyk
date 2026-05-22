@@ -1,7 +1,13 @@
 import { Command } from "@cliffy/command";
 import { join } from "@std/path";
 import { initRunDir, repoRoot } from "@garazyk/schemat/runtime";
-import { initLogger, logError, logHeader, logInfo, logOk } from "@garazyk/schemat";
+import {
+  initLogger,
+  logError,
+  logHeader,
+  logInfo,
+  logOk,
+} from "@garazyk/schemat";
 import {
   addRelayUpstream,
   startBinaryServices,
@@ -43,9 +49,11 @@ function toE2ERunContext(
 }
 
 export const demoCommand = new Command()
-  .description("Start a full ATProto stack demo with seed data.\n\n" +
-    "Starts PLC, PDS, Relay, AppView, Chat, Video, and the Admin UI. " +
-    "By default seeds demo accounts and content.")
+  .description(
+    "Start a full ATProto stack demo with seed data.\n\n" +
+      "Starts PLC, PDS, Relay, AppView, Chat, Video, and the Admin UI. " +
+      "By default seeds demo accounts and content.",
+  )
   .option("--skip-seed", "Start services without seeding demo data.")
   .option("--keep-running", "Keep services running after demo setup.")
   .option("--stop", "Stop services for the current run.")
@@ -58,12 +66,18 @@ export const demoCommand = new Command()
     const ctx = initRunDir();
     const root = await repoRoot();
 
-    const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") ?? generateHex();
-    const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ?? generateHex(8);
-    const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ?? generateHex(8);
-    const CHAT_ADMIN_SECRET = Deno.env.get("CHAT_ADMIN_SECRET") ?? generateHex(8);
-    const VIDEO_ADMIN_SECRET = Deno.env.get("VIDEO_ADMIN_SECRET") ?? generateHex(8);
-    const UI_ADMIN_PASSWORD = Deno.env.get("UI_ADMIN_PASSWORD") ?? generateHex(8);
+    const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") ??
+      generateHex();
+    const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ??
+      generateHex(8);
+    const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ??
+      generateHex(8);
+    const CHAT_ADMIN_SECRET = Deno.env.get("CHAT_ADMIN_SECRET") ??
+      generateHex(8);
+    const VIDEO_ADMIN_SECRET = Deno.env.get("VIDEO_ADMIN_SECRET") ??
+      generateHex(8);
+    const UI_ADMIN_PASSWORD = Deno.env.get("UI_ADMIN_PASSWORD") ??
+      generateHex(8);
 
     async function writePdsConfig(): Promise<string> {
       const config = {
@@ -113,14 +127,24 @@ export const demoCommand = new Command()
 
     if (flags.stop) {
       logHeader("Stopping full ATProto suite demo...");
-      const services = ["plc", "pds", "relay", "appview", "chat", "video"] as const;
+      const services = [
+        "plc",
+        "pds",
+        "relay",
+        "appview",
+        "chat",
+        "video",
+      ] as const;
       await stopBinaryServices(ctx, [...services]);
       logOk("Demo services stopped.");
       return;
     }
 
     if (flags.collectDiagnostics && !flags.stop) {
-      await collectDiagnostics(toE2ERunContext(ctx, { diagnosticsDir: flags.diagnosticsDir }), { label: "full-suite-demo" });
+      await collectDiagnostics(
+        toE2ERunContext(ctx, { diagnosticsDir: flags.diagnosticsDir }),
+        { label: "full-suite-demo" },
+      );
       return;
     }
 
@@ -128,8 +152,15 @@ export const demoCommand = new Command()
 
     const pdsConfigPath = await writePdsConfig();
 
-    const services: Array<"plc" | "pds" | "relay" | "appview" | "chat" | "video"> = [
-      "plc", "pds", "relay", "appview", "chat", "video",
+    const services: Array<
+      "plc" | "pds" | "relay" | "appview" | "chat" | "video"
+    > = [
+      "plc",
+      "pds",
+      "relay",
+      "appview",
+      "chat",
+      "video",
     ];
 
     await startBinaryServices(ctx, {
@@ -147,7 +178,8 @@ export const demoCommand = new Command()
         },
         relay: { RELAY_ADMIN_PASSWORD: APPVIEW_ADMIN_SECRET },
         appview: {
-          APPVIEW_RELAY_URLS: "ws://127.0.0.1:2584/xrpc/com.atproto.sync.subscribeRepos",
+          APPVIEW_RELAY_URLS:
+            "ws://127.0.0.1:2584/xrpc/com.atproto.sync.subscribeRepos",
           APPVIEW_ADMIN_SECRET,
           APPVIEW_MASTER_SECRET: PDS_MASTER_SECRET,
           APPVIEW_PLC_URL: "http://127.0.0.1:2582",
@@ -226,7 +258,10 @@ export const demoCommand = new Command()
     console.log("");
 
     if (flags.collectDiagnostics) {
-      await collectDiagnostics(toE2ERunContext(ctx, { diagnosticsDir: flags.diagnosticsDir }), { label: "full-suite-demo" });
+      await collectDiagnostics(
+        toE2ERunContext(ctx, { diagnosticsDir: flags.diagnosticsDir }),
+        { label: "full-suite-demo" },
+      );
     }
 
     if (!flags.keepRunning) {

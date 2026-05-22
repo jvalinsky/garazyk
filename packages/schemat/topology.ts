@@ -418,10 +418,18 @@ export function resolveTopology(
 
   const manifest = loadTopologyManifest(options.manifestPath);
   if (manifest) {
-    const hostUrls = manifest.version === 2 ? manifest.urls.host : manifest.serviceUrls;
-    const dockerUrls = manifest.version === 2 ? manifest.urls.docker : manifest.internalUrls;
-    const allCapabilities = manifest.version === 2 ? manifest.capabilitiesV2.all : manifest.capabilities;
-    const byRoleCapabilities = manifest.version === 2 ? manifest.capabilitiesV2.byRole : manifest.capabilitiesByRole;
+    const hostUrls = manifest.version === 2
+      ? manifest.urls.host
+      : manifest.serviceUrls;
+    const dockerUrls = manifest.version === 2
+      ? manifest.urls.docker
+      : manifest.internalUrls;
+    const allCapabilities = manifest.version === 2
+      ? manifest.capabilitiesV2.all
+      : manifest.capabilities;
+    const byRoleCapabilities = manifest.version === 2
+      ? manifest.capabilitiesV2.byRole
+      : manifest.capabilitiesByRole;
 
     const serviceUrls = {
       ...defaultServiceUrls(webClient),

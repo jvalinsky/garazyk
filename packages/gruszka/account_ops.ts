@@ -7,9 +7,15 @@ export function randomString(alphabet: string, length: number): string {
 }
 
 export function generateInviteCode(groups = 4, groupLength = 5): string {
-  return Array.from({ length: groups }, () => randomString(INVITE_ALPHABET, groupLength)).join("-");
+  return Array.from(
+    { length: groups },
+    () => randomString(INVITE_ALPHABET, groupLength),
+  ).join("-");
 }
 
 export function generatePassword(length = 24): string {
-  return randomString("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", length);
+  return randomString(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+    length,
+  );
 }

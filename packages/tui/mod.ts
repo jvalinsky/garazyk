@@ -9,48 +9,76 @@
  */
 
 // ── Screen buffer and cell types ──────────────────────────────────────────
-export type { CellStyle, Cell } from "./renderer.ts";
+export type { Cell, CellStyle } from "./renderer.ts";
 export {
-  DEFAULT_STYLE,
-  ScreenBuffer,
   ANSI,
-  RESET,
-  ENTER_ALT_SCREEN,
-  EXIT_ALT_SCREEN,
-  HIDE_CURSOR,
-  SHOW_CURSOR,
-  CLEAR_SCREEN,
-  CURSOR_HOME,
-  fg,
   bg,
   bold,
+  CLEAR_SCREEN,
+  CURSOR_HOME,
+  DEFAULT_STYLE,
   dim,
-  reverse,
-  underline,
+  ENTER_ALT_SCREEN,
+  EXIT_ALT_SCREEN,
+  fg,
+  HIDE_CURSOR,
   mergeStyles,
+  RESET,
+  reverse,
+  ScreenBuffer,
+  SHOW_CURSOR,
+  underline,
 } from "./renderer.ts";
 
 // ── Theme system ───────────────────────────────────────────────────────────
 export type { Theme } from "./theme.ts";
-export { COLORS, getCurrentTheme, setCurrentTheme, darkTheme, lightTheme, classicTheme, themes } from "./theme.ts";
+export {
+  classicTheme,
+  COLORS,
+  darkTheme,
+  getCurrentTheme,
+  lightTheme,
+  setCurrentTheme,
+  themes,
+} from "./theme.ts";
 
 // ── Key types and parsing (pure) ───────────────────────────────────────────
 export type { Key } from "./input.ts";
-export { Keys, parseKey, isKey, isCtrl, isQuit } from "./input.ts";
+export { isCtrl, isKey, isQuit, Keys, parseKey } from "./input.ts";
 
 // ── Layout ─────────────────────────────────────────────────────────────────
-export type { LayoutNode, ResolvedNode, Direction, Sizing } from "./layout_tree.ts";
-export { solveLayout, findResolvedNode, flattenResolvedNodes } from "./layout_tree.ts";
+export type {
+  Direction,
+  LayoutNode,
+  ResolvedNode,
+  Sizing,
+} from "./layout_tree.ts";
+export {
+  findResolvedNode,
+  flattenResolvedNodes,
+  solveLayout,
+} from "./layout_tree.ts";
 export type { BoundingBox, PanelId } from "./layout_engine.ts";
-export { PANEL_IDS, PANEL_TITLES, panelContentArea, findPanel } from "./layout.ts";
+export {
+  findPanel,
+  PANEL_IDS,
+  PANEL_TITLES,
+  panelContentArea,
+} from "./layout.ts";
 export { dashboardLayoutTree } from "./dashboard_layout.ts";
 
 // ── Focus ──────────────────────────────────────────────────────────────────
 export { FocusRing } from "./focus.ts";
 
 // ── Render commands ────────────────────────────────────────────────────────
-export type { RenderCommand } from "./command.ts";
+export type {
+  BoxCommand,
+  RectCommand,
+  RenderCommand,
+  ScrollBoxCommand,
+  TextCommand,
+} from "./command.ts";
 export { rasterize } from "./command.ts";
 
 // ── Text utilities ────────────────────────────────────────────────────────
-export { truncate, getCharWidth } from "./text.ts";
+export { getCharWidth, truncate } from "./text.ts";

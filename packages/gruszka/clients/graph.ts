@@ -16,7 +16,10 @@ export class GraphClient {
    * @returns A promise that resolves to the list of followed actors
    * @throws XrpcError if the request fails
    */
-  async getFollows(actor: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async getFollows(
+    actor: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.graph.getFollows",
       { actor, limit: options.limit ?? 50 },
@@ -50,7 +53,11 @@ export class GraphClient {
    * @throws XrpcError if the request fails
    */
   async getBlocks(token: string, limit = 50): Promise<any> {
-    return await this.transport.get("app.bsky.graph.getBlocks", { limit }, token);
+    return await this.transport.get(
+      "app.bsky.graph.getBlocks",
+      { limit },
+      token,
+    );
   }
 
   /**
@@ -61,7 +68,11 @@ export class GraphClient {
    * @throws XrpcError if the request fails
    */
   async getMutes(token: string, limit = 50): Promise<any> {
-    return await this.transport.get("app.bsky.graph.getMutes", { limit }, token);
+    return await this.transport.get(
+      "app.bsky.graph.getMutes",
+      { limit },
+      token,
+    );
   }
 
   /**
@@ -72,7 +83,9 @@ export class GraphClient {
    * @throws XrpcError if the request fails
    */
   async muteActor(actorDid: string, token: string): Promise<any> {
-    return await this.transport.post("app.bsky.graph.muteActor", { actor: actorDid }, token);
+    return await this.transport.post("app.bsky.graph.muteActor", {
+      actor: actorDid,
+    }, token);
   }
 
   /**
@@ -83,7 +96,9 @@ export class GraphClient {
    * @throws XrpcError if the request fails
    */
   async unmuteActor(actorDid: string, token: string): Promise<any> {
-    return await this.transport.post("app.bsky.graph.unmuteActor", { actor: actorDid }, token);
+    return await this.transport.post("app.bsky.graph.unmuteActor", {
+      actor: actorDid,
+    }, token);
   }
 
   /**
@@ -94,7 +109,11 @@ export class GraphClient {
    * @returns A promise that resolves to the relationship object
    * @throws XrpcError if the request fails
    */
-  async getRelationships(actor: string, targets: string[], token?: string): Promise<any> {
+  async getRelationships(
+    actor: string,
+    targets: string[],
+    token?: string,
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.graph.getRelationships",
       { actor, others: targets },
@@ -110,7 +129,11 @@ export class GraphClient {
    * @throws XrpcError if the request fails
    */
   async getStarterPack(uri: string, token?: string): Promise<any> {
-    return await this.transport.get("app.bsky.graph.getStarterPack", { uri }, token);
+    return await this.transport.get(
+      "app.bsky.graph.getStarterPack",
+      { uri },
+      token,
+    );
   }
 
   /**

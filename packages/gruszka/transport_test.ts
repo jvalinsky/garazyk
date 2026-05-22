@@ -12,7 +12,9 @@ import { TransportError, TransportLayer, XrpcError } from "./transport.ts";
 // Mock fetch infrastructure
 // ---------------------------------------------------------------------------
 
-let mockFetch: ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) | null = null;
+let mockFetch:
+  | ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>)
+  | null = null;
 
 const originalFetch = globalThis.fetch;
 
@@ -31,7 +33,11 @@ function restoreFetch() {
   globalThis.fetch = originalFetch;
 }
 
-function jsonResponse(body: any, status = 200, headers: Record<string, string> = {}): Response {
+function jsonResponse(
+  body: any,
+  status = 200,
+  headers: Record<string, string> = {},
+): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json", ...headers },
@@ -47,7 +53,9 @@ function textResponse(text: string, status = 200): Response {
 // ---------------------------------------------------------------------------
 
 Deno.test("XrpcError: constructs with method, status, body", () => {
-  const err = new XrpcError("app.bsky.actor.getProfile", 400, { error: "InvalidRequest" });
+  const err = new XrpcError("app.bsky.actor.getProfile", 400, {
+    error: "InvalidRequest",
+  });
   assertEquals(err.name, "XrpcError");
   assertEquals(err.method, "app.bsky.actor.getProfile");
   assertEquals(err.status, 400);
@@ -61,7 +69,12 @@ Deno.test("XrpcError: constructs with method, status, body", () => {
 
 Deno.test("TransportError: constructs with method, url, cause, attempt", () => {
   const cause = new TypeError("NetworkError");
-  const err = new TransportError("POST", "http://localhost/xrpc/test", cause, 3);
+  const err = new TransportError(
+    "POST",
+    "http://localhost/xrpc/test",
+    cause,
+    3,
+  );
   assertEquals(err.name, "TransportError");
   assertEquals(err.method, "POST");
   assertEquals(err.url, "http://localhost/xrpc/test");
@@ -142,7 +155,10 @@ Deno.test("request: POST retries when maxRetries and allowMutationRetry are set"
 
   try {
     const t = new TransportLayer("http://localhost:2583");
-    const res = await t.request("POST", "/xrpc/test", { method: "POST" }, { maxRetries: 3, allowMutationRetry: true });
+    const res = await t.request("POST", "/xrpc/test", { method: "POST" }, {
+      maxRetries: 3,
+      allowMutationRetry: true,
+    });
     assertEquals(res.status, 200);
     assertEquals(calls, 2);
   } finally {
@@ -256,7 +272,12 @@ Deno.test("get: skips null/undefined params", async () => {
 
   try {
     const t = new TransportLayer("http://localhost:2583");
-    await t.get("test.method", { a: "hello", b: null, c: undefined, d: "world" });
+    await t.get("test.method", {
+      a: "hello",
+      b: null,
+      c: undefined,
+      d: "world",
+    });
     const url = new URL(capturedUrl);
     assertEquals(url.searchParams.get("a"), "hello");
     assertEquals(url.searchParams.get("b"), null);
@@ -276,7 +297,9 @@ Deno.test("get: encodes array params as repeated keys", async () => {
 
   try {
     const t = new TransportLayer("http://localhost:2583");
-    await t.get("test.method", { collections: ["app.bsky.feed.post", "app.bsky.feed.like"] });
+    await t.get("test.method", {
+      collections: ["app.bsky.feed.post", "app.bsky.feed.like"],
+    });
     const url = new URL(capturedUrl);
     assertEquals(url.searchParams.getAll("collections"), [
       "app.bsky.feed.post",
@@ -293,7 +316,10 @@ Deno.test("get: encodes array params as repeated keys", async () => {
 
 Deno.test("request: parses JSON response body", async () => {
   installMockFetch(async () => {
-    return jsonResponse({ did: "did:plc:test", handle: "test.bsky.social" }, 200);
+    return jsonResponse(
+      { did: "did:plc:test", handle: "test.bsky.social" },
+      200,
+    );
   });
 
   try {

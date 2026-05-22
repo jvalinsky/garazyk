@@ -1,6 +1,7 @@
 /** XRPC client wrapper for ATProto service communication. @module client */
 import { TransportLayer, XrpcError } from "./transport.ts";
 import type {
+  CallOptions,
   GeneratedClient,
   LexiconProcedureIds,
   LexiconQueryIds,
@@ -8,7 +9,6 @@ import type {
   ProcedureOutput,
   QueryOutput,
   QueryParams,
-  CallOptions,
   XrpcCaller,
 } from "./generated_types.ts";
 import {
@@ -361,9 +361,16 @@ function extractToken(tokenOrOpts?: string | CallOptions): string | undefined {
 }
 
 class RawCaller implements XrpcCaller {
-  constructor(private transport: TransportLayer, private defaultToken?: string) {}
+  constructor(
+    private transport: TransportLayer,
+    private defaultToken?: string,
+  ) {}
 
-  async call(method: string, paramsOrInput?: any, tokenOrOpts?: string | CallOptions): Promise<any> {
+  async call(
+    method: string,
+    paramsOrInput?: any,
+    tokenOrOpts?: string | CallOptions,
+  ): Promise<any> {
     const finalToken = extractToken(tokenOrOpts) || this.defaultToken;
     const isQuery = isQueryMethod(method);
 
@@ -401,7 +408,11 @@ class AgentCaller implements XrpcCaller {
     private session: AgentSession,
   ) {}
 
-  async call(method: string, paramsOrInput?: any, tokenOrOpts?: string | CallOptions): Promise<any> {
+  async call(
+    method: string,
+    paramsOrInput?: any,
+    tokenOrOpts?: string | CallOptions,
+  ): Promise<any> {
     const finalToken = extractToken(tokenOrOpts) || this.session.accessJwt;
     const isQuery = isQueryMethod(method);
 
@@ -433,7 +444,7 @@ class AgentCaller implements XrpcCaller {
         data = await this.transport.post(method, paramsOrInput, finalToken);
       }
     }
-    
+
     // Maintain the legacy `{ data }` wrapping for the AgentProxy
     return { data };
   }
@@ -446,7 +457,7 @@ function createAgentProxy(
 ): AgentProxy {
   const caller = new AgentCaller(client.rawTransport, session);
   const baseClient = createGeneratedClient(caller);
-  
+
   return new Proxy(baseClient, {
     get(target, prop, receiver) {
       if (prop === "createAccount") {
@@ -486,8 +497,9 @@ function createAgentProxy(
       return Reflect.get(target, prop, receiver);
     },
     has(target, prop) {
-      return prop === "createAccount" || prop === "login" || Reflect.has(target, prop);
-    }
+      return prop === "createAccount" || prop === "login" ||
+        Reflect.has(target, prop);
+    },
   }) as unknown as AgentProxy;
 }
 
@@ -501,4 +513,3 @@ function createGeneratedClientHelper(
 }
 
 export { XrpcError };
-

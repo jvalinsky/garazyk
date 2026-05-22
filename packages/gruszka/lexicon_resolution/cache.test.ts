@@ -5,16 +5,16 @@
  * @module lexicon_resolution
  */
 
-import { assertEquals, assert, assertFalse } from "jsr:@std/assert";
+import { assert, assertEquals, assertFalse } from "jsr:@std/assert";
 import {
-  InMemoryCache,
-  DiskCache,
-  CachingRecordFetcher,
-  CachingDnsResolver,
   CachingDidResolver,
+  CachingDnsResolver,
+  CachingRecordFetcher,
+  DiskCache,
+  InMemoryCache,
 } from "./cache.ts";
 import type { KeyValueCache } from "./cache.ts";
-import type { DnsResolver, DidResolver, RecordFetcher } from "./ports.ts";
+import type { DidResolver, DnsResolver, RecordFetcher } from "./ports.ts";
 import type { Did, DidDocument, Domain, LexiconDoc, Result } from "./types.ts";
 import { asDid, asDomain } from "./types.ts";
 
@@ -154,7 +154,9 @@ Deno.test("InMemoryCache: cache stores complex objects", async () => {
 let _diskCacheDir: string | undefined;
 function getDiskCacheDir(): string {
   if (!_diskCacheDir) {
-    _diskCacheDir = Deno.makeTempDirSync({ prefix: "gruszka-disk-cache-test-" });
+    _diskCacheDir = Deno.makeTempDirSync({
+      prefix: "gruszka-disk-cache-test-",
+    });
   }
   return _diskCacheDir;
 }
@@ -233,7 +235,8 @@ Deno.test("DiskCache: clear removes all files and directory", async () => {
 
 Deno.test("DiskCache: handles special characters in keys", async () => {
   const cache = makeDiskCache<string>();
-  const key = "https://pds.example.com/xrpc/com.atproto.repo.getRecord?repo=did:plc:test&rkey=app.bsky.feed.post";
+  const key =
+    "https://pds.example.com/xrpc/com.atproto.repo.getRecord?repo=did:plc:test&rkey=app.bsky.feed.post";
   await cache.set(key, "lexicon data");
   assertEquals(await cache.get(key), "lexicon data");
 });

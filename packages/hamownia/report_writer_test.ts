@@ -7,9 +7,9 @@
 import { assertEquals } from "@std/assert";
 import { ScenarioResult, StepStatus } from "./runner.ts";
 import {
-  writeOverallSummary,
   type OverallResultItem,
   type OverallSummaryContext,
+  writeOverallSummary,
 } from "./report_writer.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
@@ -31,7 +31,11 @@ function makeScenarioInfo(id: string): ScenarioInfo {
   };
 }
 
-function makeResult(passed: number, failed: number, skipped: number): ScenarioResult {
+function makeResult(
+  passed: number,
+  failed: number,
+  skipped: number,
+): ScenarioResult {
   const r = new ScenarioResult(`Scenario`);
   r.start();
   for (let i = 0; i < passed; i++) r.stepPassed(`pass-${i}`);
@@ -43,8 +47,16 @@ function makeResult(passed: number, failed: number, skipped: number): ScenarioRe
   return r;
 }
 
-function makeResultItem(id: string, passed: number, failed: number, skipped = 0): OverallResultItem {
-  return { scenario: makeScenarioInfo(id), result: makeResult(passed, failed, skipped) };
+function makeResultItem(
+  id: string,
+  passed: number,
+  failed: number,
+  skipped = 0,
+): OverallResultItem {
+  return {
+    scenario: makeScenarioInfo(id),
+    result: makeResult(passed, failed, skipped),
+  };
 }
 
 function makeArgs(overrides: Partial<RunnerArgs> = {}): RunnerArgs {
@@ -205,7 +217,9 @@ Deno.test("writeOverallSummary: ok is false when there are failures", async () =
       fatalError: null,
       withPds2: false,
     });
-    const parsed = JSON.parse(await Deno.readTextFile(`${dir}/overall-summary.json`));
+    const parsed = JSON.parse(
+      await Deno.readTextFile(`${dir}/overall-summary.json`),
+    );
     assertEquals(parsed.ok, false);
   } finally {
     await Deno.remove(dir, { recursive: true });
@@ -225,7 +239,9 @@ Deno.test("writeOverallSummary: fatalError increments failed count in JSON", asy
       fatalError: new Error("something broke"),
       withPds2: false,
     });
-    const parsed = JSON.parse(await Deno.readTextFile(`${dir}/overall-summary.json`));
+    const parsed = JSON.parse(
+      await Deno.readTextFile(`${dir}/overall-summary.json`),
+    );
     assertEquals(parsed.summary.failed, 1);
     assertEquals(parsed.error, "something broke");
     assertEquals(parsed.ok, false);
@@ -247,7 +263,9 @@ Deno.test("writeOverallSummary: non-Error fatalError has no error field in JSON"
       fatalError: "string error",
       withPds2: false,
     });
-    const parsed = JSON.parse(await Deno.readTextFile(`${dir}/overall-summary.json`));
+    const parsed = JSON.parse(
+      await Deno.readTextFile(`${dir}/overall-summary.json`),
+    );
     assertEquals(parsed.error, undefined);
     assertEquals(parsed.summary.failed, 1);
   } finally {
@@ -268,7 +286,9 @@ Deno.test("writeOverallSummary: JSON includes run_id, scenario_ids, binary_mode,
       fatalError: null,
       withPds2: true,
     });
-    const parsed = JSON.parse(await Deno.readTextFile(`${dir}/overall-summary.json`));
+    const parsed = JSON.parse(
+      await Deno.readTextFile(`${dir}/overall-summary.json`),
+    );
     assertEquals(parsed.run_id, "my-run-xyz");
     assertEquals(parsed.scenario_ids, ["42", "07"]);
     assertEquals(parsed.binary_mode, true);

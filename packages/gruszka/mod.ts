@@ -16,8 +16,8 @@ export type { RequestOptions } from "./transport.ts";
 export {
   FirehoseClient,
   FirehoseEvent,
-  FirehoseFrameParseError,
   firehoseEventFromFrame,
+  FirehoseFrameParseError,
   parseFirehoseFrame,
 } from "./firehose.ts";
 export { RawClient } from "./clients/raw.ts";

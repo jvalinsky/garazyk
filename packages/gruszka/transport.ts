@@ -183,16 +183,17 @@ export class TransportLayer {
     const retryableStatuses = transportOptions?.retryableStatuses ??
       DEFAULT_RETRYABLE_STATUSES;
 
-    if (isMutation && maxAttempts > 1 && !transportOptions?.allowMutationRetry) {
+    if (
+      isMutation && maxAttempts > 1 && !transportOptions?.allowMutationRetry
+    ) {
       console.warn(
         `[TransportLayer] Warning: maxRetries=${maxAttempts} set for non-idempotent method ${httpMethod}, ` +
-        `but allowMutationRetry is not set. Retries are suppressed to prevent duplicate side effects. ` +
-        `Set allowMutationRetry: true to opt in.`,
+          `but allowMutationRetry is not set. Retries are suppressed to prevent duplicate side effects. ` +
+          `Set allowMutationRetry: true to opt in.`,
       );
     }
-    const effectiveMaxAttempts = isMutation && !transportOptions?.allowMutationRetry
-      ? 1
-      : maxAttempts;
+    const effectiveMaxAttempts =
+      isMutation && !transportOptions?.allowMutationRetry ? 1 : maxAttempts;
 
     for (let attempt = 1; attempt <= effectiveMaxAttempts; attempt++) {
       try {
@@ -209,7 +210,8 @@ export class TransportLayer {
 
         // Retry on retryable HTTP statuses (e.g. 429, 502, 503, 504)
         if (
-          retryableStatuses.includes(response.status) && attempt < effectiveMaxAttempts
+          retryableStatuses.includes(response.status) &&
+          attempt < effectiveMaxAttempts
         ) {
           await new Promise((r) => setTimeout(r, this._baseDelay * attempt));
           continue;
@@ -229,7 +231,9 @@ export class TransportLayer {
       }
     }
     // Unreachable: the loop always returns or throws.
-    throw new Error(`request: unreachable (effectiveMaxAttempts=${effectiveMaxAttempts})`);
+    throw new Error(
+      `request: unreachable (effectiveMaxAttempts=${effectiveMaxAttempts})`,
+    );
   }
 
   /**

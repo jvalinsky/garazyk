@@ -1,5 +1,9 @@
-import { assertEquals, assert } from "@std/assert";
-import { ROLE_TO_SERVICE, ROLE_TO_PORT, ROLE_TO_ENV } from "./topology_types.ts";
+import { assert, assertEquals } from "@std/assert";
+import {
+  ROLE_TO_ENV,
+  ROLE_TO_PORT,
+  ROLE_TO_SERVICE,
+} from "./topology_types.ts";
 import type { ServiceRole } from "./topology_types.ts";
 
 Deno.test("ROLE_TO_SERVICE: maps every known role to a service name", () => {
@@ -17,7 +21,10 @@ Deno.test("ROLE_TO_SERVICE: maps every known role to a service name", () => {
   ];
   for (const role of roles) {
     const service = ROLE_TO_SERVICE[role];
-    assert(typeof service === "string", `ROLE_TO_SERVICE[${role}] should be a string`);
+    assert(
+      typeof service === "string",
+      `ROLE_TO_SERVICE[${role}] should be a string`,
+    );
     assert(service.length > 0, `ROLE_TO_SERVICE[${role}] should not be empty`);
   }
 });
@@ -37,9 +44,15 @@ Deno.test("ROLE_TO_PORT: maps every known role to a port string", () => {
   ];
   for (const role of roles) {
     const port = ROLE_TO_PORT[role];
-    assert(typeof port === "string", `ROLE_TO_PORT[${role}] should be a string`);
+    assert(
+      typeof port === "string",
+      `ROLE_TO_PORT[${role}] should be a string`,
+    );
     // Port should be a numeric string
-    assert(/^\d+$/.test(port), `ROLE_TO_PORT[${role}] = '${port}' should be numeric`);
+    assert(
+      /^\d+$/.test(port),
+      `ROLE_TO_PORT[${role}] = '${port}' should be numeric`,
+    );
   }
 });
 
@@ -48,7 +61,10 @@ Deno.test("ROLE_TO_ENV: maps known roles to environment variable names", () => {
   const coreRoles = ["pds", "relay", "appview", "plc"];
   for (const role of coreRoles) {
     const envKey = ROLE_TO_ENV[role];
-    assert(typeof envKey === "string", `ROLE_TO_ENV[${role}] should be a string`);
+    assert(
+      typeof envKey === "string",
+      `ROLE_TO_ENV[${role}] should be a string`,
+    );
     assert(envKey.length > 0, `ROLE_TO_ENV[${role}] should not be empty`);
   }
 });
@@ -62,5 +78,8 @@ Deno.test("ROLE_TO_SERVICE: relay maps to local-relay", () => {
 });
 
 Deno.test("ROLE_TO_PORT: pds and pds2 have different ports", () => {
-  assert(ROLE_TO_PORT["pds"] !== ROLE_TO_PORT["pds2"], "pds and pds2 should use different ports");
+  assert(
+    ROLE_TO_PORT["pds"] !== ROLE_TO_PORT["pds2"],
+    "pds and pds2 should use different ports",
+  );
 });

@@ -8,8 +8,8 @@ export const narzedziaCommand = new Command()
   .version("1.0.0")
   .description(
     "Garazyk production operations.\n\n" +
-    "WARNING: These commands affect production systems. " +
-    "They require explicit paths and tokens — no sensible defaults.",
+      "WARNING: These commands affect production systems. " +
+      "They require explicit paths and tokens — no sensible defaults.",
   )
   .globalOption("-v, --verbose", "Enable verbose logging.")
   .globalOption("-q, --quiet", "Suppress non-error output.")

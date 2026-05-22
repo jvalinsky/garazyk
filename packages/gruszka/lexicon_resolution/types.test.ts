@@ -13,7 +13,6 @@ import {
   asDomain,
   asNsid,
   assertNever,
-  isValidNsid,
   type Did,
   type DnsFailedMsg,
   type DnsPendingState,
@@ -23,19 +22,20 @@ import {
   type FailedState,
   type FetchRecordCmd,
   type InitState,
+  isValidNsid,
   type LexiconDef,
   type LexiconDoc,
   type LexiconSchema,
   type Nsid,
   type RecordPendingState,
   type RecordSuccessMsg,
+  type ResolutionError,
   type ResolveDidCmd,
   type ResolveDnsCmd,
   type ResolvedState,
   type ResolverCmd,
   type ResolverMsg,
   type ResolverState,
-  type ResolutionError,
   type Result,
 } from "./types.ts";
 
@@ -610,7 +610,10 @@ Deno.test("ResolverCmd: FetchRecordCmd", () => {
     nsid: asNsid("app.bsky.feed.post"),
   };
   assertEquals(cmd.type, "fetchRecord");
-  assertEquals(cmd.endpoint, "https://pds.example/xrpc/com.atproto.repo.getRecord");
+  assertEquals(
+    cmd.endpoint,
+    "https://pds.example/xrpc/com.atproto.repo.getRecord",
+  );
   assertEquals(cmd.did, "did:plc:test");
   assertEquals(cmd.nsid, "app.bsky.feed.post");
 });

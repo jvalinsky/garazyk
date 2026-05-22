@@ -9,20 +9,37 @@
  * @module lexicon_resolution
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assert, assertEquals } from "jsr:@std/assert";
 
-import { DenoDnsResolver, HttpDidResolver, HttpRecordFetcher } from "./adapters.ts";
-import { asDid, asDomain, type Did, type DidDocument, type Domain, type LexiconDoc } from "./types.ts";
+import {
+  DenoDnsResolver,
+  HttpDidResolver,
+  HttpRecordFetcher,
+} from "./adapters.ts";
+import {
+  asDid,
+  asDomain,
+  type Did,
+  type DidDocument,
+  type Domain,
+  type LexiconDoc,
+} from "./types.ts";
 
 // ===========================================================================
 // Mock helpers
 // ===========================================================================
 
 /** Typed mock callback for `fetch` — accepts all valid `fetch` signatures. */
-type FetchMock = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+type FetchMock = (
+  input: string | URL | Request,
+  init?: RequestInit,
+) => Promise<Response>;
 
 /** Typed mock callback for `Deno.resolveDns`. */
-type ResolveDnsMock = (domain: string, recordType: string) => Promise<string[][]>;
+type ResolveDnsMock = (
+  domain: string,
+  recordType: string,
+) => Promise<string[][]>;
 
 /**
  * Mock a function on an object, restoring the original after the test.
@@ -236,7 +253,9 @@ Deno.test("HttpDidResolver: resolves did:plc via PLC directory", async () => {
 
   let fetchedUrl = "";
   const restore = mockFetch((input) => {
-    fetchedUrl = typeof input === "string" ? input : input instanceof URL
+    fetchedUrl = typeof input === "string"
+      ? input
+      : input instanceof URL
       ? input.href
       : input.url;
     return Promise.resolve(jsonResponse(200, doc));
@@ -362,7 +381,10 @@ Deno.test("HttpDidResolver: resolves did:web (domain with path)", async () => {
 
     assert(result.ok);
     if (result.ok) {
-      assertEquals(fetchedUrl, "https://example.com/path/to/did/.well-known/did.json");
+      assertEquals(
+        fetchedUrl,
+        "https://example.com/path/to/did/.well-known/did.json",
+      );
     }
   } finally {
     restore();
@@ -454,15 +476,19 @@ Deno.test("HttpDidResolver: handles non-Error fetch rejection", async () => {
 
 Deno.test("HttpRecordFetcher: fetches and extracts .value from envelope", async () => {
   const lex = lexiconDoc();
-  const envelope = { uri: "at://did:plc:test/com.atproto.lexicon.schema/app.bsky.feed.post", cid: "bafy123", value: lex };
+  const envelope = {
+    uri: "at://did:plc:test/com.atproto.lexicon.schema/app.bsky.feed.post",
+    cid: "bafy123",
+    value: lex,
+  };
 
-  const restore = mockFetch(() =>
-    Promise.resolve(jsonResponse(200, envelope))
-  );
+  const restore = mockFetch(() => Promise.resolve(jsonResponse(200, envelope)));
 
   try {
     const fetcher = new HttpRecordFetcher();
-    const result = await fetcher.fetch("https://pds.example/xrpc/com.atproto.repo.getRecord?repo=did:plc:test");
+    const result = await fetcher.fetch(
+      "https://pds.example/xrpc/com.atproto.repo.getRecord?repo=did:plc:test",
+    );
 
     assert(result.ok);
     if (result.ok) {
@@ -555,7 +581,11 @@ Deno.test("HttpRecordFetcher: returns error when .value is null", async () => {
 });
 
 Deno.test("HttpRecordFetcher: returns error when .value.lexicon is not a number", async () => {
-  const envelope = { uri: "at://...", cid: "bafy123", value: { lexicon: "1", id: "test", defs: {} } };
+  const envelope = {
+    uri: "at://...",
+    cid: "bafy123",
+    value: { lexicon: "1", id: "test", defs: {} },
+  };
 
   const restore = mockFetch(() => Promise.resolve(jsonResponse(200, envelope)));
 
@@ -614,7 +644,9 @@ Deno.test("HttpRecordFetcher: error message includes the endpoint URL", async ()
 
   try {
     const fetcher = new HttpRecordFetcher();
-    const result = await fetcher.fetch("https://pds.bsky.app/xrpc/com.atproto.repo.getRecord?repo=did:plc:test&collection=com.atproto.lexicon.schema&rkey=app.bsky.feed.post");
+    const result = await fetcher.fetch(
+      "https://pds.bsky.app/xrpc/com.atproto.repo.getRecord?repo=did:plc:test&collection=com.atproto.lexicon.schema&rkey=app.bsky.feed.post",
+    );
 
     assert(!result.ok);
     if (!result.ok) {

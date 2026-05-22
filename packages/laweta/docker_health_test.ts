@@ -14,8 +14,14 @@ import { waitForHttp } from "./docker_health.ts";
 // waitForHttp
 // ---------------------------------------------------------------------------
 
-Deno.test({ name: "waitForHttp: returns true when server responds 200 on first attempt", sanitizeResources: false }, async () => {
-  const server = Deno.serve({ port: 0, hostname: "127.0.0.1" }, () => new Response("ok"));
+Deno.test({
+  name: "waitForHttp: returns true when server responds 200 on first attempt",
+  sanitizeResources: false,
+}, async () => {
+  const server = Deno.serve(
+    { port: 0, hostname: "127.0.0.1" },
+    () => new Response("ok"),
+  );
   const { port } = server.addr as Deno.NetAddr;
   try {
     const ok = await waitForHttp(`http://127.0.0.1:${port}/health`, "TEST", 5);
@@ -25,7 +31,10 @@ Deno.test({ name: "waitForHttp: returns true when server responds 200 on first a
   }
 });
 
-Deno.test({ name: "waitForHttp: returns true after initial non-ok responses", sanitizeResources: false }, async () => {
+Deno.test({
+  name: "waitForHttp: returns true after initial non-ok responses",
+  sanitizeResources: false,
+}, async () => {
   let calls = 0;
   const server = Deno.serve({ port: 0, hostname: "127.0.0.1" }, () => {
     calls++;
@@ -54,7 +63,11 @@ Deno.test(
     const { port } = server.addr as Deno.NetAddr;
     try {
       const start = Date.now();
-      const ok = await waitForHttp(`http://127.0.0.1:${port}/health`, "TEST", 1);
+      const ok = await waitForHttp(
+        `http://127.0.0.1:${port}/health`,
+        "TEST",
+        1,
+      );
       assertEquals(ok, false);
       // Should resolve within a few seconds of the 1s deadline
       assertEquals(Date.now() - start < 4000, true);
@@ -64,7 +77,10 @@ Deno.test(
   },
 );
 
-Deno.test({ name: "waitForHttp: forwards custom headers to the server", sanitizeResources: false }, async () => {
+Deno.test({
+  name: "waitForHttp: forwards custom headers to the server",
+  sanitizeResources: false,
+}, async () => {
   let receivedHeader = "";
   const server = Deno.serve({ port: 0, hostname: "127.0.0.1" }, (req) => {
     receivedHeader = req.headers.get("x-test-token") ?? "";

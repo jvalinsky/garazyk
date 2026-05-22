@@ -12,9 +12,9 @@
  */
 
 import {
+  buildXrpcUrl,
   deriveDnsDomain,
   extractPdsEndpoint,
-  buildXrpcUrl,
   parseDnsTxtRecords,
   parseNsid,
   verifyRecord,
@@ -181,7 +181,11 @@ function reduceDnsPending(
       return [
         {
           status: "failed",
-          error: { type: "DnsQueryFailed", domain: state.domain, reason: msg.reason },
+          error: {
+            type: "DnsQueryFailed",
+            domain: state.domain,
+            reason: msg.reason,
+          },
         },
         { type: "done" },
       ];
@@ -223,7 +227,12 @@ function reduceDidPending(
           pdsEndpoint,
         };
         const url = buildXrpcUrl(pdsEndpoint, state.did, state.nsid);
-        return [next, { type: "fetchRecord", endpoint: url, did: state.did, nsid: state.nsid }];
+        return [next, {
+          type: "fetchRecord",
+          endpoint: url,
+          did: state.did,
+          nsid: state.nsid,
+        }];
       }
       return [
         { status: "failed", error: result.error },
@@ -235,7 +244,11 @@ function reduceDidPending(
       return [
         {
           status: "failed",
-          error: { type: "DidResolutionFailed", did: state.did, reason: msg.reason },
+          error: {
+            type: "DidResolutionFailed",
+            did: state.did,
+            reason: msg.reason,
+          },
         },
         { type: "done" },
       ];

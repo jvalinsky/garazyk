@@ -17,7 +17,9 @@ export class AdminClient {
    * @throws XrpcError if the request fails
    */
   async getSubjectStatus(did: string, token: string): Promise<any> {
-    return await this.transport.get("com.atproto.admin.getSubjectStatus", { did }, token);
+    return await this.transport.get("com.atproto.admin.getSubjectStatus", {
+      did,
+    }, token);
   }
 
   /**
@@ -33,7 +35,11 @@ export class AdminClient {
   ): Promise<any> {
     const body: Record<string, any> = { subject };
     if (options.takedown) body.takedown = options.takedown;
-    return await this.transport.post("com.atproto.admin.updateSubjectStatus", body, options.token);
+    return await this.transport.post(
+      "com.atproto.admin.updateSubjectStatus",
+      body,
+      options.token,
+    );
   }
 
   /**
@@ -68,7 +74,11 @@ export class AdminClient {
   async getLabels(uris: string[], token?: string): Promise<any> {
     // Preserve repeated URI parameters for this legacy XRPC shape.
     const params: Record<string, any> = { "uris[]": uris };
-    return await this.transport.get("com.atproto.label.getLabels", params, token);
+    return await this.transport.get(
+      "com.atproto.label.getLabels",
+      params,
+      token,
+    );
   }
 
   /**
@@ -92,7 +102,9 @@ export class AdminClient {
     const data = await res.json();
     const token = data.token || data.ui_admin_token;
     if (!token) {
-      throw new XrpcError("/admin/login", 200, { error: "missing token in response" });
+      throw new XrpcError("/admin/login", 200, {
+        error: "missing token in response",
+      });
     }
     return token;
   }

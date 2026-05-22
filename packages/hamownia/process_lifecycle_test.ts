@@ -82,7 +82,12 @@ Deno.test("createProcessLifecycle: stopIfNeeded is no-op when keepRunning is tru
 Deno.test("createProcessLifecycle: stopIfNeeded swallows errors from stopLocalNetwork", async () => {
   let threw = false;
   const lifecycle = createProcessLifecycle({
-    args: { binary: false, keepRunning: false, teardown: false, noSetup: false },
+    args: {
+      binary: false,
+      keepRunning: false,
+      teardown: false,
+      noSetup: false,
+    },
     context: { runId: "r", diagnosticsDir: "/d" },
     stopLocalNetwork: async () => {
       throw new Error("network error");
@@ -164,7 +169,10 @@ Deno.test("createProcessLifecycle: finalizeRun stops network when teardown is tr
 });
 
 Deno.test("createProcessLifecycle: finalizeRun stops network when noSetup=false and keepRunning=false", async () => {
-  const { lifecycle, callCount } = makeLifecycle({ noSetup: false, keepRunning: false });
+  const { lifecycle, callCount } = makeLifecycle({
+    noSetup: false,
+    keepRunning: false,
+  });
   lifecycle.markNetworkStarted();
   await lifecycle.finalizeRun({
     results: [],
@@ -175,7 +183,10 @@ Deno.test("createProcessLifecycle: finalizeRun stops network when noSetup=false 
 });
 
 Deno.test("createProcessLifecycle: finalizeRun does not stop when noSetup=true and teardown=false", async () => {
-  const { lifecycle, callCount } = makeLifecycle({ noSetup: true, teardown: false });
+  const { lifecycle, callCount } = makeLifecycle({
+    noSetup: true,
+    teardown: false,
+  });
   lifecycle.markNetworkStarted();
   await lifecycle.finalizeRun({
     results: [],
@@ -186,7 +197,10 @@ Deno.test("createProcessLifecycle: finalizeRun does not stop when noSetup=true a
 });
 
 Deno.test("createProcessLifecycle: finalizeRun does not stop when keepRunning=true", async () => {
-  const { lifecycle, callCount } = makeLifecycle({ keepRunning: true, teardown: false });
+  const { lifecycle, callCount } = makeLifecycle({
+    keepRunning: true,
+    teardown: false,
+  });
   lifecycle.markNetworkStarted();
   await lifecycle.finalizeRun({
     results: [],

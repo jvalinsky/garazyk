@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { solveLayout, type LayoutNode } from "./layout_tree.ts";
+import { type LayoutNode, solveLayout } from "./layout_tree.ts";
 
 Deno.test("solveLayout: single node fills bounds", () => {
   const root: LayoutNode = { id: "root" };

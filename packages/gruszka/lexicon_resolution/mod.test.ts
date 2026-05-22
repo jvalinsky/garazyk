@@ -7,16 +7,10 @@
  * @module lexicon_resolution
  */
 
-import { assertEquals, assert, assertFalse } from "jsr:@std/assert";
-import { resolveLexicon, type ResolutionPorts } from "./mod.ts";
+import { assert, assertEquals, assertFalse } from "jsr:@std/assert";
+import { type ResolutionPorts, resolveLexicon } from "./mod.ts";
 import { InMemoryCache } from "./cache.ts";
-import type {
-  Did,
-  DidDocument,
-  Domain,
-  LexiconDoc,
-  Result,
-} from "./types.ts";
+import type { Did, DidDocument, Domain, LexiconDoc, Result } from "./types.ts";
 import { asDid, asDomain, asNsid } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -151,7 +145,9 @@ Deno.test("resolveLexicon: happy path — resolves DNS → DID → record", asyn
   // Record was fetched from the PDS with a properly constructed XRPC URL.
   assertEquals(record.calls.length, 1);
   const url = record.calls[0];
-  assert(url.startsWith("https://pds.example.com/xrpc/com.atproto.repo.getRecord?"));
+  assert(
+    url.startsWith("https://pds.example.com/xrpc/com.atproto.repo.getRecord?"),
+  );
   assert(url.includes("repo=did%3Aplc%3Atest123"));
   assert(url.includes("collection=com.atproto.lexicon.schema"));
   assert(url.includes("rkey=app.bsky.feed.post"));
@@ -159,10 +155,19 @@ Deno.test("resolveLexicon: happy path — resolves DNS → DID → record", asyn
 
 Deno.test("resolveLexicon: happy path — handles deep NSID", async () => {
   const dns = stubDns({ ok: true, value: [["did=did:plc:test123"]] });
-  const did = stubDid({ ok: true, value: makeDidDoc("https://pds.deep.example") });
-  const record = stubRecord({ ok: true, value: makeLexicon("com.atproto.repo.createRecord") });
+  const did = stubDid({
+    ok: true,
+    value: makeDidDoc("https://pds.deep.example"),
+  });
+  const record = stubRecord({
+    ok: true,
+    value: makeLexicon("com.atproto.repo.createRecord"),
+  });
 
-  const result = await resolveLexicon("com.atproto.repo.createRecord", makePorts(dns, did, record));
+  const result = await resolveLexicon(
+    "com.atproto.repo.createRecord",
+    makePorts(dns, did, record),
+  );
 
   assert(result.ok);
   assertEquals(result.value.id, "com.atproto.repo.createRecord");
@@ -214,9 +219,15 @@ Deno.test("resolveLexicon: NSID with uppercase — validated correctly", async (
   // Uppercase is now valid per the fixed regex (allows a-zA-Z0-9.).
   const dns = stubDns({ ok: true, value: [["did=did:plc:test123"]] });
   const did = stubDid({ ok: true, value: makeDidDoc() });
-  const record = stubRecord({ ok: true, value: makeLexicon("com.Atproto.Repo.CreateRecord") });
+  const record = stubRecord({
+    ok: true,
+    value: makeLexicon("com.Atproto.Repo.CreateRecord"),
+  });
 
-  const result = await resolveLexicon("com.Atproto.Repo.CreateRecord", makePorts(dns, did, record));
+  const result = await resolveLexicon(
+    "com.Atproto.Repo.CreateRecord",
+    makePorts(dns, did, record),
+  );
 
   assert(result.ok);
   assertEquals(dns.calls.length, 1);
@@ -401,7 +412,10 @@ Deno.test("resolveLexicon: DID doc has no service array — returns PdsEndpointM
 Deno.test("resolveLexicon: record fetch fails — returns RecordFetchFailed", async () => {
   const dns = stubDns({ ok: true, value: [["did=did:plc:test123"]] });
   const did = stubDid({ ok: true, value: makeDidDoc() });
-  const record = stubRecord({ ok: false, error: "HTTP 503: service unavailable" });
+  const record = stubRecord({
+    ok: false,
+    error: "HTTP 503: service unavailable",
+  });
 
   const result = await resolveLexicon(testNsid, makePorts(dns, did, record));
 
@@ -440,7 +454,10 @@ Deno.test("resolveLexicon: record id mismatch — returns RecordVerificationFail
   const dns = stubDns({ ok: true, value: [["did=did:plc:test123"]] });
   const did = stubDid({ ok: true, value: makeDidDoc() });
   // The PDS returns a lexicon for a different NSID than what was requested.
-  const record = stubRecord({ ok: true, value: makeLexicon("com.atproto.other.method") });
+  const record = stubRecord({
+    ok: true,
+    value: makeLexicon("com.atproto.other.method"),
+  });
 
   const result = await resolveLexicon(testNsid, makePorts(dns, did, record));
 
@@ -491,7 +508,11 @@ Deno.test("resolveLexicon: DID doc with object-form endpoint — resolves correc
   assert(result.ok);
   // The XRPC URL should use the unwrapped .url from the object-form endpoint.
   const url = record.calls[0];
-  assert(url.startsWith("https://pds-object.example.com/xrpc/com.atproto.repo.getRecord?"));
+  assert(
+    url.startsWith(
+      "https://pds-object.example.com/xrpc/com.atproto.repo.getRecord?",
+    ),
+  );
 });
 
 // =============================================================================
@@ -594,9 +615,21 @@ Deno.test("resolveLexicon: cache hit — second resolution for same NSID does no
   const r2 = await resolveLexicon(testNsid, ports);
   assert(r2.ok);
   assertEquals(r2.value.id, testNsid);
-  assertEquals(dns.calls.length, 1, "DNS should not be called again (cache hit)");
-  assertEquals(did.calls.length, 1, "DID should not be called again (cache hit)");
-  assertEquals(record.calls.length, 1, "record should not be called again (cache hit)");
+  assertEquals(
+    dns.calls.length,
+    1,
+    "DNS should not be called again (cache hit)",
+  );
+  assertEquals(
+    did.calls.length,
+    1,
+    "DID should not be called again (cache hit)",
+  );
+  assertEquals(
+    record.calls.length,
+    1,
+    "record should not be called again (cache hit)",
+  );
 });
 
 Deno.test("resolveLexicon: cache miss — different NSID calls inner ports for each", async () => {
@@ -686,7 +719,11 @@ Deno.test("resolveLexicon: errors are not cached", async () => {
   const r1 = await resolveLexicon(testNsid, ports);
   assertFalse(r1.ok);
   assertEquals(dns.calls.length, 1);
-  assertEquals(dnsCache.size, 0, "cache should be empty — errors are not stored");
+  assertEquals(
+    dnsCache.size,
+    0,
+    "cache should be empty — errors are not stored",
+  );
 
   // Second attempt — DNS is called again because the error was not cached.
   const r2 = await resolveLexicon(testNsid, ports);
@@ -722,5 +759,9 @@ Deno.test("resolveLexicon: TTL expiry — inner port called again after entry ex
   // Second resolution — TTL has expired, so the inner port must be recalled.
   const r2 = await resolveLexicon(testNsid, ports);
   assert(r2.ok);
-  assertEquals(record.calls.length, 2, "TTL expired — record port called again");
+  assertEquals(
+    record.calls.length,
+    2,
+    "TTL expired — record port called again",
+  );
 });

@@ -176,11 +176,12 @@ async function runHostScenarioInChild(
   const childRunnerPath = fromFileUrl(
     new URL("./host_child_runner.ts", import.meta.url),
   );
-  
+
   // Write a temporary bootstrap script that statically imports the host runner and
   // scenario. This eliminates dynamic runtime import warnings during package publication.
   const bootstrapPath = join(tempDir, "bootstrap.ts");
-  const bootstrapContent = `// Generated bootstrap for isolated scenario execution
+  const bootstrapContent =
+    `// Generated bootstrap for isolated scenario execution
 import { runChildWithModule } from "${toFileUrl(childRunnerPath).href}";
 import * as scenarioModule from "${toFileUrl(scenario.path).href}";
 const exitCode = await runChildWithModule(scenarioModule);

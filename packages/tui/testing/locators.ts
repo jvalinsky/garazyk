@@ -18,12 +18,24 @@ import type { Key } from "../input.ts";
 /** Represents a delayed query locator pointing to one or more TUI components. */
 export class Locator {
   private harness: VirtualTuiHarness;
-  private resolveQuery: () => { x: number; y: number; width: number; height: number; text?: string } | undefined;
+  private resolveQuery: () => {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    text?: string;
+  } | undefined;
   private description: string;
 
   constructor(
     harness: VirtualTuiHarness,
-    resolveQuery: () => { x: number; y: number; width: number; height: number; text?: string } | undefined,
+    resolveQuery: () => {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      text?: string;
+    } | undefined,
     description: string,
   ) {
     this.harness = harness;
@@ -32,7 +44,13 @@ export class Locator {
   }
 
   /** Resolves the locator to its active screen bounding box. Throws if not found. */
-  resolve(): { x: number; y: number; width: number; height: number; text?: string } {
+  resolve(): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    text?: string;
+  } {
     const bounds = this.resolveQuery();
     if (!bounds) {
       throw new Error(`Failed to resolve locator: ${this.description}`);
@@ -50,7 +68,10 @@ export class Locator {
   }
 
   /** Simulate pressing a specific key or escape sequence. */
-  async press(keyName: string, modifiers?: Partial<Omit<Key, "key">>): Promise<void> {
+  async press(
+    keyName: string,
+    modifiers?: Partial<Omit<Key, "key">>,
+  ): Promise<void> {
     this.resolve();
     await this.harness.emitKey(keyName, modifiers);
   }
@@ -63,7 +84,7 @@ export class Locator {
     const bounds = this.resolve();
     const clickX = bounds.x + Math.floor(bounds.width / 2);
     const clickY = bounds.y + Math.floor(bounds.height / 2);
-    
+
     // In TUI context, clicking targets often activates them or focuses them.
     // If the harness has coordinate click handlers, we would dispatch it.
     // For general keys, we simulate an active click confirmation (e.g. ENTER) or tab-to focus.
@@ -73,17 +94,19 @@ export class Locator {
   /** Assert that the locator contains the expected text substring or matches a regex. */
   toHaveText(expected: string | RegExp): void {
     const bounds = this.resolve();
-    const text = bounds.text !== undefined ? bounds.text : this.harness.dumpScreen();
-    
+    const text = bounds.text !== undefined
+      ? bounds.text
+      : this.harness.dumpScreen();
+
     if (expected instanceof RegExp) {
       assert(
         expected.test(text),
-        `Expected locator "${this.description}" text "${text}" to match regex ${expected}`
+        `Expected locator "${this.description}" text "${text}" to match regex ${expected}`,
       );
     } else {
       assert(
         text.includes(expected),
-        `Expected locator "${this.description}" text to contain "${expected}", but got:\n${text}`
+        `Expected locator "${this.description}" text to contain "${expected}", but got:\n${text}`,
       );
     }
   }
@@ -102,7 +125,10 @@ export class Locator {
 // ---------------------------------------------------------------------------
 
 /** Scan the virtual screen cells to locate the bounding box of a specific text. */
-export function getByText(harness: VirtualTuiHarness, textOrRegex: string | RegExp): Locator {
+export function getByText(
+  harness: VirtualTuiHarness,
+  textOrRegex: string | RegExp,
+): Locator {
   return new Locator(
     harness,
     () => {
@@ -112,12 +138,24 @@ export function getByText(harness: VirtualTuiHarness, textOrRegex: string | RegE
         if (textOrRegex instanceof RegExp) {
           const match = line.match(textOrRegex);
           if (match && match.index !== undefined) {
-            return { x: match.index, y, width: match[0].length, height: 1, text: match[0] };
+            return {
+              x: match.index,
+              y,
+              width: match[0].length,
+              height: 1,
+              text: match[0],
+            };
           }
         } else {
           const idx = line.indexOf(textOrRegex);
           if (idx !== -1) {
-            return { x: idx, y, width: textOrRegex.length, height: 1, text: textOrRegex };
+            return {
+              x: idx,
+              y,
+              width: textOrRegex.length,
+              height: 1,
+              text: textOrRegex,
+            };
           }
         }
       }
@@ -128,14 +166,21 @@ export function getByText(harness: VirtualTuiHarness, textOrRegex: string | RegE
 }
 
 /** Recursively searches the TDOM tree to find a node by ID, role, or matching name. */
-function findInTdom(element: TdomElement, role: string, name: string | RegExp): TdomElement | undefined {
-  const matchesRole = element.id?.toLowerCase().includes(role.toLowerCase()) || false;
+function findInTdom(
+  element: TdomElement,
+  role: string,
+  name: string | RegExp,
+): TdomElement | undefined {
+  const matchesRole = element.id?.toLowerCase().includes(role.toLowerCase()) ||
+    false;
   let matchesName = false;
 
   if (name instanceof RegExp) {
-    matchesName = name.test(element.text) || (element.id !== undefined && name.test(element.id));
+    matchesName = name.test(element.text) ||
+      (element.id !== undefined && name.test(element.id));
   } else {
-    matchesName = element.text.includes(name) || element.id?.includes(name) || false;
+    matchesName = element.text.includes(name) || element.id?.includes(name) ||
+      false;
   }
 
   if (matchesRole && matchesName) {
@@ -162,7 +207,13 @@ export function getByRole(
       const tdom = serializeTdom(harness.buffer, layout);
       const match = findInTdom(tdom, role, options.name);
       if (match) {
-        return { x: match.x, y: match.y, width: match.width, height: match.height, text: match.text };
+        return {
+          x: match.x,
+          y: match.y,
+          width: match.width,
+          height: match.height,
+          text: match.text,
+        };
       }
       return undefined;
     },

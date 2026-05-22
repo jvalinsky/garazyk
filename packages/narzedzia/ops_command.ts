@@ -125,7 +125,9 @@ export async function runBackup(options: BackupOptions): Promise<void> {
     "did_cache/service.db",
   );
 
-  for await (const entry of walk(dataDir, { maxDepth: 4, includeDirs: false })) {
+  for await (
+    const entry of walk(dataDir, { maxDepth: 4, includeDirs: false })
+  ) {
     if (basename(entry.path) === "data.sqlite") {
       const relPath = entry.path.slice(dataDir.length + 1);
       await backupDb(entry.path, join(backupDest, relPath), `user/${relPath}`);
@@ -206,8 +208,12 @@ export async function runBackfill(options: BackfillOptions): Promise<void> {
         );
       `);
 
-      const { text: recordCount } = await runSql("SELECT COUNT(*) FROM records;");
-      const { text: repoBytes } = await runSql("SELECT COALESCE(SUM(size), 0) FROM ipld_blocks;");
+      const { text: recordCount } = await runSql(
+        "SELECT COUNT(*) FROM records;",
+      );
+      const { text: repoBytes } = await runSql(
+        "SELECT COALESCE(SUM(size), 0) FROM ipld_blocks;",
+      );
 
       let blobBytes = "0";
       let blobCount = "0";
@@ -215,7 +221,9 @@ export async function runBackfill(options: BackfillOptions): Promise<void> {
         "SELECT name FROM sqlite_master WHERE type='table' AND name='blobs';",
       );
       if (hasBlobs) {
-        const { text: bb } = await runSql("SELECT COALESCE(SUM(size), 0) FROM blobs;");
+        const { text: bb } = await runSql(
+          "SELECT COALESCE(SUM(size), 0) FROM blobs;",
+        );
         const { text: bc } = await runSql("SELECT COUNT(*) FROM blobs;");
         blobBytes = bb;
         blobCount = bc;
@@ -243,7 +251,9 @@ export async function runBackfill(options: BackfillOptions): Promise<void> {
   logInfo(`  Total blobs:      ${totalBlobs}`);
 }
 
-export async function runValidateConfig(options: ValidateConfigOptions): Promise<void> {
+export async function runValidateConfig(
+  options: ValidateConfigOptions,
+): Promise<void> {
   const configPath = options.configPath;
 
   try {
@@ -287,13 +297,17 @@ export async function runValidateConfig(options: ValidateConfigOptions): Promise
 export async function runSetupPds(options: SetupPdsOptions): Promise<void> {
   const { email, handle, cfToken, cfZoneId } = options;
   if (!email || !handle || !cfToken || !cfZoneId) {
-    errorExit("--email, --handle, --cf-token, and --cf-zone-id are required for setup");
+    errorExit(
+      "--email, --handle, --cf-token, and --cf-zone-id are required for setup",
+    );
   }
-  const password = options.password || crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+  const password = options.password ||
+    crypto.randomUUID().replace(/-/g, "").slice(0, 24);
 
   logHeader("=== PDS Production Setup ===");
 
-  const dataDir = options.dataDir || join(Deno.env.get("HOME") || ".", "pds-data");
+  const dataDir = options.dataDir ||
+    join(Deno.env.get("HOME") || ".", "pds-data");
   await Deno.mkdir(dataDir, { recursive: true, mode: 0o750 });
   await Deno.mkdir(join(dataDir, "keys"), { recursive: true, mode: 0o700 });
   logOk(`Directories created at ${dataDir}`);
@@ -304,11 +318,16 @@ export async function runSetupPds(options: SetupPdsOptions): Promise<void> {
 
   const proc = new Deno.Command(buildBin, {
     args: [
-      "account", "create",
-      "--email", email,
-      "--handle", handle,
-      "--password", password,
-      "--config", configPath,
+      "account",
+      "create",
+      "--email",
+      email,
+      "--handle",
+      handle,
+      "--password",
+      password,
+      "--config",
+      configPath,
       "--verbose",
     ],
   });
@@ -347,13 +366,17 @@ export async function runSetupPds(options: SetupPdsOptions): Promise<void> {
   logHeader("\nSetup Complete!");
   logInfo(`Admin Handle: ${handle}`);
   logInfo(`Password:     ${password}`);
-  logInfo("Next steps: Install Nginx config and systemd unit from config/ folder.");
+  logInfo(
+    "Next steps: Install Nginx config and systemd unit from config/ folder.",
+  );
 }
 
 export async function runDnsAdd(options: DnsAddOptions): Promise<void> {
   const { cfToken, cfZoneId, handle, cfTarget } = options;
   if (!cfToken || !cfZoneId || !handle || !cfTarget) {
-    errorExit("--cf-token, --cf-zone-id, --handle, and --cf-target are required");
+    errorExit(
+      "--cf-token, --cf-zone-id, --handle, and --cf-target are required",
+    );
   }
 
   const cf = new CloudflareClient(cfToken, cfZoneId);

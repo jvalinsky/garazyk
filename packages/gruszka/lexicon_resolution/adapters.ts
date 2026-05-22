@@ -11,7 +11,7 @@
  * @module lexicon_resolution
  */
 
-import type { DnsResolver, DidResolver, RecordFetcher } from "./ports.ts";
+import type { DidResolver, DnsResolver, RecordFetcher } from "./ports.ts";
 import type { Did, DidDocument, Domain, LexiconDoc, Result } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,10 @@ export class HttpDidResolver implements DidResolver {
       return { ok: true, value: document };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      return { ok: false, error: `DID resolution failed for ${did}: ${reason}` };
+      return {
+        ok: false,
+        error: `DID resolution failed for ${did}: ${reason}`,
+      };
     }
   }
 
@@ -183,20 +186,25 @@ export class HttpRecordFetcher implements RecordFetcher {
       if (!response.ok) {
         return {
           ok: false,
-          error: `Record fetch returned HTTP ${response.status} for ${endpoint}`,
+          error:
+            `Record fetch returned HTTP ${response.status} for ${endpoint}`,
         };
       }
       const envelope = await response.json() as { value?: LexiconDoc };
       if (!envelope.value || typeof envelope.value.lexicon !== "number") {
         return {
           ok: false,
-          error: `Record fetch response missing or invalid .value field for ${endpoint}`,
+          error:
+            `Record fetch response missing or invalid .value field for ${endpoint}`,
         };
       }
       return { ok: true, value: envelope.value };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      return { ok: false, error: `Record fetch failed for ${endpoint}: ${reason}` };
+      return {
+        ok: false,
+        error: `Record fetch failed for ${endpoint}: ${reason}`,
+      };
     }
   }
 }

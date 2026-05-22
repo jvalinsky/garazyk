@@ -1,4 +1,4 @@
-import { assertEquals, assert, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertThrows } from "@std/assert";
 import {
   createTopologyManifest,
   defaultPortForRole,
@@ -56,16 +56,25 @@ Deno.test("defaultPortForRole: falls back to 8080 for unknown roles", () => {
 });
 
 Deno.test("parsePortMapping: returns empty ports for missing or empty mappings", () => {
-  assertEquals(parsePortMapping(undefined), { hostPort: "", containerPort: "" });
+  assertEquals(parsePortMapping(undefined), {
+    hostPort: "",
+    containerPort: "",
+  });
   assertEquals(parsePortMapping(""), { hostPort: "", containerPort: "" });
 });
 
 Deno.test("parsePortMapping: treats a single port as both host and container ports", () => {
-  assertEquals(parsePortMapping("8080"), { hostPort: "8080", containerPort: "8080" });
+  assertEquals(parsePortMapping("8080"), {
+    hostPort: "8080",
+    containerPort: "8080",
+  });
 });
 
 Deno.test("parsePortMapping: parses host and container ports from a two-part mapping", () => {
-  assertEquals(parsePortMapping("8080:80"), { hostPort: "8080", containerPort: "80" });
+  assertEquals(parsePortMapping("8080:80"), {
+    hostPort: "8080",
+    containerPort: "80",
+  });
 });
 
 Deno.test("parsePortMapping: ignores an IP prefix and uses the last two segments", () => {
@@ -108,7 +117,10 @@ Deno.test("internalUrlForRole: treats a single port as both the host and contain
 });
 
 Deno.test("internalUrlForRole: falls back to the default role port when no ports are declared", () => {
-  assertEquals(internalUrlForRole("pds", makeAdapter()), "http://local-pds:2583");
+  assertEquals(
+    internalUrlForRole("pds", makeAdapter()),
+    "http://local-pds:2583",
+  );
 });
 
 Deno.test("roleToEnvKey: maps built-in and experimental roles to environment keys", () => {
@@ -133,7 +145,12 @@ Deno.test("dependencyInfoForService: resolves direct and role dependencies", () 
     ),
     {
       requested: ["database", "relay", "ui", "pds"],
-      composeServiceNames: ["database", "local-relay", "ui-custom", "pds-custom"],
+      composeServiceNames: [
+        "database",
+        "local-relay",
+        "ui-custom",
+        "pds-custom",
+      ],
     },
   );
 });

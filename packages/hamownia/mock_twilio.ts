@@ -161,7 +161,10 @@ export async function handleMockTwilioRequest(
   }
 
   if (path === "/__control/state") {
-    return jsonResponse({ store: state.store, alwaysApproveCodes: state.alwaysApproveCodes });
+    return jsonResponse({
+      store: state.store,
+      alwaysApproveCodes: state.alwaysApproveCodes,
+    });
   }
 
   if (path === "/__control/reset" && req.method === "POST") {
@@ -247,7 +250,9 @@ export async function handleMockTwilioRequest(
   }
 
   // Match: /v2/Service/{serviceSID}/VerificationCheck or /{serviceSID}/VerificationCheck
-  const checkMatch = path.match(/^(?:\/v2\/Service)?\/([^/]+)\/VerificationCheck$/);
+  const checkMatch = path.match(
+    /^(?:\/v2\/Service)?\/([^/]+)\/VerificationCheck$/,
+  );
   if (checkMatch && req.method === "POST") {
     await maybeLatency(config.latency ?? 0);
     if (await maybeFail(config.failRate ?? 0)) {
@@ -318,7 +323,9 @@ export function serveMockTwilio(config: MockTwilioServerConfig): void {
 
   console.error(`[mock-twilio] Starting on port ${config.port}`);
   console.error(
-    `[mock-twilio] Always-approve codes: ${state.alwaysApproveCodes.join(", ")}`,
+    `[mock-twilio] Always-approve codes: ${
+      state.alwaysApproveCodes.join(", ")
+    }`,
   );
   console.error(`[mock-twilio] Account SID: ${config.accountSid}`);
   if ((config.latency ?? 0) > 0) {

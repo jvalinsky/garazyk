@@ -4,14 +4,14 @@
  * @module tui/layout_test
  */
 
-import { assertEquals, assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
   dashboardLayoutTree,
-  solveLayout,
   findPanel,
-  panelContentArea,
   PANEL_IDS,
   PANEL_TITLES,
+  panelContentArea,
+  solveLayout,
 } from "./layout.ts";
 
 Deno.test("dashboardLayoutTree: returns null for too-small terminal", () => {
@@ -52,7 +52,10 @@ Deno.test("dashboardLayoutTree + solveLayout: wide layout (100+ cols)", () => {
 
   // Scenarios and History should be below
   const scenarios = findPanel(layout, "scenarios")!;
-  assert(scenarios.y >= network.y + network.height - 1, "Scenarios should be below Network");
+  assert(
+    scenarios.y >= network.y + network.height - 1,
+    "Scenarios should be below Network",
+  );
 });
 
 Deno.test("dashboardLayoutTree + solveLayout: narrow layout (< 100 cols)", () => {
@@ -79,7 +82,14 @@ Deno.test("dashboardLayoutTree + solveLayout: all four panel IDs present", () =>
 });
 
 Deno.test("panelContentArea: returns inner area inside borders", () => {
-  const node = { id: "network" as const, x: 5, y: 2, width: 30, height: 10, children: [] as never[] };
+  const node = {
+    id: "network" as const,
+    x: 5,
+    y: 2,
+    width: 30,
+    height: 10,
+    children: [] as never[],
+  };
   const area = panelContentArea(node);
   assertEquals(area.x, 6);
   assertEquals(area.y, 3);
@@ -88,7 +98,14 @@ Deno.test("panelContentArea: returns inner area inside borders", () => {
 });
 
 Deno.test("panelContentArea: handles small panels", () => {
-  const node = { id: "network" as const, x: 0, y: 0, width: 2, height: 2, children: [] as never[] };
+  const node = {
+    id: "network" as const,
+    x: 0,
+    y: 0,
+    width: 2,
+    height: 2,
+    children: [] as never[],
+  };
   const area = panelContentArea(node);
   assertEquals(area.width, 0);
   assertEquals(area.height, 0);

@@ -8,7 +8,7 @@
  * @module lexicon_resolution
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assert, assertEquals } from "jsr:@std/assert";
 
 import {
   buildXrpcUrl,

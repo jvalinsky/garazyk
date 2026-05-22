@@ -1,11 +1,15 @@
 import { Command } from "@cliffy/command";
 import { Table } from "@cliffy/table";
 import { initLogger, logInfo } from "@garazyk/schemat";
-import { SERVICE_PORTS, serviceUrl, initRunDir } from "@garazyk/schemat/runtime";
+import {
+  initRunDir,
+  SERVICE_PORTS,
+  serviceUrl,
+} from "@garazyk/schemat/runtime";
 import {
   BINARY_SERVICES,
-  getBinaryServiceStatus,
   type BinaryServiceName,
+  getBinaryServiceStatus,
 } from "../binary_services.ts";
 import { bold, cyan, green, red, yellow } from "@std/fmt/colors";
 
@@ -30,8 +34,8 @@ const ALL_SERVICES = Object.keys(BINARY_SERVICES) as BinaryServiceName[];
 export const psCommand = new Command()
   .description(
     "List service status in a table.\n\n" +
-    "Shows running state, health, PID, port, URL, and binary for each local ATProto service. " +
-    "By default only running services are shown (like `docker ps`). Use --all to show everything.",
+      "Shows running state, health, PID, port, URL, and binary for each local ATProto service. " +
+      "By default only running services are shown (like `docker ps`). Use --all to show everything.",
   )
   .option("-a, --all", "Show all services, not just running ones.")
   .action(async ({ verbose, quiet, all }: PsOptions) => {

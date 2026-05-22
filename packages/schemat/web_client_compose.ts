@@ -99,7 +99,8 @@ export async function writeSourceDockerfile(
   client: WebClientTopology,
   runDir: string,
 ): Promise<string> {
-  const allowUnpinned = Deno.env.get("ATPROTO_ALLOW_UNPINNED_WEB_CLIENT") === "1";
+  const allowUnpinned =
+    Deno.env.get("ATPROTO_ALLOW_UNPINNED_WEB_CLIENT") === "1";
   const looksPinned = /^[0-9a-f]{12,40}$/i.test(client.ref) ||
     /^refs\/tags\//.test(client.ref) ||
     /^v?\d+\.\d+\.\d+/.test(client.ref);
@@ -113,9 +114,10 @@ export async function writeSourceDockerfile(
   await Deno.mkdir(buildDir, { recursive: true });
   await prepareSourceBuildContext(client, buildDir);
   const dockerfile = join(buildDir, "Dockerfile");
-  const installCommand = client.buildPreset === "social-app" || client.buildPreset === "witchsky"
-    ? "corepack enable && yarn install --immutable || yarn install"
-    : "npm ci || npm install";
+  const installCommand =
+    client.buildPreset === "social-app" || client.buildPreset === "witchsky"
+      ? "corepack enable && yarn install --immutable || yarn install"
+      : "npm ci || npm install";
   const commandJson = JSON.stringify(client.serveCommand);
   await Deno.writeTextFile(
     dockerfile,
@@ -270,7 +272,9 @@ networks:
 export async function main() {
   const args = Deno.args;
   if (args.length === 0 || args.includes("--help")) {
-    console.log(`Usage: deno run -A packages/schemat/web_client_compose.ts <preset> <output-file> [options]`);
+    console.log(
+      `Usage: deno run -A packages/schemat/web_client_compose.ts <preset> <output-file> [options]`,
+    );
     Deno.exit(0);
   }
 

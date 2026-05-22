@@ -9,8 +9,8 @@
 import { assertEquals, assertMatch } from "@std/assert";
 import {
   handleMockTwilioRequest,
-  MockTwilioState,
   type MockTwilioServerConfig,
+  MockTwilioState,
   parseMockTwilioConfig,
 } from "./mock_twilio.ts";
 
@@ -82,7 +82,11 @@ function verifyReq(
 Deno.test("handleMockTwilioRequest: GET /__control/health returns ok", async () => {
   const config = makeConfig();
   const state = makeState();
-  const res = await handleMockTwilioRequest(controlReq("/__control/health"), config, state);
+  const res = await handleMockTwilioRequest(
+    controlReq("/__control/health"),
+    config,
+    state,
+  );
   assertEquals(res.status, 200);
   const body = await res.json();
   assertEquals(body.status, "ok");
@@ -93,8 +97,16 @@ Deno.test("handleMockTwilioRequest: GET /__control/health returns ok", async () 
 Deno.test("handleMockTwilioRequest: GET /__control/state returns store and codes", async () => {
   const config = makeConfig();
   const state = makeState();
-  state.store["+15555550001"] = { code: "123456", createdAt: 0, verified: false };
-  const res = await handleMockTwilioRequest(controlReq("/__control/state"), config, state);
+  state.store["+15555550001"] = {
+    code: "123456",
+    createdAt: 0,
+    verified: false,
+  };
+  const res = await handleMockTwilioRequest(
+    controlReq("/__control/state"),
+    config,
+    state,
+  );
   assertEquals(res.status, 200);
   const body = await res.json();
   assertEquals(body.store["+15555550001"].code, "123456");
@@ -104,8 +116,16 @@ Deno.test("handleMockTwilioRequest: GET /__control/state returns store and codes
 Deno.test("handleMockTwilioRequest: POST /__control/reset clears state", async () => {
   const config = makeConfig();
   const state = makeState();
-  state.store["+15555550002"] = { code: "999999", createdAt: 0, verified: false };
-  await handleMockTwilioRequest(controlPost("/__control/reset", {}), config, state);
+  state.store["+15555550002"] = {
+    code: "999999",
+    createdAt: 0,
+    verified: false,
+  };
+  await handleMockTwilioRequest(
+    controlPost("/__control/reset", {}),
+    config,
+    state,
+  );
   assertEquals(Object.keys(state.store).length, 0);
 });
 
@@ -113,7 +133,10 @@ Deno.test("handleMockTwilioRequest: POST /__control/setCode stores code", async 
   const config = makeConfig();
   const state = makeState();
   const res = await handleMockTwilioRequest(
-    controlPost("/__control/setCode", { phone: "+15555550003", code: "654321" }),
+    controlPost("/__control/setCode", {
+      phone: "+15555550003",
+      code: "654321",
+    }),
     config,
     state,
   );
@@ -169,7 +192,12 @@ Deno.test("handleMockTwilioRequest: Verifications POST valid → 200 pending", a
   const config = makeConfig();
   const state = makeState();
   const res = await handleMockTwilioRequest(
-    verifyReq("Verifications", { To: "+15555550010", Channel: "sms" }, true, config),
+    verifyReq(
+      "Verifications",
+      { To: "+15555550010", Channel: "sms" },
+      true,
+      config,
+    ),
     config,
     state,
   );
@@ -235,10 +263,19 @@ Deno.test("handleMockTwilioRequest: Verifications POST missing To → 400", asyn
 Deno.test("handleMockTwilioRequest: VerificationCheck correct code → approved", async () => {
   const config = makeConfig();
   const state = makeState();
-  state.store["+15555550020"] = { code: "123456", createdAt: Date.now(), verified: false };
+  state.store["+15555550020"] = {
+    code: "123456",
+    createdAt: Date.now(),
+    verified: false,
+  };
 
   const res = await handleMockTwilioRequest(
-    verifyReq("VerificationCheck", { To: "+15555550020", Code: "123456" }, true, config),
+    verifyReq(
+      "VerificationCheck",
+      { To: "+15555550020", Code: "123456" },
+      true,
+      config,
+    ),
     config,
     state,
   );
@@ -252,10 +289,19 @@ Deno.test("handleMockTwilioRequest: VerificationCheck correct code → approved"
 Deno.test("handleMockTwilioRequest: VerificationCheck wrong code → pending", async () => {
   const config = makeConfig();
   const state = makeState();
-  state.store["+15555550021"] = { code: "123456", createdAt: Date.now(), verified: false };
+  state.store["+15555550021"] = {
+    code: "123456",
+    createdAt: Date.now(),
+    verified: false,
+  };
 
   const res = await handleMockTwilioRequest(
-    verifyReq("VerificationCheck", { To: "+15555550021", Code: "999999" }, true, config),
+    verifyReq(
+      "VerificationCheck",
+      { To: "+15555550021", Code: "999999" },
+      true,
+      config,
+    ),
     config,
     state,
   );
@@ -272,7 +318,12 @@ Deno.test("handleMockTwilioRequest: VerificationCheck always-approve code → ap
   // No entry in store for this phone
 
   const res = await handleMockTwilioRequest(
-    verifyReq("VerificationCheck", { To: "+15555550022", Code: "000000" }, true, config),
+    verifyReq(
+      "VerificationCheck",
+      { To: "+15555550022", Code: "000000" },
+      true,
+      config,
+    ),
     config,
     state,
   );
@@ -287,7 +338,12 @@ Deno.test("handleMockTwilioRequest: VerificationCheck always-approve does not cr
   const state = makeState(["000000"]);
 
   await handleMockTwilioRequest(
-    verifyReq("VerificationCheck", { To: "+15555550023", Code: "000000" }, true, config),
+    verifyReq(
+      "VerificationCheck",
+      { To: "+15555550023", Code: "000000" },
+      true,
+      config,
+    ),
     config,
     state,
   );
@@ -298,7 +354,12 @@ Deno.test("handleMockTwilioRequest: VerificationCheck always-approve does not cr
 Deno.test("handleMockTwilioRequest: VerificationCheck bad auth → 401", async () => {
   const config = makeConfig();
   const res = await handleMockTwilioRequest(
-    verifyReq("VerificationCheck", { To: "+15555550024", Code: "123456" }, false, config),
+    verifyReq(
+      "VerificationCheck",
+      { To: "+15555550024", Code: "123456" },
+      false,
+      config,
+    ),
     config,
     makeState(),
   );
@@ -380,15 +441,20 @@ Deno.test("parseMockTwilioConfig: defaults from empty args", () => {
     if (portOrig !== undefined) Deno.env.set("PORT", portOrig);
     if (sidOrig !== undefined) Deno.env.set("TWILIO_ACCOUNT_SID", sidOrig);
     if (tokenOrig !== undefined) Deno.env.set("TWILIO_AUTH_TOKEN", tokenOrig);
-    if (approveOrig !== undefined) Deno.env.set("ALWAYS_APPROVE_CODES", approveOrig);
+    if (approveOrig !== undefined) {
+      Deno.env.set("ALWAYS_APPROVE_CODES", approveOrig);
+    }
   }
 });
 
 Deno.test("parseMockTwilioConfig: explicit flag values", () => {
   const config = parseMockTwilioConfig([
-    "--port", "9999",
-    "--account-sid", "ACcustom",
-    "--auth-token", "SKcustom",
+    "--port",
+    "9999",
+    "--account-sid",
+    "ACcustom",
+    "--auth-token",
+    "SKcustom",
   ]);
   assertEquals(config.port, 9999);
   assertEquals(config.accountSid, "ACcustom");
@@ -402,8 +468,10 @@ Deno.test("parseMockTwilioConfig: --always-approve comma-separated", () => {
 
 Deno.test("parseMockTwilioConfig: --latency and --fail-rate", () => {
   const config = parseMockTwilioConfig([
-    "--latency", "50",
-    "--fail-rate", "0.1",
+    "--latency",
+    "50",
+    "--fail-rate",
+    "0.1",
   ]);
   assertEquals(config.latency, 50);
   assertEquals(config.failRate, 0.1);

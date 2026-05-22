@@ -15,10 +15,14 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
     if (!res.ok) throw new Error(`Server not healthy: ${res.status}`);
   });
 
-  if (result.failed > 0) { result.finish(); return result; }
+  if (result.failed > 0) {
+    result.finish();
+    return result;
+  }
 
   const session = await timedCall(
-    result, `Create account: ${luna.name}`,
+    result,
+    `Create account: ${luna.name}`,
     async () => {
       try {
         const res = await client.agent.createAccount({
@@ -28,7 +32,10 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
         });
         return res.data;
       } catch (e: any) {
-        if (e?.status === 400 && String(e.body?.error ?? "").includes("already exists")) {
+        if (
+          e?.status === 400 &&
+          String(e.body?.error ?? "").includes("already exists")
+        ) {
           const res = await client.agent.login({
             identifier: luna.handle,
             password: luna.password,
@@ -41,13 +48,17 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
     (s) => `did=${s.did}`,
   );
 
-  if (!session) { result.finish(); return result; }
+  if (!session) {
+    result.finish();
+    return result;
+  }
   luna.did = session.did;
   luna.accessJwt = session.accessJwt;
 
   let postUri = "";
   await timedCall(
-    result, "Create a post",
+    result,
+    "Create a post",
     async () => {
       const res = await client.agent.com.atproto.repo.createRecord({
         repo: luna.did,
@@ -66,7 +77,8 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
 
   if (postUri) {
     await timedCall(
-      result, "Read post back",
+      result,
+      "Read post back",
       async () => {
         const rkey = postUri.split("/").pop()!;
         const res = await client.agent.com.atproto.repo.getRecord({
@@ -84,5 +96,3 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
   result.finish();
   return result;
 }
-
-

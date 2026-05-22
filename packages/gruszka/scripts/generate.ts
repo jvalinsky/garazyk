@@ -365,9 +365,11 @@ export interface GeneratedClient {
         const doc = value;
         const isQuery = doc.defs["main"].type === "query";
         if (isQuery) {
-          result += `${indent}"${key}": (params?: QueryParams<"${doc.id}">, tokenOrOpts?: string | CallOptions) => caller.call("${doc.id}", params, tokenOrOpts) as Promise<QueryOutput<"${doc.id}">>,\n`;
+          result +=
+            `${indent}"${key}": (params?: QueryParams<"${doc.id}">, tokenOrOpts?: string | CallOptions) => caller.call("${doc.id}", params, tokenOrOpts) as Promise<QueryOutput<"${doc.id}">>,\n`;
         } else {
-          result += `${indent}"${key}": (input?: ProcedureInput<"${doc.id}">, tokenOrOpts?: string | CallOptions) => caller.call("${doc.id}", input, tokenOrOpts) as Promise<ProcedureOutput<"${doc.id}">>,\n`;
+          result +=
+            `${indent}"${key}": (input?: ProcedureInput<"${doc.id}">, tokenOrOpts?: string | CallOptions) => caller.call("${doc.id}", input, tokenOrOpts) as Promise<ProcedureOutput<"${doc.id}">>,\n`;
         }
       } else {
         result += `${indent}"${key}": {\n`;
@@ -381,7 +383,8 @@ export interface GeneratedClient {
   out += generateInterface(tree, "  ");
   out += "}\n\n";
 
-  out += "export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {\n";
+  out +=
+    "export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {\n";
   out += "  return {\n";
   out += generateImpl(tree, "    ");
   out += "  };\n";

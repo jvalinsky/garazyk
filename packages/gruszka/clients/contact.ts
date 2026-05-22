@@ -1,5 +1,5 @@
 /** Phone contact verification, import, and sync @module contact */
-import type { QueryOutput, ProcedureOutput } from "../lexicons.ts";
+import type { ProcedureOutput, QueryOutput } from "../lexicons.ts";
 import { TransportLayer } from "../transport.ts";
 
 /** Client for phone contact verification, import, and sync XRPC methods. */
@@ -21,7 +21,9 @@ export class ContactClient {
     phoneNumber: string,
     token: string,
   ): Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">> {
-    return await this.transport.post<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>(
+    return await this.transport.post<
+      ProcedureOutput<"app.bsky.contact.startPhoneVerification">
+    >(
       "app.bsky.contact.startPhoneVerification",
       { phoneNumber },
       token,
@@ -41,7 +43,9 @@ export class ContactClient {
     code: string,
     token: string,
   ): Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">> {
-    return await this.transport.post<ProcedureOutput<"app.bsky.contact.verifyPhone">>(
+    return await this.transport.post<
+      ProcedureOutput<"app.bsky.contact.verifyPhone">
+    >(
       "app.bsky.contact.verifyPhone",
       { phoneNumber, code },
       token,
@@ -61,7 +65,9 @@ export class ContactClient {
     importToken: string,
     token: string,
   ): Promise<ProcedureOutput<"app.bsky.contact.importContacts">> {
-    return await this.transport.post<ProcedureOutput<"app.bsky.contact.importContacts">>(
+    return await this.transport.post<
+      ProcedureOutput<"app.bsky.contact.importContacts">
+    >(
       "app.bsky.contact.importContacts",
       { token: importToken, contacts },
       token,
@@ -74,7 +80,9 @@ export class ContactClient {
    * @returns A promise that resolves to the contact matches response
    * @throws XrpcError if the request fails
    */
-  async getContactMatches(token: string): Promise<QueryOutput<"app.bsky.contact.getMatches">> {
+  async getContactMatches(
+    token: string,
+  ): Promise<QueryOutput<"app.bsky.contact.getMatches">> {
     return await this.transport.get<QueryOutput<"app.bsky.contact.getMatches">>(
       "app.bsky.contact.getMatches",
       undefined,
@@ -93,7 +101,9 @@ export class ContactClient {
     did: string,
     token: string,
   ): Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">> {
-    return await this.transport.post<ProcedureOutput<"app.bsky.contact.dismissMatch">>(
+    return await this.transport.post<
+      ProcedureOutput<"app.bsky.contact.dismissMatch">
+    >(
       "app.bsky.contact.dismissMatch",
       { did },
       token,
@@ -106,8 +116,12 @@ export class ContactClient {
    * @returns A promise that resolves to the sync status response
    * @throws XrpcError if the request fails
    */
-  async getContactSyncStatus(token: string): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">> {
-    return await this.transport.get<QueryOutput<"app.bsky.contact.getSyncStatus">>(
+  async getContactSyncStatus(
+    token: string,
+  ): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">> {
+    return await this.transport.get<
+      QueryOutput<"app.bsky.contact.getSyncStatus">
+    >(
       "app.bsky.contact.getSyncStatus",
       undefined,
       token,
@@ -120,8 +134,12 @@ export class ContactClient {
    * @returns A promise that resolves to the removal response
    * @throws XrpcError if the request fails
    */
-  async removeContactData(token: string): Promise<ProcedureOutput<"app.bsky.contact.removeData">> {
-    return await this.transport.post<ProcedureOutput<"app.bsky.contact.removeData">>(
+  async removeContactData(
+    token: string,
+  ): Promise<ProcedureOutput<"app.bsky.contact.removeData">> {
+    return await this.transport.post<
+      ProcedureOutput<"app.bsky.contact.removeData">
+    >(
       "app.bsky.contact.removeData",
       undefined,
       token,

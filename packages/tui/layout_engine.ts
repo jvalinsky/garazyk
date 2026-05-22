@@ -209,7 +209,10 @@ export function pointInBox(x: number, y: number, box: BoundingBox): boolean {
  * // clipped = { x: 50, y: 25, width: 50, height: 25 }
  * ```
  */
-export function clipBox(box: BoundingBox, clipRegion: BoundingBox): BoundingBox {
+export function clipBox(
+  box: BoundingBox,
+  clipRegion: BoundingBox,
+): BoundingBox {
   const x1 = Math.max(box.x, clipRegion.x);
   const y1 = Math.max(box.y, clipRegion.y);
   const x2 = Math.min(box.x + box.width, clipRegion.x + clipRegion.width);
@@ -259,7 +262,11 @@ export function isValidBox(box: BoundingBox): boolean {
  * // translated = { x: 15, y: 7, width: 20, height: 20 }
  * ```
  */
-export function translateBox(box: BoundingBox, dx: number, dy: number): BoundingBox {
+export function translateBox(
+  box: BoundingBox,
+  dx: number,
+  dy: number,
+): BoundingBox {
   return {
     x: box.x + dx,
     y: box.y + dy,

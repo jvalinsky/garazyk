@@ -1,18 +1,20 @@
 import { Command, SecretType } from "@cliffy/command";
 import {
-  runBackup,
   runBackfill,
-  runValidateConfig,
-  runSetupPds,
+  runBackup,
   runDnsAdd,
+  runSetupPds,
+  runValidateConfig,
 } from "../ops_command.ts";
 
 const secret = new SecretType();
 
 const backupCmd = new Command()
-  .description("Run PDS backup.\n\n" +
-    "Backs up service databases, user databases, and config files, " +
-    "then compresses into a timestamped archive.")
+  .description(
+    "Run PDS backup.\n\n" +
+      "Backs up service databases, user databases, and config files, " +
+      "then compresses into a timestamped archive.",
+  )
   .option("--data-dir <dir:string>", "PDS data directory.", {
     required: true,
   })
@@ -44,7 +46,7 @@ const backfillCmd = new Command()
 const validateConfigCmd = new Command()
   .description(
     "Validate PDS configuration for security standards.\n\n" +
-    "Checks invite_code_required, plc.url, rate_limit.enabled, and debug flags.",
+      "Checks invite_code_required, plc.url, rate_limit.enabled, and debug flags.",
   )
   .arguments("<config-path:string>")
   .action(async (_, configPath) => {
@@ -52,13 +54,22 @@ const validateConfigCmd = new Command()
   });
 
 const setupPdsCmd = new Command()
-  .description("Initialize a production PDS instance.\n\n" +
-    "Creates an admin account, verifies DID registration, and sets up DNS records.")
+  .description(
+    "Initialize a production PDS instance.\n\n" +
+      "Creates an admin account, verifies DID registration, and sets up DNS records.",
+  )
   .option("--email <email:string>", "Admin email.", { required: true })
-  .option("--handle <handle:string>", "Admin handle (e.g. alice.garazyk.xyz).", {
-    required: true,
-  })
-  .option("--password <password:secret>", "Account password (generated if omitted).")
+  .option(
+    "--handle <handle:string>",
+    "Admin handle (e.g. alice.garazyk.xyz).",
+    {
+      required: true,
+    },
+  )
+  .option(
+    "--password <password:secret>",
+    "Account password (generated if omitted).",
+  )
   .option("--cf-token <token:secret>", "Cloudflare API token.", {
     required: true,
   })
@@ -68,7 +79,13 @@ const setupPdsCmd = new Command()
   .type("secret", secret)
   .action(async (options) => {
     const {
-      email, handle, password, cfToken, cfZoneId, dataDir, cfTarget,
+      email,
+      handle,
+      password,
+      cfToken,
+      cfZoneId,
+      dataDir,
+      cfTarget,
     } = options as {
       email: string;
       handle: string;
@@ -78,7 +95,15 @@ const setupPdsCmd = new Command()
       dataDir?: string;
       cfTarget?: string;
     };
-    await runSetupPds({ email, handle, password, cfToken, cfZoneId, dataDir, cfTarget });
+    await runSetupPds({
+      email,
+      handle,
+      password,
+      cfToken,
+      cfZoneId,
+      dataDir,
+      cfTarget,
+    });
   });
 
 const dnsAddCmd = new Command()
@@ -105,11 +130,13 @@ const dnsAddCmd = new Command()
   });
 
 export const opsCommand = new Command()
-  .description("Production PDS operations.\n\n" +
-    "Backup, backfill, config validation, setup, and DNS management " +
-    "for production ATProto PDS instances.\n\n" +
-    "WARNING: These commands affect production systems. " +
-    "Use --dry-run where available to preview changes.")
+  .description(
+    "Production PDS operations.\n\n" +
+      "Backup, backfill, config validation, setup, and DNS management " +
+      "for production ATProto PDS instances.\n\n" +
+      "WARNING: These commands affect production systems. " +
+      "Use --dry-run where available to preview changes.",
+  )
   .command("backup", backupCmd)
   .command("backfill", backfillCmd)
   .command("validate-config", validateConfigCmd)

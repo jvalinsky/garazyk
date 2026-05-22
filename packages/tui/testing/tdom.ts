@@ -31,7 +31,10 @@ export interface TdomElement {
 }
 
 /** Extracts text content from a ScreenBuffer within a specific bounding region. */
-export function extractTextFromBounds(buf: ScreenBuffer, bounds: BoundingBox): string {
+export function extractTextFromBounds(
+  buf: ScreenBuffer,
+  bounds: BoundingBox,
+): string {
   const lines: string[] = [];
   const startX = Math.max(0, bounds.x);
   const startY = Math.max(0, bounds.y);
@@ -57,9 +60,14 @@ export function extractTextFromBounds(buf: ScreenBuffer, bounds: BoundingBox): s
  * Serializes a solved layout tree (ResolvedNode) into a TdomElement tree
  * by reading character contents directly from the ScreenBuffer.
  */
-export function serializeTdom(buf: ScreenBuffer, layout: ResolvedNode): TdomElement {
+export function serializeTdom(
+  buf: ScreenBuffer,
+  layout: ResolvedNode,
+): TdomElement {
   const text = extractTextFromBounds(buf, layout);
-  const children = (layout.children || []).map((child) => serializeTdom(buf, child));
+  const children = (layout.children || []).map((child) =>
+    serializeTdom(buf, child)
+  );
 
   return {
     id: layout.id,
@@ -76,18 +84,23 @@ export function serializeTdom(buf: ScreenBuffer, layout: ResolvedNode): TdomElem
 export function renderTdomToXml(element: TdomElement, depth = 0): string {
   const indent = "  ".repeat(depth);
   const tag = element.id || "div";
-  const attrs = `x="${element.x}" y="${element.y}" w="${element.width}" h="${element.height}"`;
-  
+  const attrs =
+    `x="${element.x}" y="${element.y}" w="${element.width}" h="${element.height}"`;
+
   if (element.children.length === 0) {
     if (!element.text) {
       return `${indent}<${tag} ${attrs} />`;
     }
     // Inline text content
-    const escapedText = element.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const escapedText = element.text.replace(/</g, "&lt;").replace(
+      />/g,
+      "&gt;",
+    );
     return `${indent}<${tag} ${attrs}>${escapedText}</${tag}>`;
   }
 
-  const childXml = element.children.map((c) => renderTdomToXml(c, depth + 1)).join("\n");
+  const childXml = element.children.map((c) => renderTdomToXml(c, depth + 1))
+    .join("\n");
   const baseXml = `${indent}<${tag} ${attrs}>\n${childXml}\n${indent}</${tag}>`;
   return baseXml;
 }

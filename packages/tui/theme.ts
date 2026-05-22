@@ -317,7 +317,11 @@ export function getCurrentTheme(): Theme {
 /** Set the active theme by name. */
 export function setCurrentTheme(name: string): Theme {
   const theme = themes[name];
-  if (!theme) throw new Error(`Unknown theme: ${name}. Available: ${Object.keys(themes).join(", ")}`);
+  if (!theme) {
+    throw new Error(
+      `Unknown theme: ${name}. Available: ${Object.keys(themes).join(", ")}`,
+    );
+  }
   _currentTheme = theme;
   return theme;
 }
@@ -370,24 +374,64 @@ export function resolveTheme(options: ThemeResolutionOptions = {}): Theme {
  *   exists for backward compatibility with existing panel code.
  */
 export const COLORS: Readonly<Omit<Theme, "name">> = {
-  get surfaceBase() { return getCurrentTheme().surfaceBase; },
-  get surfacePanel() { return getCurrentTheme().surfacePanel; },
-  get surfaceElevated() { return getCurrentTheme().surfaceElevated; },
-  get textPrimary() { return getCurrentTheme().textPrimary; },
-  get textSecondary() { return getCurrentTheme().textSecondary; },
-  get textMuted() { return getCurrentTheme().textMuted; },
-  get accent() { return getCurrentTheme().accent; },
-  get statusOk() { return getCurrentTheme().statusOk; },
-  get statusWarn() { return getCurrentTheme().statusWarn; },
-  get statusErr() { return getCurrentTheme().statusErr; },
-  get statusMuted() { return getCurrentTheme().statusMuted; },
-  get border() { return getCurrentTheme().border; },
-  get borderFocused() { return getCurrentTheme().borderFocused; },
-  get badgePassed() { return getCurrentTheme().badgePassed; },
-  get badgeFailed() { return getCurrentTheme().badgeFailed; },
-  get badgeSkipped() { return getCurrentTheme().badgeSkipped; },
-  get badgeRunning() { return getCurrentTheme().badgeRunning; },
-  get progressBar() { return getCurrentTheme().progressBar; },
-  get progressTrack() { return getCurrentTheme().progressTrack; },
-  get title() { return getCurrentTheme().title; },
+  get surfaceBase() {
+    return getCurrentTheme().surfaceBase;
+  },
+  get surfacePanel() {
+    return getCurrentTheme().surfacePanel;
+  },
+  get surfaceElevated() {
+    return getCurrentTheme().surfaceElevated;
+  },
+  get textPrimary() {
+    return getCurrentTheme().textPrimary;
+  },
+  get textSecondary() {
+    return getCurrentTheme().textSecondary;
+  },
+  get textMuted() {
+    return getCurrentTheme().textMuted;
+  },
+  get accent() {
+    return getCurrentTheme().accent;
+  },
+  get statusOk() {
+    return getCurrentTheme().statusOk;
+  },
+  get statusWarn() {
+    return getCurrentTheme().statusWarn;
+  },
+  get statusErr() {
+    return getCurrentTheme().statusErr;
+  },
+  get statusMuted() {
+    return getCurrentTheme().statusMuted;
+  },
+  get border() {
+    return getCurrentTheme().border;
+  },
+  get borderFocused() {
+    return getCurrentTheme().borderFocused;
+  },
+  get badgePassed() {
+    return getCurrentTheme().badgePassed;
+  },
+  get badgeFailed() {
+    return getCurrentTheme().badgeFailed;
+  },
+  get badgeSkipped() {
+    return getCurrentTheme().badgeSkipped;
+  },
+  get badgeRunning() {
+    return getCurrentTheme().badgeRunning;
+  },
+  get progressBar() {
+    return getCurrentTheme().progressBar;
+  },
+  get progressTrack() {
+    return getCurrentTheme().progressTrack;
+  },
+  get title() {
+    return getCurrentTheme().title;
+  },
 };

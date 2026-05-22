@@ -9,10 +9,7 @@
  * @module scenario_context
  */
 
-import {
-  createCharacterRegistry,
-  createScenarioConfig,
-} from "./config.ts";
+import { createCharacterRegistry, createScenarioConfig } from "./config.ts";
 import type { CharacterRegistry } from "./config.ts";
 import type { ScenarioConfig } from "./config.ts";
 

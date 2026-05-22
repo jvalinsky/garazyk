@@ -80,7 +80,10 @@ Deno.test("normalizePorts: defaults to TCP protocol", () => {
 });
 
 Deno.test("normalizePorts: parses PortSpec objects", () => {
-  const result = normalizePorts([{ container: "2583", protocol: "tcp" as const }]);
+  const result = normalizePorts([{
+    container: "2583",
+    protocol: "tcp" as const,
+  }]);
   assertEquals(result.length, 1);
   assertEquals(result[0].container, "2583");
   assertEquals(result[0].protocol, "tcp");
@@ -96,7 +99,10 @@ Deno.test("normalizePorts: returns empty array for undefined", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("renderPortSpec: renders host:container", () => {
-  assertEquals(renderPortSpec({ host: "2583", container: "2583", protocol: "tcp" }), "2583:2583");
+  assertEquals(
+    renderPortSpec({ host: "2583", container: "2583", protocol: "tcp" }),
+    "2583:2583",
+  );
 });
 
 Deno.test("renderPortSpec: renders container-only", () => {
@@ -170,7 +176,12 @@ Deno.test("renderVolumeSpec: renders source:target", () => {
 
 Deno.test("renderVolumeSpec: renders source:target:mode", () => {
   assertEquals(
-    renderVolumeSpec({ kind: "bind", source: "./data", target: "/app/data", mode: "ro" }),
+    renderVolumeSpec({
+      kind: "bind",
+      source: "./data",
+      target: "/app/data",
+      mode: "ro",
+    }),
     "./data:/app/data:ro",
   );
 });

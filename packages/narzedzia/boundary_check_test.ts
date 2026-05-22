@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { checkBoundaries, type BoundaryRule } from "./boundary_check.ts";
+import { type BoundaryRule, checkBoundaries } from "./boundary_check.ts";
 
 Deno.test("checkBoundaries: detects real violations", async () => {
   const root = Deno.cwd();
@@ -12,13 +12,15 @@ Deno.test("checkBoundaries: detects real violations", async () => {
       packageName: "laweta",
       denied: new Set(["gruszka"]),
       description: "Test violation: laweta must not depend on gruszka",
-    }
+    },
   ];
 
   const violations = await checkBoundaries(root, rules, new Set());
 
   // laweta/format.ts imports @garazyk/gruszka/format.ts
-  const lawetaToGruszka = violations.find(v => v.specifier.includes("gruszka"));
+  const lawetaToGruszka = violations.find((v) =>
+    v.specifier.includes("gruszka")
+  );
   assertEquals(!!lawetaToGruszka, true);
   assertEquals(lawetaToGruszka?.file, "packages/laweta/format.ts");
 });
@@ -31,7 +33,7 @@ Deno.test("checkBoundaries: passes when no violations", async () => {
       packageName: "gruszka",
       denied: new Set(["schemat"]),
       description: "gruszka must not depend on schemat",
-    }
+    },
   ];
 
   const violations = await checkBoundaries(root, rules, new Set());

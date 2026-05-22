@@ -1,7 +1,6 @@
 /** Operation timing, metrics scraping, storage monitoring, and instrumentation reports. @module instrumentation */
 import { join } from "@std/path";
 
-
 const SAMPLE_INTERVAL = 2000; // ms
 
 /** A metrics sample captured at a specific point in time. */

@@ -1,8 +1,8 @@
 import { assertEquals, assertInstanceOf, assertThrows } from "@std/assert";
 import { encode } from "@ipld/dag-cbor";
 import {
-  firehoseEventFromFrame,
   FirehoseClient,
+  firehoseEventFromFrame,
   FirehoseFrameParseError,
   parseFirehoseFrame,
 } from "./firehose.ts";
@@ -90,7 +90,10 @@ Deno.test("parseFirehoseFrame rejects oversized frames", () => {
   // Create a frame larger than 10MB by padding the body
   const header = encode({ op: 1, t: "#commit" });
   const largeBody = new Uint8Array(10 * 1024 * 1024 + 1);
-  const payload = concatBytes(header, encode({ seq: 1, ops: [], blocks: largeBody }));
+  const payload = concatBytes(
+    header,
+    encode({ seq: 1, ops: [], blocks: largeBody }),
+  );
 
   assertThrows(
     () => parseFirehoseFrame(payload),
@@ -105,7 +108,11 @@ Deno.test("validateDagCborShape rejects deeply nested objects", () => {
   for (let i = 0; i < 300; i++) {
     obj = { inner: obj };
   }
-  const payload = frame({ op: 1, t: "#commit" }, { seq: 1, ops: [], nested: obj });
+  const payload = frame({ op: 1, t: "#commit" }, {
+    seq: 1,
+    ops: [],
+    nested: obj,
+  });
 
   // The error is wrapped by decodeDagCborObject as "Invalid body DAG-CBOR object"
   assertThrows(
@@ -124,7 +131,11 @@ Deno.test("firehoseEventFromFrame: op=-1 without type defaults to 'error'", () =
 });
 
 Deno.test("firehoseEventFromFrame: op=1 without t defaults to 'unknown'", () => {
-  const frame = { payload: new Uint8Array(0), header: { op: 1 }, body: { seq: 10 } };
+  const frame = {
+    payload: new Uint8Array(0),
+    header: { op: 1 },
+    body: { seq: 10 },
+  };
   const event = firehoseEventFromFrame(frame);
 
   assertEquals(event.seq, 10);
@@ -132,7 +143,11 @@ Deno.test("firehoseEventFromFrame: op=1 without t defaults to 'unknown'", () => 
 });
 
 Deno.test("firehoseEventFromFrame: op=0 with t preserved", () => {
-  const frame = { payload: new Uint8Array(0), header: { op: 0, t: "#migrate" }, body: { seq: 5 } };
+  const frame = {
+    payload: new Uint8Array(0),
+    header: { op: 0, t: "#migrate" },
+    body: { seq: 5 },
+  };
   const event = firehoseEventFromFrame(frame);
 
   assertEquals(event.seq, 5);
@@ -140,7 +155,11 @@ Deno.test("firehoseEventFromFrame: op=0 with t preserved", () => {
 });
 
 Deno.test("firehoseEventFromFrame: body without seq defaults to 0", () => {
-  const frame = { payload: new Uint8Array(0), header: { op: 1, t: "#commit" }, body: { repo: "did:test" } };
+  const frame = {
+    payload: new Uint8Array(0),
+    header: { op: 1, t: "#commit" },
+    body: { repo: "did:test" },
+  };
   const event = firehoseEventFromFrame(frame);
 
   assertEquals(event.seq, 0);
@@ -213,8 +232,14 @@ Deno.test("FirehoseClient.handleMessage: does not invoke callback for invalid fr
   const client = new FirehoseClient("ws://localhost:2584");
   let called = false;
 
-  client.handleMessage(new Uint8Array([0x81]), () => { called = true; });
-  assertEquals(called, false, "Callback should not be called for invalid frames");
+  client.handleMessage(new Uint8Array([0x81]), () => {
+    called = true;
+  });
+  assertEquals(
+    called,
+    false,
+    "Callback should not be called for invalid frames",
+  );
 });
 
 Deno.test("FirehoseClient: subscribe cursor defaults to lastSeq", async () => {
@@ -223,7 +248,9 @@ Deno.test("FirehoseClient: subscribe cursor defaults to lastSeq", async () => {
 
   // Spy on the subscribe URL construction
   let capturedCursor: string | null = null;
-  const url = new URL(`ws://localhost:2584/xrpc/com.atproto.sync.subscribeRepos`);
+  const url = new URL(
+    `ws://localhost:2584/xrpc/com.atproto.sync.subscribeRepos`,
+  );
   const effectiveCursor = undefined;
   // The subscribe method uses `cursor ?? this.lastSeq` for the effective cursor
   // We simulate by checking the default fallback

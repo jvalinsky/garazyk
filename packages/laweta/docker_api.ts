@@ -325,9 +325,11 @@ export class DockerApiClient {
    *   for backward compatibility.
    */
   constructor(options?: DockerApiClientOptions | string) {
-    const opts: DockerApiClientOptions =
-      typeof options === "string" ? { endpoint: options } : (options ?? {});
-    const host = opts.endpoint || opts.dockerHost || Deno.env.get("DOCKER_HOST") || "";
+    const opts: DockerApiClientOptions = typeof options === "string"
+      ? { endpoint: options }
+      : (options ?? {});
+    const host = opts.endpoint || opts.dockerHost ||
+      Deno.env.get("DOCKER_HOST") || "";
     if (
       host.startsWith("tcp://") || host.startsWith("http://") ||
       host.startsWith("https://")
