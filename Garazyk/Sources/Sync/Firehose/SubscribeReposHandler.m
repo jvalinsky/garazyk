@@ -508,8 +508,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)broadcastCommitEvent:(FirehoseCommitEvent *)event {
   if (self.stopping || !event) {
+    GZ_LOG_SYNC_INFO(@"[Relay] broadcastCommitEvent: early return (stopping=%d, event=%p)", self.stopping, event);
     return;
   }
+  GZ_LOG_SYNC_INFO(@"[Relay] broadcastCommitEvent: dispatching for repo=%@ seq=%lld", event.repo, (long long)event.seq);
   __weak typeof(self) weakSelf = self;
   dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -518,6 +520,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       [strongSelf ensureSequenceInitialized];
       NSData *eventData = [strongSelf.session encodeCommitEvent:event];
       if (eventData) {
+        GZ_LOG_SYNC_INFO(@"[Relay] broadcastCommitEvent: encoded %lu bytes, seq=%lu, broadcasting to subscribers",
+                          (unsigned long)eventData.length, (unsigned long)strongSelf.session.sequenceNumber);
         if (strongSelf.serviceDatabases) {
           [strongSelf.serviceDatabases persistEvent:strongSelf.session.sequenceNumber
                                          type:@"commit"
@@ -525,6 +529,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                         error:nil];
         }
         [strongSelf broadcastEventData:eventData];
+      } else {
+        GZ_LOG_SYNC_ERROR(@"[Relay] broadcastCommitEvent: encodeCommitEvent returned nil for repo=%@", event.repo);
       }
     }
   });
@@ -749,9 +755,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   dispatch_sync(_connectionsQueue, ^{
     snapshot = [_attachedConnections allObjects];
   });
-  GZ_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers (data=%lu bytes)",
+  GZ_LOG_SYNC_INFO(@"Broadcasting event to %lu subscribers (data=%lu bytes)",
                      (unsigned long)snapshot.count, (unsigned long)eventData.length);
   if (snapshot.count == 0) {
+    GZ_LOG_SYNC_INFO(@"[Relay] No subscribers, skipping broadcast");
     return;
   }
   // Single dispatch + loop: reduces per-event dispatch overhead from O(N)

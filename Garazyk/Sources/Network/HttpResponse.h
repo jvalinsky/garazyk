@@ -24,6 +24,7 @@ typedef NSData * _Nullable (^HttpResponseBodyChunkProducer)(NSError **error);
  */
 typedef NS_ENUM(NSInteger, HttpStatusCode) {
     HttpStatusOK = 200,
+    HttpStatusPartialContent = 206,
     HttpStatusCreated = 201,
     HttpStatusAccepted = 202,
     HttpStatusNoContent = 204,
@@ -91,6 +92,15 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 
 /*! Whether to use keep-alive connection. */
 @property (nonatomic, assign) BOOL keepAlive;
+
+/*! Indicates if this is a partial HTTP range request response. */
+@property (nonatomic, assign) BOOL isRangeRequest;
+
+/*! Starting byte offset for the range request. */
+@property (nonatomic, assign) NSUInteger rangeStart;
+
+/*! Length of the byte range to deliver. */
+@property (nonatomic, assign) NSUInteger rangeLength;
 
 /*! Applies security headers to a headers dictionary. */
 + (void)applySecurityHeaders:(NSMutableDictionary *)headers;
