@@ -10,7 +10,7 @@
  */
 
 import { bold, brightBlue } from "@std/fmt/colors";
-import { fromFileUrl, join } from "@std/path";
+import { join } from "@std/path";
 import { startLocalNetwork, stopLocalNetwork } from "./atproto_network.ts";
 import { collectDiagnostics, createRunContext } from "./run_diagnostics.ts";
 import { resolveTopology, TopologyRegistry } from "@garazyk/schemat";
@@ -24,11 +24,27 @@ import { createProcessLifecycle } from "./process_lifecycle.ts";
 import { writeOverallSummary } from "./report_writer.ts";
 import { initE2eTracing, isOtelEnabled, shutdownTracing } from "./otel.ts";
 import { runPreflight } from "./preflight.ts";
-import { ScenarioResult } from "./runner.ts";
+import type { ScenarioResult } from "./runner.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 
 const OTEL_REEXEC_GUARD = "GARAZYK_OTEL_REEXEC";
 const DEFAULT_LOCAL_TOPOLOGY = "garazyk-default";
+
+interface ScenarioReportData {
+  metadata?: Record<string, unknown>;
+  summary?: {
+    passed?: number;
+    failed?: number;
+    skipped?: number;
+  };
+  ok?: boolean;
+  scenario?: string;
+  duration_s?: number;
+  steps?: unknown[];
+  artifacts?: unknown;
+  started_at?: number;
+  finished_at?: number;
+}
 
 /** Append loop execution output into the CLI-level accumulators. */
 export function appendScenarioLoopResult(
@@ -38,6 +54,95 @@ export function appendScenarioLoopResult(
 ): void {
   results.push(...loopResult.results);
   reportPaths.push(...loopResult.reportPaths);
+}
+
+function sqlValue(value: unknown): string {
+  if (value === null || value === undefined) return "NULL";
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : "NULL";
+  }
+  if (typeof value === "boolean") return value ? "1" : "0";
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+async function runSqliteScript(dbPath: string, script: string): Promise<void> {
+  const child = new Deno.Command("sqlite3", {
+    args: [dbPath],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = child.stdin.getWriter();
+  await writer.write(new TextEncoder().encode(script));
+  await writer.close();
+  const output = await child.output();
+  if (output.code !== 0) {
+    const stderr = new TextDecoder().decode(output.stderr).trim();
+    throw new Error(stderr || "sqlite3 command failed");
+  }
+}
+
+function dashboardDbPath(repoRoot: string): string {
+  return join(repoRoot, "scripts", "scenarios", "reports", "dashboard.db");
+}
+
+async function dashboardDbExists(dbPath: string): Promise<boolean> {
+  try {
+    const stat = await Deno.stat(dbPath);
+    return stat.isFile;
+  } catch {
+    return false;
+  }
+}
+
+async function tryRecordRunStartInDatabase(
+  repoRoot: string,
+  context: {
+    runId: string;
+    runDir: string;
+  },
+  reportsDir: string,
+  startTime: number,
+  selected: ScenarioInfo[],
+  args: RunnerArgs,
+  withPds2: boolean,
+): Promise<void> {
+  const dbPath = dashboardDbPath(repoRoot);
+  try {
+    if (!(await dashboardDbExists(dbPath))) return;
+    const script = `
+INSERT OR REPLACE INTO runs (
+  id, started_at, status, total_scenarios, pds2, binary_mode,
+  topology, runner, web_client, client_flow, scenario_ids_json,
+  run_dir, reports_dir, log_path, scenario_params_json,
+  allow_hybrid_network, otel, verbose, timeout, no_setup
+) VALUES (
+  ${sqlValue(context.runId)},
+  ${sqlValue(startTime)},
+  'running',
+  ${sqlValue(selected.length)},
+  ${sqlValue(withPds2)},
+  ${sqlValue(args.binary)},
+  ${sqlValue(args.topology || "default")},
+  'host',
+  ${sqlValue(args.webClient || null)},
+  ${sqlValue(args.clientFlow || null)},
+  ${sqlValue(JSON.stringify(selected.map((s) => s.id)))},
+  ${sqlValue(context.runDir)},
+  ${sqlValue(reportsDir)},
+  ${sqlValue(context.runDir ? join(context.runDir, "run.log") : null)},
+  NULL,
+  ${sqlValue(args.allowHybridNetwork)},
+  ${sqlValue(args.otel)},
+  ${sqlValue(args.verbose)},
+  ${sqlValue(args.timeout ?? 120)},
+  ${sqlValue(args.noSetup)}
+);
+`;
+    await runSqliteScript(dbPath, script);
+  } catch {
+    // Gracefully ignore when the dashboard database or sqlite3 CLI is unavailable.
+  }
 }
 
 /**
@@ -398,58 +503,18 @@ export async function executeRunnerArgs(
     selected = selectScenarios(scenarios, args, topology);
     withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
 
-    // Try to register the run start in SQLite
-    const dbPath = join(
+    await tryRecordRunStartInDatabase(
       options.repoRoot,
-      "scripts",
-      "scenarios",
-      "reports",
-      "dashboard.db",
+      {
+        runId: context.runId,
+        runDir: context.runDir,
+      },
+      reportsDir,
+      startTime,
+      selected,
+      args,
+      withPds2,
     );
-    try {
-      const stat = await Deno.stat(dbPath);
-      if (stat.isFile) {
-        const { Database } = await import(
-          "https://deno.land/x/sqlite3@0.12.0/mod.ts"
-        );
-        const db = new Database(dbPath);
-        try {
-          db.prepare(`
-            INSERT OR REPLACE INTO runs (
-              id, started_at, status, total_scenarios, pds2, binary_mode,
-              topology, runner, web_client, client_flow, scenario_ids_json,
-              run_dir, reports_dir, log_path, scenario_params_json,
-              allow_hybrid_network, otel, verbose, timeout, no_setup
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            context.runId,
-            startTime,
-            "running",
-            selected.length,
-            withPds2 ? 1 : 0,
-            args.binary ? 1 : 0,
-            args.topology || "default",
-            "host",
-            args.webClient || null,
-            args.clientFlow || null,
-            JSON.stringify(selected.map((s) => s.id)),
-            context.runDir,
-            reportsDir,
-            context.runDir ? join(context.runDir, "run.log") : null,
-            null,
-            args.allowHybridNetwork ? 1 : 0,
-            args.otel ? 1 : 0,
-            args.verbose ? 1 : 0,
-            args.timeout ?? 120,
-            args.noSetup ? 1 : 0,
-          );
-        } finally {
-          db.close();
-        }
-      }
-    } catch {
-      // Gracefully ignore if not in repository or sqlite3 is unavailable
-    }
 
     await runPreflight({
       useBinary: args.binary,
@@ -583,23 +648,11 @@ async function tryRecordRunInDatabase(
   reportsDir: string,
   startTime: number,
 ) {
-  const dbPath = join(
-    repoRoot,
-    "scripts",
-    "scenarios",
-    "reports",
-    "dashboard.db",
-  );
+  const dbPath = dashboardDbPath(repoRoot);
   try {
-    const stat = await Deno.stat(dbPath);
-    if (!stat.isFile) return;
+    if (!(await dashboardDbExists(dbPath))) return;
 
-    const { Database } = await import(
-      "https://deno.land/x/sqlite3@0.12.0/mod.ts"
-    );
-    const db = new Database(dbPath);
-
-    const reports: Array<{ filename: string; report: any }> = [];
+    const reports: Array<{ filename: string; report: ScenarioReportData }> = [];
     try {
       for await (const entry of Deno.readDir(reportsDir)) {
         if (!entry.isFile || !entry.name.endsWith(".json")) continue;
@@ -608,7 +661,10 @@ async function tryRecordRunInDatabase(
           entry.name.endsWith("-progress.json")
         ) continue;
         const content = await Deno.readTextFile(join(reportsDir, entry.name));
-        reports.push({ filename: entry.name, report: JSON.parse(content) });
+        reports.push({
+          filename: entry.name,
+          report: JSON.parse(content) as ScenarioReportData,
+        });
       }
     } catch {
       // reports dir might not exist or empty
@@ -618,69 +674,69 @@ async function tryRecordRunInDatabase(
     let totalFailed = 0;
     let totalSkipped = 0;
     let finishedAt = startTime;
+    const statements = [
+      "BEGIN TRANSACTION;",
+      `DELETE FROM scenario_results WHERE run_id = ${sqlValue(runId)};`,
+    ];
 
-    db.exec("BEGIN TRANSACTION");
-    try {
-      db.prepare("DELETE FROM scenario_results WHERE run_id = ?").run(runId);
-
-      for (const { filename, report } of reports) {
-        const match = filename.match(/^(\d+)/);
-        const scenarioId = String(
-          report.metadata?.scenario_id ?? (match ? match[1] : "00"),
-        );
-        totalPassed += report.summary?.passed ?? 0;
-        totalFailed += report.summary?.failed ?? 0;
-        totalSkipped += report.summary?.skipped ?? 0;
-
-        const reportFinishedAt = report.finished_at < 10_000_000_000
-          ? report.finished_at * 1000
-          : report.finished_at;
-        if (reportFinishedAt > finishedAt) finishedAt = reportFinishedAt;
-
-        db.prepare(
-          `INSERT INTO scenario_results (run_id, scenario_id, scenario_name, status, passed, failed, skipped, duration_ms, steps_json, artifacts_json, started_at, finished_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ).run(
-          runId,
-          scenarioId,
-          report.scenario || filename,
-          report.ok ? "passed" : "failed",
-          report.summary?.passed ?? 0,
-          report.summary?.failed ?? 0,
-          report.summary?.skipped ?? 0,
-          Math.round((report.duration_s || 0) * 1000),
-          JSON.stringify(report.steps || []),
-          JSON.stringify(report.artifacts ?? {}),
-          report.started_at < 10_000_000_000
-            ? report.started_at * 1000
-            : report.started_at,
-          reportFinishedAt,
-        );
-      }
-
-      const durationS = (finishedAt - startTime) / 1000;
-      const status = totalFailed > 0 ? "error" : "completed";
-
-      db.prepare(
-        `UPDATE runs SET finished_at=?, total_scenarios=?, passed=?, failed=?, skipped=?, duration_s=?, status=? WHERE id=?`,
-      ).run(
-        finishedAt,
-        reports.length,
-        totalPassed,
-        totalFailed,
-        totalSkipped,
-        durationS,
-        status,
-        runId,
+    for (const { filename, report } of reports) {
+      const match = filename.match(/^(\d+)/);
+      const scenarioId = String(
+        report.metadata?.scenario_id ?? (match ? match[1] : "00"),
       );
+      const passed = report.summary?.passed ?? 0;
+      const failed = report.summary?.failed ?? 0;
+      const skipped = report.summary?.skipped ?? 0;
+      totalPassed += passed;
+      totalFailed += failed;
+      totalSkipped += skipped;
 
-      db.exec("COMMIT");
-    } catch (e) {
-      db.exec("ROLLBACK");
-      throw e;
-    } finally {
-      db.close();
+      const rawFinishedAt = report.finished_at ?? startTime;
+      const reportFinishedAt = rawFinishedAt < 10_000_000_000
+        ? rawFinishedAt * 1000
+        : rawFinishedAt;
+      if (reportFinishedAt > finishedAt) finishedAt = reportFinishedAt;
+      const rawStartedAt = report.started_at ?? startTime;
+      const reportStartedAt = rawStartedAt < 10_000_000_000
+        ? rawStartedAt * 1000
+        : rawStartedAt;
+
+      statements.push(
+        `INSERT INTO scenario_results (run_id, scenario_id, scenario_name, status, passed, failed, skipped, duration_ms, steps_json, artifacts_json, started_at, finished_at)
+VALUES (${
+          [
+            sqlValue(runId),
+            sqlValue(scenarioId),
+            sqlValue(report.scenario || filename),
+            sqlValue(report.ok ? "passed" : "failed"),
+            sqlValue(passed),
+            sqlValue(failed),
+            sqlValue(skipped),
+            sqlValue(Math.round((report.duration_s || 0) * 1000)),
+            sqlValue(JSON.stringify(report.steps || [])),
+            sqlValue(JSON.stringify(report.artifacts ?? {})),
+            sqlValue(reportStartedAt),
+            sqlValue(reportFinishedAt),
+          ].join(", ")
+        });`,
+      );
     }
+
+    const durationS = (finishedAt - startTime) / 1000;
+    const status = totalFailed > 0 ? "error" : "completed";
+    statements.push(
+      `UPDATE runs SET finished_at = ${
+        sqlValue(finishedAt)
+      }, total_scenarios = ${sqlValue(reports.length)}, passed = ${
+        sqlValue(totalPassed)
+      }, failed = ${sqlValue(totalFailed)}, skipped = ${
+        sqlValue(totalSkipped)
+      }, duration_s = ${sqlValue(durationS)}, status = ${
+        sqlValue(status)
+      } WHERE id = ${sqlValue(runId)};`,
+      "COMMIT;",
+    );
+    await runSqliteScript(dbPath, `${statements.join("\n")}\n`);
   } catch (e) {
     console.warn(`[hamownia] Failed to record run results to SQLite: ${e}`);
   }
