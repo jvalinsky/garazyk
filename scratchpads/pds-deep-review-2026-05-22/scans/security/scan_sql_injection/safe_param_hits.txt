@@ -1,0 +1,424 @@
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:528:        NSString *sql = @"SELECT blob_bytes, blob_count, repo_bytes, record_count FROM account_usage WHERE did = ?";
+./Garazyk/Sources/Repository/MSTPersistence.m:189:    BOOL cleared = [db executeParameterizedUpdate:@"DELETE FROM blocks WHERE repo_did = ?" params:@[did] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:344:    NSArray<NSDictionary *> *rows = [_database executeParameterizedQuery:@"SELECT code FROM invite_codes WHERE code = ? LIMIT 1"
+./Garazyk/Sources/Services/Core/PDSAdminService.m:359:    return [_database executeParameterizedUpdate:@"UPDATE invite_codes SET disabled = 1 WHERE code = ?"
+./Garazyk/Sources/Services/Core/PDSAdminService.m:611:                                         @"SELECT applied FROM admin_takedowns WHERE subjectType = ? AND subjectId = ? ORDER BY createdAt DESC LIMIT 1"
+./Garazyk/Sources/Services/Core/PDSAdminService.m:691:    NSArray *reports = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM reports WHERE status = 'open'" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:698:    NSArray *recentSignups = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM accounts WHERE created_at >= ?" params:@[sevenDaysAgo] error:error];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:91:    NSString *checkSQL = @"SELECT address FROM germ_mailboxes WHERE address = ? AND datetime(expires_at) > datetime('now')";
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:141:                         @"WHERE b.agent_ref = ? "
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:222:    NSString *checkSQL = @"SELECT address FROM germ_rendezvous WHERE address = ?";
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:267:                         @"WHERE r.agent_ref = ? "
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:194:        const char *sql = "SELECT data, attrs FROM items WHERE service = ? AND account = ?";
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:277:        const char *sql = "UPDATE items SET data = ?, attrs = ?, updated_at = CURRENT_TIMESTAMP WHERE service = ? AND account = ?";
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:324:        const char *sql = "DELETE FROM items WHERE service = ? AND account = ?";
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:364:        const char *sql = "SELECT 1 FROM items WHERE service = ? AND account = ? LIMIT 1";
+./Garazyk/Sources/Network/RateLimiter.m:262:    NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
+./Garazyk/Sources/Network/RateLimiter.m:351:    NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
+./Garazyk/Sources/Network/RateLimiter.m:398:    NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
+./Garazyk/Sources/Network/RateLimiter.m:464:    NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
+./Garazyk/Sources/Network/RateLimiter.m:584:                     @"FROM rate_limits WHERE window_start > ? "
+./Garazyk/Sources/Network/RateLimiter.m:612:        sql = @"DELETE FROM blob_rate_limits WHERE did = ?";
+./Garazyk/Sources/Network/RateLimiter.m:614:        sql = @"DELETE FROM rate_limits WHERE identifier = ? AND type = ?";
+./Garazyk/Sources/PLC/PLCReplicaStore.m:20:    @"SELECT value FROM plc_sync_state WHERE key = ?;";
+./Garazyk/Sources/Database/PDSDatabase+Records.m:19:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM records WHERE uri = ?", kRecordsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Records.m:38:    NSMutableString *sql = [NSMutableString stringWithFormat:@"SELECT %@ FROM records WHERE did = ?", kRecordsColumns];
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:69:    NSString *sql = @"UPDATE video_jobs SET width = ?, height = ?, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:77:    NSString *sql = @"UPDATE video_jobs SET duration_seconds = ?, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:84:    NSString *sql = @"SELECT * FROM video_jobs WHERE state = 'PENDING' ORDER BY created_at ASC LIMIT ?";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:47:    @"WHERE did = ? AND nullified = 0 ORDER BY id ASC;";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:51:    @"WHERE did = ? ORDER BY id ASC;";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:55:    @"WHERE did = ? AND id > ? AND nullified = 0 ORDER BY id ASC;";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:58:    @"SELECT COUNT(*) FROM plc_operations WHERE did = ?;";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:61:    @"DELETE FROM plc_operations WHERE did = ?;";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:65:    @"WHERE did = ? AND nullified = 0 ORDER BY id DESC LIMIT 1;";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:69:    @"WHERE created_at > ? ORDER BY created_at ASC, id ASC LIMIT ?;";
+./Garazyk/Sources/PLC/PLCPersistentStore.m:491:            NSMutableString *sql = [NSMutableString stringWithString:@"UPDATE plc_operations SET nullified = 1 WHERE did = ? AND cid IN ("];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:409:        NSString *sql = @"SELECT token, account_did, created_at, expires_at FROM refresh_tokens WHERE account_did = ? AND expires_at > ? ORDER BY created_at DESC";
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:431:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT token FROM refresh_tokens WHERE account_did = ?" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:459:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT code FROM invite_codes WHERE account_did = ? AND disabled = 0 LIMIT 1" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:469:        success = [store.database executeParameterizedUpdate:@"UPDATE invite_codes SET uses = uses + 1 WHERE code = ? AND disabled = 0" params:@[code] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:471:            [store.database executeParameterizedUpdate:@"UPDATE invite_codes SET disabled = 1 WHERE code = ? AND uses >= max_uses" params:@[code] error:nil];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:496:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT 1 FROM reserved_handles WHERE handle = ? LIMIT 1" params:@[normalized] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:531:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT name, created_at, privileged FROM app_passwords WHERE account_did = ? ORDER BY created_at DESC" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:547:        success = [store.database executeParameterizedUpdate:@"DELETE FROM app_passwords WHERE account_did = ? AND name = ?" params:@[accountDid, name] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:556:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT password_hash, password_salt FROM app_passwords WHERE account_did = ?" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:584:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT document FROM did_cache WHERE did = ? AND expires_at > ?" params:@[did, @([[NSDate date] timeIntervalSince1970])] error:nil];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:596:        NSArray *rows = [store.database executeParameterizedQuery:@"SELECT did, document FROM did_cache WHERE expires_at > ?" params:@[@([[NSDate date] timeIntervalSince1970])] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:630:            [sql appendString:@" WHERE did = ?"];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:663:        NSArray *rows = [store.database executeParameterizedQuery:@"SELECT seq, event_type, event_data, created_at FROM events WHERE seq > ? ORDER BY seq ASC LIMIT ?" params:@[@(seq), @(limit)] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:692:        success = [store.database executeParameterizedUpdate:@"DELETE FROM events WHERE created_at < ?" params:@[@(date.timeIntervalSince1970)] error:innerError];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:14:    NSString *sql = @"SELECT token, session_id, created_at, expires_at FROM refresh_tokens WHERE account_did = ? ORDER BY created_at DESC";
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:38:    NSString *sql = @"SELECT account_did, session_id FROM refresh_tokens WHERE token = ? AND expires_at > ?";
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:54:    NSString *sql = @"SELECT 1 FROM refresh_tokens WHERE session_id = ? AND account_did = ? AND expires_at > ? LIMIT 1";
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:61:    NSString *sql = @"DELETE FROM refresh_tokens WHERE token = ?";
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:66:    NSString *sql = @"DELETE FROM refresh_tokens WHERE session_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:71:    NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:76:    NSString *sql = @"SELECT id, name, privileged, created_at FROM app_passwords WHERE account_did = ? ORDER BY created_at DESC";
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:81:    NSString *sql = @"DELETE FROM app_passwords WHERE id = ? AND account_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Reports.m:94:    NSString *sql = @"SELECT * FROM reports WHERE report_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+Reports.m:115:    [sql appendString:@" WHERE report_id = ?"];
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:78:        ? @"SELECT client_id, client_secret, redirect_uris, grant_types, response_types, scope FROM oauth_clients WHERE client_id = ?"
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:79:        : @"SELECT client_id, client_secret, redirect_uris, grant_types, scope FROM oauth_clients WHERE client_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:258:    NSString *sql = @"DELETE FROM oauth_clients WHERE client_id = ?";
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:289:                    @"WHERE r.did = ? AND r.collection = 'com.germnetwork.declaration' "
+./Garazyk/Sources/Video/JelczDatabase.m:124:        const char *sql = "SELECT * FROM video_jobs WHERE job_id = ?";
+./Garazyk/Sources/Video/JelczDatabase.m:200:        const char *sql = "UPDATE video_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Video/JelczDatabase.m:240:        const char *sql = "UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Video/JelczDatabase.m:281:        const char *sql = "UPDATE video_jobs SET retry_count = retry_count + 1, state = 'PENDING', error_message = NULL, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Video/JelczDatabase.m:314:        const char *sql = "UPDATE video_jobs SET width = ?, height = ?, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Video/JelczDatabase.m:348:        const char *sql = "UPDATE video_jobs SET duration_seconds = ?, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Video/JelczDatabase.m:379:        const char *sql = "SELECT * FROM video_jobs WHERE state = 'PENDING' ORDER BY created_at ASC LIMIT ?";
+./Garazyk/Sources/Video/JelczDatabase.m:413:            sql = "SELECT * FROM video_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+./Garazyk/Sources/Database/PDSDatabase+AdminConfig.m:17:    NSString *sql = @"SELECT value FROM admin_config WHERE key = ?";
+./Garazyk/Sources/Database/PDSDatabase+AdminAudit.m:97:    NSString *sql = @"DELETE FROM admin_audit_log WHERE created_at < ?";
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:42:    NSString *sql = @"UPDATE admin_takedowns SET applied = 0 WHERE subjectId = ? AND subjectType = 'account'";
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:53:    NSString *sql = @"UPDATE accounts SET status = 'deactivated', deactivated_at = ?, updated_at = ? WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:66:    NSString *sql = @"UPDATE accounts SET status = 'active', deactivated_at = NULL, updated_at = ? WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:82:    NSString *sql = @"SELECT status FROM accounts WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:102:    NSString *sql = @"SELECT applied FROM admin_takedowns WHERE subjectId = ? AND subjectType = 'account' ORDER BY createdAt DESC LIMIT 1";
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:52:        NSString *sql = @"SELECT * FROM blobs WHERE cid = ? AND did = ?";
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:73:        NSString *sql = @"SELECT * FROM blobs WHERE did = ? LIMIT ? OFFSET ?";
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:94:        NSString *sql = @"SELECT COUNT(*) FROM blobs WHERE did = ?";
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:111:        NSString *sql = @"DELETE FROM blobs WHERE cid = ? AND did = ?";
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:137:        NSString *sql = @"SELECT * FROM blobs WHERE cid = ?";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:286:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM repo_root WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:292:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM records WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:294:    results = [self.database executeParameterizedQuery:@"SELECT 1 FROM record_tombstones WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:300:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM ipld_blocks WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:330:    NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did FROM records WHERE uri = ?";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:336:        NSString *diagSql = @"SELECT uri FROM records WHERE collection = ? LIMIT 5";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:345:    NSString *sql = hasRev ? @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones WHERE rev > ? ORDER BY rev LIMIT ?" : @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones ORDER BY rev LIMIT ?";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:368:    NSString *sql = collection ? @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did FROM records WHERE collection = ? ORDER BY rkey LIMIT ? OFFSET ?" : @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did FROM records ORDER BY rkey LIMIT ? OFFSET ?";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:389:    NSString *sql = @"UPDATE records SET did = ?, collection = ?, rkey = ?, cid = ?, value = ?, created_at = ?, rev = ?, subject_did = ? WHERE uri = ?";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:395:    return [self.database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:416:    NSString *sql = hasRev ? @"SELECT cid FROM ipld_blocks WHERE rev > ? ORDER BY rev, cid LIMIT ?" : @"SELECT cid FROM ipld_blocks ORDER BY cid LIMIT ?";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:428:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT cid FROM ipld_blocks WHERE rev = ? ORDER BY cid LIMIT ?" params:@[rev, @(limit)] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:435:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT block FROM ipld_blocks WHERE cid = ?" params:@[cid] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:457:    return [self.database executeParameterizedUpdate:@"DELETE FROM ipld_blocks WHERE cid = ?" params:@[cid] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:463:    NSString *sql = collection ? @"SELECT COUNT(*) as count FROM records WHERE collection = ?" : @"SELECT COUNT(*) as count FROM records";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:517:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT private_key FROM signing_keys WHERE did = ?" params:@[self.did ?: @""] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:554:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT encrypted_private_key, encryption_salt FROM rotation_keys WHERE did = ?" params:@[self.did ?: @""] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:576:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT public_key_compressed FROM rotation_keys WHERE did = ?" params:@[self.did ?: @""] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:581:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM rotation_keys WHERE did = ? LIMIT 1" params:@[self.did ?: @""] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:597:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT name FROM sqlite_master WHERE type='table' AND name=?" params:@[tableName] error:nil];
+./Garazyk/Sources/Network/XrpcLabelPack.m:93:                                         "WHERE CAST(COALESCE(strftime('%s', cts), '0') AS INTEGER) >= ? "
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:58:    NSString *sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE cid = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:80:        sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE did = ? AND cid > ? ORDER BY cid LIMIT ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:83:        sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE did = ? ORDER BY cid LIMIT ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:96:    NSString *sql = @"DELETE FROM blobs WHERE cid = ? AND did = ?";
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:139:        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:324:        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:371:        NSString *itemQuery = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT 100";
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:677:                         @"WHERE collection = ? ORDER BY rkey DESC LIMIT ?"
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:767:        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:834:        NSString *query = @"SELECT DISTINCT did, rkey FROM records WHERE collection = ? AND subject_did = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:76:        NSArray *rows = [self.database executeParameterizedQuery:@"SELECT block_data FROM blocks WHERE cid = ? LIMIT 1"
+./Garazyk/Sources/AppView/Services/FeedService.m:257:    NSString *query = @"SELECT rkey, cid, value FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:315:    NSString *memberQuery = @"SELECT subject_did FROM bsky_graph_listitems WHERE list_uri = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:355:    NSString *query = @"SELECT subject_did, cid, value FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:400:    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid, value FROM records WHERE did IN (%@) AND collection = ?",
+./Garazyk/Sources/AppView/Services/FeedService.m:478:        NSString *query = @"SELECT cid, value FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:522:    NSString *query = @"SELECT cid, value FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:543:    NSString *query = @"SELECT did, rkey, cid, value FROM records WHERE collection = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:587:    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ? AND value LIKE ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:598:    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.repost' AND value LIKE ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:609:    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.like' AND value LIKE ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:625:        NSString *query = @"SELECT created_at FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:721:    NSString *query = @"SELECT cid, did FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:803:    NSString *sql = @"DELETE FROM bsky_feed_threadgates WHERE uri = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:831:    NSString *sql = @"DELETE FROM bsky_feed_postgates WHERE uri = ?";
+./Garazyk/Sources/AppView/Services/FeedService.m:847:    NSString *sql = @"DELETE FROM bsky_feed_generators WHERE uri = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:29:    NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:35:    NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:42:    NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:57:        [sql appendString:@" WHERE did > ?"];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:122:                     @"age_verified_at = ?, webauthn_enabled = ? WHERE did = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:149:    NSString *sql = @"DELETE FROM accounts WHERE did = ?";
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.m:189:                                         @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT 500"
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.m:231:    NSArray *rows = [appViewDatabase executeParameterizedQuery:@"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1"
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:13:    NSString *sql = @"SELECT account_did, session_id FROM refresh_tokens WHERE token = ? AND expires_at > ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:23:    NSString *sql = @"SELECT account_did FROM refresh_tokens WHERE token = ? AND expires_at > ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:33:    NSString *sql = @"SELECT 1 FROM refresh_tokens WHERE session_id = ? AND account_did = ? AND expires_at > ? LIMIT 1";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:67:    NSString *sql = @"DELETE FROM refresh_tokens WHERE token = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:73:    NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:79:    NSString *sql = @"DELETE FROM refresh_tokens WHERE session_id = ?";
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:85:    NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:91:    NSString *sql = @"SELECT * FROM age_assurance_states WHERE did = ? ORDER BY created_at DESC LIMIT 1";
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:112:    NSString *querySql = @"SELECT * FROM age_assurance_states WHERE token = ? AND status = 'pending'";
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:133:    NSString *updateSql = @"UPDATE age_assurance_states SET status = 'assured', updated_at = ? WHERE id = ?";
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:65:    NSString *countSQL = @"SELECT count(*) as cnt FROM fts_actors WHERE fts_actors MATCH ?";
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:73:    NSString *sql = @"SELECT did FROM fts_actors WHERE fts_actors MATCH ? ORDER BY bm25(fts_actors) LIMIT ? OFFSET ?";
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:114:    NSString *countSQL = @"SELECT count(*) as cnt FROM fts_posts WHERE fts_posts MATCH ?";
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:121:    NSString *sql = @"SELECT uri FROM fts_posts WHERE fts_posts MATCH ? ORDER BY bm25(fts_posts) LIMIT ? OFFSET ?";
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:162:    NSString *countSQL = @"SELECT count(*) as cnt FROM fts_starter_packs WHERE fts_starter_packs MATCH ?";
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:169:    NSString *sql = @"SELECT uri FROM fts_starter_packs WHERE fts_starter_packs MATCH ? ORDER BY bm25(fts_starter_packs) LIMIT ? OFFSET ?";
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:225:        NSString *handle = [self.database executeParameterizedQuery:@"SELECT handle FROM accounts WHERE did = ?" params:@[did] error:nil].firstObject[@"handle"];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:256:                return [self.database executeParameterizedUpdate:@"DELETE FROM search_actors WHERE did = ?" params:@[did] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:260:        return [self.database executeParameterizedUpdate:@"DELETE FROM search_posts WHERE uri = ?" params:@[uri] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:262:        return [self.database executeParameterizedUpdate:@"DELETE FROM search_starter_packs WHERE uri = ?" params:@[uri] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:93:    NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, password_salt = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ?, tfa_enabled = ?, tfa_secret = ?, recovery_codes = ?, invite_enabled = ? WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:117:    // WHERE did = ?
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:139:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE did = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:145:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE handle = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:152:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE email = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:161:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE refresh_jwt = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:199:        ? [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE did > ? ORDER BY did ASC LIMIT ?", kAccountsColumns]
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:237:    NSString *sql = @"DELETE FROM accounts WHERE did = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:34:    NSArray *rows = [database executeParameterizedQuery:@"SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:117:        [query appendFormat:@"c.id IN (SELECT convo_id FROM conversation_members WHERE member_did = ? AND status != 'left')"];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:120:    [query appendFormat:@" AND (SELECT COUNT(*) FROM conversation_members WHERE convo_id = c.id AND status != 'left') = ? LIMIT 1"];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:143:    NSString *query = @"SELECT id, mode, created_at, updated_at FROM conversations WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:158:    NSString *membersQuery = @"SELECT member_did, status, muted, last_read_id, joined_at FROM conversation_members WHERE convo_id = ? AND status != 'left'";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:206:                     @"WHERE cm.member_did = ? AND cm.status != 'left'";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:240:        query = [query stringByAppendingString:@" WHERE id < ?"];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:269:    NSString *query = @"UPDATE conversation_members SET status = ? WHERE convo_id = ? AND member_did = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:282:    NSString *query = @"UPDATE conversation_members SET status = ? WHERE convo_id = ? AND member_did = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:289:        NSArray *activeRows = [(PDSDatabase *)self.database executeParameterizedQuery:@"SELECT COUNT(*) AS count FROM conversation_members WHERE convo_id = ? AND status != 'left'"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:295:            BOOL ok = [database executeParameterizedUpdate:@"DELETE FROM message_reactions WHERE message_id IN (SELECT id FROM messages WHERE convo_id = ?)"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:300:            ok = [database executeParameterizedUpdate:@"DELETE FROM messages WHERE convo_id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:305:            ok = [database executeParameterizedUpdate:@"DELETE FROM conversation_members WHERE convo_id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:311:                ok = [database executeParameterizedUpdate:@"DELETE FROM chat_event_log WHERE convo_id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:317:            ok = [database executeParameterizedUpdate:@"DELETE FROM conversations WHERE id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:330:                     @"WHERE cm.member_did = ? AND cm.status = ? "
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:387:    NSArray *membershipRows = [(PDSDatabase *)self.database executeParameterizedQuery:@"SELECT 1 FROM conversation_members WHERE convo_id = ? AND member_did = ? AND status != 'left' LIMIT 1"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:411:    NSString *updateQuery = @"UPDATE conversations SET updated_at = ? WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:428:    NSString *query = @"SELECT id, sender_did, text, embed_json, created_at FROM messages WHERE convo_id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:467:    NSString *fetchQuery = @"SELECT deleted_for_json FROM messages WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:490:    NSString *updateQuery = @"UPDATE messages SET deleted_for_json = ? WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:500:    NSString *query = @"UPDATE conversation_members SET last_read_id = ? WHERE convo_id = ? AND member_did = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:519:        NSString *convoQuery = @"SELECT convo_id FROM messages WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:532:    NSString *query = @"DELETE FROM message_reactions WHERE message_id = ? AND actor_did = ? AND emoji = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:538:        NSString *convoQuery = @"SELECT convo_id FROM messages WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:553:    NSString *query = @"UPDATE conversation_members SET muted = 1 WHERE convo_id = ? AND member_did = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:562:    NSString *query = @"UPDATE conversation_members SET muted = 0 WHERE convo_id = ? AND member_did = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:573:    NSString *query = @"UPDATE conversations SET locked = 1, updated_at = ? WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:582:    NSString *query = @"UPDATE conversations SET locked = 0, updated_at = ? WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:601:    NSString *query = @"UPDATE conversations SET mode = ?, updated_at = ? WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:620:    NSString *checkQuery = @"SELECT locked FROM conversations WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:667:        query = [query stringByAppendingString:@"WHERE created_at < ? "];
+./Garazyk/Sources/AppView/Services/ActorService.m:108:    NSString *query = @"SELECT preferences FROM actor_preferences WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:166:    NSString *checkQuery = @"SELECT did FROM actor_preferences WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:171:        NSString *updateQuery = @"UPDATE actor_preferences SET preferences = ?, updated_at = datetime('now') WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:196:    NSString *query = @"SELECT handle FROM accounts WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:226:    NSString *query = @"SELECT did FROM accounts WHERE handle = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:239:    NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:259:    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE subject_did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:270:    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:281:    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:383:    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ?";
+./Garazyk/Sources/AppView/Services/ActorService.m:420:    NSString *followsQuery = @"SELECT subject_did FROM bsky_graph_follows WHERE did = ?";
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:234:        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:301:        NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1";
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:349:        NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:406:        NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:509:        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatModerationService.m:21:    NSString *sql = @"SELECT * FROM chat_actor_metadata WHERE did = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatModerationService.m:59:    NSString *sql = @"SELECT * FROM messages WHERE id = ?";
+./Garazyk/Sources/Chat/Server/Services/ChatModerationService.m:70:    NSString *contextSql = @"SELECT * FROM messages WHERE convo_id = ? ORDER BY created_at DESC LIMIT 5";
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:33:    NSString *sql = @"SELECT * FROM blobs WHERE cid = ?";
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:39:    NSString *sql = @"SELECT * FROM blobs WHERE did = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:46:        NSString *sql = @"SELECT COUNT(*) FROM blobs WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:59:    NSString *sql = @"DELETE FROM blobs WHERE cid = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:104:    NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:161:    NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC";
+./Garazyk/Sources/AppView/Services/GraphService.m:219:    NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:275:    NSString *sql = @"DELETE FROM actor_mutes WHERE did = ? AND muted_did = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:285:    NSString *query = @"SELECT id, muted_did FROM actor_mutes WHERE did = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:337:    NSString *followQuery = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:358:    NSString *blockQuery = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:369:    NSString *muteQuery = @"SELECT id FROM actor_mutes WHERE did = ? AND muted_did = ? LIMIT 1";
+./Garazyk/Sources/AppView/Services/GraphService.m:397:    NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC";
+./Garazyk/Sources/AppView/Services/GraphService.m:454:    NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC";
+./Garazyk/Sources/AppView/Services/GraphService.m:505:    NSString *query = @"SELECT cid, name, created_at FROM starter_packs WHERE did = ? AND rkey = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:540:    NSString *query = @"SELECT rkey, cid, name, created_at FROM starter_packs WHERE did = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:590:    NSString *sql = @"SELECT did, rkey, cid, name, created_at FROM starter_packs WHERE name LIKE ? ORDER BY created_at DESC LIMIT ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:631:    NSString *sql = @"DELETE FROM starter_packs WHERE did = ? AND rkey = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:650:    NSString *sql = @"DELETE FROM bsky_graph_lists WHERE uri = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:665:    NSString *sql = @"DELETE FROM bsky_graph_listitems WHERE uri = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:677:    NSString *query = @"SELECT uri, did, name, purpose, description, avatar_cid, created_at FROM bsky_graph_lists WHERE did = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:720:        NSString *recordQuery = @"SELECT uri, did, rkey, cid, value, indexed_at FROM records WHERE did = ? AND collection = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:770:    NSString *listQuery = @"SELECT uri, did, name, purpose, description, avatar_cid, created_at FROM bsky_graph_lists WHERE uri = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:785:        NSString *recordQuery = @"SELECT uri, did, rkey, cid, value, indexed_at FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1";
+./Garazyk/Sources/AppView/Services/GraphService.m:808:    NSString *itemsQuery = @"SELECT uri, list_uri, subject_did, created_at FROM bsky_graph_listitems WHERE list_uri = ?";
+./Garazyk/Sources/AppView/Services/GraphService.m:842:        NSString *recordItemQuery = @"SELECT uri, did, rkey, cid, value, indexed_at FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT ?";
+./Garazyk/Sources/AppView/Services/BookmarkService.m:35:    NSString *query = @"SELECT subject_uri, subject_cid, created_at FROM bookmarks WHERE did = ?";
+./Garazyk/Sources/AppView/Services/BookmarkService.m:117:    return [self.database executeParameterizedUpdate:@"DELETE FROM bookmarks WHERE did = ? AND uri = ?"
+./Garazyk/Sources/AppView/Services/BookmarkService.m:125:    return [self.database executeParameterizedUpdate:@"DELETE FROM bookmarks WHERE did = ? AND subject_uri = ?"
+./Garazyk/Sources/AppView/Services/DraftService.m:93:    NSString *sql = @"UPDATE drafts SET content = ?, updated_at = ? WHERE id = ? AND did = ?";
+./Garazyk/Sources/AppView/Services/DraftService.m:109:    NSString *sql = @"SELECT id, did, content, created_at, updated_at FROM drafts WHERE did = ? ORDER BY updated_at DESC";
+./Garazyk/Sources/AppView/Services/DraftService.m:149:    NSString *sql = @"DELETE FROM drafts WHERE id = ? AND did = ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:71:    NSString *sql = @"SELECT id FROM phone_verifications WHERE phone = ? AND code = ? AND did = ? AND expires_at > ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:108:    NSString *sql = @"SELECT did FROM contact_tokens WHERE token = ? AND did = ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:143:    NSString *matchSql = @"SELECT DISTINCT did FROM contact_hashes WHERE phone_hash = ? AND did != ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:149:        NSString *findSql = @"SELECT DISTINCT ch.did FROM contact_hashes ch WHERE ch.phone_hash = ? AND ch.did != ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:182:    NSString *sql = @"SELECT match_did FROM contact_matches WHERE did = ? AND dismissed_at IS NULL";
+./Garazyk/Sources/AppView/Services/ContactService.m:207:    NSString *sql = @"UPDATE contact_matches SET dismissed_at = ? WHERE did = ? AND match_did = ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:215:    NSString *sql = @"SELECT synced_at, matches_count FROM contact_sync_status WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:231:    NSString *sql1 = @"DELETE FROM contact_hashes WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:232:    NSString *sql2 = @"DELETE FROM contact_matches WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:233:    NSString *sql3 = @"DELETE FROM contact_sync_status WHERE did = ?";
+./Garazyk/Sources/AppView/Services/ContactService.m:234:    NSString *sql4 = @"DELETE FROM contact_tokens WHERE did = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:132:    NSString *query = @"SELECT * FROM moderation_events WHERE id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:187:                     @"FROM moderation_subjects WHERE subject_did = ? LIMIT 1";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:233:    NSString *sql = @"UPDATE moderation_team SET role = ? WHERE did = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:240:    NSString *sql = @"DELETE FROM moderation_team WHERE did = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:273:        NSString *sql = @"UPDATE moderation_sets SET name = ?, updated_at = ? WHERE id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:278:        NSString *del = @"DELETE FROM moderation_set_members WHERE set_id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:290:    NSString *sql = @"DELETE FROM moderation_sets WHERE id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:296:    NSString *sql = @"SELECT * FROM moderation_sets WHERE id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:301:    NSString *mSql = @"SELECT did FROM moderation_set_members WHERE set_id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:332:        NSString *sql = @"DELETE FROM moderation_set_members WHERE set_id = ? AND did = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:343:    NSString *sql = @"SELECT did, added_at FROM moderation_set_members WHERE set_id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:468:    NSString *sql = [NSString stringWithFormat:@"UPDATE moderation_templates SET %@ WHERE id = ?", [updates componentsJoinedByString:@", "]];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:475:    NSString *sql = @"DELETE FROM moderation_templates WHERE id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:603:    NSString *sql = @"UPDATE moderation_scheduled_actions SET status = 'cancelled' WHERE id = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:615:        NSString *sql = @"UPDATE moderation_scheduled_actions SET status = 'cancelled' WHERE subject_did = ? AND status = 'pending'";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:637:        NSString *statusSql = @"SELECT * FROM moderation_subjects WHERE did = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:711:        [sql appendFormat:@" WHERE url = ? AND pattern = ?"];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:729:        NSString *sql = @"DELETE FROM moderation_safelinks WHERE url = ? AND pattern = ?";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:744:    NSString *sql = @"SELECT * FROM moderation_safelinks WHERE url = ? AND pattern = ?";
+./Garazyk/Sources/AppView/Services/NotificationService.m:91:    NSString *checkQuery = @"SELECT id FROM actor_push_tokens WHERE did = ? AND device_token = ?";
+./Garazyk/Sources/AppView/Services/NotificationService.m:96:        query = @"UPDATE actor_push_tokens SET platform_token = ?, service_endpoint = ?, updated_at = datetime('now') WHERE did = ? AND device_token = ?";
+./Garazyk/Sources/AppView/Services/NotificationService.m:114:    NSString *query = @"DELETE FROM actor_push_tokens WHERE did = ?";
+./Garazyk/Sources/AppView/Services/NotificationService.m:139:    NSMutableString *query = [NSMutableString stringWithString:@"SELECT * FROM notifications WHERE did = ?"];
+./Garazyk/Sources/AppView/Services/NotificationService.m:205:    NSString *query = @"SELECT subject_uri, subject_cid FROM notifications WHERE id = ?";
+./Garazyk/Sources/AppView/Services/NotificationService.m:232:    NSMutableString *query = [NSMutableString stringWithString:@"UPDATE notifications SET is_read = 1 WHERE did = ? AND is_read = 0"];
+./Garazyk/Sources/AppView/Services/NotificationService.m:234:        [query appendString:@" AND id IN (SELECT id FROM notifications WHERE did = ? ORDER BY id DESC LIMIT ?)"];
+./Garazyk/Sources/AppView/Services/NotificationService.m:283:    NSString *sql = @"SELECT COUNT(*) as count FROM notifications WHERE did = ? AND is_read = 0";
+./Garazyk/Sources/AppView/Services/NotificationService.m:294:    NSString *sql = @"DELETE FROM notifications WHERE subject_uri = ?";
+./Garazyk/Sources/AppView/Services/NotificationService.m:314:    NSString *query = @"DELETE FROM actor_push_tokens WHERE did = ? AND device_token = ?";
+./Garazyk/Sources/AppView/Services/NotificationService.m:348:    NSMutableString *query = [NSMutableString stringWithString:@"SELECT id, subject_did FROM actor_activity_subscriptions WHERE owner_did = ?"];
+./Garazyk/Sources/AppView/Services/NotificationService.m:389:    NSString *query = @"SELECT preferences FROM notification_preferences WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:554:        NSString *sql = @"SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:578:    NSString *sql = @"SELECT seq, saved_at FROM appview_checkpoints WHERE relay_url = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:623:    NSString *sql = @"SELECT status, last_rev, last_backfill_at, error_count, last_error FROM appview_repo_sync_state WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:649:        " WHERE status = ?"
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:676:    NSString *sql = @"SELECT COUNT(*) AS count FROM appview_repo_sync_state WHERE status = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:690:            NSString *sql = @"UPDATE appview_repo_sync_state SET status = ? WHERE did = ? AND status = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:713:        " WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:719:    NSString *sql = @"UPDATE appview_repo_sync_state SET status = ? WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:728:        " WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:760:            " WHERE did = ? ORDER BY seq ASC";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:778:        NSString *deleteSQL = @"DELETE FROM appview_pending_deltas WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:786:    NSString *sql = @"SELECT COUNT(*) AS count FROM appview_pending_deltas WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:819:    NSString *sql = @"SELECT 1 FROM appview_event_log WHERE did IS ? AND rev IS ? AND cid IS ? LIMIT 1";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:827:    NSString *sql = @"DELETE FROM appview_event_log WHERE created_at < ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:868:        " FROM appview_cursor_events WHERE cursor > ? ORDER BY cursor ASC LIMIT ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:941:    NSString *sql = @"SELECT reason, expires_at, added_at FROM appview_relevance WHERE did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:965:    NSString *sql = @"DELETE FROM appview_relevance WHERE expires_at IS NOT NULL AND expires_at <= ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:974:        NSString *sel = @"SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:985:    NSString *sql = @"SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1127:    NSString *sql = @"SELECT cid, repo_did, block_data, content_type, size, created_at FROM blocks WHERE cid = ? AND repo_did = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1220:        NSString *deleteSQL = @"DELETE FROM records WHERE did = ? AND uri NOT IN (SELECT uri FROM appview_snapshot_uris)";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1243:    NSString *sql = @"SELECT COUNT(*) AS count FROM records WHERE collection = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1263:    NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, handle, subject_did, indexed_at FROM records WHERE uri = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1303:        @"SELECT uri, did, collection, rkey, cid, value, handle, indexed_at FROM records WHERE collection = ?"];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1370:    NSString *countSql = @"SELECT COUNT(*) AS total FROM records WHERE collection = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1402:    NSString *sql = @"SELECT COUNT(*) AS cnt FROM records WHERE collection = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1417:    [self executeParameterizedUpdate:@"DELETE FROM handles WHERE did = ?" params:@[did] error:nil];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1425:    NSString *sql = @"SELECT did FROM handles WHERE handle = ?";
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1432:    NSString *sql = @"SELECT handle FROM handles WHERE did = ?";
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1504:    NSString *query = @"SELECT cid, value FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1560:            NSString *query = @"SELECT src, uri, cid, val, neg, created_at FROM labels WHERE uri = ?";
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1601:            NSString *query = @"SELECT did, handle, email, created_at FROM accounts WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:15:    NSString *sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs WHERE job_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:50:    NSString *sql = @"UPDATE video_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:67:    NSString *sql = @"UPDATE accounts SET age_assurance = ?, age_verified_at = ?, updated_at = ? WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:83:    NSString *sql = @"UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:98:    NSString *sql = @"UPDATE video_jobs SET retry_count = retry_count + 1, state = 'PENDING', error_message = NULL, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:110:        sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:105:    NSString *updateQuery = [NSString stringWithFormat:@"UPDATE groups SET %@ WHERE uri = ?",
+./Garazyk/Sources/AppView/Services/GroupService.m:124:        @"DELETE FROM group_message_reactions WHERE message_id IN (SELECT id FROM group_messages WHERE group_uri = ?)",
+./Garazyk/Sources/AppView/Services/GroupService.m:125:        @"DELETE FROM group_messages WHERE group_uri = ?",
+./Garazyk/Sources/AppView/Services/GroupService.m:126:        @"DELETE FROM group_join_requests WHERE group_uri = ?",
+./Garazyk/Sources/AppView/Services/GroupService.m:127:        @"DELETE FROM group_invite_links WHERE group_uri = ?",
+./Garazyk/Sources/AppView/Services/GroupService.m:128:        @"DELETE FROM group_members WHERE group_uri = ?",
+./Garazyk/Sources/AppView/Services/GroupService.m:129:        @"DELETE FROM groups WHERE uri = ?"
+./Garazyk/Sources/AppView/Services/GroupService.m:149:    NSString *query = @"SELECT uri, creator_did, name, description, privacy, joinability, created_at, updated_at FROM groups WHERE uri = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:168:    NSString *countQuery = @"SELECT COUNT(*) as count FROM group_members WHERE group_uri = ? AND status = 'accepted'";
+./Garazyk/Sources/AppView/Services/GroupService.m:226:        NSString *deleteQuery = @"DELETE FROM group_members WHERE group_uri = ? AND member_did = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:250:                     @"WHERE group_uri = ? AND status = 'accepted' ORDER BY joined_at ASC LIMIT ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:387:    NSString *updateQuery = [NSString stringWithFormat:@"UPDATE group_invite_links SET %@ WHERE id = ?",
+./Garazyk/Sources/AppView/Services/GroupService.m:401:    NSString *updateQuery = @"UPDATE group_invite_links SET enabled = 0 WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:457:    NSString *query = @"SELECT id, group_uri, enabled, expires_at, max_uses, uses FROM group_invite_links WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:515:    NSString *updateQuery = @"UPDATE group_invite_links SET uses = uses + 1 WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:556:    NSString *query = @"SELECT group_uri, requester_did FROM group_join_requests WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:587:    NSString *updateQuery = @"UPDATE group_join_requests SET status = 'approved', responded_at = ?, responded_by = ? WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:604:    NSString *updateQuery = @"UPDATE group_join_requests SET status = 'rejected', responded_at = ?, responded_by = ? WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:619:                     @"WHERE group_uri = ? AND status = 'pending' ORDER BY requested_at ASC";
+./Garazyk/Sources/AppView/Services/GroupService.m:653:    NSString *creatorQuery = @"SELECT creator_did FROM groups WHERE uri = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:669:    NSString *deleteQuery = @"DELETE FROM group_members WHERE group_uri = ? AND member_did = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:725:                     @"WHERE group_uri = ? ORDER BY created_at DESC LIMIT ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:782:    NSString *deleteQuery = @"DELETE FROM group_message_reactions WHERE message_id = ? AND actor_did = ? AND emoji = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:798:    NSString *query = @"SELECT deleted_for_json FROM group_messages WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:835:    NSString *updateQuery = @"UPDATE group_messages SET deleted_for_json = ? WHERE id = ?";
+./Garazyk/Sources/AppView/Services/GroupService.m:852:    NSString *query = @"SELECT role FROM group_members WHERE member_did = ? AND group_uri = ? AND status = 'accepted'";
+./Garazyk/Sources/AppView/Services/GroupService.m:877:    NSString *query = @"SELECT 1 FROM group_members WHERE member_did = ? AND group_uri = ? AND status = 'accepted'";
+./Garazyk/Sources/Network/XrpcAdminPack.m:594:                                 @"FROM account_usage WHERE did = ?";
+./Garazyk/Sources/Network/XrpcAdminPack.m:1428:        @"DELETE FROM refresh_tokens WHERE account_did = ?",
+./Garazyk/Sources/Network/XrpcAdminPack.m:1429:        @"DELETE FROM app_passwords WHERE account_did = ?",
+./Garazyk/Sources/Network/XrpcAdminPack.m:1430:        @"DELETE FROM invite_codes WHERE account_did = ?",
+./Garazyk/Sources/Network/XrpcAdminPack.m:1431:        @"DELETE FROM passkeys WHERE account_did = ?"
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:28:    NSString *sql = @"UPDATE repos SET root_cid = ?, updated_at = ? WHERE owner_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:38:    NSString *sql = @"SELECT * FROM repos WHERE owner_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:49:    NSString *sql = @"DELETE FROM repos WHERE owner_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:58:    NSString *sql = @"SELECT * FROM blocks WHERE cid = ? AND repo_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:64:    NSString *sql = @"SELECT * FROM blocks WHERE repo_did = ? ORDER BY created_at ASC LIMIT ? OFFSET ?";
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:71:        NSString *sql = @"SELECT COUNT(*) FROM blocks WHERE repo_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:84:    NSString *sql = @"DELETE FROM blocks WHERE cid = ? AND repo_did = ?";
+./Garazyk/Sources/Network/XrpcVendorPack.m:143:                                 @"FROM account_usage WHERE did = ?";
+./Garazyk/Sources/Database/PDSDatabase+WebAuthn.m:30:    NSString *sql = @"SELECT id, account_did, credential_id, public_key_cose, sign_count, aaguid, created_at FROM webauthn_credentials WHERE account_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+WebAuthn.m:52:    NSString *sql = @"DELETE FROM webauthn_credentials WHERE credential_id = ? AND account_did = ?";
+./Garazyk/Sources/Database/PDSDatabase+WebAuthn.m:58:    NSString *sql = @"UPDATE webauthn_credentials SET sign_count = ? WHERE credential_id = ? AND account_did = ?";
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:169:    NSString *query = @"DELETE FROM records WHERE uri = ?";
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:276:    NSArray *rows = [db executeParameterizedQuery:@"SELECT id, token_hash, challenge, expires_at, consumed_at FROM pending_factor_tokens WHERE account_did = ? AND method = ? AND consumed_at IS NULL"
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:300:    BOOL consumed = [db executeParameterizedUpdate:@"UPDATE pending_factor_tokens SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL"
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:610:    const char *sql = "SELECT 1 FROM _migrations WHERE version = ? LIMIT 1";
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1025:        const char *removeSQL = "DELETE FROM _migrations WHERE version = ?";
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1101:    const char *sql = "SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at FROM accounts WHERE did = ? LIMIT 1";
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1184:    const char *sql = "SELECT owner_did, root_cid, collection_data, created_at, updated_at FROM repos WHERE owner_did = ?";
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1237:    const char *sql = "SELECT uri, did, collection, rkey, cid, created_at FROM records WHERE did = ?";
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1309:    const char *sql = "SELECT cid, repo_did, block_data, content_type, size, created_at FROM blocks WHERE repo_did = ?";
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:110:    NSString *deleteMembersQuery = @"DELETE FROM group_members WHERE group_uri = ?";
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:113:    NSString *deleteGroupQuery = @"DELETE FROM groups WHERE uri = ?";
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:222:        NSString *deleteLinks = @"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?";
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:266:        if (![self executeUpdate:@"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:272:        return [self executeUpdate:@"DELETE FROM mikrus_records WHERE uri = ?"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:294:        "WHERE subject = ? AND source_collection = ? AND source_path = ?"];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:304:        "WHERE subject = ? AND source_collection = ? AND source_path = ?"];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:363:        "WHERE subject = ? AND source_collection = ? AND source_path = ? "
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:372:        "WHERE subject = ? AND source_collection = ? AND source_path = ? "
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:409:        "WHERE subject = ? AND source_collection = ? AND source_path = ?";
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:438:        "WHERE l1.subject = ? AND l1.source_collection = ? AND l1.source_path = ?"];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:512:        "WHERE l1.subject = ? AND l1.source_collection = ? AND l1.source_path = ?"];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:554:    NSString *sql = @"SELECT uri, cid, value_json FROM mikrus_records WHERE uri = ? LIMIT 1";
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:590:        if (![self executeUpdate:@"DELETE FROM mikrus_handles WHERE did = ?"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:604:    NSArray *rows = [self executeQuery:@"SELECT did FROM mikrus_handles WHERE handle = ? LIMIT 1"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:612:    NSArray *rows = [self executeQuery:@"SELECT handle FROM mikrus_handles WHERE did = ? LIMIT 1"
+./Garazyk/Sources/Auth/PDSReplayCache.m:97:        const char *selectSQL = "SELECT expires_at FROM jti_cache WHERE jti = ?";
+./Garazyk/Sources/Auth/PDSReplayCache.m:144:        const char *deleteSQL = "DELETE FROM jti_cache WHERE expires_at < ?";
+./Garazyk/Sources/Auth/OAuth2Handler.m:3424:          @"oauth_par_requests WHERE request_uri = ? LIMIT 1"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3471:                       @"DELETE FROM oauth_par_requests WHERE request_uri = ?"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3496:                         @"oauth_par_requests WHERE request_uri = ? LIMIT 1"
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:113:        const char *sql = "SELECT * FROM media_jobs WHERE job_id = ?";
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:170:        const char *sql = "UPDATE media_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:209:        const char *sql = "UPDATE media_jobs SET results_json = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:239:        const char *sql = "UPDATE media_jobs SET retry_count = retry_count + 1, state = 'PENDING', error_message = NULL, updated_at = ? WHERE job_id = ?";
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:264:        const char *sql = "SELECT * FROM media_jobs WHERE state = 'PENDING' ORDER BY created_at ASC LIMIT ?";
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:288:            const char *sql = "SELECT * FROM media_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:148:    NSString *sql = @"UPDATE invite_codes SET disabled = 1 WHERE code = ?";
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.m:235:                    @"WHERE timestamp >= ? "
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.m:277:                    @"WHERE timestamp >= ? "
+./Garazyk/Sources/Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.m:314:    NSString *sql = @"DELETE FROM sequencer_analytics WHERE timestamp < ?";
+./Garazyk/Sources/Auth/Session.m:517:    const char *sql = "SELECT * FROM sessions WHERE access_token = ?";
+./Garazyk/Sources/Auth/Session.m:529:    const char *sql = "SELECT * FROM sessions WHERE refresh_token = ?";
+./Garazyk/Sources/Auth/Session.m:541:    const char *sql = "SELECT * FROM sessions WHERE session_id = ?";
+./Garazyk/Sources/Auth/Session.m:553:    const char *sql = "DELETE FROM sessions WHERE session_id = ?";
+./Garazyk/Sources/Auth/Session.m:565:    const char *sql = "SELECT * FROM sessions WHERE did = ?";
+./Garazyk/Sources/Auth/Session.m:579:    const char *sql = "SELECT * FROM sessions WHERE access_token_expires_at > ?";
+./Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m:633:            if (![_database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:&deleteError]) {
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m:127:                    @"WHERE id = ?";
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m:225:    NSString *sql = @"DELETE FROM blob_audit_jobs WHERE created_at < ?";
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditOperation.m:69:    NSString *sql = @"UPDATE blob_audit_jobs SET progress = ? WHERE id = ?";
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditOperation.m:99:    NSString *sql = @"UPDATE blob_audit_jobs SET status = ?, completed_at = ?, results = ? WHERE id = ?";

@@ -1,0 +1,243 @@
+./Garazyk/Sources/Sync/Relay/RelayClient.m:6:#import "Sync/WebSocket/WebSocketConnection.h"
+./Garazyk/Sources/Sync/Firehose/Firehose.h:313: @discussion Propagates to the underlying WebSocketConnection, causing
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:24:#import "Sync/WebSocket/WebSocketConnection.h"
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:25:#import "Sync/WebSocket/WebSocketServer.h"
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:43:@interface SubscribeReposHandler () <WebSocketServerDelegate,
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:44:                                     WebSocketConnectionDelegate>
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:46:@property(nonatomic, strong) WebSocketServer *webSocketServer;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:58:    NSMutableSet<WebSocketConnection *> *attachedConnections;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:71:                  toConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:72:- (void)detachConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:74:    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:80:                   toConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:83:          toConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:212:      [[WebSocketServer alloc] initWithHost:@"localhost" port:port];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:250:  __block NSSet<WebSocketConnection *> *attachedSnapshot = nil;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:254:  for (WebSocketConnection *connection in attachedSnapshot) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:296:  WebSocketConnection *webSocketConnection =
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:297:      [[WebSocketConnection alloc] initWithConnection:connection];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:321:#pragma mark - WebSocketServerDelegate
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:323:- (void)webSocketServer:(WebSocketServer *)server
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:324:    didAcceptConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:345:- (void)webSocketServer:(WebSocketServer *)server
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:346:     didCloseConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:352:- (void)webSocketServer:(WebSocketServer *)server
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:357:- (void)webSocketServer:(WebSocketServer *)server
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:358:         stateDidChange:(WebSocketServerState)state {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:362:#pragma mark - WebSocketConnectionDelegate
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:364:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:373:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:766:  __block NSArray<WebSocketConnection *> *snapshot;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:780:    for (WebSocketConnection *connection in snapshot) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:801:- (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:904:                   toConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1025:          toConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1115:                  toConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1124:- (void)detachConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1146:    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:4:#import "Sync/WebSocket/WebSocketConnection.h"
+./Garazyk/Sources/Sync/Firehose/Firehose.m:22:@interface Firehose () <WebSocketConnectionDelegate>
+./Garazyk/Sources/Sync/Firehose/Firehose.m:26:@property (nonatomic, strong, readwrite, nullable) WebSocketConnection *connection;
+./Garazyk/Sources/Sync/Firehose/Firehose.m:77:    self.connection = [[WebSocketConnection alloc] initWithHost:host port:port path:path];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:238:#pragma mark - WebSocketConnectionDelegate
+./Garazyk/Sources/Sync/Firehose/Firehose.m:240:- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveMessage:(NSData *)message {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:244:- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveText:(NSString *)text {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:249:- (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:267:- (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:271:- (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:273:    if (connection.state == WebSocketConnectionStateConnected) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:21:@class WebSocketServer;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:22:@class WebSocketConnection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:52:- (void)subscribeReposHandler:(id)handler didAcceptConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:53:- (void)subscribeReposHandler:(id)handler didCloseConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:69:@property (nonatomic, readonly) WebSocketServer *webSocketServer
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:76:@property (nonatomic, readonly) NSSet<WebSocketConnection *> *attachedConnections;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:4: @file WebSocketConnection.h
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:18:@class WebSocketConnection;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:23:extern NSString *const WebSocketConnectionErrorDomain;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:26:extern NSInteger const WebSocketConnectionErrorCodeConnectionClosed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:29:extern NSInteger const WebSocketConnectionErrorCodeInvalidFrame;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:32:extern NSInteger const WebSocketConnectionErrorCodeWriteFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:38: @constant WebSocketConnectionStateConnecting Connection is being established.
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:39: @constant WebSocketConnectionStateConnected Connection is active.
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:40: @constant WebSocketConnectionStateClosing Connection is closing.
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:41: @constant WebSocketConnectionStateClosed Connection is closed.
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:43:typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:44:  WebSocketConnectionStateConnecting,
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:45:  WebSocketConnectionStateConnected,
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:46:  WebSocketConnectionStateClosing,
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:47:  WebSocketConnectionStateClosed
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:51: @protocol WebSocketConnectionDelegate
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:55:@protocol WebSocketConnectionDelegate <NSObject>
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:57:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:59:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:64:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:70:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:75:- (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:78:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:83:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:88:- (void)webSocketConnectionDidClearBackpressure:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:91:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:97: @class WebSocketConnection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:103:@interface WebSocketConnection : NSObject
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:126:@property(nonatomic, readonly) WebSocketConnectionState state;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.h:129:@property(nonatomic, weak, nullable) id<WebSocketConnectionDelegate> delegate;
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:4: @file PDSWebSocketServer.h
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:20:@class PDSWebSocketServer;
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:32:typedef void (^PDSWebSocketConnectionHandler)(id<PDSWebSocketTransport> transport);
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:40:typedef void (^PDSWebSocketServerErrorHandler)(NSError *error);
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:44: @class PDSWebSocketServer
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:54:@interface PDSWebSocketServer : NSObject
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:73:@property (nonatomic, copy, nullable) PDSWebSocketConnectionHandler connectionHandler;
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.h:82:@property (nonatomic, copy, nullable) PDSWebSocketServerErrorHandler errorHandler;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:3:#import "Sync/WebSocket/WebSocketServer.h"
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:8:#import "Sync/WebSocket/WebSocketConnection.h"
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:10:NSString *const WebSocketServerErrorDomain = @"com.atproto.pds.websocket.server";
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:11:NSInteger const WebSocketServerErrorCodeListenerFailed = 1000;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:12:NSInteger const WebSocketServerErrorCodeInvalidHandshake = 1001;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:13:NSInteger const WebSocketServerErrorCodeConnectionFailed = 1002;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:34:@interface WebSocketServer () <WebSocketConnectionDelegate>
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:36:@property(nonatomic, readwrite) WebSocketServerState state;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:41:@property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:46:@implementation WebSocketServer
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:53:        _state = WebSocketServerStateIdle;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:66:- (NSSet<WebSocketConnection *> *)connections {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:67:    __block NSSet<WebSocketConnection *> *snapshot;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:75:    if (self.state != WebSocketServerStateIdle) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:77:            *error = [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:78:                                       code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:84:    self.state = WebSocketServerStateStarting;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:95:        self.state = WebSocketServerStateFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:97:            *error = [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:98:                                       code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:121:        self.state = WebSocketServerStateFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:123:            *error = [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:124:                                       code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:132:        self.state = WebSocketServerStateFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:134:            *error = [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:135:                                       code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:148:    self.state = WebSocketServerStateRunning;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:154:    if (self.state == WebSocketServerStateIdle || self.state == WebSocketServerStateStopping) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:158:    self.state = WebSocketServerStateStopping;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:160:    __block NSSet<WebSocketConnection *> *connectionsSnapshot = nil;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:166:    for (WebSocketConnection *connection in connectionsSnapshot) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:176:    self.state = WebSocketServerStateIdle;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:179:- (void)addConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:186:- (void)removeConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:193:    __block NSSet<WebSocketConnection *> *snapshot = nil;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:198:    NSSet<WebSocketConnection *> *targets =
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:201:    for (WebSocketConnection *connection in targets) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:206:- (void)setState:(WebSocketServerState)state {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:209:        id<WebSocketServerDelegate> delegate = self.delegate;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:218:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:224:    id<WebSocketServerDelegate> delegate = self.delegate;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:232:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:235:    id<WebSocketServerDelegate> delegate = self.delegate;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:249:@interface WebSocketServer () <WebSocketConnectionDelegate>
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:251:@property(nonatomic, readwrite) WebSocketServerState state;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:255:@property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:260:@implementation WebSocketServer
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:267:        _state = WebSocketServerStateIdle;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:277:- (NSSet<WebSocketConnection *> *)connections {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:278:    __block NSSet<WebSocketConnection *> *snapshot;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:286:    if (self.state != WebSocketServerStateIdle) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:288:            *error = [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:289:                                       code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:295:    self.state = WebSocketServerStateStarting;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:302:        self.state = WebSocketServerStateFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:304:            *error = [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:305:                                       code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:324:            strongSelf.state = WebSocketServerStateRunning;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:330:            strongSelf.state = WebSocketServerStateFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:341:            strongSelf.state = WebSocketServerStateIdle;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:353:        WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:adapter];
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:368:            *error = [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:369:                                       code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:378:            *error = startupError ?: [NSError errorWithDomain:WebSocketServerErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:379:                                             code:WebSocketServerErrorCodeListenerFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:390:    if (self.state == WebSocketServerStateIdle || self.state == WebSocketServerStateStopping) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:394:    self.state = WebSocketServerStateStopping;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:396:    __block NSSet<WebSocketConnection *> *connectionsSnapshot = nil;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:402:    for (WebSocketConnection *connection in connectionsSnapshot) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:414:    self.state = WebSocketServerStateIdle;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:417:- (void)addConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:424:- (void)removeConnection:(WebSocketConnection *)connection {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:431:    __block NSSet<WebSocketConnection *> *snapshot = nil;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:436:    NSSet<WebSocketConnection *> *targets =
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:439:    for (WebSocketConnection *connection in targets) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:444:- (void)setState:(WebSocketServerState)state {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:447:        id<WebSocketServerDelegate> delegate = self.delegate;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:456:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:462:    id<WebSocketServerDelegate> delegate = self.delegate;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:470:- (void)webSocketConnection:(WebSocketConnection *)connection
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:473:    id<WebSocketServerDelegate> delegate = self.delegate;
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.m:4: @file PDSWebSocketServer.m
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.m:6: @abstract Implementation of PDSWebSocketServer.
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.m:11:#import "PDSWebSocketServer.h"
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.m:16:@interface PDSWebSocketServer ()
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.m:23:@implementation PDSWebSocketServer
+./Garazyk/Sources/Sync/WebSocket/PDSWebSocketServer.m:56:            blockError = [NSError errorWithDomain:@"PDSWebSocketServer"
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:3:#import "Sync/WebSocket/WebSocketConnection.h"
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:14:NSString *const WebSocketConnectionErrorDomain =
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:17:NSInteger const WebSocketConnectionErrorCodeConnectionClosed = 2000;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:18:NSInteger const WebSocketConnectionErrorCodeInvalidFrame = 2001;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:19:NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:21:@interface WebSocketConnection () {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:28:@property(nonatomic, assign, readwrite) WebSocketConnectionState state;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:47:@implementation WebSocketConnection
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:59:    _state = WebSocketConnectionStateConnecting;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:79:    _state = WebSocketConnectionStateConnected;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:181:  if (self.state != WebSocketConnectionStateConnecting) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:184:          [NSError errorWithDomain:WebSocketConnectionErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:185:                              code:WebSocketConnectionErrorCodeConnectionClosed
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:235:          self.state = WebSocketConnectionStateConnected;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:250:      self.state = WebSocketConnectionStateClosed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:256:      self.state = WebSocketConnectionStateClosed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:264:                    errorWithDomain:WebSocketConnectionErrorDomain
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:265:                               code:WebSocketConnectionErrorCodeConnectionClosed
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:308:                              WebSocketConnectionStateClosed) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:309:                            strongSelf.state = WebSocketConnectionStateClosed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:420:            [self notifyError:[NSError errorWithDomain:WebSocketConnectionErrorDomain 
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:421:                                                  code:WebSocketConnectionErrorCodeConnectionClosed 
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:429:        self.state = WebSocketConnectionStateConnected;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:446:        [self notifyError:[NSError errorWithDomain:WebSocketConnectionErrorDomain 
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:447:                                              code:WebSocketConnectionErrorCodeConnectionClosed 
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:469:      BOOL ackingOurClose = (self.state == WebSocketConnectionStateClosing);
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:471:      if (ackingOurClose && self.state != WebSocketConnectionStateClosed) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:472:        self.state = WebSocketConnectionStateClosed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:512:    if (self.state == WebSocketConnectionStateClosing ||
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:513:        self.state == WebSocketConnectionStateClosed) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:517:    self.state = WebSocketConnectionStateClosing;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:529:                     if (self.state != WebSocketConnectionStateClosed) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:530:                       self.state = WebSocketConnectionStateClosed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:558:    if (self.state == WebSocketConnectionStateClosing ||
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:559:        self.state == WebSocketConnectionStateClosed) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:4: @file WebSocketServer.h
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:16:@class WebSocketConnection;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:17:@class WebSocketServer;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:22:extern NSString * const WebSocketServerErrorDomain;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:25:extern NSInteger const WebSocketServerErrorCodeListenerFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:28:extern NSInteger const WebSocketServerErrorCodeInvalidHandshake;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:31:extern NSInteger const WebSocketServerErrorCodeConnectionFailed;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:37: @constant WebSocketServerStateIdle Server is not running.
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:38: @constant WebSocketServerStateStarting Server is starting up.
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:39: @constant WebSocketServerStateRunning Server is accepting connections.
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:40: @constant WebSocketServerStateStopping Server is shutting down.
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:41: @constant WebSocketServerStateFailed Server failed to start.
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:43:typedef NS_ENUM(NSInteger, WebSocketServerState) {
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:44:    WebSocketServerStateIdle,
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:45:    WebSocketServerStateStarting,
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:46:    WebSocketServerStateRunning,
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:47:    WebSocketServerStateStopping,
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:48:    WebSocketServerStateFailed
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:52: @protocol WebSocketServerDelegate
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:56:@protocol WebSocketServerDelegate <NSObject>
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:58:- (void)webSocketServer:(WebSocketServer *)server didAcceptConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:59:- (void)webSocketServer:(WebSocketServer *)server didCloseConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:60:- (void)webSocketServer:(WebSocketServer *)server didFailWithError:(NSError *)error;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:61:- (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:65: @class WebSocketServer
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:71:@interface WebSocketServer : NSObject
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:80:@property (nonatomic, readonly) WebSocketServerState state;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:83:@property (nonatomic, weak, nullable) id<WebSocketServerDelegate> delegate;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.h:86:@property (nonatomic, readonly) NSSet<WebSocketConnection *> *connections;

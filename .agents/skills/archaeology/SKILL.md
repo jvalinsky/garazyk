@@ -1,3 +1,8 @@
+---
+name: archaeology
+description: Transform narratives into a queryable decision graph.
+---
+
 # Archaeology
 
 **Transform narratives into a queryable decision graph.**
@@ -32,7 +37,6 @@ deciduous link <goal> <decision> -r "Initial design"
 For each **PIVOT** in a narrative, use the atomic pivot command:
 
 ```bash
-# One command replaces 7 manual add/link/status commands
 deciduous archaeology pivot <from_id> "<what was learned>" "<new approach>" -c 85 -r "<why it failed>"
 ```
 
@@ -44,6 +48,7 @@ This automatically creates:
 - Marks the old approach as superseded
 
 Preview before executing:
+
 ```bash
 deciduous archaeology pivot <from_id> "observation" "new approach" --dry-run
 ```
@@ -116,4 +121,4 @@ deciduous nodes --type revisit
 
 - **Don't create nodes for every commit.** Commits are evidence, not graph nodes.
 - **Don't create implementation nodes.** The graph is about the MODEL, not the code.
-- **Don't over-structure.** Simple narratives might just be: goal → option → decision.
+- **Don't over-structure.** Simple narratives might just be: goal -> option -> decision.

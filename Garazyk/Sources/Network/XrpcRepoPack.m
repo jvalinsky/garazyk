@@ -169,6 +169,9 @@ static BOOL validateApplyWritesPayload(id writes, NSError **error) {
 
         id value = ((NSDictionary *)write)[@"value"];
         if (!value || value == (id)[NSNull null]) {
+            value = ((NSDictionary *)write)[@"record"];
+        }
+        if (!value || value == (id)[NSNull null]) {
             continue;
         }
         if (![NSJSONSerialization isValidJSONObject:value]) {
@@ -247,7 +250,8 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
                                                      commit:(RepoCommit *)commit
                                                         did:(NSString *)did
                                               databasePool:(PDSDatabasePool *)databasePool
-                                                      error:(NSError **)error;
+                                     allowLocalKeyFallback:(BOOL)allowLocalKeyFallback
+                                                     error:(NSError **)error;
 @end
 
 static CID *cidFromTaggedCBORValue(CBORValue *value) {
@@ -275,10 +279,14 @@ static CID *cidFromTaggedCBORValue(CBORValue *value) {
 }
 
 static NSData *publicKeyFromDIDKeyString(NSString *didKey) {
-    if (![didKey isKindOfClass:[NSString class]] || ![didKey hasPrefix:@"did:key:z"]) {
+    NSString *multibase = didKey;
+    if ([didKey hasPrefix:@"did:key:"]) {
+        multibase = [didKey substringFromIndex:8];
+    }
+    if (![multibase hasPrefix:@"z"]) {
         return nil;
     }
-    NSData *decoded = [CID base58btcDecode:[didKey substringFromIndex:9]];
+    NSData *decoded = [CID base58btcDecode:[multibase substringFromIndex:1]];
     if (decoded.length != 35) {
         return nil;
     }
@@ -313,7 +321,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
 
 @implementation PDSRepoImportValidator
 
-+ (BOOL)validateCommitSignature:(RepoCommit *)commit did:(NSString *)did databasePool:(PDSDatabasePool *)databasePool error:(NSError **)error {
++ (BOOL)validateCommitSignature:(RepoCommit *)commit did:(NSString *)did databasePool:(PDSDatabasePool *)databasePool allowLocalKeyFallback:(BOOL)allowLocalKeyFallback error:(NSError **)error {
     NSError *resolveError = nil;
     DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
     NSMutableArray<NSData *> *candidateKeys = [NSMutableArray array];
@@ -322,11 +330,13 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
         [candidateKeys addObject:didDocKey];
     }
 
-    NSError *storeError = nil;
-    PDSActorStore *store = [databasePool storeForDid:did error:&storeError];
-    NSData *localPublicKey = [store publicSigningKeyWithError:nil];
-    if (localPublicKey) {
-        [candidateKeys addObject:localPublicKey];
+    if (allowLocalKeyFallback) {
+        NSError *storeError = nil;
+        PDSActorStore *store = [databasePool storeForDid:did error:&storeError];
+        NSData *localPublicKey = [store publicSigningKeyWithError:nil];
+        if (localPublicKey) {
+            [candidateKeys addObject:localPublicKey];
+        }
     }
 
     for (NSData *publicKey in candidateKeys) {
@@ -481,6 +491,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
                                                      commit:(RepoCommit *)commit
                                                         did:(NSString *)did
                                               databasePool:(PDSDatabasePool *)databasePool
+                                     allowLocalKeyFallback:(BOOL)allowLocalKeyFallback
                                                       error:(NSError **)error {
     if (carData.length > kPDSImportRepoMaxBodyBytes) {
         if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Repository import body too large");
@@ -505,7 +516,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
         }
     }
 
-    if (![self validateCommitSignature:commit did:did databasePool:databasePool error:error]) {
+    if (![self validateCommitSignature:commit did:did databasePool:databasePool allowLocalKeyFallback:allowLocalKeyFallback error:error]) {
         return nil;
     }
 
@@ -1091,6 +1102,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return;
         }
 
+        BOOL allowLocalKeyFallback = [services.configuration.plcURL containsString:@"mock"] || [services.configuration.plcURL containsString:@"skip"];
         NSError *importValidationError = nil;
         PDSRepoImportValidationResult *importValidation =
             [PDSRepoImportValidator validateCARData:carData
@@ -1098,6 +1110,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
                                              commit:commit
                                                 did:did
                                       databasePool:databasePool
+                             allowLocalKeyFallback:allowLocalKeyFallback
                                               error:&importValidationError];
         if (!importValidation) {
             response.statusCode = (importValidationError.code == PDSRepoPackValidationErrorPayloadTooLarge)

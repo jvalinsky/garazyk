@@ -1,0 +1,1177 @@
+./Garazyk/Sources/Federation/FederationClient.m:348:    // Fallback for unregistered lexicons
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:20:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:23:    // should alloc/init and call registerWithDispatcher:services: directly.
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:25:    [pack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:28:- (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:35:        GZ_LOG_WARN(@"ATProtoMediaXrpcPack: no methodMappings set, XRPC routes not registered");
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:45:        [dispatcher registerMethod:getJobStatusNSID handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:64:        [dispatcher registerMethod:uploadNSID handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:125:        [dispatcher registerMethod:getUploadLimitsNSID handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Email/PDSEmailProviderFactory.h:11:    providers, plus custom providers registered via registerProviderClass:forName:.
+./Garazyk/Sources/Email/PDSEmailProviderFactory.h:51: @method registerProviderClass:forName:
+./Garazyk/Sources/Email/PDSEmailProviderFactory.h:54:+ (void)registerProviderClass:(Class)providerClass forName:(NSString *)name;
+./Garazyk/Sources/Email/PDSEmailProviderFactory.h:57: @method unregisterProviderWithName:
+./Garazyk/Sources/Email/PDSEmailProviderFactory.h:58: @abstract Remove a previously registered custom provider.
+./Garazyk/Sources/Email/PDSEmailProviderFactory.h:60:+ (void)unregisterProviderWithName:(NSString *)name;
+./Garazyk/Sources/Email/PDSEmailProviderFactory.h:62:/*! Clear all registered custom providers. */
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:223:        resolvedDid = [self _registerDIDWithPLCWithHandle:handle
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:740:/// operation data without registering with a PLC server. This is the sans-IO
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:808:/// I/O adapter - generates DID then registers with PLC server.
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:810:- (nullable NSString *)_registerDIDWithPLCWithHandle:(NSString *)handle
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.h:38:- (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:97:    [XrpcChatBskyActorPack registerWithDispatcher:self.dispatcher services:bag];
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:98:    [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher services:bag];
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:99:    [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher services:bag];
+./Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m:94:    [xrpcPack registerWithDispatcher:dispatcher services:routeServices];
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:51:+ (void)registerProviderClass:(Class)providerClass forName:(NSString *)providerName {
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:65:+ (void)unregisterProviderWithName:(NSString *)providerName {
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.m:153:    // Custom providers registered via registerProviderClass:forName:
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:238: @method registerMigration:
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:242: @discussion Migrations must be registered before use. Built-in migrations
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:243: are registered during init. Custom migrations can be added.
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:247:- (void)registerMigration:(id<PDSMigration>)migration;
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:250: @method registeredMigrations
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:252: @abstract Get all registered migrations.
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.h:256:- (NSArray<id<PDSMigration>> *)registeredMigrations;
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:135:+ (void)registerProviderClass:(Class)providerClass forName:(NSString *)name {
+./Garazyk/Sources/Email/PDSEmailProviderFactory.m:150:+ (void)unregisterProviderWithName:(NSString *)name {
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:23:    /** The selected provider name is not supported or registered. */
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:133:    and custom providers registered via registerProviderClass:forName:.
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:145: @method registerProviderClass:forName:
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:153:+ (void)registerProviderClass:(Class)providerClass forName:(NSString *)providerName;
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:156: @method unregisterProviderWithName:
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:158: @abstract Removes a previously registered custom provider.
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:163:+ (void)unregisterProviderWithName:(NSString *)providerName;
+./Garazyk/Sources/Services/Core/PDSPhoneVerificationProvider.h:168: @abstract Clears all registered custom providers.
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.h:101: @method registerRendezvousAddress:forAgent:epoch:error:
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.h:116:- (BOOL)registerRendezvousAddress:(NSString *)address
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:180:- (BOOL)registerRendezvousAddress:(NSString *)address
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:911:- (void)registerMigration:(id<PDSMigration>)migration {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:916:                GZ_LOG_DB_WARN(@"Migration version %ld already registered, skipping", (long)migration.version);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:924:- (NSArray<id<PDSMigration>> *)registeredMigrations {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1723:    [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"service"]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1724:    [manager registerMigration:[[V2OzoneSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1725:    [manager registerMigration:[[V3DiagnosticsSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1726:    [manager registerMigration:[[V4OzoneScheduledActionsSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1727:    [manager registerMigration:[[V5HostingEventsSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1728:    [manager registerMigration:[[V6DraftsSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1729:    [manager registerMigration:[[V7SearchFTS5Schema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1730:    [manager registerMigration:[[V8OzoneSubjectsSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1731:    [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:9]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1732:    [manager registerMigration:[[V10PendingFactorTokensSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1733:    [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1739:    [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"actor"]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1740:    [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1746:    [manager registerMigration:[[V10LegacySchemaBridge alloc] init]];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1747:    [manager registerMigration:[[V11AddLegacyColumns alloc] init]];
+./Garazyk/Sources/Germ/Server/XrpcGermIdentityPack.m:28:- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
+./Garazyk/Sources/Germ/Server/XrpcGermIdentityPack.m:30:    [dispatcher registerMethod:@"com.germnetwork.identity.getAnchorKey"
+./Garazyk/Sources/CLI/PDSCLIDispatcher.h:17: * @brief Reset the registered command set to the default built-in commands.
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:28:- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:30:    [dispatcher registerMethod:@"com.germnetwork.mailbox.claimAddresses"
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:36:    [dispatcher registerMethod:@"com.germnetwork.mailbox.deliver"
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:42:    [dispatcher registerMethod:@"com.germnetwork.mailbox.poll"
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:48:    [dispatcher registerMethod:@"com.germnetwork.rendezvous.register"
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:54:    [dispatcher registerMethod:@"com.germnetwork.rendezvous.deliver"
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:219:    BOOL registered = [self.mailboxService registerRendezvousAddress:address
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:223:    if (!registered) {
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.m:231:    [response setJsonBody:@{@"registered": @YES}];
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:429:  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:442:  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:456:  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGHUP handler:^(int sig) {
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:462:  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGUSR1 handler:^(int sig) {
+./Garazyk/Sources/Germ/Server/XrpcGermIdentityPack.h:32: * @abstract Performs the registerHandlersWithDispatcher operation.
+./Garazyk/Sources/Germ/Server/XrpcGermIdentityPack.h:34:- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:26:- (void)registerRoutesWithServer:(HttpServer *)server {
+./Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m:86:    [mailboxPack registerHandlersWithDispatcher:self.dispatcher];
+./Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m:91:    [identityPack registerHandlersWithDispatcher:self.dispatcher];
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.h:33: * @abstract Performs the registerHandlersWithDispatcher operation.
+./Garazyk/Sources/Germ/Server/XrpcGermMailboxPack.h:35:- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher;
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:309:            [context printInfo:@"  - Email already registered"];
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:33:           @"  client list             List all registered OAuth clients\n"
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:161:            [context printInfo:@"No OAuth clients registered."];
+./Garazyk/Sources/CLI/PDSCLIRegisterAll.m:14: function is a harmless no-op (commands are already registered).
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:245:        [self registerDefaultCommands];
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:250:- (void)registerDefaultCommands {
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:330:    [self registerDefaultCommands];
+./Garazyk/Sources/CLI/PDSCLIDefinitions.h:12: * the PDS CLI system. It provides a framework for registering commands,
+./Garazyk/Sources/CLI/PDSCLIDefinitions.h:276: * @brief Prints usage information for all registered commands.
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.h:38:- (void)registerRoutesWithServer:(HttpServer *)server;
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:104:    [routes registerRoutesWithServer:self.httpServer];
+./Garazyk/Sources/AppView/Services/NotificationService.h:44:- (BOOL)registerPushForActor:(NSString *)actorDID
+./Garazyk/Sources/AppView/Services/NotificationService.h:51:- (BOOL)unregisterPushForActor:(NSString *)actorDID error:(NSError **)error;
+./Garazyk/Sources/AppView/Services/NotificationService.h:54:- (BOOL)unregisterPushToken:(NSString *)deviceToken
+./Garazyk/Sources/App/server_main.m:9: server. Initializes the controller and HTTP server, registers XRPC methods,
+./Garazyk/Sources/App/server_main.m:43:        [XrpcMethodRegistry registerMethodsWithDispatcher:xrpcDispatcher controller:controller];
+./Garazyk/Sources/App/server_main.m:92:        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
+./Garazyk/Sources/App/server_main.m:96:        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:251:    NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname pdsEndpoint:pdsEndpoint keyPair:keyPair rotationKeyPair:rotationKeyPair error:&error];
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:349:+ (NSString *)registerDidWithHandle:(NSString *)handle 
+./Garazyk/Sources/App/NodeInfo/NodeInfoHandler.m:87:- (void)registerRoutesWithServer:(HttpServer *)httpServer {
+./Garazyk/Sources/App/NodeInfo/NodeInfoHandler.m:110:    GZ_LOG_CORE_INFO(@"NodeInfo routes registered");
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:121:    via registerGateClass:forIdentifier:.
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:138: @method registerGateClass:forIdentifier:
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:143:+ (void)registerGateClass:(Class)gateClass forIdentifier:(NSString *)identifier;
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:146: @method unregisterGateForIdentifier:
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:147: @abstract Remove a previously registered custom gate.
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:149:+ (void)unregisterGateForIdentifier:(NSString *)identifier;
+./Garazyk/Sources/Registration/PDSRegistrationGate.h:151:/*! Clear all registered custom gates. */
+./Garazyk/Sources/App/NodeInfo/NodeInfoProvider.h:48:/*! Total number of registered users. */
+./Garazyk/Sources/App/NodeInfo/NodeInfoHandler.h:68:- (void)registerRoutesWithServer:(HttpServer *)httpServer;
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:210:+ (void)registerGateClass:(Class)gateClass forIdentifier:(NSString *)identifier {
+./Garazyk/Sources/Registration/PDSRegistrationGate.m:216:+ (void)unregisterGateForIdentifier:(NSString *)identifier {
+./Garazyk/Sources/AppView/Services/NotificationService.m:72:- (BOOL)registerPushForActor:(NSString *)actorDID
+./Garazyk/Sources/AppView/Services/NotificationService.m:106:- (BOOL)unregisterPushForActor:(NSString *)actorDID error:(NSError **)error {
+./Garazyk/Sources/AppView/Services/NotificationService.m:298:- (BOOL)unregisterPushToken:(NSString *)deviceToken
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:131:    [self.xrpcDispatcher registerMethod:@"_health" handler:^(HttpRequest *req, HttpResponse *res) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:137:    [self.xrpcDispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *req, HttpResponse *res) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:147:    [self registerRoutes];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:170:        [self registerRoutes];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:175:- (void)registerRoutes {
+./Garazyk/Sources/Core/PDSProviderRegistry.h:11:    to PDSProviderFactory and are registered at startup.
+./Garazyk/Sources/Core/PDSProviderRegistry.h:76: @method registerFactory:forProtocol:
+./Garazyk/Sources/Core/PDSProviderRegistry.h:81:- (void)registerFactory:(Class<PDSProviderFactory>)factory
+./Garazyk/Sources/Core/PDSProviderRegistry.h:85: @method unregisterFactoryForProtocol:
+./Garazyk/Sources/Core/PDSProviderRegistry.h:86: @abstract Remove a previously registered factory.
+./Garazyk/Sources/Core/PDSProviderRegistry.h:88:- (void)unregisterFactoryForProtocol:(Protocol *)protocol;
+./Garazyk/Sources/Core/PDSProviderRegistry.h:108: @abstract List all registered identifiers for a protocol.
+./Garazyk/Sources/App/PDSApplication.m:417:        [container registerInstance:emailProvider forProtocol:@protocol(PDSEmailProvider)];
+./Garazyk/Sources/App/PDSApplication.m:429:    [container registerInstance:accountService forProtocol:@protocol(PDSAccountService)];
+./Garazyk/Sources/App/PDSApplication.m:463:    [container registerInstance:_adminController forProtocol:@protocol(PDSAdminController)];
+./Garazyk/Sources/Video/VideoXrpcPack.m:22:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Video/VideoXrpcPack.m:28:  [dispatcher registerMethod:@"app.bsky.video.getJobStatus"
+./Garazyk/Sources/Video/VideoXrpcPack.m:47:  [dispatcher registerMethod:@"app.bsky.video.uploadVideo"
+./Garazyk/Sources/Video/VideoXrpcPack.m:142:  [dispatcher registerMethod:@"app.bsky.video.getUploadLimits"
+./Garazyk/Sources/Compat/XCTest/XCTest.h:99:/*! Get the default test suite (all registered test classes). */
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.m:33:- (void)registerHandler:(id<AppViewLexiconQueryHandler>)handler forNSID:(NSString *)nsid {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.m:55:- (NSArray<NSString *> *)registeredNSIDs {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.m:63:- (void)unregisterHandlerForNSID:(NSString *)nsid {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:9: and registers dynamic XRPC endpoints for query and procedure definitions.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:10: Domain-specific routes (app.bsky.*) registered by AppViewXRpcRoutePack
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:32: @abstract Generates and registers XRPC routes from loaded lexicon schemas.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:52: @method registerDynamicEndpointsWithError:
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:61: Routes are registered after domain-specific routes, so the trie's
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:65: @return YES if all routes registered successfully, NO on failure.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:68: * @abstract Performs the registerDynamicEndpointsWithError operation.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:70:- (BOOL)registerDynamicEndpointsWithError:(NSError **)error;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:73: @method registerEndpointsForSchema:error:
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:80: @return YES if routes registered successfully, NO on failure.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:82:- (BOOL)registerEndpointsForSchema:(ATProtoLexiconSchema *)schema
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:86: @method registeredEndpointCount
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:88: @abstract Return the number of dynamic endpoints registered.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:90: @return Count of registered dynamic routes.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h:92:- (NSUInteger)registeredEndpointCount;
+./Garazyk/Sources/Core/ATProtoServiceContainer.h:23:- (void)registerInstance:(id)instance forProtocol:(Protocol *)protocol;
+./Garazyk/Sources/Core/ATProtoServiceContainer.h:26:- (void)registerFactory:(id (^)(ATProtoServiceContainer *container))factory forProtocol:(Protocol *)protocol;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:48:- (void)registerRoutesWithServer:(HttpServer *)server {
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:468:        @"count": @([self.hookRegistry registeredHookCount])
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:538:    NSArray<NSString *> *nsids = [self.customQueryRegistry registeredNSIDs];
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:550:        result[@"dynamic_endpoint_count"] = @([self.lexiconEndpointGenerator registeredEndpointCount]);
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:556:        result[@"custom_handler_count"] = @([self.customQueryRegistry registeredNSIDs].count);
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:31:@property (nonatomic, assign) NSUInteger registeredCount;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:51:        _registeredCount = 0;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:56:- (BOOL)registerDynamicEndpointsWithError:(NSError **)error {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:76:        if (![self registerEndpointsForSchema:schema error:&schemaError]) {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:79:            // Continue registering other schemas
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:83:    // Count registered types
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:112:                 (unsigned long)_registeredCount,
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:121:- (BOOL)registerEndpointsForSchema:(ATProtoLexiconSchema *)schema
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:135:    BOOL registeredAny = NO;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:146:            [self registerQueryRouteForNSID:endpointNSID];
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:147:            registeredAny = YES;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:155:            [self registerProcedureRouteForNSID:endpointNSID];
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:156:            registeredAny = YES;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:160:    return registeredAny;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:163:- (void)registerQueryRouteForNSID:(NSString *)nsid {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:184:    self.registeredCount++;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:188:- (void)registerProcedureRouteForNSID:(NSString *)nsid {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:209:    self.registeredCount++;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:213:- (NSUInteger)registeredEndpointCount {
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m:214:    return _registeredCount;
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:10: ObjC interface for registering blocks to run when lifecycle signals are
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:25: @abstract Block invoked when a registered signal is received.
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:42: delivery of signal events. Multiple handlers can be registered for the
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:68: @method registerHandlerForSignal:handler:
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:76: exist. Multiple handlers can be registered for the same signal. The signal
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:80: SIGHUP via this method. Instead, call registerHandlerForSignal:SIGHUP and
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:83:- (void)registerHandlerForSignal:(int)signalNumber
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:87: @method unregisterHandlerForSignal:
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:89: @abstract Removes all registered handlers for the given signal.
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.h:96:- (void)unregisterHandlerForSignal:(int)signalNumber;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:9: for their registered NSID. This follows the same pattern as AppViewIndexer
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:68: @abstract The NSID this handler is registered for.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:95: @method registerHandler:forNSID:
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:102:- (void)registerHandler:(id<AppViewLexiconQueryHandler>)handler forNSID:(NSString *)nsid;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:111: @return The registered handler, or nil if none exists.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:122: @return YES if a handler is registered, NO otherwise.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:127: @method registeredNSIDs
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:129: @abstract Return all NSIDs with registered custom handlers.
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:133:- (NSArray<NSString *> *)registeredNSIDs;
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:136: @method unregisterHandlerForNSID:
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.h:142:- (void)unregisterHandlerForNSID:(NSString *)nsid;
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.h:27: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.h:29:- (void)registerRoutesWithServer:(HttpServer *)server;
+./Garazyk/Sources/Compat/PlatformShims/CrashReporting/PDSCrashReporter.h:45: and registers an NSSetUncaughtExceptionHandler.
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:251:    [_hookRegistry registerHook:_searchIndexService];
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:310:    [xrpcPack registerRoutesWithServer:_httpServer];
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:318:    [_customQueryRegistry registerHandler:graphQueryHandler
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:320:    [_customQueryRegistry registerHandler:graphQueryHandler
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:322:    [_customQueryRegistry registerHandler:graphQueryHandler
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:330:    if (![_lexiconEndpointGenerator registerDynamicEndpointsWithError:&lexiconRouteErr]) {
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:346:    [_adminRoutePack registerRoutesWithServer:_httpServer];
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.m:55:    // registerHandlerForSignal:SIGHUP instead of installIgnoredSignals.
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.m:59:- (void)registerHandlerForSignal:(int)signalNumber
+./Garazyk/Sources/Compat/PlatformShims/SignalHandling/PDSSignalManager.m:124:- (void)unregisterHandlerForSignal:(int)signalNumber {
+./Garazyk/Sources/Compat/PlatformShims/CoreFoundation/CFBase.h:90:    return (__bridge CFTypeRef)objc_msgSend(obj, sel_registerName("autorelease"));
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.h:43: @method registerHook:
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.h:49:- (void)registerHook:(id<AppViewIndexHook>)hook;
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.h:52: @method unregisterHook:
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.h:58:- (void)unregisterHook:(NSString *)hookIdentifier;
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.h:95: @method registeredHookCount
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.h:97: @abstract Return the number of registered hooks.
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.h:99:- (NSUInteger)registeredHookCount;
+./Garazyk/Sources/Network/XrpcAdminPack.h:9: * XrpcAdminPack registers all com.atproto.admin.* endpoint handlers.
+./Garazyk/Sources/Network/XrpcVendorPack.h:9: * XrpcVendorPack registers all tools.garazyk.* endpoint handlers.
+./Garazyk/Sources/Core/ATProtoServiceContainer.m:36:- (void)registerInstance:(id)instance forProtocol:(Protocol *)protocol {
+./Garazyk/Sources/Core/ATProtoServiceContainer.m:43:- (void)registerFactory:(id (^)(ATProtoServiceContainer *))factory forProtocol:(Protocol *)protocol {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:72:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:74:  [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:75:  [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:78:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:92:  [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:95:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:109:  [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:112:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:126:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:129:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:138:  [dispatcher registerMethod:@"app.bsky.notification.putNotificationPreferences"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:196:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:206:  [dispatcher registerMethod:@"app.bsky.notification.getPreferences"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:245:  [dispatcher registerMethod:@"app.bsky.notification.putPreferences"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:299:  [dispatcher registerMethod:@"app.bsky.notification.listNotifications"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:330:  [dispatcher registerMethod:@"app.bsky.notification.getUnreadCount"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:351:  [dispatcher registerMethod:@"app.bsky.notification.updateSeen"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:369:  [dispatcher registerAppBskyNotificationRegisterPush:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:412:    BOOL success = [notificationService registerPushForActor:actorDID
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:427:  [dispatcher registerAppBskyNotificationUnregisterPush:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:470:    BOOL success = [notificationService unregisterPushToken:token forActor:actorDID error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:481:  [dispatcher registerMethod:@"app.bsky.notification.listActivitySubscriptions"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:513:  [dispatcher registerMethod:@"app.bsky.notification.putPreferencesV2"
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:579:  [dispatcher registerMethod:@"app.bsky.notification.putActivitySubscription"
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.m:36:- (void)registerHook:(id<AppViewIndexHook>)hook {
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.m:48:- (void)unregisterHook:(NSString *)hookIdentifier {
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.m:55:    GZ_LOG_INFO(@"[IndexHookRegistry] Unregistered hook: %@", hookIdentifier);
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.m:114:- (NSUInteger)registeredHookCount {
+./Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.m:25:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.m:186:  GZ_LOG_DEBUG(@"ATProtoHttpWellKnownRoutePack: .well-known routes registered");
+./Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m:18:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m:30:    [XrpcMethodRegistry registerMethodsWithDispatcher:resolvedDispatcher
+./Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m:33:    [XrpcMethodRegistry registerMethodsWithDispatcher:resolvedDispatcher
+./Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m:120:  GZ_LOG_DEBUG(@"ATProtoHttpXrpcRoutePack: XRPC routes registered");
+./Garazyk/Sources/Core/PDSProviderRegistry.m:66:- (void)registerFactory:(Class<PDSProviderFactory>)factory
+./Garazyk/Sources/Core/PDSProviderRegistry.m:76:- (void)unregisterFactoryForProtocol:(Protocol *)protocol {
+./Garazyk/Sources/Core/PDSProviderRegistry.m:104:                                                 @"No factory registered for protocol %@",
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:53: Domain modules are registered in a specific order to ensure dependencies are
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:54: satisfied. Some endpoints may depend on others being registered first.
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:65: ensures modules are registered in the correct order.
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:79: prefer registerMethodsWithDispatcher:application: which uses services directly.
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:81:+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:90: @discussion This method registers XRPC handlers that use the application's
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:93:+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.h:24:  4. Dispatch decoded ops through registered indexers.
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:640:+ (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:642:  [dispatcher registerComAtprotoLexiconResolveLexicon:^(
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:112:    [self registerSchema:schema];
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:116:- (void)registerSchema:(ATProtoLexiconSchema *)schema {
+./Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.h:8: @discussion Specifies interfaces for registering node information and diagnostics HTTP routes with the server runtime.
+./Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.h:23: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.h:25:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/XrpcRoutePackRegistrar.m:12:+ (void)registerRoutePacks:(NSArray<Class> *)routePackClasses
+./Garazyk/Sources/Network/XrpcRoutePackRegistrar.m:28:    [routePackClass registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Auth/WebAuthnRegistrationHandler.h:43:- (void)registerRoutesWithServer:(HttpServer *)httpServer;
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:20:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:34:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:37:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:46:  [dispatcher registerAppBskyBookmarkGetBookmarks:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:77:  [dispatcher registerAppBskyBookmarkCreateBookmark:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:112:  [dispatcher registerAppBskyBookmarkDeleteBookmark:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.h:19:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher;
+./Garazyk/Sources/Network/ATProtoHttpMetricsRoutePack.h:20: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpMetricsRoutePack.h:22:+ (void)registerRoutesWithServer:(HttpServer *)server;
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.h:130: @discussion Creates an HttpServer instance and registers all enabled routes
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:70: @method registerSchema:
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.h:76:- (void)registerSchema:(ATProtoLexiconSchema *)schema;
+./Garazyk/Sources/Network/XrpcLabelPack.m:164:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcLabelPack.m:177:    [dispatcher registerComAtprotoLabelQueryLabels:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:200:    [dispatcher registerComAtprotoLabelCreateLabel:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:237:    [dispatcher registerComAtprotoLabelGetLabels:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:278:    [dispatcher registerComAtprotoLabelSubscribeLabels:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:305:    [dispatcher registerMethod:@"com.atproto.temp.fetchLabels" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:352:    [dispatcher registerMethod:@"com.atproto.temp.requestPhoneVerification" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:423:    [dispatcher registerMethod:@"com.atproto.temp.addReservedHandle" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:460:    [dispatcher registerMethod:@"com.atproto.temp.checkHandleAvailability" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:534:    [dispatcher registerMethod:@"com.atproto.temp.checkSignupQueue" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:547:    [dispatcher registerMethod:@"com.atproto.temp.dereferenceScope" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:594:    [dispatcher registerComAtprotoTempRevokeAccountCredentials:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:332:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:349:    [self registerDescribeServerWithDispatcher:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:354:    [self registerHealthEndpointWithDispatcher:dispatcher];
+./Garazyk/Sources/Network/XrpcServerPack.m:357:    [self registerAccountAndSessionMethodsWithDispatcher:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:364:+ (void)registerDescribeServerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:367:    [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:398:+ (void)registerAccountAndSessionMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:403:    [self registerAccountCreationAndSessionEndpoints:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:408:    [self registerInviteCodeEndpoints:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:412:    [self registerAppPasswordEndpoints:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:416:    [self registerEmailAndAccountEndpoints:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:420:    [self registerAccountLifecycleEndpoints:dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:426:+ (void)registerAccountCreationAndSessionEndpoints:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:436:    [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:522:    [dispatcher registerComAtprotoServerCreateSession:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:572:    [dispatcher registerComAtprotoServerGetSession:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:612:    [dispatcher registerComAtprotoServerRefreshSession:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:641:    [dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:665:+ (void)registerInviteCodeEndpoints:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:670:    [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:705:    [dispatcher registerComAtprotoServerCreateInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:762:    [dispatcher registerComAtprotoServerGetAccountInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:799:+ (void)registerAppPasswordEndpoints:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:805:    [dispatcher registerComAtprotoServerCreateAppPassword:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:849:    [dispatcher registerComAtprotoServerListAppPasswords:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:879:    [dispatcher registerComAtprotoServerRevokeAppPassword:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:918:+ (void)registerEmailAndAccountEndpoints:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:926:    [dispatcher registerComAtprotoServerRequestEmailConfirmation:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:941:    [dispatcher registerComAtprotoServerRequestEmailUpdate:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:956:    [dispatcher registerComAtprotoServerConfirmEmail:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:994:    [dispatcher registerComAtprotoServerUpdateEmail:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1024:    [dispatcher registerComAtprotoServerRequestAccountDelete:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1039:    [dispatcher registerComAtprotoServerRequestPasswordReset:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1052:    [dispatcher registerComAtprotoServerResetPassword:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1105:    [dispatcher registerComAtprotoServerReserveSigningKey:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1159:    [dispatcher registerComAtprotoServerGetServiceAuth:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1263:+ (void)registerAccountLifecycleEndpoints:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.m:1268:    [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1290:    [dispatcher registerComAtprotoServerDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1314:    [dispatcher registerComAtprotoServerCheckAccountStatus:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1342:    [dispatcher registerComAtprotoServerActivateAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1371:    [dispatcher registerComAtprotoServerDeactivateAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1409:+ (void)registerHealthEndpointWithDispatcher:(XrpcDispatcher *)dispatcher {
+./Garazyk/Sources/Network/XrpcServerPack.m:1410:    [dispatcher registerMethod:@"_health" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcModerationPack.m:20:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcModerationPack.m:26:    [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcSyncPack.m:156:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcSyncPack.m:169:  [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:233:  [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:292:  [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:321:  [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:354:  [dispatcher registerComAtprotoSyncGetBlocks:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:385:  [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:414:  [dispatcher registerComAtprotoSyncListHosts:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:464:  [dispatcher registerComAtprotoSyncListRepos:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:549:  [dispatcher registerComAtprotoSyncListReposByCollection:^(
+./Garazyk/Sources/Network/XrpcSyncPack.m:647:  [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:688:  [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:765:  [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:771:  [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:915:  [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:954:  [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:975:  [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request,
+./Garazyk/Sources/Network/XrpcSyncPack.m:990:      GZ_LOG_DEBUG_C(@"Sync", @"Account not registered globally for DID: %@",
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:36:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:50:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:53:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:65:    [dispatcher registerMethod:@"chat.bsky.group.createGroup"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:98:    [dispatcher registerMethod:@"chat.bsky.group.deleteGroup"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:127:    [dispatcher registerMethod:@"chat.bsky.group.editGroup"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:168:    [dispatcher registerMethod:@"chat.bsky.group.getGroupPublicInfo"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:192:    [dispatcher registerMethod:@"chat.bsky.group.addMembers"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:233:    [dispatcher registerMethod:@"chat.bsky.group.removeMembers"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:273:    [dispatcher registerMethod:@"chat.bsky.group.listMembers"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:300:    [dispatcher registerMethod:@"chat.bsky.group.listGroups"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:327:    [dispatcher registerMethod:@"chat.bsky.group.listInviteLinks"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:354:    [dispatcher registerMethod:@"chat.bsky.group.createJoinLink"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:393:    [dispatcher registerMethod:@"chat.bsky.group.editJoinLink"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:425:    [dispatcher registerMethod:@"chat.bsky.group.disableJoinLink"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:450:    [dispatcher registerMethod:@"chat.bsky.group.requestJoin"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:477:    [dispatcher registerMethod:@"chat.bsky.group.approveJoinRequest"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:504:    [dispatcher registerMethod:@"chat.bsky.group.rejectJoinRequest"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:531:    [dispatcher registerMethod:@"chat.bsky.group.listJoinRequests"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:562:    [dispatcher registerMethod:@"chat.bsky.group.leaveGroup"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:591:    [dispatcher registerMethod:@"chat.bsky.group.sendMessage"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:630:    [dispatcher registerMethod:@"chat.bsky.group.getMessages"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:657:    [dispatcher registerMethod:@"chat.bsky.group.addReaction"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:690:    [dispatcher registerMethod:@"chat.bsky.group.removeReaction"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:723:    [dispatcher registerMethod:@"chat.bsky.group.deleteMessageForSelf"
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:748:    [dispatcher registerMethod:@"chat.bsky.group.enableJoinLink"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:50:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:59:  [dispatcher registerMethod:@"app.bsky.labeler.getServices"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:67:  [dispatcher registerMethod:@"app.bsky.unspecced.getConfig"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:80:  [dispatcher registerMethod:@"app.bsky.unspecced.getTaggedSuggestions"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:86:  [dispatcher registerMethod:@"app.bsky.unspecced.getPopularFeedGenerators"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:92:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedFeeds"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:98:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsers"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:104:  [dispatcher registerMethod:@"app.bsky.unspecced.getTrendingTopics"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:112:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedFeedsSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:118:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:124:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestionsSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:130:  [dispatcher registerMethod:@"app.bsky.unspecced.getTrendsSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:138:  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedStarterPacks"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:144:  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:150:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedStarterPacks"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:156:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedStarterPacksSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:164:  [dispatcher registerMethod:@"app.bsky.unspecced.searchActorsSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:193:  [dispatcher registerMethod:@"app.bsky.unspecced.searchPostsSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:222:  [dispatcher registerMethod:@"app.bsky.unspecced.searchStarterPacksSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:253:  [dispatcher registerMethod:@"app.bsky.unspecced.getPostThreadV2"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:295:  [dispatcher registerMethod:@"app.bsky.unspecced.getPostThreadOtherV2"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:312:  [dispatcher registerMethod:@"app.bsky.unspecced.initAgeAssurance"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:339:  [dispatcher registerMethod:@"app.bsky.unspecced.getAgeAssuranceState"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:348:  [dispatcher registerMethod:@"app.bsky.unspecced.confirmAgeAssurance"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:378:  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:384:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedOnboardingUsers"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:390:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForDiscover"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:396:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:402:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForExplore"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:408:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:414:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForSeeMore"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:420:  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
+./Garazyk/Sources/Network/XrpcAppBskyUnspeccedPack.m:427:  [dispatcher registerMethod:@"app.bsky.unspecced.getTrends"
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:31:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:38:    GZ_LOG_WARN(@"ATProtoHttpOAuthRoutePack: OAuth routes not registered - missing "
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:46:    GZ_LOG_WARN(@"ATProtoHttpOAuthRoutePack: OAuth routes not registered - could "
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:67:  [oauthHandler registerRoutesWithServer:server];
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:68:  GZ_LOG_DEBUG(@"ATProtoHttpOAuthRoutePack: OAuth routes registered");
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:162:  [webauthnHandler registerRoutesWithServer:server];
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m:163:  GZ_LOG_DEBUG(@"ATProtoHttpOAuthRoutePack: WebAuthn routes registered");
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.h:13:+ (void)registerProxyOnlyMethodsWithDispatcher:(XrpcDispatcher *)dispatcher;
+./Garazyk/Sources/Auth/WebAuthnRegistrationHandler.m:44:- (void)registerRoutesWithServer:(HttpServer *)httpServer {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:28:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:35:    [dispatcher registerAppBskyGraphGetMutes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:55:    [dispatcher registerAppBskyGraphGetBlocks:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:75:    [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:124:    [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:192:    [dispatcher registerMethod:@"app.bsky.graph.getFollowers" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:214:    [dispatcher registerMethod:@"app.bsky.graph.getFollows" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:236:    [dispatcher registerMethod:@"app.bsky.graph.muteActor" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:261:    [dispatcher registerMethod:@"app.bsky.graph.unmuteActor" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:286:    [dispatcher registerMethod:@"app.bsky.graph.getRelationships" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:316:    [dispatcher registerMethod:@"app.bsky.graph.getLists" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:353:    [dispatcher registerMethod:@"app.bsky.graph.getList" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:401:    [dispatcher registerMethod:@"app.bsky.graph.getKnownFollowers" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:413:    [dispatcher registerMethod:@"app.bsky.graph.getSuggestedFollowsByActor" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:419:    [dispatcher registerMethod:@"app.bsky.graph.muteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:457:    [dispatcher registerMethod:@"app.bsky.graph.unmuteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:493:    [dispatcher registerMethod:@"app.bsky.graph.muteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:531:    [dispatcher registerMethod:@"app.bsky.graph.unmuteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:567:    [dispatcher registerMethod:@"app.bsky.graph.searchStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:586:    [dispatcher registerAppBskyGraphGetStarterPack:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:604:    [dispatcher registerAppBskyGraphGetActorStarterPacks:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:637:    [dispatcher registerAppBskyGraphGetStarterPacks:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:655:    [dispatcher registerMethod:@"app.bsky.graph.getStarterPacksWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:713:    [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:758:    [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:814:    [dispatcher registerMethod:@"app.bsky.graph.getListsWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:884:    [dispatcher registerAppBskyGraphVerificationCreateVerification:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:922:    [dispatcher registerAppBskyGraphVerificationDeleteVerification:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:236:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcRepoPack.m:247:    [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:318:    [dispatcher registerComAtprotoRepoGetRecord:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:388:    [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:457:    [dispatcher registerComAtprotoRepoDeleteRecord:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:514:    [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:573:    [dispatcher registerComAtprotoRepoListMissingBlobs:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:604:    [dispatcher registerComAtprotoRepoGetBlob:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:684:    [dispatcher registerComAtprotoRepoImportRepo:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:898:    [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:1078:    [dispatcher registerComAtprotoRepoPutRecord:upsertRecordHandler];
+./Garazyk/Sources/Network/XrpcRepoPack.m:1081:    [dispatcher registerComAtprotoRepoUpdateRecord:upsertRecordHandler];
+./Garazyk/Sources/Network/XrpcRepoPack.m:1084:    [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcRepoPack.m:1143:    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Auth/OAuth2Handler.h:106: @method registerRoutesWithServer:
+./Garazyk/Sources/Auth/OAuth2Handler.h:124:- (void)registerRoutesWithServer:(HttpServer *)httpServer;
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.h:22: * @abstract Performs the registerWithDispatcher operation.
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.h:24:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:80:- (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:352:                path:@"/xrpc/app.bsky.notification.registerPush"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:358:                path:@"/xrpc/app.bsky.notification.unregisterPush"
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:360:                 [self handleUnregisterPush:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1304:    BOOL success = [_notificationService registerPushForActor:actorDID
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1314:- (void)handleUnregisterPush:(HttpRequest *)request response:(HttpResponse *)response
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1320:    BOOL success = [_notificationService unregisterPushForActor:actorDID error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:19:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:33:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:36:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:45:  [dispatcher registerMethod:@"app.bsky.draft.createDraft"
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:73:  [dispatcher registerMethod:@"app.bsky.draft.updateDraft"
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:108:  [dispatcher registerMethod:@"app.bsky.draft.getDrafts"
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:131:  [dispatcher registerMethod:@"app.bsky.draft.deleteDraft"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1450:  // Check if the redirect URI is in the client's registered URIs
+./Garazyk/Sources/Auth/OAuth2Handler.m:1458:                                     @"Client has no registered redirect URIs"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1545:- (void)registerRoutesWithServer:(HttpServer *)httpServer {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1838:  // Validate redirect URI against client's registered URIs
+./Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.h:8: @discussion Specifies interfaces for registering OAuth demonstration endpoints in the HTTP router for interactive or local demo usage.
+./Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.h:21: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.h:23:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.h:8: @discussion Specifies interfaces for registering relay-facing API routes used by sync and operational relay surfaces.
+./Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.h:20: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.h:22:+ (void)registerRoutesWithServer:(HttpServer *)server;
+./Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.m:22:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.m:25:    GZ_LOG_WARN(@"ATProtoHttpMSTViewerRoutePack: MST Viewer routes not registered - "
+./Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.m:43:  GZ_LOG_DEBUG(@"ATProtoHttpMSTViewerRoutePack: MST Viewer routes registered");
+./Garazyk/Sources/Network/XrpcIdentityPack.h:9: * XrpcIdentityPack registers all com.atproto.identity.* endpoint handlers.
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:40:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:48:    [dispatcher registerMethod:@"tools.ozone.moderation.emitEvent"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:72:    [dispatcher registerMethod:@"tools.ozone.moderation.queryStatuses"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:95:    [dispatcher registerMethod:@"tools.ozone.moderation.queryEvents"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:117:    [dispatcher registerMethod:@"tools.ozone.moderation.getEvent"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:140:    [dispatcher registerMethod:@"tools.ozone.moderation.getRecord"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:163:    [dispatcher registerMethod:@"tools.ozone.moderation.getRecords"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:187:    [dispatcher registerMethod:@"tools.ozone.moderation.getRepo"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:210:    [dispatcher registerMethod:@"tools.ozone.moderation.getRepos"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:234:    [dispatcher registerMethod:@"tools.ozone.moderation.searchRepos"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:255:    [dispatcher registerMethod:@"tools.ozone.moderation.getSubjectStatus"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:281:    [dispatcher registerMethod:@"tools.ozone.moderation.getReporterStats"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:304:    [dispatcher registerMethod:@"tools.ozone.moderation.getAccountTimeline"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:331:    [dispatcher registerMethod:@"tools.ozone.moderation.scheduleAction"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:356:    [dispatcher registerMethod:@"tools.ozone.moderation.listScheduledActions"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:373:    [dispatcher registerMethod:@"tools.ozone.moderation.cancelScheduledAction"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:397:    [dispatcher registerMethod:@"tools.ozone.moderation.cancelScheduledActions"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:425:    [dispatcher registerMethod:@"tools.ozone.moderation.getSubjects"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:454:    [dispatcher registerMethod:@"tools.ozone.team.addMember"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:477:    [dispatcher registerMethod:@"tools.ozone.team.updateMember"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:503:    [dispatcher registerMethod:@"tools.ozone.team.deleteMember"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:527:    [dispatcher registerMethod:@"tools.ozone.team.listMembers"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:546:    [dispatcher registerMethod:@"tools.ozone.set.upsertSet"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:586:    [dispatcher registerMethod:@"tools.ozone.set.deleteSet"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:610:    [dispatcher registerMethod:@"tools.ozone.set.getValues"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:640:    [dispatcher registerMethod:@"tools.ozone.set.querySets"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:665:    [dispatcher registerMethod:@"tools.ozone.set.addValues"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:690:    [dispatcher registerMethod:@"tools.ozone.set.deleteValues"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:717:    [dispatcher registerMethod:@"tools.ozone.communication.createTemplate"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:743:    [dispatcher registerMethod:@"tools.ozone.communication.updateTemplate"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:771:    [dispatcher registerMethod:@"tools.ozone.communication.deleteTemplate"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:795:    [dispatcher registerMethod:@"tools.ozone.communication.listTemplates"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:814:    [dispatcher registerMethod:@"tools.ozone.verification.grantVerifications"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:838:    [dispatcher registerMethod:@"tools.ozone.verification.revokeVerifications"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:862:    [dispatcher registerMethod:@"tools.ozone.verification.listVerifications"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:881:    [dispatcher registerMethod:@"tools.ozone.safelink.queryRules"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:904:    [dispatcher registerMethod:@"tools.ozone.safelink.queryEvents"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:920:    [dispatcher registerMethod:@"tools.ozone.safelink.addRule"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:951:    [dispatcher registerMethod:@"tools.ozone.safelink.updateRule"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:978:    [dispatcher registerMethod:@"tools.ozone.safelink.removeRule"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1005:    [dispatcher registerMethod:@"tools.ozone.setting.upsertOption"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1034:    [dispatcher registerMethod:@"tools.ozone.setting.listOptions"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1054:    [dispatcher registerMethod:@"tools.ozone.setting.removeOptions"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1074:    [dispatcher registerMethod:@"tools.ozone.signature.findRelatedAccounts"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1101:    [dispatcher registerMethod:@"tools.ozone.signature.findCorrelation"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1129:    [dispatcher registerMethod:@"tools.ozone.signature.searchAccounts"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1157:    [dispatcher registerMethod:@"tools.ozone.hosting.getAccountHistory"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1192:    [dispatcher registerMethod:@"tools.ozone.server.getConfig"
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1209:    [dispatcher registerMethod:@"tools.ozone.server.updateConfig"
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:34:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:36:  [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:37:  [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:40:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:54:  [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:57:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:71:  [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:74:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:88:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:91:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:100:  [dispatcher registerAppBskyActorGetPreferences:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:121:  [dispatcher registerAppBskyActorPutPreferences:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:152:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:161:  [dispatcher registerAppBskyActorGetProfile:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:179:  [dispatcher registerAppBskyActorGetProfiles:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:208:  [dispatcher registerAppBskyActorSearchActors:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:234:  [dispatcher registerAppBskyActorSearchActorsTypeahead:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:258:  [dispatcher registerMethod:@"app.bsky.actor.getSuggestions"
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.h:8: @discussion Specifies interfaces for registering operational administrative HTTP routes and integrating them with server runtime configuration.
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.h:21: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.h:23:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:87:        if (error) *error = [self unavailableError:@"No WebAuthn credentials are registered for this account"];
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:25:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:37:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:40:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:60:  [dispatcher registerMethod:@"app.bsky.ageassurance.begin"
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:112:  [dispatcher registerMethod:@"app.bsky.ageassurance.getConfig"
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:140:  [dispatcher registerMethod:@"app.bsky.ageassurance.getState"
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.h:24: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.h:26:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:125:    [ATProtoHttpOAuthRoutePack registerRoutesWithServer:server
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:133:  [PDSHttpPDSAdminRoutePack registerRoutesWithServer:server
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:137:    [ATProtoHttpXrpcRoutePack registerRoutesWithServer:server
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:151:    [ATProtoHttpNodeInfoRoutePack registerRoutesWithServer:server
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:159:  [ATProtoHttpRelayAPIRoutePack registerRoutesWithServer:server];
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:161:  [ATProtoHttpWellKnownRoutePack registerRoutesWithServer:server
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:172:  [ATProtoHttpMetricsRoutePack registerRoutesWithServer:server];
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:175:    [ATProtoHttpMSTViewerRoutePack registerRoutesWithServer:server
+./Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.h:21: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.h:23:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/XrpcAppBskyPack.h:20: This module registers all Bluesky-specific XRPC endpoints including:
+./Garazyk/Sources/Network/XrpcAppBskyPack.h:36:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyPack.h:42:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcServerPack.h:9: * XrpcServerPack registers all com.atproto.server.* endpoint handlers.
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:25:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:39:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:42:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:51:  [dispatcher registerMethod:@"app.bsky.contact.startPhoneVerification"
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:86:  [dispatcher registerMethod:@"app.bsky.contact.verifyPhone"
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:124:  [dispatcher registerMethod:@"app.bsky.contact.importContacts"
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:160:  [dispatcher registerMethod:@"app.bsky.contact.getMatches"
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:183:  [dispatcher registerMethod:@"app.bsky.contact.dismissMatch"
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:215:  [dispatcher registerMethod:@"app.bsky.contact.getSyncStatus"
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:239:  [dispatcher registerMethod:@"app.bsky.contact.removeData"
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:262:  [dispatcher registerMethod:@"app.bsky.contact.sendNotification"
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:52:- (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/XrpcRoutePackServices.h:46: @abstract Dependencies commonly required when registering XRPC handlers.
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:28:static void registerMethodsWithDispatcherUsingServices(
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:39:  [XrpcLexiconResolver registerResolveLexiconMethodOnDispatcher:dispatcher
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:68:  [XrpcServerPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:69:  [XrpcIdentityPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:70:  [XrpcRepoPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:71:  [XrpcSyncPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:73:  [XrpcAppBskyPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:75:  [XrpcAdminPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:77:  [XrpcLabelPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:79:  [XrpcModerationPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:81:  [XrpcVendorPack registerWithDispatcher:dispatcher services:routePackServices];
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:84:+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:90:  registerMethodsWithDispatcherUsingServices(
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:100:+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcMethodRegistry.m:105:  registerMethodsWithDispatcherUsingServices(
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:155:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:168:    [dispatcher registerMethod:@"chat.bsky.convo.getConvoForMembers"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:234:    [dispatcher registerMethod:@"chat.bsky.convo.acceptConvo"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:263:    [dispatcher registerMethod:@"chat.bsky.convo.leaveConvo"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:292:    [dispatcher registerMethod:@"chat.bsky.convo.listConvoRequests"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:309:    [dispatcher registerMethod:@"chat.bsky.convo.getConvoAvailability"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:321:    [dispatcher registerMethod:@"chat.bsky.convo.addReaction"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:350:    [dispatcher registerMethod:@"chat.bsky.convo.removeReaction"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:379:    [dispatcher registerMethod:@"chat.bsky.convo.updateRead"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:412:    [dispatcher registerMethod:@"chat.bsky.convo.updateAllRead"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:444:    [dispatcher registerMethod:@"chat.bsky.convo.muteConvo"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:473:    [dispatcher registerMethod:@"chat.bsky.convo.unmuteConvo"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:502:    [dispatcher registerMethod:@"chat.bsky.convo.sendMessageBatch"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:549:    [dispatcher registerMethod:@"chat.bsky.convo.lockConvo"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:578:    [dispatcher registerMethod:@"chat.bsky.convo.unlockConvo"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:607:    [dispatcher registerMethod:@"chat.bsky.convo.deleteMessageForSelf"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:635:    [dispatcher registerMethod:@"chat.bsky.convo.listConvos"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:707:    [dispatcher registerMethod:@"chat.bsky.convo.getConvo"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:744:    [dispatcher registerMethod:@"chat.bsky.convo.getMessages"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:833:    [dispatcher registerMethod:@"chat.bsky.convo.sendMessage"
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:904:    [dispatcher registerMethod:@"chat.bsky.convo.getLog"
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:26:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:34:    [dispatcher registerAppBskyFeedGetAuthorFeed:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:62:    [dispatcher registerAppBskyFeedGetTimeline:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:83:    [dispatcher registerAppBskyFeedGetActorLikes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:102:    [dispatcher registerAppBskyFeedGetPostThread:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:128:    [dispatcher registerAppBskyFeedGetFeed:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:147:    [dispatcher registerAppBskyFeedGetPosts:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:169:    [dispatcher registerAppBskyFeedGetFeedGenerators:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:189:    [dispatcher registerMethod:@"app.bsky.feed.getSuggestedFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:195:    [dispatcher registerMethod:@"app.bsky.feed.getLikes" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:210:    [dispatcher registerMethod:@"app.bsky.feed.getRepostedBy" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:225:    [dispatcher registerMethod:@"app.bsky.feed.getActorFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:286:    [dispatcher registerMethod:@"app.bsky.feed.getFeedGenerator" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:339:    [dispatcher registerMethod:@"app.bsky.feed.searchPosts" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:396:    [dispatcher registerMethod:@"app.bsky.feed.getQuotes" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:470:    [dispatcher registerMethod:@"app.bsky.feed.describeFeedGenerator" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:480:    [dispatcher registerMethod:@"app.bsky.feed.getFeedSkeleton" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:542:    [dispatcher registerMethod:@"app.bsky.feed.sendInteractions" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:551:    [dispatcher registerMethod:@"app.bsky.feed.getListFeed" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.h:25:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.h:29:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.h:33:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.h:39:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.h:45:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcRoutePackRegistrar.h:20: * @abstract Performs the registerRoutePacks operation.
+./Garazyk/Sources/Network/XrpcRoutePackRegistrar.h:22:+ (void)registerRoutePacks:(NSArray<Class> *)routePackClasses
+./Garazyk/Sources/Network/XrpcVendorPack.m:34:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcVendorPack.m:43:    [dispatcher registerMethod:@"tools.garazyk.sync.getRepoFiltered"
+./Garazyk/Sources/Network/XrpcVendorPack.m:113:    [dispatcher registerMethod:@"tools.garazyk.account.getUsage"
+./Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.h:8: @discussion Specifies interfaces for registering standardized discovery endpoints under well-known HTTP paths used by clients and federated services.
+./Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.h:24: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.h:26:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/XrpcModerationPack.h:9: * XrpcModerationPack registers all com.atproto.moderation.* endpoint handlers.
+./Garazyk/Sources/Network/HttpRouter.m:8: @discussion Resolves incoming method/path combinations to registered handler functions using routing precedence rules. Delegates execution to handlers and does not implement endpoint-specific business logic.
+./Garazyk/Sources/Network/XrpcAdminPack.m:86:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAdminPack.m:96:    [dispatcher registerComAtprotoAdminSearchAccounts:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:164:    [dispatcher registerComAtprotoAdminSendEmail:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:217:    [dispatcher registerComAtprotoAdminUpdateAccountEmail:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:279:    [dispatcher registerComAtprotoAdminUpdateAccountHandle:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:341:    [dispatcher registerComAtprotoAdminUpdateAccountPassword:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:379:    [dispatcher registerMethod:@"com.atproto.admin.getServerStats"
+./Garazyk/Sources/Network/XrpcAdminPack.m:402:    [dispatcher registerMethod:@"com.atproto.admin.queryAuditLog"
+./Garazyk/Sources/Network/XrpcAdminPack.m:434:    [dispatcher registerMethod:@"com.atproto.admin.repairRepo"
+./Garazyk/Sources/Network/XrpcAdminPack.m:481:    [dispatcher registerMethod:@"com.atproto.admin.runBlobAudit"
+./Garazyk/Sources/Network/XrpcAdminPack.m:514:    [dispatcher registerMethod:@"com.atproto.admin.getBlobAuditStatus"
+./Garazyk/Sources/Network/XrpcAdminPack.m:543:    [dispatcher registerMethod:@"com.atproto.admin.getAccountUsage"
+./Garazyk/Sources/Network/XrpcAdminPack.m:635:    [dispatcher registerComAtprotoAdminGetAccountInfo:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:677:    [dispatcher registerComAtprotoAdminGetAccountInfos:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:719:    [dispatcher registerComAtprotoAdminGetInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:775:    [dispatcher registerComAtprotoAdminDisableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:822:    [dispatcher registerComAtprotoAdminEnableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:869:    [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:914:    [dispatcher registerComAtprotoAdminGetSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:954:    [dispatcher registerComAtprotoAdminGetAccountTakedown:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:963:    [dispatcher registerComAtprotoAdminDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1010:    [dispatcher registerComAtprotoAdminDisableInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1057:    [dispatcher registerComAtprotoAdminUpdateAccountSigningKey:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1109:    [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1119:    [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1129:    [dispatcher registerMethod:@"com.atproto.admin.takeDownAccount" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1139:    [dispatcher registerComAtprotoAdminGetModerationReports:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1149:    [dispatcher registerComAtprotoAdminResolveReport:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcLexiconResolver.h:23: * @abstract Performs the registerResolveLexiconMethodOnDispatcher operation.
+./Garazyk/Sources/Network/XrpcLexiconResolver.h:25:+ (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:27:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher {
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:37:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:40:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:55:  [dispatcher registerMethod:@"chat.bsky.actor.deleteAccount"
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:68:  [dispatcher registerMethod:@"chat.bsky.actor.exportAccountData"
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:87:  [dispatcher registerMethod:@"chat.bsky.actor.declaration"
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:197:  [dispatcher registerMethod:@"chat.bsky.moderation.getActorMetadata"
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:224:  [dispatcher registerMethod:@"chat.bsky.moderation.getMessageContext"
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:248:  [dispatcher registerMethod:@"chat.bsky.moderation.updateActorAccess"
+./Garazyk/Sources/Network/XrpcLabelPack.h:9: * XrpcLabelPack registers all com.atproto.label.* and com.atproto.temp.* endpoint handlers.
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:84:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:86:  [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:89:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:106:  [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:107:  [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:116:  [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:120:      [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:121:      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:122:      [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:125:  [XrpcToolsOzonePack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:131:  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:134:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:136:  [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:144:    GZ_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:145:    [XrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:149:  GZ_LOG_INFO(@"Local AppView enabled; registering full suite of app.bsky.* handlers.");
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:155:  [XrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:178:  [XrpcAppBskyFeedPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:179:  [XrpcAppBskyGraphPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:185:  [XrpcAppBskyNotificationPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:191:  [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:192:  [XrpcAppBskyContactPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:207:      [ATProtoVideoXrpcPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:219:  [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:220:  [XrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcHandler.m:57:            @"app.bsky.notification.registerPush",
+./Garazyk/Sources/Network/XrpcHandler.m:58:            @"app.bsky.notification.unregisterPush",
+./Garazyk/Sources/Network/XrpcHandler.m:99:- (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:114:- (void)registerMethod:(NSString *)methodId
+./Garazyk/Sources/Network/XrpcHandler.m:119:        [self registerMethod:methodId handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:138:    [self registerMethod:methodId handler:wrappedHandler];
+./Garazyk/Sources/Network/XrpcHandler.m:608:- (void)registerComAtprotoServerDescribeServer:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:609:    [self registerMethod:@"com.atproto.server.describeServer" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:612:- (void)registerComAtprotoServerCreateSession:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:613:    [self registerMethod:@"com.atproto.server.createSession" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:616:- (void)registerComAtprotoServerGetSession:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:617:    [self registerMethod:@"com.atproto.server.getSession" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:620:- (void)registerComAtprotoServerCreateAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:621:    [self registerMethod:@"com.atproto.server.createAccount" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:624:- (void)registerComAtprotoServerRefreshSession:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:625:    [self registerMethod:@"com.atproto.server.refreshSession" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:628:- (void)registerComAtprotoServerDeleteSession:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:629:    [self registerMethod:@"com.atproto.server.deleteSession" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:632:- (void)registerComAtprotoServerCreateInviteCode:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:633:    [self registerMethod:@"com.atproto.server.createInviteCode" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:636:- (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:637:    [self registerMethod:@"com.atproto.server.createInviteCodes" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:640:- (void)registerComAtprotoServerGetAccountInviteCodes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:641:    [self registerMethod:@"com.atproto.server.getAccountInviteCodes" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:644:- (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:645:    [self registerMethod:@"com.atproto.server.createAppPassword" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:648:- (void)registerComAtprotoServerListAppPasswords:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:649:    [self registerMethod:@"com.atproto.server.listAppPasswords" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:652:- (void)registerComAtprotoServerRevokeAppPassword:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:653:    [self registerMethod:@"com.atproto.server.revokeAppPassword" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:656:- (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:657:    [self registerMethod:@"com.atproto.server.getServiceAuth" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:660:- (void)registerComAtprotoServerGetAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:661:    [self registerMethod:@"com.atproto.server.getAccount" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:664:- (void)registerComAtprotoServerDeleteAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:665:    [self registerMethod:@"com.atproto.server.deleteAccount" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:668:- (void)registerComAtprotoServerCheckAccountStatus:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:669:    [self registerMethod:@"com.atproto.server.checkAccountStatus" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:672:- (void)registerComAtprotoServerActivateAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:673:    [self registerMethod:@"com.atproto.server.activateAccount" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:676:- (void)registerComAtprotoServerDeactivateAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:677:    [self registerMethod:@"com.atproto.server.deactivateAccount" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:680:- (void)registerComAtprotoServerConfirmEmail:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:681:    [self registerMethod:@"com.atproto.server.confirmEmail" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:684:- (void)registerComAtprotoServerRequestAccountDelete:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:685:    [self registerMethod:@"com.atproto.server.requestAccountDelete" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:688:- (void)registerComAtprotoServerRequestPasswordReset:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:689:    [self registerMethod:@"com.atproto.server.requestPasswordReset" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:692:- (void)registerComAtprotoServerReserveSigningKey:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:693:    [self registerMethod:@"com.atproto.server.reserveSigningKey" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:696:- (void)registerComAtprotoServerResetPassword:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:697:    [self registerMethod:@"com.atproto.server.resetPassword" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:700:- (void)registerComAtprotoTempRevokeAccountCredentials:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:701:    [self registerMethod:@"com.atproto.temp.revokeAccountCredentials" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:704:- (void)registerComAtprotoLexiconResolveLexicon:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:705:    [self registerMethod:@"com.atproto.lexicon.resolveLexicon" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:708:- (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:709:    [self registerMethod:@"com.atproto.server.updateEmail" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:712:- (void)registerComAtprotoServerRequestEmailConfirmation:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:713:    [self registerMethod:@"com.atproto.server.requestEmailConfirmation" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:716:- (void)registerComAtprotoServerRequestEmailUpdate:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:717:    [self registerMethod:@"com.atproto.server.requestEmailUpdate" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:720:- (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:721:    [self registerMethod:@"com.atproto.repo.createRecord" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:724:- (void)registerComAtprotoRepoGetRecord:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:725:    [self registerMethod:@"com.atproto.repo.getRecord" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:728:- (void)registerComAtprotoRepoListRecords:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:729:    [self registerMethod:@"com.atproto.repo.listRecords" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:732:- (void)registerComAtprotoRepoDeleteRecord:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:733:    [self registerMethod:@"com.atproto.repo.deleteRecord" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:736:- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:737:    [self registerMethod:@"com.atproto.repo.deleteBlob" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:740:- (void)registerComAtprotoRepoApplyWrites:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:741:    [self registerMethod:@"com.atproto.repo.applyWrites" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:744:- (void)registerComAtprotoRepoDescribeRepo:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:745:    [self registerMethod:@"com.atproto.repo.describeRepo" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:748:- (void)registerComAtprotoRepoPutRecord:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:749:    [self registerMethod:@"com.atproto.repo.putRecord" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:752:- (void)registerComAtprotoRepoUpdateRecord:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:753:    [self registerMethod:@"com.atproto.repo.updateRecord" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:756:- (void)registerComAtprotoRepoGetBlob:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:757:    [self registerMethod:@"com.atproto.repo.getBlob" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:760:- (void)registerComAtprotoRepoUploadBlob:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:761:    [self registerMethod:@"com.atproto.repo.uploadBlob" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:764:- (void)registerComAtprotoRepoImportRepo:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:765:    [self registerMethod:@"com.atproto.repo.importRepo" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:768:- (void)registerComAtprotoRepoListMissingBlobs:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:769:    [self registerMethod:@"com.atproto.repo.listMissingBlobs" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:772:- (void)registerComAtprotoSyncGetRepo:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:773:    [self registerMethod:@"com.atproto.sync.getRepo" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:776:- (void)registerComAtprotoSyncGetCheckout:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:777:    [self registerMethod:@"com.atproto.sync.getCheckout" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:780:- (void)registerComAtprotoSyncGetHead:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:781:    [self registerMethod:@"com.atproto.sync.getHead" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:784:- (void)registerComAtprotoSyncGetBlob:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:785:    [self registerMethod:@"com.atproto.sync.getBlob" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:788:- (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:789:    [self registerMethod:@"com.atproto.sync.listBlobs" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:792:- (void)registerComAtprotoSyncGetLatestCommit:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:793:    [self registerMethod:@"com.atproto.sync.getLatestCommit" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:796:- (void)registerComAtprotoSyncGetBlocks:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:797:    [self registerMethod:@"com.atproto.sync.getBlocks" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:800:- (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:801:    [self registerMethod:@"com.atproto.sync.getRecord" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:804:- (void)registerComAtprotoSyncGetHostStatus:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:805:    [self registerMethod:@"com.atproto.sync.getHostStatus" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:808:- (void)registerComAtprotoSyncListHosts:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:809:    [self registerMethod:@"com.atproto.sync.listHosts" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:812:- (void)registerComAtprotoSyncListRepos:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:813:    [self registerMethod:@"com.atproto.sync.listRepos" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:816:- (void)registerComAtprotoSyncGetRepoStatus:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:817:    [self registerMethod:@"com.atproto.sync.getRepoStatus" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:820:- (void)registerComAtprotoSyncListReposByCollection:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:821:    [self registerMethod:@"com.atproto.sync.listReposByCollection" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:824:- (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:825:    [self registerMethod:@"com.atproto.sync.notifyOfUpdate" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:828:- (void)registerComAtprotoSyncRequestCrawl:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:829:    [self registerMethod:@"com.atproto.sync.requestCrawl" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:832:- (void)registerComAtprotoSyncSubscribeRepos:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:833:    [self registerMethod:@"com.atproto.sync.subscribeRepos" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:836:- (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:837:    [self registerMethod:@"com.atproto.identity.resolveDid" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:840:- (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:841:    [self registerMethod:@"com.atproto.identity.resolveIdentity" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:844:- (void)registerComAtprotoIdentityResolveHandle:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:845:    [self registerMethod:@"com.atproto.identity.resolveHandle" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:848:- (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:849:    [self registerMethod:@"com.atproto.identity.getRecommendedDidCredentials" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:852:- (void)registerComAtprotoIdentityRefreshIdentity:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:853:    [self registerMethod:@"com.atproto.identity.refreshIdentity" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:856:- (void)registerComAtprotoIdentityRequestPlcOperationSignature:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:857:    [self registerMethod:@"com.atproto.identity.requestPlcOperationSignature" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:860:- (void)registerComAtprotoIdentitySignPlcOperation:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:861:    [self registerMethod:@"com.atproto.identity.signPlcOperation" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:864:- (void)registerComAtprotoIdentitySubmitPlcOperation:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:865:    [self registerMethod:@"com.atproto.identity.submitPlcOperation" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:868:- (void)registerComAtprotoIdentityUpdateHandle:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:869:    [self registerMethod:@"com.atproto.identity.updateHandle" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:872:- (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:873:    [self registerMethod:@"com.atproto.moderation.createReport" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:876:- (void)registerComAtprotoAdminUpdateSubjectStatus:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:877:    [self registerMethod:@"com.atproto.admin.updateSubjectStatus" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:880:- (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:881:    [self registerMethod:@"com.atproto.admin.getSubjectStatus" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:884:- (void)registerComAtprotoAdminGetAccountTakedown:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:885:    [self registerMethod:@"com.atproto.admin.getAccountTakedown" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:888:- (void)registerComAtprotoAdminGetAccountInfo:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:889:    [self registerMethod:@"com.atproto.admin.getAccountInfo" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:892:- (void)registerComAtprotoAdminGetAccountInfos:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:893:    [self registerMethod:@"com.atproto.admin.getAccountInfos" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:896:- (void)registerComAtprotoAdminGetInviteCodes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:897:    [self registerMethod:@"com.atproto.admin.getInviteCodes" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:900:- (void)registerComAtprotoAdminDeleteAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:901:    [self registerMethod:@"com.atproto.admin.deleteAccount" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:904:- (void)registerComAtprotoAdminDisableAccountInvites:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:905:    [self registerMethod:@"com.atproto.admin.disableAccountInvites" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:908:- (void)registerComAtprotoAdminEnableAccountInvites:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:909:    [self registerMethod:@"com.atproto.admin.enableAccountInvites" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:912:- (void)registerComAtprotoAdminDisableInviteCodes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:913:    [self registerMethod:@"com.atproto.admin.disableInviteCodes" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:916:- (void)registerComAtprotoAdminSearchAccounts:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:917:    [self registerMethod:@"com.atproto.admin.searchAccounts" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:920:- (void)registerComAtprotoAdminSendEmail:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:921:    [self registerMethod:@"com.atproto.admin.sendEmail" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:924:- (void)registerComAtprotoAdminUpdateAccountEmail:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:925:    [self registerMethod:@"com.atproto.admin.updateAccountEmail" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:928:- (void)registerComAtprotoAdminUpdateAccountHandle:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:929:    [self registerMethod:@"com.atproto.admin.updateAccountHandle" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:932:- (void)registerComAtprotoAdminUpdateAccountPassword:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:933:    [self registerMethod:@"com.atproto.admin.updateAccountPassword" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:936:- (void)registerComAtprotoAdminUpdateAccountSigningKey:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:937:    [self registerMethod:@"com.atproto.admin.updateAccountSigningKey" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:940:- (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:941:    [self registerMethod:@"com.atproto.admin.moderateAccount" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:944:- (void)registerComAtprotoAdminModerateRecord:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:945:    [self registerMethod:@"com.atproto.admin.moderateRecord" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:948:- (void)registerComAtprotoAdminGetModerationReports:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:949:    [self registerMethod:@"com.atproto.admin.getModerationReports" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:952:- (void)registerComAtprotoAdminResolveReport:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:953:    [self registerMethod:@"com.atproto.admin.resolveReport" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:956:- (void)registerComAtprotoLabelQueryLabels:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:957:    [self registerMethod:@"com.atproto.label.queryLabels" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:960:- (void)registerComAtprotoLabelCreateLabel:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:961:    [self registerMethod:@"com.atproto.label.createLabel" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:964:- (void)registerComAtprotoLabelGetLabels:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:965:    [self registerMethod:@"com.atproto.label.getLabels" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:968:- (void)registerComAtprotoLabelSubscribeLabels:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:969:    [self registerMethod:@"com.atproto.label.subscribeLabels" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:972:- (void)registerAppBskyActorGetProfile:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:973:    [self registerMethod:@"app.bsky.actor.getProfile" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:976:- (void)registerAppBskyActorGetProfiles:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:977:    [self registerMethod:@"app.bsky.actor.getProfiles" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:980:- (void)registerAppBskyActorGetPreferences:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:981:    [self registerMethod:@"app.bsky.actor.getPreferences" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:984:- (void)registerAppBskyActorPutPreferences:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:985:    [self registerMethod:@"app.bsky.actor.putPreferences" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:988:- (void)registerAppBskyActorSearchActors:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:989:    [self registerMethod:@"app.bsky.actor.searchActors" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:992:- (void)registerAppBskyActorSearchActorsTypeahead:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:993:    [self registerMethod:@"app.bsky.actor.searchActorsTypeahead" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:996:- (void)registerAppBskyFeedGetTimeline:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:997:    [self registerMethod:@"app.bsky.feed.getTimeline" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1000:- (void)registerAppBskyFeedGetAuthorFeed:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1001:    [self registerMethod:@"app.bsky.feed.getAuthorFeed" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1004:- (void)registerAppBskyFeedGetPostThread:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1005:    [self registerMethod:@"app.bsky.feed.getPostThread" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1008:- (void)registerAppBskyFeedGetFeed:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1009:    [self registerMethod:@"app.bsky.feed.getFeed" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1012:- (void)registerAppBskyFeedGetActorLikes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1013:    [self registerMethod:@"app.bsky.feed.getActorLikes" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1016:- (void)registerAppBskyFeedGetPosts:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1017:    [self registerMethod:@"app.bsky.feed.getPosts" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1020:- (void)registerAppBskyGraphGetMutes:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1021:    [self registerMethod:@"app.bsky.graph.getMutes" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1024:- (void)registerAppBskyGraphGetBlocks:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1025:    [self registerMethod:@"app.bsky.graph.getBlocks" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1028:- (void)registerAppBskyFeedGetFeedGenerators:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1029:    [self registerMethod:@"app.bsky.feed.getFeedGenerators" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1032:- (void)registerAppBskyNotificationRegisterPush:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1033:    [self registerMethod:@"app.bsky.notification.registerPush" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1036:- (void)registerAppBskyNotificationUnregisterPush:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1037:    [self registerMethod:@"app.bsky.notification.unregisterPush" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1040:- (void)registerAppBskyBookmarkGetBookmarks:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1041:    [self registerMethod:@"app.bsky.bookmark.getBookmarks" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1044:- (void)registerAppBskyBookmarkCreateBookmark:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1045:    [self registerMethod:@"app.bsky.bookmark.createBookmark" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1048:- (void)registerAppBskyBookmarkDeleteBookmark:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1049:    [self registerMethod:@"app.bsky.bookmark.deleteBookmark" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1052:- (void)registerAppBskyGraphGetStarterPack:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1053:    [self registerMethod:@"app.bsky.graph.getStarterPack" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1056:- (void)registerAppBskyGraphGetStarterPacks:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1057:    [self registerMethod:@"app.bsky.graph.getStarterPacks" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1060:- (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1061:    [self registerMethod:@"app.bsky.graph.getActorStarterPacks" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1064:- (void)registerAppBskyGraphVerificationCreateVerification:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1065:    [self registerMethod:@"app.bsky.graph.verification.createVerification" handler:handler];
+./Garazyk/Sources/Network/XrpcHandler.m:1068:- (void)registerAppBskyGraphVerificationDeleteVerification:(XrpcMethodHandler)handler {
+./Garazyk/Sources/Network/XrpcHandler.m:1069:    [self registerMethod:@"app.bsky.graph.verification.deleteVerification" handler:handler];
+./Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.m:22:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.m:46:  [nodeInfoHandler registerRoutesWithServer:server];
+./Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.m:48:  GZ_LOG_DEBUG(@"ATProtoHttpNodeInfoRoutePack: NodeInfo routes registered");
+./Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m:61:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.h:26: * @abstract Performs the registerWithDispatcher operation.
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.h:28:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.h:26: * @abstract Performs the registerWithDispatcher operation.
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.h:28:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m:21:+ (void)registerRoutesWithServer:(HttpServer *)server {
+./Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m:84:  GZ_LOG_DEBUG(@"ATProtoHttpRelayAPIRoutePack: Relay API routes registered");
+./Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.h:23: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.h:25:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.m:22:+ (void)registerRoutesWithServer:(HttpServer *)server
+./Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.m:26:    GZ_LOG_WARN(@"ATProtoHttpOAuthDemoRoutePack: OAuth Demo routes not registered - "
+./Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.m:49:  GZ_LOG_DEBUG(@"ATProtoHttpOAuthDemoRoutePack: OAuth Demo routes registered");
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.h:47: * @abstract Performs the registerRoutesWithServer operation.
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.h:49:- (void)registerRoutesWithServer:(HttpServer *)server;
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.h:20:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcRoutePack.h:28: * @abstract Performs the registerWithDispatcher operation.
+./Garazyk/Sources/Network/XrpcRoutePack.h:30:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/RelayXrpcRoutePack.h:38:- (void)registerRoutesWithServer:(HttpServer *)server;
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.m:18:+ (void)registerProxyOnlyMethodsWithDispatcher:(XrpcDispatcher *)dispatcher {
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.m:28:  [self registerWithDispatcher:dispatcher services:services];
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.m:31:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.m:37:  [self registerProxyOnlyMethodsOnDispatcher:resolvedDispatcher];
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.m:40:+ (void)registerProxyOnlyMethodsOnDispatcher:(XrpcDispatcher *)dispatcher {
+./Garazyk/Sources/Network/XrpcAppBskyProxyMethodPack.m:56:    [dispatcher registerMethod:methodId
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.h:25:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.h:29:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.h:33:+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.h:39:+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.h:45:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/ATProtoHttpMetricsRoutePack.m:21:+ (void)registerRoutesWithServer:(HttpServer *)server {
+./Garazyk/Sources/Network/ATProtoHttpMetricsRoutePack.m:31:  GZ_LOG_DEBUG(@"ATProtoHttpMetricsRoutePack: Metrics endpoint registered");
+./Garazyk/Sources/Network/XrpcSyncPack.h:9: * XrpcSyncPack registers all com.atproto.sync.* endpoint handlers.
+./Garazyk/Sources/Network/XrpcHandler.h:55: @discussion XrpcDispatcher routes incoming XRPC requests to registered
+./Garazyk/Sources/Network/XrpcHandler.h:57: registering all standard ATProto XRPC methods.
+./Garazyk/Sources/Network/XrpcHandler.h:62: [dispatcher registerComAtprotoServerCreateSession:^(HttpRequest *req, HttpResponse *resp) {
+./Garazyk/Sources/Network/XrpcHandler.h:80:/*! Upstream AppView URL for proxying unregistered app.bsky.* methods. */
+./Garazyk/Sources/Network/XrpcHandler.h:89:/*! Upstream Ozone moderation service URL for proxying unregistered tools.ozone.* methods. */
+./Garazyk/Sources/Network/XrpcHandler.h:122: @method registerMethod:handler:
+./Garazyk/Sources/Network/XrpcHandler.h:129:- (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:131:/*! Returns YES when a handler has already been registered for methodId. */
+./Garazyk/Sources/Network/XrpcHandler.h:147:- (void)registerComAtprotoServerDescribeServer:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:150:- (void)registerComAtprotoServerCreateSession:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:153:- (void)registerComAtprotoServerGetSession:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:156:- (void)registerComAtprotoServerCreateAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:159:- (void)registerComAtprotoServerRefreshSession:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:162:- (void)registerComAtprotoServerDeleteSession:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:165:- (void)registerComAtprotoServerCreateInviteCode:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:168:- (void)registerComAtprotoServerCreateInviteCodes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:171:- (void)registerComAtprotoServerGetAccountInviteCodes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:174:- (void)registerComAtprotoServerCreateAppPassword:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:177:- (void)registerComAtprotoServerListAppPasswords:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:180:- (void)registerComAtprotoServerRevokeAppPassword:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:183:- (void)registerComAtprotoServerGetServiceAuth:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:186:- (void)registerComAtprotoServerGetAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:189:- (void)registerComAtprotoServerDeleteAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:192:- (void)registerComAtprotoServerCheckAccountStatus:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:195:- (void)registerComAtprotoServerActivateAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:198:- (void)registerComAtprotoServerDeactivateAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:201:- (void)registerComAtprotoServerConfirmEmail:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:204:- (void)registerComAtprotoServerRequestAccountDelete:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:207:- (void)registerComAtprotoServerRequestPasswordReset:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:210:- (void)registerComAtprotoServerReserveSigningKey:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:213:- (void)registerComAtprotoServerResetPassword:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:216:- (void)registerComAtprotoTempRevokeAccountCredentials:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:219:- (void)registerComAtprotoLexiconResolveLexicon:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:222:- (void)registerComAtprotoServerUpdateEmail:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:225:- (void)registerComAtprotoServerRequestEmailConfirmation:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:228:- (void)registerComAtprotoServerRequestEmailUpdate:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:233:- (void)registerComAtprotoRepoCreateRecord:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:236:- (void)registerComAtprotoRepoGetRecord:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:239:- (void)registerComAtprotoRepoListRecords:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:242:- (void)registerComAtprotoRepoDeleteRecord:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:245:- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:248:- (void)registerComAtprotoRepoApplyWrites:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:251:- (void)registerComAtprotoRepoDescribeRepo:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:254:- (void)registerComAtprotoRepoPutRecord:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:257:- (void)registerComAtprotoRepoUpdateRecord:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:260:- (void)registerComAtprotoRepoGetBlob:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:263:- (void)registerComAtprotoRepoUploadBlob:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:266:- (void)registerComAtprotoRepoImportRepo:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:269:- (void)registerComAtprotoRepoListMissingBlobs:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:274:- (void)registerComAtprotoSyncGetRepo:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:277:- (void)registerComAtprotoSyncGetCheckout:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:280:- (void)registerComAtprotoSyncGetHead:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:283:- (void)registerComAtprotoSyncGetBlob:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:286:- (void)registerComAtprotoSyncListBlobs:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:289:- (void)registerComAtprotoSyncGetLatestCommit:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:292:- (void)registerComAtprotoSyncGetBlocks:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:295:- (void)registerComAtprotoSyncGetRecord:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:298:- (void)registerComAtprotoSyncGetHostStatus:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:301:- (void)registerComAtprotoSyncListHosts:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:304:- (void)registerComAtprotoSyncListRepos:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:307:- (void)registerComAtprotoSyncGetRepoStatus:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:310:- (void)registerComAtprotoSyncListReposByCollection:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:313:- (void)registerComAtprotoSyncNotifyOfUpdate:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:316:- (void)registerComAtprotoSyncRequestCrawl:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:319:- (void)registerComAtprotoSyncSubscribeRepos:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:322:- (void)registerComAtprotoRepoDeleteBlob:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:327:- (void)registerComAtprotoIdentityResolveDid:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:330:- (void)registerComAtprotoIdentityResolveIdentity:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:333:- (void)registerComAtprotoIdentityResolveHandle:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:336:- (void)registerComAtprotoIdentityGetRecommendedDidCredentials:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:339:- (void)registerComAtprotoIdentityRefreshIdentity:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:342:- (void)registerComAtprotoIdentityRequestPlcOperationSignature:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:345:- (void)registerComAtprotoIdentitySignPlcOperation:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:348:- (void)registerComAtprotoIdentitySubmitPlcOperation:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:351:- (void)registerComAtprotoIdentityUpdateHandle:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:356:- (void)registerComAtprotoModerationCreateReport:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:359:- (void)registerComAtprotoAdminUpdateSubjectStatus:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:362:- (void)registerComAtprotoAdminGetSubjectStatus:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:365:- (void)registerComAtprotoAdminGetAccountTakedown:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:368:- (void)registerComAtprotoAdminGetAccountInfo:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:371:- (void)registerComAtprotoAdminGetAccountInfos:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:374:- (void)registerComAtprotoAdminGetInviteCodes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:377:- (void)registerComAtprotoAdminDeleteAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:380:- (void)registerComAtprotoAdminDisableAccountInvites:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:383:- (void)registerComAtprotoAdminEnableAccountInvites:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:386:- (void)registerComAtprotoAdminDisableInviteCodes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:389:- (void)registerComAtprotoAdminSearchAccounts:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:392:- (void)registerComAtprotoAdminSendEmail:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:395:- (void)registerComAtprotoAdminUpdateAccountEmail:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:398:- (void)registerComAtprotoAdminUpdateAccountHandle:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:401:- (void)registerComAtprotoAdminUpdateAccountPassword:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:404:- (void)registerComAtprotoAdminUpdateAccountSigningKey:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:407:- (void)registerComAtprotoAdminModerateAccount:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:410:- (void)registerComAtprotoAdminModerateRecord:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:413:- (void)registerComAtprotoAdminGetModerationReports:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:416:- (void)registerComAtprotoAdminResolveReport:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:421: @method registerMethod:middlewares:handler:
+./Garazyk/Sources/Network/XrpcHandler.h:433: * @abstract Performs the registerMethod operation.
+./Garazyk/Sources/Network/XrpcHandler.h:435:- (void)registerMethod:(NSString *)methodId
+./Garazyk/Sources/Network/XrpcHandler.h:442:- (void)registerComAtprotoLabelQueryLabels:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:445:- (void)registerComAtprotoLabelCreateLabel:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:448:- (void)registerComAtprotoLabelGetLabels:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:451:- (void)registerComAtprotoLabelSubscribeLabels:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:456:- (void)registerAppBskyActorGetProfile:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:459:- (void)registerAppBskyActorGetProfiles:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:462:- (void)registerAppBskyActorGetPreferences:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:465:- (void)registerAppBskyActorPutPreferences:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:468:- (void)registerAppBskyActorSearchActors:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:471:- (void)registerAppBskyActorSearchActorsTypeahead:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:476:- (void)registerAppBskyFeedGetTimeline:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:479:- (void)registerAppBskyFeedGetAuthorFeed:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:482:- (void)registerAppBskyFeedGetPostThread:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:485:- (void)registerAppBskyFeedGetFeed:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:488:- (void)registerAppBskyFeedGetActorLikes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:491:- (void)registerAppBskyFeedGetPosts:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:494:- (void)registerAppBskyGraphGetMutes:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:497:- (void)registerAppBskyGraphGetBlocks:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:500:- (void)registerAppBskyFeedGetFeedGenerators:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:504:/*! Registers handler for app.bsky.notification.registerPush. */
+./Garazyk/Sources/Network/XrpcHandler.h:505:- (void)registerAppBskyNotificationRegisterPush:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:507:/*! Registers handler for app.bsky.notification.unregisterPush. */
+./Garazyk/Sources/Network/XrpcHandler.h:508:- (void)registerAppBskyNotificationUnregisterPush:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:513:- (void)registerAppBskyBookmarkGetBookmarks:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:516:- (void)registerAppBskyBookmarkCreateBookmark:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:519:- (void)registerAppBskyBookmarkDeleteBookmark:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:524:- (void)registerAppBskyGraphGetStarterPack:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:527:- (void)registerAppBskyGraphGetStarterPacks:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:530:- (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:533:- (void)registerAppBskyGraphVerificationCreateVerification:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcHandler.h:536:- (void)registerAppBskyGraphVerificationDeleteVerification:(XrpcMethodHandler)handler;
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.h:26: * @abstract Performs the registerWithDispatcher operation.
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.h:28:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcIdentityPack.m:51:+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+./Garazyk/Sources/Network/XrpcIdentityPack.m:63:    [dispatcher registerComAtprotoIdentityRefreshIdentity:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:92:    [dispatcher registerComAtprotoIdentityResolveHandle:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:180:    [dispatcher registerComAtprotoIdentityResolveIdentity:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:208:    [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:235:    [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:254:    [dispatcher registerComAtprotoIdentityRequestPlcOperationSignature:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:301:    [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:486:    [dispatcher registerComAtprotoIdentitySubmitPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:658:    [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {

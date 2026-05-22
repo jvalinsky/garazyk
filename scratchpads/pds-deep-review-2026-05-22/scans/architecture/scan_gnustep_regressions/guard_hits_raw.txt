@@ -1,0 +1,71 @@
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:884:#if defined(GNUSTEP)
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:930:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/CryptoUtils.m:18:#if !TARGET_OS_LINUX
+./Garazyk/Sources/Auth/PDSKeyManagerFactory.m:13:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSKeyManagerFactory.m:26:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSKeyProtocol.h:46:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/DPoPUtil.h:21:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:63:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:15:#if !defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:35:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:75:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:186:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:243:#if !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.h:16:#if !TARGET_OS_LINUX
+./Garazyk/Sources/Auth/DPoPUtil.m:13:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/DPoPUtil.m:264:#endif // __APPLE__ && !GNUSTEP
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:16:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:23:#if !defined(__APPLE__) || defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:37:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:420:#endif // __APPLE__ && !GNUSTEP
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:480:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:515:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:547:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:609:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:850:#endif // __APPLE__ && !GNUSTEP
+./Garazyk/Sources/Auth/WebAuthnVerifier.m:11:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/Auth/OAuth2.m:40:#if !TARGET_OS_LINUX
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:8://  This file is only compiled when GNUSTEP is defined or on non-Apple platforms.
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:15:#if !defined(__APPLE__) || defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m:957:#endif // !__APPLE__ || GNUSTEP
+./Garazyk/Sources/Auth/TOTPService.m:11:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/TOTPService.m:66:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:187:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:204:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:222:#if defined(GNUSTEP)
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:240:#if defined(GNUSTEP)
+./Garazyk/Sources/PLC/PLCAuditor.m:15:#if defined(__APPLE__) && !defined(GNUSTEP)
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:445:#if defined(GNUSTEP)
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:475:#if defined(GNUSTEP)
+./Garazyk/Sources/Blob/BlobStorage.m:14:#if !TARGET_OS_LINUX
+./Garazyk/Sources/Identity/HandleResolver.m:22:#ifdef GNUSTEP
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:10:#if !TARGET_OS_LINUX
+./Garazyk/Sources/App/AppDelegate.m:16:#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
+./Garazyk/Sources/App/AppDelegate.m:26:#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
+./Garazyk/Sources/App/AppDelegate.m:62:#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:260:#if defined(GNUSTEP) || defined(LINUX)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:441:#if defined(GNUSTEP) || defined(LINUX)
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:449:#if defined(GNUSTEP) || defined(LINUX)
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:15:#if defined(__linux__) || defined(__GNUstep__)
+./Garazyk/Sources/Database/PDSDatabase.m:13:#if !defined(__linux__) && !defined(__GNUstep__)
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:7:#if defined(GNUSTEP)
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:12:#if !defined(GNUSTEP)
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:49:#if !defined(GNUSTEP)
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:101:#if defined(GNUSTEP)
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:482:#if defined(GNUSTEP)
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:521:#if !defined(GNUSTEP)
+./Garazyk/Sources/Database/ActorStore/PDSActorStoreInternal.h:31:#if defined(GNUSTEP)
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:6:#if defined(GNUSTEP)
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:95:#endif // defined(GNUSTEP)
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:123:#if defined(GNUSTEP)
+./Garazyk/Sources/Compat/PDSTypes.h:32: * Replaces: __linux__, defined(__linux__), GNUSTEP, defined(__GNUstep__), !defined(__APPLE__)
+./Garazyk/Sources/Core/DID.m:603:#if defined(GNUSTEP)
+./Garazyk/Sources/Core/DID.m:616:#if defined(GNUSTEP)
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:82:#if defined(GNUSTEP)
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:89:#if defined(GNUSTEP)
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:96:#if defined(GNUSTEP)
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:103:#if defined(GNUSTEP)
+./Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m:113:#if defined(GNUSTEP)
+./Garazyk/Sources/Compat/GNUstepCFNetworkCompat.h:12:#ifndef GNUSTEP_CFNETWORK_COMPAT_H
+./Garazyk/Sources/Compat/GNUstepCFNetworkCompat.h:13:#define GNUSTEP_CFNETWORK_COMPAT_H
+./Garazyk/Sources/Compat/PlatformShims/os/log.h:9:#elif defined(GNUSTEP) || defined(__linux__)

@@ -1,0 +1,97 @@
+./Garazyk/Sources/Repository/MST.m:800:    CBORValue *rootValue = [CBORValue decode:data];
+./Garazyk/Sources/Core/CID.h:106: @abstract Base32 decode a string.
+./Garazyk/Sources/Core/CID.h:107: @param string The base32 string to decode.
+./Garazyk/Sources/Core/CID.h:114:|  @abstract Base58btc decode a string.
+./Garazyk/Sources/Core/CID.h:115:|  @param string The base58btc string to decode.
+./Garazyk/Sources/Repository/MSTPersistence.m:238:                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse CID"}];
+./Garazyk/Sources/Repository/MSTPersistence.m:270:    CBORValue *nodeValue = [CBORValue decode:block.blockData];
+./Garazyk/Sources/Repository/STAR.h:333:     STARReader *reader = [STARReader readFromData:data error:&err];
+./Garazyk/Sources/Repository/STAR.h:347: * @abstract Performs the readFromData operation.
+./Garazyk/Sources/Repository/STAR.h:349:+ (nullable instancetype)readFromData:(NSData *)data error:(NSError **)error;
+./Garazyk/Sources/Repository/STAR.h:351: * @abstract Performs the readFromPath operation.
+./Garazyk/Sources/Repository/STAR.h:353:+ (nullable instancetype)readFromPath:(NSString *)path error:(NSError **)error;
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:624:                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to decode array item"}];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:647:                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to decode map key"}];
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:657:                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to decode map value"}];
+./Garazyk/Sources/Repository/CAR.m:113:                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse root CID"}];
+./Garazyk/Sources/Repository/CAR.m:129:+ (instancetype)readFromData:(NSData *)data error:(NSError **)error {
+./Garazyk/Sources/Repository/CAR.m:137:+ (instancetype)readFromPath:(NSString *)path error:(NSError **)error {
+./Garazyk/Sources/Repository/CAR.m:149:    return [self readFromData:data error:error];
+./Garazyk/Sources/Repository/CAR.m:194:    CBORValue *header = [CBORValue decode:headerData];
+./Garazyk/Sources/Repository/CAR.m:262:                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse CID from CAR block"}];
+./Garazyk/Sources/Repository/CAR.m:328:                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse root CID"}];
+./Garazyk/Sources/Core/NSDictionary+CID.h:35: are CID objects (from tag 42 decode) rather than strings. For example:
+./Garazyk/Sources/Repository/CBOR.m:210:+ (instancetype)decode:(NSData *)data {
+./Garazyk/Sources/Repository/CBOR.m:211:    return [CBORDecoder decode:data];
+./Garazyk/Sources/Repository/CBOR.m:426:+ (CBORValue *)decode:(NSData *)data {
+./Garazyk/Sources/Repository/CBOR.m:428:    return [self decode:data offset:&offset];
+./Garazyk/Sources/Repository/CBOR.m:431:+ (CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset {
+./Garazyk/Sources/Repository/CBOR.m:463:        value = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:483:        length = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:499:        length = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:516:        count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:528:        CBORValue *value = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:542:        count = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
+./Garazyk/Sources/Repository/CBOR.m:554:        CBORValue *key = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:555:        CBORValue *value = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:565:    CBORValue *value = [self decode:data offset:offset];
+./Garazyk/Sources/Repository/CBOR.m:583:+ (NSUInteger)readIntegerFromData:(NSData *)data offset:(NSUInteger *)offset bytesToRead:(NSUInteger)bytesToRead {
+./Garazyk/Sources/Core/Base58.m:72:+ (NSData *)decode:(NSString *)string {
+./Garazyk/Sources/Repository/RepoCommit.m:146:    CARReader *reader = [CARReader readFromData:carData error:error];
+./Garazyk/Sources/Core/MSTCacheManager.m:112:    CBORValue *commitValue = [CBORValue decode:commitBlockData];
+./Garazyk/Sources/Core/MSTCacheManager.m:134:        GZ_LOG_ERROR(@"MSTCacheManager: failed to parse data CID for %@", did);
+./Garazyk/Sources/Repository/CAR.h:76: CARReader *reader = [CARReader readFromPath:@"/path/to/repo.car" error:nil];
+./Garazyk/Sources/Repository/CAR.h:97: @method readFromData:error:
+./Garazyk/Sources/Repository/CAR.h:105:+ (nullable instancetype)readFromData:(NSData *)data error:(NSError **)error;
+./Garazyk/Sources/Repository/CAR.h:108: @method readFromPath:error:
+./Garazyk/Sources/Repository/CAR.h:116:+ (nullable instancetype)readFromPath:(NSString *)path error:(NSError **)error;
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.h:73: @param string The string to parse.
+./Garazyk/Sources/Repository/STAR.m:607:+ (nullable instancetype)readFromData:(NSData *)data error:(NSError **)error {
+./Garazyk/Sources/Repository/STAR.m:615:+ (nullable instancetype)readFromPath:(NSString *)path error:(NSError **)error {
+./Garazyk/Sources/Repository/STAR.m:618:    return [self readFromData:data error:error];
+./Garazyk/Sources/Repository/STAR.m:703:    CBORValue *root = [CBORValue decode:data];
+./Garazyk/Sources/Repository/STAR.m:887:    STARReader *reader = [STARReader readFromData:starData error:error];
+./Garazyk/Sources/Repository/STAR.m:904:    CARReader *reader = [CARReader readFromData:carData error:error];
+./Garazyk/Sources/Repository/STAR.m:928:    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+./Garazyk/Sources/Repository/STAR.m:993:    CARReader *reader = [CARReader readFromData:carData error:error];
+./Garazyk/Sources/Repository/STAR.m:1008:    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+./Garazyk/Sources/Repository/STAR.m:1079:    NSData *header = [fh readDataOfLength:1];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.h:33: @param data The CBOR data to decode.
+./Garazyk/Sources/Repository/CBOR.h:144:+ (nullable instancetype)decode:(NSData *)data;
+./Garazyk/Sources/Repository/CBOR.h:171:+ (nullable CBORValue *)decode:(NSData *)data;
+./Garazyk/Sources/Repository/CBOR.h:174:+ (nullable CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset;
+./Garazyk/Sources/Core/Base58.h:6: @abstract Base58BTC encode/decode helpers.
+./Garazyk/Sources/Core/Base58.h:31: @method decode:
+./Garazyk/Sources/Core/Base58.h:38:+ (nullable NSData *)decode:(NSString *)string;
+./Garazyk/Sources/Core/DID.m:636:                NSData *curlData = [[outPipe fileHandleForReading] readDataToEndOfFile];
+./Garazyk/Sources/Core/ATProtoBase32.h:32: @param string The Base32 string to decode.
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:37:/// parse dates concurrently. We use pthread_key_t for thread-local storage
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:39:  CBORValue *cbor = [CBORDecoder decode:data];
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:46:                   NSLocalizedDescriptionKey : @"Failed to decode CBOR data"
+./Garazyk/Sources/Core/ATProtoCBORSerialization.m:212:    // For other tags, decode the inner value
+./Garazyk/Sources/Core/CID.m:163:    NSUInteger versionSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:177:        NSUInteger innerSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:191:    NSUInteger codecSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:204:    NSUInteger mhCodeSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:213:    NSUInteger mhLenSize = [self readVarint:bytes + offset
+./Garazyk/Sources/Core/CID.m:303:+ (NSUInteger)readVarint:(const uint8_t *)bytes 
+./Garazyk/Sources/Core/CID.m:387:    return [Base58 decode:string];
+./Garazyk/Sources/Core/Repositories/PDSSQLiteSessionRepository.m:40:    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteSessionRepository.m:54:    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:50:    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:71:    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:92:    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:135:    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlobRepository.m:189:        // Use timeIntervalSince1970 if stored as double, or parse if string
+./Garazyk/Sources/Core/Repositories/PDSSQLiteAccountRepository.m:25:    [_databasePool readWithDid:PDSServiceStoreDID block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteAccountRepository.m:36:    [_databasePool readWithDid:PDSServiceStoreDID block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteAccountRepository.m:45:    [_databasePool readWithDid:PDSServiceStoreDID block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteAccountRepository.m:78:    [_databasePool readWithDid:PDSServiceStoreDID block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteAccountRepository.m:87:    [_databasePool readWithDid:PDSServiceStoreDID block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteRepoRepository.m:40:    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteRecordRepository.m:36:    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteRecordRepository.m:44:    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteRecordRepository.m:52:    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:53:    [_databasePool readWithDid:repoDid block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:68:    [_databasePool readWithDid:repoDid block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+./Garazyk/Sources/Core/Repositories/PDSSQLiteBlockRepository.m:76:    [_databasePool readWithDid:repoDid block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
