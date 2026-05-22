@@ -176,6 +176,9 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _captchaSiteKey = nil;
     _captchaSecretKey = nil;
     _oauthOnlyRegistration = NO;
+    _oauthClientPolicy = @"dynamic";
+    _oauthAllowedClientIDs = @[];
+    _oauthTrustedClientIDs = @[];
     _availableUserDomains = nil;
     _phoneVerificationProvider = @"none";
     _emailProviderType = @"none";
@@ -551,6 +554,39 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     }
     _captchaSiteKey = registration[@"captcha_site_key"];
     _captchaSecretKey = registration[@"captcha_secret_key"];
+  }
+
+  // OAuth client policy and trusted/allowed client ID configuration
+  NSDictionary *oauth = config[@"oauth"];
+  if (oauth && [oauth isKindOfClass:[NSDictionary class]]) {
+    NSString *policy = oauth[@"client_policy"];
+    if ([policy isKindOfClass:[NSString class]]) {
+      _oauthClientPolicy = [policy stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].lowercaseString;
+    }
+    if (oauth[@"allowed_client_ids"] && [oauth[@"allowed_client_ids"] isKindOfClass:[NSArray class]]) {
+      _oauthAllowedClientIDs = oauth[@"allowed_client_ids"];
+    }
+    if (oauth[@"trusted_client_ids"] && [oauth[@"trusted_client_ids"] isKindOfClass:[NSArray class]]) {
+      _oauthTrustedClientIDs = oauth[@"trusted_client_ids"];
+    }
+  }
+
+  // Environment overrides
+  NSString *envPolicy = [self resolveEnvOverrideForKey:@"PDS_OAUTH_CLIENT_POLICY" default:nil];
+  if (envPolicy.length > 0) {
+    _oauthClientPolicy = [envPolicy stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].lowercaseString;
+  }
+  if (![_oauthClientPolicy isEqualToString:@"allowlist"]) {
+    _oauthClientPolicy = @"dynamic";
+  }
+
+  NSString *envAllowed = [self resolveEnvOverrideForKey:@"PDS_OAUTH_ALLOWED_CLIENT_IDS" default:nil];
+  if (envAllowed.length > 0) {
+    _oauthAllowedClientIDs = [envAllowed componentsSeparatedByString:@","];
+  }
+  NSString *envTrusted = [self resolveEnvOverrideForKey:@"PDS_OAUTH_TRUSTED_CLIENT_IDS" default:nil];
+  if (envTrusted.length > 0) {
+    _oauthTrustedClientIDs = [envTrusted componentsSeparatedByString:@","];
   }
 
   // Structured providers section (takes precedence over legacy keys)

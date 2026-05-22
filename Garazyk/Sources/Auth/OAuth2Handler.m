@@ -73,8 +73,11 @@
 - (NSDictionary *)parseClientMetadataFromInput:(id)clientMetadataInput;
 - (NSString *)assetsPath;
 - (NSString *)escapeHtml:(NSString *)input;
+- (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient
+                                        clientID:(NSString *)clientID;
 - (void)serveAuthorizePage:(HttpResponse *)response
-                    params:(NSDictionary *)params;
+                    params:(NSDictionary *)params
+                    client:(NSDictionary *)client;
 - (void)fetchClientMetadataFromURL:(NSString *)url
                         completion:(void (^)(NSDictionary *_Nullable metadata,
                                              NSError *_Nullable error))completion;
@@ -179,6 +182,21 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return self;
 }
 
+- (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient
+                                        clientID:(NSString *)clientID {
+  if (!validatedClient) {
+    return nil;
+  }
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+  if ([config.oauthTrustedClientIDs containsObject:clientID]) {
+    return validatedClient;
+  }
+  // Otherwise, untrusted: overwrite client_name with the raw clientID
+  NSMutableDictionary *mutableClient = [validatedClient mutableCopy];
+  mutableClient[@"client_name"] = clientID;
+  return [mutableClient copy];
+}
+
 - (void)validateClient:(NSString *)clientID
             completion:(void (^)(NSDictionary *_Nullable client,
                                  NSError *_Nullable error))completion {
@@ -202,6 +220,20 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     // Database lookup succeeded - return the client
     completion(client, nil);
     return;
+  }
+
+  // Operator policy check: if allowlist is enabled, reject if not in allowed_client_ids
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+  if ([config.oauthClientPolicy isEqualToString:@"allowlist"]) {
+    if (![config.oauthAllowedClientIDs containsObject:clientID]) {
+      GZ_LOG_AUTH_WARN(@"OAuth client rejected by allowlist policy: %@", clientID);
+      completion(nil, [NSError errorWithDomain:@"OAuth2"
+                                          code:400
+                                      userInfo:@{
+                                        NSLocalizedDescriptionKey : @"unauthorized_client"
+                                      }]);
+      return;
+    }
   }
 
   // Database lookup failed - check if client_metadata is available in request
@@ -233,7 +265,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       }
       GZ_LOG_AUTH_INFO(
           @"Client validated successfully via client_metadata: %@", clientID);
-      completion(validatedClient, nil);
+      completion([self sanitizeClientMetadataIfNeeded:validatedClient clientID:clientID], nil);
       return;
     } else {
       // Metadata validation failed
@@ -258,7 +290,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     });
     if (cached) {
       GZ_LOG_AUTH_INFO(@"Found cached metadata for client: %@", clientID);
-      completion(cached, nil);
+      completion([self sanitizeClientMetadataIfNeeded:cached clientID:clientID], nil);
       return;
     }
 
@@ -287,7 +319,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                   GZ_LOG_AUTH_INFO(@"Successfully discovered "
                                                     @"and cached client: %@",
                                                     clientID);
-                                  completion(validatedClient, nil);
+                                  completion([strongSelf sanitizeClientMetadataIfNeeded:validatedClient clientID:clientID], nil);
                                 } else {
                                   completion(
                                       nil,
@@ -1869,11 +1901,12 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                     clientID, authRequest.loginHint);
 
   // Instead of auto-authorizing, serve the consent screen
-  [self serveAuthorizePage:response params:params];
+  [self serveAuthorizePage:response params:params client:client];
 }
 
 - (void)serveAuthorizePage:(HttpResponse *)response
-                    params:(NSDictionary *)params {
+                    params:(NSDictionary *)params
+                    client:(NSDictionary *)client {
   NSString *assetsPath = [self assetsPath];
   NSString *filePath =
       [assetsPath stringByAppendingPathComponent:@"authorize.html"];
@@ -1902,6 +1935,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   // Simple template replacement with HTML escaping
   NSString *clientId = [self escapeHtml:params[@"client_id"] ?: @"Unknown App"];
+  NSString *clientName = [self escapeHtml:client[@"client_name"] ?: params[@"client_id"] ?: @"Unknown App"];
   NSString *state = [self escapeHtml:params[@"state"] ?: @""];
   NSString *scope = [self escapeHtml:params[@"scope"] ?: @"atproto"];
   NSString *redirectUri = [self escapeHtml:params[@"redirect_uri"] ?: @""];
@@ -1917,6 +1951,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   html = [html stringByReplacingOccurrencesOfString:@"{{client_id}}"
                                          withString:clientId];
+  html = [html stringByReplacingOccurrencesOfString:@"{{client_name}}"
+                                         withString:clientName];
   html =
       [html stringByReplacingOccurrencesOfString:@"{{state}}" withString:state];
   html =
