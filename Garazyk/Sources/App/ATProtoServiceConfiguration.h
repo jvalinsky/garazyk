@@ -139,6 +139,15 @@ typedef NS_ENUM(NSInteger, ATProtoServiceConfigError) {
 /*! @abstract Whether only OAuth-based registration is allowed (blocks direct API signup). */
 @property (nonatomic, readonly) BOOL oauthOnlyRegistration;
 
+/*! @abstract OAuth client policy: `dynamic` or `allowlist`. Defaults to `dynamic`. */
+@property (nonatomic, readonly) NSString *oauthClientPolicy;
+
+/*! @abstract List of client IDs allowed under the allowlist policy. */
+@property (nonatomic, readonly) NSArray<NSString *> *oauthAllowedClientIDs;
+
+/*! @abstract List of trusted client IDs permitted to display custom names. */
+@property (nonatomic, readonly) NSArray<NSString *> *oauthTrustedClientIDs;
+
 /*! @abstract Check whether a named registration gate is enabled in config. */
 - (BOOL)isRegistrationGateEnabled:(NSString *)gateIdentifier;
 

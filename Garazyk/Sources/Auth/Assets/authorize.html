@@ -104,8 +104,9 @@
       const loginHint = params.get("login_hint");
 
       // Populate client names
-      document.getElementById("client-name").textContent = clientId;
-      document.getElementById("consent-client-name").textContent = clientId;
+      const clientName = "{{client_name}}";
+      document.getElementById("client-name").textContent = clientName || clientId;
+      document.getElementById("consent-client-name").textContent = clientName || clientId;
 
       // Pre-fill handle from login_hint
       const handleInput = document.getElementById("auth-handle");
