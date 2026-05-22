@@ -7,6 +7,7 @@
 #import <sqlite3.h>
 
 NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.store";
+static const NSInteger ATProtoMediaSQLiteStoreErrorNoRow = 404;
 
 @interface ATProtoMediaSQLiteStore ()
 @property (nonatomic, strong) ATProtoConnectionManagerSerial *connectionManager;
@@ -107,19 +108,19 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
 
 - (nullable NSDictionary<NSString *, id> *)getJobById:(NSString *)jobId error:(NSError **)error {
     __block NSDictionary *result = nil;
-    __block NSError *inner = nil;
+    __block NSError *blockError = nil;
     [self.connectionManager execute:^(sqlite3 *db) {
         const char *sql = "SELECT * FROM media_jobs WHERE job_id = ?";
         sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+        if (rc != SQLITE_OK) { blockError = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
         sqlite3_bind_text(stmt, 1, jobId.UTF8String, -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             result = [self rowFromStatement:stmt];
         }
         sqlite3_finalize(stmt);
-    } error:&inner];
-    if (!result && error) *error = inner;
+    } error:&blockError];
+    if (!result && error) *error = blockError;
     return result;
 }
 
@@ -131,13 +132,12 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
        serviceAuthToken:(nullable NSString *)token
                   error:(NSError **)error {
     __block BOOL ok = NO;
-    __block NSError *inner = nil;
     [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "INSERT INTO media_jobs (job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)";
         sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+        if (rc != SQLITE_OK) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
         sqlite3_bind_text(stmt, 1, jobId.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 3, blobCid.UTF8String, -1, SQLITE_TRANSIENT);
@@ -152,10 +152,9 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
         sqlite3_bind_text(stmt, 8, now.UTF8String, -1, SQLITE_TRANSIENT);
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-        if (rc != SQLITE_DONE) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+        if (rc != SQLITE_DONE) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
         ok = YES;
-    } error:&inner];
-    if (!ok && error) *error = inner;
+    } error:error];
     return ok;
 }
 
@@ -165,14 +164,13 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
                message:(nullable NSString *)message
                  error:(NSError **)error {
     __block BOOL ok = NO;
-    __block NSError *inner = nil;
     [self.connectionManager execute:^(sqlite3 *db) {
         NSString *stateStr = [self stringForState:state];
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "UPDATE media_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
         sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+        if (rc != SQLITE_OK) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
         sqlite3_bind_text(stmt, 1, stateStr.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int64(stmt, 2, progress);
         if (message) {
@@ -184,10 +182,16 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
         sqlite3_bind_text(stmt, 5, jobId.UTF8String, -1, SQLITE_TRANSIENT);
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-        ok = (rc == SQLITE_DONE);
-        if (!ok) inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
-    } error:&inner];
-    if (!ok && error) *error = inner;
+        if (rc != SQLITE_DONE) {
+            if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
+            return;
+        }
+        if (sqlite3_changes(db) == 0) {
+            if (error) *error = [self errorWithMessage:"No matching row" code:ATProtoMediaSQLiteStoreErrorNoRow];
+            return;
+        }
+        ok = YES;
+    } error:error];
     return ok;
 }
 
@@ -195,7 +199,6 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
                  results:(NSDictionary<NSString *, id> *)results
                    error:(NSError **)error {
     __block BOOL ok = NO;
-    __block NSError *inner = nil;
     [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         NSData *jsonData = nil;
@@ -206,7 +209,7 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
         const char *sql = "UPDATE media_jobs SET results_json = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
         sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+        if (rc != SQLITE_OK) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
         if (jsonStr) {
             sqlite3_bind_text(stmt, 1, jsonStr.UTF8String, -1, SQLITE_TRANSIENT);
         } else {
@@ -216,42 +219,52 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
         sqlite3_bind_text(stmt, 3, jobId.UTF8String, -1, SQLITE_TRANSIENT);
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-        ok = (rc == SQLITE_DONE);
-        if (!ok) inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
-    } error:&inner];
-    if (!ok && error) *error = inner;
+        if (rc != SQLITE_DONE) {
+            if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
+            return;
+        }
+        if (sqlite3_changes(db) == 0) {
+            if (error) *error = [self errorWithMessage:"No matching row" code:ATProtoMediaSQLiteStoreErrorNoRow];
+            return;
+        }
+        ok = YES;
+    } error:error];
     return ok;
 }
 
 - (BOOL)incrementJobRetry:(NSString *)jobId error:(NSError **)error {
     __block BOOL ok = NO;
-    __block NSError *inner = nil;
     [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "UPDATE media_jobs SET retry_count = retry_count + 1, state = 'PENDING', error_message = NULL, updated_at = ? WHERE job_id = ?";
         sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+        if (rc != SQLITE_OK) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
         sqlite3_bind_text(stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, jobId.UTF8String, -1, SQLITE_TRANSIENT);
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-        ok = (rc == SQLITE_DONE);
-        if (!ok) inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
-    } error:&inner];
-    if (!ok && error) *error = inner;
+        if (rc != SQLITE_DONE) {
+            if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
+            return;
+        }
+        if (sqlite3_changes(db) == 0) {
+            if (error) *error = [self errorWithMessage:"No matching row" code:ATProtoMediaSQLiteStoreErrorNoRow];
+            return;
+        }
+        ok = YES;
+    } error:error];
     return ok;
 }
 
 - (NSArray<NSDictionary<NSString *, id> *> *)queryPendingJobsWithLimit:(NSInteger)limit
                                                                  error:(NSError **)error {
     __block NSArray *result = @[];
-    __block NSError *inner = nil;
     [self.connectionManager execute:^(sqlite3 *db) {
         const char *sql = "SELECT * FROM media_jobs WHERE state = 'PENDING' ORDER BY created_at ASC LIMIT ?";
         sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+        if (rc != SQLITE_OK) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
         sqlite3_bind_int64(stmt, 1, limit);
         NSMutableArray *rows = [NSMutableArray array];
         while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -259,8 +272,7 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
         }
         sqlite3_finalize(stmt);
         result = rows;
-    } error:&inner];
-    if (result.count == 0 && error && inner) *error = inner;
+    } error:error];
     return result;
 }
 
@@ -269,21 +281,20 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
                                                         offset:(NSUInteger)offset
                                                          error:(NSError **)error {
     __block NSArray *result = @[];
-    __block NSError *inner = nil;
     [self.connectionManager execute:^(sqlite3 *db) {
         sqlite3_stmt *stmt = NULL;
         int rc = SQLITE_OK;
         if (state.length > 0) {
             const char *sql = "SELECT * FROM media_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
             rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-            if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+            if (rc != SQLITE_OK) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
             sqlite3_bind_text(stmt, 1, state.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_int64(stmt, 2, (int64_t)limit);
             sqlite3_bind_int64(stmt, 3, (int64_t)offset);
         } else {
             const char *sql = "SELECT * FROM media_jobs ORDER BY created_at DESC LIMIT ? OFFSET ?";
             rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-            if (rc != SQLITE_OK) { inner = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
+            if (rc != SQLITE_OK) { if (error) *error = [self errorWithMessage:sqlite3_errmsg(db) code:rc]; return; }
             sqlite3_bind_int64(stmt, 1, (int64_t)limit);
             sqlite3_bind_int64(stmt, 2, (int64_t)offset);
         }
@@ -293,8 +304,7 @@ NSString * const ATProtoMediaSQLiteStoreErrorDomain = @"com.atproto.mediacore.st
         }
         sqlite3_finalize(stmt);
         result = rows;
-    } error:&inner];
-    if (result.count == 0 && error && inner) *error = inner;
+    } error:error];
     return result;
 }
 
