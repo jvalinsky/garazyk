@@ -616,4 +616,128 @@
     return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
 }
 
+#pragma mark - Query Lists
+
+- (nullable NSDictionary *)getListsForActor:(NSString *)actorDID
+                                      limit:(NSInteger)limit
+                                     cursor:(nullable NSString *)cursor
+                                      error:(NSError **)error {
+    limit = MIN(MAX(limit, 1), 100);
+
+    NSString *query = @"SELECT uri, did, name, purpose, description, avatar_blob_cid, created_at FROM bsky_graph_lists WHERE did = ?";
+    if (cursor) {
+        query = [query stringByAppendingString:@" AND created_at < ?"];
+    }
+    query = [query stringByAppendingString:@" ORDER BY created_at DESC LIMIT ?"];
+
+    NSMutableArray *args = [NSMutableArray arrayWithObject:actorDID];
+    if (cursor) {
+        [args addObject:cursor];
+    }
+    [args addObject:@(limit + 1)];
+
+    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+    if (!rows) {
+        return @{@"lists": @[]};
+    }
+
+    NSMutableArray *lists = [NSMutableArray array];
+    NSString *nextCursor = nil;
+
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSDictionary *row = rows[i];
+        NSString *did = row[@"did"];
+
+        NSMutableDictionary *listView = [NSMutableDictionary dictionary];
+        listView[@"uri"] = row[@"uri"];
+        listView[@"name"] = row[@"name"] ?: @"";
+        listView[@"purpose"] = row[@"purpose"] ?: @"";
+        listView[@"description"] = row[@"description"] ?: @"";
+        listView[@"creator"] = [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did};
+        listView[@"indexedAt"] = row[@"created_at"] ?: @"";
+
+        [lists addObject:listView];
+
+        if (i == (NSUInteger)(limit - 1) && rows.count > (NSUInteger)limit) {
+            nextCursor = row[@"created_at"];
+        }
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"lists"] = lists;
+    if (nextCursor) {
+        result[@"cursor"] = nextCursor;
+    }
+
+    return [result copy];
+}
+
+- (nullable NSDictionary *)getList:(NSString *)listURI
+                             limit:(NSInteger)limit
+                            cursor:(nullable NSString *)cursor
+                             error:(NSError **)error {
+    limit = MIN(MAX(limit, 1), 100);
+
+    // Get list metadata
+    NSString *listQuery = @"SELECT uri, did, name, purpose, description, avatar_blob_cid, created_at FROM bsky_graph_lists WHERE uri = ?";
+    NSArray *listRows = [self.database executeParameterizedQuery:listQuery params:@[listURI] error:error];
+    if (!listRows || listRows.count == 0) {
+        return nil;
+    }
+
+    NSDictionary *listRow = listRows.firstObject;
+    NSString *creatorDID = listRow[@"did"];
+
+    NSMutableDictionary *listView = [NSMutableDictionary dictionary];
+    listView[@"uri"] = listRow[@"uri"];
+    listView[@"name"] = listRow[@"name"] ?: @"";
+    listView[@"purpose"] = listRow[@"purpose"] ?: @"";
+    listView[@"description"] = listRow[@"description"] ?: @"";
+    listView[@"creator"] = [self.actorService getProfileForActor:creatorDID error:nil] ?: @{@"did": creatorDID};
+    listView[@"indexedAt"] = listRow[@"created_at"] ?: @"";
+
+    // Get items
+    NSString *itemsQuery = @"SELECT uri, list_uri, subject_did, created_at FROM bsky_graph_listitems WHERE list_uri = ?";
+    if (cursor) {
+        itemsQuery = [itemsQuery stringByAppendingString:@" AND created_at < ?"];
+    }
+    itemsQuery = [itemsQuery stringByAppendingString:@" ORDER BY created_at DESC LIMIT ?"];
+
+    NSMutableArray *itemArgs = [NSMutableArray arrayWithObject:listURI];
+    if (cursor) {
+        [itemArgs addObject:cursor];
+    }
+    [itemArgs addObject:@(limit + 1)];
+
+    NSArray *itemRows = [self.database executeParameterizedQuery:itemsQuery params:itemArgs error:error];
+
+    NSMutableArray *items = [NSMutableArray array];
+    NSString *nextCursor = nil;
+
+    for (NSUInteger i = 0; itemRows && (NSInteger)i < limit && i < itemRows.count; i++) {
+        NSDictionary *row = itemRows[i];
+        NSString *subjectDID = row[@"subject_did"];
+
+        NSMutableDictionary *itemView = [NSMutableDictionary dictionary];
+        itemView[@"uri"] = row[@"uri"];
+        itemView[@"subject"] = [self.actorService getProfileForActor:subjectDID error:nil] ?: @{@"did": subjectDID};
+        itemView[@"indexedAt"] = row[@"created_at"] ?: @"";
+
+        [items addObject:itemView];
+
+        if (i == (NSUInteger)(limit - 1) && itemRows.count > (NSUInteger)limit) {
+            nextCursor = row[@"created_at"];
+        }
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"list"] = listView;
+    result[@"items"] = items;
+    if (nextCursor) {
+        result[@"cursor"] = nextCursor;
+    }
+
+    return [result copy];
+}
+
 @end
