@@ -64,7 +64,9 @@ export async function checkStagedBinaries(): Promise<PreflightResult> {
 }
 
 /** Check if Playwright browsers are installed. */
-export async function checkPlaywright(required: boolean): Promise<PreflightResult> {
+export async function checkPlaywright(
+  required: boolean,
+): Promise<PreflightResult> {
   try {
     // We use a dynamic import to avoid a hard dependency if playwright isn't even used.
     // In Deno, this will pull from npm if not already cached.
@@ -76,7 +78,9 @@ export async function checkPlaywright(required: boolean): Promise<PreflightResul
     return {
       ok: false,
       fatal: required,
-      message: `Playwright browser not found or failed to launch: ${err instanceof Error ? err.message : String(err)}`,
+      message: `Playwright browser not found or failed to launch: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
       fixHint: "npx playwright install --with-deps chromium",
     };
   }
@@ -88,18 +92,26 @@ export async function checkHostPorts(
 ): Promise<void> {
   const ports = neededPorts(opts);
   const knownBinaries = new Set([
-    "kaszlak", "garazyk-ui", "campagnola",
-    "zuk", "syrena", "syrena-chat", "jelcz",
+    "kaszlak",
+    "garazyk-ui",
+    "campagnola",
+    "zuk",
+    "syrena",
+    "syrena-chat",
+    "jelcz",
   ]);
   for (const port of ports) {
     try {
       const lsofProc = new Deno.Command("lsof", {
         args: ["-ti", `:${port}`],
-        stdout: "piped", stderr: "piped",
+        stdout: "piped",
+        stderr: "piped",
       });
       const { code, stdout } = await lsofProc.output();
       if (code !== 0) continue;
-      const pids = new TextDecoder().decode(stdout).trim().split("\n").filter(Boolean);
+      const pids = new TextDecoder().decode(stdout).trim().split("\n").filter(
+        Boolean,
+      );
       for (const pid of pids) {
         const psProc = new Deno.Command("ps", {
           args: ["-p", pid, "-o", "comm="],
@@ -108,8 +120,15 @@ export async function checkHostPorts(
         const { code: pc, stdout: pout } = await psProc.output();
         if (pc !== 0) continue;
         const cmd = new TextDecoder().decode(pout).trim();
-        if (knownBinaries.has(cmd) || cmd.startsWith("garazyk") || cmd.startsWith("atproto")) {
-          console.warn(yellow(`[WARN]  Stale process on port ${port} (PID: ${pid}, ${cmd}) — killing`));
+        if (
+          knownBinaries.has(cmd) || cmd.startsWith("garazyk") ||
+          cmd.startsWith("atproto")
+        ) {
+          console.warn(
+            yellow(
+              `[WARN]  Stale process on port ${port} (PID: ${pid}, ${cmd}) — killing`,
+            ),
+          );
           await new Deno.Command("kill", { args: ["-9", pid] }).output();
         }
       }
@@ -123,17 +142,26 @@ interface HealthProbe {
   key: string;
   path: string;
   timeoutSeconds: number;
+  headers?: Record<string, string>;
 }
 
 const DEFAULT_PROBES: HealthProbe[] = [
-  { key: "plc", path: "/", timeoutSeconds: 5 },
-  { key: "pds", path: "/xrpc/_health", timeoutSeconds: 5 },
-  { key: "relay", path: "/xrpc/_health", timeoutSeconds: 5 },
-  { key: "appview", path: "/xrpc/_health", timeoutSeconds: 10 },
-  { key: "chat", path: "/xrpc/_health", timeoutSeconds: 5 },
+  { key: "plc", path: "/_health", timeoutSeconds: 5 },
+  {
+    key: "pds",
+    path: "/xrpc/com.atproto.server.describeServer",
+    timeoutSeconds: 5,
+  },
+  { key: "relay", path: "/api/relay/health", timeoutSeconds: 5 },
+  { key: "appview", path: "/admin/backfill/status", timeoutSeconds: 10 },
+  { key: "chat", path: "/_health", timeoutSeconds: 5 },
 ];
 
-const PDS2_PROBE: HealthProbe = { key: "pds2", path: "/xrpc/_health", timeoutSeconds: 5 };
+const PDS2_PROBE: HealthProbe = {
+  key: "pds2",
+  path: "/xrpc/com.atproto.server.describeServer",
+  timeoutSeconds: 5,
+};
 
 /** Verify that all expected ATProto services respond to health probes.
  *
@@ -143,14 +171,28 @@ const PDS2_PROBE: HealthProbe = { key: "pds2", path: "/xrpc/_health", timeoutSec
 export async function verifyNetworkHealth(opts: {
   withPds2?: boolean;
 }): Promise<void> {
-  const probes = [...DEFAULT_PROBES];
+  const appviewAdminSecret = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
+    "localdevadmin";
+  const probes = DEFAULT_PROBES.map((probe) =>
+    probe.key === "appview"
+      ? {
+        ...probe,
+        headers: { "Authorization": `Bearer ${appviewAdminSecret}` },
+      }
+      : probe
+  );
   if (opts.withPds2) probes.push(PDS2_PROBE);
 
   console.log(yellow("\n[PREFLIGHT] Verifying network health..."));
   let allOk = true;
   for (const probe of probes) {
     const url = `${serviceUrl(probe.key)}${probe.path}`;
-    const ok = await waitForHttp(url, probe.key, probe.timeoutSeconds);
+    const ok = await waitForHttp(
+      url,
+      probe.key,
+      probe.timeoutSeconds,
+      probe.headers,
+    );
     if (!ok) {
       allOk = false;
       console.error(
@@ -203,7 +245,9 @@ export async function runPreflight(options: {
         printPreflightError(pw);
         Deno.exit(1);
       } else {
-        console.warn(yellow(`\n[WARN]  Browser scenarios will be skipped: ${pw.message}`));
+        console.warn(
+          yellow(`\n[WARN]  Browser scenarios will be skipped: ${pw.message}`),
+        );
         console.warn(yellow(`        To enable them: \`${pw.fixHint}\`\n`));
       }
     }
