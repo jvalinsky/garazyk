@@ -15,6 +15,7 @@
 #import <XCTest/XCTest.h>
 #import "MediaCore/ATProtoMediaServiceConfiguration.h"
 #import "Video/ATProtoVideoProcessor.h"
+#import "MediaCore/JelczCLI.h"
 
 /*! Size of redirect buffer for capturing stdout. */
 static const NSUInteger kCaptureBufferSize = 16384;
@@ -270,30 +271,9 @@ static const NSUInteger kCaptureBufferSize = 16384;
 }
 
 - (void)testNoCommandShowsUsage {
-    // Simulate: argc < 2 → print_usage and return 1
-    // We validate this by checking what print_usage outputs
+    // Calls the actual JelczPrintUsage function from MediaCore
     NSString *output = [StdoutCapture capture:^{
-        // Inline the print_usage output
-        printf("Usage: jelcz <command> [options]\n\n");
-        printf("Commands:\n");
-        printf("  serve        Start video processing service\n");
-        printf("  status       Query service status\n");
-        printf("  version      Show version info\n");
-        printf("  help         Show this help\n\n");
-        printf("Options:\n");
-        printf("  --port <number>       HTTP API port (default: 2586)\n");
-        printf("  --pds-url <url>       PDS URL for blob upload (default: http://localhost:2583)\n");
-        printf("  --data-dir <path>     Data directory for database\n");
-        printf("  --blob-dir <path>     Blob storage directory\n");
-        printf("  --did <did>           Service DID for Service Auth\n");
-        printf("  --s3-bucket <name>    S3 bucket for blob storage\n");
-        printf("  --s3-region <region>  S3 region (default: us-east-1)\n");
-        printf("  --s3-endpoint <url>   S3-compatible endpoint URL\n");
-        printf("  --hls-dir <path>      HLS output directory\n");
-        printf("  --hls-base-url <url>  Base URL for HLS playlist URLs\n");
-        printf("  --hls-1080p           Include 1080p HLS variant\n");
-        printf("  -v, --verbose         Enable debug logging\n");
-        printf("  -h, --help            Show this help\n");
+        JelczPrintUsage();
     }];
 
     XCTAssertTrue([output containsString:@"Usage: jelcz <command> [options]"]);
@@ -304,12 +284,7 @@ static const NSUInteger kCaptureBufferSize = 16384;
     XCTAssertTrue([output containsString:@"-v, --verbose         Enable debug logging"]);
 }
 
-- (void)testVersionOutputFormat {
-    // Validate the version output matches main.m formatting
-    NSString *versionOutput = @"Jelcz 0.2.0 (AT Protocol Video Processing Service - ATProtoMediaCore)\n";
-    XCTAssertTrue([versionOutput hasPrefix:@"Jelcz 0.2.0"]);
-    XCTAssertTrue([versionOutput containsString:@"ATProtoMediaCore"]);
-}
+
 
 #pragma mark - Environment variable configuration
 

@@ -310,26 +310,20 @@
 }
 
 - (void)testRuntimeReportsFailureOnInvalidConfig {
-    // No data directory → should fail to init db
+    // /dev/null is a file, not a directory — SQLite will fail to create a DB there
     ATProtoMediaServiceConfiguration *badConfig = [[ATProtoMediaServiceConfiguration alloc] init];
     badConfig.port = self.testPort;
-    badConfig.dataDirectory = @"/nonexistent/path/that/does/not/exist";
-    badConfig.blobDirectory = @"/nonexistent/blobs";
+    badConfig.dataDirectory = @"/dev/null";
+    badConfig.blobDirectory = @"/dev/null/blobs";
     badConfig.pdsURL = @"http://localhost:2583";
     badConfig.serviceDID = @"did:web:test";
 
-    // Disable worker to avoid spurious jobs
     ATProtoMediaServiceRuntime *badRuntime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:badConfig
                                                                                               processor:self.mockProcessor];
     NSError *error = nil;
     BOOL started = [badRuntime startWithError:&error];
-    // Should fail because data directory doesn't exist
-    // (The store will fail to create the db file in the nonexistent dir)
-    // Note: this may or may not fail depending on SQLite behavior,
-    // so we'll assert that if it fails, error is set
-    if (!started) {
-        XCTAssertNotNil(error);
-    }
+    XCTAssertFalse(started, @"Runtime should fail to start with /dev/null as data directory");
+    XCTAssertNotNil(error, @"Error should be set when runtime fails to start");
     [badRuntime stop];
 }
 
