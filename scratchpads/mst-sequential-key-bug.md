@@ -1,35 +1,42 @@
-# MST Sequential-Key Bug
+# MST Sequential-Key Bug (Investigated — Not Reproducible)
 
 ## Summary
 
-The MST (Merkle Search Tree) implementation in `MST.m` loses entries when keys are
-sequential or non-random (e.g., `poison0001`, `poison0002`, etc.). The bug does not
-manifest with random TID keys, which is the only key pattern used in production.
+The MST (Merkle Search Tree) implementation in `MST.m` was suspected of losing
+entries when keys are sequential or non-random (e.g., `poison0001`, `poison0002`).
 
-## Root Cause
+## Investigation
 
-The bug is in `addRecursive:` — when multiple keys hash to similar depths, the tree
-restructuring logic in the `depth > node.level` branch and the `depth == node.level`
-branch has edge cases where entries can be lost during split/rebuild operations.
+A thorough stress test was written and run against the `addRecursive:` method:
 
-Specifically, when keys have sequential prefixes, their SHA-256 hashes tend to share
-leading zero-bit patterns, causing them to land at identical tree depths. The MST's
-split logic (`split:left:right:`) and subsequent rebuild don't always preserve all
-entries when multiple keys compete for the same structural position.
+| Key Pattern                 | Count | Insert | Verify | Delete Half | Verify Remain |
+|-----------------------------|-------|--------|--------|-------------|---------------|
+| `poison%04d`                | 100   | ✅     | ✅     | ✅          | ✅            |
+| `key_%05d`                  | 100   | ✅     | ✅     | ✅          | ✅            |
+| `test/data/record_%03d`     | 100   | ✅     | ✅     | ✅          | ✅            |
+| `app.bsky.feed.post/seq%04d`| 100   | ✅     | ✅     | ✅          | ✅            |
 
-## Impact
+All 4 patterns passed insertion, full-key verification, half-deletion, and
+remaining-key verification with zero failures.
 
-- **Production**: None. ATProto uses random TIDs (base32-encoded 13-char timestamps),
-  which produce uniformly distributed SHA-256 hashes. The existing
-  `testLargeScaleRebalancing` test (1000 random TIDs) passes consistently.
-- **Testing**: Tests that use hardcoded/sequential keys (e.g., `poison%04d` or
-  `a00001`/`b00001`) will fail when verifying `allEntries.count` or individual `get:`.
+## Root Cause Analysis
 
-## Status
+The suspected bug was in `addRecursive:` — the hypothesis was that sequential
+keys produce SHA-256 hashes sharing leading zero-bit patterns, causing tree-depth
+collisions that lose entries during split/rebuild operations.
 
-- **Severity**: Low (no production impact)
-- **Fix**: Would require auditing the `addRecursive:` split/rebalance paths for
-  edge cases where entries can be dropped. Not a priority since random TIDs are
-  the only key source in real ATProto usage.
-- **Workaround**: Generate random TIDs for any MST test that needs to verify
-  entry count or roundtrip integrity.
+**This hypothesis is incorrect.** SHA-256 exhibits the avalanche effect: even
+single-bit input changes produce completely different hashes. Sequential keys
+produce uniformly distributed depths, identical to random TID keys.
+
+A thorough code review of `addRecursive:` and `split:` found no edge case where
+entries could be dropped. All code paths (CASE 1: `depth > node.level`, CASE 2:
+key-exists update, CASE 3: `depth == node.level` insert, CASE 4: `depth < node.level`
+recurse) preserve entry pointers through the split/rebuild/insert operations.
+
+## Conclusion
+
+- **Severity**: None — the bug does not exist.
+- **Recommendation**: Close as not reproducible.
+- **Tests**: `testSequentialKeysStress` in `MSTRebalancingTests.m` provides
+  ongoing regression coverage for sequential key patterns.
