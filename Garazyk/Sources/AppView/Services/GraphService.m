@@ -13,6 +13,7 @@
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATProtoDagCBOR.h"
 #import "Core/ATURI.h"
 #import "Core/NSDateFormatter+ATProto.h"
 
@@ -35,12 +36,61 @@
 
 #pragma mark - Internal Helpers
 
+- (nullable NSDictionary *)recordBodyFromRow:(NSDictionary *)row did:(NSString *)did error:(NSError **)error {
+    NSString *cid = row[@"cid"] != [NSNull null] ? row[@"cid"] : nil;
+    NSDictionary *record = cid.length > 0 ? [self getRecordBodyFromCID:cid did:did error:error] : nil;
+    if (record) return record;
+
+    NSString *value = row[@"value"] != [NSNull null] ? row[@"value"] : nil;
+    if (value.length == 0) return nil;
+
+    NSData *data = [value dataUsingEncoding:NSUTF8StringEncoding];
+    if (!data) return nil;
+
+    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:error];
+    return [json isKindOfClass:[NSDictionary class]] ? json : nil;
+}
+
+- (NSDictionary *)listViewForURI:(NSString *)uri
+                              did:(NSString *)did
+                           record:(nullable NSDictionary *)record
+                       indexedAt:(nullable id)indexedAt
+                              cid:(nullable NSString *)cid {
+    NSMutableDictionary *listView = [NSMutableDictionary dictionary];
+    listView[@"uri"] = uri ?: @"";
+    if (cid.length > 0) listView[@"cid"] = cid;
+    listView[@"name"] = record[@"name"] ?: @"";
+    listView[@"purpose"] = record[@"purpose"] ?: @"";
+    listView[@"description"] = record[@"description"] ?: @"";
+    listView[@"creator"] = [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did ?: @""};
+    listView[@"indexedAt"] = record[@"createdAt"] ?: indexedAt ?: @"";
+    return listView;
+}
+
+- (BOOL)parseListURI:(NSString *)listURI did:(NSString **)didOut rkey:(NSString **)rkeyOut {
+    NSArray<NSString *> *components = [listURI componentsSeparatedByString:@"/"];
+    if (components.count < 5) return NO;
+    NSString *did = components[2];
+    NSString *collection = components[3];
+    NSString *rkey = components[4];
+    if (![collection isEqualToString:@"app.bsky.graph.list"] || did.length == 0 || rkey.length == 0) {
+        return NO;
+    }
+    if (didOut) *didOut = did;
+    if (rkeyOut) *rkeyOut = rkey;
+    return YES;
+}
+
 - (nullable NSDictionary *)getRecordBodyFromCID:(NSString *)cidStr did:(NSString *)did error:(NSError **)error {
     CID *cid = [CID cidFromString:cidStr];
     if (!cid) return nil;
     PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
     if (!block || !block.blockData) return nil;
-    return [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:error];
+    id decoded = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:error];
+    if (!decoded) {
+        decoded = [ATProtoDagCBOR decodeData:block.blockData error:error];
+    }
+    return [decoded isKindOfClass:[NSDictionary class]] ? decoded : nil;
 }
 
 #pragma mark - Follows
@@ -644,22 +694,60 @@
     NSMutableArray *lists = [NSMutableArray array];
     NSString *nextCursor = nil;
 
+    NSMutableSet *seenURIs = [NSMutableSet set];
+
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
         NSString *did = row[@"did"];
+        NSString *uri = row[@"uri"];
+        if (uri.length > 0) [seenURIs addObject:uri];
 
-        NSMutableDictionary *listView = [NSMutableDictionary dictionary];
-        listView[@"uri"] = row[@"uri"];
-        listView[@"name"] = row[@"name"] ?: @"";
-        listView[@"purpose"] = row[@"purpose"] ?: @"";
-        listView[@"description"] = row[@"description"] ?: @"";
-        listView[@"creator"] = [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did};
-        listView[@"indexedAt"] = row[@"created_at"] ?: @"";
+        NSDictionary *record = @{
+            @"name": row[@"name"] ?: @"",
+            @"purpose": row[@"purpose"] ?: @"",
+            @"description": row[@"description"] ?: @""
+        };
+        NSDictionary *listView = [self listViewForURI:uri did:did record:record indexedAt:row[@"created_at"] cid:nil];
 
         [lists addObject:listView];
 
         if (i == (NSUInteger)(limit - 1) && rows.count > (NSUInteger)limit) {
             nextCursor = row[@"created_at"];
+        }
+    }
+
+    if ((NSInteger)lists.count < limit) {
+        NSString *recordQuery = @"SELECT uri, did, rkey, cid, value, indexed_at FROM records WHERE did = ? AND collection = ?";
+        if (cursor) {
+            recordQuery = [recordQuery stringByAppendingString:@" AND rkey < ?"];
+        }
+        recordQuery = [recordQuery stringByAppendingString:@" ORDER BY rkey DESC LIMIT ?"];
+
+        NSMutableArray *recordArgs = [NSMutableArray arrayWithObjects:actorDID, @"app.bsky.graph.list", nil];
+        if (cursor) [recordArgs addObject:cursor];
+        [recordArgs addObject:@(limit + 1)];
+
+        NSArray *recordRows = [self.database executeParameterizedQuery:recordQuery params:recordArgs error:error];
+        for (NSUInteger i = 0; i < recordRows.count && (NSInteger)lists.count < limit; i++) {
+            NSDictionary *row = recordRows[i];
+            NSString *uri = row[@"uri"];
+            if (uri.length == 0 || [seenURIs containsObject:uri]) continue;
+
+            NSDictionary *record = [self recordBodyFromRow:row did:actorDID error:nil];
+            if (!record) continue;
+
+            NSString *cid = row[@"cid"] != [NSNull null] ? row[@"cid"] : nil;
+            NSDictionary *listView = [self listViewForURI:uri
+                                                       did:actorDID
+                                                    record:record
+                                                 indexedAt:row[@"indexed_at"]
+                                                       cid:cid];
+            [lists addObject:listView];
+            [seenURIs addObject:uri];
+
+            if ((NSInteger)lists.count == limit && recordRows.count > i + 1) {
+                nextCursor = row[@"rkey"];
+            }
         }
     }
 
@@ -681,20 +769,40 @@
     // Get list metadata
     NSString *listQuery = @"SELECT uri, did, name, purpose, description, avatar_cid, created_at FROM bsky_graph_lists WHERE uri = ?";
     NSArray *listRows = [self.database executeParameterizedQuery:listQuery params:@[listURI] error:error];
-    if (!listRows || listRows.count == 0) {
+    if (!listRows) {
         return nil;
     }
 
     NSDictionary *listRow = listRows.firstObject;
     NSString *creatorDID = listRow[@"did"];
+    NSDictionary *listRecord = nil;
 
-    NSMutableDictionary *listView = [NSMutableDictionary dictionary];
-    listView[@"uri"] = listRow[@"uri"];
-    listView[@"name"] = listRow[@"name"] ?: @"";
-    listView[@"purpose"] = listRow[@"purpose"] ?: @"";
-    listView[@"description"] = listRow[@"description"] ?: @"";
-    listView[@"creator"] = [self.actorService getProfileForActor:creatorDID error:nil] ?: @{@"did": creatorDID};
-    listView[@"indexedAt"] = listRow[@"created_at"] ?: @"";
+    if (!listRow) {
+        NSString *rkey = nil;
+        if (![self parseListURI:listURI did:&creatorDID rkey:&rkey]) {
+            return nil;
+        }
+        NSString *recordQuery = @"SELECT uri, did, rkey, cid, value, indexed_at FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1";
+        NSArray *recordRows = [self.database executeParameterizedQuery:recordQuery
+                                                                 params:@[creatorDID, @"app.bsky.graph.list", rkey]
+                                                                  error:error];
+        listRow = recordRows.firstObject;
+        if (!listRow) return nil;
+        listRecord = [self recordBodyFromRow:listRow did:creatorDID error:nil];
+    } else {
+        listRecord = @{
+            @"name": listRow[@"name"] ?: @"",
+            @"purpose": listRow[@"purpose"] ?: @"",
+            @"description": listRow[@"description"] ?: @""
+        };
+    }
+
+    NSString *cid = listRow[@"cid"] != [NSNull null] ? listRow[@"cid"] : nil;
+    NSDictionary *listView = [self listViewForURI:listURI
+                                              did:creatorDID
+                                           record:listRecord
+                                        indexedAt:listRow[@"created_at"] ?: listRow[@"indexed_at"]
+                                              cid:cid];
 
     // Get items
     NSString *itemsQuery = @"SELECT uri, list_uri, subject_did, created_at FROM bsky_graph_listitems WHERE list_uri = ?";
@@ -727,6 +835,31 @@
 
         if (i == (NSUInteger)(limit - 1) && itemRows.count > (NSUInteger)limit) {
             nextCursor = row[@"created_at"];
+        }
+    }
+
+    if (items.count == 0 && creatorDID.length > 0) {
+        NSString *recordItemQuery = @"SELECT uri, did, rkey, cid, value, indexed_at FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT ?";
+        NSArray *recordItemRows = [self.database executeParameterizedQuery:recordItemQuery
+                                                                    params:@[creatorDID, @"app.bsky.graph.listitem", @(limit + 1)]
+                                                                     error:error];
+        for (NSUInteger i = 0; i < recordItemRows.count && (NSInteger)items.count < limit; i++) {
+            NSDictionary *row = recordItemRows[i];
+            NSDictionary *record = [self recordBodyFromRow:row did:creatorDID error:nil];
+            if (![record[@"list"] isEqualToString:listURI]) continue;
+
+            NSString *subjectDID = record[@"subject"];
+            if (subjectDID.length == 0) continue;
+
+            NSMutableDictionary *itemView = [NSMutableDictionary dictionary];
+            itemView[@"uri"] = row[@"uri"] ?: [NSString stringWithFormat:@"at://%@/app.bsky.graph.listitem/%@", creatorDID, row[@"rkey"] ?: @""];
+            itemView[@"subject"] = [self.actorService getProfileForActor:subjectDID error:nil] ?: @{@"did": subjectDID};
+            itemView[@"indexedAt"] = record[@"createdAt"] ?: row[@"indexed_at"] ?: @"";
+            [items addObject:itemView];
+
+            if ((NSInteger)items.count == limit && recordItemRows.count > i + 1) {
+                nextCursor = row[@"rkey"];
+            }
         }
     }
 

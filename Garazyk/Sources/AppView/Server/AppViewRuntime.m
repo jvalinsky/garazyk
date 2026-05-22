@@ -183,6 +183,26 @@ static AppViewRuntime *_sharedRuntime = nil;
                 ttlHours:config.partialTTLHours];
     [_relevanceSet rebuild];
 
+    // Initialize services before indexers so domain indexers use the same
+    // service instances as the HTTP query layer.
+    _feedService = [[FeedService alloc] initWithDatabase:_database];
+    _actorService = [[ActorService alloc] initWithDatabase:_database];
+    _graphService = [[GraphService alloc] initWithDatabase:_database];
+    _notificationService = [[NotificationService alloc] initWithDatabase:_database
+                                                            actorService:_actorService];
+    _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database
+                                                           emailProvider:nil];
+    _bookmarkService = [[BookmarkService alloc] initWithDatabase:_database];
+    _draftService = [[DraftService alloc] initWithDatabase:_database];
+    _searchIndexService = [[SearchIndexService alloc] initWithDatabase:_database];
+    _contactService = [[ContactService alloc] initWithDatabase:_database actorService:_actorService];
+
+    // Initialize video URI builder (for constructing HLS playlist/thumbnail URLs)
+    if (config.videoServiceURL.length > 0) {
+        _videoUriBuilder = [AppViewVideoUriBuilder builderWithVideoServiceURL:config.videoServiceURL];
+        _feedService.videoUriBuilder = _videoUriBuilder;
+    }
+
     // Build indexers
     AppViewActorIndexer *actorIdx   = [[AppViewActorIndexer alloc] initWithDatabase:_database];
     AppViewFeedIndexer  *feedIdx    = [[AppViewFeedIndexer alloc]  initWithDatabase:_database];
@@ -264,27 +284,6 @@ static AppViewRuntime *_sharedRuntime = nil;
         res.contentType = @"image/x-icon";
         [res setBodyData:[NSData data]];
     }];
-
-    // Initialize Services with AppViewDatabase (which now conforms to PDSQueryDatabase)
-    _feedService = [[FeedService alloc] initWithDatabase:_database];
-    _actorService = [[ActorService alloc] initWithDatabase:_database];
-    _graphService = [[GraphService alloc] initWithDatabase:_database];
-    _notificationService = [[NotificationService alloc] initWithDatabase:_database
-                                                            actorService:_actorService];
-    _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database
-                                                           emailProvider:nil];
-    _bookmarkService = [[BookmarkService alloc] initWithDatabase:_database];
-    _draftService = [[DraftService alloc] initWithDatabase:_database];
-    _searchIndexService = [[SearchIndexService alloc] initWithDatabase:_database];
-    _contactService = [[ContactService alloc] initWithDatabase:_database actorService:_actorService];
-
-    // Initialize video URI builder (for constructing HLS playlist/thumbnail URLs)
-    if (config.videoServiceURL.length > 0) {
-        _videoUriBuilder = [AppViewVideoUriBuilder builderWithVideoServiceURL:config.videoServiceURL];
-        _feedService.videoUriBuilder = _videoUriBuilder;
-    }
-
-    _hookRegistry = [[AppViewIndexHookRegistry alloc] initWithDatabase:_database];
 
     _writeProxy = [[AppViewWriteProxy alloc] initWithDatabase:_database plcUrl:config.plcURL];
 

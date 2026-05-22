@@ -210,12 +210,22 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
+    self.currentSeq = event.seq;
+
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
         if (delegate) {
             [delegate relayClient:self didReceiveIdentityEvent:event];
         }
     });
+}
+
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveAccountEvent:(FirehoseAccountEvent *)event {
+    self.currentSeq = event.seq;
+}
+
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event {
+    self.currentSeq = event.seq;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
