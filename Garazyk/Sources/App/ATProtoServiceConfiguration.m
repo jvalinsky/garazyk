@@ -88,6 +88,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
 
 @interface ATProtoServiceConfiguration ()
 - (BOOL)dictionary:(NSDictionary *)dictionary hasValueForKey:(NSString *)key;
+- (nullable id)objectForKey:(NSString *)key;
 @property (nonatomic, assign) BOOL plcReplicaEnabled;
 @property (nonatomic, copy, nullable) NSString *plcReplicaUpstreamURL;
 @property (nonatomic, copy, nullable) NSString *plcReplicaBindAddress;
@@ -952,7 +953,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     }
   }
 
-  NSDictionary *appview = config[@"appview"];
+  NSDictionary *appview = config[@"appview"] ?: config[@"appView"];
   if (appview) {
     _appViewURL = [self resolveEnvOverrideForKey:@"PDS_APPVIEW_URL"
                                          default:appview[@"url"]];
@@ -1114,7 +1115,7 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
          [@"1" isEqualToString:envValue];
 }
 
-- (nullable NSArray *)arrayForKey:(NSString *)key {
+- (nullable id)objectForKey:(NSString *)key {
   NSArray *components = [key componentsSeparatedByString:@"."];
   id current = _config;
   for (NSString *component in components) {
@@ -1124,33 +1125,37 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     if (!current)
       return nil;
   }
-  return [current isKindOfClass:[NSArray class]] ? (NSArray *)current : nil;
+  return current;
+}
+
+- (nullable NSArray *)arrayForKey:(NSString *)key {
+  id value = [self objectForKey:key];
+  return [value isKindOfClass:[NSArray class]] ? (NSArray *)value : nil;
 }
 
 - (nullable NSString *)stringForKey:(NSString *)key {
-  NSArray *components = [key componentsSeparatedByString:@"."];
-  id current = _config;
-  for (NSString *component in components) {
-    if (![current isKindOfClass:[NSDictionary class]])
-      return nil;
-    current = ((NSDictionary *)current)[component];
-    if (!current)
-      return nil;
-  }
-  return [current isKindOfClass:[NSString class]] ? (NSString *)current : nil;
+  id value = [self objectForKey:key];
+  return [value isKindOfClass:[NSString class]] ? (NSString *)value : nil;
 }
 
 - (NSInteger)integerForKey:(NSString *)key {
-  NSString *value = [self stringForKey:key];
-  return value ? [value integerValue] : 0;
+  id value = [self objectForKey:key];
+  if ([value respondsToSelector:@selector(integerValue)]) {
+    return [value integerValue];
+  }
+  return 0;
 }
 
 - (BOOL)boolForKey:(NSString *)key {
-  NSString *value = [self stringForKey:key];
-  if (!value)
-    return NO;
-  return [@"true" isEqualToString:value.lowercaseString] ||
-         [@"1" isEqualToString:value];
+  id value = [self objectForKey:key];
+  if ([value respondsToSelector:@selector(boolValue)]) {
+    return [value boolValue];
+  }
+  if ([value isKindOfClass:[NSString class]]) {
+    return [@"true" isEqualToString:((NSString *)value).lowercaseString] ||
+           [@"1" isEqualToString:value];
+  }
+  return NO;
 }
 
 - (NSString *)canonicalIssuer {
