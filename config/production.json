@@ -6,10 +6,9 @@
     "issuer": "https://pds.garazyk.xyz",
     "available_user_domains": ["garazyk.xyz"]
   },
-  "appView": {
+  "appview": {
     "url": "https://api.bsky.app",
-    "did": "did:web:api.bsky.app",
-    "local_enabled": false
+    "did": "did:web:api.bsky.app"
   },
   "plc": {
     "url": "https://plc.directory"

@@ -63,6 +63,7 @@
     self.dispatcher = [PDSCLIDispatcher sharedDispatcher];
     self.context = [[MockCLICommandContext alloc] init];
     self.context.dataDir = self.tempDir;
+    self.context.dataDirExplicitlySet = YES;
     self.context.configPath = [self.tempDir stringByAppendingPathComponent:@"config.json"];
     
     // Write a dummy config file to avoid picking up the project's config.json

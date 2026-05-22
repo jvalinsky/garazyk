@@ -183,6 +183,7 @@ static const NSUInteger kMaxDecodeDepth = 64;
         return [self _encodeCIDLink:(CID *)value toData:data error:error];
         
     } else {
+        NSLog(@"ATProtoDagCBOR: Unsupported type: %@", NSStringFromClass([value class]));
         if (error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                          code:ATProtoDagCBORErrorCodeInvalidType

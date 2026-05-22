@@ -60,6 +60,7 @@
     self.dispatcher = [PDSCLIDispatcher sharedDispatcher];
     self.context = [[PDSCLIInviteTestContext alloc] init];
     self.context.dataDir = self.tempDir;
+    self.context.dataDirExplicitlySet = YES;
     
     NSString *dbPath = [[self.tempDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];

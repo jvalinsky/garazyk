@@ -138,7 +138,7 @@
     if (dataDir.length > 0) _dataDirectory = dataDir;
 
     // http.port
-    id port = dict[@"http.port"] ?: dict[@"port"];
+    id port = dict[@"http.port"] ?: dict[@"port"] ?: dict[@"http_port"];
     if ([port respondsToSelector:@selector(integerValue)] && [port integerValue] > 0)
         _httpPort = (NSUInteger)[port integerValue];
 
@@ -151,44 +151,44 @@
     if (master.length > 0) _masterSecret = master;
 
     // cursor.checkpoint_interval_ms
-    id ckpt = dict[@"cursor.checkpoint_interval_ms"];
+    id ckpt = dict[@"cursor.checkpoint_interval_ms"] ?: dict[@"cursor_checkpoint_interval_ms"];
     if ([ckpt respondsToSelector:@selector(integerValue)] && [ckpt integerValue] > 0)
         _cursorCheckpointIntervalMs = (NSUInteger)[ckpt integerValue];
 
     // plc.url
-    NSString *plcUrl = dict[@"plc.url"];
+    NSString *plcUrl = dict[@"plc.url"] ?: dict[@"plc_url"];
     if (plcUrl.length > 0) _plcURL = plcUrl;
 
     // backfill.*
-    id bfEnabled = dict[@"backfill.enabled"];
+    id bfEnabled = dict[@"backfill.enabled"] ?: dict[@"backfill_enabled"];
     if (bfEnabled) _backfillEnabled = [bfEnabled boolValue];
 
-    id bfGlobal = dict[@"backfill.global_workers"];
+    id bfGlobal = dict[@"backfill.global_workers"] ?: dict[@"backfill_global_workers"];
     if ([bfGlobal respondsToSelector:@selector(integerValue)] && [bfGlobal integerValue] > 0)
         _backfillGlobalWorkers = (NSUInteger)[bfGlobal integerValue];
 
-    id bfHost = dict[@"backfill.per_host_workers"];
+    id bfHost = dict[@"backfill.per_host_workers"] ?: dict[@"backfill_per_host_workers"];
     if ([bfHost respondsToSelector:@selector(integerValue)] && [bfHost integerValue] > 0)
         _backfillPerHostWorkers = (NSUInteger)[bfHost integerValue];
 
     // partial.*
-    id partialEnabled = dict[@"partial.enabled"];
+    id partialEnabled = dict[@"partial.enabled"] ?: dict[@"partial_enabled"];
     if (partialEnabled) _partialEnabled = [partialEnabled boolValue];
 
-    id seeds = dict[@"partial.seed_dids"];
+    id seeds = dict[@"partial.seed_dids"] ?: dict[@"partial_seed_dids"];
     if ([seeds isKindOfClass:[NSArray class]]) _partialSeedDIDs = seeds;
 
-    id allow = dict[@"partial.allowlist"];
+    id allow = dict[@"partial.allowlist"] ?: dict[@"partial_allowlist"];
     if ([allow isKindOfClass:[NSArray class]]) _partialAllowlist = allow;
 
-    id ttl = dict[@"partial.ttl_hours"];
+    id ttl = dict[@"partial.ttl_hours"] ?: dict[@"partial_ttl_hours"];
     if ([ttl respondsToSelector:@selector(integerValue)] && [ttl integerValue] > 0)
         _partialTTLHours = (NSUInteger)[ttl integerValue];
 
-    id proxyFallback = dict[@"partial.proxy_fallback"];
+    id proxyFallback = dict[@"partial.proxy_fallback"] ?: dict[@"partial_proxy_fallback"];
     if (proxyFallback) _partialProxyFallback = [proxyFallback boolValue];
 
-    NSString *fallbackURL = dict[@"partial.proxy_fallback_url"];
+    NSString *fallbackURL = dict[@"partial.proxy_fallback_url"] ?: dict[@"partial_proxy_fallback_url"];
     if (fallbackURL.length > 0) _partialProxyFallbackURL = fallbackURL;
 
     // Video service
