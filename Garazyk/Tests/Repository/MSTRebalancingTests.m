@@ -113,26 +113,33 @@
     NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
     int count = 20;
 
-    // Generate keys guaranteed to be at depth 0 (single-node MST),
-    // because the current deserializer doesn't reconstruct child subtrees.
-    int attempts = 0;
-    while ((int)expected.count < count && attempts < 500) {
-        attempts++;
+    // Use random TID keys (will produce multi-node MST at various depths)
+    for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
-        if ([MST keyDepth:key] == 0) {
-            CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
-            [tree put:key valueCID:cid];
-            expected[key] = cid;
-        }
+        CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        [tree put:key valueCID:cid];
+        expected[key] = cid;
     }
-    XCTAssertEqual((NSUInteger)count, expected.count,
-        @"Failed to generate %d depth-0 keys in %d attempts", count, attempts);
 
-    // Serialize and deserialize
+    // Serialize root node to CBOR
     NSData *cbor = [tree serializeToCBOR];
     XCTAssertNotNil(cbor);
-    MST *restored = [MST deserializeFromCBOR:cbor];
+
+    // Build a node map (CID → CBOR) from the original tree for the block provider
+    NSMutableDictionary<NSString *, NSData *> *nodeMap = [NSMutableDictionary dictionary];
+    [tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+        nodeMap[cid.stringValue] = data;
+        return YES;
+    } error:nil];
+    XCTAssertEqual((NSUInteger)count, tree.allEntries.count,
+        @"Tree should have %d entries before roundtrip", count);
+
+    // Deserialize with block provider to reconstruct child subtrees
+    MSTBlockProvider provider = ^NSData *(CID *cid) {
+        return nodeMap[cid.stringValue];
+    };
+    MST *restored = [MST deserializeFromCBOR:cbor blockProvider:provider];
     XCTAssertNotNil(restored);
 
     // Verify all entries survive roundtrip
@@ -143,7 +150,7 @@
             @"Roundtrip: Key %@ not found or value mismatch", key);
     }
 
-    GZ_LOG_INFO(@"[MST TEST] Serialize/deserialize roundtrip completed.");
+    GZ_LOG_INFO(@"[MST TEST] Serialize/deserialize roundtrip with block provider completed.");
 }
 
 - (void)testDepthConsistency {
