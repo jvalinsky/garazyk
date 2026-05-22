@@ -457,6 +457,13 @@ file(GLOB_RECURSE ATPROTO_VIDEO_SOURCES
 )
 pds_filter_common_sources(ATPROTO_VIDEO_SOURCES)
 
+# MediaCore framework — reusable AT Protocol media CDN abstractions
+file(GLOB_RECURSE ATPROTO_MEDIA_CORE_SOURCES
+  "Garazyk/Sources/MediaCore/*.m"
+  "Garazyk/Sources/MediaCore/*.c"
+)
+pds_filter_common_sources(ATPROTO_MEDIA_CORE_SOURCES)
+
 set(ATPROTO_ALL_RUNTIME_SOURCES
   ${ATPROTO_CORE_SOURCES}
   ${ATPROTO_STORAGE_SOURCES}
@@ -477,6 +484,7 @@ add_library(ATProtoXRPC STATIC ${ATPROTO_XRPC_SOURCES})
 add_library(ATProtoSync STATIC ${ATPROTO_SYNC_SOURCES})
 add_library(ATProtoPLC STATIC ${ATPROTO_PLC_SOURCES})
 add_library(ATProtoRuntime STATIC ${ATPROTO_RUNTIME_SOURCES})
+add_library(ATProtoMediaCore STATIC ${ATPROTO_MEDIA_CORE_SOURCES})
 add_library(ATProtoVideoService STATIC ${ATPROTO_VIDEO_SOURCES})
 
 set(PDS_MODULE_TARGETS
@@ -489,6 +497,7 @@ set(PDS_MODULE_TARGETS
   ATProtoPLC
   ATProtoRuntime
   ATProtoVideoService
+  ATProtoMediaCore
 )
 
 foreach(target ${PDS_MODULE_TARGETS})
@@ -512,9 +521,11 @@ target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProto
 target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore)
 target_link_libraries(ATProtoPLC PUBLIC ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService)
-target_link_libraries(ATProtoVideoService PUBLIC ATProtoStorage ATProtoCore ATProtoTransport)
+target_link_libraries(ATProtoMediaCore PUBLIC ATProtoStorage ATProtoCore ATProtoTransport)
+target_link_libraries(ATProtoVideoService PUBLIC ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport)
 if(APPLE)
   target_link_libraries(ATProtoVideoService PUBLIC ${COREMEDIA} ${AVFOUNDATION} ${IMAGEIO} ${CORESERVICES})
+  target_link_libraries(ATProtoMediaCore PUBLIC ${FOUNDATION})
 endif()
 
 #=============================
@@ -856,6 +867,7 @@ target_include_directories(jelcz PRIVATE
 if(APPLE)
   target_link_libraries(jelcz PRIVATE
     ATProtoVideoService
+    ATProtoMediaCore
     ATProtoRuntime
     ATProtoStorage
     ATProtoServices
@@ -868,6 +880,7 @@ else()
   target_link_libraries(jelcz PRIVATE
     -Wl,--whole-archive
     ATProtoVideoService
+    ATProtoMediaCore
     ATProtoRuntime
     ATProtoStorage
     ATProtoServices
@@ -1477,6 +1490,7 @@ if(BUILD_TESTS)
     ATProtoPLC
     ATProtoMikrus
     ATProtoAppViewServer
+    ATProtoMediaCore
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
   )
@@ -1506,6 +1520,7 @@ if(BUILD_TESTS)
        ATProtoPLC
        ATProtoMikrus
        ATProtoAppViewServer
+       ATProtoMediaCore
        -Wl,--no-whole-archive
        ${PLATFORM_LIBRARIES}
        ${SECP256K1_LIBRARIES}
