@@ -1,3 +1,8 @@
+---
+name: pulse
+description: Map the current system model as goals, options, and decisions.
+---
+
 # Pulse
 
 **Map the current model as decisions. No history, just now.**
@@ -26,7 +31,7 @@ Read the code. For the thing you're scoping, ask:
 
 Not implementation questions ("which library?") - model questions ("what's the behavior?")
 
-## Step 4: Build the goal → options → decisions
+## Step 4: Build the goal -> options -> decisions
 
 ```bash
 # Create the root goal

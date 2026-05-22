@@ -1,0 +1,2 @@
+./Garazyk/Sources/Core/TID.m:49:            rnd = (uint8_t)arc4random();
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.m:84:        value = arc4random();

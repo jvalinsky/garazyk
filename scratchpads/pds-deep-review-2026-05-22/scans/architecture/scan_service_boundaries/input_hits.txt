@@ -1,0 +1,38 @@
+./Garazyk/Sources/Security/PDSAuthzManager.m:8: @discussion Implements access control checks for repo access, record operations,
+./Garazyk/Sources/Security/PDSAuthzManager.m:70:            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid repo DID format"}];
+./Garazyk/Sources/Security/PDSAuthzManager.m:79:    PDSDatabaseRepo *repo = [self.database getRepoForDid:repoDID error:nil];
+./Garazyk/Sources/Security/PDSAuthzManager.m:80:    if (!repo) {
+./Garazyk/Sources/Security/PDSAuthzManager.m:87:    if (![repo.ownerDid isEqualToString:requestingDID]) {
+./Garazyk/Sources/Security/PDSAuthzManager.m:216:    if (collection && ![collection isEqualToString:@"app.bsky.actor.profile"]) {
+./Garazyk/Sources/Security/PDSInputValidator.m:33:        _didRegex = [NSRegularExpression regularExpressionWithPattern:@"^did:(plc|web|key):[a-zA-Z0-9_-]+$" options:0 error:&error];
+./Garazyk/Sources/Security/PDSInputValidator.m:53:- (BOOL)isValidDID:(NSString *)did {
+./Garazyk/Sources/Security/PDSInputValidator.m:54:    if (!did || did.length == 0) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:55:    if (did.length > 1024) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:56:    if ([self containsNullByte:did]) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:58:    NSRange range = NSMakeRange(0, did.length);
+./Garazyk/Sources/Security/PDSInputValidator.m:59:    return [self.didRegex numberOfMatchesInString:did options:0 range:range] > 0;
+./Garazyk/Sources/Security/PDSInputValidator.m:62:- (BOOL)isValidHandle:(NSString *)handle {
+./Garazyk/Sources/Security/PDSInputValidator.m:63:    if (!handle || handle.length == 0) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:64:    if (handle.length > 253) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:65:    if ([self containsNullByte:handle]) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:66:    if ([handle hasPrefix:@"-"] || [handle hasSuffix:@"-"]) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:67:    if ([handle containsString:@".."]) return NO;
+./Garazyk/Sources/Security/PDSInputValidator.m:69:    NSRange range = NSMakeRange(0, handle.length);
+./Garazyk/Sources/Security/PDSInputValidator.m:70:    return [self.handleRegex numberOfMatchesInString:handle options:0 range:range] > 0;
+./Garazyk/Sources/Security/PDSAuthzManager.h:32:    /** The authenticated actor does not own the target repository. */
+./Garazyk/Sources/Security/PDSAuthzManager.h:66: * @param requestingDID The actor DID making the request.
+./Garazyk/Sources/Security/PDSAuthzManager.h:78: * @param requestingDID The actor DID making the request.
+./Garazyk/Sources/Security/PDSAuthzManager.h:91: * @param requestingDID The actor DID making the request.
+./Garazyk/Sources/Security/PDSAuthzManager.h:104: * @param requestingDID The actor DID making the request.
+./Garazyk/Sources/Security/PDSAuthzManager.h:121: * @param requestingDID The actor DID making the request.
+./Garazyk/Sources/Security/PDSAuthzManager.h:132: * @param actorDID The actor DID making the request.
+./Garazyk/Sources/Security/PDSAuthzManager.h:134: * @return YES when the actor may write the target record.
+./Garazyk/Sources/Security/PDSAuthzManager.h:146: * @param actorDID The actor DID making the request.
+./Garazyk/Sources/Security/PDSAuthzManager.h:148: * @return YES when the actor may read the target data.
+./Garazyk/Sources/Security/PDSInputValidator.h:33: @constant PDSValidationErrorInvalidHandle Invalid handle format.
+./Garazyk/Sources/Security/PDSInputValidator.h:69:/*! Validates a DID (e.g., did:plc:...). */
+./Garazyk/Sources/Security/PDSInputValidator.h:70:- (BOOL)isValidDID:(NSString *)did;
+./Garazyk/Sources/Security/PDSInputValidator.h:72:/*! Validates a handle (e.g., alice.test). */
+./Garazyk/Sources/Security/PDSInputValidator.h:73:- (BOOL)isValidHandle:(NSString *)handle;
+./Garazyk/Sources/Security/PDSInputValidator.h:87:/*! Validates a repo URI. */
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:15:    /** LocalAuthentication failed or the user did not authorize access. */

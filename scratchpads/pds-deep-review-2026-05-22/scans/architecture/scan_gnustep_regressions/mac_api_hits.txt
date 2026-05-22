@@ -1,0 +1,309 @@
+./Garazyk/Sources/App/PDSController.m:45:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/App/PDSController.m:46:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:8:#import <CommonCrypto/CommonHMAC.h>
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:9:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:14:@property (nonatomic, strong) NSURLSession *session;
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:41:        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:44:        _session = [NSURLSession sessionWithConfiguration:config];
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:92:    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:144:    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:201:    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:247:    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
+./Garazyk/Sources/Repository/MST.m:8:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/App/main.m:8: @discussion Launches the NSApplication and sets up the application delegate.
+./Garazyk/Sources/App/main.m:20:        NSApplication *application = [NSApplication sharedApplication];
+./Garazyk/Sources/App/main.m:23:        return NSApplicationMain(argc, argv);
+./Garazyk/Sources/Blob/BlobStorage.m:15:#import <CommonCrypto/CommonCrypto.h>
+./Garazyk/Sources/Services/PDS/PDSRelayService.h:17: * The default implementation uses NSURLSession.
+./Garazyk/Sources/Services/PDS/PDSRelayService.h:39:/*! Transport for sending relay notifications. Defaults to NSURLSession. */
+./Garazyk/Sources/App/AppDelegate.h:20:#define PDS_NS_APPLICATION_DELEGATE <NSApplicationDelegate>
+./Garazyk/Sources/App/AppDelegate.h:32: @discussion On macOS, provides NSApplicationDelegate implementation with
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:46:    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&dataRef);
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:48:    if (status == errSecItemNotFound) {
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:102:    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:132:    OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
+./Garazyk/Sources/Email/PDSKeychainSecretsProvider.m:134:    if (status == errSecItemNotFound || status == errSecParam) {
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.h:15: Uses NSURLSession for HTTP requests with AWS Signature V4 authentication.
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:20:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:885:    // On GNUstep, NSURLSession cannot make outbound HTTPS requests.
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:931:    // On GNUstep, NSURLSession cannot make outbound HTTPS requests.
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:932:    // Fall back to curl if the NSURLSession attempt failed or timed out.
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:935:        GZ_LOG_AUTH_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
+./Garazyk/Sources/Repository/STAR.m:9:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:122:      URLsForDirectory:NSApplicationSupportDirectory
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:12:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:265:        // This would require Security framework SecKeyVerifySignature
+./Garazyk/Sources/CLI/PDSCLIHealthCommand.m:113:    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *taskError) {
+./Garazyk/Sources/Services/PDS/PDSRecordService.m:26:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Core/ATProtoDagCBOR.m:5:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/PLC/PLCAuditor.m:648:// Convert raw r||s (64 bytes) to DER-encoded ECDSA signature for SecKey APIs.
+./Garazyk/Sources/Services/PDS/PDSBlobService.m:16:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:8:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Core/DID.h:91: @discussion Reuses a single NSURLSession and DID document cache across all callers.
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:199:    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+./Garazyk/Sources/PLC/DIDPLCResolver.m:11:@interface DIDPLCResolver () <NSURLSessionTaskDelegate>
+./Garazyk/Sources/PLC/DIDPLCResolver.m:15:@property (nonatomic, strong) NSURLSession *session;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:34:        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+./Garazyk/Sources/PLC/DIDPLCResolver.m:37:        _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
+./Garazyk/Sources/PLC/DIDPLCResolver.m:43:- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:12:static SecKeyAlgorithm _kSecKeyAlgorithmEd25519Signature = nil;
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:23:            SecKeyAlgorithm *algoPtr = dlsym(handle, "kSecKeyAlgorithmEd25519Signature");
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:24:            if (algoPtr) _kSecKeyAlgorithmEd25519Signature = *algoPtr;
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:28:        // SecKeyAlgorithm values are CFString constants with known
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:34:        if (!_kSecKeyAlgorithmEd25519Signature) {
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:35:            _kSecKeyAlgorithmEd25519Signature = CFSTR("ecdsaSignatureMessageEd25519");
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:128:    // to create a SecKey from it. On macOS 12+, ed25519 keys are
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:131:    SecKeyRef secKey = [self createEd25519PublicKeyFromData:keyData];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:183:    SecKeyRef successorSecKey = [self createEd25519PublicKeyFromData:successorKeyData];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:184:    if (!successorSecKey) {
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:206:            CFRelease(successorSecKey);
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:218:            CFRelease(successorSecKey);
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:236:                                    withPublicKey:successorSecKey];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:238:            CFRelease(successorSecKey);
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:251:        CFRelease(successorSecKey);
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:253:        successorSecKey = [self createEd25519PublicKeyFromData:predecessorKeyData];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:254:        if (!successorSecKey) {
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:266:    CFRelease(successorSecKey);
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:341:- (nullable SecKeyRef)createEd25519PublicKeyFromData:(NSData *)keyData {
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:346:    // On macOS 12+, ed25519 is supported via SecKeyCreateWithData
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:353:    SecKeyRef key = SecKeyCreateWithData((__bridge CFDataRef)keyData,
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:365:                   withPublicKey:(SecKeyRef)publicKey {
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:371:    BOOL result = SecKeyVerifySignature(publicKey,
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:372:                                        _kSecKeyAlgorithmEd25519Signature,
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:4:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:20:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:477:        GZ_LOG_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:34:        URLsForDirectory:NSApplicationSupportDirectory
+./Garazyk/Sources/Admin/PDSAdminAuth.m:8:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Core/DID.m:26:@interface DIDResolver () <NSURLSessionTaskDelegate>
+./Garazyk/Sources/Core/DID.m:98:    NSURLSession *_session;
+./Garazyk/Sources/Core/DID.m:123:        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+./Garazyk/Sources/Core/DID.m:126:        _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
+./Garazyk/Sources/Core/DID.m:139:#pragma mark - NSURLSessionTaskDelegate
+./Garazyk/Sources/Core/DID.m:141:- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
+./Garazyk/Sources/Core/DID.m:617:        GZ_LOG_CORE_DEBUG(@"NSURLSession failed, trying curl fallback: %@", urlString ?: @"");
+./Garazyk/Sources/AppView/Services/FeedService.m:7:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:11:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:12:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:13:#import <CommonCrypto/CommonCryptor.h>
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:16:#import "Compat/PlatformShims/CommonCrypto/CommonDigest.h"
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:17:#import "Compat/PlatformShims/CommonCrypto/CommonKeyDerivation.h"
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:10:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Core/CID.m:6:#import <CommonCrypto/CommonCrypto.h>
+./Garazyk/Sources/Network/XrpcRepoPack.m:37:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/AppView/Services/ContactService.m:15:#import <CommonCrypto/CommonCrypto.h>
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:13:#import <CommonCrypto/CommonCrypto.h>
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:16:#import <CommonCrypto/CommonCrypto.h>
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:17:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:18:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Network/XrpcIdentityPack.m:136:                [[[NSURLSession sharedSession] dataTaskWithRequest:listReq
+./Garazyk/Sources/Network/XrpcIdentityPack.m:628:        [[[NSURLSession sharedSession] dataTaskWithRequest:submitRequest completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+./Garazyk/Sources/Video/VideoRemoteBlobUploader.m:35:    [[[NSURLSession sharedSession] dataTaskWithRequest:request
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:88:    // Synchronous fetch via NSURLSession (we're already on a background queue)
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:93:    NSURLSession *session = [NSURLSession sharedSession];
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:94:    NSURLSessionDataTask *task = [session dataTaskWithRequest:req
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:190:    [[[NSURLSession sharedSession] dataTaskWithRequest:req
+./Garazyk/Sources/Network/WebSocketUpgradeHandler.m:14:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:125:// On GNUstep, NSURLSession (libcurl backend) does not properly close
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:127:// leaving them in CLOSE-WAIT indefinitely. We bypass NSURLSession
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:444:#else // Apple platforms — use NSURLSession
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:446:@interface ATProtoSafeHTTPClient () <NSURLSessionTaskDelegate>
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:452:@property (nonatomic, strong) NSURLSession *sharedSession;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:475:        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:484:        _sharedSession = [NSURLSession sessionWithConfiguration:config
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:588:    __block NSURLSessionDataTask *task =
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:592:        NSURLSessionDataTask *capturedTask = task;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:689:- (void)URLSession:(NSURLSession *)session
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:690:              task:(NSURLSessionTask *)task
+./Garazyk/Sources/Network/XrpcProxyHandler.m:147:    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:proxyRequest completionHandler:^(NSData *data, NSURLResponse *urlResponse, NSError *error) {
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:477:    [[[NSURLSession sharedSession] dataTaskWithRequest:request
+./Garazyk/Sources/Network/SSLPinningManager.m:14:#import <CommonCrypto/CommonCrypto.h>
+./Garazyk/Sources/Network/SSLPinningManager.m:70:- (NSURLSession *)createSessionWithConfiguration:(NSURLSessionConfiguration *)configuration {
+./Garazyk/Sources/Network/SSLPinningManager.m:71:    return [NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:nil];
+./Garazyk/Sources/Network/SSLPinningManager.m:81:        SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
+./Garazyk/Sources/Network/SSLPinningManager.m:90:- (BOOL)validateServerTrust:(SecTrustRef)serverTrust forDomain:(NSString *)domain {
+./Garazyk/Sources/Network/SSLPinningManager.m:101:    CFIndex certificateCount = SecTrustGetCertificateCount(serverTrust);
+./Garazyk/Sources/Network/SSLPinningManager.m:105:    SecCertificateRef leafCertificate = SecTrustGetCertificateAtIndex(serverTrust, 0);
+./Garazyk/Sources/Network/SSLPinningManager.m:109:    SecKeyRef publicKey = [self publicKeyFromCertificate:leafCertificate];
+./Garazyk/Sources/Network/SSLPinningManager.m:132:- (SecKeyRef)publicKeyFromCertificate:(SecCertificateRef)certificate {
+./Garazyk/Sources/Network/SSLPinningManager.m:136:    SecTrustRef trust = NULL;
+./Garazyk/Sources/Network/SSLPinningManager.m:138:    OSStatus status = SecTrustCreateWithCertificates(certificate, policy, &trust);
+./Garazyk/Sources/Network/SSLPinningManager.m:146:    SecTrustResultType trustResult;
+./Garazyk/Sources/Network/SSLPinningManager.m:147:    status = SecTrustEvaluate(trust, &trustResult);
+./Garazyk/Sources/Network/SSLPinningManager.m:155:    SecKeyRef publicKey = SecTrustCopyKey(trust);
+./Garazyk/Sources/Network/SSLPinningManager.m:163:- (NSData *)dataFromPublicKey:(SecKeyRef)publicKey {
+./Garazyk/Sources/Network/SSLPinningManager.m:167:    CFDataRef keyData = SecKeyCopyExternalRepresentation(publicKey, &error);
+./Garazyk/Sources/Network/SSLPinningManager.m:176:#pragma mark - NSURLSessionDelegate
+./Garazyk/Sources/Network/SSLPinningManager.m:178:- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler {
+./Garazyk/Sources/Network/SSLPinningManager.m:186:            completionHandler(NSURLSessionAuthChallengeUseCredential, credential);
+./Garazyk/Sources/Network/SSLPinningManager.m:189:            completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);
+./Garazyk/Sources/Network/SSLPinningManager.m:193:        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+./Garazyk/Sources/Network/XrpcServerPack.m:38:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Network/SSLPinningManager.h:29:@interface SSLPinningManager : NSObject <NSURLSessionDelegate>
+./Garazyk/Sources/Network/SSLPinningManager.h:89:- (NSURLSession *)createSessionWithConfiguration:(NSURLSessionConfiguration *)configuration;
+./Garazyk/Sources/Auth/OAuth2.m:41:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/OAuth2.m:267:+ (nullable SecKeyRef)createPrivateKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/OAuth2.m:324:        SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+./Garazyk/Sources/Auth/OAuth2.m:353:+ (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/OAuth2.m:396:    SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:22:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:35:+ (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:36:                                      publicKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:70:    // We don't create SecKeyRef for secp256k1 keys since Apple Security doesn't support them
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:155:- (nullable NSData *)exportPublicKeyData:(SecKeyRef)key {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:157:    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &error));
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:184:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:201:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:219:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:236:        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:321:    SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)parameters, &cfError);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:335:    SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:510:    // Select the correct SecKeyAlgorithm based on the key pair's algorithm
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:511:    SecKeyAlgorithm alg = self.signingAlgorithm;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:513:        alg = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:515:        alg = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:519:    NSData *signature = CFBridgingRelease(SecKeyCreateSignature(keyPair.privateKey,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:578:               withKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:580:    BOOL isValid = SecKeyVerifySignature(publicKey,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:639:            SecKeyRef privateKey = NULL;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:640:            SecKeyRef publicKey = NULL;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:651:                OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&privateKey);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:670:                    continue;  // Skip SecKeyRef creation for ES256K keys
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:679:                privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:693:            publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:745:                privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:759:            publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &pubExportError));
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:47:/** Security.framework private key reference, when backed by SecKey. */
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:48:@property (nonatomic, assign, nullable) SecKeyRef privateKey;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:49:/** Security.framework public key reference, when backed by SecKey. */
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:50:@property (nonatomic, assign, nullable) SecKeyRef publicKey;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:63:+ (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:64:                                      publicKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:85:/** Security.framework signing algorithm used for SecKey-backed signatures. */
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:86:@property (nonatomic, assign) SecKeyAlgorithm signingAlgorithm;
+./Garazyk/Sources/Auth/PDSAppleKeyManager.h:118:               withKey:(SecKeyRef)publicKey
+./Garazyk/Sources/Network/XrpcAdminPack.m:31:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Auth/CryptoUtils.m:19:#import <CommonCrypto/CommonHMAC.h>
+./Garazyk/Sources/Auth/CryptoUtils.m:20:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/CryptoUtils.m:21:#import <CommonCrypto/CommonCryptor.h>
+./Garazyk/Sources/Auth/CryptoUtils.m:22:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:61:#pragma mark - SecKeyRef Operations (macOS only, deprecated)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:73:/*! Creates a SecKeyRef public key from an EC P-256 JWK. Caller must CFRelease. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:74:+ (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:77:/*! Creates a SecKeyRef private key from an EC P-256 JWK. Caller must CFRelease. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:78:+ (nullable SecKeyRef)createPrivateKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:81:/*! Returns a public JWK dictionary representation of a SecKeyRef. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:82:+ (nullable NSDictionary *)publicJWKFromSecKey:(SecKeyRef)key error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:85:/*! Returns a JWK dictionary representation of a SecKeyRef. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:86:+ (nullable NSDictionary *)jwkFromSecKey:(SecKeyRef)key error:(NSError **)error
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:89:/*! Computes RFC 7638 thumbprint directly from a SecKeyRef. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.h:90:+ (nullable NSString *)thumbprintForSecKey:(SecKeyRef)key error:(NSError **)error
+./Garazyk/Sources/Auth/Secp256k1.m:5:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/DPoPUtil.h:11: NOTE: This class uses SecKeyRef which is only available on macOS.
+./Garazyk/Sources/Auth/DPoPUtil.h:24:// GNUstep: Use compat SecKey header for SecKeyRef definition
+./Garazyk/Sources/Auth/DPoPUtil.h:25:#import "Security/SecKey.h"
+./Garazyk/Sources/Auth/DPoPUtil.h:93: @param privateKey SecKeyRef private key (macOS only)
+./Garazyk/Sources/Auth/DPoPUtil.h:105:                                         key:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/DPoPUtil.h:112: @param publicKey Optional SecKeyRef to verify against (macOS only)
+./Garazyk/Sources/Auth/DPoPUtil.h:125:      withPublicKey:(nullable SecKeyRef)publicKey
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:18:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.h:58:    Used during verification because Apple's SecKeyVerifySignature may only
+./Garazyk/Sources/Auth/Crypto/AuthCryptoECDSA.h:59:    accept the original (high-S) form produced by SecKeyCreateSignature.
+./Garazyk/Sources/Auth/JWT.m:19:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:18:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:35:#pragma mark - SecKey Adapter Class (macOS only)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:40: * Adapter class wrapping SecKeyRef to conform to PDSKeyProtocol.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:43:@interface PDSSecKeyAdapter : NSObject <PDSPrivateKeyProtocol, PDSPublicKeyProtocol>
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:44:@property (nonatomic, assign) SecKeyRef secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:47:- (instancetype)initWithSecKey:(SecKeyRef)secKey isPrivateKey:(BOOL)isPrivateKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:50:@implementation PDSSecKeyAdapter
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:52:- (instancetype)initWithSecKey:(SecKeyRef)secKey isPrivateKey:(BOOL)isPrivateKey {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:71:    PDSSecKeyAdapter *copy = [[PDSSecKeyAdapter alloc] initWithSecKey:_secKey isPrivateKey:_isPrivateKey];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:83:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:87:    NSData *data = CFBridgingRelease(SecKeyCopyExternalRepresentation(pubKey, &error));
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:146:    CFDataRef signature = SecKeyCreateSignature(_secKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:147:                                                 kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:237:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:248:    // Apple's SecKeyVerifySignature may have produced a high-S signature that was
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:252:    BOOL valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:253:                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:266:                valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:267:                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:335:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:346:    // Note: kSecKeyAlgorithmECDSASignatureDigestX962SHA256 expects the digest (not the message)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:347:    BOOL valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:348:                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:355:    // Apple's SecKeyVerifySignature may only accept the original form
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:362:                valid = SecKeyVerifySignature(pubKey,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:363:                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:388:    SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:391:    PDSSecKeyAdapter *adapter = [[PDSSecKeyAdapter alloc] initWithSecKey:pubKey isPrivateKey:NO];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:400:    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(_secKey, &error));
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:518:    SecKeyRef secKey = [self createPublicKeyFromJWK:jwk error:&secError];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:525:    PDSSecKeyAdapter *adapter = [[PDSSecKeyAdapter alloc] initWithSecKey:secKey isPrivateKey:NO];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:550:    SecKeyRef secKey = [self createPrivateKeyFromJWK:jwk error:&secError];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:557:    PDSSecKeyAdapter *adapter = [[PDSSecKeyAdapter alloc] initWithSecKey:secKey isPrivateKey:YES];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:607:#pragma mark - SecKeyRef Operations (macOS only)
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:611:+ (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:657:    SecKeyRef publicKey = SecKeyCreateWithData((__bridge CFDataRef)publicKeyData,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:674:+ (nullable SecKeyRef)createPrivateKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:742:    SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:759:+ (nullable NSDictionary *)publicJWKFromSecKey:(SecKeyRef)key error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:760:    NSDictionary *jwk = [self jwkFromSecKey:key error:error];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:765:+ (nullable NSDictionary *)jwkFromSecKey:(SecKeyRef)key error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:767:    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &cfError));
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:783:        SecKeyRef publicKey = SecKeyCopyPublicKey(key);
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:829:            SecKeyRef publicKey = SecKeyCopyPublicKey(key);
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:831:                NSDictionary *publicJWK = [self jwkFromSecKey:publicKey error:error];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:844:+ (nullable NSString *)thumbprintForSecKey:(SecKeyRef)key error:(NSError **)error {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoJWK.m:845:    NSDictionary *jwk = [self jwkFromSecKey:key error:error];
+./Garazyk/Sources/Auth/PDSKeyProtocol.h:8://  macOS: Uses Apple Security framework (SecKey)
+./Garazyk/Sources/Auth/PKCEUtil.m:5:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/OAuth2Handler.m:16:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/OAuth2Handler.m:959:    NSURLSessionConfiguration *config =
+./Garazyk/Sources/Auth/OAuth2Handler.m:960:        [NSURLSessionConfiguration defaultSessionConfiguration];
+./Garazyk/Sources/Auth/OAuth2Handler.m:962:    NSURLSession *session = [NSURLSession sessionWithConfiguration:config];
+./Garazyk/Sources/Auth/OAuth2Handler.m:964:    NSURLSessionDataTask *task = [session
+./Garazyk/Sources/Auth/OAuth2Handler.m:1286:  SecKeyRef publicKey = [self createECPublicKeyFromX:xData Y:yData];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1323:      SecKeyVerifySignature(publicKey, kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+./Garazyk/Sources/Auth/OAuth2Handler.m:1345:- (SecKeyRef)createECPublicKeyFromX:(NSData *)xData Y:(NSData *)yData {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1359:  SecKeyRef publicKey = SecKeyCreateWithData(
+./Garazyk/Sources/Auth/PDSOpenSSLKeyManager.m:10:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/DPoPUtil.m:7://  DPoP utility wrapper. This file uses SecKeyRef which is only available on macOS.
+./Garazyk/Sources/Auth/DPoPUtil.m:22:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/DPoPUtil.m:97:                                         key:(SecKeyRef)privateKey
+./Garazyk/Sources/Auth/DPoPUtil.m:109:    // Use AuthCryptoJWK to get the JWK representation from SecKeyRef
+./Garazyk/Sources/Auth/DPoPUtil.m:110:    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:privateKey error:error];
+./Garazyk/Sources/Auth/DPoPUtil.m:116:    // and handles SecKey creation internally from it.
+./Garazyk/Sources/Auth/DPoPUtil.m:118:    // To maintain DPoPUtil's API (which takes SecKeyRef), we'll do a slightly different path
+./Garazyk/Sources/Auth/DPoPUtil.m:148:    NSData *derSignature = CFBridgingRelease(SecKeyCreateSignature(privateKey,
+./Garazyk/Sources/Auth/DPoPUtil.m:149:                                                                 kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+./Garazyk/Sources/Auth/DPoPUtil.m:169:     withPublicKey:(nullable SecKeyRef)publicKey
+./Garazyk/Sources/Auth/DPoPUtil.m:204:        NSString *expectedThumbprint = [AuthCryptoJWK thumbprintForSecKey:publicKey error:error];
+./Garazyk/Sources/Auth/DPoPUtil.m:223:// DPoPUtil uses SecKeyRef from compat headers on GNUstep.
+./Garazyk/Sources/Auth/DPoPUtil.m:227:#import "Security/SecKey.h"  // Compat SecKeyRef definition
+./Garazyk/Sources/Auth/DPoPUtil.m:244:+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(SecKeyRef)privateKey error:(NSError **)error {
+./Garazyk/Sources/Auth/DPoPUtil.m:253:+ (BOOL)verifyDPoP:(NSString *)dpopJwt withPublicKey:(nullable SecKeyRef)publicKey method:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:10:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:87:    SecItemDelete((__bridge CFDictionaryRef)deleteQuery);
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:93:    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)addQuery, NULL);
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:203:    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
+./Garazyk/Sources/Auth/PDSAppleActorKeyManager.m:221:    if (status == errSecItemNotFound) {
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:4:#import <Security/SecItem.h>
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:6:#import <CommonCrypto/CommonKeyDerivation.h>
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:77:    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:80:        SecItemDelete((__bridge CFDictionaryRef)query);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:81:        status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:108:    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:128:    OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:130:    if (status != errSecSuccess && status != errSecItemNotFound) {
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:144:    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, NULL);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:185:        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)oldQuery, &result);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:194:        SecItemDelete((__bridge CFDictionaryRef)oldQuery);
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:281:        case errSecItemNotFound:
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:8:#import <CommonCrypto/CommonCryptor.h>
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:9:#import <CommonCrypto/CommonDigest.h>
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:10:#import <CommonCrypto/CommonHMAC.h>
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:13:#import "CommonCrypto/CommonCryptor.h"
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:14:#import "CommonCrypto/CommonDigest.h"
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:15:#import "CommonCrypto/CommonHMAC.h"

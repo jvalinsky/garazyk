@@ -1,0 +1,43 @@
+./Garazyk/Sources/Database/Schema.m:131:    @"BEGIN "
+./Garazyk/Sources/Database/Schema.m:143:    @"BEGIN "
+./Garazyk/Sources/Database/Schema.m:154:    @"BEGIN "
+./Garazyk/Sources/Database/Schema.m:165:    @"BEGIN "
+./Garazyk/Sources/Database/Schema.m:175:    @"BEGIN "
+./Garazyk/Sources/Database/Schema.m:186:    @"BEGIN "
+./Garazyk/Sources/Database/PDSDatabase+Transactions.h:17: @method beginTransactionWithError:
+./Garazyk/Sources/Database/PDSDatabase+Transactions.h:32:- (BOOL)beginTransactionWithError:(NSError **)error;
+./Garazyk/Sources/Database/PDSDatabase+Transactions.h:39: @discussion All operations since the last beginTransaction are made permanent.
+./Garazyk/Sources/Database/PDSDatabase+Transactions.h:51: @discussion All operations since the last beginTransaction are discarded.
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:13:    if (![self beginTransactionWithError:error]) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:33:- (BOOL)beginTransactionWithError:(NSError **)error {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:46:        if (sqlite3_exec(self.db, "BEGIN TRANSACTION", NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:69:        if (sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:92:        if (sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:117:        NSString *beginSQL = @"BEGIN TRANSACTION";
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:136:                    NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:141:                    sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:147:            NSString *finishSQL = useSavepoint ? [NSString stringWithFormat:@"RELEASE %@", savepointName] : @"COMMIT";
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:153:                    NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:157:                    sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:164:                NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:169:                sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:122:        int rc = sqlite3_exec(self.db, "BEGIN", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:137:            sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:145:            rc = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:152:                sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:89:    int rc = sqlite3_exec(db, "BEGIN IMMEDIATE", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:103:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:113:    rc = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:119:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:941:    int result = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:966:                result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:969:                    sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:976:                sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:982:            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:987:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1009:    int result = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1032:                result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1035:                    sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1042:                sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1048:            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1053:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);

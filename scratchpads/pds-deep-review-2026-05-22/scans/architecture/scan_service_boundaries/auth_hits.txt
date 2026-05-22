@@ -1,0 +1,12 @@
+./Garazyk/Sources/Security/PDSAuthzManager.m:19:NSErrorDomain const PDSAuthzErrorDomain = @"com.atproto.pds.authz";
+./Garazyk/Sources/Security/PDSAuthzManager.m:155:    // Admin access is granted only from JWT scope validation in XrpcMethodRegistry.
+./Garazyk/Sources/Security/PDSAuthzManager.m:157:    // through the JWT scope claim ("admin") to prevent privilege escalation.
+./Garazyk/Sources/Security/PDSAuthzManager.m:178:    // Account exists. Authorization is verified through JWT scope validation.
+./Garazyk/Sources/Security/PDSAuthzManager.m:179:    // Caller must check JWT "admin" scope before calling this method.
+./Garazyk/Sources/Security/PDSAuthzManager.m:184:                                 userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (verify JWT 'admin' scope)"}];
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:15:    /** LocalAuthentication failed or the user did not authorize access. */
+./Garazyk/Sources/Security/PDSAuthzManager.h:36:    /** The caller lacks the scope required by the operation. */
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:154:        if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil]) {
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:159:    if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:nil]) {
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:209:        return [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
+./Garazyk/Sources/Security/PDSBiometricKeychain.m:212:    return [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:&error];

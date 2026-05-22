@@ -44,6 +44,9 @@ typedef NS_ENUM(NSInteger, ATProtoServiceConfigError) {
     ATProtoServiceConfigErrorMissingValue = 3
 };
 
+/*! @abstract Returns YES if the application is running under XCTest. */
+extern BOOL ATProtoServiceConfigRunningUnderTests(void);
+
 /*!
  @class ATProtoServiceConfiguration
 

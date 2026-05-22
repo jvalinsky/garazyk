@@ -1,0 +1,17 @@
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:47:    if (key.length != kCCKeySizeAES256) {
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:72:                                     kCCKeySizeAES256,
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:101:    if (key.length != kCCKeySizeAES256) {
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:147:                                     kCCKeySizeAES256,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:47:    kCCKeySizeAES128 = 16,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:48:    kCCKeySizeAES192 = 24,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:49:    kCCKeySizeAES256 = 32,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:50:    kCCKeySizeDES = 8,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:51:    kCCKeySize3DES = 24,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:52:    kCCKeySizeMinCAST = 5,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:53:    kCCKeySizeMaxCAST = 16,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:54:    kCCKeySizeMinRC4 = 1,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:55:    kCCKeySizeMaxRC4 = 512,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:56:    kCCKeySizeMinRC2 = 1,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:57:    kCCKeySizeMaxRC2 = 128,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:58:    kCCKeySizeMinBlowfish = 8,
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonCryptor.h:59:    kCCKeySizeMaxBlowfish = 56

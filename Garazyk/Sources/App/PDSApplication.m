@@ -165,7 +165,13 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     if (self) {
         _configuration = configuration ?: [ATProtoServiceConfiguration sharedConfiguration];
         _dataDirectory = [dataDirectory copy] ?: (_configuration.dataDirectory ?: [ATProtoServiceConfiguration defaultDataDirectory]);
-        _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
+        
+        if (ATProtoServiceConfigRunningUnderTests()) {
+            _httpPort = 0; // Use ephemeral port for tests to avoid contention
+        } else {
+            _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
+        }
+        
         _rateLimiter = [RateLimiter sharedLimiter];
         _running = NO;
 

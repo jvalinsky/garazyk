@@ -1,5 +1,5 @@
 ---
-name: Expand Topic Markdown
+name: expand-md-topic
 description: Takes a markdown file outlining a topic and expands it fully into a proper, comprehensive discussion.
 ---
 

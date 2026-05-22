@@ -1,0 +1,62 @@
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.m:92:        // Telegram Gateway uses Bearer token authentication.
+./Garazyk/Sources/PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h:60:    requests with Bearer token authentication. Thread-safe: the HTTP
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:35:    [request setValue:[NSString stringWithFormat:@"Bearer %@", self.apiKey] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:62:    if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:346:    [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m:381:    if (![authHeader hasPrefix:@"Bearer "]) return nil;
+./Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m:107:            if (workerToken.length == 0 && authHeader.length > 7 && [[authHeader substringToIndex:7] isEqualToString:@"Bearer "]) {
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:226:    if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:227:        token = [authHeader substringFromIndex:@"Bearer ".length];
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:268:- (NSString *)createCSRFNonceCookie:(BOOL)secure {
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:382:        [request setValue:[NSString stringWithFormat:@"Bearer %@", self.configuration.plcAdminToken] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1611:        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1710:        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1803:        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m:131:    if (![authHeader hasPrefix:@"Bearer "]) return nil;
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:79: @abstract Extract the Bearer token from the Authorization header.
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:83: @return The Bearer token string, or nil if not present.
+./Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.h:98: @param token         The Bearer token string.
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:208:        [response setHeader:csrfCookie forKey:@"Set-Cookie"];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:230:        [response setHeader:cookie forKey:@"Set-Cookie"];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:238:        [response setHeader:@"ui_admin_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" forKey:@"Set-Cookie"];
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:412:            [upstreamRequest setValue:[NSString stringWithFormat:@"Bearer %@",
+./Garazyk/Sources/AdminUIServer/UIAuthManager.h:47:/// Build a Set-Cookie header value for the session token with security attributes.
+./Garazyk/Sources/AdminUIServer/UIAuthManager.h:62:/// Generate a new CSRF nonce and return the Set-Cookie header value.
+./Garazyk/Sources/AdminUIServer/UIAuthManager.h:68:- (NSString *)createCSRFNonceCookie:(BOOL)secure;
+./Garazyk/Sources/AdminUIServer/UIAuthManager.h:70:/// Generate a new CSRF nonce and return both the raw value and the Set-Cookie header.
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:53:    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", apiKey];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:41:    Provides POST and GET methods with Bearer token authentication,
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:51:/*! The authorization header value (e.g. "Bearer <api_key>"). */
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:64: @param authHeader The authorization header value (e.g. "Bearer <api_key>").
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:71: @abstract Convenience initializer using Bearer token authentication.
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:73: @param apiKey The API key (will be formatted as "Bearer <apiKey>").
+./Garazyk/Sources/Network/XrpcProxyHandler.m:139:    [proxyRequest setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:203:    // Parse Bearer or DPoP token
+./Garazyk/Sources/Network/XrpcAuthHelper.m:206:    if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:209:            isDPoP = YES; // Some clients send Bearer but attach a DPoP header
+./Garazyk/Sources/Network/XrpcAuthHelper.m:340:        GZ_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:664:            if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:665:                token = [authHeader substringFromIndex:@"Bearer ".length];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:757:            if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:758:                token = [authHeader substringFromIndex:@"Bearer ".length];
+./Garazyk/Sources/Admin/PDSAdminAuth.m:294:    if ([authorization isKindOfClass:[NSString class]] && [authorization hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Admin/PDSAdminAuth.m:295:        token = [authorization substringFromIndex:@"Bearer ".length];
+./Garazyk/Sources/Network/XrpcHandler.m:205:    // the rate limiter is enabled and the request carries a Bearer token.
+./Garazyk/Sources/Network/XrpcHandler.m:1075:    // Lightweight DID extraction from Bearer token — decodes the JWT payload
+./Garazyk/Sources/Network/XrpcHandler.m:1081:    if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Video/VideoRemoteBlobUploader.m:28:        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:743:    // Requires Authorization: Bearer <admin_token>
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:747:    if (!authHeader || ![authHeader hasPrefix:@"Bearer "])
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:757:    NSString *token = [authHeader substringFromIndex:7]; // Skip "Bearer "
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:63:    if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Admin/AdminMiddleware.m:112:    if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Network/XrpcAuthHelper.h:46: * @param authHeader Authorization header value (Bearer or DPoP).
+./Garazyk/Sources/Network/XrpcAuthHelper.h:59: * @param authHeader Authorization header value (Bearer or DPoP).
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:462:    if (![authHeader hasPrefix:@"Bearer "])
+./Garazyk/Sources/Video/VideoXrpcPack.m:112:        [[authHeader substringToIndex:7] isEqualToString:@"Bearer "]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:232:    if (!authHeader || ![authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:616:        if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:127:    return [self verifyAuthHeader:[NSString stringWithFormat:@"Bearer %@", token]
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:151:    if ([authHeader hasPrefix:@"Bearer "]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1978:               forKey:@"Set-Cookie"];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:98: It supports both Bearer tokens and DPoP-bound access tokens.

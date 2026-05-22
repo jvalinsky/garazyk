@@ -227,11 +227,19 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                                                   error:&exportError];
       }
       if (!producer) {
-        response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{
-          @"error" : @"RepoNotFound",
-          @"message" : exportError.localizedDescription ?: @"Repository not found"
-        }];
+        if (exportError && exportError.code == 413) {
+          response.statusCode = HttpStatusPayloadTooLarge;
+          [response setJsonBody:@{
+            @"error" : @"PayloadTooLarge",
+            @"message" : exportError.localizedDescription ?: @"Repository export exceeds safety cap"
+          }];
+        } else {
+          response.statusCode = HttpStatusNotFound;
+          [response setJsonBody:@{
+            @"error" : @"RepoNotFound",
+            @"message" : exportError.localizedDescription ?: @"Repository not found"
+          }];
+        }
         return;
       }
 
@@ -248,11 +256,19 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                                since:sinceRev
                                                error:&exportError];
     if (!producer) {
-      response.statusCode = HttpStatusNotFound;
-      [response setJsonBody:@{
-        @"error" : @"RepoNotFound",
-        @"message" : exportError.localizedDescription ?: @"Repository not found"
-      }];
+      if (exportError && exportError.code == 413) {
+        response.statusCode = HttpStatusPayloadTooLarge;
+        [response setJsonBody:@{
+          @"error" : @"PayloadTooLarge",
+          @"message" : exportError.localizedDescription ?: @"Repository export exceeds safety cap"
+        }];
+      } else {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+          @"error" : @"RepoNotFound",
+          @"message" : exportError.localizedDescription ?: @"Repository not found"
+        }];
+      }
       return;
     }
 
@@ -856,6 +872,10 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
+    if (!validateSyncDIDParam(did, response)) {
+      return;
+    }
+
     NSString *uri =
         [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSError *recordError = nil;
@@ -1045,6 +1065,10 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
         @"error" : @"InvalidRequest",
         @"message" : @"Missing did parameter"
       }];
+      return;
+    }
+
+    if (!validateSyncDIDParam(did, response)) {
       return;
     }
 

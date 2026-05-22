@@ -639,12 +639,22 @@
         return [newNode trim];
     }
     return node;
-}
-
-- (MSTNode *)merge:(MSTNode *)left and:(MSTNode *)right {
+}- (MSTNode *)merge:(MSTNode *)left and:(MSTNode *)right {
     if (!left) return right;
     if (!right) return left;
-    if (left.level != right.level) return nil;
+
+    // Handle level mismatch by wrapping the lower-level subtree in
+    // passthrough nodes (nodes with only a left pointer, no entries)
+    // until it matches the higher level. This preserves all entries.
+    if (left.level < right.level) {
+        while (left.level < right.level) {
+            left = [[MSTNode alloc] initWithLevel:left.level + 1 left:left entries:@[]];
+        }
+    } else if (right.level < left.level) {
+        while (right.level < left.level) {
+            right = [[MSTNode alloc] initWithLevel:right.level + 1 left:right entries:@[]];
+        }
+    }
     
     MSTNodeEntry *lastInLeft = left.internalEntries.lastObject;
     if (lastInLeft.internalTree && right.internalLeft) {

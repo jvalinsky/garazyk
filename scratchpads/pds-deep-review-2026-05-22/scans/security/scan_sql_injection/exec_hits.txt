@@ -1,0 +1,818 @@
+./Garazyk/Sources/Services/Core/PDSAdminService.m:323:    BOOL inserted = [_database executeParameterizedUpdate:@"INSERT INTO invite_codes (id, code, account_did, created_at, max_uses, uses, disabled) VALUES (?, ?, ?, ?, ?, 0, 0)"
+./Garazyk/Sources/Services/Core/PDSAdminService.m:344:    NSArray<NSDictionary *> *rows = [_database executeParameterizedQuery:@"SELECT code FROM invite_codes WHERE code = ? LIMIT 1"
+./Garazyk/Sources/Services/Core/PDSAdminService.m:359:    return [_database executeParameterizedUpdate:@"UPDATE invite_codes SET disabled = 1 WHERE code = ?"
+./Garazyk/Sources/Services/Core/PDSAdminService.m:399:        if (![_database executeParameterizedUpdate:codeSQL params:validatedCodes error:error]) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:407:        if (![_database executeParameterizedUpdate:accountSQL params:resolvedDids error:error]) {
+./Garazyk/Sources/Services/Core/PDSAdminService.m:610:        NSArray<NSDictionary *> *rows = [_database executeParameterizedQuery:
+./Garazyk/Sources/Services/Core/PDSAdminService.m:644:    return [_database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:653:    NSArray *accounts = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM accounts" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:659:    NSArray *repos = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM repos" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:665:    NSArray *records = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM records" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:671:    NSArray *blobs = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count, COALESCE(SUM(size), 0) as total_size FROM blobs" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:678:    NSArray *blocks = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM blocks" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:684:    NSArray *invites = [_database executeParameterizedQuery:@"SELECT COUNT(*) as total, SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active FROM invite_codes" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:691:    NSArray *reports = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM reports WHERE status = 'open'" params:@[] error:error];
+./Garazyk/Sources/Services/Core/PDSAdminService.m:698:    NSArray *recentSignups = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM accounts WHERE created_at >= ?" params:@[sevenDaysAgo] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:48:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/Ozone/Services/ModerationService.m:64:    [(PDSDatabase *)self.database executeParameterizedUpdate:auditQuery
+./Garazyk/Sources/Ozone/Services/ModerationService.m:85:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Ozone/Services/ModerationService.m:110:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql
+./Garazyk/Sources/Ozone/Services/ModerationService.m:133:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Ozone/Services/ModerationService.m:188:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Ozone/Services/ModerationService.m:223:    if (![(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[did, role, now] error:error]) {
+./Garazyk/Sources/Ozone/Services/ModerationService.m:234:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[role, memberId] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:241:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[memberId] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:246:    return [(PDSDatabase *)self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:260:    if (![(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[id, name, desc, adminDid, now, now] error:error]) {
+./Garazyk/Sources/Ozone/Services/ModerationService.m:274:        if (![(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[name, now, setId] error:error]) return NO;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:279:        [(PDSDatabase *)self.database executeParameterizedUpdate:del params:@[setId] error:nil];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:291:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[setId] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:297:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql params:@[setId] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:302:    NSArray *mRows = [(PDSDatabase *)self.database executeParameterizedQuery:mSql params:@[setId] error:nil];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:312:    return [(PDSDatabase *)self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:322:        [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[setId, did, now] error:nil];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:333:        [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[setId, did] error:nil];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:354:    NSArray *rows = [self.database executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:397:    NSArray *rows = [self.database executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:428:    if (![(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[id, name, text, adminDid, now, now] error:error]) {
+./Garazyk/Sources/Ozone/Services/ModerationService.m:469:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:476:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[templateId] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:481:    return [(PDSDatabase *)self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:542:    NSString *executeAt = scheduling[@"executeAt"] ?: @"";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:543:    NSString *executeAfter = scheduling[@"executeAfter"] ?: @"";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:544:    NSString *executeUntil = scheduling[@"executeUntil"] ?: @"";
+./Garazyk/Sources/Ozone/Services/ModerationService.m:550:    NSTimeInterval executeAtInterval = executeAt.length > 0 ? [[formatter dateFromString:executeAt] timeIntervalSince1970] : 0;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:551:    NSTimeInterval executeAfterInterval = executeAfter.length > 0 ? [[formatter dateFromString:executeAfter] timeIntervalSince1970] : 0;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:552:    NSTimeInterval executeUntilInterval = executeUntil.length > 0 ? [[formatter dateFromString:executeUntil] timeIntervalSince1970] : 0;
+./Garazyk/Sources/Ozone/Services/ModerationService.m:564:        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[actionId, subjectDid, actionType, comment, duration, ackSubjects, policiesJson, severity, strikeCount, @(strikeExpiresInterval), emailContent, emailSubject, @(executeAtInterval), @(executeAfterInterval), @(executeUntilInterval), adminDid, @(now), @"pending", modTool ?: [NSNull null]] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:579:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:593:        action[@"execute_at"] = @([row[@"execute_at"] doubleValue]);
+./Garazyk/Sources/Ozone/Services/ModerationService.m:604:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[actionId] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:616:        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[subjectDid] error:nil];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:638:        NSArray *statusRows = [self.database executeParameterizedQuery:statusSql params:@[subject] error:nil];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:680:    BOOL success = [self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/Ozone/Services/ModerationService.m:716:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:730:        return [self.database executeParameterizedUpdate:sql params:@[parts[0], parts[1]] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:745:    NSArray<NSDictionary *> *results = [self.database executeParameterizedQuery:sql params:@[parts[0], parts[1]] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:751:    return [self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Ozone/Services/ModerationService.m:839:    return [(PDSDatabase *)self.database executeParameterizedUpdate:upsert
+./Garazyk/Sources/Repository/MSTPersistence.m:189:    BOOL cleared = [db executeParameterizedUpdate:@"DELETE FROM blocks WHERE repo_did = ?" params:@[did] error:error];
+./Garazyk/Sources/Identity/HandleResolver.m:227:    [self executeSafeHTTPSRequest:request
+./Garazyk/Sources/Identity/HandleResolver.m:324:                [self executeSafeHTTPSRequest:request
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:389:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" params:@[] error:&error];
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:466:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:62:        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:92:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:checkSQL
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:112:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:143:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:fetchSQL
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:169:        [(PDSDatabase *)self.database executeParameterizedUpdate:deleteSQL
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:197:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:223:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:checkSQL
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:241:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:269:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:fetchSQL
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:294:        [(PDSDatabase *)self.database executeParameterizedUpdate:deleteSQL
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:307:    [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/FeedService.m:76:        NSArray *rows = [self.database executeParameterizedQuery:@"SELECT block_data FROM blocks WHERE cid = ? LIMIT 1"
+./Garazyk/Sources/AppView/Services/FeedService.m:269:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:316:    NSArray *memberRows = [self.database executeParameterizedQuery:memberQuery params:@[listURI] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:356:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID, @"app.bsky.graph.follow"] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:414:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:479:        NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.feed.generator", rkey] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:523:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[repo, @"app.bsky.feed.post", rkey] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:544:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.post"] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:589:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[collection, likePattern] error:nil];
+./Garazyk/Sources/AppView/Services/FeedService.m:600:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[likePattern] error:nil];
+./Garazyk/Sources/AppView/Services/FeedService.m:611:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[likePattern] error:nil];
+./Garazyk/Sources/AppView/Services/FeedService.m:626:        NSArray *rows = [self.database executeParameterizedQuery:query params:@[repo, @"app.bsky.feed.post", rkey] error:nil];
+./Garazyk/Sources/AppView/Services/FeedService.m:722:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.generator", @(limit)] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:799:    return [self.database executeParameterizedUpdate:sql params:@[uri ?: @"", postUri, allowJson ?: @"[]", @((long long)now), @((long long)now)] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:804:    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:827:    return [self.database executeParameterizedUpdate:sql params:@[uri, postUri ?: @"", rulesJson, detachedJson, @((long long)now)] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:832:    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:843:    return [self.database executeParameterizedUpdate:sql params:@[uri, did, displayName ?: @"", description ?: @"", avatar ?: [NSNull null], @((long long)now)] error:error];
+./Garazyk/Sources/AppView/Services/FeedService.m:848:    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+./Garazyk/Sources/Germ/Server/Identity/GermIdentityService.m:291:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql
+./Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m:70:    if (![self.db executeUnsafeRawSQL:schemaSQL error:error]) {
+./Garazyk/Sources/AppView/Services/GroupService.m:42:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:51:    success = [(PDSDatabase *)self.database executeParameterizedUpdate:memberQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:108:    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:params error:error];
+./Garazyk/Sources/AppView/Services/GroupService.m:133:        if (![(PDSDatabase *)self.database executeParameterizedUpdate:query params:@[groupUri] error:error]) {
+./Garazyk/Sources/AppView/Services/GroupService.m:151:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:169:    NSArray *countRows = [(PDSDatabase *)self.database executeParameterizedQuery:countQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:205:        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:227:        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:deleteQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:253:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:309:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql
+./Garazyk/Sources/AppView/Services/GroupService.m:345:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:390:    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:params error:error];
+./Garazyk/Sources/AppView/Services/GroupService.m:402:    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:@[linkId] error:error];
+./Garazyk/Sources/AppView/Services/GroupService.m:436:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql
+./Garazyk/Sources/AppView/Services/GroupService.m:459:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:509:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:516:    [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:@[linkId] error:nil];
+./Garazyk/Sources/AppView/Services/GroupService.m:538:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:558:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:580:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:588:    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:605:    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:622:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:655:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:creatorQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:670:    return [(PDSDatabase *)self.database executeParameterizedUpdate:deleteQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:702:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:728:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:767:    return [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:783:    return [(PDSDatabase *)self.database executeParameterizedUpdate:deleteQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:800:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:836:    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+./Garazyk/Sources/AppView/Services/GroupService.m:854:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/GroupService.m:879:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:51:    BOOL success = [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:92:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:113:    NSArray *results = [self.database executeParameterizedQuery:querySql params:@[token] error:error];
+./Garazyk/Sources/AppView/Services/AgeAssuranceService.m:139:    return [self.database executeParameterizedUpdate:updateSql params:params error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:42:    [self.database executeParameterizedUpdate:createPushTableSQL params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/NotificationService.m:55:    [self.database executeParameterizedUpdate:createNotificationsTableSQL params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/NotificationService.m:58:    [self.database executeParameterizedUpdate:@"ALTER TABLE notifications ADD COLUMN author_did TEXT NOT NULL DEFAULT ''" params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/NotificationService.m:69:    [self.database executeParameterizedUpdate:createActivitySubscriptionsSQL params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/NotificationService.m:92:    NSArray *existingRows = [self.database executeParameterizedQuery:checkQuery params:@[actorDID, deviceToken] error:nil];
+./Garazyk/Sources/AppView/Services/NotificationService.m:97:        BOOL success = [self.database executeParameterizedUpdate:query params:@[platformToken ?: [NSNull null], serviceEndpoint, actorDID, deviceToken] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:101:        BOOL success = [self.database executeParameterizedUpdate:query params:@[actorDID, deviceToken, platformToken ?: [NSNull null], serviceEndpoint] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:115:    BOOL success = [self.database executeParameterizedUpdate:query params:@[actorDID] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:151:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:206:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@(notificationId)] error:nil];
+./Garazyk/Sources/AppView/Services/NotificationService.m:244:    BOOL success = [self.database executeParameterizedUpdate:query params:args error:&queryError];
+./Garazyk/Sources/AppView/Services/NotificationService.m:268:    return [self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Services/NotificationService.m:284:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[actorDID] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:295:    return [self.database executeParameterizedUpdate:sql params:@[subjectURI] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:315:    return [self.database executeParameterizedUpdate:query params:@[actorDID, deviceToken] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:332:    return [self.database executeParameterizedUpdate:query params:@[actorDID, subjectDID, @(postEnabled ? 1 : 0), @(replyEnabled ? 1 : 0)] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:360:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:390:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID] error:error];
+./Garazyk/Sources/AppView/Services/NotificationService.m:418:    return [self.database executeParameterizedUpdate:query params:@[actorDID, prefsJson] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:66:    NSArray *countRows = [self.database executeParameterizedQuery:countSQL params:@[ftsQuery] error:nil];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:74:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[ftsQuery, @(limit + 1), @(offset)] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:115:    NSArray *countRows = [self.database executeParameterizedQuery:countSQL params:@[ftsQuery] error:nil];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:122:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[ftsQuery, @(limit + 1), @(offset)] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:163:    NSArray *countRows = [self.database executeParameterizedQuery:countSQL params:@[ftsQuery] error:nil];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:170:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[ftsQuery, @(limit + 1), @(offset)] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:225:        NSString *handle = [self.database executeParameterizedQuery:@"SELECT handle FROM accounts WHERE did = ?" params:@[did] error:nil].firstObject[@"handle"];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:226:        return [self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:231:        return [self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:236:        return [self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:256:                return [self.database executeParameterizedUpdate:@"DELETE FROM search_actors WHERE did = ?" params:@[did] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:260:        return [self.database executeParameterizedUpdate:@"DELETE FROM search_posts WHERE uri = ?" params:@[uri] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:262:        return [self.database executeParameterizedUpdate:@"DELETE FROM search_starter_packs WHERE uri = ?" params:@[uri] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:273:    [self.database executeParameterizedUpdate:@"DELETE FROM search_actors" params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:274:    [self.database executeParameterizedUpdate:@"DELETE FROM search_posts" params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:275:    [self.database executeParameterizedUpdate:@"DELETE FROM search_starter_packs" params:@[] error:nil];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:283:    BOOL ok = [self.database executeParameterizedUpdate:actorsSQL params:@[] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:294:    ok = [self.database executeParameterizedUpdate:postsSQL params:@[] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:305:    ok = [self.database executeParameterizedUpdate:packsSQL params:@[] error:error];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:313:    BOOL rebuildOk = [self.database executeParameterizedUpdate:@"INSERT INTO fts_actors(fts_actors) VALUES('rebuild')" params:@[] error:&rebuildError];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:317:    rebuildOk = [self.database executeParameterizedUpdate:@"INSERT INTO fts_posts(fts_posts) VALUES('rebuild')" params:@[] error:&rebuildError];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:321:    rebuildOk = [self.database executeParameterizedUpdate:@"INSERT INTO fts_starter_packs(fts_starter_packs) VALUES('rebuild')" params:@[] error:&rebuildError];
+./Garazyk/Sources/AppView/Services/SearchIndexService.m:332:    NSArray *rows = [self.database executeParameterizedQuery:@"SELECT count(*) as cnt FROM search_actors" params:@[] error:nil];
+./Garazyk/Sources/PLC/PLCReplicaStore.m:58:        int result = sqlite3_exec(self.db, kCreateSyncStateTableSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Auth/PDSReplayCache.m:36:        sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
+./Garazyk/Sources/Auth/PDSReplayCache.m:46:        if (sqlite3_exec(_db, createSQL, NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Auth/PDSReplayCache.m:88:        if (sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Auth/PDSReplayCache.m:111:            sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL);
+./Garazyk/Sources/Auth/PDSReplayCache.m:128:        if (sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:623:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" params:@[] error:&error];
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:792:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:58:    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[] error:&error];
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:119:    BOOL success = [db executeParameterizedUpdate:sql
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:149:    BOOL success = [db executeParameterizedUpdate:sql params:@[code] error:&error];
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:152:        NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:@"SELECT changes() AS cnt" params:@[] error:nil];
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:215:        [self executeListWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:217:        [self executeCreateWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIInviteCommand.m:219:        [self executeRevokeWithArgs:subArgs context:context];
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:227:    return [db executeUnsafeRawSQL:sql error:error];
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:246:    return [db executeParameterizedUpdate:sql
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:276:    NSArray *rows = [db executeParameterizedQuery:@"SELECT id, token_hash, challenge, expires_at, consumed_at FROM pending_factor_tokens WHERE account_did = ? AND method = ? AND consumed_at IS NULL"
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:300:    BOOL consumed = [db executeParameterizedUpdate:@"UPDATE pending_factor_tokens SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL"
+./Garazyk/Sources/App/MSTViewer/MSTViewerHandler.m:218:    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[] error:&error];
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m:66:        return [self executeListWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m:68:        return [self executeAddWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m:70:        return [self executeRemoveWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m:72:        return [self executeCreateWithArgs:subArgs context:context];
+./Garazyk/Sources/AppView/Services/GraphService.m:116:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:162:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.graph.follow"] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:231:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:271:    return [self.database executeParameterizedUpdate:sql params:@[actorDID, targetDID, now] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:276:    return [self.database executeParameterizedUpdate:sql params:@[actorDID, targetDID] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:297:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:338:    NSArray *followRows = [self.database executeParameterizedQuery:followQuery params:@[viewerDID, @"app.bsky.graph.follow"] error:nil];
+./Garazyk/Sources/AppView/Services/GraphService.m:348:    NSArray *followedByRows = [self.database executeParameterizedQuery:followQuery params:@[targetDID, @"app.bsky.graph.follow"] error:nil];
+./Garazyk/Sources/AppView/Services/GraphService.m:359:    NSArray *blockRows = [self.database executeParameterizedQuery:blockQuery params:@[viewerDID, @"app.bsky.graph.block"] error:nil];
+./Garazyk/Sources/AppView/Services/GraphService.m:370:    NSArray *muteRows = [self.database executeParameterizedQuery:muteQuery params:@[viewerDID, targetDID] error:nil];
+./Garazyk/Sources/AppView/Services/GraphService.m:376:    NSArray *blockedByRows = [self.database executeParameterizedQuery:blockQuery params:@[targetDID, @"app.bsky.graph.block"] error:nil];
+./Garazyk/Sources/AppView/Services/GraphService.m:398:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.like"] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:455:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.repost"] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:506:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, rkey] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:552:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:592:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[likeQuery, @(limit)] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:625:    return [self.database executeParameterizedUpdate:sql params:@[uri, did, rkey, cid, name, createdAt] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:632:    return [self.database executeParameterizedUpdate:sql params:@[did, rkey] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:646:    return [self.database executeParameterizedUpdate:sql params:@[uri, did, name ?: @"", purpose ?: @"", description ?: @"", avatar ?: [NSNull null], @((long long)now)] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:651:    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:661:    return [self.database executeParameterizedUpdate:sql params:@[uri, listUri ?: @"", subjectDid ?: @"", @((long long)now)] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:666:    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:689:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:730:        NSArray *recordRows = [self.database executeParameterizedQuery:recordQuery params:recordArgs error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:771:    NSArray *listRows = [self.database executeParameterizedQuery:listQuery params:@[listURI] error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:786:        NSArray *recordRows = [self.database executeParameterizedQuery:recordQuery
+./Garazyk/Sources/AppView/Services/GraphService.m:820:    NSArray *itemRows = [self.database executeParameterizedQuery:itemsQuery params:itemArgs error:error];
+./Garazyk/Sources/AppView/Services/GraphService.m:843:        NSArray *recordItemRows = [self.database executeParameterizedQuery:recordItemQuery
+./Garazyk/Sources/PLC/PLCPersistentStore.m:179:        int result = sqlite3_exec(self.db, pragmas[i], NULL, NULL, &errMsg);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:196:    int result = sqlite3_exec(self.db, kCreateOperationsTableSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:211:    result = sqlite3_exec(self.db, kCreateDidIndexSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:222:    result = sqlite3_exec(self.db, kCreatePrevIndexSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:259:        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN cid TEXT;", NULL, NULL, &errMsg);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:273:        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN nullified INTEGER DEFAULT 0;", NULL, NULL, &errMsg);
+./Garazyk/Sources/Auth/OAuth2Handler.m:3304:  if (![self.database executeParameterizedUpdate:createTableSQL
+./Garazyk/Sources/Auth/OAuth2Handler.m:3470:    [self.database executeParameterizedUpdate:
+./Garazyk/Sources/Auth/OAuth2Handler.m:3494:      [self.database executeParameterizedQuery:
+./Garazyk/Sources/AppView/Services/ActorService.m:109:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:167:    NSArray *existingRows = [self.database executeParameterizedQuery:checkQuery params:@[actorDID] error:nil];
+./Garazyk/Sources/AppView/Services/ActorService.m:172:        success = [self.database executeParameterizedUpdate:updateQuery params:@[prefsData, actorDID] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:175:        success = [self.database executeParameterizedUpdate:insertQuery params:@[actorDID, prefsData] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:197:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did] error:nil];
+./Garazyk/Sources/AppView/Services/ActorService.m:227:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[handle] error:nil];
+./Garazyk/Sources/AppView/Services/ActorService.m:240:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.actor.profile"] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:260:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.graph.follow"] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:271:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.graph.follow"] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:282:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.feed.post"] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:320:    NSArray *rows = [self.database executeParameterizedQuery:query params:params error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:360:    NSArray *rows = [self.database executeParameterizedQuery:query params:params error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:384:    NSArray *rows = [self.database executeParameterizedQuery:query params:@[collection] error:error];
+./Garazyk/Sources/AppView/Services/ActorService.m:421:    NSArray *followRows = [self.database executeParameterizedQuery:followsQuery
+./Garazyk/Sources/AppView/Services/ActorService.m:433:        NSArray *theirFollows = [self.database executeParameterizedQuery:followsQuery
+./Garazyk/Sources/AppView/Services/ActorService.m:455:        NSArray *popularRows = [self.database executeParameterizedQuery:popularQuery
+./Garazyk/Sources/App/PDSReadinessCheck.m:85:        NSArray *result = [db executeParameterizedQuery:@"SELECT 1" params:@[] error:error];
+./Garazyk/Sources/CLI/PDSCLIRelayCommand.m:64:        return [self executeServe:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRelayCommand.m:66:        return [self executeStop:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRelayCommand.m:68:        return [self executeStatus:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRelayCommand.m:70:        return [self executeUpstream:subArgs context:context];
+./Garazyk/Sources/PLC/DIDPLCResolver.m:118:    [self executeRequest:request attempt:0 transform:^id(NSData *data, NSError **error) {
+./Garazyk/Sources/PLC/DIDPLCResolver.m:144:                [self executeRequest:request attempt:attempt + 1 transform:transform completion:completion];
+./Garazyk/Sources/PLC/DIDPLCResolver.m:245:    [self executeRequest:request attempt:0 transform:^id(NSData *data, NSError **error) {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:494:        int rc = sqlite3_exec(self->_db, kSchemaV1.UTF8String, NULL, NULL, &errmsg);
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:506:        rc = sqlite3_exec(self->_db,
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:524:        rc = sqlite3_exec(self->_db,
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:538:        sqlite3_exec(self->_db,
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:555:        NSArray *rows = [self executeParameterizedQuery:sql params:@[iso8601Now()] error:nil];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:573:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:579:    NSArray *rows = [self executeParameterizedQuery:sql params:@[relayURL] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:618:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:624:    NSArray *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:653:    NSArray *rows = [self executeParameterizedQuery:sql params:@[@(status), @(limit)] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:677:    NSArray *rows = [self executeParameterizedQuery:sql params:@[@(status)] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:698:            [db executeParameterizedUpdate:sql params:params error:nil];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:715:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:721:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:730:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:750:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:761:        NSArray *rows = [db executeParameterizedQuery:selectSQL params:@[did] error:innerError];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:779:        return [db executeParameterizedUpdate:deleteSQL params:@[did] error:innerError];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:787:    NSArray *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:813:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:821:    NSArray *rows = [self executeParameterizedQuery:sql params:params error:nil];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:831:        [self executeParameterizedUpdate:sql params:@[cutoffStr] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:860:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:870:    NSArray *rows = [self executeParameterizedQuery:sql params:@[@(cursor), @(limit)] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:927:    __block BOOL ok = [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:942:    NSArray *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:969:        [self executeParameterizedUpdate:sql params:@[now] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:975:        NSArray *rows = [self executeParameterizedQuery:sel params:@[now] error:nil];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:986:    NSArray *rows = [self executeParameterizedQuery:sql params:@[iso8601Now()] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1022:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1105:- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error {
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1111:        int rc = sqlite3_exec(self->_db, sql.UTF8String, NULL, NULL, &errmsg);
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1128:    NSArray *rows = [self executeParameterizedQuery:sql params:@[cid, repoDid] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1160:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1170:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1180:        [db executeUnsafeRawSQL:@"CREATE TEMP TABLE IF NOT EXISTS appview_snapshot_uris(uri TEXT PRIMARY KEY); DELETE FROM appview_snapshot_uris;" error:innerError];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1191:            if (![db executeParameterizedUpdate:insertBlockSQL params:params error:innerError]) return NO;
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1215:            if (![db executeParameterizedUpdate:insertRecordSQL params:recordParams error:innerError]) return NO;
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1216:            if (![db executeParameterizedUpdate:insertURIToTempSQL params:@[uri] error:innerError]) return NO;
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1221:        if (![db executeParameterizedUpdate:deleteSQL params:@[did] error:innerError]) return NO;
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1227:        if (![db executeParameterizedUpdate:eventSQL params:eventParams error:innerError]) return NO;
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1244:    NSArray *rows = [self executeParameterizedQuery:sql params:@[collection] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1251:    NSArray *rows = [self executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1264:    NSArray *rows = [self executeParameterizedQuery:sql params:@[uri] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1320:    NSArray *rows = [self executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1376:    NSArray *countRows = [self executeParameterizedQuery:countSql params:countParams error:nil];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1387:    NSArray *rows = [self executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1403:    NSArray *rows = [self executeParameterizedQuery:sql params:@[collection] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1417:    [self executeParameterizedUpdate:@"DELETE FROM handles WHERE did = ?" params:@[did] error:nil];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1421:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1426:    NSArray *rows = [self executeParameterizedQuery:sql params:@[handle] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1433:    NSArray *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1449:        int rc = sqlite3_exec(self->_db, "BEGIN IMMEDIATE", NULL, NULL, &errmsg);
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1462:            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1466:        rc = sqlite3_exec(self->_db, "COMMIT", NULL, NULL, &errmsg);
+./Garazyk/Sources/AppView/Server/AppViewDatabase.m:1471:            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/AppView/Services/BookmarkService.m:48:    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+./Garazyk/Sources/AppView/Services/BookmarkService.m:98:    return [self.database executeParameterizedUpdate:sql params:@[did, uri, subjectURI, subjectCID ?: [NSNull null], createdAt] error:error];
+./Garazyk/Sources/AppView/Services/BookmarkService.m:109:    return [self.database executeParameterizedUpdate:sql 
+./Garazyk/Sources/AppView/Services/BookmarkService.m:117:    return [self.database executeParameterizedUpdate:@"DELETE FROM bookmarks WHERE did = ? AND uri = ?"
+./Garazyk/Sources/AppView/Services/BookmarkService.m:125:    return [self.database executeParameterizedUpdate:@"DELETE FROM bookmarks WHERE did = ? AND subject_uri = ?"
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:76:        return [self executeListWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:78:        return [self executeInfoWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:80:        return [self executeCreateWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:82:        return [self executeDeactivateWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:84:        return [self executeReactivateWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:86:        return [self executeDeleteWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:88:        return [self executeUpdateEmailWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:90:        return [self executeUpdateHandleWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m:92:        return [self executeUpdatePlcEndpointWithArgs:subArgs context:context];
+./Garazyk/Sources/Auth/Session.m:418:        sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
+./Garazyk/Sources/Auth/Session.m:439:        if (sqlite3_exec(_db, createSQL, NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:68:        [self executeListWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:70:        [self executeGetWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:72:        [self executeRootWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:74:        [self executeCreateRecordWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:76:        [self executeDeleteRecordWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIRepoCommand.m:78:        [self executeRepairWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:55:        return [self executeClientWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:75:        return [self executeClientRegisterWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:77:        return [self executeClientListWithArgs:subArgs context:context];
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:79:        return [self executeClientDeleteWithArgs:subArgs context:context];
+./Garazyk/Sources/AppView/Services/DraftService.m:54:    BOOL success = [self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Services/DraftService.m:94:    return [self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Services/DraftService.m:110:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[actorDID] error:error];
+./Garazyk/Sources/AppView/Services/DraftService.m:150:    return [self.database executeParameterizedUpdate:sql params:@[draftID, actorDID] error:error];
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:288:        return [command executeWithArguments:args context:context];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2605:        NSString *executeAt = UIEscaped(action[@"executeAt"] ?: @"");
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2606:        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td><span class=\"badge\">%@</span></td><td>%@</td><td>", subject, actionType, status, executeAt];
+./Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.m:151:    [self.database executeParameterizedUpdate:sql params:params error:&error];
+./Garazyk/Sources/AppView/Services/ContactService.m:52:    if (![(PDSDatabase *)self.database executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Services/ContactService.m:73:    NSArray *rows = [self.database executeParameterizedQuery:sql
+./Garazyk/Sources/AppView/Services/ContactService.m:94:    [(PDSDatabase *)self.database executeParameterizedUpdate:tokenSql
+./Garazyk/Sources/AppView/Services/ContactService.m:115:        NSArray *rows = [self.database executeParameterizedQuery:sql params:@[token, actorDID] error:error];
+./Garazyk/Sources/AppView/Services/ContactService.m:136:        [(PDSDatabase *)self.database executeParameterizedUpdate:insertSql
+./Garazyk/Sources/AppView/Services/ContactService.m:150:        NSArray *matchRows = [self.database executeParameterizedQuery:findSql params:@[hash, actorDID] error:nil];
+./Garazyk/Sources/AppView/Services/ContactService.m:172:    [(PDSDatabase *)self.database executeParameterizedUpdate:syncSql
+./Garazyk/Sources/AppView/Services/ContactService.m:183:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[actorDID] error:error];
+./Garazyk/Sources/AppView/Services/ContactService.m:208:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[now, actorDID, matchDID] error:error];
+./Garazyk/Sources/AppView/Services/ContactService.m:216:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[actorDID] error:error];
+./Garazyk/Sources/AppView/Services/ContactService.m:236:    [(PDSDatabase *)self.database executeParameterizedUpdate:sql1 params:@[actorDID] error:nil];
+./Garazyk/Sources/AppView/Services/ContactService.m:237:    [(PDSDatabase *)self.database executeParameterizedUpdate:sql2 params:@[actorDID] error:nil];
+./Garazyk/Sources/AppView/Services/ContactService.m:238:    [(PDSDatabase *)self.database executeParameterizedUpdate:sql3 params:@[actorDID] error:nil];
+./Garazyk/Sources/AppView/Services/ContactService.m:239:    [(PDSDatabase *)self.database executeParameterizedUpdate:sql4 params:@[actorDID] error:nil];
+./Garazyk/Sources/AppView/Services/ContactService.m:252:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[fromDID, toDID, now] error:error];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:34:    NSArray *rows = [database executeParameterizedQuery:@"SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:80:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:88:        success = [(PDSDatabase *)self.database executeParameterizedUpdate:memberQuery
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:124:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:145:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:159:    NSArray *memberRows = [(PDSDatabase *)self.database executeParameterizedQuery:membersQuery
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:217:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:249:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:270:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:283:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:289:        NSArray *activeRows = [(PDSDatabase *)self.database executeParameterizedQuery:@"SELECT COUNT(*) AS count FROM conversation_members WHERE convo_id = ? AND status != 'left'"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:295:            BOOL ok = [database executeParameterizedUpdate:@"DELETE FROM message_reactions WHERE message_id IN (SELECT id FROM messages WHERE convo_id = ?)"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:300:            ok = [database executeParameterizedUpdate:@"DELETE FROM messages WHERE convo_id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:305:            ok = [database executeParameterizedUpdate:@"DELETE FROM conversation_members WHERE convo_id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:311:                ok = [database executeParameterizedUpdate:@"DELETE FROM chat_event_log WHERE convo_id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:317:            ok = [database executeParameterizedUpdate:@"DELETE FROM conversations WHERE id = ?"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:334:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:377:    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:387:    NSArray *membershipRows = [(PDSDatabase *)self.database executeParameterizedQuery:@"SELECT 1 FROM conversation_members WHERE convo_id = ? AND member_did = ? AND status != 'left' LIMIT 1"
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:402:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:412:    [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:@[now, convoId] error:nil];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:439:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:468:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:fetchQuery
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:491:    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:501:    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:514:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:520:        NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:convoQuery params:@[messageId] error:nil];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:533:    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:539:        NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:convoQuery params:@[messageId] error:nil];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:554:    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:563:    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:574:    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:583:    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:602:    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:621:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:checkQuery
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:674:    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query params:params error:error];
+./Garazyk/Sources/Chat/Server/Services/ChatModerationService.m:22:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[actor] error:error];
+./Garazyk/Sources/Chat/Server/Services/ChatModerationService.m:60:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[messageId] error:error];
+./Garazyk/Sources/Chat/Server/Services/ChatModerationService.m:71:    NSArray *contextMessages = [self.database executeParameterizedQuery:contextSql params:@[convoId] error:error];
+./Garazyk/Sources/Chat/Server/Services/ChatModerationService.m:109:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:481:    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[@(limit)] error:&error];
+./Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m:633:            if (![_database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:&deleteError]) {
+./Garazyk/Sources/Chat/Server/ChatRuntime.m:73:    if (![self.db executeParameterizedUpdate:schemaSQL params:@[] error:error]) {
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m:170:    return [self.database executeParameterizedUpdate:query
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:18:    int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:31:    result = [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:43:    result = [self executeParameterizedUpdate:sql params:@[did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:56:    result = [self executeParameterizedUpdate:sql params:@[dateStr, @(now), did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:68:    result = [self executeParameterizedUpdate:sql params:@[now, did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:83:    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:103:    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:131:    result = [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Moderation.m:178:    result = [self executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Records.m:20:    NSArray *results = [self executeParameterizedQuery:sql params:@[uri] modelClass:[PDSDatabaseRecord class] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Records.m:34:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Records.m:47:    return [self executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseRecord class] error:error] ?: @[];
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditOperation.m:71:    [db executeParameterizedUpdate:sql params:@[@(progress), self.jobId] error:nil];
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditOperation.m:101:    return [db executeParameterizedUpdate:sql
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:60:    BOOL ok = [self.avdb executeParameterizedUpdate:query params:args error:error];
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:78:                [self.avdb executeParameterizedUpdate:memberQuery params:memberArgs error:nil];
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:95:                [self.avdb executeParameterizedUpdate:roleQuery params:roleArgs error:nil];
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:111:    [self.avdb executeParameterizedUpdate:deleteMembersQuery params:@[uri] error:nil];
+./Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m:114:    BOOL ok = [self.avdb executeParameterizedUpdate:deleteGroupQuery params:@[uri] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:24:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:59:    NSArray *results = [self executeParameterizedQuery:sql params:@[cid, repoDid] modelClass:[PDSDatabaseBlock class] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:65:    return [self executeParameterizedQuery:sql params:@[repoDid, @(limit), @(offset)] modelClass:[PDSDatabaseBlock class] error:error] ?: @[];
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:85:    return [self executeParameterizedUpdate:sql params:@[cid, repoDid] error:error];
+./Garazyk/Sources/Database/PDSDatabase+WebAuthn.m:26:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+WebAuthn.m:32:    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+WebAuthn.m:54:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+WebAuthn.m:60:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:137:    [self executeSQL:pragmaSQL onPool:pool error:nil];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:162:    return [self executeSQL:schemaSQL onPool:self.didCachePool error:error];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:171:    return [self executeSQL:schemaSQL onPool:self.sequencerPool error:error];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:178:        success = [store.database executeUnsafeRawSQL:sql error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:411:        NSArray<NSDictionary *> *results = [store.database executeParameterizedQuery:sql params:params error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:431:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT token FROM refresh_tokens WHERE account_did = ?" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:450:        success = [store.database executeParameterizedUpdate:sql params:@[[[NSUUID UUID] UUIDString], code, accountDid, @([[NSDate date] timeIntervalSince1970]), @(maxUses)] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:459:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT code FROM invite_codes WHERE account_did = ? AND disabled = 0 LIMIT 1" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:469:        success = [store.database executeParameterizedUpdate:@"UPDATE invite_codes SET uses = uses + 1 WHERE code = ? AND disabled = 0" params:@[code] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:471:            [store.database executeParameterizedUpdate:@"UPDATE invite_codes SET disabled = 1 WHERE code = ? AND uses >= max_uses" params:@[code] error:nil];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:485:        success = [store.database executeParameterizedUpdate:@"INSERT OR IGNORE INTO reserved_handles (handle, created_at) VALUES (?, ?)" params:@[normalized, @([[NSDate date] timeIntervalSince1970])] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:496:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT 1 FROM reserved_handles WHERE handle = ? LIMIT 1" params:@[normalized] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:515:        if ([store.database executeParameterizedUpdate:sql params:@[[[NSUUID UUID] UUIDString], accountDid, name, hash, salt, @(privileged), @(now)] error:innerError]) {
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:531:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT name, created_at, privileged FROM app_passwords WHERE account_did = ? ORDER BY created_at DESC" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:547:        success = [store.database executeParameterizedUpdate:@"DELETE FROM app_passwords WHERE account_did = ? AND name = ?" params:@[accountDid, name] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:556:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT password_hash, password_salt FROM app_passwords WHERE account_did = ?" params:@[accountDid] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:576:        [store.database executeParameterizedUpdate:@"INSERT OR REPLACE INTO did_cache (did, document, expires_at) VALUES (?, ?, ?)" params:@[did, jsonData ?: [NSNull null], @(expiresAt.timeIntervalSince1970)] error:nil];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:584:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT document FROM did_cache WHERE did = ? AND expires_at > ?" params:@[did, @([[NSDate date] timeIntervalSince1970])] error:nil];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:596:        NSArray *rows = [store.database executeParameterizedQuery:@"SELECT did, document FROM did_cache WHERE expires_at > ?" params:@[@([[NSDate date] timeIntervalSince1970])] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:615:        success = [store.database executeParameterizedUpdate:@"INSERT INTO hosting_events (did, event_type, details_json, created_by, created_at) VALUES (?, ?, ?, ?, ?)" params:@[did, type, jsonStr ?: [NSNull null], createdBy ?: [NSNull null], @([[NSDate date] timeIntervalSince1970])] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:636:        NSArray *rows = [store.database executeParameterizedQuery:sql params:params error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:654:        success = [store.database executeParameterizedUpdate:@"INSERT INTO events (seq, event_type, event_data, created_at) VALUES (?, ?, ?, ?)" params:@[@(seq), type, data, @([[NSDate date] timeIntervalSince1970])] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:663:        NSArray *rows = [store.database executeParameterizedQuery:@"SELECT seq, event_type, event_data, created_at FROM events WHERE seq > ? ORDER BY seq ASC LIMIT ?" params:@[@(seq), @(limit)] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:680:        NSArray *results = [store.database executeParameterizedQuery:@"SELECT MAX(seq) as max_seq FROM events" params:@[] error:innerError];
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:692:        success = [store.database executeParameterizedUpdate:@"DELETE FROM events WHERE created_at < ?" params:@[@(date.timeIntervalSince1970)] error:innerError];
+./Garazyk/Sources/Network/RateLimiter.m:166:    result = sqlite3_exec(_db, createTableSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Network/RateLimiter.m:174:    sqlite3_exec(_db, createIndexSQL.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:184:    result = sqlite3_exec(_db, createBlobTableSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Network/RateLimiter.m:265:    int txResult = sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION", NULL, NULL, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:274:        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:292:        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:313:        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:330:        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
+./Garazyk/Sources/Network/RateLimiter.m:334:    sqlite3_exec(_db, "COMMIT TRANSACTION", NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:15:    return [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:28:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:40:    NSArray *rows = [self executeParameterizedQuery:sql params:@[token, @(now)] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:56:    NSArray *rows = [self executeParameterizedQuery:sql params:@[sessionID, did, @(now)] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:62:    return [self executeParameterizedUpdate:sql params:@[token] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:67:    return [self executeParameterizedUpdate:sql params:@[sessionID] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:72:    return [self executeParameterizedUpdate:sql params:@[did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:77:    return [self executeParameterizedQuery:sql params:@[did] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Sessions.m:82:    return [self executeParameterizedUpdate:sql params:@[passwordId, did] error:error];
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:54:        int rc = sqlite3_exec(db, "PRAGMA journal_mode=WAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:61:        int rc = sqlite3_exec(db, "PRAGMA synchronous=NORMAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:68:        int rc = sqlite3_exec(db, "PRAGMA foreign_keys=ON", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:75:        int rc = sqlite3_exec(db, "PRAGMA temp_store=MEMORY", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:88:        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:97:        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:106:        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:115:        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:124:        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:49:        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:72:        sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:108:        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:130:        sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:160:        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:177:    sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:207:        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:224:    sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:259:        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:275:    sqlite3_exec(db, "DROP TABLE IF EXISTS drafts", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:342:        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:358:    sqlite3_exec(db, "DROP TABLE IF EXISTS fts_starter_packs", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:359:    sqlite3_exec(db, "DROP TABLE IF EXISTS fts_posts", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:360:    sqlite3_exec(db, "DROP TABLE IF EXISTS fts_actors", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:361:    sqlite3_exec(db, "DROP TABLE IF EXISTS search_starter_packs", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:362:    sqlite3_exec(db, "DROP TABLE IF EXISTS search_posts", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:363:    sqlite3_exec(db, "DROP TABLE IF EXISTS search_actors", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:396:        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:412:    sqlite3_exec(db, "DROP TABLE IF EXISTS moderation_subjects", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:413:    sqlite3_exec(db, "DROP TABLE IF EXISTS moderation_safelinks", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:452:    int result = sqlite3_exec(db, schemaSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:499:        sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:636:    int result = sqlite3_exec(db, createMigrationsTable, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:941:    int result = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:966:                result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:969:                    sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:976:                sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:982:            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:987:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1009:    int result = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1032:                result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1035:                    sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1042:                sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1048:            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1053:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1423:    int rc = sqlite3_exec(db, "ALTER TABLE blobs RENAME COLUMN mime_type TO mimeType", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1442:    int rc = sqlite3_exec(db, "ALTER TABLE blobs RENAME COLUMN mimeType TO mime_type", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1485:    int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1502:    int rc = sqlite3_exec(db, "DROP TABLE IF EXISTS pending_factor_tokens", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1544:    rc = sqlite3_exec(db, createMigrations, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1578:    rc = sqlite3_exec(db, copySQL, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1589:    sqlite3_exec(db, "DROP TABLE IF EXISTS schema_version", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1596:    sqlite3_exec(db, createSQL, NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1600:    sqlite3_exec(db, copyBackSQL, NULL, NULL, NULL);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1628:        int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1644:    int rc = sqlite3_exec(db, "UPDATE records SET indexed_at = created_at WHERE indexed_at = ''", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1676:    int rc = sqlite3_exec(db, "ALTER TABLE refresh_tokens ADD COLUMN session_id TEXT NOT NULL DEFAULT ''", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1695:    rc = sqlite3_exec(db, "UPDATE refresh_tokens SET session_id = token WHERE session_id = ''", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1701:    sqlite3_exec(db, "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session ON refresh_tokens(session_id)", NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase.h:93: @method executeUnsafeRawSQL:error:
+./Garazyk/Sources/Database/PDSDatabase.h:110:- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error;
+./Garazyk/Sources/Database/PDSDatabase.h:113: @method executeUnsafeRawQuery:error:
+./Garazyk/Sources/Database/PDSDatabase.h:130:- (NSArray<NSDictionary *> *)executeUnsafeRawQuery:(NSString *)sql error:(NSError **)error;
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m:115:    return [db executeParameterizedUpdate:sql
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m:129:    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[jobId] error:&queryError];
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m:184:    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[@(limit)] error:&queryError];
+./Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m:227:    return [db executeParameterizedUpdate:sql params:@[@(cutoff)] error:error];
+./Garazyk/Sources/Network/XrpcAppBskyPack.m:69:  if (![database executeUnsafeRawSQL:schemaSQL error:&schemaError]) {
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:16:    NSArray *rows = [self executeParameterizedQuery:sql params:@[jobId] error:error];
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:41:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:60:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:75:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:92:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:100:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+VideoJobs.m:117:    return [self executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Reports.m:33:    if ([self executeParameterizedUpdate:sql params:params error:error]) {
+./Garazyk/Sources/Database/PDSDatabase+Reports.m:83:    result = [self executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Reports.m:95:    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[reportId] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Reports.m:118:    result = [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:24:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:34:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:39:    NSArray *results = [self executeParameterizedQuery:sql params:@[did] modelClass:[PDSDatabaseRepo class] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:45:    return [self executeParameterizedQuery:sql params:@[] modelClass:[PDSDatabaseRepo class] error:error] ?: @[];
+./Garazyk/Sources/Database/PDSDatabase+Repos.m:50:    return [self executeParameterizedUpdate:sql params:@[ownerDid] error:error];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:108:    return [self executeRequestWithRetry:request error:error];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:135:    return [self executeRequestWithRetry:request error:error];
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:168:    return [self executeRequestWithRetry:request error:error];
+./Garazyk/Sources/Database/PDSDatabase+AdminConfig.m:18:    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[key] error:error];
+./Garazyk/Sources/Database/PDSDatabase+AdminConfig.m:31:    result = [self executeParameterizedUpdate:sql params:@[key, value, dateStr] error:error];
+./Garazyk/Sources/Database/PDSDatabase.m:275:    int rc = sqlite3_exec(_db, "PRAGMA journal_mode=WAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:298:    rc = sqlite3_exec(_db, "PRAGMA synchronous=NORMAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:308:    rc = sqlite3_exec(_db, "PRAGMA cache_size=64", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:310:    rc = sqlite3_exec(_db, "PRAGMA cache_size=65536", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:320:    rc = sqlite3_exec(_db, "PRAGMA temp_store=MEMORY", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:330:    rc = sqlite3_exec(_db, "PRAGMA mmap_size=4194304", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:332:    rc = sqlite3_exec(_db, "PRAGMA mmap_size=268435456", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:342:    rc = sqlite3_exec(_db, "PRAGMA page_size=65536", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:363:    int rc = sqlite3_exec(_db, [kPDSAccountTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:372:    rc = sqlite3_exec(_db, [kPDSRepoTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:381:    rc = sqlite3_exec(_db, [kPDSRecordTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:390:    rc = sqlite3_exec(_db, [kPDSBlockTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:399:    rc = sqlite3_exec(_db, [kPDSBlobTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:408:    rc = sqlite3_exec(_db, [kPDSIndexBlocksRepoDidSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:417:    rc = sqlite3_exec(_db, [kPDSIndexBlobsDidSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:426:    rc = sqlite3_exec(_db, [kPDSIndexAccountsHandleSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:435:    rc = sqlite3_exec(_db, [kPDSInviteCodeTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:444:    rc = sqlite3_exec(_db, [kPDSAdminTakedownTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:453:    rc = sqlite3_exec(_db, [kPDSAdminAuditLogTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:462:    rc = sqlite3_exec(_db, [kPDSReportsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:471:    rc = sqlite3_exec(_db, [kPDSAdminConfigTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:480:    rc = sqlite3_exec(_db, [kPDSIndexInviteCodesAccountDidSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:489:    rc = sqlite3_exec(_db, [kPDSIndexTakedownsSubjectIdSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:498:    rc = sqlite3_exec(_db, [kPDSIndexAuditLogAdminSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:507:    rc = sqlite3_exec(_db, [kPDSIndexAuditLogSubjectSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:516:    rc = sqlite3_exec(_db, [kPDSIndexAuditLogCreatedSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:525:    rc = sqlite3_exec(_db, [kPDSIndexReportsStatusSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:534:    rc = sqlite3_exec(_db, [kPDSIndexReportsSubjectSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:543:    rc = sqlite3_exec(_db, [kPDSIndexReportsReportedBySQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:552:    rc = sqlite3_exec(_db, [kPDSIndexReportsCreatedSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:561:    rc = sqlite3_exec(_db, [kPDSPasskeysTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:570:    rc = sqlite3_exec(_db, [kPDSOAuthClientsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:579:    rc = sqlite3_exec(_db, [kPDSLabelTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:588:    rc = sqlite3_exec(_db, [kPDSReservedHandleTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:597:    rc = sqlite3_exec(_db, [kPDSIndexLabelsUriSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:606:    rc = sqlite3_exec(_db, [kPDSIndexLabelsSourceSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:615:    rc = sqlite3_exec(_db, [kPDSIndexReservedHandlesHandleSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:624:    rc = sqlite3_exec(_db, [kPDSJWTSigningKeysTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:633:    rc = sqlite3_exec(_db, [kPDSIndexPasskeysAccountDidSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:642:    rc = sqlite3_exec(_db, [kPDSIndexPasskeysCredentialIdSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:651:    rc = sqlite3_exec(_db, [kPDSBookmarkTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:660:    rc = sqlite3_exec(_db, [kPDSStarterPackTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:669:    rc = sqlite3_exec(_db, [kPDSIndexBookmarksDidSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:678:    rc = sqlite3_exec(_db, [kPDSIndexStarterPacksDidSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:688:    rc = sqlite3_exec(_db, [kPDSConversationsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:697:    rc = sqlite3_exec(_db, [kPDSConversationMembersTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:706:    rc = sqlite3_exec(_db, [kPDSMessagesTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:715:    rc = sqlite3_exec(_db, [kPDSMessageReactionsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:724:    rc = sqlite3_exec(_db, [kPDSIndexConversationMembersConvoSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:733:    rc = sqlite3_exec(_db, [kPDSIndexConversationMembersActorSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:742:    rc = sqlite3_exec(_db, [kPDSIndexMessagesConvoSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:751:    rc = sqlite3_exec(_db, [kPDSIndexMessagesCreatedSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:761:    rc = sqlite3_exec(_db, [kPDSGroupsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:770:    rc = sqlite3_exec(_db, [kPDSGroupMembersTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:779:    rc = sqlite3_exec(_db, [kPDSGroupInviteLinksTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:788:    rc = sqlite3_exec(_db, [kPDSGroupJoinRequestsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:797:    rc = sqlite3_exec(_db, [kPDSIndexGroupMembersGroupSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:806:    rc = sqlite3_exec(_db, [kPDSIndexGroupMembersMemberSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:815:    rc = sqlite3_exec(_db, [kPDSIndexGroupInviteLinksGroupSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:824:    rc = sqlite3_exec(_db, [kPDSIndexGroupJoinRequestsGroupSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:833:    rc = sqlite3_exec(_db, [kPDSIndexGroupJoinRequestsRequesterSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:842:    rc = sqlite3_exec(_db, [kPDSGroupMessagesTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:851:    rc = sqlite3_exec(_db, [kPDSGroupMessageReactionsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:860:    rc = sqlite3_exec(_db, [kPDSIndexGroupMessagesGroupSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:869:    rc = sqlite3_exec(_db, [kPDSIndexGroupMessagesCreatedSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:878:    rc = sqlite3_exec(_db, [kPDSVideoJobsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:887:    rc = sqlite3_exec(_db, [kPDSVideoJobsIndexDidSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:896:    rc = sqlite3_exec(_db, [kPDSVideoJobsIndexStateSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:905:    rc = sqlite3_exec(_db, [kPDSVideoJobsIndexCreatedSQL UTF8String], NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:922:    rc = sqlite3_exec(_db, refreshTokensSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:933:    rc = sqlite3_exec(_db, refreshTokensIndexSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:957:- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error {
+./Garazyk/Sources/Database/PDSDatabase.m:972:    int rc = sqlite3_exec(_db, sql.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:989:- (NSArray<NSDictionary *> *)executeUnsafeRawQuery:(NSString *)sql error:(NSError **)error {
+./Garazyk/Sources/Database/PDSDatabase.m:1100:    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Federation/FederationClient.m:75:                [self executeRequestWithRetry:request
+./Garazyk/Sources/Federation/FederationClient.m:197:    [self executeRequestWithRetry:request attempt:0 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+./Garazyk/Sources/Federation/FederationClient.m:327:    [self executeRequestWithRetry:request attempt:0 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+./Garazyk/Sources/Database/Schema/PDSSchemaManager.h:41: [database executeSQL:sql error:nil];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:140:    NSArray *results = [self executeParameterizedQuery:sql params:@[did] modelClass:[PDSDatabaseAccount class] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:147:    NSArray *results = [self executeParameterizedQuery:sql params:@[normalizedHandle] modelClass:[PDSDatabaseAccount class] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:153:    NSArray *results = [self executeParameterizedQuery:sql params:@[email] modelClass:[PDSDatabaseAccount class] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:191:    return [self executeParameterizedQuery:sql params:@[] modelClass:[PDSDatabaseAccount class] error:error] ?: @[];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:174:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:176:        int rc = sqlite3_exec(db, schema.UTF8String, NULL, NULL, &errmsg);
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:223:        if (![self executeUpdate:deleteLinks params:@[did, collection, rkey] connection:db error:innerError]) return NO;
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:231:        if (![self executeUpdate:upsertRecord
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:247:            if (![self executeUpdate:insertLink params:params connection:db error:innerError]) return NO;
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:266:        if (![self executeUpdate:@"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:272:        return [self executeUpdate:@"DELETE FROM mikrus_records WHERE uri = ?"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:297:    NSArray *countRows = [self executeQuery:countSQL params:countParams error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:323:    NSArray *rows = [self executeQuery:sql params:params error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:365:    NSArray *countRows = [self executeQuery:countSQL params:@[subject, source.collection, source.path] error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:384:    NSArray *rows = [self executeQuery:sql params:params error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:410:    NSArray *rows = [self executeQuery:sql params:@[subject, source.collection, source.path] error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:461:    NSArray *rows = [self executeQuery:sql params:params error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:528:    NSArray *rows = [self executeQuery:sql params:params error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:555:    NSArray *rows = [self executeQuery:sql params:@[uri ?: @""] error:error];
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:590:        if (![self executeUpdate:@"DELETE FROM mikrus_handles WHERE did = ?"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:596:        return [self executeUpdate:@"INSERT OR REPLACE INTO mikrus_handles(handle, did, updated_at) VALUES(?,?,?)"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:604:    NSArray *rows = [self executeQuery:@"SELECT did FROM mikrus_handles WHERE handle = ? LIMIT 1"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:612:    NSArray *rows = [self executeQuery:@"SELECT handle FROM mikrus_handles WHERE did = ? LIMIT 1"
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:621:- (nullable NSArray<NSDictionary *> *)executeQuery:(NSString *)sql
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:626:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Mikrus/MikrusDatabase.m:663:- (BOOL)executeUpdate:(NSString *)sql
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:29:    return [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:34:    NSArray *results = [self executeParameterizedQuery:sql params:@[cid] modelClass:[PDSDatabaseBlob class] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:40:    return [self executeParameterizedQuery:sql params:@[did, @(limit), @(offset)] modelClass:[PDSDatabaseBlob class] error:error] ?: @[];
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:60:    return [self executeParameterizedUpdate:sql params:@[cid] error:error];
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:46:        if (sqlite3_exec(self.db, "BEGIN TRANSACTION", NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:69:        if (sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:92:        if (sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:124:        if (sqlite3_exec(self.db, beginSQL.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:138:                    sqlite3_exec(self.db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:139:                    sqlite3_exec(self.db, releaseSQL.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:141:                    sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:149:            if (sqlite3_exec(self.db, finishSQL.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:154:                    sqlite3_exec(self.db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:155:                    sqlite3_exec(self.db, finishSQL.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:157:                    sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:166:                sqlite3_exec(self.db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:167:                sqlite3_exec(self.db, releaseSQL.UTF8String, NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+Transactions.m:169:                sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:152:    NSArray *markerResults = [self.database executeParameterizedQuery:checkMarkerSQL params:@[] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:155:        int rc = sqlite3_exec((sqlite3 *)self.database.internalSQLiteHandle, schemaSQL.UTF8String, NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:169:    NSArray *results = [self.database executeParameterizedQuery:checkMigrationsSQL params:@[] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:174:        NSArray *tableResults = [self.database executeParameterizedQuery:checkTablesSQL params:@[] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:184:            if (![self.database executeParameterizedUpdate:createMigrationsSQL params:@[] error:error]) return NO;
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:250:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:265:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:272:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:279:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:286:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM repo_root WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:292:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM records WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:294:    results = [self.database executeParameterizedQuery:@"SELECT 1 FROM record_tombstones WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:300:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM ipld_blocks WHERE rev = ? LIMIT 1" params:@[rev] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:306:    return [self.database executeParameterizedUpdate:sql params:@[repo.rootCid ?: [NSNull null], @"", @(repo.updatedAt.timeIntervalSince1970)] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:316:    return [self.database executeParameterizedUpdate:sql params:@[rootCid ?: [NSNull null], resolvedRev, @([[NSDate date] timeIntervalSince1970])] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:320:    return [self.database executeParameterizedUpdate:@"DELETE FROM repo_root" params:@[] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:324:    return [self.database executeParameterizedUpdate:@"DELETE FROM repo_root" params:@[] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:331:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[uri] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:337:        NSArray *diagResults = [self.database executeParameterizedQuery:diagSql params:@[uri.pathComponents.count > 2 ? uri.pathComponents[2] : @""] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:349:    return [self.database executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:372:    return [self.database executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseRecord class] error:error] ?: @[];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:379:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:385:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:391:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:395:    return [self.database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:401:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:420:    NSArray *results = [self.database executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:428:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT cid FROM ipld_blocks WHERE rev = ? ORDER BY cid LIMIT ?" params:@[rev, @(limit)] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:435:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT block FROM ipld_blocks WHERE cid = ?" params:@[cid] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:440:    return [self.database executeParameterizedQuery:@"SELECT cid, block AS block_data, size, rev FROM ipld_blocks LIMIT ? OFFSET ?" params:@[@(limit), @(offset)] modelClass:[PDSDatabaseBlock class] error:error] ?: @[];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:445:    return [self.database executeParameterizedUpdate:sql params:@[block.cid ?: [NSNull null], block.blockData ?: [NSNull null], @(block.size), block.rev ?: [NSNull null]] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:457:    return [self.database executeParameterizedUpdate:@"DELETE FROM ipld_blocks WHERE cid = ?" params:@[cid] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:465:    NSArray *results = [self.database executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:470:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM ipld_blocks" params:@[] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:513:    return [self.database executeParameterizedUpdate:sql params:@[self.did ?: @"", privateKey ?: [NSNull null], publicKey ?: [NSNull null], @(now), @(now)] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:517:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT private_key FROM signing_keys WHERE did = ?" params:@[self.did ?: @""] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:544:    return [self.database executeParameterizedUpdate:sql params:@[self.did ?: @"", encryptedKey, compressedPublicKey, salt, @(now), @(now)] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:554:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT encrypted_private_key, encryption_salt FROM rotation_keys WHERE did = ?" params:@[self.did ?: @""] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:576:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT public_key_compressed FROM rotation_keys WHERE did = ?" params:@[self.did ?: @""] error:error];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:581:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM rotation_keys WHERE did = ? LIMIT 1" params:@[self.did ?: @""] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:597:    NSArray *results = [self.database executeParameterizedQuery:@"SELECT name FROM sqlite_master WHERE type='table' AND name=?" params:@[tableName] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:599:    NSArray *info = [self.database executeUnsafeRawQuery:[NSString stringWithFormat:@"PRAGMA table_info(%@)", tableName] error:nil];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:601:    return [self.database executeUnsafeRawSQL:[NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@ %@", tableName, columnName, type] error:nil];
+./Garazyk/Sources/Database/PDSQueryDatabase.h:54: @method executeUnsafeRawSQL:error:
+./Garazyk/Sources/Database/PDSQueryDatabase.h:57:- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error;
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:89:    int rc = sqlite3_exec(db, "BEGIN IMMEDIATE", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:103:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:113:    rc = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerPooled.m:119:        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/PDSDatabase+AdminAudit.m:31:    result = [self executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+AdminAudit.m:83:    result = [self executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/PDSDatabase+AdminAudit.m:98:    result = [self executeParameterizedUpdate:sql params:@[cutoffStr] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:30:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[did] modelClass:[PDSDatabaseAccount class] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:37:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[normalizedHandle] modelClass:[PDSDatabaseAccount class] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:43:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[email] modelClass:[PDSDatabaseAccount class] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:49:    return [self.database executeParameterizedQuery:sql params:@[] modelClass:[PDSDatabaseAccount class] error:error] ?: @[];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:64:    return [self.database executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseAccount class] error:error] ?: @[];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:103:    if (![self.database executeParameterizedUpdate:sql params:params error:error]) {
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:145:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m:150:    return [self.database executeParameterizedUpdate:sql params:@[did] error:error];
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:122:        int rc = sqlite3_exec(self.db, "BEGIN", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:137:            sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:145:            rc = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Connection/ATProtoConnectionManagerSerial.m:152:                sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:14:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[token, @([[NSDate date] timeIntervalSince1970])] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:24:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[token, @([[NSDate date] timeIntervalSince1970])] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:34:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[sessionID, did, @([[NSDate date] timeIntervalSince1970])] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:50:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:62:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:68:    return [self.database executeParameterizedUpdate:sql params:@[token] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:74:    return [self.database executeParameterizedUpdate:sql params:@[accountDid] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:80:    return [self.database executeParameterizedUpdate:sql params:@[sessionID] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Session.m:86:    return [self.database executeParameterizedUpdate:sql params:@[did] error:error];
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:89:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:91:        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:112:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:135:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:167:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:202:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:237:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:263:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m:284:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1505:    NSArray *rows = [_database executeParameterizedQuery:query params:@[did, collection, rkey] error:nil];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1561:            NSArray *rows = [_database executeParameterizedQuery:query params:@[uri] error:nil];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1602:            NSArray *rows = [_database executeParameterizedQuery:query params:@[did] error:nil];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:163:    [db executeParameterizedUpdate:[schemaManager chatSchemaSQL] params:@[] error:nil];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:1001:        NSArray *rows = [(PDSDatabase *)serviceDatabase executeParameterizedQuery:query params:params error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:245:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:303:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:@[did, @"app.bsky.feed.generator", rkey] error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:351:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:408:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyFeedPack.m:519:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&queryError];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:151:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:333:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:372:        NSArray *itemRows = [services.appViewDatabase executeParameterizedQuery:itemQuery params:@[did, @"app.bsky.graph.listitem"] error:nil];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:675:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:776:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
+./Garazyk/Sources/Network/XrpcAppBskyGraphPack.m:845:        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
+./Garazyk/Sources/Network/XrpcLabelPack.m:92:        rows = [db executeParameterizedQuery:@"SELECT src, uri, cid, val, neg, cts, exp FROM labels "
+./Garazyk/Sources/Network/XrpcLabelPack.m:98:        rows = [db executeParameterizedQuery:@"SELECT src, uri, cid, val, neg, cts, exp FROM labels "
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.m:188:    NSArray<NSDictionary *> *itemRows = [appViewDatabase executeParameterizedQuery:
+./Garazyk/Sources/Network/XrpcAppBskyGraphHelpers.m:231:    NSArray *rows = [appViewDatabase executeParameterizedQuery:@"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1"
+./Garazyk/Sources/Network/XrpcHandler.m:266:        [self executeHandler:handler methodId:methodId request:request response:response];
+./Garazyk/Sources/Network/XrpcHandler.m:306:            [self executeHandler:handler methodId:methodId request:request response:response];
+./Garazyk/Sources/Network/XrpcHandler.m:320:            [self executeHandler:handler methodId:methodId request:request response:response];
+./Garazyk/Sources/Network/XrpcHandler.m:334:            [self executeHandler:handler methodId:methodId request:request response:response];
+./Garazyk/Sources/Network/XrpcHandler.m:347:        [self executeHandler:handler methodId:methodId request:request response:response];
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:80:    sqlite3_exec(gKeychainDB, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecItemLinuxStore.m:99:    int rc = sqlite3_exec(gKeychainDB, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Network/XrpcAdminPack.m:1342:    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql
+./Garazyk/Sources/Network/XrpcAdminPack.m:1371:    BOOL success = [db executeParameterizedUpdate:sql params:params error:&updateError];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:54:    return [self.database executeParameterizedUpdate:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:59:    NSArray *results = [self.database executeParameterizedQuery:sql params:@[cid] error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:87:    NSArray *results = [self.database executeParameterizedQuery:sql params:params error:error];
+./Garazyk/Sources/Database/ActorStore/PDSActorStore+Blob.m:97:    return [self.database executeParameterizedUpdate:sql params:@[cid, did] error:error];
+./Garazyk/Sources/Video/JelczDatabase.m:95:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:97:        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+./Garazyk/Sources/Video/JelczDatabase.m:123:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:153:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:198:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:238:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:279:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:312:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:346:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:378:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/JelczDatabase.m:407:    [self.connectionManager execute:^(sqlite3 *db) {
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:71:    return [self.database executeParameterizedUpdate:sql params:@[@(width), @(height), now, jobId] error:error];
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:79:    return [self.database executeParameterizedUpdate:sql params:@[@(seconds), now, jobId] error:error];
+./Garazyk/Sources/Video/PDSLocalVideoJobStore.m:85:    return [self.database executeParameterizedQuery:sql params:@[@(limit)] error:error];

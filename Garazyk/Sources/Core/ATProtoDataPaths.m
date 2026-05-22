@@ -81,6 +81,9 @@
 }
 
 - (NSString *)keyPathForDid:(NSString *)did {
+    if (![ATProtoValidator validateDID:did error:nil]) {
+        return nil;
+    }
     return [self.keysDirectory stringByAppendingPathComponent:did];
 }
 

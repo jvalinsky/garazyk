@@ -1,0 +1,314 @@
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:11:    - Last sequence number for each repo
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:43: * @abstract Maintains per-repository relay cursor, root, revision, and status state.
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:56: * @param rev The repository revision string after the commit.
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:57: * @param seq The firehose sequence number for the commit event.
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:61:                         rev:(NSString *)rev
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:62:                         seq:(int64_t)seq;
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:98: * @abstract Returns the last sequence cursor seen for a repository.
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.h:100: * @return The last sequence number, or zero when no cursor is tracked.
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:24:@property (nonatomic, strong) SubscribeReposHandler *subscribeReposHandler;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:40:               subscribeReposHandler:(SubscribeReposHandler *)handler {
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:44:        _subscribeReposHandler = handler;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:45:        if (_subscribeReposHandler && !_subscribeReposHandler.eventBuffer) {
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:46:            _subscribeReposHandler.eventBuffer = buffer;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:66:        // Extract sequence number and event type
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:67:        int64_t seq = 0;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:74:            if (self.subscribeReposHandler) {
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:75:                [self.subscribeReposHandler broadcastCommitEvent:commitEvent];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:76:                seq = (int64_t)commitEvent.seq;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:78:                seq = (int64_t)commitEvent.seq;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:79:                [self.eventBuffer appendEvent:commitEvent seq:seq];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:82:            GZ_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:87:            if (self.subscribeReposHandler) {
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:88:                [self.subscribeReposHandler broadcastIdentityChange:identityEvent.did handle:identityEvent.handle];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:89:                seq = (int64_t)identityEvent.seq;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:91:                seq = (int64_t)identityEvent.seq;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:92:                [self.eventBuffer appendEvent:identityEvent seq:seq];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:95:            GZ_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:100:            if (self.subscribeReposHandler) {
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:101:                [self.subscribeReposHandler broadcastAccountStatus:accountEvent.did active:accountEvent.active status:accountEvent.status];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:102:                seq = (int64_t)accountEvent.seq;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:104:                seq = (int64_t)accountEvent.seq;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:105:                [self.eventBuffer appendEvent:accountEvent seq:seq];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:108:            GZ_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:117:            seq = [eventDict[@"seq"] longLongValue];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:118:            [self.eventBuffer appendEvent:eventDict seq:seq];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:120:            if (self.subscribeReposHandler) {
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:124:                    [self.subscribeReposHandler broadcastEventData:data];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:145:        didReceiveCursor:(int64_t)cursor
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:147:    GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received cursor %lld from upstream %@", (long long)cursor, url);
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:148:    // We don't necessarily update our local sequence based on upstream cursor
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:154:    if (self.subscribeReposHandler) {
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.m:155:        return self.subscribeReposHandler.attachedConnections.count;
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:67: * @abstract Records the latest observed firehose sequence.
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:68: * @param seq The observed sequence number.
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:70:- (void)recordSequence:(int64_t)seq;
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:73: * @abstract Sets the current relay sequence gauge.
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:74: * @param seq The sequence number to expose as current.
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:76:- (void)setCurrentSequence:(int64_t)seq;
+./Garazyk/Sources/Sync/Relay/RelayMetrics.h:126:/** Latest sequence exposed by the relay. */
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:22:    // Required fields per com.atproto.sync.subscribeRepos#commit
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:23:    payload[@"seq"] = @(event.seq);
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:28:    payload[@"rev"] = event.rev;
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:29:    payload[@"since"] = event.since ?: [NSNull null];
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:58:    payload[@"seq"] = @(event.seq);
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:61:    payload[@"rev"] = event.rev ?: @"";
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:69:    payload[@"seq"] = @(event.seq);
+./Garazyk/Sources/Sync/Relay/EventFormatter.m:82:    payload[@"seq"] = @(event.seq);
+./Garazyk/Sources/Sync/Relay/RelayClient.h:9: Supports cursor-based resumption and automatic reconnection.
+./Garazyk/Sources/Sync/Relay/RelayClient.h:51:- (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor;
+./Garazyk/Sources/Sync/Relay/RelayClient.h:75:/*! Current cursor position (sequence number). */
+./Garazyk/Sources/Sync/Relay/RelayClient.h:119:/*! Gets stored cursor for a repo. */
+./Garazyk/Sources/Sync/Relay/RelayClient.h:122:/*! Stores a cursor for a repo. */
+./Garazyk/Sources/Sync/Relay/RelayClient.h:123:- (void)storeCursor:(int64_t)cursor forRepo:(NSString *)repo;
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:19:@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostSeqs;           // url -> seq
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:307:- (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:311:            self.hostSeqs[url] = @(cursor);
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:313:        [[RelayMetrics sharedMetrics] recordSequence:cursor];
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:316:            [delegate upstreamManager:self didReceiveCursor:cursor fromUpstream:url];
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:355:    __block int64_t seq = 0;
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:357:        seq = [self.hostSeqs[url] longLongValue];
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:359:    return seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:7:@property (nonatomic, assign) int64_t seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:55:- (void)appendEvent:(id)event seq:(int64_t)seq {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:56:    [self appendEvent:event seq:seq timestamp:[NSDate date]];
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:59:- (void)appendEvent:(id)event seq:(int64_t)seq timestamp:(NSDate *)timestamp {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:63:        e.seq = seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:66:        if (self.newestSeq < seq) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:67:            self.newestSeq = seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:69:        if (self.oldestSeq < 0 || seq < self.oldestSeq) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:70:            self.oldestSeq = seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:79:                self.oldestSeq = ((BufferedEvent *)self.buffer[0]).seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:85:- (nullable NSArray *)eventsAfterCursor:(int64_t)cursor count:(NSUInteger)count {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:89:            if (e.seq > cursor) {
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.m:151:            self.oldestSeq = ((BufferedEvent *)self.buffer[0]).seq;
+./Garazyk/Sources/Sync/Relay/RelayMetrics.m:134:- (void)recordSequence:(int64_t)seq {
+./Garazyk/Sources/Sync/Relay/RelayMetrics.m:136:        if (seq > self.currentSequence) {
+./Garazyk/Sources/Sync/Relay/RelayMetrics.m:137:            self.currentSequence = seq;
+./Garazyk/Sources/Sync/Relay/RelayMetrics.m:142:- (void)setCurrentSequence:(int64_t)seq {
+./Garazyk/Sources/Sync/Relay/RelayMetrics.m:144:        self.currentSequence = seq;
+./Garazyk/Sources/Sync/Relay/RelayMetrics.m:201:        [metrics appendString:@"# HELP relay_current_sequence Current highest sequence number\n"];
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:13:    - Supports cursor-based replay for new subscribers
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:46: @property subscribeReposHandler
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:50:@property (nonatomic, readonly) SubscribeReposHandler *subscribeReposHandler;
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:67: @method initWithEventBuffer:subscribeReposHandler:
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:77:              subscribeReposHandler:(SubscribeReposHandler *)handler
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:127: @abstract Called when cursor (sequence number) is received.
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:130: @param cursor The sequence number.
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:134:       didReceiveCursor:(int64_t)cursor
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:32:                           rev:(NSString *)rev
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:33:                           seq:(int64_t)seq {
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:36:        self.repoRevs[repoDID] = rev;
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:37:        self.repoSeqs[repoDID] = @(seq);
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:72:    __block NSString *rev;
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:74:        rev = self.repoRevs[repoDID];
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:76:    return rev;
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:80:    __block int64_t cursor = -1;
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:82:        NSNumber *seq = self.repoSeqs[repoDID];
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:83:        if (seq) {
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:84:            cursor = seq.longLongValue;
+./Garazyk/Sources/Sync/Relay/RelayRepoStateManager.m:87:    return cursor;
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:54:/** Firehose sequence associated with the event, when known. */
+./Garazyk/Sources/Sync/Relay/RelayEventValidator.h:55:@property (nonatomic, assign) int64_t sequence;
+./Garazyk/Sources/Sync/Relay/RelayAPIHandler.m:430:                      [NSString stringWithFormat:@"wss://%@/xrpc/com.atproto.sync.subscribeRepos", hostname];
+./Garazyk/Sources/Sync/Relay/RelayClient.m:71:    GZ_LOG_SYNC_INFO(@"RelayClient: Connecting to %@ (cursor=%lld)", wsURL, (long long)self.currentSeq);
+./Garazyk/Sources/Sync/Relay/RelayClient.m:86:    NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
+./Garazyk/Sources/Sync/Relay/RelayClient.m:95:        components.query = [NSString stringWithFormat:@"cursor=%lld", (long long)self.currentSeq];
+./Garazyk/Sources/Sync/Relay/RelayClient.m:138:    __block int64_t cursor = 0;
+./Garazyk/Sources/Sync/Relay/RelayClient.m:140:        cursor = [self.cursorStorage[repo] longLongValue];
+./Garazyk/Sources/Sync/Relay/RelayClient.m:142:    return cursor;
+./Garazyk/Sources/Sync/Relay/RelayClient.m:145:- (void)storeCursor:(int64_t)cursor forRepo:(NSString *)repo {
+./Garazyk/Sources/Sync/Relay/RelayClient.m:147:        self.cursorStorage[repo] = @(cursor);
+./Garazyk/Sources/Sync/Relay/RelayClient.m:174:    GZ_LOG_SYNC_INFO(@"RelayClient: Scheduling reconnect to %@ (attempt=%ld/%ld, delay=%.1fs, cursor=%lld)",
+./Garazyk/Sources/Sync/Relay/RelayClient.m:200:    // Phase 5: Use seq as cursor per ATProto spec
+./Garazyk/Sources/Sync/Relay/RelayClient.m:201:    [self storeCursor:event.seq forRepo:event.repo];
+./Garazyk/Sources/Sync/Relay/RelayClient.m:202:    self.currentSeq = event.seq;
+./Garazyk/Sources/Sync/Relay/RelayClient.m:213:    self.currentSeq = event.seq;
+./Garazyk/Sources/Sync/Relay/RelayClient.m:224:    self.currentSeq = event.seq;
+./Garazyk/Sources/Sync/Relay/RelayClient.m:228:    self.currentSeq = event.seq;
+./Garazyk/Sources/Sync/Relay/RelayClient.m:249:    int64_t seq = self.currentSeq;  // Capture value
+./Garazyk/Sources/Sync/Relay/RelayClient.m:252:            [delegate relayClient:self didReceiveCursor:seq];
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:14:    - Efficient sequence-based retrieval for backfill
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:24: * @abstract Stores recent relay events for cursor and time-based replay.
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:50: * @param seq The firehose sequence number for the event.
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:52:- (void)appendEvent:(id)event seq:(int64_t)seq;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:57: * @param seq The firehose sequence number for the event.
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:60:- (void)appendEvent:(id)event seq:(int64_t)seq timestamp:(NSDate *)timestamp;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:63: * @abstract Returns retained events with sequence numbers after a cursor.
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:64: * @param cursor The exclusive lower sequence bound.
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:67:- (nullable NSArray *)eventsAfterCursor:(int64_t)cursor count:(NSUInteger)count;
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:76:/** Returns the oldest retained sequence number. */
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:78:/** Returns the newest retained sequence number. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketHeartbeatPolicy.m:34:    // Not waiting for pong. Check if interval has elapsed since last ping
+./Garazyk/Sources/Sync/Firehose/Firehose.m:16:@property (nonatomic, assign, readwrite) int64_t cursor;
+./Garazyk/Sources/Sync/Firehose/Firehose.m:24:@property (nonatomic, assign, readwrite) int64_t cursor;
+./Garazyk/Sources/Sync/Firehose/Firehose.m:44:- (FirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
+./Garazyk/Sources/Sync/Firehose/Firehose.m:47:    self.cursor = cursor;
+./Garazyk/Sources/Sync/Firehose/Firehose.m:48:    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:cursor
+./Garazyk/Sources/Sync/Firehose/Firehose.m:69:    NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
+./Garazyk/Sources/Sync/Firehose/Firehose.m:71:    if (self.cursor > 0) {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:72:        path = [path stringByAppendingFormat:@"?cursor=%lld", (long long)self.cursor];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:175:        event.seq = [payload[@"seq"] longLongValue];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:180:        event.rev = payload[@"rev"];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:181:        event.since = payload[@"since"];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:193:        event.seq = [payload[@"seq"] longLongValue];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:202:        event.seq = [payload[@"seq"] longLongValue];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:212:        event.seq = [payload[@"seq"] longLongValue];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:214:        event.rev = payload[@"rev"];
+./Garazyk/Sources/Sync/Firehose/Firehose.m:291:- (instancetype)initWithCursor:(int64_t)cursor collections:(nullable NSArray<NSString *> *)collections {
+./Garazyk/Sources/Sync/Firehose/Firehose.m:294:        _cursor = cursor;
+./Garazyk/Sources/Sync/Firehose/Firehose.m:319:                         rev:(NSString *)rev
+./Garazyk/Sources/Sync/Firehose/Firehose.m:323:    event.rev = rev;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:6: @abstract Handler for com.atproto.sync.subscribeRepos endpoint.
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:37:/*! Error domain for subscribeRepos handler. */
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:50:- (void)subscribeReposHandlerDidStart:(id)handler;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:51:- (void)subscribeReposHandlerDidStop:(id)handler;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:52:- (void)subscribeReposHandler:(id)handler didAcceptConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:53:- (void)subscribeReposHandler:(id)handler didCloseConnection:(WebSocketConnection *)connection;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:70:    DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; use acceptUpgradedConnection:request:");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:98:    DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; this legacy listener is deprecated");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:141:/*! Returns and increments the next sequence number for this handler's stream. */
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.h:51: * @abstract Returns the next sequence number result.
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:51:  if (commit.rev.length > 0 && revBlockListProvider) {
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.m:52:    NSArray<NSData *> *cids = revBlockListProvider(commit.rev);
+./Garazyk/Sources/Sync/Firehose/FirehoseCARBuilder.h:10:typedef NSArray<NSData *> * _Nullable (^PDSRevisionBlockListProvider)(NSString *rev);
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:20:    _sequenceQueue = dispatch_queue_create("com.atproto.firehose.sequence", DISPATCH_QUEUE_SERIAL);
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:26:   __block NSUInteger seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:29:     seq = _sequenceNumber;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:31:  event.seq = seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:41:   __block NSUInteger seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:44:     seq = _sequenceNumber;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:46:  event.seq = seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:56:   __block NSUInteger seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:59:     seq = _sequenceNumber;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:61:  event.seq = seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:71:   __block NSUInteger seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:74:     seq = _sequenceNumber;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:76:  event.seq = seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:104:  __block NSUInteger seq;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:107:    seq = _sequenceNumber;
+./Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m:109:  return seq;
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:69: * @abstract Called when an upstream reports a cursor.
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:70: * @param manager The upstream manager receiving the cursor.
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:71: * @param cursor The latest upstream sequence cursor.
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:72: * @param url The upstream URL that reported the cursor.
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:74:- (void)upstreamManager:(RelayUpstreamManager *)manager didReceiveCursor:(int64_t)cursor fromUpstream:(NSString *)url;
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:139:/*! Returns the current sequence for an upstream host. */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:10: with cursor-based replay support.
+./Garazyk/Sources/Sync/Firehose/Firehose.h:60: Per com.atproto.sync.subscribeRepos#commit lexicon.
+./Garazyk/Sources/Sync/Firehose/Firehose.h:66:/*! The stream sequence number of this message. */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:67:@property (nonatomic, assign) int64_t seq;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:81:/*! The rev of the emitted commit (TID). */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:82:@property (nonatomic, copy) NSString *rev;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:84:/*! The rev of the last emitted commit from this repo (nullable). */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:85:@property (nonatomic, copy, nullable) NSString *since;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:113: @discussion Per com.atproto.sync.subscribeRepos#sync lexicon.
+./Garazyk/Sources/Sync/Firehose/Firehose.h:117:/*! The stream sequence number of this message. */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:118:@property (nonatomic, assign) int64_t seq;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:126:/*! The rev of the commit. */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:127:@property (nonatomic, copy) NSString *rev;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:133:                         rev:(NSString *)rev
+./Garazyk/Sources/Sync/Firehose/Firehose.h:145:/*! The stream sequence number of this message. */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:146:@property (nonatomic, assign) int64_t seq;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:168:/*! The stream sequence number of this message. */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:169:@property (nonatomic, assign) int64_t seq;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:264:@property (nonatomic, assign, readonly) int64_t cursor;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:272:- (instancetype)initWithCursor:(int64_t)cursor collections:(nullable NSArray<NSString *> *)collections;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:298:/*! Creates a new subscription with optional cursor and collection filter. */
+./Garazyk/Sources/Sync/Firehose/Firehose.h:299:- (FirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:30:    @"com.atproto.pds.subscribeRepos";
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:67:- (BOOL)parseCursorString:(nullable NSString *)cursor
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:79:- (void)replayEventsAfterCursor:(NSUInteger)cursor
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:84:- (void)bufferRelayEventData:(NSData *)eventData seq:(NSUInteger)seq;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:110:    _syncQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.sync",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:115:        "com.atproto.pds.subscribeRepos.broadcast", DISPATCH_QUEUE_CONCURRENT);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:206:  GZ_LOG_SYNC_INFO(@"Starting subscribeRepos WebSocket handler on port %d",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:214:  self.webSocketServer.subprotocol = @"com.atproto.sync.subscribeRepos";
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:224:          respondsToSelector:@selector(subscribeReposHandlerDidStart:)]) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:225:    [self.delegate subscribeReposHandlerDidStart:self];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:233:  GZ_LOG_SYNC_INFO(@"Stopping subscribeRepos WebSocket handler");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:263:          respondsToSelector:@selector(subscribeReposHandlerDidStop:)]) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:264:    [self.delegate subscribeReposHandlerDidStop:self];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:293:  GZ_LOG_SYNC_INFO(@"Accepting upgraded connection for subscribeRepos from %@", request.remoteAddress);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:311:                      subscribeReposHandler:didAcceptConnection:)]) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:312:    [self.delegate subscribeReposHandler:self
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:318:                                        cursor:[request queryParamForKey:@"cursor"]];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:326:      @"[%@] Accepted new WebSocket connection for subscribeRepos",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:338:                     (subscribeReposHandler:didAcceptConnection:)]) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:339:    [self.delegate subscribeReposHandler:self didAcceptConnection:connection];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:342:  [self sendInitialRepositoryStateToConnection:connection cursor:nil];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:347:  GZ_LOG_SYNC_INFO(@"[%@] Closed WebSocket connection for subscribeRepos",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:457:            commit.rev = commitMap[@"rev"];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:515:  GZ_LOG_SYNC_INFO(@"[Relay] broadcastCommitEvent: dispatching for repo=%@ seq=%lld", event.repo, (long long)event.seq);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:524:        GZ_LOG_SYNC_INFO(@"[Relay] broadcastCommitEvent: encoded %lu bytes, seq=%lu, broadcasting to subscribers",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:533:                                     seq:strongSelf.session.sequenceNumber];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:557:    // Required fields per subscribeRepos lexicon
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:562:    event.rev = commit.rev;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:563:    event.since =
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:564:        strongSelf.lastCommitRevByDID[repoDid]; // Previous commit rev for this repo
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:573:                                      revBlockListProvider:^NSArray<NSData *> * _Nullable(NSString * _Nonnull rev) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:576:                                               return [[innerSelf.userDatabasePool storeForDid:repoDid error:nil] listBlockCIDsForRevision:rev limit:200000 error:nil];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:583:    // Update the per-DID tracking for next event's since field
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:584:    if (commit.rev) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:585:      strongSelf.lastCommitRevByDID[repoDid] = commit.rev;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:592:          @"Commit event encoding failed for %@ at seq %lu, falling back "
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:598:      syncEvent.rev = commit.rev ?: @"";
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:620:                                   seq:strongSelf.session.sequenceNumber];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:627:    GZ_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:672:                                   seq:strongSelf.session.sequenceNumber];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:677:      GZ_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:718:                                   seq:strongSelf.session.sequenceNumber];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:723:      GZ_LOG_SYNC_INFO(@"Broadcast account status event for DID %@ (active=%d, status=%@), seq %lu",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:743:    // and "Not all message types need to include seq". Info events should NOT consume
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:744:    // a sequence number and should NOT be persisted.
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:802:                                        cursor:(nullable NSString *)cursor {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:806:  if (!cursor) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:807:    id cursorParam = connection.queryParams[@"cursor"];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:809:      cursor = cursorParam;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:814:        cursor = firstValue;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:819:  __block BOOL hasCursor = (cursor.length > 0);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:823:    cursorValid = [self parseCursorString:cursor outValue:&parsedCursor];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:825:      GZ_LOG_SYNC_INFO(@"Client requested resumption from cursor %@ (parsed as seq %lu)",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:826:                        cursor, (unsigned long)parsedCursor);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:828:      GZ_LOG_SYNC_WARN(@"Client requested resumption from invalid cursor: %@", cursor);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:831:    GZ_LOG_SYNC_INFO(@"No cursor requested by client, connection will start in live update mode");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:847:                           message:@"cursor must be a non-negative integer"
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:854:    // Per ATProto event-stream spec: "cursor is higher than current seq ("in the future"):
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:856:    // Deviation: treat future cursor as outdated cursor instead. Relays cache
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:862:          @"Future cursor %lu is ahead of server sequence %lu; "
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:863:          @"adjusting to cursor 0 and sending OutdatedCursor info for connection %@",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:868:                        message:@"Requested cursor is ahead of server sequence; replaying from beginning"
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:872:      GZ_LOG_SYNC_INFO(@"No cursor provided; replaying retained events before switching to live updates.");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:874:      GZ_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all retained events from the beginning.");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:882:      GZ_LOG_SYNC_WARN(@"Outdated cursor %lu adjusted to %lu for connection %@",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:886:                  message:@"Requested cursor exceeded limit. Possibly missing events"
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:891:      GZ_LOG_SYNC_INFO(@"Cursor %lu is up to date at server sequence %lu; client is listening for live events.",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:895:      GZ_LOG_SYNC_INFO(@"Backfill requested (backlog: %lu). Replaying events from cursor %lu.",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:903:- (void)replayEventsAfterCursor:(NSUInteger)cursor
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:917:                [self.serviceDatabases getEventsSince:(int64_t)cursor
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:925:            GZ_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:926:                              (unsigned long)events.count, (unsigned long)cursor, connection.remoteAddress);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:929:                int64_t dbSeq = [eventDict[@"seq"] longLongValue];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:946:                    payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:948:                    patchedPayload[@"seq"] = @(dbSeq);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:953:                        GZ_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:954:                                           [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:971:            NSArray *bufferedEvents = [self.eventBuffer eventsAfterCursor:(int64_t)cursor count:limit];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:973:                GZ_LOG_SYNC_INFO(@"No buffered events to replay after cursor %lu for %@",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:974:                                  (unsigned long)cursor, connection.remoteAddress);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:978:            GZ_LOG_SYNC_INFO(@"Replaying %lu buffered events after cursor %lu for connection %@",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:979:                              (unsigned long)bufferedEvents.count, (unsigned long)cursor,
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1016:- (void)bufferRelayEventData:(NSData *)eventData seq:(NSUInteger)seq {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1017:  if (self.serviceDatabases || !self.eventBuffer || !eventData || seq == 0) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1020:  [self.eventBuffer appendEvent:eventData seq:(int64_t)seq];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1038:- (BOOL)parseCursorString:(nullable NSString *)cursor
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1040:  if (cursor.length == 0) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1048:  if ([cursor rangeOfCharacterFromSet:nonDigits].location != NSNotFound) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1052:  NSScanner *scanner = [NSScanner scannerWithString:cursor];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1072:    GZ_LOG_SYNC_WARN(@"Failed to read oldest persisted sequence: %@", error);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1079:  id seqValue = events.firstObject[@"seq"];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1139:    if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1140:      [self.delegate subscribeReposHandler:self didCloseConnection:connection];
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1186:          GZ_LOG_SYNC_ERROR(@"Failed to get max event sequence: %@", dbError);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1193:    GZ_LOG_SYNC_INFO(@"Initialized sequence number to %lu",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1203:    GZ_LOG_SYNC_INFO(@"Firehose persistence disabled. Starting from sequence 0.");

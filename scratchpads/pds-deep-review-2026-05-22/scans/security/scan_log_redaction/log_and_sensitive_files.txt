@@ -1,0 +1,8 @@
+./Garazyk/Sources/App/PDSApplication.m
+./Garazyk/Sources/CLI/PDSCLIAccountCommand.m
+./Garazyk/Sources/CLI/PDSCLIAdminCommand.m
+./Garazyk/Sources/CLI/PDSCLIInitCommand.m
+./Garazyk/Sources/CLI/PDSCLIInputHelper.m
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m
+./Garazyk/Sources/Debug/GZLogger.m

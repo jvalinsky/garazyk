@@ -1,0 +1,11 @@
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:168:                               @"DELETE FROM germ_mailbox_messages WHERE id IN (%@)", placeholders];
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:293:                               @"DELETE FROM germ_rendezvous_messages WHERE id IN (%@)", placeholders];
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:147:    NSString *sql = [NSString stringWithFormat:@"INSERT OR REPLACE INTO oauth_clients (%@) VALUES (%@)",
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:151:    NSString *checkMarkerSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type='table' AND name='%@'", schemaMarkerTable];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:601:    return [self.database executeUnsafeRawSQL:[NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@ %@", tableName, columnName, type] error:nil];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:71:        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:129:        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:498:        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+./Garazyk/Sources/AppView/Services/FeedService.m:400:    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid, value FROM records WHERE did IN (%@) AND collection = ?",
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:999:        NSString *query = [NSString stringWithFormat:@"SELECT did, handle FROM accounts WHERE did IN (%@)", placeholders];
+./Garazyk/Sources/Network/XrpcAdminPack.m:1341:                     @"FROM invite_codes ORDER BY %@ LIMIT ? OFFSET ?", orderBy];

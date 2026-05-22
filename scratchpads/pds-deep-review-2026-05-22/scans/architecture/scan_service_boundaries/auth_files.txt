@@ -1,0 +1,4 @@
+./Garazyk/Sources/Security/PDSAuthzManager.h
+./Garazyk/Sources/Security/PDSAuthzManager.m
+./Garazyk/Sources/Security/PDSBiometricKeychain.h
+./Garazyk/Sources/Security/PDSBiometricKeychain.m

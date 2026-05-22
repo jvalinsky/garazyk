@@ -1,0 +1,2 @@
+./Garazyk/Sources/Core/Base58.h
+./Garazyk/Sources/Repository/STAR.h

@@ -1,0 +1,56 @@
+./Garazyk/Sources/Lexicon/ATProtoLexiconRegistry.m:93:    NSData *data = [NSData dataWithContentsOfFile:filePath options:0 error:&readError];
+./Garazyk/Sources/Compat/Foundation/NSDataCompat.h:16:+ (nullable NSData *)dataWithContentsOfFile:(NSString *)path
+./Garazyk/Sources/Compat/Foundation/NSDataCompat.m:9:+ (nullable NSData *)dataWithContentsOfFile:(NSString *)path
+./Garazyk/Sources/Compat/Foundation/NSDataCompat.m:12:    NSData *data = [NSData dataWithContentsOfFile:path];
+./Garazyk/Sources/Sync/Relay/RelayConfiguration.m:51:    NSData *data = [NSData dataWithContentsOfFile:path];
+./Garazyk/Sources/Compat/PlatformShims/CoreFoundation/CFNetwork.m:28:    struct __CFHTTPMessage *msg = calloc(1, sizeof(struct __CFHTTPMessage));
+./Garazyk/Sources/Compat/PlatformShims/CoreFoundation/CFNetwork.m:108:    struct __CFURL *url = calloc(1, sizeof(struct __CFURL));
+./Garazyk/Sources/Blob/PDSDiskBlobProvider.m:70:    return [NSData dataWithContentsOfURL:blobURL options:NSDataReadingMappedIfSafe error:error];
+./Garazyk/Sources/CLI/PDSCLIHealthCommand.m:83:    NSString *pidContent = [NSString stringWithContentsOfFile:pidPath encoding:NSUTF8StringEncoding error:nil];
+./Garazyk/Sources/Compat/PlatformShims/CrashReporting/PDSCrashReporter.m:200:    ss.ss_sp = malloc(SIGSTKSZ);
+./Garazyk/Sources/Video/VideoTranscoder.m:65:            result = [NSData dataWithContentsOfURL:outputURL];
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:46:    NSData *data = [NSData dataWithContentsOfFile:configPath options:0 error:&error];
+./Garazyk/Sources/CLI/PDSCLIDispatcher.m:48:    NSData *data = [NSData dataWithContentsOfFile:configPath];
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:82:    SecKeyRef key = malloc(sizeof(struct SecKey));
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:93:    SecKeyRef publicKey = malloc(sizeof(struct SecKey));
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:135:             buf = malloc(len);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:210:    SecKeyRef key = malloc(sizeof(struct SecKey));
+./Garazyk/Sources/Compat/PlatformShims/Security/SecKey.m:236:    unsigned char *sig = malloc(sigLen);
+./Garazyk/Sources/Video/VideoThumbnailGenerator.m:168:            NSData *jpegData = [NSData dataWithContentsOfURL:outputURL];
+./Garazyk/Sources/CLI/PDSCLIDaemonCommand.m:233:    NSString *content = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+./Garazyk/Sources/Video/VideoWorker.m:400:                    NSData *originalVideoData = [NSData dataWithContentsOfURL:inputURL options:0 error:&storeError];
+./Garazyk/Sources/Video/ATProtoVideoProcessor.m:182:        NSData *transcodedData = [NSData dataWithContentsOfURL:transcodedURL
+./Garazyk/Sources/Admin/PDSInstallerCommand.m:135:    NSData *plistData = [NSData dataWithContentsOfFile:sourcePlist options:0 error:&error];
+./Garazyk/Sources/Admin/PDSInstallerCommand.m:456:            NSString *content = [NSString stringWithContentsOfFile:logPath encoding:NSUTF8StringEncoding error:&error];
+./Garazyk/Sources/Admin/PDSAdminAuth.m:209:    NSString *value = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+./Garazyk/Sources/Admin/PDSAdminAuth.m:224:    NSData *data = [NSData dataWithContentsOfFile:path];
+./Garazyk/Sources/Admin/PDSAdminAuth.m:422:        NSString *content = [NSString stringWithContentsOfFile:passwordFile
+./Garazyk/Sources/Chat/Server/Config/ChatConfiguration.m:35:    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
+./Garazyk/Sources/Compat/PlatformShims/Security/Security.h:66:    return (CFHostRef)malloc(1);
+./Garazyk/Sources/App/MSTViewer/MSTViewerHandler.m:139:            NSData *data = [NSData dataWithContentsOfFile:path options:0 error:&error];
+./Garazyk/Sources/App/MSTViewer/MSTViewerHandler.m:151:        return [NSData dataWithContentsOfFile:resourcePath];
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:103:        [NSData dataWithContentsOfFile:candidate options:0 error:&readError];
+./Garazyk/Sources/AppView/Server/AppViewRuntime.m:100:    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
+./Garazyk/Sources/Network/HttpStreamingBody.m:161:        return [NSData dataWithContentsOfFile:self.tempFilePath options:0 error:nil];
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:95:    unsigned char *buf = malloc(len);
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:263:    unsigned char *sig = malloc(RSA_size(keyPair.rsaKey));
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:440:    unsigned char *buf = malloc(len);
+./Garazyk/Sources/Auth/PDSOpenSSLSessionKeyManager.m:448:    unsigned char *pubBuf = malloc(pubLen);
+./Garazyk/Sources/Auth/PDSOpenSSLKeyManager.m:124:    NSData *privateKey = [NSData dataWithContentsOfFile:[self privateKeyPath]
+./Garazyk/Sources/Repository/CAR.m:139:    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
+./Garazyk/Sources/Repository/CAR.m:141:    NSData *data = [NSData dataWithContentsOfFile:path];
+./Garazyk/Sources/App/OAuthDemo/OAuthDemoHandler.m:102:    NSData *data = [NSData dataWithContentsOfFile:filePath options:0 error:&error];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:313:      [NSData dataWithContentsOfFile:path options:0 error:&readError];
+./Garazyk/Sources/App/ATProtoServiceConfiguration.m:315:  NSData *data = [NSData dataWithContentsOfFile:path];
+./Garazyk/Sources/Repository/STAR.m:616:    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
+./Garazyk/Sources/Core/Base58.m:35:    uint8_t *buf = calloc(size, sizeof(uint8_t));
+./Garazyk/Sources/Core/Base58.m:93:    uint8_t *buf = calloc(size, sizeof(uint8_t));
+./Garazyk/Sources/PLC/PLCRotationKeyManager.m:100:        NSData *keyData = [NSData dataWithContentsOfFile:keyPath];
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:884:        NSData *data = [NSData dataWithContentsOfURL:url options:0 error:&resolveError];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1347:      (uint8_t *)malloc(xData.length + yData.length + 1);
+./Garazyk/Sources/Auth/OAuth2Handler.m:1916:  NSString *html = [NSString stringWithContentsOfFile:filePath
+./Garazyk/Sources/Auth/OAuth2Handler.m:4006:  NSData *data = [NSData dataWithContentsOfFile:filePath options:0 error:&readError];
+./Garazyk/Sources/Network/HttpResponse.m:203:        return [NSData dataWithContentsOfFile:self.bodyFilePath];
+./Garazyk/Sources/Network/HttpResponse.m:213:        _body = [NSData dataWithContentsOfFile:_bodyFilePath];
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2033:    NSData *data = [NSData dataWithContentsOfFile:filePath];
+./Garazyk/Sources/Mikrus/MikrusRuntime.m:36:    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];

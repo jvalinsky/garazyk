@@ -1,3 +1,8 @@
+---
+name: narratives
+description: Understand how a system evolved by writing decision-history narratives.
+---
+
 # Narrative Tracking
 
 **Narratives are the source of truth. Commits are just evidence.**

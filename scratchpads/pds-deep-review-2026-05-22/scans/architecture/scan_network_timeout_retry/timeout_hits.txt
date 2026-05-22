@@ -1,0 +1,120 @@
+./Garazyk/Sources/Network/HttpServer.m:56:@property(nonatomic, assign) NSTimeInterval headerStartTime;
+./Garazyk/Sources/Network/HttpServer.m:128:static const NSTimeInterval kHttpHeaderTimeout = 5.0;
+./Garazyk/Sources/Network/HttpServer.m:297:  // Wait for READY state with 5s timeout
+./Garazyk/Sources/Network/HttpServer.m:298:  dispatch_time_t timeout =
+./Garazyk/Sources/Network/HttpServer.m:299:      dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/HttpServer.m:300:  if (dispatch_semaphore_wait(self.readySemaphore, timeout) != 0) {
+./Garazyk/Sources/Network/HttpServer.m:511:        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 600 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/HttpServer.m:548:        NSTimeInterval requestStart = [NSDate timeIntervalSinceReferenceDate];
+./Garazyk/Sources/Network/HttpServer.m:556:        NSTimeInterval latency = [NSDate timeIntervalSinceReferenceDate] - requestStart;
+./Garazyk/Sources/Network/HttpServer.m:1052:    // Wait for CANCELLED state with 2s timeout
+./Garazyk/Sources/Network/HttpServer.m:1053:    dispatch_time_t timeout =
+./Garazyk/Sources/Network/HttpServer.m:1054:        dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/HttpServer.m:1055:    dispatch_semaphore_wait(self.stopSemaphore, timeout);
+./Garazyk/Sources/Network/HttpServer.m:1061:  dispatch_group_wait(self.taskGroup, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:344:  safeOptions.timeout = 10.0;
+./Garazyk/Sources/Network/HttpRetryPolicy.m:16:- (instancetype)initWithDecision:(HttpRetryDecision)decision delay:(NSTimeInterval)delay {
+./Garazyk/Sources/Network/HttpRetryPolicy.m:47:            NSTimeInterval delay = self.initialDelay * pow(self.backoffMultiplier, attempt);
+./Garazyk/Sources/Network/XrpcRepoPack.m:280:                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/XrpcRepoPack.m:350:                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:26:@property (nonatomic, assign) NSTimeInterval headerStartTime;
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:29:static const NSTimeInterval kHttpHeaderTimeout = 30.0;
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:90:    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:93:            self.errorHandler([NSError errorWithDomain:@"HttpConnectionIOCoordinator" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Read timeout"}]);
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:105:        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(50 * NSEC_PER_MSEC)),
+./Garazyk/Sources/Network/HttpConnectionDriver.m:19:                     headerOpened:(NSTimeInterval)headerOpened
+./Garazyk/Sources/Network/HttpConnectionDriver.m:20:                              now:(NSTimeInterval)now
+./Garazyk/Sources/Network/HttpConnectionDriver.m:21:                    headerTimeout:(NSTimeInterval)headerTimeout {
+./Garazyk/Sources/Network/HttpBufferPool.m:65:    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_SEC)), 
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:103:    options.timeout = 10.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:113:    copy.timeout = self.timeout;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:240:    NSTimeInterval timeout = effective.timeout;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:263:        curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)timeout);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:264:        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)MIN(timeout, 10.0));
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:329:            curl_multi_wait(multi, NULL, 0, (int)(timeout * 1000), &numfds);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:426:    NSTimeInterval timeout = (options ?: [ATProtoSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:427:    if (dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC))) != 0) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:585:    mutableRequest.timeoutInterval = effective.timeout;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:634:    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(effective.timeout * NSEC_PER_SEC)),
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:673:    NSTimeInterval timeout = (options ?: [ATProtoSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:674:    if (dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC))) != 0) {
+./Garazyk/Sources/Network/HttpProtocolDriver.h:134:- (BOOL)shouldContinueReading:(NSTimeInterval)headerStartTime
+./Garazyk/Sources/Network/HttpProtocolDriver.h:136:                   headerTimeout:(NSTimeInterval)headerTimeout
+./Garazyk/Sources/Network/HttpProtocolDriver.h:137:                             now:(NSTimeInterval)now;
+./Garazyk/Sources/Network/XrpcMiddleware.m:195:@property (nonatomic, assign) NSTimeInterval windowSeconds;
+./Garazyk/Sources/Network/XrpcMiddleware.m:206:+ (instancetype)perUser:(NSInteger)limit perWindow:(NSTimeInterval)windowSeconds {
+./Garazyk/Sources/Network/XrpcMiddleware.m:215:+ (instancetype)perIP:(NSInteger)limit perWindow:(NSTimeInterval)windowSeconds {
+./Garazyk/Sources/Network/XrpcMiddleware.m:392:        NSTimeInterval window = 60.0; // 1 minute window
+./Garazyk/Sources/Network/XrpcMiddleware.m:409:    NSTimeInterval window = 60.0; // 1 minute window
+./Garazyk/Sources/Network/XrpcIdentityPack.m:115:        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/XrpcIdentityPack.m:127:                plcResolver.timeout = 2.0;
+./Garazyk/Sources/Network/XrpcIdentityPack.m:142:                dispatch_semaphore_wait(listSem, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/XrpcIdentityPack.m:636:        dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/XrpcIdentityPack.m:673:        NSTimeInterval shortWindow = env[@"PDS_IDENTITY_SHORT_WINDOW"] ? [env[@"PDS_IDENTITY_SHORT_WINDOW"] doubleValue] : 300;
+./Garazyk/Sources/Network/XrpcIdentityPack.m:685:        NSTimeInterval longWindow = env[@"PDS_IDENTITY_LONG_WINDOW"] ? [env[@"PDS_IDENTITY_LONG_WINDOW"] doubleValue] : 86400;
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:92:    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:264:            plcResolver.timeout = 10.0;
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:373:    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:417:static NSTimeInterval const kPlcOperationTokenTTLSeconds = 15.0 * 60.0;
+./Garazyk/Sources/Network/XrpcProxyHandler.m:92:        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/XrpcProxyHandler.m:142:    NSTimeInterval proxyTimeoutSeconds = (NSClassFromString(@"XCTestCase") != Nil) ? 2.0 : 30.0;
+./Garazyk/Sources/Network/XrpcProxyHandler.m:156:                [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
+./Garazyk/Sources/Network/XrpcProxyHandler.m:184:    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(proxyTimeoutSeconds * NSEC_PER_SEC)));
+./Garazyk/Sources/Network/XrpcProxyHandler.m:190:        [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
+./Garazyk/Sources/Network/HttpProtocolDriver.m:79:- (BOOL)shouldContinueReading:(NSTimeInterval)headerStartTime
+./Garazyk/Sources/Network/HttpProtocolDriver.m:81:                   headerTimeout:(NSTimeInterval)headerTimeout
+./Garazyk/Sources/Network/HttpProtocolDriver.m:82:                             now:(NSTimeInterval)now {
+./Garazyk/Sources/Network/HttpProtocolDriver.m:94:    // Check header parse timeout — if the first byte of the current
+./Garazyk/Sources/Network/HttpProtocolDriver.m:98:        NSTimeInterval age = now - headerStartTime;
+./Garazyk/Sources/Network/XrpcAdminPack.m:35:static NSString *iso8601StringFromUnixTimestamp(NSTimeInterval timestamp);
+./Garazyk/Sources/Network/XrpcAdminPack.m:1237:static NSString *iso8601StringFromUnixTimestamp(NSTimeInterval timestamp) {
+./Garazyk/Sources/Network/XrpcAdminPack.m:1307:    NSTimeInterval createdAt = [row[@"created_at"] respondsToSelector:@selector(doubleValue)] ? [row[@"created_at"] doubleValue] : 0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:30:/** Request timeout in seconds. */
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:31:@property (nonatomic, assign) NSTimeInterval timeout;
+./Garazyk/Sources/Network/XrpcMiddleware.h:134:+ (instancetype)perUser:(NSInteger)limit perWindow:(NSTimeInterval)windowSeconds;
+./Garazyk/Sources/Network/XrpcMiddleware.h:143:+ (instancetype)perIP:(NSInteger)limit perWindow:(NSTimeInterval)windowSeconds;
+./Garazyk/Sources/Network/HttpConnectionDriver.h:24:                     headerOpened:(NSTimeInterval)headerOpened
+./Garazyk/Sources/Network/HttpConnectionDriver.h:25:                              now:(NSTimeInterval)now
+./Garazyk/Sources/Network/HttpConnectionDriver.h:26:                    headerTimeout:(NSTimeInterval)headerTimeout;
+./Garazyk/Sources/Network/RateLimiter.m:42:                  resetSeconds:(NSTimeInterval)resetSeconds
+./Garazyk/Sources/Network/RateLimiter.m:43:                   retryAfter:(NSTimeInterval)retryAfter {
+./Garazyk/Sources/Network/RateLimiter.m:237:- (RateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds {
+./Garazyk/Sources/Network/RateLimiter.m:255:                                              windowSeconds:(NSTimeInterval)windowSeconds {
+./Garazyk/Sources/Network/RateLimiter.m:259:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:260:    NSTimeInterval windowStart = now - windowSeconds;
+./Garazyk/Sources/Network/RateLimiter.m:283:    NSTimeInterval existingWindowStart = 0;
+./Garazyk/Sources/Network/RateLimiter.m:291:        NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+./Garazyk/Sources/Network/RateLimiter.m:345:                                      windowSeconds:(NSTimeInterval)windowSeconds {
+./Garazyk/Sources/Network/RateLimiter.m:349:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:350:    NSTimeInterval windowStart = now - windowSeconds;
+./Garazyk/Sources/Network/RateLimiter.m:364:    NSTimeInterval existingWindowStart = 0;
+./Garazyk/Sources/Network/RateLimiter.m:371:    NSTimeInterval resetSeconds = 0;
+./Garazyk/Sources/Network/RateLimiter.m:391:                                           windowSeconds:(NSTimeInterval)windowSeconds {
+./Garazyk/Sources/Network/RateLimiter.m:395:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:396:    NSTimeInterval windowStart = now - windowSeconds;
+./Garazyk/Sources/Network/RateLimiter.m:410:    NSTimeInterval existingWindowStart = 0;
+./Garazyk/Sources/Network/RateLimiter.m:418:        NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+./Garazyk/Sources/Network/RateLimiter.m:458:                                   windowSeconds:(NSTimeInterval)windowSeconds {
+./Garazyk/Sources/Network/RateLimiter.m:462:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:463:    NSTimeInterval windowStart = now - windowSeconds;
+./Garazyk/Sources/Network/RateLimiter.m:476:    NSTimeInterval existingWindowStart = 0;
+./Garazyk/Sources/Network/RateLimiter.m:483:    NSTimeInterval resetSeconds = 0;
+./Garazyk/Sources/Network/RateLimiter.m:579:    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+./Garazyk/Sources/Network/RateLimiter.m:580:    NSTimeInterval windowStart = now - self.didWindowSeconds;
+./Garazyk/Sources/Network/RateLimiter.h:67:@property (nonatomic, assign) NSTimeInterval resetSeconds;
+./Garazyk/Sources/Network/RateLimiter.h:70:@property (nonatomic, assign) NSTimeInterval retryAfter;
+./Garazyk/Sources/Network/RateLimiter.h:85:                  resetSeconds:(NSTimeInterval)resetSeconds
+./Garazyk/Sources/Network/RateLimiter.h:86:                   retryAfter:(NSTimeInterval)retryAfter;
+./Garazyk/Sources/Network/RateLimiter.h:127:@property (nonatomic, assign) NSTimeInterval didWindowSeconds;
+./Garazyk/Sources/Network/RateLimiter.h:133:@property (nonatomic, assign) NSTimeInterval ipWindowSeconds;
+./Garazyk/Sources/Network/RateLimiter.h:139:@property (nonatomic, assign) NSTimeInterval blobWindowSeconds;
+./Garazyk/Sources/Network/RateLimiter.h:202:- (RateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds;
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:690:    // Synchronously validate host with semaphore and timeout
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:702:    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:359:                                      dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeoutNs),
+./Garazyk/Sources/Network/XrpcHandler.m:226:    // Timeout signal: set default timeout for all network calls
+./Garazyk/Sources/Network/XrpcHandler.m:227:    static const NSTimeInterval kDefaultRequestTimeout = 30.0;
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:422:  safeOptions.timeout = (NSClassFromString(@"XCTestCase") != Nil) ? 2.0 : 30.0;
+./Garazyk/Sources/Network/HttpRetryPolicy.h:29:@property (nonatomic, readonly) NSTimeInterval retryDelay;
+./Garazyk/Sources/Network/HttpRetryPolicy.h:34:- (instancetype)initWithDecision:(HttpRetryDecision)decision delay:(NSTimeInterval)delay;
+./Garazyk/Sources/Network/HttpRetryPolicy.h:46:@property (nonatomic, assign) NSTimeInterval initialDelay;    // default 0.5

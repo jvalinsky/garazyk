@@ -1,0 +1,29 @@
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:16:    NSString *sql = [NSString stringWithFormat:@"PRAGMA %@ = %@", name, value];
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:230:        ATProtoConnectionPoolApplyCustomPragma(db, @"journal_mode", self.journalMode);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:54:        int rc = sqlite3_exec(db, "PRAGMA journal_mode=WAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:61:        int rc = sqlite3_exec(db, "PRAGMA synchronous=NORMAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:68:        int rc = sqlite3_exec(db, "PRAGMA foreign_keys=ON", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:75:        int rc = sqlite3_exec(db, "PRAGMA temp_store=MEMORY", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:82:        sqlite3_busy_timeout(db, config.busyTimeout);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:87:        snprintf(sql, sizeof(sql), "PRAGMA cache_size=%d", config.cacheSize);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:96:        snprintf(sql, sizeof(sql), "PRAGMA wal_autocheckpoint=%d", config.walAutocheckpoint);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:105:        snprintf(sql, sizeof(sql), "PRAGMA journal_size_limit=%d", config.journalSizeLimit);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:114:        snprintf(sql, sizeof(sql), "PRAGMA mmap_size=%d", config.mmapSize);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:123:        snprintf(sql, sizeof(sql), "PRAGMA page_size=%d", config.pageSize);
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:101:    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA integrity_check", -1, &stmt, NULL);
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:145:    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA foreign_key_check", -1, &stmt, NULL);
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:15:    if (sqlite3_prepare_v2(db, "PRAGMA table_info(oauth_clients)", -1, &stmt, NULL) != SQLITE_OK) {
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:133:        @"PRAGMA journal_mode=WAL;"
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:134:        @"PRAGMA synchronous=NORMAL;"
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:135:        @"PRAGMA cache_size=-32000;"
+./Garazyk/Sources/Database/Service/ServiceDatabases.m:136:        @"PRAGMA temp_store=MEMORY;";
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:599:    NSArray *info = [self.database executeUnsafeRawQuery:[NSString stringWithFormat:@"PRAGMA table_info(%@)", tableName] error:nil];
+./Garazyk/Sources/Database/PDSDatabase.m:157:        sqlite3_busy_timeout(_db, 5000);
+./Garazyk/Sources/Database/PDSDatabase.m:275:    int rc = sqlite3_exec(_db, "PRAGMA journal_mode=WAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:298:    rc = sqlite3_exec(_db, "PRAGMA synchronous=NORMAL", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:308:    rc = sqlite3_exec(_db, "PRAGMA cache_size=64", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:310:    rc = sqlite3_exec(_db, "PRAGMA cache_size=65536", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:320:    rc = sqlite3_exec(_db, "PRAGMA temp_store=MEMORY", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:330:    rc = sqlite3_exec(_db, "PRAGMA mmap_size=4194304", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:332:    rc = sqlite3_exec(_db, "PRAGMA mmap_size=268435456", NULL, NULL, &errMsg);
+./Garazyk/Sources/Database/PDSDatabase.m:342:    rc = sqlite3_exec(_db, "PRAGMA page_size=65536", NULL, NULL, &errMsg);

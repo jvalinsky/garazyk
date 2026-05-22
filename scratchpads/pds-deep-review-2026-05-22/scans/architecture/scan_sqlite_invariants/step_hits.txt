@@ -1,0 +1,32 @@
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:112:    if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:156:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:177:            while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m:204:    if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:46:            if (sqlite3_step(stmt) != SQLITE_DONE) {
+./Garazyk/Sources/Database/PDSDatabase+Blocks.m:75:            if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:19:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:92:    if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:174:    rc = sqlite3_step(stmt);
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:223:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:270:    rc = sqlite3_step(stmt);
+./Garazyk/Sources/Database/PDSDatabase.m:1017:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase.m:1077:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase.m:1140:    BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:64:    rc = sqlite3_step(stmt);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:120:    rc = sqlite3_step(stmt);
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:176:    if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:219:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:249:    rc = sqlite3_step(stmt);
+./Garazyk/Sources/Database/PDSDatabase+Blobs.m:50:            if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:560:        BOOL tableExists = (sqlite3_step(checkStmt) == SQLITE_ROW);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:575:        if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:618:    BOOL applied = (sqlite3_step(stmt) == SQLITE_ROW);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:964:            if (sqlite3_step(stmt) == SQLITE_DONE) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1030:            if (sqlite3_step(stmt) == SQLITE_DONE) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1084:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1116:    if (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1198:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1253:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1325:    while (sqlite3_step(stmt) == SQLITE_ROW) {
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1536:    BOOL hasLegacyTable = (sqlite3_step(stmt) == SQLITE_ROW);
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:1562:        if (sqlite3_step(hasColStmt) == SQLITE_ROW) {

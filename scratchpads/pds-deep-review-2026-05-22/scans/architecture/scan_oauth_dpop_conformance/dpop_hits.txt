@@ -1,0 +1,329 @@
+./Garazyk/Sources/Auth/OAuth2.h:11: @abstract OAuth 2.0 with DPoP implementation for ATProto.
+./Garazyk/Sources/Auth/OAuth2.h:14: implementation with DPoP (Demonstration of Proof-of-Possession) for
+./Garazyk/Sources/Auth/OAuth2.h:16: token management, and DPoP proof generation.
+./Garazyk/Sources/Auth/OAuth2.h:47: @constant OAuth2ErrorInvalidDPoPProof The DPoP proof is invalid.
+./Garazyk/Sources/Auth/OAuth2.h:76:    /** The DPoP proof is invalid. */
+./Garazyk/Sources/Auth/OAuth2.h:170:/*! PKCE code challenge for proof key. */
+./Garazyk/Sources/Auth/OAuth2.h:179:/*! DPoP JWK for proof-of-possession. */
+./Garazyk/Sources/Auth/OAuth2.h:278:/*! PKCE code verifier for proof key. */
+./Garazyk/Sources/Auth/OAuth2.h:284:/*! The access token for DPoP-bound requests. */
+./Garazyk/Sources/Auth/OAuth2.h:287:/*! The DPoP proof JWT. */
+./Garazyk/Sources/Auth/OAuth2.h:290:/*! Thumbprint of the DPoP proof key. */
+./Garazyk/Sources/Auth/OAuth2.h:326:/*! The token type (typically "DPoP"). */
+./Garazyk/Sources/Auth/OAuth2.h:338:/*! Thumbprint of the DPoP key. */
+./Garazyk/Sources/Auth/OAuth2.h:357: @abstract Generates DPoP proof JWTs.
+./Garazyk/Sources/Auth/OAuth2.h:359: @discussion DPoP (Demonstration of Proof-of-Possession) binds tokens
+./Garazyk/Sources/Auth/OAuth2.h:364:/*! The JWK representing the proof key. */
+./Garazyk/Sources/Auth/OAuth2.h:367:/*! The HTTP method the proof is for. */
+./Garazyk/Sources/Auth/OAuth2.h:368:@property (nonatomic, copy) NSString *htm;
+./Garazyk/Sources/Auth/OAuth2.h:370:/*! The URL the proof is for. */
+./Garazyk/Sources/Auth/OAuth2.h:371:@property (nonatomic, copy) NSString *htu;
+./Garazyk/Sources/Auth/OAuth2.h:373:/*! The timestamp when the proof was created. */
+./Garazyk/Sources/Auth/OAuth2.h:379: @abstract Creates a DPoP proof JWT for a request.
+./Garazyk/Sources/Auth/OAuth2.h:381: @param url The URL the proof will be used for.
+./Garazyk/Sources/Auth/OAuth2.h:383: @param key The JWK to sign the proof with.
+./Garazyk/Sources/Auth/OAuth2.h:385: @return The DPoP proof JWT string.
+./Garazyk/Sources/Auth/OAuth2.h:398: @abstract Verifies a DPoP proof JWT and validates its claims.
+./Garazyk/Sources/Auth/OAuth2.h:400: @param dpopJwt The proof JWT from the DPoP header.
+./Garazyk/Sources/Auth/OAuth2.h:401: @param method The HTTP method the proof is for.
+./Garazyk/Sources/Auth/OAuth2.h:402: @param url The URL the proof is for.
+./Garazyk/Sources/Auth/OAuth2.h:406: @return YES if the proof is valid, NO otherwise.
+./Garazyk/Sources/Auth/OAuth2.h:422: @abstract Verifies a DPoP proof without requiring a server nonce.
+./Garazyk/Sources/Auth/OAuth2.h:424: @param dpopJwt The proof JWT from the DPoP header.
+./Garazyk/Sources/Auth/OAuth2.h:425: @param method The HTTP method the proof is for.
+./Garazyk/Sources/Auth/OAuth2.h:426: @param url The URL the proof is for.
+./Garazyk/Sources/Auth/OAuth2.h:430: @return YES if the proof is valid, NO otherwise.
+./Garazyk/Sources/Auth/OAuth2.h:559: @param dpopJWK Optional new DPoP key.
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.h:30:/** Validates token endpoint request parameters for the client and DPoP state. */
+./Garazyk/Sources/Auth/OAuthSession.m:165:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP token"}];
+./Garazyk/Sources/Auth/OAuthSession.m:373:        @"token_type": @"DPoP",
+./Garazyk/Sources/Auth/OAuthSession.m:392:        @"token_type": @"DPoP",
+./Garazyk/Sources/Auth/DPoPUtil.m:7://  DPoP utility wrapper. This file uses SecKeyRef which is only available on macOS.
+./Garazyk/Sources/Auth/DPoPUtil.m:8://  For cross-platform DPoP support, use AuthCryptoDPoP directly with protocol-based keys.
+./Garazyk/Sources/Auth/DPoPUtil.m:25:NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
+./Garazyk/Sources/Auth/DPoPUtil.m:30:+ (nullable instancetype)createWithMethod:(NSString *)htm
+./Garazyk/Sources/Auth/DPoPUtil.m:31:                                      uri:(NSString *)htu
+./Garazyk/Sources/Auth/DPoPUtil.m:34:    NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromString:htu];
+./Garazyk/Sources/Auth/DPoPUtil.m:37:            *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
+./Garazyk/Sources/Auth/DPoPUtil.m:39:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP URI"}];
+./Garazyk/Sources/Auth/DPoPUtil.m:44:    token.htm = htm;
+./Garazyk/Sources/Auth/DPoPUtil.m:45:    token.htu = canonicalHTU;
+./Garazyk/Sources/Auth/DPoPUtil.m:48:    token.jti = [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Auth/DPoPUtil.m:57:        @"typ": @"dpop+jwt",
+./Garazyk/Sources/Auth/DPoPUtil.m:70:    payload[@"htm"] = self.htm;
+./Garazyk/Sources/Auth/DPoPUtil.m:71:    payload[@"htu"] = self.htu;
+./Garazyk/Sources/Auth/DPoPUtil.m:73:    payload[@"jti"] = self.jti;
+./Garazyk/Sources/Auth/DPoPUtil.m:94:+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
+./Garazyk/Sources/Auth/DPoPUtil.m:95:                                         uri:(NSString *)htu
+./Garazyk/Sources/Auth/DPoPUtil.m:99:    NSURL *url = [NSURL URLWithString:htu];
+./Garazyk/Sources/Auth/DPoPUtil.m:102:            *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
+./Garazyk/Sources/Auth/DPoPUtil.m:104:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP URI"}];
+./Garazyk/Sources/Auth/DPoPUtil.m:124:    token.htm = htm;
+./Garazyk/Sources/Auth/DPoPUtil.m:125:    token.htu = canonicalHTU;
+./Garazyk/Sources/Auth/DPoPUtil.m:127:    token.jti = [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Auth/DPoPUtil.m:133:        @"typ": @"dpop+jwt",
+./Garazyk/Sources/Auth/DPoPUtil.m:170:              method:(NSString *)htm
+./Garazyk/Sources/Auth/DPoPUtil.m:171:                 uri:(NSString *)htu
+./Garazyk/Sources/Auth/DPoPUtil.m:174:    NSURL *url = [NSURL URLWithString:htu];
+./Garazyk/Sources/Auth/DPoPUtil.m:177:            *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
+./Garazyk/Sources/Auth/DPoPUtil.m:179:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP URI"}];
+./Garazyk/Sources/Auth/DPoPUtil.m:188:    // If a publicKey is PROVIDED to verifyDPoP, we should ensure it MATCHES the one in the proof.
+./Garazyk/Sources/Auth/DPoPUtil.m:192:                                      method:htm
+./Garazyk/Sources/Auth/DPoPUtil.m:203:        // Extra check: ensure provided publicKey matches the one in the DPoP header
+./Garazyk/Sources/Auth/DPoPUtil.m:207:                *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
+./Garazyk/Sources/Auth/DPoPUtil.m:229:NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
+./Garazyk/Sources/Auth/DPoPUtil.m:233:+ (nullable instancetype)createWithMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+./Garazyk/Sources/Auth/DPoPUtil.m:244:+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(SecKeyRef)privateKey error:(NSError **)error {
+./Garazyk/Sources/Auth/DPoPUtil.m:253:+ (BOOL)verifyDPoP:(NSString *)dpopJwt withPublicKey:(nullable SecKeyRef)publicKey method:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+./Garazyk/Sources/Auth/JWT.m:65:    payload.jti = dictionary[@"jti"];
+./Garazyk/Sources/Auth/JWT.m:97:    if (self.jti) dict[@"jti"] = self.jti;
+./Garazyk/Sources/Auth/JWT.m:503:                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate jti nonce"}];
+./Garazyk/Sources/Auth/JWT.m:507:    NSMutableString *jti = [NSMutableString stringWithCapacity:32];
+./Garazyk/Sources/Auth/JWT.m:510:        [jti appendFormat:@"%02x", bytes[i]];
+./Garazyk/Sources/Auth/JWT.m:519:    payload[@"jti"] = jti;
+./Garazyk/Sources/Auth/JWT.m:604:    payload.jti = [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Auth/JWT.m:665:    payload.jti = [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Network/XrpcProxyHandler.h:34: with iss=userDID, aud=serviceDID#fragment, lxm=method, exp=60s, jti=nonce.
+./Garazyk/Sources/Auth/OAuth2Handler.h:13:    Supports the AT Protocol OAuth profile with PKCE, DPoP, and PAR.
+./Garazyk/Sources/Auth/OAuth2Handler.h:218: response with token metadata (subject, client, expiration, scope, DPoP binding).
+./Garazyk/Sources/Network/XrpcSyncPack.m:846:    // Add the record block and MST proof path
+./Garazyk/Sources/Network/XrpcSyncPack.m:876:        // Add MST proof path
+./Garazyk/Sources/Network/XrpcProxyHandler.m:68:    //    signed with user's repo signing key, exp = 60s, jti = random nonce.
+./Garazyk/Sources/Network/XrpcProxyHandler.m:133:            ![lowerKey isEqualToString:@"dpop"] &&
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:11: - DPoP proofs (binding to access token)
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:73:/*! The DPoP key thumbprint if DPoP was used. */
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:76:/*! Whether DPoP binding was enforced. */
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:98: It supports both Bearer tokens and DPoP-bound access tokens.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:103: - DPoPNonceStore: For DPoP nonce validation (optional)
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:125: @brief Whether to require DPoP for all requests.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:126: @discussion Default is NO (DPoP is optional but recommended).
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:134: @param nonceStore For DPoP nonce validation (optional).
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:145: @param response The HTTP response (for setting auth headers like DPoP-Nonce).
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:154:  @abstract Verify an access token (without DPoP).
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:165: @param dpopHeader The DPoP header value (if present).
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:178: @brief Construct the expected DPoP URL for a request.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:180: @return The canonical URL for DPoP verification.
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:107:    NSString *dpopHeader = [request headerForKey:@"DPoP"];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:153:    } else if ([authHeader hasPrefix:@"DPoP "]) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:169:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP header"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:179:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP is required"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:190:            GZ_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:194:                                         userInfo:@{NSLocalizedDescriptionKey: @"Unable to construct DPoP URL"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:222:                [response setHeader:nonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:223:                [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:386:                                         userInfo:@{NSLocalizedDescriptionKey: @"Token not bound to DPoP key"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:394:                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP thumbprint mismatch"}];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:402:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP-bound token used without DPoP"}];
+./Garazyk/Sources/Network/XrpcServerPack.m:618:        } else if ([authHeader hasPrefix:@"DPoP "]) {
+./Garazyk/Sources/Network/XrpcServerPack.m:1241:        payload[@"jti"] = [[NSUUID UUID] UUIDString];
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:81:  NSString *defaultHeaders = @"DPoP, Authorization, Content-Type, *";
+./Garazyk/Sources/Network/ATProtoHttpServerBuilder.m:218:  [response setHeader:@"DPoP-Nonce, WWW-Authenticate"
+./Garazyk/Sources/Network/XrpcAuthHelper.m:83:    NSString *existingNonce = [response headerForKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:89:        [response setHeader:nextNonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:203:    // Parse Bearer or DPoP token
+./Garazyk/Sources/Network/XrpcAuthHelper.m:208:        if ([request headerForKey:@"DPoP"].length > 0) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:209:            isDPoP = YES; // Some clients send Bearer but attach a DPoP header
+./Garazyk/Sources/Network/XrpcAuthHelper.m:211:    } else if ([authHeader hasPrefix:@"DPoP "]) {
+./Garazyk/Sources/Network/XrpcAuthHelper.m:219:    // DPoP verification
+./Garazyk/Sources/Network/XrpcAuthHelper.m:222:        NSString *dpopProof = [request headerForKey:@"DPoP"];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:224:            GZ_LOG_AUTH_WARN(@"Missing DPoP header for DPoP authorization");
+./Garazyk/Sources/Network/XrpcAuthHelper.m:231:            GZ_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
+./Garazyk/Sources/Network/XrpcAuthHelper.m:236:        // Verify DPoP proof
+./Garazyk/Sources/Network/XrpcAuthHelper.m:250:                        [response setHeader:nonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:252:                    [response setHeader:@"DPoP error=\"use_dpop_nonce\"" forKey:@"WWW-Authenticate"];
+./Garazyk/Sources/Network/XrpcAuthHelper.m:257:                        @"message": @"DPoP nonce required"
+./Garazyk/Sources/Network/XrpcAuthHelper.m:262:            GZ_LOG_AUTH_WARN(@"Invalid DPoP proof (%@)", XrpcAuthSanitizedErrorSummary(dpopError));
+./Garazyk/Sources/Network/XrpcAuthHelper.m:326:    // Enforce DPoP binding
+./Garazyk/Sources/Network/XrpcAuthHelper.m:330:            GZ_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
+./Garazyk/Sources/Network/XrpcAuthHelper.m:335:            GZ_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
+./Garazyk/Sources/Network/XrpcAuthHelper.m:340:        GZ_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
+./Garazyk/Sources/Network/XrpcAuthHelper.h:8://  Centralizes JWT and DPoP authentication logic for extracting and validating DIDs
+./Garazyk/Sources/Network/XrpcAuthHelper.h:40: * and DPoP tokens, verifies signatures, and enforces admin authorization.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:46: * @param authHeader Authorization header value (Bearer or DPoP).
+./Garazyk/Sources/Network/XrpcAuthHelper.h:49: * @param request HTTP request for DPoP URL construction.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:58: * @abstract Extracts and validates a DID with optional response for DPoP nonce handling.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:59: * @param authHeader Authorization header value (Bearer or DPoP).
+./Garazyk/Sources/Network/XrpcAuthHelper.h:62: * @param request HTTP request for DPoP URL construction.
+./Garazyk/Sources/Network/XrpcAuthHelper.h:63: * @param response Optional response for DPoP nonce challenges.
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:361:    } else if ([lowercaseKey isEqualToString:@"dpop"]) {
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:362:      headerFieldName = @"DPoP";
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:404:            @"jti" : [[NSUUID UUID] UUIDString]
+./Garazyk/Sources/Network/XrpcMethodRegistry.h:43: - XrpcAuthHelper: JWT and DPoP authentication
+./Garazyk/Sources/Network/XrpcMiddleware.h:84: * Validates JWT or DPoP token, extracts DID, checks takedown status.
+./Garazyk/Sources/Network/XrpcMiddleware.h:192:    /** The supplied authentication token or proof is invalid. */
+./Garazyk/Sources/Auth/PDSReplayCache.h:10:    and prevent replay attacks in OAuth 2.0 and DPoP flows. Uses SQLite
+./Garazyk/Sources/Auth/PDSReplayCache.h:39:    if (![cache checkAndAddJTI:jti expiration:expiration]) {
+./Garazyk/Sources/Auth/PDSReplayCache.h:81: @param jti The JWT ID to check (unique identifier from the JWT).
+./Garazyk/Sources/Auth/PDSReplayCache.h:96:- (BOOL)checkAndAddJTI:(NSString *)jti expiration:(NSDate *)expiration;
+./Garazyk/Sources/Auth/OAuthSession.h:8: @discussion Implements OAuth 2.0 authorization code flow with PKCE and DPoP.
+./Garazyk/Sources/Auth/OAuthSession.h:47: @discussion Tracks OAuth flow state including PKCE challenge, DPoP binding,
+./Garazyk/Sources/Auth/OAuthSession.h:85:/*! DPoP nonce for replay protection. */
+./Garazyk/Sources/Auth/OAuthSession.h:88:/*! DPoP key thumbprint for binding. */
+./Garazyk/Sources/Auth/OAuthSession.h:91:/*! DPoP JWT proof. */
+./Garazyk/Sources/Auth/OAuthSession.h:158:/*! DPoP proof JWT. */
+./Garazyk/Sources/Auth/OAuthSession.h:194:/*! DPoP proof JWT for token binding. */
+./Garazyk/Sources/Auth/OAuthSession.h:232: DPoP, issues access/refresh tokens, and handles token refresh.
+./Garazyk/Sources/Auth/PDSNonceManager.h:6: @abstract Manages creation and validation of DPoP nonces.
+./Garazyk/Sources/Auth/PDSNonceManager.h:10:    DPoP (Demonstrating Proof-of-Possession) nonce flows. Nonces are used
+./Garazyk/Sources/Auth/PDSNonceManager.h:23: @abstract Manages creation and validation of DPoP nonces.
+./Garazyk/Sources/Auth/PDSNonceManager.h:26:    Generates and validates nonces for DPoP nonce flows. Nonces are
+./Garazyk/Sources/Auth/PDSNonceManager.h:34:    // ... client provides nonce in DPoP proof ...
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:388: @abstract Interface for DPoP nonce management.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:390: @discussion Required for DPoP proof verification when nonces are enforced.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:397: @brief Issues a new nonce for a DPoP key.
+./Garazyk/Sources/Auth/OAuth2Handler.m:740:  // ATProto clients must request DPoP-bound access tokens.
+./Garazyk/Sources/Auth/OAuth2Handler.m:1082:  NSString *jti = payload[@"jti"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1154:  if (!jti || ![jti isKindOfClass:[NSString class]] || jti.length == 0) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:1160:                                     @"Missing 'jti' claim for replay protection"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1166:  if (![[PDSReplayCache sharedCache] checkAndAddJTI:jti
+./Garazyk/Sources/Auth/OAuth2Handler.m:1173:                                     @"JWT assertion 'jti' has been replayed"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1533:  NSString *allowedHeaders = headersArr ? [headersArr componentsJoinedByString:@", "] : @"DPoP, Authorization, Content-Type, *";
+./Garazyk/Sources/Auth/OAuth2Handler.m:1540:  [response setHeader:@"DPoP-Nonce, WWW-Authenticate"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2657:  // In ATProto, client authentication can use DPoP binding, client_secret,
+./Garazyk/Sources/Auth/OAuth2Handler.m:2663:  NSString *dpopProof = [request headerForKey:@"dpop"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2724:    // Reject if client_secret is required but not provided and no DPoP binding
+./Garazyk/Sources/Auth/OAuth2Handler.m:2814:                    @"token_type" : @"DPoP",
+./Garazyk/Sources/Auth/OAuth2Handler.m:2978:      if (payload.jti)
+./Garazyk/Sources/Auth/OAuth2Handler.m:2979:        introspection[@"jti"] = payload.jti;
+./Garazyk/Sources/Auth/OAuth2Handler.m:3094:  // Validate client authentication (either client_secret or DPoP)
+./Garazyk/Sources/Auth/OAuth2Handler.m:3265:  // Enforce DPoP for PAR
+./Garazyk/Sources/Auth/OAuth2Handler.m:3349:    [response setHeader:nextNonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3787:  NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3794:    [response setHeader:nextNonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3801:  NSString *dpopProof = [request headerForKey:@"dpop"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3806:      @"error_description" : @"Missing DPoP proof"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3813:    GZ_LOG_AUTH_DEBUG(@"validateDPoPForRequest: Failed to construct DPoP URL");
+./Garazyk/Sources/Auth/OAuth2Handler.m:3817:      @"error_description" : @"Unable to construct DPoP URL"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3824:  NSString *requestedNonce = [request headerForKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3839:        [response setHeader:nonce forKey:@"DPoP-Nonce"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3841:      [response setHeader:@"DPoP error=\"use_dpop_nonce\""
+./Garazyk/Sources/Auth/OAuth2Handler.m:3849:            ?: @"DPoP nonce required"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3857:          ?: @"Invalid DPoP proof"
+./Garazyk/Sources/Auth/OAuth2Handler.m:3868:    GZ_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint_prefix=%@)", prefix);
+./Garazyk/Sources/Auth/OAuth2Handler.m:3870:    GZ_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint unavailable)");
+./Garazyk/Sources/Network/XrpcHandler.m:160:    NSString *allowedHeaders = [config stringForKey:@"cors.allowed_headers"] ?: @"DPoP, Authorization, Content-Type, *";
+./Garazyk/Sources/Network/XrpcHandler.m:166:    [response setHeader:@"DPoP-Nonce, WWW-Authenticate" forKey:@"Access-Control-Expose-Headers"];
+./Garazyk/Sources/Network/XrpcHandler.m:1083:    } else if ([authHeader hasPrefix:@"DPoP "]) {
+./Garazyk/Sources/Auth/Session.h:163:/*! The token type (typically "DPoP" for ATProto). */
+./Garazyk/Sources/Auth/Session.h:178:/*! Thumbprint of the DPoP key used for this session. */
+./Garazyk/Sources/Auth/Session.h:202: @abstract Creates a new session without a DPoP key thumbprint.
+./Garazyk/Sources/Auth/Session.h:231: @abstract Creates a new session with a token minter and no DPoP key thumbprint.
+./Garazyk/Sources/Auth/Session.h:246: @param jkt The DPoP key thumbprint.
+./Garazyk/Sources/Auth/Session.h:260: @abstract Initializes a session without a DPoP key thumbprint.
+./Garazyk/Sources/Auth/Session.h:275: @param jkt The DPoP key thumbprint.
+./Garazyk/Sources/Auth/Session.h:290: @abstract Initializes a session with a token minter and no DPoP key thumbprint.
+./Garazyk/Sources/Auth/Session.h:312: that don't support DPoP.
+./Garazyk/Sources/Auth/Session.h:523: @param dpopJWK Optional DPoP key for proof-of-possession.
+./Garazyk/Sources/Auth/Session.h:587: @param dpopJWK Optional new DPoP key.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:496:    response.tokenType = dpopJWK ? @"DPoP" : @"Bearer";
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:15: - Token issuance with DPoP binding
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:6: @abstract Canonical DPoP proof verification and creation (RFC 9449).
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:8: @discussion Unified DPoP implementation shared between OAuth Provider
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:22:/*! Error domain for DPoP-specific failures. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:28: @abstract Validates DPoP nonces against server-issued values.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:40: @abstract Detects DPoP proof replay by tracking JTI values.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:45:- (BOOL)checkAndAddJTI:(NSString *)jti expiration:(NSDate *)expiration;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:52: @abstract Parsed DPoP proof contents after successful verification.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:56:/*! JWK thumbprint of the proof key. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:59:/*! Unique proof identifier. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:60:@property (nonatomic, copy) NSString *jti;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:62:/*! HTTP method the proof binds to. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:63:@property (nonatomic, copy) NSString *htm;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:65:/*! HTTP target URI the proof binds to. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:66:@property (nonatomic, copy) NSString *htu;
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:68:/*! The JWK from the proof header. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:76: @abstract DPoP proof verification and creation.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:86:/*! Verifies a DPoP proof JWT against request parameters.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:87:    @param dpopJwt The DPoP proof JWT string.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:91:    @param requireNonce If YES, proof must contain a nonce.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:96:    @return YES if the proof is valid. */
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:110:/*! Creates a signed DPoP proof JWT.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:111:    @param url Target URL for the proof.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.h:115:    @return Signed DPoP JWT string, or nil on error. */
+./Garazyk/Sources/Auth/OAuthClientAuthPolicy.m:103:        if (error) *error = [self errorWithDescription:@"DPoP proof is required" code:400];
+./Garazyk/Sources/Auth/Session.m:126:        _tokenType = jkt ? @"DPoP" : @"Bearer";
+./Garazyk/Sources/Auth/Session.m:158:            self.tokenType = @"DPoP"; // Standard for ATProto
+./Garazyk/Sources/Auth/Session.m:507:    const char *dpop = (const char *)sqlite3_column_text(stmt, 8);
+./Garazyk/Sources/Auth/Session.m:508:    if (dpop) session.dpopKeyThumbprint = [NSString stringWithUTF8String:dpop];
+./Garazyk/Sources/Auth/OAuth2.m:6: @abstract OAuth 2.0 with DPoP implementation for ATProto.
+./Garazyk/Sources/Auth/OAuth2.m:9: authorization request handling, token issuance with DPoP proof binding,
+./Garazyk/Sources/Auth/OAuth2.m:203:    if (self.dpopProof) dict[@"dpop"] = self.dpopProof;
+./Garazyk/Sources/Auth/OAuth2.m:675:    } else if ([request.grantType isEqualToString:@"urn:ietf:params:oauth:grant-type:dpop"]) {
+./Garazyk/Sources/Auth/OAuth2.m:891:                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP key thumbprint"}];
+./Garazyk/Sources/Auth/OAuth2.m:902:                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP key mismatch for authorization session"}];
+./Garazyk/Sources/Auth/PDSReplayCache.m:40:            "  jti TEXT PRIMARY KEY,"
+./Garazyk/Sources/Auth/PDSReplayCache.m:75:- (BOOL)checkAndAddJTI:(NSString *)jti expiration:(NSDate *)expiration {
+./Garazyk/Sources/Auth/PDSReplayCache.m:76:    if (!jti || !expiration) return NO;
+./Garazyk/Sources/Auth/PDSReplayCache.m:97:        const char *selectSQL = "SELECT expires_at FROM jti_cache WHERE jti = ?";
+./Garazyk/Sources/Auth/PDSReplayCache.m:100:            sqlite3_bind_text(selectStmt, 1, jti.UTF8String, -1, SQLITE_TRANSIENT);
+./Garazyk/Sources/Auth/PDSReplayCache.m:116:        const char *insertSQL = "INSERT OR REPLACE INTO jti_cache (jti, expires_at) VALUES (?, ?)";
+./Garazyk/Sources/Auth/PDSReplayCache.m:120:            sqlite3_bind_text(insertStmt, 1, jti.UTF8String, -1, SQLITE_TRANSIENT);
+./Garazyk/Sources/Auth/PDSAppleKeyManager.m:10: and used for JWT signing and DPoP proof generation.
+./Garazyk/Sources/Auth/DPoPUtil.h:6: @abstract DPoP (Demonstration of Proof-of-Possession) token utilities.
+./Garazyk/Sources/Auth/DPoPUtil.h:8: @discussion Implements RFC 9449 DPoP for binding OAuth tokens to public keys.
+./Garazyk/Sources/Auth/DPoPUtil.h:9: Prevents token theft by requiring proof of private key possession on each request.
+./Garazyk/Sources/Auth/DPoPUtil.h:12: For cross-platform DPoP support, use AuthCryptoDPoP directly with
+./Garazyk/Sources/Auth/DPoPUtil.h:33: @abstract Represents a DPoP proof JWT.
+./Garazyk/Sources/Auth/DPoPUtil.h:35: @discussion Contains the proof components for binding a request to a key pair.
+./Garazyk/Sources/Auth/DPoPUtil.h:39:/*! The signed DPoP proof JWT. */
+./Garazyk/Sources/Auth/DPoPUtil.h:42:/*! HTTP method the proof is for (GET, POST, etc.). */
+./Garazyk/Sources/Auth/DPoPUtil.h:43:@property (nonatomic, copy) NSString *htm;
+./Garazyk/Sources/Auth/DPoPUtil.h:45:/*! HTTP URI the proof is for. */
+./Garazyk/Sources/Auth/DPoPUtil.h:46:@property (nonatomic, copy) NSString *htu;
+./Garazyk/Sources/Auth/DPoPUtil.h:48:/*! Unique identifier for this proof. */
+./Garazyk/Sources/Auth/DPoPUtil.h:49:@property (nonatomic, copy) NSString *jti;
+./Garazyk/Sources/Auth/DPoPUtil.h:54:/*! Timestamp when the proof was created. */
+./Garazyk/Sources/Auth/DPoPUtil.h:57:/*! Expiration time for the proof. */
+./Garazyk/Sources/Auth/DPoPUtil.h:63:/*! Creates a new DPoP proof for a request. */
+./Garazyk/Sources/Auth/DPoPUtil.h:64:+ (nullable instancetype)createWithMethod:(NSString *)htm
+./Garazyk/Sources/Auth/DPoPUtil.h:65:                                      uri:(NSString *)htu
+./Garazyk/Sources/Auth/DPoPUtil.h:80: @abstract Utility class for DPoP proof creation and verification.
+./Garazyk/Sources/Auth/DPoPUtil.h:88: @brief Creates a DPoP proof for a request.
+./Garazyk/Sources/Auth/DPoPUtil.h:90: @param htm HTTP method
+./Garazyk/Sources/Auth/DPoPUtil.h:91: @param htu HTTP URI
+./Garazyk/Sources/Auth/DPoPUtil.h:102:+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
+./Garazyk/Sources/Auth/DPoPUtil.h:103:                                         uri:(NSString *)htu
+./Garazyk/Sources/Auth/DPoPUtil.h:109: @brief Verifies a DPoP proof JWT.
+./Garazyk/Sources/Auth/DPoPUtil.h:111: @param dpopJwt The proof JWT string
+./Garazyk/Sources/Auth/DPoPUtil.h:113: @param htm HTTP method
+./Garazyk/Sources/Auth/DPoPUtil.h:114: @param htu HTTP URI
+./Garazyk/Sources/Auth/DPoPUtil.h:126:            method:(NSString *)htm
+./Garazyk/Sources/Auth/DPoPUtil.h:127:               uri:(NSString *)htu
+./Garazyk/Sources/Auth/JWT.h:161:@property (nonatomic, copy, nullable) NSString *jti;
+./Garazyk/Sources/Auth/JWT.h:181:/*! Confirmation claim (e.g., for DPoP jkt). */
+./Garazyk/Sources/Auth/JWT.h:470: @abstract Mints an access token with a DPoP key thumbprint but without a session ID.
+./Garazyk/Sources/Auth/JWT.h:481: @abstract Mints an access token without a DPoP key thumbprint.
+./Garazyk/Sources/Auth/JWT.h:519: - jti: random 16-hex nonce for replay prevention
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:6: @abstract Canonical DPoP proof verification and creation implementation.
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:18:NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:73:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP proof is nil"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:83:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP proof format"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:94:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP header encoding"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:105:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP header JSON"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:111:    if (![header[@"typ"] isEqualToString:@"dpop+jwt"]) {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:115:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP header typ must be 'dpop+jwt'"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:124:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP only supports ES256"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:134:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP header missing jwk"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:144:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP JWK must not contain private key material"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:155:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP payload encoding"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:166:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP payload JSON"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:172:    NSString *proofHtm = payload[@"htm"];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:173:    NSString *proofHtu = payload[@"htu"];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:175:    NSString *jti = payload[@"jti"];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:182:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP htm mismatch"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:193:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP htu mismatch"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:202:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP payload missing iat"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:213:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP proof expired"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:224:                                         NSLocalizedDescriptionKey: @"DPoP proof missing required nonce",
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:236:                                         NSLocalizedDescriptionKey: @"DPoP nonce mismatch",
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:249:                                             NSLocalizedDescriptionKey: @"DPoP nonce validation failed",
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:260:        if (![replayChecker checkAndAddJTI:jti expiration:jtiExpiration]) {
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:264:                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP jti reuse detected"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:288:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP signature"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:303:                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP signature verification failed"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:335:                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid URL for DPoP"}];
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:344:        @"typ": @"dpop+jwt",
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:354:        @"jti": [[NSUUID UUID] UUIDString],
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:355:        @"htm": [method uppercaseString],
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:356:        @"htu": normalizedHTU,
+./Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m:384:                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to sign DPoP proof"}];

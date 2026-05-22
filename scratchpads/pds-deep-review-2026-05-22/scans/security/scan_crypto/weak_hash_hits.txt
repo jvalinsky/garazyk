@@ -1,0 +1,4 @@
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:391:    CC_SHA1(data.bytes, (CC_LONG)data.length, hash);
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonDigest.h:24:#define CC_SHA1(data, len, md) SHA1((const unsigned char *)(data), (size_t)(len), (md))
+./Garazyk/Sources/Compat/PlatformShims/CommonCrypto/CommonDigest.h:25:#define CC_MD5(data, len, md) MD5((const unsigned char *)(data), (size_t)(len), (md))
+./Garazyk/Sources/Network/WebSocketUpgradeHandler.m:100:    CC_SHA1(cStr, (CC_LONG)strlen(cStr), digest);

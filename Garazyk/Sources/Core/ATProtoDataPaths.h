@@ -70,9 +70,9 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion For @c did:plc:z72i7h... returns @c {base}/plc/z7/did:plc:z72i7h...
  For @c did:web:example.com returns @c {base}/web/ex/did:web:example.com
  */
-- (NSString *)actorStorePathForDid:(NSString *)did;
+- (nullable NSString *)actorStorePathForDid:(NSString *)did;
 
-- (NSString *)keyPathForDid:(NSString *)did;
+- (nullable NSString *)keyPathForDid:(NSString *)did;
 
 @end
 

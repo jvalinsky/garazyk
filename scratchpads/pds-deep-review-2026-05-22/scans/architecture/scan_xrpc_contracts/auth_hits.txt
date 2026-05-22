@@ -1,0 +1,381 @@
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:203:    // Verify scope (lxm) for Service Auth tokens only.
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:204:    // Access tokens have a different scope model (e.g. "atproto transition:generic")
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:207:        NSString *scope = jwt.payload.scope;
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:209:        NSString *effectiveScope = lxm ?: scope;
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:212:            GZ_LOG_WARN(@"Service Auth JWT scope mismatch: %@", effectiveScope);
+./Garazyk/Sources/Video/VideoJWTAuthProvider.m:216:                @"message": @"Token does not authorize this operation"
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:147:                          scope:(NSString *)scope
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:149:    NSString *key = [NSString stringWithFormat:@"%@:%@:%@", accountDID, clientID, scope];
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:159:                             scope:(NSString *)scope
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:161:    NSString *key = [NSString stringWithFormat:@"%@:%@:%@", accountDID, clientID, scope];
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:377:- (BOOL)isAdmin:(NSString *)did
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:379:    if ([self.adminController respondsToSelector:@selector(isAdmin:error:)]) {
+./Garazyk/Sources/Auth/PDS/PDSAuth.m:380:        return [self.adminController isAdmin:did error:error];
+./Garazyk/Sources/Auth/OAuth2.h:41: @constant OAuth2ErrorInvalidScope The requested scope is invalid.
+./Garazyk/Sources/Auth/OAuth2.h:64:    /** The requested scope is invalid. */
+./Garazyk/Sources/Auth/OAuth2.h:90:/*! Required scope for all AT Protocol OAuth sessions. */
+./Garazyk/Sources/Auth/OAuth2.h:96:/*! DM access scope (transitional). */
+./Garazyk/Sources/Auth/OAuth2.h:99:/*! Email access scope (transitional). */
+./Garazyk/Sources/Auth/OAuth2.h:151: request including client ID, redirect URI, scope, and PKCE parameters.
+./Garazyk/Sources/Auth/OAuth2.h:165:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuth2.h:293:/*! The requested scope for the new token. */
+./Garazyk/Sources/Auth/OAuth2.h:294:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuth2.h:335:/*! The granted scope. */
+./Garazyk/Sources/Auth/OAuth2.h:336:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuth2.h:456: server.authorizationEndpoint = @"https://pds.example.com/oauth/authorize";
+./Garazyk/Sources/Auth/OAuth2.h:553: @method refreshAccessToken:scope:dpopJWK:completion:
+./Garazyk/Sources/Auth/OAuth2.h:558: @param scope Optional new scope for the token.
+./Garazyk/Sources/Auth/OAuth2.h:563:                     scope:(nullable NSString *)scope
+./Garazyk/Sources/Auth/OAuth2Handler.m:176:        [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
+./Garazyk/Sources/Auth/OAuth2Handler.m:629:  // Extract scope (optional, default to "atproto")
+./Garazyk/Sources/Auth/OAuth2Handler.m:630:  NSString *scope = metadata[@"scope"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:631:  if (scope && ![scope isKindOfClass:[NSString class]]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:637:                   NSLocalizedDescriptionKey : @"scope must be a string"
+./Garazyk/Sources/Auth/OAuth2Handler.m:642:  if (!scope) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:643:    scope = @"atproto";
+./Garazyk/Sources/Auth/OAuth2Handler.m:647:      [scope componentsSeparatedByCharactersInSet:
+./Garazyk/Sources/Auth/OAuth2Handler.m:662:                                     @"scope must include atproto"
+./Garazyk/Sources/Auth/OAuth2Handler.m:921:    @"scope" : scope,
+./Garazyk/Sources/Auth/OAuth2Handler.m:1553:                  path:@"/oauth/authorize"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1559:                  path:@"/oauth/authorize/confirm"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1565:                  path:@"/oauth/authorize/sign-in"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1571:                  path:@"/oauth/authorize/passkey/challenge"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1577:                  path:@"/oauth/authorize/passkey"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1652:                  path:@"/oauth/authorize"
+./Garazyk/Sources/Auth/OAuth2Handler.m:1748:  GZ_LOG_AUTH_INFO(@"Starting authorize request for path: %@", request.path);
+./Garazyk/Sources/Auth/OAuth2Handler.m:1806:    GZ_LOG_AUTH_WARN(@"Missing client_id in authorize request");
+./Garazyk/Sources/Auth/OAuth2Handler.m:1876:  authRequest.scope = params[@"scope"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1912:      [assetsPath stringByAppendingPathComponent:@"authorize.html"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1913:  GZ_LOG_AUTH_INFO(@"Serving authorize page from: %@", filePath);
+./Garazyk/Sources/Auth/OAuth2Handler.m:1920:    GZ_LOG_AUTH_ERROR(@"Failed to load authorize.html at %@: %@", filePath,
+./Garazyk/Sources/Auth/OAuth2Handler.m:1940:  NSString *scope = [self escapeHtml:params[@"scope"] ?: @"atproto"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1959:      [html stringByReplacingOccurrencesOfString:@"{{scope}}" withString:scope];
+./Garazyk/Sources/Auth/OAuth2Handler.m:1993:  NSString *scope = params[@"scope"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2152:  authRequest.scope = scope;
+./Garazyk/Sources/Auth/OAuth2Handler.m:2778:  tokenRequest.scope = params[@"scope"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:2816:                    @"scope" : session.scope ?: @"atproto"
+./Garazyk/Sources/Auth/OAuth2Handler.m:2970:      if (payload.scope)
+./Garazyk/Sources/Auth/OAuth2Handler.m:2971:        introspection[@"scope"] = payload.scope;
+./Garazyk/Sources/Auth/OAuth2Handler.m:3005:      if (session.scope)
+./Garazyk/Sources/Auth/OAuth2Handler.m:3006:        introspection[@"scope"] = session.scope;
+./Garazyk/Sources/Auth/OAuth2Handler.m:3027:      if (session.scope)
+./Garazyk/Sources/Auth/OAuth2Handler.m:3028:        introspection[@"scope"] = session.scope;
+./Garazyk/Sources/Auth/OAuth2Handler.m:3234:  // AT Protocol spec: scope must include 'atproto'
+./Garazyk/Sources/Auth/OAuth2Handler.m:3235:  NSString *scope = params[@"scope"];
+./Garazyk/Sources/Auth/OAuth2Handler.m:3236:  if (![scope containsString:@"atproto"]) {
+./Garazyk/Sources/Auth/OAuth2Handler.m:3241:          @"The 'atproto' scope is required for AT Protocol OAuth sessions"
+./Garazyk/Sources/Auth/OAuthServerMetadata.m:44:          [[url URLByAppendingPathComponent:@"oauth/authorize"] absoluteString],
+./Garazyk/Sources/Auth/JWT.h:138: claims (did, handle, scope).
+./Garazyk/Sources/Auth/JWT.h:172:/*! The OAuth scope granted (ATProto-specific). */
+./Garazyk/Sources/Auth/JWT.h:173:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuthSession.h:29: @constant OAuthErrorInvalidScope Requested scope is invalid.
+./Garazyk/Sources/Auth/OAuthSession.h:73:/*! Requested OAuth scope. */
+./Garazyk/Sources/Auth/OAuthSession.h:74:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuthSession.h:146:/*! Requested OAuth scope. */
+./Garazyk/Sources/Auth/OAuthSession.h:147:@property (nonatomic, copy) NSString *scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:145: @param scope The requested scope.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:151:                          scope:(NSString *)scope
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:158: @param scope The granted scope.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:164:                             scope:(NSString *)scope
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:246: @param claims Token claims (sub, aud, scope, etc.). The implementation adds iat, exp.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:255: @param claims Token claims (sub, aud, scope, client_id, etc.). The implementation adds iat.
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h:445:- (BOOL)isAdmin:(NSString *)did
+./Garazyk/Sources/Auth/Session.m:30:                                  scope:(nullable NSString *)scope
+./Garazyk/Sources/Auth/Session.m:38:    token.scope = scope;
+./Garazyk/Sources/Auth/Session.m:61:@property (nonatomic, copy, readwrite) NSString *scope;
+./Garazyk/Sources/Auth/Session.m:76:                                  scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:78:    return [[Session alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:jkt];
+./Garazyk/Sources/Auth/Session.m:83:                                  scope:(NSString *)scope {
+./Garazyk/Sources/Auth/Session.m:84:    return [[Session alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:nil];
+./Garazyk/Sources/Auth/Session.m:89:                                  scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:92:    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:jkt];
+./Garazyk/Sources/Auth/Session.m:97:                                  scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:99:    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
+./Garazyk/Sources/Auth/Session.m:104:                      scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:106:    return [self initWithDID:did handle:handle scope:scope minter:nil dpopKeyThumbprint:jkt];
+./Garazyk/Sources/Auth/Session.m:111:                      scope:(NSString *)scope {
+./Garazyk/Sources/Auth/Session.m:112:    return [self initWithDID:did handle:handle scope:scope minter:nil dpopKeyThumbprint:nil];
+./Garazyk/Sources/Auth/Session.m:117:                      scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:125:        _scope = [scope copy];
+./Garazyk/Sources/Auth/Session.m:138:                      scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:140:    return [self initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
+./Garazyk/Sources/Auth/Session.m:149:        NSArray<NSString *> *scopes = [self.scope componentsSeparatedByString:@" "];
+./Garazyk/Sources/Auth/Session.m:169:                                                  scope:self.scope
+./Garazyk/Sources/Auth/Session.m:178:        NSArray<NSString *> *scopes = [self.scope componentsSeparatedByString:@" "];
+./Garazyk/Sources/Auth/Session.m:195:                                                     scope:self.scope
+./Garazyk/Sources/Auth/Session.m:203:                      scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:213:        _scope = [scope copy];
+./Garazyk/Sources/Auth/Session.m:223:                                                       scope:scope
+./Garazyk/Sources/Auth/Session.m:228:                                                             scope:scope
+./Garazyk/Sources/Auth/Session.m:239:    response[@"scope"] = self.scope;
+./Garazyk/Sources/Auth/Session.m:259:        @"scope": self.scope,
+./Garazyk/Sources/Auth/Session.m:425:            "  scope TEXT NOT NULL,"
+./Garazyk/Sources/Auth/Session.m:457:    const char *sql = "INSERT OR REPLACE INTO sessions (session_id, did, handle, scope, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, dpop_key_thumbprint, token_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+./Garazyk/Sources/Auth/Session.m:465:    sqlite3_bind_text(stmt, 4, session.scope.UTF8String, -1, SQLITE_TRANSIENT);
+./Garazyk/Sources/Auth/Session.m:488:    const char *scope = (const char *)sqlite3_column_text(stmt, 3);
+./Garazyk/Sources/Auth/Session.m:492:    if (!did || !handle || !scope || !accessToken) return nil;
+./Garazyk/Sources/Auth/Session.m:499:                                              scope:[NSString stringWithUTF8String:scope]
+./Garazyk/Sources/Auth/Session.m:639:                                     scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:642:    Session *session = [[Session alloc] initWithDID:did handle:handle scope:scope minter:self.minter];
+./Garazyk/Sources/Auth/Session.m:662:                                     scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.m:664:    return [self createSessionForDID:did handle:handle scope:scope dpopJWK:dpopJWK error:nil];
+./Garazyk/Sources/Auth/Session.m:751:                  scope:(nullable NSString *)newScope
+./Garazyk/Sources/Auth/Session.m:767:    NSString *finalScope = newScope ?: existingSession.scope;
+./Garazyk/Sources/Auth/Session.m:775:                                                    scope:finalScope
+./Garazyk/Sources/Core/NSDateFormatter+ATProto.m:44:        // ARC releases the object when it goes out of scope
+./Garazyk/Sources/Auth/OAuthSession.m:85:    if (!self.scope || self.scope.length == 0) {
+./Garazyk/Sources/Auth/OAuthSession.m:89:                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing scope"}];
+./Garazyk/Sources/Auth/OAuthSession.m:94:    if (![self.scope containsString:@"atproto"]) {
+./Garazyk/Sources/Auth/OAuthSession.m:98:                                     userInfo:@{NSLocalizedDescriptionKey: @"atproto scope is required"}];
+./Garazyk/Sources/Auth/OAuthSession.m:217:    session.scope = request.scope;
+./Garazyk/Sources/Auth/OAuthSession.m:376:        @"scope": validSession.scope ?: @"atproto",
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:101:    // POST /admin/backfill/scope/rebuild
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:103:                path:@"/admin/backfill/scope/rebuild"
+./Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m:360:    [response setJsonBody:@{@"success": @(YES), @"message": @"Backfill scope rebuild triggered"}];
+./Garazyk/Sources/Security/PDSAuthzManager.m:155:    // Admin access is granted only from JWT scope validation in XrpcMethodRegistry.
+./Garazyk/Sources/Security/PDSAuthzManager.m:157:    // through the JWT scope claim ("admin") to prevent privilege escalation.
+./Garazyk/Sources/Security/PDSAuthzManager.m:178:    // Account exists. Authorization is verified through JWT scope validation.
+./Garazyk/Sources/Security/PDSAuthzManager.m:179:    // Caller must check JWT "admin" scope before calling this method.
+./Garazyk/Sources/Security/PDSAuthzManager.m:184:                                 userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (verify JWT 'admin' scope)"}];
+./Garazyk/Sources/Security/PDSBiometricKeychain.h:15:    /** LocalAuthentication failed or the user did not authorize access. */
+./Garazyk/Sources/Security/PDSAuthzManager.h:36:    /** The caller lacks the scope required by the operation. */
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:78:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:103:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:124:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.h:142:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/OAuth2.m:97:    NSURLComponents *components = [NSURLComponents componentsWithString:@"/oauth/authorize"];
+./Garazyk/Sources/Auth/OAuth2.m:102:    if (self.scope) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"scope" value:self.scope]];
+./Garazyk/Sources/Auth/OAuth2.m:117:    if (self.scope) dict[@"scope"] = self.scope;
+./Garazyk/Sources/Auth/OAuth2.m:204:    if (self.scope) dict[@"scope"] = self.scope;
+./Garazyk/Sources/Auth/OAuth2.m:218:    response.scope = dictionary[@"scope"];
+./Garazyk/Sources/Auth/OAuth2.m:596:    if (request.scope) codeData[@"scope"] = request.scope;
+./Garazyk/Sources/Auth/OAuth2.m:877:    NSString *scope = codeData[@"scope"] ?: OAuth2ScopeAtproto;
+./Garazyk/Sources/Auth/OAuth2.m:879:    // AT Protocol spec: atproto scope is required for all sessions
+./Garazyk/Sources/Auth/OAuth2.m:880:    if (![scope containsString:@"atproto"]) {
+./Garazyk/Sources/Auth/OAuth2.m:883:                                         userInfo:@{NSLocalizedDescriptionKey: @"The 'atproto' scope is required"}];
+./Garazyk/Sources/Auth/OAuth2.m:909:                                           scope:scope
+./Garazyk/Sources/Auth/OAuth2.m:993:    NSString *newScope = request.scope ?: (existingSession ? existingSession.scope : OAuth2ScopeAtproto);
+./Garazyk/Sources/Auth/OAuth2.m:996:                                              scope:newScope
+./Garazyk/Sources/Auth/OAuth2.m:1047:                           scope:(NSString *)scope
+./Garazyk/Sources/Auth/OAuth2.m:1051:                                              scope:scope
+./Garazyk/Sources/Auth/OAuth2.m:1082:                     scope:(nullable NSString *)scope
+./Garazyk/Sources/Auth/Session.h:34: @constant SessionErrorInvalidScope The requested scope is invalid.
+./Garazyk/Sources/Auth/Session.h:47:    /** The requested scope is invalid. */
+./Garazyk/Sources/Auth/Session.h:61: with their associated metadata including expiration and scope.
+./Garazyk/Sources/Auth/Session.h:74:/*! The OAuth 2.0 scope associated with this token. */
+./Garazyk/Sources/Auth/Session.h:75:@property (nonatomic, copy, nullable) NSString *scope;
+./Garazyk/Sources/Auth/Session.h:81: @method tokenWithValue:expiresIn:scope:isRefreshToken:
+./Garazyk/Sources/Auth/Session.h:87: @param scope The OAuth scope for this token.
+./Garazyk/Sources/Auth/Session.h:96:                                   scope:(nullable NSString *)scope
+./Garazyk/Sources/Auth/Session.h:137:                                     scope:@"atproto"];
+./Garazyk/Sources/Auth/Session.h:166:/*! The OAuth scope for this session. */
+./Garazyk/Sources/Auth/Session.h:167:@property (nonatomic, copy, readonly) NSString *scope;
+./Garazyk/Sources/Auth/Session.h:185: @method sessionWithDID:handle:scope:
+./Garazyk/Sources/Auth/Session.h:191: @param scope The OAuth scope for the session.
+./Garazyk/Sources/Auth/Session.h:196:                                  scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.h:200: @method sessionWithDID:handle:scope:
+./Garazyk/Sources/Auth/Session.h:206:                                  scope:(NSString *)scope;
+./Garazyk/Sources/Auth/Session.h:209: @method sessionWithDID:handle:scope:minter:
+./Garazyk/Sources/Auth/Session.h:215: @param scope The OAuth scope for the session.
+./Garazyk/Sources/Auth/Session.h:224:                                  scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.h:229: @method sessionWithDID:handle:scope:minter:
+./Garazyk/Sources/Auth/Session.h:235:                                  scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.h:239: @method initWithDID:handle:scope:
+./Garazyk/Sources/Auth/Session.h:245: @param scope The OAuth scope for the session.
+./Garazyk/Sources/Auth/Session.h:254:                     scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.h:258: @method initWithDID:handle:scope:
+./Garazyk/Sources/Auth/Session.h:264:                      scope:(NSString *)scope;
+./Garazyk/Sources/Auth/Session.h:267: @method initWithDID:handle:scope:minter:
+./Garazyk/Sources/Auth/Session.h:273: @param scope The OAuth scope for the session.
+./Garazyk/Sources/Auth/Session.h:283:                     scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.h:288: @method initWithDID:handle:scope:minter:
+./Garazyk/Sources/Auth/Session.h:294:                      scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.h:516: @method createSessionForDID:handle:scope:dpopJWK:
+./Garazyk/Sources/Auth/Session.h:522: @param scope The OAuth scope for the session.
+./Garazyk/Sources/Auth/Session.h:532:                                    scope:(NSString *)scope
+./Garazyk/Sources/Auth/Session.h:581: @method refreshSession:scope:dpopJWK:newSession:error:
+./Garazyk/Sources/Auth/Session.h:586: @param newScope Optional new scope for the session.
+./Garazyk/Sources/Auth/Session.h:596:                  scope:(nullable NSString *)newScope
+./Garazyk/Sources/Auth/OAuth2Handler.h:42:    endpoints: authorize, token, and revoke. It integrates with the OAuth2Server
+./Garazyk/Sources/Auth/OAuth2Handler.h:46:    - GET /oauth/authorize - Authorization request display
+./Garazyk/Sources/Auth/OAuth2Handler.h:47:    - POST /oauth/authorize/sign-in - Sign-in credential validation
+./Garazyk/Sources/Auth/OAuth2Handler.h:48:    - POST /oauth/authorize/passkey/challenge - Passkey sign-in challenge
+./Garazyk/Sources/Auth/OAuth2Handler.h:49:    - POST /oauth/authorize/passkey - Passkey sign-in assertion validation
+./Garazyk/Sources/Auth/OAuth2Handler.h:50:    - POST /oauth/authorize/confirm - Authorization confirmation
+./Garazyk/Sources/Auth/OAuth2Handler.h:113:    - GET /oauth/authorize
+./Garazyk/Sources/Auth/OAuth2Handler.h:114:    - POST /oauth/authorize/sign-in
+./Garazyk/Sources/Auth/OAuth2Handler.h:115:    - POST /oauth/authorize/passkey/challenge
+./Garazyk/Sources/Auth/OAuth2Handler.h:116:    - POST /oauth/authorize/passkey
+./Garazyk/Sources/Auth/OAuth2Handler.h:117:    - POST /oauth/authorize/confirm
+./Garazyk/Sources/Auth/OAuth2Handler.h:218: response with token metadata (subject, client, expiration, scope, DPoP binding).
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:285:    NSURL *url = [self URLByAppendingPath:@"/admin/backfill/scope/rebuild" queryItems:nil baseURL:self.configuration.appViewBaseURL];
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:290:        return @{@"error": @"rebuild_scope_failed", @"message": error.localizedDescription ?: @"Rebuild scope failed"};
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1068:                              queryItems:@{@"limit": @"50", @"scope": @"instance"}
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:80:@property (nonatomic, assign, readonly) BOOL isAdmin;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.h:87:                      isAdmin:(BOOL)isAdmin;
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1069:    // AppView: Rebuild backfill scope
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1070:    [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-rebuild-scope" handler:^(HttpRequest *request, HttpResponse *response) {
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1075:        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Rebuilding backfill scope.";
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1467:    "function fillVisibleDIDInputs(did){if(!did)return false;const scope=activeTabPane();let filled=false;"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1468:    "scope.querySelectorAll('input,textarea').forEach(el=>{if(inputExpectsDID(el)){el.value=did;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));filled=true;}});return filled;}"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:1505:    "const resp=await fetch('/admin/actions/appview-rebuild-scope',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});"
+./Garazyk/Sources/AdminUIServer/UIServerRuntime.m:2830:        @"scope": @"atproto transition:generic",
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:35:@property (nonatomic, assign, readwrite) BOOL isAdmin;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:45:                    isAdmin:(BOOL)isAdmin {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:53:        _isAdmin = isAdmin;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:419:    BOOL isAdmin = NO;
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:420:    if ([self.accountPolicy respondsToSelector:@selector(isAdmin:error:)]) {
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:422:        isAdmin = [self.accountPolicy isAdmin:subject error:&adminError];
+./Garazyk/Sources/Auth/Verifier/AuthVerifier.m:430:                                                isAdmin:isAdmin];
+./Garazyk/Sources/Admin/PDSAdminAuth.m:353:    if (!isExplicitAdmin && !PDSScopesContainAdmin(jwt.payload.scope)) {
+./Garazyk/Sources/Admin/PDSAdminAuth.m:355:            *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:403 userInfo:@{NSLocalizedDescriptionKey: @"Token missing admin scope and user is not an admin"}];
+./Garazyk/Sources/Admin/PDSAdminAuth.m:529:    claims[@"scope"] = @"admin";
+./Garazyk/Sources/Admin/PDSAdminAuth.m:573:    __block BOOL isAdmin = NO;
+./Garazyk/Sources/Admin/PDSAdminAuth.m:575:        isAdmin = [self.adminDidsInternal containsObject:did];
+./Garazyk/Sources/Admin/PDSAdminAuth.m:577:    return isAdmin;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:252:    if (request.scope) codeData[@"scope"] = request.scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:385:    NSString *scope = codeData[@"scope"];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:390:                          scope:scope
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:416:    NSString *scope = tokenClaims[@"scope"];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:421:                          scope:scope
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:437:    NSString *scope = request.scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:441:                          scope:scope
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:450:                         scope:(NSString *)scope
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:462:    if (scope) accessClaims[@"scope"] = scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:483:    if (scope) refreshClaims[@"scope"] = scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:498:    response.scope = scope;
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:533:        if (claims[@"scope"]) result[@"scope"] = claims[@"scope"];
+./Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m:547:    metadata[@"authorization_endpoint"] = [NSString stringWithFormat:@"%@/oauth/authorize", self.issuer ?: @"https://example.com"];
+./Garazyk/Sources/Admin/AdminMiddleware.m:63:    __block BOOL isAdmin = NO;
+./Garazyk/Sources/Admin/AdminMiddleware.m:66:        isAdmin = [self.adminDids containsObject:session.did];
+./Garazyk/Sources/Admin/AdminMiddleware.m:69:    if (!isAdmin) {
+./Garazyk/Sources/Admin/AdminMiddleware.m:70:        isAdmin = [[PDSAdminAuth sharedAuth] isAdminDid:session.did];
+./Garazyk/Sources/Admin/AdminMiddleware.m:73:    if (!isAdmin && self.customAdminCheck) {
+./Garazyk/Sources/Admin/AdminMiddleware.m:74:        isAdmin = self.customAdminCheck(session);
+./Garazyk/Sources/Admin/AdminMiddleware.m:77:    if (!isAdmin) { // Kept original condition `!isAdmin`
+./Garazyk/Sources/Database/Schema.m:340:    @"scope TEXT,"
+./Garazyk/Sources/Database/Schema.m:349:    @"scope TEXT,"
+./Garazyk/Sources/Database/Schema.m:366:    @"scope TEXT,"
+./Garazyk/Sources/Database/Schema.m:386:    @"scope TEXT NOT NULL,"
+./Garazyk/Sources/Database/Schema.m:388:    @"UNIQUE(did, client_id, scope)"
+./Garazyk/Sources/Database/Utils/PDSSQLiteUtils.h:25: @abstract Declares a sqlite3_stmt* that is automatically finalized when it goes out of scope.
+./Garazyk/Sources/Network/XrpcHandlerContext.h:53:- (BOOL)requireAuthentication;
+./Garazyk/Sources/Network/XrpcHandlerContext.h:58:- (BOOL)requireAuthenticatedDID:(NSString * _Nullable * _Nullable)did;
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:78:        ? @"SELECT client_id, client_secret, redirect_uris, grant_types, response_types, scope FROM oauth_clients WHERE client_id = ?"
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:79:        : @"SELECT client_id, client_secret, redirect_uris, grant_types, scope FROM oauth_clients WHERE client_id = ?";
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:110:        id scope = [self valueFromStatement:stmt columnIndex:(hasResponseTypes ? 5 : 4)];
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:111:        if (scope) dict[@"scope"] = scope;
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:136:    if ([availableColumns containsObject:@"scope"]) {
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:137:        [columns addObject:@"scope"];
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:196:        @"scope": @"atproto"
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:211:        ? @"SELECT client_id, client_secret, redirect_uris, grant_types, response_types, scope FROM oauth_clients"
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:212:        : @"SELECT client_id, client_secret, redirect_uris, grant_types, scope FROM oauth_clients";
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:241:        id scope = [self valueFromStatement:stmt columnIndex:(hasResponseTypes ? 5 : 4)];
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:242:        if (scope) dict[@"scope"] = scope;
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:486:- (NSString *)requireAuth:(HttpRequest *)request response:(HttpResponse *)response
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:624:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:646:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:711:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:978:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:992:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1147:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1177:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1209:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1236:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1255:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1279:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1316:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1328:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1342:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1379:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1401:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1583:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1623:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1649:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1694:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1730:    NSString *callerDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1739:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1756:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1793:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1816:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1840:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1864:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1879:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1902:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/AppViewXRpcRoutePack.m:1917:    NSString *actorDID = [self requireAuth:request response:response];
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:145:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:213:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:252:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:306:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:337:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:358:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:373:    if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:431:    if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:488:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:520:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyNotificationPack.m:586:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/RateLimiter.m:305:    // We need a new statement variable since the previous one is autoreleased only at scope exit
+./Garazyk/Sources/Network/RateLimiter.m:306:    // However, declaring another PDS_SQLITE_AUTORELEASE_STMT in the same scope with same name is tricky.
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:53:    if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:84:    if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyBookmarksPack.m:119:    if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1013:        NSString *scope = body[@"scope"] ?: @"global";
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1029:            @"scope": scope
+./Garazyk/Sources/Network/XrpcToolsOzonePack.m:1039:        NSString *scope = [request queryParamForKey:@"scope"];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:24:  if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:145:        BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:146:        if (!isAdmin) {
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:212:        BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:213:        if (!isAdmin) {
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:253:        BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:254:        if (!isAdmin) {
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:371:        BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:372:        if (!isAdmin) {
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:544:        BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
+./Garazyk/Sources/Network/XrpcChatBskyGroupPack.m:545:        if (!isAdmin) {
+./Garazyk/Sources/Network/XrpcLabelPack.m:546:    // com.atproto.temp.dereferenceScope - Dereference OAuth scope references
+./Garazyk/Sources/Network/XrpcLabelPack.m:555:        NSString *scopeReference = [request queryParamForKey:@"scope"];
+./Garazyk/Sources/Network/XrpcLabelPack.m:558:            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing scope"}];
+./Garazyk/Sources/Network/XrpcLabelPack.m:563:            [response setJsonBody:@{@"error": @"InvalidScopeReference", @"message": @"scope must start with ref:"}];
+./Garazyk/Sources/Network/XrpcLabelPack.m:571:            [response setJsonBody:@{@"error": @"InvalidScopeReference", @"message": @"Invalid scope reference"}];
+./Garazyk/Sources/Network/XrpcLabelPack.m:585:            [response setJsonBody:@{@"error": @"InvalidScopeReference", @"message": @"Unknown scope reference"}];
+./Garazyk/Sources/Network/XrpcLabelPack.m:590:        [response setJsonBody:@{@"scope": mappedScope}];
+./Garazyk/Sources/Auth/JWT.m:69:    payload.scope = dictionary[@"scope"];
+./Garazyk/Sources/Auth/JWT.m:101:    if (self.scope) dict[@"scope"] = self.scope;
+./Garazyk/Sources/Auth/JWT.m:600:    payload.scope = [scopes componentsJoinedByString:@" "];
+./Garazyk/Sources/Auth/JWT.m:661:    payload.scope = [scopes componentsJoinedByString:@" "];
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:67:                       if (![context requireAuthenticatedDID:&did]) {
+./Garazyk/Sources/Network/XrpcAppBskyAgeAssurancePack.m:147:                       if (![context requireAuthenticatedDID:&did]) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:106:    if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:127:    if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyActorPack.m:265:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:52:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:80:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:115:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyDraftsPack.m:138:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:90:    NSString *scope = @"atproto";
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:100:        } else if ([arg isEqualToString:@"--scope"]) {
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:101:            if (i + 1 < args.count) scope = args[++i];
+./Garazyk/Sources/CLI/PDSCLIOAuthCommand.m:125:        @"scope": scope
+./Garazyk/Sources/Network/XrpcMiddleware.m:82:@property (nonatomic, assign) BOOL requireAdmin;
+./Garazyk/Sources/Network/XrpcMiddleware.m:88:    return self.requireAdmin ? @"AdminAuth" : @"UserAuth";
+./Garazyk/Sources/Network/XrpcMiddleware.m:94:    middleware.requireAdmin = NO;
+./Garazyk/Sources/Network/XrpcMiddleware.m:103:    middleware.requireAdmin = YES;
+./Garazyk/Sources/Network/XrpcMiddleware.m:112:    middleware.requireAdmin = NO;
+./Garazyk/Sources/Network/XrpcMiddleware.m:135:    if (self.requireAdmin) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:58:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:93:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:131:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:167:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:190:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:222:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:246:                       if (![context requireAuthenticatedDID:&actorDID]) {
+./Garazyk/Sources/Network/XrpcAppBskyContactPack.m:268:                       if (![context requireAuthentication]) {
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:61:                       if (![context requireAuthentication]) {
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:74:                       if (![context requireAuthentication]) {
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:203:                       if (![context requireAuthentication]) {
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:230:                       if (![context requireAuthentication]) {
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:254:                       if (![context requireAuthentication]) {
+./Garazyk/Sources/Network/XrpcHandlerContext.m:28:- (BOOL)requireAuthentication {
+./Garazyk/Sources/Network/XrpcHandlerContext.m:29:  return [self requireAuthenticatedDID:NULL];
+./Garazyk/Sources/Network/XrpcHandlerContext.m:32:- (BOOL)requireAuthenticatedDID:(NSString **)did {

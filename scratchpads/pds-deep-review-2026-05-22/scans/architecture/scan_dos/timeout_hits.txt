@@ -1,0 +1,154 @@
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:886:    // Use a short timeout so it fails fast and falls back to curl.
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:887:    httpOptions.timeout = 2.0;
+./Garazyk/Sources/Federation/FederationClient.m:58:    safeOptions.timeout = 30.0;
+./Garazyk/Sources/Federation/FederationClient.m:244:    safeOptions.timeout = 30.0;
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:20:        _timeoutInterval = 30.0;
+./Garazyk/Sources/Email/PDSEmailHTTPClient.m:36:    request.timeoutInterval = self.timeoutInterval;
+./Garazyk/Sources/Chat/Server/ChatAuthManager.m:344:                                                       timeoutInterval:5.0];
+./Garazyk/Sources/Email/PDSEmailHTTPClient.h:25:/// The timeout interval for requests (default: 30s).
+./Garazyk/Sources/Email/PDSEmailHTTPClient.h:26:@property (nonatomic, assign) NSTimeInterval timeoutInterval;
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:42:        config.timeoutIntervalForRequest = 30.0;
+./Garazyk/Sources/Blob/PDSCloudStorageBlobProvider.m:43:        config.timeoutIntervalForResource = 300.0;
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:437:                     printf("Forced exit after timeout.\n");
+./Garazyk/Sources/CLI/PDSCLIServeCommand.m:450:                     printf("Forced exit after timeout.\n");
+./Garazyk/Sources/Identity/HandleResolver.m:221:    safeOptions.timeout = 10.0;
+./Garazyk/Sources/CLI/PDSCLIAccountManager.m:446:    httpOptions.timeout = 2.0;
+./Garazyk/Sources/Sync/Firehose/Firehose.h:293:/*! Heartbeat timeout for the underlying WebSocket connection. */
+./Garazyk/Sources/PLC/DIDPLCResolver.h:9: against a PLC directory server. Includes configurable timeouts and caching.
+./Garazyk/Sources/PLC/DIDPLCResolver.h:40: @abstract A robust DID PLC Resolver with configurable timeouts and caching.
+./Garazyk/Sources/PLC/DIDPLCResolver.h:44:    Supports both synchronous and asynchronous resolution with configurable timeouts.
+./Garazyk/Sources/PLC/DIDPLCResolver.h:53:/*! The timeout interval for HTTP requests in seconds. Default is 5.0. */
+./Garazyk/Sources/PLC/DIDPLCResolver.h:54:@property (nonatomic, assign) NSTimeInterval timeout;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:270:- (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout {
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:273:      dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC));
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:45:        _timeoutInterval = 30.0;
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:74:    request.timeoutInterval = self.timeoutInterval;
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:121:    request.timeoutInterval = self.timeoutInterval;
+./Garazyk/Sources/Core/PDSProviderHTTPClient.m:166:    request.timeoutInterval = self.timeoutInterval;
+./Garazyk/Sources/App/PDSReadinessCheck.m:128:    request.timeoutInterval = 5.0;
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:110:- (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:31:        _timeout = 5.0;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:35:        config.timeoutIntervalForRequest = _timeout;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:36:        config.timeoutIntervalForResource = _timeout * 2;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:72:    // Wait for resolution with safety margin. The underlying task has its own configured timeout.
+./Garazyk/Sources/PLC/DIDPLCResolver.m:73:    dispatch_time_t waitTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.timeout + 1.0) * NSEC_PER_SEC));
+./Garazyk/Sources/PLC/DIDPLCResolver.m:115:    request.timeoutInterval = self.timeout;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:206:    dispatch_time_t waitTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.timeout + 1.0) * NSEC_PER_SEC));
+./Garazyk/Sources/PLC/DIDPLCResolver.m:242:    request.timeoutInterval = self.timeout;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:293:    request.timeoutInterval = self.timeout;
+./Garazyk/Sources/PLC/DIDPLCResolver.m:309:    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.timeout + 2.0) * NSEC_PER_SEC)));
+./Garazyk/Sources/PLC/PLCSyncClient.h:61:/** @abstract Network request timeout. */
+./Garazyk/Sources/PLC/PLCSyncClient.h:62:@property (nonatomic, assign) NSTimeInterval timeout;
+./Garazyk/Sources/Core/DID.m:124:        config.timeoutIntervalForRequest = 10.0;
+./Garazyk/Sources/Core/DID.m:125:        config.timeoutIntervalForResource = 15.0;
+./Garazyk/Sources/Core/DID.m:604:    httpOptions.timeout = 2.0;
+./Garazyk/Sources/Core/DID.m:691:    options.timeout = 10.0;
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:408:        dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC));
+./Garazyk/Sources/Sync/WebSocket/WebSocketServer.m:409:        dispatch_semaphore_wait(self.stopSemaphore, timeout);
+./Garazyk/Sources/Sync/WebSocket/WebSocketHeartbeatPolicy.m:27:        // Check if timeout has elapsed
+./Garazyk/Sources/PLC/PLCSyncClient.m:37:        _timeout = 30.0;
+./Garazyk/Sources/PLC/PLCSyncClient.m:97:        request.timeoutInterval = self.timeout;
+./Garazyk/Sources/PLC/PLCSyncClient.m:101:        syncOptions.timeout = self.timeout;
+./Garazyk/Sources/PLC/PLCSyncClient.m:206:    request.timeoutInterval = self.timeout;
+./Garazyk/Sources/PLC/PLCSyncClient.m:215:    syncOptions.timeout = self.timeout;
+./Garazyk/Sources/PLC/PLCSyncClient.m:281:    dispatch_time_t waitTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.timeout * NSEC_PER_SEC));
+./Garazyk/Sources/PLC/PLCPersistentStore.m:153:    // Configure a 5-second busy timeout for concurrent WAL access
+./Garazyk/Sources/PLC/PLCPersistentStore.m:154:    int busyResult = sqlite3_busy_timeout(self.db, 5000);
+./Garazyk/Sources/PLC/PLCPersistentStore.m:160:                                        [NSString stringWithFormat:@"Failed to set busy timeout: %s",
+./Garazyk/Sources/Network/HttpServer.m:297:  // Wait for READY state with 5s timeout
+./Garazyk/Sources/Network/HttpServer.m:298:  dispatch_time_t timeout =
+./Garazyk/Sources/Network/HttpServer.m:300:  if (dispatch_semaphore_wait(self.readySemaphore, timeout) != 0) {
+./Garazyk/Sources/Network/HttpServer.m:1052:    // Wait for CANCELLED state with 2s timeout
+./Garazyk/Sources/Network/HttpServer.m:1053:    dispatch_time_t timeout =
+./Garazyk/Sources/Network/HttpServer.m:1055:    dispatch_semaphore_wait(self.stopSemaphore, timeout);
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:54:/** Heartbeat policy used to decide ping and timeout actions. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketProtocolSession.h:69:/** Advances heartbeat and timeout state for the supplied timestamp. */
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:111:- (void)setHeartbeatTimeout:(NSTimeInterval)timeout {
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:112:  self.session.heartbeatPolicy.heartbeatTimeout = timeout;
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:484:      [self closeWithCode:1001 reason:@"Heartbeat timeout"];
+./Garazyk/Sources/Compat/XCTest/XCTest.h:171:/*! Wait for expectations with timeout. */
+./Garazyk/Sources/Compat/XCTest/XCTest.h:172:+ (NSTimeInterval)waitForExpectationsWithTimeout:(NSTimeInterval)timeout
+./Garazyk/Sources/Compat/XCTest/XCTest.m:272:+ (NSTimeInterval)waitForExpectationsWithTimeout:(NSTimeInterval)timeout
+./Garazyk/Sources/Compat/XCTest/XCTest.m:274:    // Minimal implementation: just sleep for the timeout.
+./Garazyk/Sources/Compat/XCTest/XCTest.m:276:    [NSThread sleepForTimeInterval:timeout];
+./Garazyk/Sources/Compat/XCTest/XCTest.m:280:    return timeout;
+./Garazyk/Sources/Auth/WebAuthnDomain.m:43:    dict[@"timeout"] = @(options.timeout * 1000); // ms
+./Garazyk/Sources/Auth/WebAuthnDomain.m:53:    dict[@"timeout"] = @(options.timeout * 1000);
+./Garazyk/Sources/Auth/OAuth2.m:1231:            GZ_LOG_AUTH_ERROR(@"Handle resolution timeout");
+./Garazyk/Sources/Auth/OAuth2.m:1232:            if (error) *error = [NSError errorWithDomain:OAuth2ErrorDomain code:OAuth2ErrorServerError userInfo:@{NSLocalizedDescriptionKey: @"Identity resolution timeout"}];
+./Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m:148:    safeOptions.timeout = 30.0;
+./Garazyk/Sources/Auth/PDSSecondFactorService.m:122:            @"timeout": @(PDSSecondFactorChallengeTTL * 1000),
+./Garazyk/Sources/Core/PDSProviderHTTPClient.h:55:@property (nonatomic, assign) NSTimeInterval timeoutInterval;
+./Garazyk/Sources/AppView/Server/Hooks/AppViewWebhookHook.m:93:    options.timeout = 10.0;
+./Garazyk/Sources/AppView/Server/Hooks/AppViewSearchIndexHook.m:107:    options.timeout = 10.0;
+./Garazyk/Sources/Auth/WebAuthnDomain.h:94:@property (nonatomic, assign) NSTimeInterval timeout;
+./Garazyk/Sources/Auth/WebAuthnDomain.h:134:@property (nonatomic, assign) NSTimeInterval timeout;
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:84:    req.timeoutInterval = 120.0;
+./Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:184:    req.timeoutInterval = 10.0;
+./Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m:471:    request.timeoutInterval = 5.0;
+./Garazyk/Sources/Auth/OAuth2Handler.m:369:  dispatch_time_t timeout =
+./Garazyk/Sources/Auth/OAuth2Handler.m:372:  long waitResult = dispatch_semaphore_wait(clientSem, timeout);
+./Garazyk/Sources/Auth/OAuth2Handler.m:961:    config.timeoutIntervalForRequest = 10.0;
+./Garazyk/Sources/Auth/OAuth2Handler.m:4058:  request.timeoutInterval = 10.0;
+./Garazyk/Sources/Auth/OAuth2Handler.m:4061:  safeOptions.timeout = 10.0;
+./Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m:259:        // Apply heartbeat timeout for dead-peer detection
+./Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.h:134:/*! Heartbeat timeout for relay connections in seconds. Default 10.0. */
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1605:    request.timeoutInterval = 30.0;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1703:    request.timeoutInterval = 30.0;
+./Garazyk/Sources/AdminUIServer/UIBackendClient.m:1800:    request.timeoutInterval = 5.0;
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:339:  request.timeoutInterval = 10.0;
+./Garazyk/Sources/Network/XrpcLexiconResolver.m:344:  safeOptions.timeout = 10.0;
+./Garazyk/Sources/Network/XrpcIdentityHelper.m:264:            plcResolver.timeout = 10.0;
+./Garazyk/Sources/Network/HttpConnectionIOCoordinator.m:93:            self.errorHandler([NSError errorWithDomain:@"HttpConnectionIOCoordinator" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Read timeout"}]);
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:113:- (sqlite3 *)acquireConnectionWithTimeout:(NSTimeInterval)timeoutSeconds {
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:115:    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW,
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:116:                                           (int64_t)(timeoutSeconds * NSEC_PER_SEC));
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:117:    if (dispatch_semaphore_wait(self.connectionSemaphore, timeout) != 0) {
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:118:        GZ_LOG_DB_WARN(@"Connection pool exhausted, timeout after %.1fs", timeoutSeconds);
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.m:275:        // Only prune if idle timeout expired
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h:21: - Idle timeout: close connections above min after 60s
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h:101: @abstract Get a connection with a timeout.
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h:103: @param timeoutSeconds Maximum time to wait for connection.
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h:104: @return SQLite connection, or NULL if timeout expired.
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h:106:- (sqlite3 * _Nullable)acquireConnectionWithTimeout:(NSTimeInterval)timeoutSeconds;
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h:177: @discussion Called automatically after idle timeout.
+./Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h:235: @abstract SQLite busy timeout in milliseconds.
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:30:/** Request timeout in seconds. */
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.h:31:@property (nonatomic, assign) NSTimeInterval timeout;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:103:    options.timeout = 10.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:113:    copy.timeout = self.timeout;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:240:    NSTimeInterval timeout = effective.timeout;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:263:        curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)timeout);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:264:        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)MIN(timeout, 10.0));
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:329:            curl_multi_wait(multi, NULL, 0, (int)(timeout * 1000), &numfds);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:426:    NSTimeInterval timeout = (options ?: [ATProtoSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:427:    if (dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC))) != 0) {
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:476:        config.timeoutIntervalForRequest = 30.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:477:        config.timeoutIntervalForResource = 60.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:585:    mutableRequest.timeoutInterval = effective.timeout;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:634:    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(effective.timeout * NSEC_PER_SEC)),
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:650:        NSError *timeoutError = [NSError errorWithDomain:NSURLErrorDomain
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:653:        completion(nil, nil, timeoutError);
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:673:    NSTimeInterval timeout = (options ?: [ATProtoSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
+./Garazyk/Sources/Network/ATProtoSafeHTTPClient.m:674:    if (dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC))) != 0) {
+./Garazyk/Sources/Network/XrpcIdentityPack.m:127:                plcResolver.timeout = 2.0;
+./Garazyk/Sources/Network/XrpcIdentityPack.m:132:                                                     timeoutInterval:5.0];
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:357:            uint64_t timeoutNs = (uint64_t)_connectTimeoutMilliseconds * NSEC_PER_MSEC;
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:359:                                      dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeoutNs),
+./Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m:361:                                      timeoutNs / 10);
+./Garazyk/Sources/Network/XrpcHandler.m:226:    // Timeout signal: set default timeout for all network calls
+./Garazyk/Sources/Network/XrpcHandler.m:228:    // request.timeoutInterval is not available on HttpRequest
+./Garazyk/Sources/Network/XrpcProxyHandler.m:143:    proxyRequest.timeoutInterval = proxyTimeoutSeconds;
+./Garazyk/Sources/Network/XrpcProxyHandler.m:156:                [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
+./Garazyk/Sources/Network/XrpcProxyHandler.m:190:        [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:98:                            timeoutInterval:5.0];
+./Garazyk/Sources/Network/XrpcChatBskyActorPack.m:125:                                              timeoutInterval:10.0];
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:341:      timeoutInterval:30.0];
+./Garazyk/Sources/Network/XrpcProxyInterceptor.m:422:  safeOptions.timeout = (NSClassFromString(@"XCTestCase") != Nil) ? 2.0 : 30.0;
+./Garazyk/Sources/Network/HttpProtocolDriver.m:94:    // Check header parse timeout — if the first byte of the current
+./Garazyk/Sources/Network/RelayXrpcRoutePack.m:690:    // Synchronously validate host with semaphore and timeout
+./Garazyk/Sources/AppView/AppViewIdentityHelper.m:52:    resolver.timeout = 3.0; // Short timeout for admin UI responsiveness
+./Garazyk/Sources/AppView/AppViewIdentityHelper.m:65:    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4.0 * NSEC_PER_SEC));
+./Garazyk/Sources/AppView/AppViewIdentityHelper.m:66:    long waitResult = dispatch_semaphore_wait(sema, timeout);
+./Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m:82:        sqlite3_busy_timeout(db, config.busyTimeout);
+./Garazyk/Sources/Database/PDSDatabase.m:157:        sqlite3_busy_timeout(_db, 5000);

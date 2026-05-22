@@ -907,8 +907,8 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         }
         
         if (!action || !collection) {
-            GZ_LOG_ERROR(@"[PDSRecordService] applyWrites: missing action (%@) or collection (%@) in write: %@", 
-                          action ?: @"nil", collection ?: @"nil", write);
+            GZ_LOG_ERROR(@"[PDSRecordService] applyWrites: missing action (%@) or collection (%@) for write with rkey: %@", 
+                          action ?: @"nil", collection ?: @"nil", rkey ?: @"nil");
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
                                              code:3
@@ -924,7 +924,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 rkey = [TID tid].stringValue;
             }
             if (!record) {
-                GZ_LOG_ERROR(@"[PDSRecordService] applyWrites: create write missing record value: %@", write);
+                GZ_LOG_ERROR(@"[PDSRecordService] applyWrites: create write missing record value for collection: %@ rkey: %@", collection ?: @"nil", rkey ?: @"nil");
                 if (error) {
                     *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
                                                  code:4

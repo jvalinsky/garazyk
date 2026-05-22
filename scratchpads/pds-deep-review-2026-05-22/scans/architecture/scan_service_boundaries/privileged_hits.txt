@@ -1,0 +1,6 @@
+./Garazyk/Sources/Security/PDSAuthzManager.h:9: operations (create, read, update, delete), and admin endpoints. Validates
+./Garazyk/Sources/Security/PDSAuthzManager.h:75: * @abstract Validates update access for an existing record.
+./Garazyk/Sources/Security/PDSAuthzManager.h:88: * @abstract Validates create access for a collection in a repository.
+./Garazyk/Sources/Security/PDSAuthzManager.h:93: * @return YES when the requester may create the record.
+./Garazyk/Sources/Security/PDSAuthzManager.h:101: * @abstract Validates delete access for an existing record.
+./Garazyk/Sources/Security/PDSAuthzManager.h:106: * @return YES when the requester may delete the record.

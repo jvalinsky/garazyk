@@ -69,7 +69,10 @@ static NSString *ATProtoServiceConfigCanonicalizedIssuerString(NSString *issuer)
   return [NSString stringWithFormat:@"%@://%@", scheme, host];
 }
 
-static BOOL ATProtoServiceConfigRunningUnderTests(void) {
+BOOL ATProtoServiceConfigRunningUnderTests(void) {
+  if (NSClassFromString(@"XCTestCase") != nil) {
+    return YES;
+  }
   NSDictionary *env = [[NSProcessInfo processInfo] environment];
   if ([env[@"XCTestConfigurationFilePath"] length] > 0 ||
       [env[@"XCTestBundlePath"] length] > 0 ||

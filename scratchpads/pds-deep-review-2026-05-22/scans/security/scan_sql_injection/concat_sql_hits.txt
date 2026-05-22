@@ -1,0 +1,5 @@
+./Garazyk/Sources/Ozone/Services/ModerationService.m:390:        sql = [sql stringByAppendingString:[NSString stringWithFormat:@" WHERE %@",
+./Garazyk/Sources/AppView/Services/GroupService.m:288:        sql = [sql stringByAppendingString:@" WHERE"];
+./Garazyk/Sources/AppView/Services/GroupService.m:415:        sql = [sql stringByAppendingString:@" WHERE"];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:240:        query = [query stringByAppendingString:@" WHERE id < ?"];
+./Garazyk/Sources/Chat/Server/Services/ChatService.m:667:        query = [query stringByAppendingString:@"WHERE created_at < ? "];

@@ -1,0 +1,26 @@
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:698:    int randomStatus = SecRandomCopyBytes(kSecRandomDefault, salt.length, salt.mutableBytes);
+./Garazyk/Sources/Services/PDS/PDSAccountService.m:700:        arc4random_buf(salt.mutableBytes, salt.length);
+./Garazyk/Sources/Security/PDSKeyEnvelope.m:57:    if (SecRandomCopyBytes(kSecRandomDefault, sizeof(iv), iv) != errSecSuccess) {
+./Garazyk/Sources/Germ/Server/Services/GermMailboxService.m:317:    arc4random_buf(data.mutableBytes, kGermAddressByteLength);
+./Garazyk/Sources/Sync/WebSocket/WebSocketConnection.m:342:    arc4random_buf(randomBytes, 16);
+./Garazyk/Sources/Auth/CryptoUtils.m:102: @discussion Uses SecRandomCopyBytes for secure random generation.
+./Garazyk/Sources/Auth/CryptoUtils.m:111:    if (SecRandomCopyBytes(kSecRandomDefault, length, data.mutableBytes) != errSecSuccess) {
+./Garazyk/Sources/Auth/PDSNonceManager.m:37:    if (SecRandomCopyBytes(kSecRandomDefault, sizeof(randomBytes), randomBytes) != errSecSuccess) {
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:536:    if (SecRandomCopyBytes(kSecRandomDefault, 16, saltBytes) != errSecSuccess) return NO;
+./Garazyk/Sources/Auth/JWT.m:498:    int result = SecRandomCopyBytes(kSecRandomDefault, 16, nonceData.mutableBytes);
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:52:    if (SecRandomCopyBytes(kSecRandomDefault, byteCount, bytes) != errSecSuccess) {
+./Garazyk/Sources/AdminUIServer/UIAuthManager.m:94:        if (SecRandomCopyBytes(kSecRandomDefault, 16, saltBytes) != errSecSuccess) {
+./Garazyk/Sources/Auth/PDSNonceManager.h:62:    The nonce is generated using SecRandomCopyBytes on macOS/iOS or
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.h:5: * @brief SecRandomCopyBytes compatibility shim.
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.h:7: * Provides SecRandomCopyBytes implementation for platforms without Security framework:
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.h:9: * - Linux: arc4random_buf and arc4random_uniform wrapper
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.h:33: * Uses arc4random_buf for secure random generation on Linux/BSD.
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.h:40:int SecRandomCopyBytes(int *drbg, size_t count, void *bytes);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.h:63:void arc4random_buf(void *buf, size_t nbytes);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.m:20:static void _arc4random_buf_impl(void *buf, size_t nbytes) {
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.m:68:    _arc4random_buf_impl(&value, sizeof(value));
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.m:90:void arc4random_buf(void *buf, size_t nbytes) {
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.m:91:    _arc4random_buf_impl(buf, nbytes);
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.m:94:int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
+./Garazyk/Sources/Compat/PlatformShims/Security/SecRandom.m:96:    arc4random_buf(bytes, count);
+./Garazyk/Sources/Core/TID.m:48:        if (SecRandomCopyBytes(kSecRandomDefault, 1, &rnd) != errSecSuccess) {

@@ -1,0 +1,22 @@
+./Garazyk/Sources/Services/Core/PDSAdminService.m:397:        NSString *codeSQL = [NSString stringWithFormat:@"UPDATE invite_codes SET disabled = 1 WHERE code IN (%@)",
+./Garazyk/Sources/Services/Core/PDSAdminService.m:405:        NSString *accountSQL = [NSString stringWithFormat:@"UPDATE invite_codes SET disabled = 1 WHERE account_did IN (%@)",
+./Garazyk/Sources/Ozone/Services/ModerationService.m:468:    NSString *sql = [NSString stringWithFormat:@"UPDATE moderation_templates SET %@ WHERE id = ?", [updates componentsJoinedByString:@", "]];
+./Garazyk/Sources/Database/PDSDatabase+Records.m:19:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM records WHERE uri = ?", kRecordsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Records.m:38:    NSMutableString *sql = [NSMutableString stringWithFormat:@"SELECT %@ FROM records WHERE did = ?", kRecordsColumns];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:151:    NSString *checkMarkerSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type='table' AND name='%@'", schemaMarkerTable];
+./Garazyk/Sources/Database/ActorStore/ActorStore.m:601:    return [self.database executeUnsafeRawSQL:[NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@ %@", tableName, columnName, type] error:nil];
+./Garazyk/Sources/AppView/Services/FeedService.m:400:    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid, value FROM records WHERE did IN (%@) AND collection = ?",
+./Garazyk/Sources/Database/PDSDatabase+OAuthClients.m:147:    NSString *sql = [NSString stringWithFormat:@"INSERT OR REPLACE INTO oauth_clients (%@) VALUES (%@)",
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:139:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE did = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:145:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE handle = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:152:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE email = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:161:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE refresh_jwt = ?", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:190:    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts ORDER BY created_at DESC", kAccountsColumns];
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:199:        ? [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE did > ? ORDER BY did ASC LIMIT ?", kAccountsColumns]
+./Garazyk/Sources/Database/PDSDatabase+Accounts.m:200:        : [NSString stringWithFormat:@"SELECT %@ FROM accounts ORDER BY did ASC LIMIT ?", kAccountsColumns];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:71:        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:129:        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+./Garazyk/Sources/Database/Migrations/PDSMigrationManager.m:498:        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+./Garazyk/Sources/Network/XrpcChatBskyConvoPack.m:999:        NSString *query = [NSString stringWithFormat:@"SELECT did, handle FROM accounts WHERE did IN (%@)", placeholders];
+./Garazyk/Sources/AppView/Services/GroupService.m:105:    NSString *updateQuery = [NSString stringWithFormat:@"UPDATE groups SET %@ WHERE uri = ?",
+./Garazyk/Sources/AppView/Services/GroupService.m:387:    NSString *updateQuery = [NSString stringWithFormat:@"UPDATE group_invite_links SET %@ WHERE id = ?",

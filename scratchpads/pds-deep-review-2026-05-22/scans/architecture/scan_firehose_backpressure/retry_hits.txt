@@ -1,0 +1,25 @@
+./Garazyk/Sources/Sync/Relay/RelayClient.h:78:/*! Interval between reconnect attempts. */
+./Garazyk/Sources/Sync/Relay/RelayClient.h:81:/*! Maximum reconnect attempts. */
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:212:    [task resume];
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:224:- (void)resume {
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:326:        GZ_LOG_SYNC_WARN(@"Max reconnect attempts reached for upstream %@", url);
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m:331:    GZ_LOG_SYNC_INFO(@"Scheduling reconnect for %@ in %.1fs (attempt %ld)", url, delay, (long)attempts.integerValue + 1);
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:86:/** Base delay used when computing reconnect backoff. */
+./Garazyk/Sources/Sync/Relay/RelayUpstreamManager.h:130:- (void)resume;
+./Garazyk/Sources/Sync/Relay/RelayClient.m:164:                                         userInfo:@{NSLocalizedDescriptionKey: @"Max reconnect attempts reached"}];
+./Garazyk/Sources/Sync/Relay/RelayClient.m:174:    GZ_LOG_SYNC_INFO(@"RelayClient: Scheduling reconnect to %@ (attempt=%ld/%ld, delay=%.1fs, cursor=%lld)",
+./Garazyk/Sources/Sync/Firehose/Firehose.h:10: with cursor-based replay support.
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.h:87:/*! In-memory event buffer for relay-mode replay when serviceDatabases is nil. */
+./Garazyk/Sources/Sync/Relay/RelayAPIHandler.m:72:    else if ([path isEqualToString:@"/api/relay/upstreams/reconnect-all"] ||
+./Garazyk/Sources/Sync/Relay/RelayAPIHandler.m:73:             [path isEqualToString:@"/api/relay/upstreams/reconnect-all/"]) {
+./Garazyk/Sources/Sync/Relay/RelayAPIHandler.m:434:        // Already known — just reconnect
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:752:      // Info events are ephemeral — do NOT persist for replay
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:857:    // stale cursors and retry indefinitely, creating a loop (indigo #1231).
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:921:                GZ_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:935:                    GZ_LOG_SYNC_WARN(@"Skipping replay event %lld: missing event data", (long long)dbSeq);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:973:                GZ_LOG_SYNC_INFO(@"No buffered events to replay after cursor %lu for %@",
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:988:            GZ_LOG_SYNC_INFO(@"Buffer replay complete for connection %@", connection.remoteAddress);
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:992:        GZ_LOG_SYNC_WARN(@"Cannot replay events: no service databases or event buffer");
+./Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m:1012:    GZ_LOG_SYNC_WARN(@"Skipping unknown event type in buffer replay: %@", NSStringFromClass([event class]));
+./Garazyk/Sources/Sync/Relay/RelayDownstreamHandler.h:13:    - Supports cursor-based replay for new subscribers
+./Garazyk/Sources/Sync/Relay/RelayEventBuffer.h:24: * @abstract Stores recent relay events for cursor and time-based replay.
