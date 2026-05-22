@@ -76,6 +76,16 @@ static NSSet<NSString *> *graphCollections(void) {
         }
     }
     
+    if ([collection isEqualToString:@"app.bsky.graph.list"]) {
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        [_graphService indexList:record did:did uri:uri cid:cid error:error];
+    }
+
+    if ([collection isEqualToString:@"app.bsky.graph.listitem"]) {
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        [_graphService indexListitem:record did:did uri:uri cid:cid error:error];
+    }
+
     if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
         [_graphService indexStarterPack:record did:did rkey:rkey cid:cid error:error];
     }
@@ -115,6 +125,15 @@ static NSSet<NSString *> *graphCollections(void) {
 
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error {
     GZ_LOG_DEBUG(@"[AppViewGraphIndexer] Delete %@/%@ for %@", collection, rkey, did);
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+
+    if ([collection isEqualToString:@"app.bsky.graph.list"]) {
+        return [_graphService unindexListWithURI:uri error:error];
+    }
+    if ([collection isEqualToString:@"app.bsky.graph.listitem"]) {
+        return [_graphService unindexListitemWithURI:uri error:error];
+    }
+    // Other graph collections (follow, block, etc.) handled elsewhere
     return YES;
 }
 
