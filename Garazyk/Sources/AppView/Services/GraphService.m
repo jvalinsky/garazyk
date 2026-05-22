@@ -590,7 +590,7 @@
     NSString *description = record[@"description"];
     NSString *avatar = record[@"avatar"]; // CID
     
-    NSString *sql = @"INSERT OR REPLACE INTO bsky_graph_lists (uri, did, name, purpose, description, avatar_blob_cid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO bsky_graph_lists (uri, did, name, purpose, description, avatar_cid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     
     return [self.database executeParameterizedUpdate:sql params:@[uri, did, name ?: @"", purpose ?: @"", description ?: @"", avatar ?: [NSNull null], @((long long)now)] error:error];
@@ -624,7 +624,7 @@
                                       error:(NSError **)error {
     limit = MIN(MAX(limit, 1), 100);
 
-    NSString *query = @"SELECT uri, did, name, purpose, description, avatar_blob_cid, created_at FROM bsky_graph_lists WHERE did = ?";
+    NSString *query = @"SELECT uri, did, name, purpose, description, avatar_cid, created_at FROM bsky_graph_lists WHERE did = ?";
     if (cursor) {
         query = [query stringByAppendingString:@" AND created_at < ?"];
     }
@@ -679,7 +679,7 @@
     limit = MIN(MAX(limit, 1), 100);
 
     // Get list metadata
-    NSString *listQuery = @"SELECT uri, did, name, purpose, description, avatar_blob_cid, created_at FROM bsky_graph_lists WHERE uri = ?";
+    NSString *listQuery = @"SELECT uri, did, name, purpose, description, avatar_cid, created_at FROM bsky_graph_lists WHERE uri = ?";
     NSArray *listRows = [self.database executeParameterizedQuery:listQuery params:@[listURI] error:error];
     if (!listRows || listRows.count == 0) {
         return nil;
