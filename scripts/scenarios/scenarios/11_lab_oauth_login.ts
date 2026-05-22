@@ -18,10 +18,35 @@
  */
 
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export {
+  ScenarioResult,
+  StepResult,
+  StepStatus,
+} from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { SERVICE_URLS } from "../../lib/deno/config.ts";
+
+function firstSetCookieValue(headers: Headers, name: string): string | null {
+  const getSetCookie =
+    (headers as Headers & { getSetCookie?: () => string[] }).getSetCookie;
+  const setCookies = typeof getSetCookie === "function"
+    ? getSetCookie.call(headers)
+    : [headers.get("Set-Cookie") || ""];
+
+  for (const cookie of setCookies) {
+    const match = cookie.match(new RegExp(`(?:^|,\\s*)${name}=([^;,]+)`));
+    if (match) return match[1];
+  }
+  return null;
+}
+
+function csrfNonceFromLoginPage(html: string): string | null {
+  return html.match(
+    /<meta\s+name=["']csrf-nonce["']\s+content=["']([^"']+)["']/i,
+  )?.[1] ??
+    null;
+}
 
 /**
  * Executes the scenario logic.
@@ -32,14 +57,17 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const uiUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
-  const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") || "admin-localdev";
+  const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ||
+    "admin-localdev";
 
   await timedCall(
     result,
     "UI Server health check",
     async () => {
       const res = await fetch(`${uiUrl}/lab`, { redirect: "manual" });
-      if (res.status !== 200) throw new Error(`GET /lab returned status=${res.status}`);
+      if (res.status !== 200) {
+        throw new Error(`GET /lab returned status=${res.status}`);
+      }
     },
   );
 
@@ -60,7 +88,10 @@ export async function run(): Promise<ScenarioResult> {
         contentType.toLowerCase().startsWith("text/html"),
         `content_type=${contentType}`,
       );
-      assert.isTrue(body.includes("lab-login-section"), "body missing lab-login-section");
+      assert.isTrue(
+        body.includes("lab-login-section"),
+        "body missing lab-login-section",
+      );
     },
   );
 
@@ -68,10 +99,15 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Lab client metadata valid",
     async () => {
-      const res = await fetch(`${uiUrl}/lab/client-metadata.json`, { redirect: "manual" });
+      const res = await fetch(`${uiUrl}/lab/client-metadata.json`, {
+        redirect: "manual",
+      });
       const metadata = await res.json();
 
-      if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+      if (
+        typeof metadata !== "object" || metadata === null ||
+        Array.isArray(metadata)
+      ) {
         result.stepSkipped(
           "Lab client metadata valid",
           `garazyk-ui returned non-object JSON (${typeof metadata}), skipping OAuth metadata checks`,
@@ -96,15 +132,26 @@ export async function run(): Promise<ScenarioResult> {
       }
 
       assert.isTrue(res.status === 200, `status=${res.status}`);
-      assert.isTrue(typeof metadata.client_id === "string" && metadata.client_id.length > 0, "missing client_id");
+      assert.isTrue(
+        typeof metadata.client_id === "string" && metadata.client_id.length > 0,
+        "missing client_id",
+      );
       assert.isTrue(
         metadata.grant_types?.includes("authorization_code"),
         "missing auth_code grant",
       );
-      assert.isTrue(metadata.token_endpoint_auth_method === "none", "wrong auth method");
-      assert.isTrue(metadata.dpop_bound_access_tokens === true, "dpop not enabled");
       assert.isTrue(
-        metadata.redirect_uris?.some((uri: string) => uri.includes("/lab/callback")),
+        metadata.token_endpoint_auth_method === "none",
+        "wrong auth method",
+      );
+      assert.isTrue(
+        metadata.dpop_bound_access_tokens === true,
+        "dpop not enabled",
+      );
+      assert.isTrue(
+        metadata.redirect_uris?.some((uri: string) =>
+          uri.includes("/lab/callback")
+        ),
         "missing callback uri",
       );
     },
@@ -136,16 +183,35 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Admin login flow",
     async () => {
+      const loginPage = await fetch(`${uiUrl}/admin/login`, {
+        redirect: "manual",
+      });
+      assert.isTrue(
+        loginPage.status === 200,
+        `login_page_status=${loginPage.status}`,
+      );
+
+      const csrfCookie = firstSetCookieValue(
+        loginPage.headers,
+        "ui_admin_nonce",
+      );
+      if (!csrfCookie) throw new Error("ui_admin_nonce cookie not found");
+
+      const csrfNonce = csrfNonceFromLoginPage(await loginPage.text());
+      if (!csrfNonce) throw new Error("csrf nonce not found");
+
       const res = await fetch(`${uiUrl}/admin/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": `ui_admin_nonce=${csrfCookie}`,
+          "X-UI-Admin-Nonce": csrfNonce,
+        },
         body: JSON.stringify({ password: adminPassword }),
       });
       assert.isTrue(res.status === 200, `status=${res.status}`);
 
-      const setCookie = res.headers.get("Set-Cookie") || "";
-      const match = setCookie.match(/ui_admin_token=([^;]+)/);
-      let token = match ? match[1] : null;
+      let token = firstSetCookieValue(res.headers, "ui_admin_token");
 
       if (!token) {
         const body = await res.json();
@@ -214,7 +280,10 @@ export async function run(): Promise<ScenarioResult> {
           headers: { "Cookie": adminCookieHeader },
           redirect: "manual",
         });
-        assert.isTrue(postLogout.status === 302, `status=${postLogout.status} after logout`);
+        assert.isTrue(
+          postLogout.status === 302,
+          `status=${postLogout.status} after logout`,
+        );
       },
     );
   }
