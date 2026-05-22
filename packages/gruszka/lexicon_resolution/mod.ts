@@ -23,17 +23,21 @@ import type {
 
 import { assertNever } from "./types.ts";
 
-import type { DnsResolver, DidResolver, RecordFetcher } from "./ports.ts";
+import type { DidResolver, DnsResolver, RecordFetcher } from "./ports.ts";
 
 import type { KeyValueCache } from "./cache.ts";
 import {
-  CachingDnsResolver,
   CachingDidResolver,
+  CachingDnsResolver,
   CachingRecordFetcher,
 } from "./cache.ts";
 
 // Re-export the adapter implementations for convenience.
-export { DenoDnsResolver, HttpDidResolver, HttpRecordFetcher } from "./adapters.ts";
+export {
+  DenoDnsResolver,
+  HttpDidResolver,
+  HttpRecordFetcher,
+} from "./adapters.ts";
 
 import { init, update } from "./resolver.ts";
 
@@ -112,12 +116,8 @@ function applyCaches(ports: ResolutionPorts): ResolutionPorts {
   if (!cache) return ports;
 
   return {
-    dns: cache.dns
-      ? new CachingDnsResolver(ports.dns, cache.dns)
-      : ports.dns,
-    did: cache.did
-      ? new CachingDidResolver(ports.did, cache.did)
-      : ports.did,
+    dns: cache.dns ? new CachingDnsResolver(ports.dns, cache.dns) : ports.dns,
+    did: cache.did ? new CachingDidResolver(ports.did, cache.did) : ports.did,
     record: cache.record
       ? new CachingRecordFetcher(ports.record, cache.record)
       : ports.record,

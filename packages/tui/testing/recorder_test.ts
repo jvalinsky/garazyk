@@ -7,10 +7,10 @@
  * @module tui/testing/recorder_test
  */
 
-import { assertEquals, assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { VirtualTuiHarness } from "./harness.ts";
 import { TuiSessionRecorder } from "./recorder.ts";
-import { ScreenBuffer, DEFAULT_STYLE } from "../renderer.ts";
+import { DEFAULT_STYLE, ScreenBuffer } from "../renderer.ts";
 
 Deno.test("TuiSessionRecorder: initializes and records initial frame", () => {
   const render = (buf: ScreenBuffer) => {
@@ -24,7 +24,10 @@ Deno.test("TuiSessionRecorder: initializes and records initial frame", () => {
   const cast = recorder.exportAsciicast();
   const lines = cast.split("\n");
 
-  assert(lines.length >= 2, "Should contain at least header and one frame line");
+  assert(
+    lines.length >= 2,
+    "Should contain at least header and one frame line",
+  );
 
   // Parse header
   const header = JSON.parse(lines[0]);
@@ -37,7 +40,10 @@ Deno.test("TuiSessionRecorder: initializes and records initial frame", () => {
   const firstFrame = JSON.parse(lines[1]);
   assertEquals(firstFrame[1], "o"); // output event
   assert(typeof firstFrame[0] === "number", "Timestamp should be a number");
-  assert(firstFrame[2].includes("Test Screen"), "First frame should contain screen contents");
+  assert(
+    firstFrame[2].includes("Test Screen"),
+    "First frame should contain screen contents",
+  );
 });
 
 Deno.test("TuiSessionRecorder: captures subsequent visual updates dynamically", async () => {
@@ -71,6 +77,12 @@ Deno.test("TuiSessionRecorder: captures subsequent visual updates dynamically", 
   assertEquals(lines.length, 3, "Should have header + frame 1 + frame 2");
 
   const secondFrame = JSON.parse(lines[2]);
-  assert(secondFrame[0] > 0, "Second frame should have a positive timestamp delay");
-  assert(secondFrame[2].includes("Count: 1"), "Second frame should show updated counter state");
+  assert(
+    secondFrame[0] > 0,
+    "Second frame should have a positive timestamp delay",
+  );
+  assert(
+    secondFrame[2].includes("Count: 1"),
+    "Second frame should show updated counter state",
+  );
 });

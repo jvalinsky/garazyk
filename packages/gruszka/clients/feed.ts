@@ -19,7 +19,11 @@ export class FeedClient {
    * @throws XrpcError if the request fails
    */
   async getProfile(actor: string, token?: string): Promise<any> {
-    return await this.transport.get("app.bsky.actor.getProfile", { actor }, token);
+    return await this.transport.get(
+      "app.bsky.actor.getProfile",
+      { actor },
+      token,
+    );
   }
 
   /**
@@ -30,7 +34,11 @@ export class FeedClient {
    * @throws XrpcError if the request fails
    */
   async getTimeline(token: string, limit = 50): Promise<any> {
-    return await this.transport.get("app.bsky.feed.getTimeline", { limit }, token);
+    return await this.transport.get(
+      "app.bsky.feed.getTimeline",
+      { limit },
+      token,
+    );
   }
 
   /**
@@ -59,7 +67,11 @@ export class FeedClient {
    * @throws XrpcError if the request fails
    */
   async getPostThread(uri: string, token?: string): Promise<any> {
-    return await this.transport.get("app.bsky.feed.getPostThread", { uri }, token);
+    return await this.transport.get(
+      "app.bsky.feed.getPostThread",
+      { uri },
+      token,
+    );
   }
 
   /**
@@ -69,7 +81,10 @@ export class FeedClient {
    * @returns A promise that resolves to the list of likes
    * @throws XrpcError if the request fails
    */
-  async getLikes(uri: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async getLikes(
+    uri: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.feed.getLikes",
       { uri, limit: options.limit ?? 50 },
@@ -135,7 +150,10 @@ export class FeedClient {
    * @returns A promise that resolves to the list of actors who reposted
    * @throws XrpcError if the request fails
    */
-  async getRepostedBy(uri: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async getRepostedBy(
+    uri: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.feed.getRepostedBy",
       { uri, limit: options.limit ?? 50 },

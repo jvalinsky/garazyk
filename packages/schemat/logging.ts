@@ -1,12 +1,5 @@
 /** Terminal logging utilities with color support and NO_COLOR awareness. @module logging */
-import {
-  blue,
-  bold,
-  cyan,
-  green,
-  red,
-  yellow,
-} from "@std/fmt/colors";
+import { blue, bold, cyan, green, red, yellow } from "@std/fmt/colors";
 
 // ---------------------------------------------------------------------------
 // Types

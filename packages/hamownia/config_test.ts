@@ -1,8 +1,5 @@
 import { assertEquals } from "@std/assert";
-import {
-  createCharacterRegistry,
-  createScenarioConfig,
-} from "./config.ts";
+import { createCharacterRegistry, createScenarioConfig } from "./config.ts";
 
 Deno.test("createScenarioConfig reads PDS_URL from env", () => {
   const originalPds = Deno.env.get("PDS_URL");

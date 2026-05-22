@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { parseKey, Keys, isKey, isCtrl, isQuit, type Key } from "./input.ts";
+import { isCtrl, isKey, isQuit, type Key, Keys, parseKey } from "./input.ts";
 
 /** Parse a key from a byte array (wraps the internal parseKey). */
 function parse(bytes: number[]): Key | null {

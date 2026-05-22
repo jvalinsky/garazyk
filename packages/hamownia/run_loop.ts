@@ -7,10 +7,7 @@
 
 import { bold, red, yellow } from "@std/fmt/colors";
 import { isOtelEnabled, withSpan } from "./otel.ts";
-import {
-  ContainerEventWatcher,
-  type WatcherEvent,
-} from "@garazyk/laweta";
+import { ContainerEventWatcher, type WatcherEvent } from "@garazyk/laweta";
 import { ContainerStatsSampler } from "@garazyk/laweta";
 import { createDockerClient } from "@garazyk/laweta";
 import { formatBytes } from "./format.ts";
@@ -58,7 +55,8 @@ async function checkEssentialServicesHealth(
     if (!ok) {
       return {
         ok: false,
-        message: `Essential service "${name.toUpperCase()}" is unreachable or unhealthy at ${healthUrl}`,
+        message:
+          `Essential service "${name.toUpperCase()}" is unreachable or unhealthy at ${healthUrl}`,
       };
     }
   }
@@ -174,11 +172,12 @@ export async function runScenarioLoop(
         oomKilled: boolean;
       } | null;
       if (!health.ok || crashSnapshot !== null) {
-        const crashInfo = health.message || (crashSnapshot
-          ? crashSnapshot.oomKilled
-            ? `Container "${crashSnapshot.serviceName}" was OOM-killed (exit code ${crashSnapshot.exitCode})`
-            : `Container "${crashSnapshot.serviceName}" exited unexpectedly (exit code ${crashSnapshot.exitCode})`
-          : "Unknown service failure");
+        const crashInfo = health.message ||
+          (crashSnapshot
+            ? crashSnapshot.oomKilled
+              ? `Container "${crashSnapshot.serviceName}" was OOM-killed (exit code ${crashSnapshot.exitCode})`
+              : `Container "${crashSnapshot.serviceName}" exited unexpectedly (exit code ${crashSnapshot.exitCode})`
+            : "Unknown service failure");
 
         console.error(red(`\n  Service failure detected: ${crashInfo}`));
         console.error(yellow(`  Skipping remaining scenarios.`));
@@ -231,8 +230,10 @@ export async function runScenarioLoop(
         allow_hybrid_network: args.allowHybridNetwork,
         scenario_id: scenario.id,
         binary_mode: args.binary,
-        pds2: (topology.manifest as TopologyManifestV2 | undefined)?.env?.scenario?.ATPROTO_TOPOLOGY_CAPABILITIES
-          ?.includes("pds2") ||
+        pds2:
+          (topology.manifest as TopologyManifestV2 | undefined)?.env?.scenario
+            ?.ATPROTO_TOPOLOGY_CAPABILITIES
+            ?.includes("pds2") ||
           false,
         topology: topology.manifest?.name || null,
         runner: args.runner,

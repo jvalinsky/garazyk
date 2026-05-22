@@ -18,10 +18,10 @@ deno add jsr:@garazyk/narzedzia
 
 ## Features
 
-- **Documentation Validation**: Validates cross-document links and ensures
-  TSDoc coverage.
-- **Module Boundary Enforcement**: Ensures strict separation between packages
-  in the Garazyk workspace.
+- **Documentation Validation**: Validates cross-document links and ensures TSDoc
+  coverage.
+- **Module Boundary Enforcement**: Ensures strict separation between packages in
+  the Garazyk workspace.
 - **SPDX Header Management**: Automates license header updates across source
   files.
 - **VitePress Migration**: Helpers for evolving documentation into modern

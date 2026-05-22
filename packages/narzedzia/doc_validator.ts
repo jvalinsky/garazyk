@@ -5,7 +5,7 @@
 
 import { join } from "@std/path";
 import { walk } from "@std/fs";
-import { logInfo, logOk, logError, logWarn, logHeader } from "@garazyk/schemat";
+import { logError, logHeader, logInfo, logOk, logWarn } from "@garazyk/schemat";
 
 /** Options for document validation. */
 export interface DocValidationOptions {
@@ -16,23 +16,32 @@ export interface DocValidationOptions {
 }
 
 /** Validate code blocks in markdown files. */
-export async function validateCodeExamples(options: DocValidationOptions): Promise<boolean> {
+export async function validateCodeExamples(
+  options: DocValidationOptions,
+): Promise<boolean> {
   logHeader("Validating code examples in documentation...");
   let success = true;
   let validatedBlocks = 0;
   let errorFiles = 0;
 
-  for await (const entry of walk(options.docsDir, {
-    exts: [".md"],
-    skip: [/node_modules/, /_site/, /archive/],
-  })) {
+  for await (
+    const entry of walk(options.docsDir, {
+      exts: [".md"],
+      skip: [/node_modules/, /_site/, /archive/],
+    })
+  ) {
     const content = await Deno.readTextFile(entry.path);
     const codeBlocks = extractCodeBlocks(content);
-    
+
     let fileHasError = false;
     for (const block of codeBlocks) {
-      if (block.lang === "objc" || block.lang === "objective-c" || block.lang === "c") {
-        if (!await validateObjcSyntax(block.code, entry.path, options.repoRoot)) {
+      if (
+        block.lang === "objc" || block.lang === "objective-c" ||
+        block.lang === "c"
+      ) {
+        if (
+          !await validateObjcSyntax(block.code, entry.path, options.repoRoot)
+        ) {
           fileHasError = true;
         } else {
           validatedBlocks++;
@@ -45,7 +54,7 @@ export async function validateCodeExamples(options: DocValidationOptions): Promi
         }
       }
     }
-    
+
     if (fileHasError) {
       errorFiles++;
       success = false;
@@ -96,7 +105,11 @@ function extractCodeBlocks(content: string): CodeBlock[] {
   return blocks;
 }
 
-async function validateObjcSyntax(code: string, filePath: string, repoRoot: string): Promise<boolean> {
+async function validateObjcSyntax(
+  code: string,
+  filePath: string,
+  repoRoot: string,
+): Promise<boolean> {
   // Skip if empty or just comments
   if (!code.trim() || code.trim().startsWith("//")) return true;
 
@@ -110,7 +123,8 @@ async function validateObjcSyntax(code: string, filePath: string, repoRoot: stri
     const proc = new Deno.Command("clang", {
       args: [
         "-fsyntax-only",
-        "-x", "objective-c",
+        "-x",
+        "objective-c",
         "-fobjc-arc",
         "-Wno-everything",
         `-I${join(repoRoot, "Garazyk/Sources")}`,
@@ -134,7 +148,10 @@ async function validateObjcSyntax(code: string, filePath: string, repoRoot: stri
   }
 }
 
-async function validateBashSyntax(code: string, filePath: string): Promise<boolean> {
+async function validateBashSyntax(
+  code: string,
+  filePath: string,
+): Promise<boolean> {
   if (!code.trim()) return true;
 
   // Skip if it contains placeholders
@@ -164,13 +181,17 @@ async function validateBashSyntax(code: string, filePath: string): Promise<boole
 }
 
 /** Validate documentation diagrams (mermaid/dot). */
-export async function validateDocDiagrams(options: DocValidationOptions): Promise<boolean> {
+export async function validateDocDiagrams(
+  options: DocValidationOptions,
+): Promise<boolean> {
   logWarn("Documentation diagram validation not yet implemented");
   return false;
 }
 
 /** Check for anti-patterns or specific tropes in documentation. */
-export async function checkDocPatterns(options: DocValidationOptions): Promise<boolean> {
+export async function checkDocPatterns(
+  options: DocValidationOptions,
+): Promise<boolean> {
   logWarn("Documentation pattern checking not yet implemented");
   return false;
 }
@@ -179,16 +200,16 @@ export async function checkDocPatterns(options: DocValidationOptions): Promise<b
 export async function docValidationMain(): Promise<void> {
   const repoRootPath = await repoRoot();
   const docsDir = join(repoRootPath, "docs");
-  
+
   const options = { repoRoot: repoRootPath, docsDir };
-  
+
   const results = await Promise.all([
     validateCodeExamples(options),
     validateDocDiagrams(options),
     checkDocPatterns(options),
   ]);
 
-  if (results.some(r => !r)) {
+  if (results.some((r) => !r)) {
     Deno.exit(1);
   }
 }

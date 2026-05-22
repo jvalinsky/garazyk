@@ -1,9 +1,5 @@
 import { assertEquals } from "@std/assert";
-import {
-  ContainerEventWatcher,
-  DockerApiClient,
-  waitForHttp,
-} from "./mod.ts";
+import { ContainerEventWatcher, DockerApiClient, waitForHttp } from "./mod.ts";
 
 Deno.test("laweta root exposes generic Docker primitives", () => {
   assertEquals(typeof DockerApiClient, "function");

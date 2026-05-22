@@ -75,7 +75,9 @@ export async function checkPlaywright(
 ): Promise<PreflightResult> {
   try {
     // Playwright is an optional runtime dependency for browser scenarios.
-    const { chromium } = await import("npm:playwright@1.52.0") as PlaywrightModule;
+    const { chromium } = await import(
+      "npm:playwright@1.52.0"
+    ) as PlaywrightModule;
     const browser = await chromium.launch({ timeout: 2000 });
     await browser.close();
     return { ok: true, fatal: required };

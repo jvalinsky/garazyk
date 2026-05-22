@@ -165,7 +165,10 @@ async function collectDockerDiagnostics(
       stdout: "piped",
       stderr: "piped",
     }).output();
-    await writeText(join(dockerDir, "ps.txt"), new TextDecoder().decode(stdout));
+    await writeText(
+      join(dockerDir, "ps.txt"),
+      new TextDecoder().decode(stdout),
+    );
   } catch { /* ignore */ }
 
   try {

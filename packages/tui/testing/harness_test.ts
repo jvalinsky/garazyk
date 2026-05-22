@@ -7,11 +7,11 @@
  * @module tui/testing/harness_test
  */
 
-import { assertEquals, assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { VirtualTuiHarness } from "./harness.ts";
-import { getByText, getByRole } from "./locators.ts";
-import { serializeTdom, renderTdomToXml } from "./tdom.ts";
-import { ScreenBuffer, DEFAULT_STYLE } from "../renderer.ts";
+import { getByRole, getByText } from "./locators.ts";
+import { renderTdomToXml, serializeTdom } from "./tdom.ts";
+import { DEFAULT_STYLE, ScreenBuffer } from "../renderer.ts";
 import type { ResolvedNode } from "../layout_tree.ts";
 import { Keys } from "../input.ts";
 
@@ -40,7 +40,9 @@ Deno.test("VirtualTuiHarness: mounts, clears, renders and dumps correctly", () =
 
   // Assert styled dump highlights styled cells
   const styledScreen = harness.dumpScreenStyled();
-  assert(styledScreen.includes("[S][t][a][t][u][s][:][ ][R][u][n][n][i][n][g]"));
+  assert(
+    styledScreen.includes("[S][t][a][t][u][s][:][ ][R][u][n][n][i][n][g]"),
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -143,7 +145,14 @@ Deno.test("Locators & TDOM: getByText scanning and getByRole structural lookup",
     // Render header contents
     buf.write(2, 0, "Scenario Runner Dashboard", DEFAULT_STYLE);
     // Render list contents
-    buf.write(2, 3, "> 53_phone_verification", { fg: 2, bg: 0, bold: true, dim: false, reverse: false, underline: false });
+    buf.write(2, 3, "> 53_phone_verification", {
+      fg: 2,
+      bg: 0,
+      bold: true,
+      dim: false,
+      reverse: false,
+      underline: false,
+    });
     buf.write(2, 4, "  01_account_lifecycle", DEFAULT_STYLE);
   };
 
@@ -152,7 +161,7 @@ Deno.test("Locators & TDOM: getByText scanning and getByRole structural lookup",
   // 1. Test getByText Locator
   const headerLocator = getByText(harness, "Scenario Runner Dashboard");
   headerLocator.toHaveText("Scenario Runner Dashboard");
-  
+
   const textBounds = headerLocator.resolve();
   assertEquals(textBounds.x, 2);
   assertEquals(textBounds.y, 0);
@@ -160,9 +169,11 @@ Deno.test("Locators & TDOM: getByText scanning and getByRole structural lookup",
   // Test Regex matching
   const listMatch = getByText(harness, /53_phone_verification/);
   listMatch.toHaveText(/53_phone_/);
-  
+
   // 2. Test getByRole Locator (TDOM traversal)
-  const listboxLocator = getByRole(harness, mockLayout, "listbox", { name: "scenario-listbox" });
+  const listboxLocator = getByRole(harness, mockLayout, "listbox", {
+    name: "scenario-listbox",
+  });
   listboxLocator.toHaveText("53_phone_verification");
   listboxLocator.toHaveText("01_account_lifecycle");
   listboxLocator.toHaveStyle({ bold: true, fg: 2 }, { x: 2, y: 1 }); // coordinate offset maps to index 3 inside listbox bounds

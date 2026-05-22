@@ -21,7 +21,7 @@ import {
   HttpDidResolver,
   HttpRecordFetcher,
 } from "./adapters.ts";
-import { InMemoryCache, DiskCache } from "./cache.ts";
+import { DiskCache, InMemoryCache } from "./cache.ts";
 import type { DidDocument, LexiconDoc } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -60,9 +60,18 @@ async function makeDiskCachedPorts() {
     ports: {
       ...makeUncachedPorts(),
       cache: {
-        dns: new DiskCache<string[][]>({ directory: `${tmpDir}/dns`, ttlMs: 3600_000 }),
-        did: new DiskCache<DidDocument>({ directory: `${tmpDir}/did`, ttlMs: 3600_000 }),
-        record: new DiskCache<LexiconDoc>({ directory: `${tmpDir}/record`, ttlMs: 3600_000 }),
+        dns: new DiskCache<string[][]>({
+          directory: `${tmpDir}/dns`,
+          ttlMs: 3600_000,
+        }),
+        did: new DiskCache<DidDocument>({
+          directory: `${tmpDir}/did`,
+          ttlMs: 3600_000,
+        }),
+        record: new DiskCache<LexiconDoc>({
+          directory: `${tmpDir}/record`,
+          ttlMs: 3600_000,
+        }),
       },
     },
     cleanup: async () => {
@@ -92,7 +101,9 @@ if (import.meta.main) {
   const nsid = "app.bsky.feed.post";
   const iterations = 3;
 
-  console.log(`\nBenchmark: resolveLexicon("${nsid}") — ${iterations} iterations per mode\n`);
+  console.log(
+    `\nBenchmark: resolveLexicon("${nsid}") — ${iterations} iterations per mode\n`,
+  );
   console.log("─".repeat(50));
 
   // ── Cold (no cache) ──────────────────────────────────────────
@@ -101,7 +112,9 @@ if (import.meta.main) {
   for (let i = 0; i < iterations; i++) {
     const ms = await bench(`  run ${i + 1}/${iterations}`, async () => {
       const result = await resolveLexicon(nsid, makeUncachedPorts());
-      if (!result.ok) throw new Error(`Cold resolution failed: ${result.error.type}`);
+      if (!result.ok) {
+        throw new Error(`Cold resolution failed: ${result.error.type}`);
+      }
     });
     coldTimings.push(ms);
   }
@@ -113,13 +126,19 @@ if (import.meta.main) {
   const memPorts = makeMemoryCachedPorts();
   // Prime the cache.
   const memPrime = await resolveLexicon(nsid, memPorts);
-  if (!memPrime.ok) throw new Error(`Memory cache prime failed: ${memPrime.error.type}`);
+  if (!memPrime.ok) {
+    throw new Error(`Memory cache prime failed: ${memPrime.error.type}`);
+  }
   console.log(`  Cache primed`);
   const memTimings: number[] = [];
   for (let i = 0; i < iterations; i++) {
     const ms = await bench(`  run ${i + 1}/${iterations}`, async () => {
       const result = await resolveLexicon(nsid, memPorts);
-      if (!result.ok) throw new Error(`Memory-cached resolution failed: ${result.error.type}`);
+      if (!result.ok) {
+        throw new Error(
+          `Memory-cached resolution failed: ${result.error.type}`,
+        );
+      }
     });
     memTimings.push(ms);
   }
@@ -133,13 +152,19 @@ if (import.meta.main) {
   try {
     // Prime the cache.
     const diskPrime = await resolveLexicon(nsid, diskPorts);
-    if (!diskPrime.ok) throw new Error(`Disk cache prime failed: ${diskPrime.error.type}`);
+    if (!diskPrime.ok) {
+      throw new Error(`Disk cache prime failed: ${diskPrime.error.type}`);
+    }
     console.log(`  Cache primed`);
     const diskTimings: number[] = [];
     for (let i = 0; i < iterations; i++) {
       const ms = await bench(`  run ${i + 1}/${iterations}`, async () => {
         const result = await resolveLexicon(nsid, diskPorts);
-        if (!result.ok) throw new Error(`Disk-cached resolution failed: ${result.error.type}`);
+        if (!result.ok) {
+          throw new Error(
+            `Disk-cached resolution failed: ${result.error.type}`,
+          );
+        }
       });
       diskTimings.push(ms);
     }
@@ -153,7 +178,15 @@ if (import.meta.main) {
   console.log("\n" + "─".repeat(50));
   console.log("\nSummary:");
   console.log(`  Cold (no cache):     ${coldAvg.toFixed(1)}ms avg`);
-  console.log(`  Warm (InMemoryCache): ${memAvg.toFixed(1)}ms avg (${(coldAvg / Math.max(memAvg, 0.1)).toFixed(1)}x faster)`);
-  console.log(`  Warm (DiskCache):     ${diskAvg.toFixed(1)}ms avg (${(coldAvg / Math.max(diskAvg, 0.1)).toFixed(1)}x faster)`);
+  console.log(
+    `  Warm (InMemoryCache): ${memAvg.toFixed(1)}ms avg (${
+      (coldAvg / Math.max(memAvg, 0.1)).toFixed(1)
+    }x faster)`,
+  );
+  console.log(
+    `  Warm (DiskCache):     ${diskAvg.toFixed(1)}ms avg (${
+      (coldAvg / Math.max(diskAvg, 0.1)).toFixed(1)
+    }x faster)`,
+  );
   console.log();
 }

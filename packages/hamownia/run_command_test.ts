@@ -135,11 +135,17 @@ Deno.test("parseRunnerArgs: --keep-running", () => {
 });
 
 Deno.test("parseRunnerArgs: --collect-diagnostics", () => {
-  assertEquals(parseRunnerArgs(["--collect-diagnostics"]).collectDiagnostics, true);
+  assertEquals(
+    parseRunnerArgs(["--collect-diagnostics"]).collectDiagnostics,
+    true,
+  );
 });
 
 Deno.test("parseRunnerArgs: --allow-hybrid-network", () => {
-  assertEquals(parseRunnerArgs(["--allow-hybrid-network"]).allowHybridNetwork, true);
+  assertEquals(
+    parseRunnerArgs(["--allow-hybrid-network"]).allowHybridNetwork,
+    true,
+  );
 });
 
 Deno.test("parseRunnerArgs: --otel", () => {
@@ -212,7 +218,11 @@ Deno.test("parseRunnerArgs: --client-flow deep", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("parseRunnerArgs: positional args become scenarioIds", () => {
-  assertEquals(parseRunnerArgs(["01", "05", "12"]).scenarioIds, ["01", "05", "12"]);
+  assertEquals(parseRunnerArgs(["01", "05", "12"]).scenarioIds, [
+    "01",
+    "05",
+    "12",
+  ]);
 });
 
 Deno.test("parseRunnerArgs: mixed flags and positionals", () => {

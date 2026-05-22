@@ -300,9 +300,11 @@ export interface InheritedServiceSpec {
 }
 
 /** Zod schema for inherited service references */
-export const inheritedServiceSchema: z.ZodType<InheritedServiceSpec> = z.object({
-  inherit: z.string().min(1),
-}).strict();
+export const inheritedServiceSchema: z.ZodType<InheritedServiceSpec> = z.object(
+  {
+    inherit: z.string().min(1),
+  },
+).strict();
 
 /** Zod schema for experimental role metadata */
 export const experimentalRoleSchema = z.object({

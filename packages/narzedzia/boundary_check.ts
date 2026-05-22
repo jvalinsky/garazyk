@@ -132,8 +132,10 @@ export async function checkBoundaries(
 
       for (const dep of dependencies) {
         const specifier = dep.specifier;
-        const match = specifier.match(/^@garazyk\/(gruszka|schemat|laweta|hamownia|narzedzia|dashboard)(?:\/.*)?$/);
-        
+        const match = specifier.match(
+          /^@garazyk\/(gruszka|schemat|laweta|hamownia|narzedzia|dashboard)(?:\/.*)?$/,
+        );
+
         if (match) {
           const importedPackage = match[1] as PackageName;
           if (rule.denied.has(importedPackage)) {

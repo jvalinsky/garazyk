@@ -20,10 +20,18 @@ const PDS_CONFIG = {
     issuer: "http://localhost:2583",
     available_user_domains: ["test"],
   },
-  appview: { url: "http://127.0.0.1:3200", did: "did:web:localhost", local_enabled: false },
+  appview: {
+    url: "http://127.0.0.1:3200",
+    did: "did:web:localhost",
+    local_enabled: false,
+  },
   database: { service_pool_max_size: 10, user_pool_max_size: 50 },
   logging: { format: "text", level: "info" },
-  session: { access_token_ttl_seconds: 1800, refresh_token_ttl_seconds: 2592000, invite_code_required: false },
+  session: {
+    access_token_ttl_seconds: 1800,
+    refresh_token_ttl_seconds: 2592000,
+    invite_code_required: false,
+  },
   links: { privacy_policy: "", terms_of_service: "" },
   relays: ["http://localhost:2584"],
   plc: { url: "http://localhost:2582", retry_count: 3, retry_delay_ms: 500 },
@@ -33,11 +41,16 @@ const PDS_CONFIG = {
     allowed_headers: ["DPoP", "Authorization", "Content-Type", "*"],
     max_age: 86400,
   },
-  rate_limit: { enabled: true, did_limit: 60, did_window: 60, blob_limit: 50, blob_window: 3600 },
+  rate_limit: {
+    enabled: true,
+    did_limit: 60,
+    did_window: 60,
+    blob_limit: 50,
+    blob_window: 3600,
+  },
   providers: { phone_verification: { type: "twilio" } },
   registration: { phone_verification_required: false },
 };
-
 
 /**
  * Service descriptors for binary management.
@@ -294,8 +307,8 @@ export async function resolveBinaryServiceStartPlan(
       break;
     case "pds": {
       const configPath = join(dataDir, "pds-config.json");
-      const pdsAuthMasterSecret = Deno.env.get("PDS_MASTER_SECRET")
-        ?? crypto.randomUUID().replace(/-/g, "");
+      const pdsAuthMasterSecret = Deno.env.get("PDS_MASTER_SECRET") ??
+        crypto.randomUUID().replace(/-/g, "");
       const pdsConfig = {
         ...PDS_CONFIG,
         auth: { master_secret: pdsAuthMasterSecret },
