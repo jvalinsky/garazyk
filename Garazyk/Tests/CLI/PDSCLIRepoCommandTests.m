@@ -62,6 +62,7 @@
     self.dispatcher = [PDSCLIDispatcher sharedDispatcher];
     self.context = [[PDSCLIRepoTestContext alloc] init];
     self.context.dataDir = self.tempDir;
+    self.context.dataDirExplicitlySet = YES;
     self.context.configPath = [self.tempDir stringByAppendingPathComponent:@"config.json"];
 
     NSDictionary *dummyConfig = @{@"server": @{}, @"plc": @{@"url": @"mock"}};

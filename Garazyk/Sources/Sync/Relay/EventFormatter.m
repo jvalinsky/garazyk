@@ -4,6 +4,7 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
+#import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const EventFormatterErrorDomain = @"com.atproto.pds.eventformatter";
@@ -139,6 +140,7 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
 
     NSData *payloadData = [ATProtoDagCBOR encodeObject:payload error:error];
     if (!payloadData) {
+        GZ_LOG_SYNC_ERROR(@"encodeStreamEventWithType: failed to encode payload for msgType %@: %@", msgType, error ? *error : @"unknown error");
         if (error) {
              // Retain original error if set
         }

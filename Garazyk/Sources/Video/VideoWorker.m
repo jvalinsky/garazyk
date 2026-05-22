@@ -219,7 +219,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve video blob stream"}]];
                     return;
                 }
-                NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:inputURL append:NO];
+                NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:inputURL.path append:NO];
                 [outputStream open];
                 [inputStream open];
                 uint8_t buffer[65536];

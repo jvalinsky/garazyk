@@ -62,23 +62,28 @@
 - (NSArray<NSString *> *)getCorsAllowedOrigins {
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSArray<NSString *> *defaultOrigins = @[ @"*" ];
-  NSString *originsStr = [config stringForKey:@"cors.allowed_origins"];
-  NSArray<NSString *> *origins = originsStr ? [originsStr componentsSeparatedByString:@","] : nil;
+  NSArray<NSString *> *origins = [config arrayForKey:@"cors.allowed_origins"];
   return origins ?: defaultOrigins;
 }
 
 - (NSString *)getCorsAllowedMethods {
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSString *defaultMethods = @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
-  NSString *methods = [config stringForKey:@"cors.allowed_methods"];
-  return methods ?: defaultMethods;
+  NSArray<NSString *> *methods = [config arrayForKey:@"cors.allowed_methods"];
+  if (methods) {
+    return [methods componentsJoinedByString:@", "];
+  }
+  return defaultMethods;
 }
 
 - (NSString *)getCorsAllowedHeaders {
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSString *defaultHeaders = @"DPoP, Authorization, Content-Type, *";
-  NSString *headers = [config stringForKey:@"cors.allowed_headers"];
-  return headers ?: defaultHeaders;
+  NSArray<NSString *> *headers = [config arrayForKey:@"cors.allowed_headers"];
+  if (headers) {
+    return [headers componentsJoinedByString:@", "];
+  }
+  return defaultHeaders;
 }
 
 - (NSString *)getCorsMaxAge {
