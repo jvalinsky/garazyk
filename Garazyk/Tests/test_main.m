@@ -432,7 +432,7 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
       @"Lexicon":        @[@"LexiconValidation", @"LexiconResolve"],
       @"Interop":        @[@"LexiconValidatorInterop", @"AtprotoInterop",
                            @"SyntaxInterop", @"MSTInterop"],
-      @"Media":          @[@"ATProtoMedia", @"PDSVideo", @"ATProtoVideo", @"MimeType"],
+      @"Media":          @[@"ATProtoMedia", @"PDSVideo", @"ATProtoVideo", @"MimeType", @"JelczCLI"],
       @"Metrics":        @[@"PDSMetrics"],
       @"Debug":          @[@"GZLoggerPerformance"],
       @"Deployment":     @[@"DeploymentReadiness"],
@@ -516,7 +516,8 @@ static NSDictionary<NSString *, NSString *> *PDSGatedClassMap(void) {
       @"PDSWebSocketServerTests"       : @"socket",
       @"PDSWebSocketTransportTests"    : @"socket",
       @"WebSocketServerTests"          : @"socket",
-      @"MikrusRuntimeTests"     : @"socket"
+      @"MikrusRuntimeTests"     : @"socket",
+      @"ATProtoMediaServiceRuntimeTests" : @"socket"
     };
   });
   return map;
@@ -1122,7 +1123,9 @@ int main(int argc, char *argv[]) {
       @"ThreadgateMigrationTests",
       @"XRPCContractAuditTests",
       @"ChatGroupLifecycleTests",
-      @"ATProtoMediaCoreTests"
+      @"ATProtoMediaCoreTests",
+      @"JelczCLITests",
+      @"ATProtoMediaServiceRuntimeTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
