@@ -286,7 +286,13 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
 }
 
 - (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
-    return [self getAccountsWithLimit:limit cursor:cursor error:error];
+    __block NSArray *accounts = nil;
+    NSInteger boundedLimit = MAX(0, MIN(limit, 1000));
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        accounts = [store listAccountsWithLimit:boundedLimit cursor:cursor error:innerError];
+    } error:error];
+    return accounts;
 }
 
 - (nullable NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {

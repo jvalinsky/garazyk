@@ -32,8 +32,12 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
 static void setSubscribeReposUpgradeRequired(HttpRequest *request,
                                              HttpResponse *response);
 static NSString *normalizedHostnameString(NSString *hostInput);
+static BOOL validateSyncDIDParam(NSString *did, HttpResponse *response);
+static void applyBlobDownloadHeaders(NSString *mimeType, HttpResponse *response);
 static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                         ATProtoServiceConfiguration *config);
+static const NSUInteger kPDSSyncGetBlocksMaxCIDs = 100;
+static const NSUInteger kPDSSyncGetBlocksMaxResponseBytes = 10 * 1024 * 1024;
 
 static NSString *trimmedNonEmptyString(NSString *value) {
   if (![value isKindOfClass:[NSString class]]) {
@@ -133,6 +137,39 @@ static NSString *normalizedHostnameString(NSString *hostInput) {
   return [hostname lowercaseString];
 }
 
+static BOOL validateSyncDIDParam(NSString *did, HttpResponse *response) {
+  NSError *didError = nil;
+  if (did.length == 0 || ![ATProtoValidator validateDID:did error:&didError]) {
+    response.statusCode = HttpStatusBadRequest;
+    [response setJsonBody:@{
+      @"error" : @"InvalidRequest",
+      @"message" : didError.localizedDescription ?: @"Invalid did"
+    }];
+    return NO;
+  }
+  return YES;
+}
+
+static BOOL blobMimeTypeShouldAttach(NSString *mimeType) {
+  NSString *lower = [[mimeType ?: @"" lowercaseString] componentsSeparatedByString:@";"].firstObject ?: @"";
+  if ([lower isEqualToString:@"application/octet-stream"]) return YES;
+  if ([lower hasPrefix:@"application/pdf"]) return NO;
+  if ([lower hasPrefix:@"application/msword"] ||
+      [lower hasPrefix:@"application/vnd."] ||
+      [lower hasPrefix:@"application/rtf"] ||
+      [lower hasPrefix:@"application/zip"]) {
+    return YES;
+  }
+  return NO;
+}
+
+static void applyBlobDownloadHeaders(NSString *mimeType, HttpResponse *response) {
+  [response setHeader:@"nosniff" forKey:@"X-Content-Type-Options"];
+  if (blobMimeTypeShouldAttach(mimeType)) {
+    [response setHeader:@"attachment" forKey:@"Content-Disposition"];
+  }
+}
+
 static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                         ATProtoServiceConfiguration *config) {
   NSError *accountsError = nil;
@@ -170,12 +207,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                               HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSString *sinceRev = [request queryParamForKey:@"since"];
-    if (did.length == 0) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Missing did"
-      }];
+    if (!validateSyncDIDParam(did, response)) {
       return;
     }
 
@@ -233,27 +265,21 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request,
                                                   HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
-    if (did.length == 0) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Missing did"
-      }];
+    if (!validateSyncDIDParam(did, response)) {
       return;
     }
 
     PDSRepoFormat format = PDSRepoFormatFromAcceptHeader([request headerForKey:@"Accept"]);
 
     if (format == PDSRepoFormatSTARL0 || format == PDSRepoFormatSTARLite) {
-      // STAR format requested
       NSError *error = nil;
-      NSData *repoData = nil;
+      PDSRepoChunkProducer producer = nil;
       if (format == PDSRepoFormatSTARL0) {
-        repoData = [repositoryService getRepoContentsSTARL0:did since:nil error:&error];
+        producer = [repositoryService repoContentsSTARL0ChunkProducer:did since:nil error:&error];
       } else {
-        repoData = [repositoryService getRepoContentsSTARLite:did since:nil error:&error];
+        producer = [repositoryService repoContentsSTARLiteChunkProducer:did since:nil error:&error];
       }
-      if (!repoData || error) {
+      if (!producer || error) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
           @"error" : @"RepoNotFound",
@@ -264,15 +290,15 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
       response.statusCode = HttpStatusOK;
       response.contentType = ContentTypeForPDSRepoFormat(format);
-      [response setBodyData:repoData];
+      [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
       return;
     }
 
     // Default: CAR format
     NSError *error = nil;
-    NSData *repoData =
-        [repositoryService getRepoContents:did since:nil error:&error];
-    if (!repoData || error) {
+    PDSRepoChunkProducer producer =
+        [repositoryService repoContentsChunkProducer:did since:nil error:&error];
+    if (!producer || error) {
       response.statusCode = HttpStatusNotFound;
       [response setJsonBody:@{
         @"error" : @"RepoNotFound",
@@ -283,7 +309,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     response.statusCode = HttpStatusOK;
     response.contentType = @"application/vnd.ipld.car";
-    [response setBodyData:repoData];
+    [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
   }];
 
   // com.atproto.sync.getHead
@@ -292,12 +318,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request,
                                               HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
-    if (did.length == 0) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Missing required parameter: did"
-      }];
+    if (!validateSyncDIDParam(did, response)) {
       return;
     }
 
@@ -321,12 +342,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request,
                                                       HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
-    if (did.length == 0) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRequest",
-        @"message" : @"Missing required parameter: did"
-      }];
+    if (!validateSyncDIDParam(did, response)) {
       return;
     }
 
@@ -355,11 +371,22 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                                 HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSArray<NSString *> *cids = [request queryParamsForKey:@"cids"];
-    if (did.length == 0 || cids.count == 0) {
+    if (!validateSyncDIDParam(did, response)) {
+      return;
+    }
+    if (cids.count == 0) {
       response.statusCode = HttpStatusBadRequest;
       [response setJsonBody:@{
         @"error" : @"InvalidRequest",
         @"message" : @"Missing did or cids parameter"
+      }];
+      return;
+    }
+    if (cids.count > kPDSSyncGetBlocksMaxCIDs) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Too many cids"
       }];
       return;
     }
@@ -372,6 +399,14 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       [response setJsonBody:@{
         @"error" : @"BlocksNotFound",
         @"message" : error.localizedDescription ?: @"Blocks not found"
+      }];
+      return;
+    }
+    if (blocksData.length > kPDSSyncGetBlocksMaxResponseBytes) {
+      response.statusCode = HttpStatusPayloadTooLarge;
+      [response setJsonBody:@{
+        @"error" : @"PayloadTooLarge",
+        @"message" : @"Block response too large"
       }];
       return;
     }
@@ -478,67 +513,78 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     NSString *cursorParam = [request queryParamForKey:@"cursor"];
-    NSInteger startIndex = 0;
     if (cursorParam.length > 0) {
-      if (!parseStrictIntegerString(cursorParam, &startIndex) ||
-          startIndex < 0) {
+      NSError *cursorDIDError = nil;
+      if (![ATProtoValidator validateDID:cursorParam error:&cursorDIDError]) {
         response.statusCode = HttpStatusBadRequest;
         [response setJsonBody:@{
           @"error" : @"InvalidRequest",
-          @"message" : @"cursor must be a non-negative integer"
+          @"message" : cursorDIDError.localizedDescription ?: @"cursor must be a DID"
         }];
         return;
       }
     }
 
-    NSError *accountsError = nil;
-    NSArray<PDSDatabaseAccount *> *accounts =
-        [serviceDatabases getAllAccountsWithError:&accountsError];
-    if (!accounts) {
-      response.statusCode = HttpStatusInternalServerError;
-      [response setJsonBody:@{
-        @"error" : @"DatabaseUnavailable",
-        @"message" : accountsError.localizedDescription
-            ?: @"Failed to load accounts"
-      }];
-      return;
-    }
-
     NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
-    NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
-    while (scanIndex < (NSInteger)accounts.count &&
-           repos.count < (NSUInteger)limit) {
-      PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
-      if (account.did.length > 0) {
-        NSDictionary *latest =
-            [repositoryService getLatestCommitForDid:account.did error:nil];
-        if (!latest) {
-          scanIndex += 1;
-          continue;
+    NSInteger scanBudget = MAX(limit * 5, 1000);
+    NSString *accountCursor = cursorParam.length > 0 ? cursorParam : nil;
+    NSInteger scanned = 0;
+    NSString *nextCursor = nil;
+    while (scanned < scanBudget && repos.count < (NSUInteger)limit) {
+      NSInteger batchLimit = MIN(1000, scanBudget - scanned);
+      NSError *accountsError = nil;
+      NSArray<PDSDatabaseAccount *> *accounts =
+          [serviceDatabases listAccountsWithLimit:batchLimit cursor:accountCursor error:&accountsError];
+      if (!accounts) {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+          @"error" : @"DatabaseUnavailable",
+          @"message" : accountsError.localizedDescription ?: @"Failed to load accounts"
+        }];
+        return;
+      }
+      if (accounts.count == 0) {
+        nextCursor = nil;
+        break;
+      }
+      for (PDSDatabaseAccount *account in accounts) {
+        scanned += 1;
+        nextCursor = account.did;
+        if (account.did.length > 0) {
+          NSDictionary *latest =
+              [repositoryService getLatestCommitForDid:account.did error:nil];
+          if (latest) {
+            NSString *head = [latest[@"cid"] isKindOfClass:[NSString class]]
+                                 ? latest[@"cid"]
+                                 : nil;
+            NSString *rev = [latest[@"rev"] isKindOfClass:[NSString class]]
+                                ? latest[@"rev"]
+                                : @"";
+            if (head.length > 0) {
+              [repos addObject:@{
+                @"did" : account.did,
+                @"head" : head,
+                @"rev" : rev,
+                @"active" : @YES
+              }];
+            }
+          }
         }
-
-        NSString *head = [latest[@"cid"] isKindOfClass:[NSString class]]
-                             ? latest[@"cid"]
-                             : nil;
-        NSString *rev = [latest[@"rev"] isKindOfClass:[NSString class]]
-                            ? latest[@"rev"]
-                            : @"";
-        if (head.length > 0) {
-          [repos addObject:@{
-            @"did" : account.did,
-            @"head" : head,
-            @"rev" : rev,
-            @"active" : @YES
-          }];
+        if (repos.count >= (NSUInteger)limit || scanned >= scanBudget) {
+          break;
         }
       }
-      scanIndex += 1;
+      if (accounts.count < (NSUInteger)batchLimit) {
+        nextCursor = nil;
+        break;
+      }
+      accountCursor = nextCursor;
     }
 
     NSMutableDictionary *result =
         [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
-    if (scanIndex < (NSInteger)accounts.count) {
-      result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+    if (nextCursor.length > 0) {
+      result[@"cursor"] = nextCursor;
     }
 
     response.statusCode = HttpStatusOK;
@@ -583,60 +629,74 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     NSString *cursorParam = [request queryParamForKey:@"cursor"];
-    NSInteger startIndex = 0;
     if (cursorParam.length > 0) {
-      if (!parseStrictIntegerString(cursorParam, &startIndex) ||
-          startIndex < 0) {
+      NSError *cursorDIDError = nil;
+      if (![ATProtoValidator validateDID:cursorParam error:&cursorDIDError]) {
         response.statusCode = HttpStatusBadRequest;
         [response setJsonBody:@{
           @"error" : @"InvalidRequest",
-          @"message" : @"cursor must be a non-negative integer"
+          @"message" : cursorDIDError.localizedDescription ?: @"cursor must be a DID"
         }];
         return;
       }
     }
 
-    NSError *accountsError = nil;
-    NSArray<PDSDatabaseAccount *> *accounts =
-        [serviceDatabases getAllAccountsWithError:&accountsError];
-    if (!accounts) {
-      response.statusCode = HttpStatusInternalServerError;
-      [response setJsonBody:@{
-        @"error" : @"DatabaseUnavailable",
-        @"message" : accountsError.localizedDescription
-            ?: @"Failed to load accounts"
-      }];
-      return;
-    }
-
     NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
-    NSInteger scanIndex = MIN(startIndex, (NSInteger)accounts.count);
-    while (scanIndex < (NSInteger)accounts.count &&
-           repos.count < (NSUInteger)limit) {
-      PDSDatabaseAccount *account = accounts[(NSUInteger)scanIndex];
-      if (account.did.length > 0) {
-        NSError *storeError = nil;
-        PDSActorStore *store =
-            [userDatabasePool storeForDid:account.did error:&storeError];
-        if (store) {
-          NSArray<PDSDatabaseRecord *> *records =
-              [store listRecordsForDid:account.did
-                            collection:collection
-                                 limit:1
-                                offset:0
-                                 error:nil];
-          if (records.count > 0) {
-            [repos addObject:@{@"did" : account.did}];
+    NSInteger scanBudget = MAX(limit * 5, 1000);
+    NSString *accountCursor = cursorParam.length > 0 ? cursorParam : nil;
+    NSInteger scanned = 0;
+    NSString *nextCursor = nil;
+    while (scanned < scanBudget && repos.count < (NSUInteger)limit) {
+      NSInteger batchLimit = MIN(1000, scanBudget - scanned);
+      NSError *accountsError = nil;
+      NSArray<PDSDatabaseAccount *> *accounts =
+          [serviceDatabases listAccountsWithLimit:batchLimit cursor:accountCursor error:&accountsError];
+      if (!accounts) {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+          @"error" : @"DatabaseUnavailable",
+          @"message" : accountsError.localizedDescription ?: @"Failed to load accounts"
+        }];
+        return;
+      }
+      if (accounts.count == 0) {
+        nextCursor = nil;
+        break;
+      }
+      for (PDSDatabaseAccount *account in accounts) {
+        scanned += 1;
+        nextCursor = account.did;
+        if (account.did.length > 0) {
+          NSError *storeError = nil;
+          PDSActorStore *store =
+              [userDatabasePool storeForDid:account.did error:&storeError];
+          if (store) {
+            NSArray<PDSDatabaseRecord *> *records =
+                [store listRecordsForDid:account.did
+                              collection:collection
+                                   limit:1
+                                  offset:0
+                                   error:nil];
+            if (records.count > 0) {
+              [repos addObject:@{@"did" : account.did}];
+            }
           }
         }
+        if (repos.count >= (NSUInteger)limit || scanned >= scanBudget) {
+          break;
+        }
       }
-      scanIndex += 1;
+      if (accounts.count < (NSUInteger)batchLimit) {
+        nextCursor = nil;
+        break;
+      }
+      accountCursor = nextCursor;
     }
 
     NSMutableDictionary *result =
         [NSMutableDictionary dictionaryWithObject:repos forKey:@"repos"];
-    if (scanIndex < (NSInteger)accounts.count) {
-      result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+    if (nextCursor.length > 0) {
+      result[@"cursor"] = nextCursor;
     }
 
     response.statusCode = HttpStatusOK;
@@ -689,7 +749,10 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                               HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSString *cid = [request queryParamForKey:@"cid"];
-    if (did.length == 0 || cid.length == 0) {
+    if (!validateSyncDIDParam(did, response)) {
+      return;
+    }
+    if (cid.length == 0) {
       response.statusCode = HttpStatusBadRequest;
       [response setJsonBody:@{
         @"error" : @"InvalidRequest",
@@ -744,6 +807,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     response.contentType = mimeType;
+    applyBlobDownloadHeaders(mimeType, response);
 
     // Use shared blob response handler with Range support (Phase 1.2)
     NSError *responseError = nil;

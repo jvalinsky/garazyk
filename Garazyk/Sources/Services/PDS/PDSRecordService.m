@@ -1798,6 +1798,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     });
     if (cached) return cached;
 
+    if (![ATProtoValidator validateDID:did error:nil]) {
+        return @{
+            @"did": did ?: @"",
+            @"collections": @[],
+            @"recordCount": @0
+        };
+    }
+
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
         GZ_LOG_DB_ERROR(@"[PDSRecordService] Failed to get store for DID: %@", did);

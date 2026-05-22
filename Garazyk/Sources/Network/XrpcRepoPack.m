@@ -38,9 +38,29 @@
 
 static const NSUInteger kPDSUploadBlobDefaultMaxBytes = 1024 * 1024;
 static const NSUInteger kPDSUploadBlobVideoMaxBytes = 50 * 1024 * 1024;
+static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
+static const NSUInteger kPDSImportRepoMaxCARBlocks = 100000;
+static const NSUInteger kPDSImportRepoMaxMSTNodes = 100000;
+static const NSUInteger kPDSImportRepoMaxRecords = 100000;
+static const NSUInteger kPDSImportRepoMaxMSTDepth = 512;
+static const NSUInteger kPDSApplyWritesMaxCount = 200;
+static const NSUInteger kPDSApplyWritesMaxRecordBytes = 256 * 1024;
+static const NSUInteger kPDSApplyWritesMaxAggregateRecordBytes = 4 * 1024 * 1024;
+
+static NSString * const PDSRepoPackValidationErrorDomain = @"com.atproto.pds.xrpc.repo.validation";
+
+typedef NS_ENUM(NSInteger, PDSRepoPackValidationErrorCode) {
+    PDSRepoPackValidationErrorInvalidRequest = 1,
+    PDSRepoPackValidationErrorPayloadTooLarge = 2,
+};
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
 static CID *cidFromTaggedCBORValue(CBORValue *value);
+static NSString *normalizedMimeType(NSString *contentType);
+static BOOL isActiveUploadMimeType(NSString *contentType);
+static void applyRepoBlobDownloadHeaders(NSString *mimeType, HttpResponse *response);
+static BOOL validateApplyWritesPayload(id writes, NSError **error);
+static NSError *repoPackValidationError(PDSRepoPackValidationErrorCode code, NSString *message);
 
 static BOOL isReplyNotAllowedError(NSError *error) {
     return [error.localizedDescription containsString:@"ReplyNotAllowed"];
@@ -72,12 +92,108 @@ static NSString *trimmedNonEmptyString(NSString *value) {
 }
 
 static NSUInteger maxUploadBlobBytesForContentType(NSString *contentType) {
-    NSString *lowerContentType = [[contentType ?: @"" lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    NSString *mimeType = [lowerContentType componentsSeparatedByString:@";"].firstObject ?: @"";
+    NSString *mimeType = normalizedMimeType(contentType);
     if ([mimeType isEqualToString:@"video/mp4"]) {
         return kPDSUploadBlobVideoMaxBytes;
     }
     return kPDSUploadBlobDefaultMaxBytes;
+}
+
+static NSString *normalizedMimeType(NSString *contentType) {
+    NSString *lowerContentType = [[contentType ?: @"" lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return [[lowerContentType componentsSeparatedByString:@";"].firstObject ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+static BOOL isActiveUploadMimeType(NSString *contentType) {
+    static NSSet<NSString *> *activeTypes;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        activeTypes = [NSSet setWithArray:@[
+            @"text/html",
+            @"text/css",
+            @"text/javascript",
+            @"application/javascript",
+            @"application/xhtml+xml",
+            @"application/xml",
+            @"image/svg+xml",
+            @"application/postscript",
+        ]];
+    });
+    return [activeTypes containsObject:normalizedMimeType(contentType)];
+}
+
+static BOOL repoBlobMimeTypeShouldAttach(NSString *mimeType) {
+    NSString *lower = normalizedMimeType(mimeType);
+    if ([lower isEqualToString:@"application/octet-stream"]) return YES;
+    if ([lower hasPrefix:@"application/pdf"]) return NO;
+    if ([lower hasPrefix:@"application/msword"] ||
+        [lower hasPrefix:@"application/vnd."] ||
+        [lower hasPrefix:@"application/rtf"] ||
+        [lower hasPrefix:@"application/zip"]) {
+        return YES;
+    }
+    return NO;
+}
+
+static void applyRepoBlobDownloadHeaders(NSString *mimeType, HttpResponse *response) {
+    [response setHeader:@"nosniff" forKey:@"X-Content-Type-Options"];
+    if (repoBlobMimeTypeShouldAttach(mimeType)) {
+        [response setHeader:@"attachment" forKey:@"Content-Disposition"];
+    }
+}
+
+static NSError *repoPackValidationError(PDSRepoPackValidationErrorCode code, NSString *message) {
+    return [NSError errorWithDomain:PDSRepoPackValidationErrorDomain
+                               code:code
+                           userInfo:@{NSLocalizedDescriptionKey: message ?: @"Invalid request"}];
+}
+
+static BOOL validateApplyWritesPayload(id writes, NSError **error) {
+    if (![writes isKindOfClass:[NSArray class]]) {
+        if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Missing or invalid writes array");
+        return NO;
+    }
+
+    NSArray *writesArray = (NSArray *)writes;
+    if (writesArray.count > kPDSApplyWritesMaxCount) {
+        if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Too many writes in batch");
+        return NO;
+    }
+
+    NSUInteger aggregateBytes = 0;
+    for (id write in writesArray) {
+        if (![write isKindOfClass:[NSDictionary class]]) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Each write must be an object");
+            return NO;
+        }
+
+        id value = ((NSDictionary *)write)[@"value"];
+        if (!value || value == (id)[NSNull null]) {
+            continue;
+        }
+        if (![NSJSONSerialization isValidJSONObject:value]) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Write record value must be JSON-serializable");
+            return NO;
+        }
+
+        NSError *jsonError = nil;
+        NSData *recordData = [NSJSONSerialization dataWithJSONObject:value options:0 error:&jsonError];
+        if (!recordData) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, jsonError.localizedDescription ?: @"Invalid record value");
+            return NO;
+        }
+        if (recordData.length > kPDSApplyWritesMaxRecordBytes) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Record payload too large");
+            return NO;
+        }
+        aggregateBytes += recordData.length;
+        if (aggregateBytes > kPDSApplyWritesMaxAggregateRecordBytes) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Aggregate write payload too large");
+            return NO;
+        }
+    }
+
+    return YES;
 }
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result) {
@@ -117,13 +233,22 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
     return nil;
 }
 
-@implementation XrpcRepoPack
+@interface PDSRepoImportValidationResult : NSObject
+@property (nonatomic, strong) NSArray<PDSDatabaseBlock *> *blocks;
+@property (nonatomic, strong) NSArray<PDSDatabaseRecord *> *records;
+@end
 
-+ (NSString *)routePackIdentifier {
-  return @"com.atproto.repo";
-}
+@implementation PDSRepoImportValidationResult
+@end
 
-static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CARReader *reader, NSString *rev);
+@interface PDSRepoImportValidator : NSObject
++ (nullable PDSRepoImportValidationResult *)validateCARData:(NSData *)carData
+                                                     reader:(CARReader *)reader
+                                                     commit:(RepoCommit *)commit
+                                                        did:(NSString *)did
+                                              databasePool:(PDSDatabasePool *)databasePool
+                                                      error:(NSError **)error;
+@end
 
 static CID *cidFromTaggedCBORValue(CBORValue *value) {
     if (!value) {
@@ -149,59 +274,177 @@ static CID *cidFromTaggedCBORValue(CBORValue *value) {
     return [CID cidFromBytes:cidBytes];
 }
 
-static void walkMST(CID *nodeCID, NSString *prevKey, NSString *did, CARReader *reader, NSMutableArray<PDSDatabaseRecord *> *recordList, NSString *rev) {
-    if (!nodeCID) return;
-    CARBlock *block = [reader blockWithCID:nodeCID];
-    if (!block) return;
+static NSData *publicKeyFromDIDKeyString(NSString *didKey) {
+    if (![didKey isKindOfClass:[NSString class]] || ![didKey hasPrefix:@"did:key:z"]) {
+        return nil;
+    }
+    NSData *decoded = [CID base58btcDecode:[didKey substringFromIndex:9]];
+    if (decoded.length != 35) {
+        return nil;
+    }
+    const uint8_t *bytes = decoded.bytes;
+    if (bytes[0] != 0xe7 || bytes[1] != 0x01) {
+        return nil;
+    }
+    return [decoded subdataWithRange:NSMakeRange(2, 33)];
+}
 
-    CBORValue *nodeValue = [CBORValue decode:block.data];
-    if (!nodeValue || nodeValue.type != CBORTypeMap) return;
-
-    // Recurse left subtree first to preserve in-order traversal.
-    CBORValue *leftTag = nodeValue.map[[CBORValue textString:@"l"]];
-    CID *leftCID = cidFromTaggedCBORValue(leftTag);
-    if (leftCID) {
-        walkMST(leftCID, prevKey, did, reader, recordList, rev);
+static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
+    NSDictionary *json = document.jsonDictionary;
+    id verificationMethods = json[@"verificationMethods"];
+    if ([verificationMethods isKindOfClass:[NSDictionary class]]) {
+        NSData *key = publicKeyFromDIDKeyString(((NSDictionary *)verificationMethods)[@"atproto"]);
+        if (key) return key;
     }
 
-    CBORValue *entriesValue = nodeValue.map[[CBORValue textString:@"e"]];
-    NSArray<CBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray)
-                                             ? entriesValue.array
-                                             : @[];
+    id verificationMethod = json[@"verificationMethod"];
+    if ([verificationMethod isKindOfClass:[NSArray class]]) {
+        for (id entry in (NSArray *)verificationMethod) {
+            if (![entry isKindOfClass:[NSDictionary class]]) continue;
+            NSDictionary *method = (NSDictionary *)entry;
+            NSString *methodID = [method[@"id"] isKindOfClass:[NSString class]] ? method[@"id"] : @"";
+            if (![methodID hasSuffix:@"#atproto"]) continue;
+            NSData *key = publicKeyFromDIDKeyString(method[@"publicKeyMultibase"]);
+            if (key) return key;
+        }
+    }
+    return nil;
+}
 
-    NSString *currentPrevKey = prevKey ?: @"";
-    for (CBORValue *entryMap in entriesArray) {
-        if (entryMap.type != CBORTypeMap) continue;
+@implementation PDSRepoImportValidator
 
-        NSData *suffixData = entryMap.map[[CBORValue textString:@"k"]].byteString ?: [NSData data];
-        CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
-        NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
-        NSUInteger safePrefixLen = MIN(prefixLen, currentPrevKey.length);
-        NSString *prefix = [currentPrevKey substringToIndex:safePrefixLen];
-        NSString *suffix = [[NSString alloc] initWithData:suffixData encoding:NSUTF8StringEncoding] ?: @"";
-        NSString *fullKey = [prefix stringByAppendingString:suffix];
++ (BOOL)validateCommitSignature:(RepoCommit *)commit did:(NSString *)did databasePool:(PDSDatabasePool *)databasePool error:(NSError **)error {
+    NSError *resolveError = nil;
+    DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
+    NSMutableArray<NSData *> *candidateKeys = [NSMutableArray array];
+    NSData *didDocKey = atprotoSigningKeyFromDIDDocument(document);
+    if (didDocKey) {
+        [candidateKeys addObject:didDocKey];
+    }
 
-        CBORValue *valueTag = entryMap.map[[CBORValue textString:@"v"]];
-        CID *valueCID = cidFromTaggedCBORValue(valueTag);
-        if (valueCID) {
-            PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
-            record.did = did;
-            record.cid = valueCID.stringValue;
-            record.rev = rev;
-            record.createdAt = [NSDate date];
+    NSError *storeError = nil;
+    PDSActorStore *store = [databasePool storeForDid:did error:&storeError];
+    NSData *localPublicKey = [store publicSigningKeyWithError:nil];
+    if (localPublicKey) {
+        [candidateKeys addObject:localPublicKey];
+    }
 
-            NSRange slashRange = [fullKey rangeOfString:@"/"];
-            if (slashRange.location != NSNotFound) {
-                record.collection = [fullKey substringToIndex:slashRange.location];
-                record.rkey = [fullKey substringFromIndex:slashRange.location + 1];
-            } else {
-                record.collection = @"unknown";
-                record.rkey = fullKey;
-            }
-            record.uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, record.collection, record.rkey];
+    for (NSData *publicKey in candidateKeys) {
+        if ([commit verifySignatureWithPublicKey:publicKey error:nil]) {
+            return YES;
+        }
+    }
 
-            CARBlock *valueBlock = [reader blockWithCID:valueCID];
-            if (valueBlock) {
+    if (error) {
+        NSString *message = resolveError
+            ? [NSString stringWithFormat:@"Commit signature verification failed and DID document could not be resolved: %@", resolveError.localizedDescription]
+            : @"Commit signature did not verify against the DID atproto signing key";
+        *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, message);
+    }
+    return NO;
+}
+
++ (nullable NSArray<PDSDatabaseRecord *> *)extractRecordsFromMSTRoot:(CID *)rootCID
+                                                                 did:(NSString *)did
+                                                              reader:(CARReader *)reader
+                                                                 rev:(NSString *)rev
+                                                               error:(NSError **)error {
+    if (!rootCID) {
+        return @[];
+    }
+
+    NSMutableArray<PDSDatabaseRecord *> *records = [NSMutableArray array];
+    NSMutableSet<NSString *> *visitedCIDs = [NSMutableSet set];
+    NSMutableArray<NSDictionary *> *stack = [NSMutableArray arrayWithObject:@{
+        @"cid": rootCID,
+        @"prevKey": @"",
+        @"depth": @0,
+    }];
+    NSUInteger nodeCount = 0;
+
+    while (stack.count > 0) {
+        NSDictionary *frame = stack.lastObject;
+        [stack removeLastObject];
+
+        CID *nodeCID = frame[@"cid"];
+        NSString *prevKey = frame[@"prevKey"] ?: @"";
+        NSUInteger depth = [frame[@"depth"] unsignedIntegerValue];
+        if (depth > kPDSImportRepoMaxMSTDepth) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Imported MST exceeds maximum depth");
+            return nil;
+        }
+
+        NSString *nodeKey = nodeCID.stringValue ?: @"";
+        if ([visitedCIDs containsObject:nodeKey]) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Imported MST contains a cycle");
+            return nil;
+        }
+        [visitedCIDs addObject:nodeKey];
+
+        nodeCount += 1;
+        if (nodeCount > kPDSImportRepoMaxMSTNodes) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Imported MST has too many nodes");
+            return nil;
+        }
+
+        CARBlock *block = [reader blockWithCID:nodeCID];
+        if (!block) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Imported MST references a missing block");
+            return nil;
+        }
+
+        CBORValue *nodeValue = [CBORValue decode:block.data];
+        if (!nodeValue || nodeValue.type != CBORTypeMap) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Imported MST node is invalid");
+            return nil;
+        }
+
+        NSMutableArray<NSDictionary *> *childFrames = [NSMutableArray array];
+        CBORValue *leftTag = nodeValue.map[[CBORValue textString:@"l"]];
+        CID *leftCID = cidFromTaggedCBORValue(leftTag);
+        if (leftCID) {
+            [childFrames addObject:@{@"cid": leftCID, @"prevKey": prevKey, @"depth": @(depth + 1)}];
+        }
+
+        CBORValue *entriesValue = nodeValue.map[[CBORValue textString:@"e"]];
+        NSArray<CBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray) ? entriesValue.array : @[];
+        NSString *currentPrevKey = prevKey;
+
+        for (CBORValue *entryMap in entriesArray) {
+            if (entryMap.type != CBORTypeMap) continue;
+
+            NSData *suffixData = entryMap.map[[CBORValue textString:@"k"]].byteString ?: [NSData data];
+            CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
+            NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
+            NSUInteger safePrefixLen = MIN(prefixLen, currentPrevKey.length);
+            NSString *prefix = [currentPrevKey substringToIndex:safePrefixLen];
+            NSString *suffix = [[NSString alloc] initWithData:suffixData encoding:NSUTF8StringEncoding] ?: @"";
+            NSString *fullKey = [prefix stringByAppendingString:suffix];
+
+            CID *valueCID = cidFromTaggedCBORValue(entryMap.map[[CBORValue textString:@"v"]]);
+            if (valueCID) {
+                CARBlock *valueBlock = [reader blockWithCID:valueCID];
+                if (!valueBlock) {
+                    if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Imported MST references a missing record block");
+                    return nil;
+                }
+
+                PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+                record.did = did;
+                record.cid = valueCID.stringValue;
+                record.rev = rev;
+                record.createdAt = [NSDate date];
+
+                NSRange slashRange = [fullKey rangeOfString:@"/"];
+                if (slashRange.location != NSNotFound) {
+                    record.collection = [fullKey substringToIndex:slashRange.location];
+                    record.rkey = [fullKey substringFromIndex:slashRange.location + 1];
+                } else {
+                    record.collection = @"unknown";
+                    record.rkey = fullKey;
+                }
+                record.uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, record.collection, record.rkey];
+
                 id jsonObj = [ATProtoCBORSerialization JSONObjectWithData:valueBlock.data error:nil];
                 if (jsonObj) {
                     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonObj options:0 error:nil];
@@ -209,28 +452,94 @@ static void walkMST(CID *nodeCID, NSString *prevKey, NSString *did, CARReader *r
                         record.value = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
                     }
                 }
+
+                [records addObject:record];
+                if (records.count > kPDSImportRepoMaxRecords) {
+                    if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Imported repository has too many records");
+                    return nil;
+                }
             }
-            [recordList addObject:record];
+
+            CID *treeCID = cidFromTaggedCBORValue(entryMap.map[[CBORValue textString:@"t"]]);
+            if (treeCID) {
+                [childFrames addObject:@{@"cid": treeCID, @"prevKey": fullKey, @"depth": @(depth + 1)}];
+            }
+
+            currentPrevKey = fullKey;
         }
 
-        CBORValue *treeTag = entryMap.map[[CBORValue textString:@"t"]];
-        CID *treeCID = cidFromTaggedCBORValue(treeTag);
-        if (treeCID) {
-            walkMST(treeCID, fullKey, did, reader, recordList, rev);
+        for (NSDictionary *childFrame in [childFrames reverseObjectEnumerator]) {
+            [stack addObject:childFrame];
         }
-
-        currentPrevKey = fullKey;
     }
+
+    return [records copy];
 }
 
-static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CARReader *reader, NSString *rev) {
-    NSMutableArray<PDSDatabaseRecord *> *recordList = [NSMutableArray array];
-    CID *rootCID = [CID cidFromBytes:mstRootCIDBytes];
-    if (!rootCID) return @[];
-    
-    walkMST(rootCID, @"", did, reader, recordList, rev);
++ (nullable PDSRepoImportValidationResult *)validateCARData:(NSData *)carData
+                                                     reader:(CARReader *)reader
+                                                     commit:(RepoCommit *)commit
+                                                        did:(NSString *)did
+                                              databasePool:(PDSDatabasePool *)databasePool
+                                                      error:(NSError **)error {
+    if (carData.length > kPDSImportRepoMaxBodyBytes) {
+        if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Repository import body too large");
+        return nil;
+    }
+    if (reader.blocks.count > kPDSImportRepoMaxCARBlocks) {
+        if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Repository import has too many CAR blocks");
+        return nil;
+    }
 
-    return [recordList copy];
+    CID *computedCommitCID = [commit computeCID];
+    if (!computedCommitCID || ![computedCommitCID isEqualToCID:reader.rootCID]) {
+        if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Commit CID does not match CAR root");
+        return nil;
+    }
+
+    for (CARBlock *block in reader.blocks) {
+        CID *computed = [CID cidWithDigest:[CID sha256Digest:block.data] codec:block.cid.codec];
+        if (!computed || ![computed isEqualToCID:block.cid]) {
+            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"CAR block CID does not match block data");
+            return nil;
+        }
+    }
+
+    if (![self validateCommitSignature:commit did:did databasePool:databasePool error:error]) {
+        return nil;
+    }
+
+    NSArray<PDSDatabaseRecord *> *records = [self extractRecordsFromMSTRoot:commit.dataCID
+                                                                        did:did
+                                                                     reader:reader
+                                                                        rev:commit.rev ?: @""
+                                                                      error:error];
+    if (!records) {
+        return nil;
+    }
+
+    NSMutableArray<PDSDatabaseBlock *> *blocks = [NSMutableArray arrayWithCapacity:reader.blocks.count];
+    for (CARBlock *block in reader.blocks) {
+        PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
+        dbBlock.cid = block.cid.bytes;
+        dbBlock.blockData = block.data;
+        dbBlock.size = (NSInteger)block.data.length;
+        dbBlock.rev = commit.rev ?: @"";
+        [blocks addObject:dbBlock];
+    }
+
+    PDSRepoImportValidationResult *result = [[PDSRepoImportValidationResult alloc] init];
+    result.blocks = [blocks copy];
+    result.records = records;
+    return result;
+}
+
+@end
+
+@implementation XrpcRepoPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.repo";
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -537,9 +846,10 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        if (contentType && [contentType isEqualToString:@"application/x-msdownload"]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Forbidden MIME type"}];
+        if ((contentType && [normalizedMimeType(contentType) isEqualToString:@"application/x-msdownload"]) ||
+            isActiveUploadMimeType(contentType)) {
+            response.statusCode = HttpStatusUnsupportedMediaType;
+            [response setJsonBody:@{@"error": @"UnsupportedMediaType", @"message": @"Forbidden MIME type"}];
             return;
         }
 
@@ -659,6 +969,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                  ? result[@"mimeType"]
                                  : @"application/octet-stream";
         response.contentType = mimeType;
+        applyRepoBlobDownloadHeaders(mimeType, response);
 
         NSString *filePath = [result[@"filePath"] isKindOfClass:[NSString class]] ? result[@"filePath"] : nil;
         NSData *blobData = [result[@"blob"] isKindOfClass:[NSData class]] ? result[@"blob"] : nil;
@@ -696,6 +1007,11 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         if (!repoData || repoData.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repository body"}];
+            return;
+        }
+        if (repoData.length > kPDSImportRepoMaxBodyBytes) {
+            response.statusCode = HttpStatusPayloadTooLarge;
+            [response setJsonBody:@{@"error": @"PayloadTooLarge", @"message": @"Repository import body too large"}];
             return;
         }
 
@@ -768,20 +1084,34 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        NSMutableArray<PDSDatabaseBlock *> *blocks = [NSMutableArray arrayWithCapacity:reader.blocks.count];
-        for (CARBlock *block in reader.blocks) {
-            if (!block.cid || block.data.length == 0) {
-                continue;
-            }
-            PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
-            dbBlock.cid = block.cid.bytes;
-            dbBlock.blockData = block.data;
-            dbBlock.size = (NSInteger)block.data.length;
-            dbBlock.rev = commit.rev ?: @"";
-            [blocks addObject:dbBlock];
+        PDSDatabasePool *databasePool = recordService.databasePool;
+        if (!databasePool) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalError", @"message": @"Record database pool is unavailable"}];
+            return;
         }
 
-        NSArray<PDSDatabaseRecord *> *records = importRepoExtractRecords(commit.dataCID.bytes, did, reader, commit.rev ?: @"");
+        NSError *importValidationError = nil;
+        PDSRepoImportValidationResult *importValidation =
+            [PDSRepoImportValidator validateCARData:carData
+                                             reader:reader
+                                             commit:commit
+                                                did:did
+                                      databasePool:databasePool
+                                              error:&importValidationError];
+        if (!importValidation) {
+            response.statusCode = (importValidationError.code == PDSRepoPackValidationErrorPayloadTooLarge)
+                ? HttpStatusPayloadTooLarge
+                : HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": (response.statusCode == HttpStatusPayloadTooLarge) ? @"PayloadTooLarge" : @"InvalidRequest",
+                @"message": importValidationError.localizedDescription ?: @"Invalid repository import"
+            }];
+            return;
+        }
+
+        NSArray<PDSDatabaseBlock *> *blocks = importValidation.blocks;
+        NSArray<PDSDatabaseRecord *> *records = importValidation.records;
 
         // Lexicon validation for imported records
         // Per spec: records must conform to their declared lexicon type
@@ -842,13 +1172,6 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
 
         GZ_LOG_DEBUG(@"[importRepo] Validated %lu/%lu records",
                       (unsigned long)validatedRecords.count, (unsigned long)records.count);
-
-        PDSDatabasePool *databasePool = recordService.databasePool;
-        if (!databasePool) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"InternalError", @"message": @"Record database pool is unavailable"}];
-            return;
-        }
 
         NSError *storeError = nil;
         PDSActorStore *store = [databasePool storeForDid:did error:&storeError];
@@ -1083,7 +1406,6 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
     // com.atproto.repo.applyWrites
     [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
-        GZ_LOG_INFO(@"applyWrites: method called, body=%@", body);
         if (!body) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
@@ -1105,7 +1427,10 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
         NSString *swapCommit = body[@"swapCommit"];
 
-        GZ_LOG_INFO(@"applyWrites: body=%@, writes=%@", body, writes);
+        GZ_LOG_INFO(@"applyWrites: did=%@ writeCount=%lu validationMode=%ld",
+                    did,
+                    (unsigned long)([writes isKindOfClass:[NSArray class]] ? [(NSArray *)writes count] : 0),
+                    (long)mode);
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
@@ -1113,9 +1438,15 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        if (!writes || ![writes isKindOfClass:[NSArray class]]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid writes array"}];
+        NSError *writeValidationError = nil;
+        if (!validateApplyWritesPayload(writes, &writeValidationError)) {
+            response.statusCode = (writeValidationError.code == PDSRepoPackValidationErrorPayloadTooLarge)
+                ? HttpStatusPayloadTooLarge
+                : HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": (response.statusCode == HttpStatusPayloadTooLarge) ? @"PayloadTooLarge" : @"InvalidRequest",
+                @"message": writeValidationError.localizedDescription ?: @"Invalid writes array"
+            }];
             return;
         }
 
@@ -1126,6 +1457,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                                swapCommit:swapCommit
                                                     error:&error];
         if (!result) {
+            GZ_LOG_INFO(@"applyWrites: did=%@ writeCount=%lu result=failed", did, (unsigned long)[writes count]);
             response.statusCode = HttpStatusBadRequest;
             if (isReplyNotAllowedError(error)) {
                 [response setJsonBody:@{@"error": @"ReplyNotAllowed", @"message": @"Reply not allowed by threadgate"}];
@@ -1135,6 +1467,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
+        GZ_LOG_INFO(@"applyWrites: did=%@ writeCount=%lu result=ok", did, (unsigned long)[writes count]);
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
     }];
