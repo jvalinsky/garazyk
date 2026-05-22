@@ -233,3 +233,6 @@ result
 docker/local-network/sources_cache/
 build/
 .beads/
+
+# Git worktrees
+.worktrees/
