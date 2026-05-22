@@ -14,6 +14,12 @@
 #import "Services/PDS/PDSAccountService.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonDigest.h>
+#import "App/ATProtoServiceConfiguration.h"
+
+@interface OAuth2Handler (TestPrivate)
+- (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient
+                                        clientID:(NSString *)clientID;
+@end
 
 @interface TestAccountService : NSObject <PDSAccountService>
 @property (nonatomic, copy) NSDictionary *mockUser;
@@ -1235,6 +1241,120 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
     XCTAssertTrue(response.statusCode == 400 || response.statusCode == 401,
                  @"Should return 400 or 401 when no client authentication provided");
+}
+
+- (void)testOAuthClientPolicyAllowlistBlocksUnregisteredHTTPSClient {
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+    NSString *origPolicy = config.oauthClientPolicy;
+    NSArray *origAllowed = config.oauthAllowedClientIDs;
+    
+    [config setValue:@"allowlist" forKey:@"oauthClientPolicy"];
+    [config setValue:@[@"https://allowed-client.com"] forKey:@"oauthAllowedClientIDs"];
+    
+    XCTestExpectation *expectation = [self expectationWithDescription:@"validateClient callback"];
+    [self.handler validateClient:@"https://unallowed-client.com" completion:^(NSDictionary *client, NSError *error) {
+        XCTAssertNil(client);
+        XCTAssertNotNil(error);
+        XCTAssertEqualObjects(error.userInfo[NSLocalizedDescriptionKey], @"unauthorized_client");
+        [expectation fulfill];
+    }];
+    
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    
+    // Restore config
+    [config setValue:origPolicy forKey:@"oauthClientPolicy"];
+    [config setValue:origAllowed forKey:@"oauthAllowedClientIDs"];
+}
+
+- (void)testOAuthClientPolicyAllowlistAllowsAllowedHTTPSClient {
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+    NSString *origPolicy = config.oauthClientPolicy;
+    NSArray *origAllowed = config.oauthAllowedClientIDs;
+    NSArray *origTrusted = config.oauthTrustedClientIDs;
+    
+    [config setValue:@"allowlist" forKey:@"oauthClientPolicy"];
+    [config setValue:@[@"https://allowed-client.com"] forKey:@"oauthAllowedClientIDs"];
+    [config setValue:@[@"https://allowed-client.com"] forKey:@"oauthTrustedClientIDs"];
+    
+    // Setup metadata in request to mock client validation
+    self.handler.clientMetadata = [self validATProtoClientMetadataTemplateWithClientID:@"https://allowed-client.com" redirectURI:@"https://allowed-client.com/cb"];
+    
+    XCTestExpectation *expectation = [self expectationWithDescription:@"validateClient callback"];
+    [self.handler validateClient:@"https://allowed-client.com" completion:^(NSDictionary *client, NSError *error) {
+        XCTAssertNotNil(client);
+        XCTAssertNil(error);
+        XCTAssertEqualObjects(client[@"client_id"], @"https://allowed-client.com");
+        XCTAssertEqualObjects(client[@"client_name"], @"Spec Client"); // Trusted, so not sanitized
+        [expectation fulfill];
+    }];
+    
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    
+    // Restore config
+    [config setValue:origPolicy forKey:@"oauthClientPolicy"];
+    [config setValue:origAllowed forKey:@"oauthAllowedClientIDs"];
+    [config setValue:origTrusted forKey:@"oauthTrustedClientIDs"];
+    self.handler.clientMetadata = nil;
+}
+
+- (void)testOAuthClientPolicyAllowlistAllowsDBClient {
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+    NSString *origPolicy = config.oauthClientPolicy;
+    NSArray *origAllowed = config.oauthAllowedClientIDs;
+    
+    [config setValue:@"allowlist" forKey:@"oauthClientPolicy"];
+    [config setValue:@[] forKey:@"oauthAllowedClientIDs"]; // Empty allowlist
+    
+    // "test-client" is DB-registered in setUp
+    XCTestExpectation *expectation = [self expectationWithDescription:@"validateClient callback"];
+    [self.handler validateClient:@"test-client" completion:^(NSDictionary *client, NSError *error) {
+        XCTAssertNotNil(client);
+        XCTAssertNil(error);
+        XCTAssertEqualObjects(client[@"client_id"], @"test-client");
+        [expectation fulfill];
+    }];
+    
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    
+    // Restore config
+    [config setValue:origPolicy forKey:@"oauthClientPolicy"];
+    [config setValue:origAllowed forKey:@"oauthAllowedClientIDs"];
+}
+
+- (void)testOAuthTrustedClientIDsDisplaysCustomName {
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+    NSArray *origTrusted = config.oauthTrustedClientIDs;
+    
+    [config setValue:@[@"https://trusted-client.com"] forKey:@"oauthTrustedClientIDs"];
+    
+    NSDictionary *rawClient = @{
+        @"client_id": @"https://trusted-client.com",
+        @"client_name": @"Trusted App"
+    };
+    
+    NSDictionary *sanitized = [self.handler sanitizeClientMetadataIfNeeded:rawClient clientID:@"https://trusted-client.com"];
+    XCTAssertEqualObjects(sanitized[@"client_name"], @"Trusted App", @"Trusted client should retain original client_name");
+    
+    // Restore config
+    [config setValue:origTrusted forKey:@"oauthTrustedClientIDs"];
+}
+
+- (void)testOAuthUntrustedClientIDsOverwritesCustomName {
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+    NSArray *origTrusted = config.oauthTrustedClientIDs;
+    
+    [config setValue:@[] forKey:@"oauthTrustedClientIDs"]; // Explicitly empty
+    
+    NSDictionary *rawClient = @{
+        @"client_id": @"https://untrusted-client.com",
+        @"client_name": @"Spoofed App"
+    };
+    
+    NSDictionary *sanitized = [self.handler sanitizeClientMetadataIfNeeded:rawClient clientID:@"https://untrusted-client.com"];
+    XCTAssertEqualObjects(sanitized[@"client_name"], @"https://untrusted-client.com", @"Untrusted client should have client_name overwritten with clientID");
+    
+    // Restore config
+    [config setValue:origTrusted forKey:@"oauthTrustedClientIDs"];
 }
 
 @end
