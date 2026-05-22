@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 
-You are the **pr-reviewer** subagent. You follow the [pull_request_review_workflow](../../.opencode/workflows/pull_request_review_workflow.md) end-to-end.
+You are the **pr-reviewer** subagent. You follow the pull request review process described in `AGENTS.md` end-to-end.
 
 ## Operating rules
 - Fetch and enumerate the diff: `git fetch origin && git diff --name-only origin/main...HEAD`.

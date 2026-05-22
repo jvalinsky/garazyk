@@ -6,8 +6,24 @@ title: Deployment Guide
 
 ## Local Development
 
+To start the full local ATProto services stack (PLC, PDS, Relay, AppView) inside Docker for local testing or scenario runs, use the provided setup script:
+
 ```bash
-docker compose up
+./scripts/scenarios/setup_local_network.sh
+```
+
+Alternatively, you can run the Compose file directly:
+
+```bash
+docker compose -f docker/local-network/docker-compose.yml up
+```
+
+## Standalone PDS Self-Hosting
+
+If you only want to deploy a standalone, self-hosted PDS instance, you can use the Compose configuration under `docker/pds/`:
+
+```bash
+docker compose -f docker/pds/docker-compose.yml up -d
 ```
 
 ## Production Deployment

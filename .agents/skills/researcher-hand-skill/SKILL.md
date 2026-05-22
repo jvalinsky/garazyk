@@ -206,7 +206,7 @@ Reference: Smith, J. (2024). Title of the article. *Journal Name*, 42(3), 123-14
 
 For web sources (APA):
 ```
-Author, A. A. (Year, Month Day). Title of page. Site Name. https://url
+Author, A. A. (Year, Month Day). Title of page. Site Name. https://example.com/page
 ```
 
 ### Numbered References
@@ -214,8 +214,8 @@ Author, A. A. (Year, Month Day). Title of page. Site Name. https://url
 According to recent research [1], the finding was confirmed by independent analysis [2].
 
 ## References
-1. Author (Year). Title. URL
-2. Author (Year). Title. URL
+1. Author (Year). Title. https://example.com/source1
+2. Author (Year). Title. https://example.com/source2
 ```
 
 ---
@@ -239,8 +239,8 @@ According to recent research [1], the finding was confirmed by independent analy
 - [Limitation or uncertainty]
 
 ## Sources
-1. [Source](url)
-2. [Source](url)
+1. [Source](https://example.com/source1)
+2. [Source](https://example.com/source2)
 ```
 
 ### Detailed Report

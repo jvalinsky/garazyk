@@ -136,11 +136,14 @@ Use `./scripts/run_scenarios.ts --list` for the complete auto-discovered scenari
 
 ### Stop the Network
 
+> [!WARNING]
+> Running the teardown script with `--wipe` or `-w` will **completely delete all persistent Docker volumes** associated with the local network databases (PLC, PDS, etc.), resulting in complete loss of local test account state.
+
 ```bash
-# Stop, preserve data
+# Stop, preserve data (containers stopped, volumes kept)
 ./scripts/scenarios/teardown_local_network.sh --run-id local-debug
 
-# Stop and wipe all data
+# Stop and wipe all data (containers stopped, volumes deleted)
 ./scripts/scenarios/teardown_local_network.sh --wipe --run-id local-debug
 
 # Capture diagnostics before teardown

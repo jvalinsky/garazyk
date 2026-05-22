@@ -21,11 +21,10 @@ as a local network:
 
 ## Deployment & Self-Hosting
 
-Run the Garazyk stack for testing or local development via the included Docker Compose
-configuration:
+Run the Garazyk stack for testing or local development via the included local-network setup script (which orchestrates the services under `docker/local-network/`):
 
 ```bash
-docker compose up
+./scripts/scenarios/setup_local_network.sh
 ```
 
 ### Production Deployment
