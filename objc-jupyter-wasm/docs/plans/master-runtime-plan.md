@@ -1,5 +1,8 @@
 # Master Implementation Plan: Objective-C Runtime Features
 
+> [!NOTE]
+> All phases described in this plan (Phases D-G) have been successfully completed and verified. This document remains as a historical implementation reference.
+
 ## Overview
 
 This plan outlines the next two phases of expanding the Objective-C WASM kernel's runtime
@@ -11,7 +14,7 @@ features like exceptions, protocols, and autorelease pools.
 **Goal:** Implement robust error handling and protocol conformance.
 
 - **Scratchpad:**
-  [docs/plans/scratchpad-runtime-phase-d.md](docs/plans/scratchpad-runtime-phase-d.md)
+  [scratchpad-runtime-phase-d.md](scratchpad-runtime-phase-d.md)
 - **Status:** **Completed**
 - **Decisions:**
   - Uses a `TryFrame` stack for nested exception handling.
@@ -22,7 +25,7 @@ features like exceptions, protocols, and autorelease pools.
 **Goal:** Improve language compatibility and memory management scaffolding.
 
 - **Scratchpad:**
-  [docs/plans/scratchpad-runtime-phase-e.md](docs/plans/scratchpad-runtime-phase-e.md)
+  [scratchpad-runtime-phase-e.md](scratchpad-runtime-phase-e.md)
 - **Status:** **Completed**
 
 ## Phase F: __block & Fast Enumeration
@@ -30,7 +33,7 @@ features like exceptions, protocols, and autorelease pools.
 **Goal:** Support shared state in blocks and protocol-based iteration.
 
 - **Scratchpad:**
-  [docs/plans/scratchpad-runtime-phase-f.md](docs/plans/scratchpad-runtime-phase-f.md)
+  [scratchpad-runtime-phase-f.md](scratchpad-runtime-phase-f.md)
 - **Status:** **Completed**
 - **Decisions:**
   - `__block` variables are captured by reference to the `g_ctx.vars` table.
@@ -41,7 +44,7 @@ features like exceptions, protocols, and autorelease pools.
 **Goal:** Implement dynamic dispatch patterns and Key-Value Coding.
 
 - **Scratchpad:**
-  [docs/plans/scratchpad-runtime-phase-g.md](docs/plans/scratchpad-runtime-phase-g.md)
+  [scratchpad-runtime-phase-g.md](scratchpad-runtime-phase-g.md)
 - **Status:** **Completed**
 - **Decisions:**
   - Supports `forwardInvocation:` for proxy objects.
