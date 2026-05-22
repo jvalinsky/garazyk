@@ -16,7 +16,7 @@ import type {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const basePorts = [2582, 2583, 2584, 3200, 8080, 8081];
+const basePorts = [2582, 2583, 2584, 3200, 2590, 8080, 8081];
 
 /** Build a mock EnvSource from a plain record. */
 function mockEnv(
@@ -42,8 +42,10 @@ class MockFs implements FileSystemOps {
 
 Deno.test("neededPorts: returns the base set of ports when no options are given", () => {
   const ports = neededPorts({});
-  assertEquals(ports.length, 6);
-  for (const p of basePorts) assert(ports.includes(p), `expected ${p} in ports`);
+  assertEquals(ports.length, 7);
+  for (const p of basePorts) {
+    assert(ports.includes(p), `expected ${p} in ports`);
+  }
 });
 
 Deno.test("neededPorts: adds pds2 port when withPds2 is enabled", () => {
@@ -69,7 +71,7 @@ Deno.test("neededPorts: returns a new array each time", () => {
   const b = neededPorts({});
   assertEquals(a, b);
   a.push(9999);
-  assertEquals(neededPorts({}).length, 6);
+  assertEquals(neededPorts({}).length, 7);
 });
 
 // ---------------------------------------------------------------------------
@@ -174,8 +176,14 @@ Deno.test("computeRunDir: respects ATPROTO_E2E_COMPOSE_PROJECT env override", ()
 
 Deno.test("computeRunDir: sanitizes compose project name from run ID", () => {
   const ctx = computeRunDir("test.run_2025", { env: emptyEnv });
-  assert(!ctx.composeProject.includes("."), "dots should be removed from compose project");
-  assert(!ctx.composeProject.includes("_"), "underscores should be removed from compose project");
+  assert(
+    !ctx.composeProject.includes("."),
+    "dots should be removed from compose project",
+  );
+  assert(
+    !ctx.composeProject.includes("_"),
+    "underscores should be removed from compose project",
+  );
 });
 
 Deno.test("computeRunDir: uses deterministic clock for run ID", () => {

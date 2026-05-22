@@ -162,10 +162,14 @@ export async function startLocalNetwork(
     }
 
     // Export admin credentials so scenario config picks them up
-    Deno.env.set("PDS_ADMIN_PASSWORD",
-      Deno.env.get("PDS_ADMIN_PASSWORD") ?? "admin-localdev");
-    Deno.env.set("APPVIEW_ADMIN_SECRET",
-      Deno.env.get("APPVIEW_ADMIN_SECRET") ?? "localdevadmin");
+    Deno.env.set(
+      "PDS_ADMIN_PASSWORD",
+      Deno.env.get("PDS_ADMIN_PASSWORD") ?? "admin-localdev",
+    );
+    Deno.env.set(
+      "APPVIEW_ADMIN_SECRET",
+      Deno.env.get("APPVIEW_ADMIN_SECRET") ?? "localdevadmin",
+    );
 
     if (!options.waitOnly) {
       console.log("[INFO]  Starting local network (Docker)...");
@@ -248,6 +252,16 @@ export async function startLocalNetwork(
         if (!appviewOk) {
           throw new Error("AppView failed to start within 90s");
         }
+        const uiOk = await waitForService(
+          "local-ui",
+          ctx.composeProject,
+          composeFiles[0],
+          60,
+          sharedWatcher,
+        );
+        if (!uiOk) {
+          throw new Error("garazyk-ui failed to start within 60s");
+        }
         if (options.withPds2) {
           await waitForService(
             "local-pds2",
@@ -266,10 +280,12 @@ export async function startLocalNetwork(
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
     if (isOtelEnabled() && !options.useBinary) {
-      // In standalone mode, we do not start the background stats sampler 
-      // because we cannot reliably clean up the client and interval 
+      // In standalone mode, we do not start the background stats sampler
+      // because we cannot reliably clean up the client and interval
       // across separate start/stop CLI invocations.
-      console.log("[INFO]  Container stats sampler is disabled in standalone network mode (run scenarios via hamownia runner instead)");
+      console.log(
+        "[INFO]  Container stats sampler is disabled in standalone network mode (run scenarios via hamownia runner instead)",
+      );
     }
 
     console.log("[OK]    Local network is ready!");

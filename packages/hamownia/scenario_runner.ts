@@ -111,6 +111,7 @@ export function buildDockerScenarioRunnerOptions(
   repoRoot: string,
   composeProject: string,
 ): DockerRunnerOptions {
+  const topologyName = args.topology ?? topology.preset?.name;
   return {
     repoRoot,
     composeProject,
@@ -118,18 +119,20 @@ export function buildDockerScenarioRunnerOptions(
       ? `${composeProject}_${topology.manifest.networkName}`
       : `${composeProject}_local_net`,
     internalUrls: topology.internalUrls,
-    dockerRunnerEnv: (topology.manifest as TopologyManifestV2 | undefined)?.env?.dockerRunner,
+    dockerRunnerEnv: (topology.manifest as TopologyManifestV2 | undefined)?.env
+      ?.dockerRunner,
     capabilities: topology.capabilities,
     scenarioPath: scenario.path,
     timeoutSeconds,
     roleEnvMapper: roleEnvKey,
     env: {
       ...(topology.manifest?.scenarioEnv || {}),
-      ...((topology.manifest as TopologyManifestV2 | undefined)?.env?.scenario || {}),
+      ...((topology.manifest as TopologyManifestV2 | undefined)?.env
+        ?.scenario || {}),
       ATPROTO_CLIENT_FLOW: args.clientFlow,
       ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
       ...(args.webClient ? { ATPROTO_WEB_CLIENT: args.webClient } : {}),
-      ...(args.topology ? { ATPROTO_TOPOLOGY: args.topology } : {}),
+      ...(topologyName ? { ATPROTO_TOPOLOGY: topologyName } : {}),
     },
   };
 }
@@ -146,7 +149,8 @@ function buildHostScenarioEnv(
       : "bsky.app,api.bsky.app,bsky.network,plc.directory",
   };
   if (args.webClient) env.ATPROTO_WEB_CLIENT = args.webClient;
-  if (args.topology) env.ATPROTO_TOPOLOGY = args.topology;
+  const topologyName = args.topology ?? topology.preset?.name;
+  if (topologyName) env.ATPROTO_TOPOLOGY = topologyName;
   if (topology.manifest) {
     const manifestV2 = topology.manifest as TopologyManifestV2;
     const runnerEnv = manifestV2.env?.hostRunner ||

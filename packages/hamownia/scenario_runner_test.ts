@@ -176,3 +176,25 @@ Deno.test("Docker scenario options use schemat roleEnvKey mapping", () => {
   assertEquals(options.env?.ATPROTO_WEB_CLIENT, "dashboard");
   assertEquals(options.env?.ATPROTO_TOPOLOGY, "garazyk-default");
 });
+
+Deno.test("Docker scenario options expose implicit default topology", () => {
+  const dockerArgs = args();
+  dockerArgs.runner = "docker";
+  const topo = topology();
+  topo.preset = {
+    name: "garazyk-default",
+    description: "standard local network",
+    roles: {},
+  };
+
+  const options = buildDockerScenarioRunnerOptions(
+    scenario("/repo/scripts/scenarios/scenarios/11_lab_oauth_login.ts"),
+    30,
+    dockerArgs,
+    topo,
+    "/repo",
+    "garazyk-test",
+  );
+
+  assertEquals(options.env?.ATPROTO_TOPOLOGY, "garazyk-default");
+});

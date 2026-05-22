@@ -93,7 +93,15 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
       requireCapability(Role.relay, Cap.relay.subscribeRepos),
     ],
   },
-  "11": { browserFlows: ["smoke", "login"] },
+  "11": {
+    browserFlows: ["smoke", "login"],
+    requires: [
+      requireCapability(Role.ui, Cap.ui.smoke),
+      requireCapability(Role.ui, Cap.ui.login),
+      requireCapability(Role.ui, Cap.ui.oauth),
+      requireCapability(Role.ui, Cap.ui.admin),
+    ],
+  },
   "12": {
     needsPds2: true,
     requires: [
