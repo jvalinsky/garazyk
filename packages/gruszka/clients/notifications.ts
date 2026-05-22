@@ -17,7 +17,9 @@ export class NotificationsClient {
    * @throws XrpcError if the request fails
    */
   async listNotifications(token: string, limit = 50): Promise<any> {
-    return await this.transport.get("app.bsky.notification.listNotifications", { limit }, token);
+    return await this.transport.get("app.bsky.notification.listNotifications", {
+      limit,
+    }, token);
   }
 
   /**
@@ -28,7 +30,9 @@ export class NotificationsClient {
    * @throws XrpcError if the request fails
    */
   async updateSeen(token: string, limit = 0): Promise<any> {
-    return await this.transport.post("app.bsky.notification.updateSeen", { limit }, token);
+    return await this.transport.post("app.bsky.notification.updateSeen", {
+      limit,
+    }, token);
   }
 
   /**
@@ -86,7 +90,11 @@ export class NotificationsClient {
    * @throws XrpcError if the request fails
    */
   async getNotificationPreferences(token: string): Promise<any> {
-    return await this.transport.get("app.bsky.notification.getPreferences", undefined, token);
+    return await this.transport.get(
+      "app.bsky.notification.getPreferences",
+      undefined,
+      token,
+    );
   }
 
   /**
@@ -96,7 +104,10 @@ export class NotificationsClient {
    * @returns A promise that resolves to the set preferences response
    * @throws XrpcError if the request fails
    */
-  async putNotificationPreferences(preferences: Record<string, any>, token: string): Promise<any> {
+  async putNotificationPreferences(
+    preferences: Record<string, any>,
+    token: string,
+  ): Promise<any> {
     return await this.transport.post(
       "app.bsky.notification.putPreferences",
       { priority: preferences.priority ?? false },

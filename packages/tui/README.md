@@ -62,8 +62,8 @@ for downstream terminal UI tests.
 
 ## Stability
 
-This package is currently versioned as `0.1.0-alpha.1`. Treat the exported modules above
-as the public API for this alpha release.
+This package is currently versioned as `0.1.0-alpha.1`. Treat the exported
+modules above as the public API for this alpha release.
 
 ## Repository
 

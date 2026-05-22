@@ -27,50 +27,74 @@ Deno.test("ConsoleLogger: defaults to non-verbose, non-quiet", () => {
   const log = createLogger({}, out);
   log.debug("hidden");
   log.info("visible");
-  assert(!out.lines.some((l) => l.includes("hidden")), "debug message should be suppressed");
-  assert(out.lines.some((l) => l.includes("visible")), "info message should appear");
+  assert(
+    !out.lines.some((l) => l.includes("hidden")),
+    "debug message should be suppressed",
+  );
+  assert(
+    out.lines.some((l) => l.includes("visible")),
+    "info message should appear",
+  );
 });
 
 Deno.test("ConsoleLogger: verbose enables debug output", () => {
   const out = new StringOutput();
   const log = createLogger({ verbose: true }, out);
   log.debug("debug-on");
-  assert(out.lines.some((l) => l.includes("debug-on")), "debug message should appear when verbose");
+  assert(
+    out.lines.some((l) => l.includes("debug-on")),
+    "debug message should appear when verbose",
+  );
 });
 
 Deno.test("ConsoleLogger: quiet suppresses info output", () => {
   const out = new StringOutput();
   const log = createLogger({ quiet: true }, out);
   log.info("suppressed");
-  assert(!out.lines.some((l) => l.includes("suppressed")), "info message should be suppressed when quiet");
+  assert(
+    !out.lines.some((l) => l.includes("suppressed")),
+    "info message should be suppressed when quiet",
+  );
 });
 
 Deno.test("ConsoleLogger: quiet suppresses ok output", () => {
   const out = new StringOutput();
   const log = createLogger({ quiet: true }, out);
   log.ok("hidden-ok");
-  assert(!out.lines.some((l) => l.includes("hidden-ok")), "ok message should be suppressed when quiet");
+  assert(
+    !out.lines.some((l) => l.includes("hidden-ok")),
+    "ok message should be suppressed when quiet",
+  );
 });
 
 Deno.test("ConsoleLogger: quiet suppresses warn output", () => {
   const out = new StringOutput();
   const log = createLogger({ quiet: true }, out);
   log.warn("hidden-warn");
-  assert(!out.lines.some((l) => l.includes("hidden-warn")), "warn message should be suppressed when quiet");
+  assert(
+    !out.lines.some((l) => l.includes("hidden-warn")),
+    "warn message should be suppressed when quiet",
+  );
 });
 
 Deno.test("ConsoleLogger: quiet suppresses header output", () => {
   const out = new StringOutput();
   const log = createLogger({ quiet: true }, out);
   log.header("hidden-header");
-  assert(!out.lines.some((l) => l.includes("hidden-header")), "header should be suppressed when quiet");
+  assert(
+    !out.lines.some((l) => l.includes("hidden-header")),
+    "header should be suppressed when quiet",
+  );
 });
 
 Deno.test("ConsoleLogger: error always outputs regardless of quiet mode", () => {
   const out = new StringOutput();
   const log = createLogger({ quiet: true }, out);
   log.error("critical-error");
-  assert(out.lines.some((l) => l.includes("critical-error")), "error message should always appear");
+  assert(
+    out.lines.some((l) => l.includes("critical-error")),
+    "error message should always appear",
+  );
 });
 
 Deno.test("ConsoleLogger: error always outputs in verbose mode", () => {
@@ -91,14 +115,19 @@ Deno.test("ConsoleLogger: debug suppressed when quiet is true even with verbose"
   const out = new StringOutput();
   const log = createLogger({ verbose: true, quiet: true }, out);
   log.debug("both-flags");
-  assert(!out.lines.some((l) => l.includes("both-flags")), "debug should be suppressed when quiet && verbose");
+  assert(
+    !out.lines.some((l) => l.includes("both-flags")),
+    "debug should be suppressed when quiet && verbose",
+  );
 });
 
 Deno.test("ConsoleLogger: info includes the [INFO] prefix", () => {
   const out = new StringOutput();
   const log = createLogger({}, out);
   log.info("status update");
-  assert(out.lines.some((l) => l.includes("[INFO]") && l.includes("status update")));
+  assert(
+    out.lines.some((l) => l.includes("[INFO]") && l.includes("status update")),
+  );
 });
 
 Deno.test("ConsoleLogger: ok includes the [OK] prefix", () => {

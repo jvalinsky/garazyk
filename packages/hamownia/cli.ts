@@ -13,8 +13,8 @@ export const hamowniaCommand = new Command()
   .version("1.0.0")
   .description(
     "Garazyk developer tooling.\n\n" +
-    "Manage local ATProto services, run e2e scenarios, " +
-    "start the full demo stack, smoke-test, and fuzz.",
+      "Manage local ATProto services, run e2e scenarios, " +
+      "start the full demo stack, smoke-test, and fuzz.",
   )
   .globalOption("-v, --verbose", "Enable verbose logging.")
   .globalOption("-q, --quiet", "Suppress non-error output.")

@@ -18,17 +18,25 @@ import type { BoundingBox } from "./command.ts";
 
 /** Style attributes for a single terminal cell. */
 export interface CellStyle {
-  fg: number; // ANSI color code (0-255) or -1 for default
-  bg: number; // ANSI color code (0-255) or -1 for default
+  /** ANSI foreground color code (0-255) or -1 for default. */
+  fg: number;
+  /** ANSI background color code (0-255) or -1 for default. */
+  bg: number;
+  /** Whether the text is rendered in bold. */
   bold: boolean;
+  /** Whether the text is rendered dim. */
   dim: boolean;
+  /** Whether the text and background colors are reversed. */
   reverse: boolean;
+  /** Whether the text is rendered with an underline. */
   underline: boolean;
 }
 
 /** A single cell in the screen buffer. */
 export interface Cell {
+  /** The single character or CJK character to render. */
   char: string;
+  /** The cell styling configuration. */
   style: CellStyle;
 }
 
@@ -57,11 +65,24 @@ export interface ScreenBufferOptions {
 export class ScreenBuffer {
   private cells: Cell[];
   private prevCells: Cell[];
+  /** The width of the screen buffer in character cells. */
   width: number;
+  /** The height of the screen buffer in character cells. */
   height: number;
   private noColor: boolean;
 
-  constructor(width: number, height: number, options: ScreenBufferOptions = {}) {
+  /**
+   * Creates a new virtual screen buffer.
+   *
+   * @param width The width of the buffer.
+   * @param height The height of the buffer.
+   * @param options Configuration options.
+   */
+  constructor(
+    width: number,
+    height: number,
+    options: ScreenBufferOptions = {},
+  ) {
     this.width = width;
     this.height = height;
     this.noColor = options.noColor ?? false;
@@ -272,8 +293,10 @@ export class ScreenBuffer {
 
     // Helper: only set cell if within clip
     const setIfClipped = (cx: number, cy: number, char: string) => {
-      if (cx >= clip.x && cx < clip.x + clip.width &&
-          cy >= clip.y && cy < clip.y + clip.height) {
+      if (
+        cx >= clip.x && cx < clip.x + clip.width &&
+        cy >= clip.y && cy < clip.y + clip.height
+      ) {
         this.setCell(cx, cy, { char, style: borderStyle });
       }
     };

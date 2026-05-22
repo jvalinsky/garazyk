@@ -2,10 +2,7 @@
  * Unit tests for ScenarioResult, timedCall, timedCallChecked, and unwrapOutcome.
  */
 
-import {
-  assertEquals,
-  assertInstanceOf,
-} from "@std/assert";
+import { assertEquals, assertInstanceOf } from "@std/assert";
 import {
   type ScenarioReport,
   ScenarioResult,

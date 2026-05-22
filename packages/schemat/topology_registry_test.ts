@@ -1,16 +1,16 @@
-import { assertEquals, assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
   Cap,
   DEFAULT_PORTS,
   DEFAULT_SERVICE_NAMES,
-  KNOWN_SERVICE_ROLES,
-  ROLE_ENV_REGISTRY,
-  Role,
   defaultRolePort,
   defaultServiceName,
   isExperimentalCapability,
   isExperimentalRole,
   isKnownServiceRole,
+  KNOWN_SERVICE_ROLES,
+  Role,
+  ROLE_ENV_REGISTRY,
   roleEnvKey,
   validateRoleCapability,
 } from "./topology_registry.ts";
@@ -255,7 +255,10 @@ Deno.test("isKnownServiceRole: recognizes built-in roles and rejects unknown one
   }
 
   assert(!isKnownServiceRole("unknown"), "unknown should not be a known role");
-  assert(!isKnownServiceRole("x-demo"), "experimental roles are not known built-ins");
+  assert(
+    !isKnownServiceRole("x-demo"),
+    "experimental roles are not known built-ins",
+  );
 });
 
 Deno.test("isExperimentalRole: recognizes x-roles and rejects non-matching strings", () => {
@@ -328,7 +331,10 @@ Deno.test("validateRoleCapability: allows registered capabilities for built-in r
 
 Deno.test("validateRoleCapability: permits experimental capabilities", () => {
   assertEquals(validateRoleCapability("pds", "x-demo:custom"), undefined);
-  assertEquals(validateRoleCapability("x-demo-service", "x-demo:custom"), undefined);
+  assertEquals(
+    validateRoleCapability("x-demo-service", "x-demo:custom"),
+    undefined,
+  );
 });
 
 Deno.test("validateRoleCapability: rejects invalid built-in capabilities", () => {

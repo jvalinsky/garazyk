@@ -4,17 +4,17 @@
  * @module tui/layout_engine_test
  */
 
-import { assertEquals, assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
-  computePanelGeometry,
-  overlaps,
-  contains,
-  pointInBox,
-  clipBox,
-  isValidBox,
-  translateBox,
   type BoundingBox,
+  clipBox,
+  computePanelGeometry,
+  contains,
+  isValidBox,
+  overlaps,
   type PanelLayout,
+  pointInBox,
+  translateBox,
 } from "./layout_engine.ts";
 
 Deno.test("computePanelGeometry: computes outer, inner, and scrollable areas", () => {
@@ -128,7 +128,10 @@ Deno.test("pointInBox: detects point outside box", () => {
   const box: BoundingBox = { x: 10, y: 10, width: 20, height: 20 };
 
   assert(!pointInBox(5, 5, box), "Point before box should be outside");
-  assert(!pointInBox(30, 30, box), "Point on bottom-right boundary should be outside");
+  assert(
+    !pointInBox(30, 30, box),
+    "Point on bottom-right boundary should be outside",
+  );
   assert(!pointInBox(35, 35, box), "Point after box should be outside");
 });
 
@@ -199,7 +202,12 @@ Deno.test("translateBox: handles negative offsets", () => {
 
 // ── Non-overlap property tests (using tree solver) ───────────────────────────
 
-import { dashboardLayoutTree, solveLayout, findResolvedNode, PANEL_IDS } from "./layout.ts";
+import {
+  dashboardLayoutTree,
+  findResolvedNode,
+  PANEL_IDS,
+  solveLayout,
+} from "./layout.ts";
 
 /**
  * Helper: assert that no two panels in a resolved layout overlap.
@@ -212,7 +220,9 @@ function assertNoPanelOverlap(cols: number, rows: number): void {
   assert(tree !== null, `Expected non-null tree for ${cols}x${rows}`);
   const layout = solveLayout(tree, { x: 0, y: 0, width: cols, height: rows });
 
-  const panels = PANEL_IDS.map((id) => findResolvedNode(layout, id)!).filter(Boolean);
+  const panels = PANEL_IDS.map((id) => findResolvedNode(layout, id)!).filter(
+    Boolean,
+  );
   for (let i = 0; i < panels.length; i++) {
     for (let j = i + 1; j < panels.length; j++) {
       const p1 = panels[i]!;
@@ -291,6 +301,6 @@ Deno.test("non-overlap: returns null for tiny terminal", () => {
 // Boundary between wide and narrow
 
 Deno.test("non-overlap: layout at wide threshold boundary (99 vs 100 cols)", () => {
-  assertNoPanelOverlap(99, 24);  // narrow
+  assertNoPanelOverlap(99, 24); // narrow
   assertNoPanelOverlap(100, 24); // wide
 });

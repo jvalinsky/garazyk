@@ -12,14 +12,14 @@
  * @module lexicon_resolution
  */
 
-import { assertEquals, assert, assertFalse } from "jsr:@std/assert";
+import { assert, assertEquals, assertFalse } from "jsr:@std/assert";
 import { resolveLexicon } from "./mod.ts";
 import {
   DenoDnsResolver,
   HttpDidResolver,
   HttpRecordFetcher,
 } from "./adapters.ts";
-import { InMemoryCache, DiskCache } from "./cache.ts";
+import { DiskCache, InMemoryCache } from "./cache.ts";
 import type { DidDocument, LexiconDoc, ResolutionError } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -62,13 +62,26 @@ function makeRealPorts() {
  * and correctly typed.
  */
 function assertValidLexicon(doc: LexiconDoc, expectedId: string): void {
-  assertEquals(doc.id, expectedId, `Lexicon id should match the requested NSID`);
-  assertEquals(typeof doc.lexicon, "number", "lexicon version should be a number");
+  assertEquals(
+    doc.id,
+    expectedId,
+    `Lexicon id should match the requested NSID`,
+  );
+  assertEquals(
+    typeof doc.lexicon,
+    "number",
+    "lexicon version should be a number",
+  );
   assert(doc.lexicon >= 1, "lexicon version should be >= 1");
-  assert(typeof doc.defs === "object" && doc.defs !== null, "defs should be a non-null object");
+  assert(
+    typeof doc.defs === "object" && doc.defs !== null,
+    "defs should be a non-null object",
+  );
   assert("main" in doc.defs, "lexicon should have a main definition");
   assert(
-    ["query", "procedure", "record", "token", "subscription"].includes(doc.defs.main.type),
+    ["query", "procedure", "record", "token", "subscription"].includes(
+      doc.defs.main.type,
+    ),
     `main.type should be a valid definition type, got: ${doc.defs.main.type}`,
   );
 }
@@ -84,18 +97,27 @@ Deno.test({
     if (!shouldRunIntegration()) return;
     const result = await resolveLexicon("app.bsky.feed.post", makeRealPorts());
 
-    assert(result.ok, `Expected resolution to succeed, got: ${
-      result.ok ? "" : `${result.error.type}: ${JSON.stringify(result.error)}`
-    }`);
+    assert(
+      result.ok,
+      `Expected resolution to succeed, got: ${
+        result.ok ? "" : `${result.error.type}: ${JSON.stringify(result.error)}`
+      }`,
+    );
 
     assertValidLexicon(result.value, "app.bsky.feed.post");
 
     // app.bsky.feed.post should be a record type.
-    assertEquals(result.value.defs.main.type, "record",
-      "app.bsky.feed.post should be a record type");
+    assertEquals(
+      result.value.defs.main.type,
+      "record",
+      "app.bsky.feed.post should be a record type",
+    );
 
     // The record should have a schema with a properties block.
-    assert(result.value.defs.main.record, "record definition should have a record schema");
+    assert(
+      result.value.defs.main.record,
+      "record definition should have a record schema",
+    );
   },
 });
 
@@ -104,21 +126,31 @@ Deno.test({
 // =============================================================================
 
 Deno.test({
-  name: "integration: resolve com.atproto.repo.createRecord through real adapters",
+  name:
+    "integration: resolve com.atproto.repo.createRecord through real adapters",
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
-    const result = await resolveLexicon("com.atproto.repo.createRecord", makeRealPorts());
+    const result = await resolveLexicon(
+      "com.atproto.repo.createRecord",
+      makeRealPorts(),
+    );
 
-    assert(result.ok, `Expected resolution to succeed, got: ${
-      result.ok ? "" : `${result.error.type}: ${JSON.stringify(result.error)}`
-    }`);
+    assert(
+      result.ok,
+      `Expected resolution to succeed, got: ${
+        result.ok ? "" : `${result.error.type}: ${JSON.stringify(result.error)}`
+      }`,
+    );
 
     assertValidLexicon(result.value, "com.atproto.repo.createRecord");
 
     // com.atproto.repo.createRecord should be a procedure type.
-    assertEquals(result.value.defs.main.type, "procedure",
-      "com.atproto.repo.createRecord should be a procedure type");
+    assertEquals(
+      result.value.defs.main.type,
+      "procedure",
+      "com.atproto.repo.createRecord should be a procedure type",
+    );
   },
 });
 
@@ -131,19 +163,30 @@ Deno.test({
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
-    const result = await resolveLexicon("com.atproto.repo.getRecord", makeRealPorts());
+    const result = await resolveLexicon(
+      "com.atproto.repo.getRecord",
+      makeRealPorts(),
+    );
 
-    assert(result.ok, `Expected resolution to succeed, got: ${
-      result.ok ? "" : `${result.error.type}: ${JSON.stringify(result.error)}`
-    }`);
+    assert(
+      result.ok,
+      `Expected resolution to succeed, got: ${
+        result.ok ? "" : `${result.error.type}: ${JSON.stringify(result.error)}`
+      }`,
+    );
 
     assertValidLexicon(result.value, "com.atproto.repo.getRecord");
 
     // com.atproto.repo.getRecord should be a query type with parameters.
-    assertEquals(result.value.defs.main.type, "query",
-      "com.atproto.repo.getRecord should be a query type");
-    assert(result.value.defs.main.parameters,
-      "com.atproto.repo.getRecord should have query parameters");
+    assertEquals(
+      result.value.defs.main.type,
+      "query",
+      "com.atproto.repo.getRecord should be a query type",
+    );
+    assert(
+      result.value.defs.main.parameters,
+      "com.atproto.repo.getRecord should have query parameters",
+    );
   },
 });
 
@@ -157,7 +200,10 @@ Deno.test({
   fn: async () => {
     if (!shouldRunIntegration()) return;
     // A namespace that almost certainly has no _lexicon DNS record.
-    const result = await resolveLexicon("com.nonexistent.integration.test", makeRealPorts());
+    const result = await resolveLexicon(
+      "com.nonexistent.integration.test",
+      makeRealPorts(),
+    );
 
     assertFalse(result.ok);
 
@@ -198,12 +244,21 @@ Deno.test({
     assert(first.ok, "first resolution should succeed");
     assert(second.ok, "second resolution should succeed");
 
-    assertEquals(first.value.id, second.value.id,
-      "same NSID should resolve to the same lexicon id");
-    assertEquals(first.value.lexicon, second.value.lexicon,
-      "same NSID should return the same lexicon version");
-    assertEquals(first.value.defs.main.type, second.value.defs.main.type,
-      "same NSID should return the same main definition type");
+    assertEquals(
+      first.value.id,
+      second.value.id,
+      "same NSID should resolve to the same lexicon id",
+    );
+    assertEquals(
+      first.value.lexicon,
+      second.value.lexicon,
+      "same NSID should return the same lexicon version",
+    );
+    assertEquals(
+      first.value.defs.main.type,
+      second.value.defs.main.type,
+      "same NSID should return the same main definition type",
+    );
   },
 });
 
@@ -236,13 +291,23 @@ Deno.test({
       for await (const entry of Deno.readDir(`${tmpDir}/lexicons`)) {
         entries1.push(entry);
       }
-      assert(entries1.length >= 1, "DiskCache should write at least one entry after first resolution");
-      assert(entries1.some((e) => e.isFile), "Cache directory should contain files");
+      assert(
+        entries1.length >= 1,
+        "DiskCache should write at least one entry after first resolution",
+      );
+      assert(
+        entries1.some((e) => e.isFile),
+        "Cache directory should contain files",
+      );
 
       // Second resolution: cache hit, returns from disk without network.
       const r2 = await resolveLexicon("app.bsky.feed.post", ports);
       assert(r2.ok);
-      assertEquals(r2.value.id, r1.value.id, "disk-cached resolution should return same lexicon");
+      assertEquals(
+        r2.value.id,
+        r1.value.id,
+        "disk-cached resolution should return same lexicon",
+      );
       assertEquals(r2.value.lexicon, r1.value.lexicon);
       assertEquals(r2.value.defs.main.type, r1.value.defs.main.type);
     } finally {

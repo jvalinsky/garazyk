@@ -4,8 +4,21 @@
  * @module tui/renderer_test
  */
 
-import { assertEquals, assert } from "@std/assert";
-import { ScreenBuffer, DEFAULT_STYLE, RESET, ANSI, fg, bg, bold, dim, getCurrentTheme, reverse, underline, mergeStyles } from "./renderer.ts";
+import { assert, assertEquals } from "@std/assert";
+import {
+  ANSI,
+  bg,
+  bold,
+  DEFAULT_STYLE,
+  dim,
+  fg,
+  getCurrentTheme,
+  mergeStyles,
+  RESET,
+  reverse,
+  ScreenBuffer,
+  underline,
+} from "./renderer.ts";
 
 Deno.test("ScreenBuffer: setCell and getCell", () => {
   const buf = new ScreenBuffer(10, 5);
@@ -287,7 +300,10 @@ Deno.test("Encoding: preserved backgrounds are emitted in diff output", () => {
   // Clear prev state so diff sees all cells
   const output = buf.diff();
   // The text cell should have bg:8 encoded
-  assert(output.includes("48;5;8"), `Expected 48;5;8 in diff output, got: ${output}`);
+  assert(
+    output.includes("48;5;8"),
+    `Expected 48;5;8 in diff output, got: ${output}`,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -301,7 +317,10 @@ Deno.test("Encoding: reverse video produces '7' in escape sequence", () => {
   const output = buf.diff();
   // The escape sequence should contain \x1b[...7...m (reverse video)
   // deno-lint-ignore no-control-regex
-  assert(output.match(/\x1b\[[0-9;]*7[0-9;]*m/), `Expected reverse video (7) in: ${JSON.stringify(output)}`);
+  assert(
+    output.match(/\x1b\[[0-9;]*7[0-9;]*m/),
+    `Expected reverse video (7) in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: reverse video with foreground color", () => {
@@ -310,9 +329,15 @@ Deno.test("Encoding: reverse video with foreground color", () => {
   buf.setCell(0, 0, { char: "R", style });
   const output = buf.diff();
   // Should have both color and reverse
-  assert(output.includes("32"), `Expected green fg (32) in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("32"),
+    `Expected green fg (32) in: ${JSON.stringify(output)}`,
+  );
   // deno-lint-ignore no-control-regex
-  assert(output.match(/\x1b\[[0-9;]*7[0-9;]*m/), `Expected reverse (7) in: ${JSON.stringify(output)}`);
+  assert(
+    output.match(/\x1b\[[0-9;]*7[0-9;]*m/),
+    `Expected reverse (7) in: ${JSON.stringify(output)}`,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -325,7 +350,10 @@ Deno.test("Encoding: underline produces '4' in escape sequence", () => {
   buf.setCell(0, 0, { char: "U", style });
   const output = buf.diff();
   // deno-lint-ignore no-control-regex
-  assert(output.match(/\x1b\[[0-9;]*4[0-9;]*m/), `Expected underline (4) in: ${JSON.stringify(output)}`);
+  assert(
+    output.match(/\x1b\[[0-9;]*4[0-9;]*m/),
+    `Expected underline (4) in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: underline combined with bold", () => {
@@ -333,9 +361,15 @@ Deno.test("Encoding: underline combined with bold", () => {
   const style = { ...DEFAULT_STYLE, underline: true, bold: true };
   buf.setCell(0, 0, { char: "U", style });
   const output = buf.diff();
-  assert(output.includes("1"), `Expected bold (1) in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("1"),
+    `Expected bold (1) in: ${JSON.stringify(output)}`,
+  );
   // deno-lint-ignore no-control-regex
-  assert(output.match(/\x1b\[[0-9;]*4[0-9;]*m/), `Expected underline (4) in: ${JSON.stringify(output)}`);
+  assert(
+    output.match(/\x1b\[[0-9;]*4[0-9;]*m/),
+    `Expected underline (4) in: ${JSON.stringify(output)}`,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -380,28 +414,40 @@ Deno.test("Encoding: bg color 0 (black) uses 48;5;0", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: bg(0) });
   const output = buf.diff();
-  assert(output.includes("48;5;0"), `Expected 48;5;0 in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("48;5;0"),
+    `Expected 48;5;0 in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: bg color 1 (red) uses 48;5;1", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: bg(1) });
   const output = buf.diff();
-  assert(output.includes("48;5;1"), `Expected 48;5;1 in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("48;5;1"),
+    `Expected 48;5;1 in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: bg color 7 (white) uses 48;5;7", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: bg(7) });
   const output = buf.diff();
-  assert(output.includes("48;5;7"), `Expected 48;5;7 in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("48;5;7"),
+    `Expected 48;5;7 in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: bg color 4 (blue) uses 48;5;4", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: bg(4) });
   const output = buf.diff();
-  assert(output.includes("48;5;4"), `Expected 48;5;4 in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("48;5;4"),
+    `Expected 48;5;4 in: ${JSON.stringify(output)}`,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -413,26 +459,47 @@ Deno.test("Encoding: bright foreground (8-15) uses standard ANSI + bold trick", 
   buf.setCell(0, 0, { char: "X", style: fg(10) }); // BRIGHT_GREEN
   const output = buf.diff();
   // Bright green = fg color 2 (green) + bold: 32 + 1
-  assert(output.includes("32"), `Expected 32 (green) in: ${JSON.stringify(output)}`);
-  assert(output.includes("1"), `Expected bold trick (1) in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("32"),
+    `Expected 32 (green) in: ${JSON.stringify(output)}`,
+  );
+  assert(
+    output.includes("1"),
+    `Expected bold trick (1) in: ${JSON.stringify(output)}`,
+  );
   // Should NOT use 38;5;10 for colors < 16
-  assert(!output.includes("38;5"), `Expected no 38;5 for fg < 16 in: ${JSON.stringify(output)}`);
+  assert(
+    !output.includes("38;5"),
+    `Expected no 38;5 for fg < 16 in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: bright magenta (13) uses magenta + bold", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: fg(13) }); // BRIGHT_MAGENTA
   const output = buf.diff();
-  assert(output.includes("35"), `Expected 35 (magenta) in: ${JSON.stringify(output)}`);
-  assert(output.includes("1"), `Expected bold trick (1) in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("35"),
+    `Expected 35 (magenta) in: ${JSON.stringify(output)}`,
+  );
+  assert(
+    output.includes("1"),
+    `Expected bold trick (1) in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: bright white (15) uses white + bold", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: fg(15) }); // BRIGHT_WHITE
   const output = buf.diff();
-  assert(output.includes("37"), `Expected 37 (white) in: ${JSON.stringify(output)}`);
-  assert(output.includes("1"), `Expected bold trick (1) in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("37"),
+    `Expected 37 (white) in: ${JSON.stringify(output)}`,
+  );
+  assert(
+    output.includes("1"),
+    `Expected bold trick (1) in: ${JSON.stringify(output)}`,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -443,14 +510,20 @@ Deno.test("Encoding: 256-color foreground (16+) uses 38;5;N", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: fg(42) });
   const output = buf.diff();
-  assert(output.includes("38;5;42"), `Expected 38;5;42 in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("38;5;42"),
+    `Expected 38;5;42 in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: 256-color foreground at boundary (16)", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: fg(16) });
   const output = buf.diff();
-  assert(output.includes("38;5;16"), `Expected 38;5;16 in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("38;5;16"),
+    `Expected 38;5;16 in: ${JSON.stringify(output)}`,
+  );
 });
 
 Deno.test("Encoding: 256-color foreground at boundary (15 uses standard)", () => {
@@ -458,8 +531,14 @@ Deno.test("Encoding: 256-color foreground at boundary (15 uses standard)", () =>
   buf.setCell(0, 0, { char: "X", style: fg(15) }); // exactly 15 = last standard
   const output = buf.diff();
   // Should use standard ANSI, not 256-color
-  assert(output.includes("37"), `Expected 37 (white) in: ${JSON.stringify(output)}`);
-  assert(!output.includes("38;5"), `Expected no 38;5 for fg=15 in: ${JSON.stringify(output)}`);
+  assert(
+    output.includes("37"),
+    `Expected 37 (white) in: ${JSON.stringify(output)}`,
+  );
+  assert(
+    !output.includes("38;5"),
+    `Expected no 38;5 for fg=15 in: ${JSON.stringify(output)}`,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -489,8 +568,10 @@ Deno.test("Encoding: final cell with non-default style has trailing reset", () =
   buf.setCell(0, 0, { char: "X", style: fg(ANSI.RED) });
   const output = buf.diff();
   // Output should end with RESET (\x1b[0m)
-  assert(output.endsWith(RESET) || output.includes(RESET),
-    `Expected trailing reset, got: ${JSON.stringify(output)}`);
+  assert(
+    output.endsWith(RESET) || output.includes(RESET),
+    `Expected trailing reset, got: ${JSON.stringify(output)}`,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -527,7 +608,10 @@ Deno.test("Encoding: dim + underline + bg produces correct sequence", () => {
 Deno.test("Encoding: fullRedraw produces valid ANSI for styled cells", () => {
   const buf = new ScreenBuffer(10, 3);
   buf.setCell(0, 0, { char: "X", style: fg(ANSI.GREEN) });
-  buf.setCell(1, 0, { char: "Y", style: { ...DEFAULT_STYLE, fg: ANSI.RED, bold: true } });
+  buf.setCell(1, 0, {
+    char: "Y",
+    style: { ...DEFAULT_STYLE, fg: ANSI.RED, bold: true },
+  });
   const output = buf.fullRedraw();
   assert(output.length > 0);
   assert(output.includes("X"));
