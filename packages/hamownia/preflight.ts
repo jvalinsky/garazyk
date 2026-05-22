@@ -163,6 +163,12 @@ const PDS2_PROBE: HealthProbe = {
   timeoutSeconds: 5,
 };
 
+const UI_PROBE: HealthProbe = {
+  key: "ui",
+  path: "/lab",
+  timeoutSeconds: 5,
+};
+
 /** Verify that all expected ATProto services respond to health probes.
  *
  * Intended for --no-setup runs where the network is expected to already be
@@ -170,6 +176,7 @@ const PDS2_PROBE: HealthProbe = {
  */
 export async function verifyNetworkHealth(opts: {
   withPds2?: boolean;
+  withUi?: boolean;
 }): Promise<void> {
   const appviewAdminSecret = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
     "localdevadmin";
@@ -182,6 +189,7 @@ export async function verifyNetworkHealth(opts: {
       : probe
   );
   if (opts.withPds2) probes.push(PDS2_PROBE);
+  if (opts.withUi) probes.push(UI_PROBE);
 
   console.log(yellow("\n[PREFLIGHT] Verifying network health..."));
   let allOk = true;
@@ -222,9 +230,12 @@ export async function runPreflight(options: {
   noSetup?: boolean;
 }): Promise<void> {
   await checkHostPorts({ withPds2: options.withPds2 });
+  const withUi = options.selectedScenarios.some((scenario) =>
+    scenario.requires.some((req) => req.role === "ui")
+  );
 
   if (options.noSetup) {
-    await verifyNetworkHealth({ withPds2: options.withPds2 });
+    await verifyNetworkHealth({ withPds2: options.withPds2, withUi });
   }
 
   if (!options.useBinary) {

@@ -86,6 +86,7 @@ export function neededPorts(
     SERVICE_PORTS.pds,
     SERVICE_PORTS.relay,
     SERVICE_PORTS.appview,
+    SERVICE_PORTS.ui,
     8080,
     8081,
   ];
@@ -187,7 +188,8 @@ function sanitizeRunId(id: string): string {
 }
 
 function defaultRunId(proc: ProcessInfo, clock: ClockSource): string {
-  const ts = new Date(clock.now()).toISOString().replace(/[:.]/g, "").slice(0, 15) + "Z";
+  const ts =
+    new Date(clock.now()).toISOString().replace(/[:.]/g, "").slice(0, 15) + "Z";
   return `${ts}-${proc.pid}`;
 }
 
