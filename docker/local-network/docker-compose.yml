@@ -18,9 +18,9 @@ services:
       - local_plc_data:/var/lib/atprotopds
     environment:
       - TZ=UTC
-      - PLC_HOURLY_LIMIT=500
-      - PLC_DAILY_LIMIT=1000
-      - PLC_WEEKLY_LIMIT=5000
+      - PLC_HOURLY_LIMIT=5
+      - PLC_DAILY_LIMIT=10
+      - PLC_WEEKLY_LIMIT=50
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2582/_health"]
       interval: 5s
@@ -51,7 +51,11 @@ services:
       - PDS_ALLOW_HTTP=1
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
-      - PDS_RATELIMIT_ENABLED=false
+      - PDS_RATELIMIT_ENABLED=true
+      - PDS_RATELIMIT_DID_LIMIT=60
+      - PDS_RATELIMIT_DID_WINDOW=60
+      - PDS_FIREHOSE_MAX_PENDING_SENDS=1
+      - PDS_FIREHOSE_MAX_PENDING_BYTES=10000
       - PDS_HANDLE_RESOLVE_LIMIT=10000
       - PDS_DATA_DIR=/var/lib/atprotopds
       - PDS_PLC_KEYS_DIR=/var/lib/atprotopds/keys
@@ -212,6 +216,9 @@ services:
       - MIKRUS_RELAY_URLS=ws://local-relay:2584
       - MIKRUS_DATA_DIR=/var/lib/atprotopds
       - MIKRUS_HTTP_PORT=3210
+      - MIKRUS_RATELIMIT_ENABLED=true
+      - MIKRUS_RATELIMIT_IP_LIMIT=200
+      - MIKRUS_RATELIMIT_IP_WINDOW=60
     depends_on:
       local-relay:
         condition: service_healthy
