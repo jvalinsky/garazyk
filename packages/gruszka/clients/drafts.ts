@@ -17,7 +17,11 @@ export class DraftsClient {
    * @throws XrpcError if the request fails
    */
   async createDraft(content: Record<string, any>, token: string): Promise<any> {
-    return await this.transport.post("app.bsky.draft.createDraft", { content }, token);
+    return await this.transport.post(
+      "app.bsky.draft.createDraft",
+      { content },
+      token,
+    );
   }
 
   /**
@@ -28,7 +32,11 @@ export class DraftsClient {
    * @returns A promise that resolves to the update response
    * @throws XrpcError if the request fails
    */
-  async updateDraft(draftId: string, content: Record<string, any>, token: string): Promise<any> {
+  async updateDraft(
+    draftId: string,
+    content: Record<string, any>,
+    token: string,
+  ): Promise<any> {
     return await this.transport.post(
       "app.bsky.draft.updateDraft",
       { id: draftId, content },
@@ -43,7 +51,11 @@ export class DraftsClient {
    * @throws XrpcError if the request fails
    */
   async getDrafts(token: string): Promise<any> {
-    return await this.transport.get("app.bsky.draft.getDrafts", undefined, token);
+    return await this.transport.get(
+      "app.bsky.draft.getDrafts",
+      undefined,
+      token,
+    );
   }
 
   /**
@@ -54,6 +66,8 @@ export class DraftsClient {
    * @throws XrpcError if the request fails
    */
   async deleteDraft(draftId: string, token: string): Promise<any> {
-    return await this.transport.post("app.bsky.draft.deleteDraft", { id: draftId }, token);
+    return await this.transport.post("app.bsky.draft.deleteDraft", {
+      id: draftId,
+    }, token);
   }
 }

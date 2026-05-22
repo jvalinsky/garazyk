@@ -33,7 +33,11 @@ export class RecordsClient {
       validate: options.validate ?? true,
     };
     if (options.rkey) body.rkey = options.rkey;
-    return await this.transport.post("com.atproto.repo.createRecord", body, token);
+    return await this.transport.post(
+      "com.atproto.repo.createRecord",
+      body,
+      token,
+    );
   }
 
   /**
@@ -44,7 +48,11 @@ export class RecordsClient {
    * @returns A promise that resolves to the record
    * @throws XrpcError if the request fails
    */
-  async getRecord(repo: string, collection: string, rkey: string): Promise<any> {
+  async getRecord(
+    repo: string,
+    collection: string,
+    rkey: string,
+  ): Promise<any> {
     return await this.transport.get("com.atproto.repo.getRecord", {
       repo,
       collection,
@@ -61,7 +69,12 @@ export class RecordsClient {
    * @returns A promise that resolves to the deletion response
    * @throws XrpcError if the request fails
    */
-  async deleteRecord(repo: string, collection: string, rkey: string, token: string): Promise<any> {
+  async deleteRecord(
+    repo: string,
+    collection: string,
+    rkey: string,
+    token: string,
+  ): Promise<any> {
     return await this.transport.post(
       "com.atproto.repo.deleteRecord",
       { repo, collection, rkey },
@@ -121,7 +134,11 @@ export class RecordsClient {
    * @returns A promise that resolves to the batch write response
    * @throws XrpcError if the request fails
    */
-  async applyWrites(repo: string, writes: Array<Record<string, any>>, token: string): Promise<any> {
+  async applyWrites(
+    repo: string,
+    writes: Array<Record<string, any>>,
+    token: string,
+  ): Promise<any> {
     return await this.transport.post(
       "com.atproto.repo.applyWrites",
       { repo, writes },

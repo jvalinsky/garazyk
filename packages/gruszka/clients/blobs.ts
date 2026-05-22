@@ -19,7 +19,16 @@ export class BlobsClient {
    * @returns A promise that resolves to the blob upload response
    * @throws XrpcError if the request fails
    */
-  async uploadBlob(data: Uint8Array, contentType: string, token: string): Promise<any> {
-    return await this.transport.postBinary("com.atproto.repo.uploadBlob", data, contentType, token);
+  async uploadBlob(
+    data: Uint8Array,
+    contentType: string,
+    token: string,
+  ): Promise<any> {
+    return await this.transport.postBinary(
+      "com.atproto.repo.uploadBlob",
+      data,
+      contentType,
+      token,
+    );
   }
 }

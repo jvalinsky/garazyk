@@ -32,7 +32,9 @@ function bucket(documented: number, total: number) {
   return {
     documented,
     total,
-    percent: total === 0 ? 100 : Number(((documented / total) * 100).toFixed(2)),
+    percent: total === 0
+      ? 100
+      : Number(((documented / total) * 100).toFixed(2)),
   };
 }
 
@@ -140,7 +142,11 @@ Deno.test("buildReport groups totals by file and sorts file buckets lexicographi
 
   const report = buildReport(items, []);
 
-  assertEquals(Object.keys(report.byFile), ["src/a.ts", "src/m.ts", "src/z.ts"]);
+  assertEquals(Object.keys(report.byFile), [
+    "src/a.ts",
+    "src/m.ts",
+    "src/z.ts",
+  ]);
   assertEquals(report.byFile["src/a.ts"], bucket(0, 2));
   assertEquals(report.byFile["src/m.ts"], bucket(1, 1));
   assertEquals(report.byFile["src/z.ts"], bucket(1, 1));
@@ -154,7 +160,9 @@ Deno.test("buildReport keeps missing items in the report with their full item da
 
   const report = buildReport(items, []);
 
-  assertEquals(report.missing, [mkItem("function", "missing", "src/keep.ts", 2, false)]);
+  assertEquals(report.missing, [
+    mkItem("function", "missing", "src/keep.ts", 2, false),
+  ]);
   assertEquals(report.missing[0], items[1]);
 });
 

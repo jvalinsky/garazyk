@@ -188,7 +188,7 @@ export class FirehoseClient {
     signal?: AbortSignal,
   ): Promise<void> {
     const url = new URL(`${this.wsUrl}/xrpc/com.atproto.sync.subscribeRepos`);
-    
+
     // Use explicit cursor, or fallback to the last tracked sequence
     const effectiveCursor = cursor ?? this.lastSeq;
     if (effectiveCursor !== undefined) {

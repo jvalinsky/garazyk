@@ -12,14 +12,8 @@
  * @module lexicon_resolution
  */
 
-import type {
-  Did,
-  DidDocument,
-  Domain,
-  LexiconDoc,
-  Result,
-} from "./types.ts";
-import type { DnsResolver, DidResolver, RecordFetcher } from "./ports.ts";
+import type { Did, DidDocument, Domain, LexiconDoc, Result } from "./types.ts";
+import type { DidResolver, DnsResolver, RecordFetcher } from "./ports.ts";
 
 // ---------------------------------------------------------------------------
 // Cache entry

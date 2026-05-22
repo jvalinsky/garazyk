@@ -145,7 +145,7 @@ export function countDocumentation(content: string): Counts {
     // @interface ClassName(Category)
     const categoryMatch = line.match(/^@interface\s+\w+\s*\(/);
     if (categoryMatch) {
-      const documented = (i - lastCommentStartLine <= 10);
+      const documented = i - lastCommentStartLine <= 10;
       results.categories.total++;
       if (documented) results.categories.documented++;
       continue;
@@ -155,7 +155,7 @@ export function countDocumentation(content: string): Counts {
     const interfaceMatch = line.match(/^@interface\s+(\w+)\s*[:{<]/);
     if (interfaceMatch) {
       currentInterface = interfaceMatch[1];
-      const documented = (i - lastCommentStartLine <= 10);
+      const documented = i - lastCommentStartLine <= 10;
       results.classes.total++;
       if (documented) results.classes.documented++;
       continue;
@@ -170,7 +170,7 @@ export function countDocumentation(content: string): Counts {
     // @protocol ProtocolName
     const protocolMatch = line.match(/^@protocol\s+(\w+)/);
     if (protocolMatch) {
-      const documented = (i - lastCommentStartLine <= 10);
+      const documented = i - lastCommentStartLine <= 10;
       results.protocols.total++;
       if (documented) results.protocols.documented++;
       continue;
@@ -178,7 +178,7 @@ export function countDocumentation(content: string): Counts {
 
     // @property (readonly) type name;
     if (line.startsWith("@property")) {
-      const documented = (i - lastCommentStartLine <= 5);
+      const documented = i - lastCommentStartLine <= 5;
       results.properties.total++;
       if (documented) results.properties.documented++;
       continue;
@@ -186,7 +186,7 @@ export function countDocumentation(content: string): Counts {
 
     // - (void)methodName:(type)arg;
     if (/^[+-]\s*\(/.test(line)) {
-      const documented = (i - lastCommentStartLine <= 10);
+      const documented = i - lastCommentStartLine <= 10;
       results.methods.total++;
       if (documented) results.methods.documented++;
       continue;
@@ -194,7 +194,7 @@ export function countDocumentation(content: string): Counts {
 
     // typedef NS_ENUM(type, name) { ... }
     if (line.includes("NS_ENUM") || line.includes("NS_OPTIONS")) {
-      const documented = (i - lastCommentStartLine <= 10);
+      const documented = i - lastCommentStartLine <= 10;
       results.enums.total++;
       if (documented) results.enums.documented++;
       continue;

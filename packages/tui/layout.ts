@@ -7,31 +7,23 @@
  * @module tui/layout
  */
 
-export type {
-  PanelId,
-  PanelLayout,
-} from "./layout_engine.ts";
+export type { PanelId, PanelLayout } from "./layout_engine.ts";
 
-export {
-  PANEL_IDS,
-  PANEL_TITLES,
-} from "./layout_engine.ts";
+export { PANEL_IDS, PANEL_TITLES } from "./layout_engine.ts";
 
-export {
-  dashboardLayoutTree,
-} from "./dashboard_layout.ts";
+export { dashboardLayoutTree } from "./dashboard_layout.ts";
 
 export type {
+  Direction,
   LayoutNode,
   ResolvedNode,
-  Direction,
   Sizing,
 } from "./layout_tree.ts";
 
 export {
-  solveLayout,
   findResolvedNode,
   flattenResolvedNodes,
+  solveLayout,
 } from "./layout_tree.ts";
 
 import type { ResolvedNode } from "./layout_tree.ts";
@@ -66,7 +58,10 @@ export function panelContentArea(node: ResolvedNode): {
  * @param id - The panel ID to search for
  * @returns The found node or undefined
  */
-export function findPanel(root: ResolvedNode, id: string): ResolvedNode | undefined {
+export function findPanel(
+  root: ResolvedNode,
+  id: string,
+): ResolvedNode | undefined {
   if (root.id === id) return root;
   for (const child of root.children) {
     const found = findPanel(child, id);

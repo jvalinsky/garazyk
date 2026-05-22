@@ -291,7 +291,8 @@ export function verifyRecord(
     error: {
       type: "RecordVerificationFailed",
       nsid,
-      reason: `Lexicon id "${lexicon.id}" does not match requested NSID "${nsid}"`,
+      reason:
+        `Lexicon id "${lexicon.id}" does not match requested NSID "${nsid}"`,
     },
   };
 }

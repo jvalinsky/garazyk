@@ -1,7 +1,14 @@
 import { Command } from "@cliffy/command";
 import { join } from "@std/path";
 import { repoRoot } from "@garazyk/schemat/runtime";
-import { initLogger, logError, logInfo, logOk, logHeader, logWarn } from "@garazyk/schemat";
+import {
+  initLogger,
+  logError,
+  logHeader,
+  logInfo,
+  logOk,
+  logWarn,
+} from "@garazyk/schemat";
 
 interface FuzzCommonOptions {
   verbose?: boolean;
@@ -18,11 +25,17 @@ interface FuzzRunOptions extends FuzzCommonOptions {
 
 const runCmd = new Command()
   .description("Run a specific fuzzer.")
-  .option("-f, --fuzzer <name:string>", "Fuzzer to run.", { default: "fuzz_jwt" })
-  .option("-c, --corpus <dir:string>", "Corpus directory.", { default: "fuzzing/corpus" })
+  .option("-f, --fuzzer <name:string>", "Fuzzer to run.", {
+    default: "fuzz_jwt",
+  })
+  .option("-c, --corpus <dir:string>", "Corpus directory.", {
+    default: "fuzzing/corpus",
+  })
   .option("-r, --runs <n:string>", "Max number of runs.", { default: "100000" })
   .option("-j, --jobs <n:string>", "Number of parallel jobs.", { default: "4" })
-  .option("-o, --output <dir:string>", "Output directory.", { default: "fuzzing/results" })
+  .option("-o, --output <dir:string>", "Output directory.", {
+    default: "fuzzing/results",
+  })
   .action(async (options: FuzzRunOptions) => {
     const { verbose, quiet } = options;
     const fuzzer = options.fuzzer ?? "fuzz_jwt";
@@ -47,7 +60,9 @@ const runCmd = new Command()
       await Deno.stat(binaryPath);
     } catch {
       logError(`Fuzzer binary not found: ${binaryPath}`);
-      logInfo('Build it first with: cmake --build build --target <fuzzer_name>');
+      logInfo(
+        "Build it first with: cmake --build build --target <fuzzer_name>",
+      );
       Deno.exit(1);
     }
 
@@ -91,8 +106,10 @@ const listCmd = new Command()
   });
 
 export const fuzzCommand = new Command()
-  .description("Fuzz Garazyk parsers and components.\n\n" +
-    "Runs libFuzzer-based fuzzers for JWT, CID, and other parsers. " +
-    "Supports custom corpus, parallel jobs, and crash triage.")
+  .description(
+    "Fuzz Garazyk parsers and components.\n\n" +
+      "Runs libFuzzer-based fuzzers for JWT, CID, and other parsers. " +
+      "Supports custom corpus, parallel jobs, and crash triage.",
+  )
   .command("run", runCmd)
   .command("list", listCmd);

@@ -106,7 +106,11 @@ export type {
   ResourceHints,
   SourceBuildSpec,
 } from "./topology_schema.ts";
-export type { CompilerOptions, CompilerResult, OtelOptions } from "./topology_compiler.ts";
+export type {
+  CompilerOptions,
+  CompilerResult,
+  OtelOptions,
+} from "./topology_compiler.ts";
 export type {
   AnyCapability,
   CapabilityForRole,
@@ -136,8 +140,8 @@ export type {
   PortValue,
   RegisteredTopologyPreset,
   ScenarioRequirement,
-  serviceRefBrand,
   ServiceRef,
+  serviceRefBrand,
   ServiceSource,
   TopologyDefinition,
 } from "./topology_authoring.ts";

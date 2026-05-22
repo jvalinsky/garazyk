@@ -10,7 +10,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { ScreenBuffer } from "../renderer.ts";
-import type { CellStyle, Cell } from "../renderer.ts";
+import type { Cell, CellStyle } from "../renderer.ts";
 import type { Key } from "../input.ts";
 
 /** Configuration options for VirtualTuiHarness. */
@@ -23,7 +23,7 @@ export interface HarnessOptions {
 export class VirtualTuiHarness {
   /** The internal virtual canvas grid. */
   buffer: ScreenBuffer;
-  
+
   private renderCallback: (buf: ScreenBuffer) => void;
   private keyCallback?: (key: Key) => void;
   private resizeListeners: (() => void)[] = [];
@@ -75,9 +75,14 @@ export class VirtualTuiHarness {
   }
 
   /** Inject simulated key inputs into the mounted component listeners. */
-  async emitKey(keyName: string, modifiers: Partial<Omit<Key, "key">> = {}): Promise<void> {
+  async emitKey(
+    keyName: string,
+    modifiers: Partial<Omit<Key, "key">> = {},
+  ): Promise<void> {
     if (!this.keyCallback) {
-      throw new Error("No key callback handler has been registered on the VirtualTuiHarness.");
+      throw new Error(
+        "No key callback handler has been registered on the VirtualTuiHarness.",
+      );
     }
     const keyEvent: Key = {
       key: keyName.toLowerCase(),
@@ -114,7 +119,8 @@ export class VirtualTuiHarness {
           line += " ";
           continue;
         }
-        const hasStyle = cell.style.fg >= 0 || cell.style.bg >= 0 || cell.style.bold || cell.style.underline;
+        const hasStyle = cell.style.fg >= 0 || cell.style.bg >= 0 ||
+          cell.style.bold || cell.style.underline;
         if (hasStyle) {
           line += `[${cell.char}]`;
         } else {
@@ -140,16 +146,32 @@ export class VirtualTuiHarness {
     const cell = this.buffer.getCell(x, y);
     assert(cell, `No terminal cell exists at coordinate location (${x}, ${y})`);
     if (expectedStyle.fg !== undefined) {
-      assertEquals(cell.style.fg, expectedStyle.fg, `Cell fg color mismatch at (${x}, ${y})`);
+      assertEquals(
+        cell.style.fg,
+        expectedStyle.fg,
+        `Cell fg color mismatch at (${x}, ${y})`,
+      );
     }
     if (expectedStyle.bg !== undefined) {
-      assertEquals(cell.style.bg, expectedStyle.bg, `Cell bg color mismatch at (${x}, ${y})`);
+      assertEquals(
+        cell.style.bg,
+        expectedStyle.bg,
+        `Cell bg color mismatch at (${x}, ${y})`,
+      );
     }
     if (expectedStyle.bold !== undefined) {
-      assertEquals(cell.style.bold, expectedStyle.bold, `Cell bold mismatch at (${x}, ${y})`);
+      assertEquals(
+        cell.style.bold,
+        expectedStyle.bold,
+        `Cell bold mismatch at (${x}, ${y})`,
+      );
     }
     if (expectedStyle.underline !== undefined) {
-      assertEquals(cell.style.underline, expectedStyle.underline, `Cell underline mismatch at (${x}, ${y})`);
+      assertEquals(
+        cell.style.underline,
+        expectedStyle.underline,
+        `Cell underline mismatch at (${x}, ${y})`,
+      );
     }
   }
 }

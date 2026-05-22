@@ -11,8 +11,8 @@ import {
   missingCounts,
   parseArgs,
   pct,
-  summarize,
   subsystemForPath,
+  summarize,
 } from "./doc_coverage.ts";
 
 Deno.test("emptyCounts initializes every bucket to zero", () => {
@@ -92,11 +92,17 @@ Deno.test("summarize aggregates totals and documented counts across buckets", ()
 
 Deno.test("subsystemForPath maps the primary Garazyk source folders", () => {
   assert(subsystemForPath("./Garazyk/Sources/Core/Foo.h") === "Core");
-  assertEquals(subsystemForPath("./Garazyk/Sources/Database/Foo.h"), "Database");
+  assertEquals(
+    subsystemForPath("./Garazyk/Sources/Database/Foo.h"),
+    "Database",
+  );
   assertEquals(subsystemForPath("./Garazyk/Sources/Blob/Foo.h"), "Blob");
   assertEquals(subsystemForPath("./Garazyk/Sources/Chat/Foo.h"), "Chat");
   assertEquals(subsystemForPath("./Garazyk/Sources/AppView/Foo.h"), "AppView");
-  assertEquals(subsystemForPath("./Garazyk/Sources/Services/Foo.h"), "Services");
+  assertEquals(
+    subsystemForPath("./Garazyk/Sources/Services/Foo.h"),
+    "Services",
+  );
   assertEquals(
     subsystemForPath("./Garazyk/Sources/AdminUIServer/Foo.h"),
     "AdminUIServer",
@@ -167,7 +173,10 @@ Deno.test("inferCanonicalTarget preserves canonical docs and resolves explicit e
     inferCanonicalTarget("docs/guides/intro.md", "canonical"),
     "docs/guides/intro.md",
   );
-  assertEquals(inferCanonicalTarget("README.md", "entrypoint"), "docs/index.md");
+  assertEquals(
+    inferCanonicalTarget("README.md", "entrypoint"),
+    "docs/index.md",
+  );
   assertEquals(
     inferCanonicalTarget("BUILD.md", "entrypoint"),
     "docs/01-getting-started/setup.md",
@@ -315,8 +324,14 @@ Deno.test("createSubsystemReport: returns an entry for every subsystem with zero
   const report = createSubsystemReport();
 
   const subsystems = [
-    "Core", "Database", "Blob", "Chat", "AppView", "Services",
-    "AdminUIServer", "Other",
+    "Core",
+    "Database",
+    "Blob",
+    "Chat",
+    "AppView",
+    "Services",
+    "AdminUIServer",
+    "Other",
   ] as const;
 
   for (const subsystem of subsystems) {
@@ -373,7 +388,8 @@ Deno.test("parseArgs: sets json flag when --json is passed", async () => {
 Deno.test("parseArgs: sets bySubsystem flag and min-subsystem threshold", async () => {
   const options = await parseArgs([
     "--by-subsystem",
-    "--min-subsystem", "Chat=60",
+    "--min-subsystem",
+    "Chat=60",
   ]);
 
   assertEquals(options.bySubsystem, true);

@@ -3,7 +3,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
-export interface LexiconQuery<Params = unknown, Input = unknown, Output = unknown> {
+export interface LexiconQuery<
+  Params = unknown,
+  Input = unknown,
+  Output = unknown,
+> {
   inputEncoding?: string;
   outputEncoding?: string;
   params?: Params;
@@ -18,7 +22,11 @@ export interface LexiconProcedure<Input = unknown, Output = unknown> {
   output?: Output;
 }
 
-export type BinaryXrpcResponse = [status: number, contentType: string, data: Uint8Array];
+export type BinaryXrpcResponse = [
+  status: number,
+  contentType: string,
+  data: Uint8Array,
+];
 
 /** Type definitions for lexicon schema records (populated at generation time). */
 export interface LexiconDefs {
@@ -32,7 +40,11 @@ export interface Lexicons {
   "app.bsky.actor.getSuggestions": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.actor.putPreferences": LexiconProcedure<unknown, unknown>;
   "app.bsky.actor.searchActors": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.actor.searchActorsTypeahead": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.actor.searchActorsTypeahead": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.ageassurance.begin": LexiconProcedure<unknown, unknown>;
   "app.bsky.ageassurance.getConfig": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.ageassurance.getState": LexiconQuery<unknown, unknown, unknown>;
@@ -51,7 +63,11 @@ export interface Lexicons {
   "app.bsky.draft.deleteDraft": LexiconProcedure<unknown, unknown>;
   "app.bsky.draft.getDrafts": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.draft.updateDraft": LexiconProcedure<unknown, unknown>;
-  "app.bsky.feed.describeFeedGenerator": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.feed.describeFeedGenerator": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.feed.getActorFeeds": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.feed.getActorLikes": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.feed.getAuthorFeed": LexiconQuery<unknown, unknown, unknown>;
@@ -69,7 +85,11 @@ export interface Lexicons {
   "app.bsky.feed.getTimeline": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.feed.searchPosts": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.feed.sendInteractions": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.getActorStarterPacks": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getActorStarterPacks": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.graph.getBlocks": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.graph.getFollowers": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.graph.getFollows": LexiconQuery<unknown, unknown, unknown>;
@@ -78,13 +98,25 @@ export interface Lexicons {
   "app.bsky.graph.getListBlocks": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.graph.getListMutes": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.graph.getLists": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getListsWithMembership": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getListsWithMembership": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.graph.getMutes": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.graph.getRelationships": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.graph.getStarterPack": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.graph.getStarterPacks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getStarterPacksWithMembership": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getSuggestedFollowsByActor": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.graph.getStarterPacksWithMembership": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.graph.getSuggestedFollowsByActor": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.graph.muteActor": LexiconProcedure<unknown, unknown>;
   "app.bsky.graph.muteActorList": LexiconProcedure<unknown, unknown>;
   "app.bsky.graph.muteThread": LexiconProcedure<unknown, unknown>;
@@ -92,51 +124,183 @@ export interface Lexicons {
   "app.bsky.graph.unmuteActor": LexiconProcedure<unknown, unknown>;
   "app.bsky.graph.unmuteActorList": LexiconProcedure<unknown, unknown>;
   "app.bsky.graph.unmuteThread": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.verification.createVerification": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.verification.deleteVerification": LexiconProcedure<unknown, unknown>;
+  "app.bsky.graph.verification.createVerification": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "app.bsky.graph.verification.deleteVerification": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "app.bsky.labeler.getServices": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.notification.getPreferences": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.notification.getUnreadCount": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.notification.listActivitySubscriptions": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.notification.listNotifications": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.notification.putActivitySubscription": LexiconProcedure<unknown, unknown>;
-  "app.bsky.notification.putNotificationPreferences": LexiconProcedure<unknown, unknown>;
+  "app.bsky.notification.getPreferences": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.notification.getUnreadCount": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.notification.listActivitySubscriptions": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.notification.listNotifications": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.notification.putActivitySubscription": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "app.bsky.notification.putNotificationPreferences": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "app.bsky.notification.putPreferences": LexiconProcedure<unknown, unknown>;
   "app.bsky.notification.putPreferencesV2": LexiconProcedure<unknown, unknown>;
   "app.bsky.notification.registerPush": LexiconProcedure<unknown, unknown>;
   "app.bsky.notification.unregisterPush": LexiconProcedure<unknown, unknown>;
   "app.bsky.notification.updateSeen": LexiconProcedure<unknown, unknown>;
   "app.bsky.unspecced.confirmAgeAssurance": LexiconProcedure<unknown, unknown>;
-  "app.bsky.unspecced.getAgeAssuranceState": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getAgeAssuranceState": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.unspecced.getConfig": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getPopularFeedGenerators": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getPostThreadOtherV2": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getPopularFeedGenerators": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getPostThreadOtherV2": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.unspecced.getPostThreadV2": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedFeeds": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedFeedsSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedOnboardingUsers": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedStarterPacks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsers": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsersForDiscover": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsersForExplore": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsersForSeeMore": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedUsersSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestionsSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getTaggedSuggestions": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getTrendingTopics": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getSuggestedFeeds": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedStarterPacks": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsers": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsersForExplore": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getSuggestionsSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getTaggedSuggestions": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.getTrendingTopics": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.unspecced.getTrends": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getTrendsSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.getTrendsSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.unspecced.initAgeAssurance": LexiconProcedure<unknown, unknown>;
-  "app.bsky.unspecced.searchActorsSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.searchPostsSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.searchStarterPacksSkeleton": LexiconQuery<unknown, unknown, unknown>;
+  "app.bsky.unspecced.searchActorsSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.searchPostsSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "app.bsky.unspecced.searchStarterPacksSkeleton": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "app.bsky.video.getJobStatus": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.video.getUploadLimits": LexiconQuery<unknown, unknown, unknown>;
   "app.bsky.video.uploadVideo": LexiconProcedure<unknown, unknown>;
@@ -146,7 +310,11 @@ export interface Lexicons {
   "chat.bsky.convo.addReaction": LexiconProcedure<unknown, unknown>;
   "chat.bsky.convo.deleteMessageForSelf": LexiconProcedure<unknown, unknown>;
   "chat.bsky.convo.getConvo": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.getConvoAvailability": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.convo.getConvoAvailability": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "chat.bsky.convo.getConvoForMembers": LexiconQuery<unknown, unknown, unknown>;
   "chat.bsky.convo.getLog": LexiconQuery<unknown, unknown, unknown>;
   "chat.bsky.convo.getMessages": LexiconQuery<unknown, unknown, unknown>;
@@ -185,8 +353,16 @@ export interface Lexicons {
   "chat.bsky.group.removeReaction": LexiconProcedure<unknown, unknown>;
   "chat.bsky.group.requestJoin": LexiconProcedure<unknown, unknown>;
   "chat.bsky.group.sendMessage": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.moderation.getActorMetadata": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.moderation.getMessageContext": LexiconQuery<unknown, unknown, unknown>;
+  "chat.bsky.moderation.getActorMetadata": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "chat.bsky.moderation.getMessageContext": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "chat.bsky.moderation.updateActorAccess": LexiconProcedure<unknown, unknown>;
   "com.atproto.admin.deleteAccount": LexiconProcedure<unknown, unknown>;
   "com.atproto.admin.disableAccountInvites": LexiconProcedure<unknown, unknown>;
@@ -196,9 +372,17 @@ export interface Lexicons {
   "com.atproto.admin.getAccountInfos": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.admin.getAccountTakedown": LexiconProcedure<unknown, unknown>;
   "com.atproto.admin.getAccountUsage": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.getBlobAuditStatus": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getBlobAuditStatus": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.admin.getInviteCodes": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.getModerationReports": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.admin.getModerationReports": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.admin.getServerStats": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.admin.getSubjectStatus": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.admin.moderateAccount": LexiconProcedure<unknown, unknown>;
@@ -213,14 +397,28 @@ export interface Lexicons {
   "com.atproto.admin.updateAccountEmail": LexiconProcedure<unknown, unknown>;
   "com.atproto.admin.updateAccountHandle": LexiconProcedure<unknown, unknown>;
   "com.atproto.admin.updateAccountPassword": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.updateAccountSigningKey": LexiconProcedure<unknown, unknown>;
+  "com.atproto.admin.updateAccountSigningKey": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "com.atproto.admin.updateSubjectStatus": LexiconProcedure<unknown, unknown>;
-  "com.atproto.identity.getRecommendedDidCredentials": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.identity.getRecommendedDidCredentials": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.identity.refreshIdentity": LexiconProcedure<unknown, unknown>;
-  "com.atproto.identity.requestPlcOperationSignature": LexiconProcedure<unknown, unknown>;
+  "com.atproto.identity.requestPlcOperationSignature": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "com.atproto.identity.resolveDid": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.identity.resolveHandle": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.identity.resolveIdentity": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.identity.resolveIdentity": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.identity.signPlcOperation": LexiconProcedure<unknown, unknown>;
   "com.atproto.identity.submitPlcOperation": LexiconProcedure<unknown, unknown>;
   "com.atproto.identity.updateHandle": LexiconProcedure<unknown, unknown>;
@@ -243,7 +441,11 @@ export interface Lexicons {
   "com.atproto.repo.updateRecord": LexiconProcedure<unknown, unknown>;
   "com.atproto.repo.uploadBlob": LexiconProcedure<unknown, unknown>;
   "com.atproto.server.activateAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.checkAccountStatus": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.checkAccountStatus": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.server.confirmEmail": LexiconProcedure<unknown, unknown>;
   "com.atproto.server.createAccount": LexiconProcedure<unknown, unknown>;
   "com.atproto.server.createAppPassword": LexiconProcedure<unknown, unknown>;
@@ -255,13 +457,24 @@ export interface Lexicons {
   "com.atproto.server.deleteSession": LexiconProcedure<unknown, unknown>;
   "com.atproto.server.describeServer": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.server.getAccount": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.server.getAccountInviteCodes": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.getAccountInviteCodes": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.server.getServiceAuth": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.server.getSession": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.server.listAppPasswords": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.server.listAppPasswords": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.server.refreshSession": LexiconProcedure<unknown, unknown>;
   "com.atproto.server.requestAccountDelete": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.requestEmailConfirmation": LexiconProcedure<unknown, unknown>;
+  "com.atproto.server.requestEmailConfirmation": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "com.atproto.server.requestEmailUpdate": LexiconProcedure<unknown, unknown>;
   "com.atproto.server.requestPasswordReset": LexiconProcedure<unknown, unknown>;
   "com.atproto.server.reserveSigningKey": LexiconProcedure<unknown, unknown>;
@@ -280,53 +493,114 @@ export interface Lexicons {
   "com.atproto.sync.listBlobs": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.sync.listHosts": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.sync.listRepos": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.listReposByCollection": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.sync.listReposByCollection": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.sync.notifyOfUpdate": LexiconProcedure<unknown, unknown>;
   "com.atproto.sync.requestCrawl": LexiconProcedure<unknown, unknown>;
   "com.atproto.temp.addReservedHandle": LexiconProcedure<unknown, unknown>;
-  "com.atproto.temp.checkHandleAvailability": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.temp.checkHandleAvailability": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.atproto.temp.checkSignupQueue": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.temp.dereferenceScope": LexiconQuery<unknown, unknown, unknown>;
   "com.atproto.temp.fetchLabels": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.temp.requestPhoneVerification": LexiconProcedure<unknown, unknown>;
-  "com.atproto.temp.revokeAccountCredentials": LexiconProcedure<unknown, unknown>;
-  "com.germnetwork.identity.getAnchorKey": LexiconQuery<unknown, unknown, unknown>;
+  "com.atproto.temp.requestPhoneVerification": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "com.atproto.temp.revokeAccountCredentials": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "com.germnetwork.identity.getAnchorKey": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.germnetwork.mailbox.claimAddresses": LexiconProcedure<unknown, unknown>;
   "com.germnetwork.mailbox.deliver": LexiconProcedure<unknown, unknown>;
   "com.germnetwork.mailbox.poll": LexiconQuery<unknown, unknown, unknown>;
   "com.germnetwork.rendezvous.deliver": LexiconProcedure<unknown, unknown>;
   "com.germnetwork.rendezvous.register": LexiconProcedure<unknown, unknown>;
-  "com.shinolabs.pinksea.getAuthorFeed": LexiconQuery<unknown, unknown, unknown>;
-  "com.shinolabs.pinksea.getAuthorReplies": LexiconQuery<unknown, unknown, unknown>;
-  "com.shinolabs.pinksea.getHandleFromDid": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getAuthorFeed": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "com.shinolabs.pinksea.getAuthorReplies": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "com.shinolabs.pinksea.getHandleFromDid": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.shinolabs.pinksea.getIdentity": LexiconQuery<unknown, unknown, unknown>;
   "com.shinolabs.pinksea.getOekaki": LexiconQuery<unknown, unknown, unknown>;
-  "com.shinolabs.pinksea.getParentForReply": LexiconQuery<unknown, unknown, unknown>;
+  "com.shinolabs.pinksea.getParentForReply": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.shinolabs.pinksea.getRecent": LexiconQuery<unknown, unknown, unknown>;
   "com.shinolabs.pinksea.getTagFeed": LexiconQuery<unknown, unknown, unknown>;
   "com.whtwnd.blog.getAuthorPosts": LexiconQuery<unknown, unknown, unknown>;
-  "com.whtwnd.blog.getEntryMetadataByName": LexiconQuery<unknown, unknown, unknown>;
+  "com.whtwnd.blog.getEntryMetadataByName": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "com.whtwnd.blog.getMentionsByEntry": LexiconQuery<unknown, unknown, unknown>;
   "com.whtwnd.blog.notifyOfNewEntry": LexiconProcedure<unknown, unknown>;
   "place.stream.branding.deleteBlob": LexiconProcedure<unknown, unknown>;
   "place.stream.branding.getBlob": LexiconQuery<unknown, unknown, unknown>;
   "place.stream.branding.getBranding": LexiconQuery<unknown, unknown, unknown>;
   "place.stream.branding.updateBlob": LexiconProcedure<unknown, unknown>;
-  "place.stream.broadcast.getBroadcaster": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.graph.getFollowingUser": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.broadcast.getBroadcaster": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "place.stream.graph.getFollowingUser": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "place.stream.live.getLiveUsers": LexiconQuery<unknown, unknown, unknown>;
   "place.stream.live.getProfileCard": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.live.getRecommendations": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.live.getRecommendations": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "place.stream.live.getSegments": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.live.searchActorsTypeahead": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.live.searchActorsTypeahead": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "place.stream.moderation.createBlock": LexiconProcedure<unknown, unknown>;
   "place.stream.moderation.createGate": LexiconProcedure<unknown, unknown>;
   "place.stream.moderation.deleteBlock": LexiconProcedure<unknown, unknown>;
   "place.stream.moderation.deleteGate": LexiconProcedure<unknown, unknown>;
-  "place.stream.moderation.updateLivestream": LexiconProcedure<unknown, unknown>;
+  "place.stream.moderation.updateLivestream": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "place.stream.multistream.createTarget": LexiconProcedure<unknown, unknown>;
   "place.stream.multistream.deleteTarget": LexiconProcedure<unknown, unknown>;
-  "place.stream.multistream.listTargets": LexiconQuery<unknown, unknown, unknown>;
+  "place.stream.multistream.listTargets": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "place.stream.multistream.putTarget": LexiconProcedure<unknown, unknown>;
   "place.stream.server.createWebhook": LexiconProcedure<unknown, unknown>;
   "place.stream.server.deleteWebhook": LexiconProcedure<unknown, unknown>;
@@ -341,7 +615,11 @@ export interface Lexicons {
   "social.grain.actor.updateProfile": LexiconProcedure<unknown, unknown>;
   "social.grain.comment.createComment": LexiconProcedure<unknown, unknown>;
   "social.grain.comment.deleteComment": LexiconProcedure<unknown, unknown>;
-  "social.grain.darkroom.getGalleryComposite": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.darkroom.getGalleryComposite": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "social.grain.favorite.createFavorite": LexiconProcedure<unknown, unknown>;
   "social.grain.favorite.deleteFavorite": LexiconProcedure<unknown, unknown>;
   "social.grain.feed.getTimeline": LexiconQuery<unknown, unknown, unknown>;
@@ -350,15 +628,27 @@ export interface Lexicons {
   "social.grain.gallery.createItem": LexiconProcedure<unknown, unknown>;
   "social.grain.gallery.deleteGallery": LexiconProcedure<unknown, unknown>;
   "social.grain.gallery.deleteItem": LexiconProcedure<unknown, unknown>;
-  "social.grain.gallery.getActorGalleries": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.gallery.getActorGalleries": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "social.grain.gallery.getGallery": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.gallery.getGalleryThread": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.gallery.getGalleryThread": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "social.grain.gallery.updateGallery": LexiconProcedure<unknown, unknown>;
   "social.grain.graph.createFollow": LexiconProcedure<unknown, unknown>;
   "social.grain.graph.deleteFollow": LexiconProcedure<unknown, unknown>;
   "social.grain.graph.getFollowers": LexiconQuery<unknown, unknown, unknown>;
   "social.grain.graph.getFollows": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.notification.getNotifications": LexiconQuery<unknown, unknown, unknown>;
+  "social.grain.notification.getNotifications": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "social.grain.notification.updateSeen": LexiconProcedure<unknown, unknown>;
   "social.grain.photo.applyAlts": LexiconProcedure<unknown, unknown>;
   "social.grain.photo.createExif": LexiconProcedure<unknown, unknown>;
@@ -367,26 +657,68 @@ export interface Lexicons {
   "social.grain.photo.uploadPhoto": LexiconProcedure<unknown, unknown>;
   "tools.garazyk.account.getUsage": LexiconQuery<unknown, unknown, unknown>;
   "tools.garazyk.sync.getRepoFiltered": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.communication.createTemplate": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.communication.deleteTemplate": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.communication.listTemplates": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.communication.updateTemplate": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.hosting.getAccountHistory": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.cancelScheduledAction": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.moderation.cancelScheduledActions": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.communication.createTemplate": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "tools.ozone.communication.deleteTemplate": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "tools.ozone.communication.listTemplates": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "tools.ozone.communication.updateTemplate": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "tools.ozone.hosting.getAccountHistory": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "tools.ozone.moderation.cancelScheduledAction": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "tools.ozone.moderation.cancelScheduledActions": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "tools.ozone.moderation.emitEvent": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.moderation.getAccountTimeline": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getAccountTimeline": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "tools.ozone.moderation.getEvent": LexiconQuery<unknown, unknown, unknown>;
   "tools.ozone.moderation.getRecord": LexiconQuery<unknown, unknown, unknown>;
   "tools.ozone.moderation.getRecords": LexiconQuery<unknown, unknown, unknown>;
   "tools.ozone.moderation.getRepo": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getReporterStats": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.getReporterStats": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "tools.ozone.moderation.getRepos": LexiconQuery<unknown, unknown, unknown>;
   "tools.ozone.moderation.getSubjects": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getSubjectStatus": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.listScheduledActions": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.moderation.getSubjectStatus": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "tools.ozone.moderation.listScheduledActions": LexiconProcedure<
+    unknown,
+    unknown
+  >;
   "tools.ozone.moderation.queryEvents": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.queryStatuses": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.moderation.queryStatuses": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "tools.ozone.moderation.scheduleAction": LexiconProcedure<unknown, unknown>;
   "tools.ozone.moderation.searchRepos": LexiconQuery<unknown, unknown, unknown>;
   "tools.ozone.safelink.addRule": LexiconProcedure<unknown, unknown>;
@@ -405,16 +737,38 @@ export interface Lexicons {
   "tools.ozone.setting.listOptions": LexiconQuery<unknown, unknown, unknown>;
   "tools.ozone.setting.removeOptions": LexiconProcedure<unknown, unknown>;
   "tools.ozone.setting.upsertOption": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.signature.findCorrelation": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.signature.findRelatedAccounts": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.signature.searchAccounts": LexiconQuery<unknown, unknown, unknown>;
+  "tools.ozone.signature.findCorrelation": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "tools.ozone.signature.findRelatedAccounts": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "tools.ozone.signature.searchAccounts": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
   "tools.ozone.team.addMember": LexiconProcedure<unknown, unknown>;
   "tools.ozone.team.deleteMember": LexiconProcedure<unknown, unknown>;
   "tools.ozone.team.listMembers": LexiconQuery<unknown, unknown, unknown>;
   "tools.ozone.team.updateMember": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.verification.grantVerifications": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.verification.listVerifications": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.verification.revokeVerifications": LexiconProcedure<unknown, unknown>;
+  "tools.ozone.verification.grantVerifications": LexiconProcedure<
+    unknown,
+    unknown
+  >;
+  "tools.ozone.verification.listVerifications": LexiconQuery<
+    unknown,
+    unknown,
+    unknown
+  >;
+  "tools.ozone.verification.revokeVerifications": LexiconProcedure<
+    unknown,
+    unknown
+  >;
 }
 
 export const LEXICON_METHOD_TYPES = {
@@ -1057,7 +1411,8 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "app.bsky.unspecced.getAgeAssuranceState": "application/json",
   "app.bsky.unspecced.getConfig": "application/json",
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": "application/json",
-  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton":
+    "application/json",
   "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": "application/json",
   "app.bsky.unspecced.getPopularFeedGenerators": "application/json",
   "app.bsky.unspecced.getPostThreadOtherV2": "application/json",
@@ -1338,47 +1693,44 @@ export type LexiconQueryIds = string;
  *  widened to `string` so that consumers with placeholder endpoints compile. */
 export type LexiconProcedureIds = string;
 
-export type QueryParams<K extends string> =
-  K extends keyof Lexicons
-    ? Lexicons[K] extends { params: infer P } ? P : unknown
-    : unknown;
+export type QueryParams<K extends string> = K extends keyof Lexicons
+  ? Lexicons[K] extends { params: infer P } ? P : unknown
+  : unknown;
 
-export type QueryOutput<K extends string> =
-  K extends keyof Lexicons
-    ? Lexicons[K] extends { output: infer O } ? O : unknown
-    : unknown;
+export type QueryOutput<K extends string> = K extends keyof Lexicons
+  ? Lexicons[K] extends { output: infer O } ? O : unknown
+  : unknown;
 
-export type ProcedureInput<K extends string> =
-  K extends keyof Lexicons
-    ? Lexicons[K] extends { input: infer I } ? I : unknown
-    : unknown;
+export type ProcedureInput<K extends string> = K extends keyof Lexicons
+  ? Lexicons[K] extends { input: infer I } ? I : unknown
+  : unknown;
 
-export type ProcedureOutput<K extends string> =
-  K extends keyof Lexicons
-    ? Lexicons[K] extends { output: infer O } ? O : unknown
-    : unknown;
+export type ProcedureOutput<K extends string> = K extends keyof Lexicons
+  ? Lexicons[K] extends { output: infer O } ? O : unknown
+  : unknown;
 
-export type QueryOutputEncoding<K extends string> =
-  K extends keyof Lexicons
-    ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
-    : unknown;
+export type QueryOutputEncoding<K extends string> = K extends keyof Lexicons
+  ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
+  : unknown;
 
-export type ProcedureInputEncoding<K extends string> =
-  K extends keyof Lexicons
-    ? Lexicons[K] extends { inputEncoding: infer E } ? E : unknown
-    : unknown;
+export type ProcedureInputEncoding<K extends string> = K extends keyof Lexicons
+  ? Lexicons[K] extends { inputEncoding: infer E } ? E : unknown
+  : unknown;
 
-export type ProcedureOutputEncoding<K extends string> =
-  K extends keyof Lexicons
-    ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
-    : unknown;
+export type ProcedureOutputEncoding<K extends string> = K extends keyof Lexicons
+  ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
+  : unknown;
 
 export interface CallOptions {
   headers?: { Authorization?: string };
 }
 
 export interface XrpcCaller {
-  call(method: string, data?: unknown, tokenOrOpts?: string | CallOptions): Promise<unknown>;
+  call(
+    method: string,
+    data?: unknown,
+    tokenOrOpts?: string | CallOptions,
+  ): Promise<unknown>;
 }
 
 /** Strongly typed nested API client. Methods are resolved dynamically
@@ -1402,8 +1754,16 @@ export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {
     const nsid = path.join(".");
 
     const target = function (...args: unknown[]): Promise<unknown> {
-      if (!nsid) throw new TypeError("GeneratedClient root cannot be called directly; use namespace chains like client.com.atproto...");
-      return caller.call(nsid, args[0], args[1] as string | CallOptions | undefined);
+      if (!nsid) {
+        throw new TypeError(
+          "GeneratedClient root cannot be called directly; use namespace chains like client.com.atproto...",
+        );
+      }
+      return caller.call(
+        nsid,
+        args[0],
+        args[1] as string | CallOptions | undefined,
+      );
     };
 
     return new Proxy(target, {
@@ -1412,7 +1772,9 @@ export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {
         if (typeof prop === "symbol") return undefined;
         if (prop === "then") return undefined;
         if (prop === "toJSON") return () => nsid;
-        if (prop === "toString") return () => `[GeneratedClient ${nsid || "root"}]`;
+        if (prop === "toString") {
+          return () => `[GeneratedClient ${nsid || "root"}]`;
+        }
 
         return buildProxy([...path, prop]);
       },
