@@ -13,6 +13,9 @@
     _httpPort = 3210;
     _cursorCheckpointIntervalMs = 5000;
     _ingestEnabled = YES;
+    _rateLimitEnabled = YES;
+    _rateLimitIpLimit = 200;
+    _rateLimitIpWindowSeconds = 60;
     return self;
 }
 
@@ -38,6 +41,15 @@
 
     NSString *ingest = env[@"MIKRUS_INGEST_ENABLED"];
     if (ingest.length > 0) config.ingestEnabled = [ingest boolValue];
+
+    NSString *rlEnabled = env[@"MIKRUS_RATELIMIT_ENABLED"];
+    if (rlEnabled.length > 0) config.rateLimitEnabled = [rlEnabled boolValue];
+
+    NSString *rlIpLimit = env[@"MIKRUS_RATELIMIT_IP_LIMIT"];
+    if (rlIpLimit.integerValue > 0) config.rateLimitIpLimit = rlIpLimit.integerValue;
+
+    NSString *rlIpWindow = env[@"MIKRUS_RATELIMIT_IP_WINDOW"];
+    if (rlIpWindow.doubleValue > 0) config.rateLimitIpWindowSeconds = rlIpWindow.doubleValue;
 
     return config;
 }
@@ -73,6 +85,19 @@
 
     id ingest = dictionary[@"ingest.enabled"] ?: dictionary[@"ingest_enabled"];
     if (ingest) self.ingestEnabled = [ingest boolValue];
+
+    id rlEnabled = dictionary[@"rate_limit.enabled"] ?: dictionary[@"rate_limit_enabled"];
+    if (rlEnabled) self.rateLimitEnabled = [rlEnabled boolValue];
+
+    id rlIpLimit = dictionary[@"rate_limit.ip_limit"] ?: dictionary[@"rate_limit_ip_limit"];
+    if ([rlIpLimit respondsToSelector:@selector(integerValue)] && [rlIpLimit integerValue] > 0) {
+        self.rateLimitIpLimit = [rlIpLimit integerValue];
+    }
+
+    id rlIpWindow = dictionary[@"rate_limit.ip_window"] ?: dictionary[@"rate_limit_ip_window"];
+    if ([rlIpWindow respondsToSelector:@selector(doubleValue)] && [rlIpWindow doubleValue] > 0) {
+        self.rateLimitIpWindowSeconds = [rlIpWindow doubleValue];
+    }
 }
 
 - (BOOL)validate:(NSError **)error {

@@ -25,6 +25,15 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Flag to enable or disable ingestion. */
 @property (nonatomic, assign) BOOL ingestEnabled;
 
+#pragma mark - Rate Limiting
+
+/** @abstract Enable per-IP rate limiting (default: YES). */
+@property (nonatomic, assign) BOOL rateLimitEnabled;
+/** @abstract Maximum requests per IP per window (default: 200). */
+@property (nonatomic, assign) NSInteger rateLimitIpLimit;
+/** @abstract IP rate limit window in seconds (default: 60). */
+@property (nonatomic, assign) NSTimeInterval rateLimitIpWindowSeconds;
+
 /**
  * @abstract Returns a default configuration instance.
  */
