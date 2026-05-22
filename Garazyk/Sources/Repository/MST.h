@@ -214,8 +214,17 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 - (NSData *)exportCAR;
 /** @abstract Serializes the tree to CBOR. */
 - (NSData *)serializeToCBOR;
-/** @abstract Deserializes an MST from CBOR. */
+/** @abstract Deserializes an MST from CBOR (single-node only). */
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data;
+
+/**
+ * @abstract Deserializes an MST from CBOR, recursively resolving child subtrees via a block provider.
+ * @param data The root node's CBOR data.
+ * @param blockProvider A block that resolves a CID to its CBOR data, or nil for lazy resolution.
+ * @return A fully reconstructed MST, or nil if deserialization fails.
+ */
++ (nullable instancetype)deserializeFromCBOR:(NSData *)data
+                               blockProvider:(nullable MSTBlockProvider)blockProvider;
 
 /**
  * @abstract Computes differences between this tree and an older version.
