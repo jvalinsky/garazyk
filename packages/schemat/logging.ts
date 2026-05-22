@@ -31,11 +31,17 @@ export interface LoggerOutput {
 
 /** Injectable logger interface. */
 export interface Logger {
+  /** Log a debug-level message (only printed when verbose logging is enabled). */
   debug(message: string): void;
+  /** Log an informational message. */
   info(message: string): void;
+  /** Log a success or okay message. */
   ok(message: string): void;
+  /** Log a warning message. */
   warn(message: string): void;
+  /** Log an error message. */
   error(message: string): void;
+  /** Log a bold header message. */
   header(message: string): void;
 }
 
@@ -49,45 +55,53 @@ export class ConsoleLogger implements Logger {
   #quiet: boolean;
   #output: LoggerOutput;
 
+  /** Create a new ConsoleLogger instance with optional custom sink. */
   constructor(opts: LoggerOptions = {}, output?: LoggerOutput) {
     this.#verbose = opts.verbose ?? false;
     this.#quiet = opts.quiet ?? false;
     this.#output = output ?? { write: (msg: string) => console.error(msg) };
   }
 
+  /** Update active logging settings on the fly. */
   updateOptions(opts: LoggerOptions): void {
     if (opts.verbose !== undefined) this.#verbose = opts.verbose;
     if (opts.quiet !== undefined) this.#quiet = opts.quiet;
   }
 
+  /** Print a debug message to the configured sink. */
   debug(message: string): void {
     if (this.#verbose && !this.#quiet) {
       this.#output.write(`${blue("[DEBUG]")} ${message}`);
     }
   }
 
+  /** Print an info message to the configured sink. */
   info(message: string): void {
     if (!this.#quiet) {
       this.#output.write(`${cyan("[INFO]")}  ${message}`);
     }
   }
 
+  /** Print a success message to the configured sink. */
   ok(message: string): void {
     if (!this.#quiet) {
       this.#output.write(`${green("[OK]")}    ${message}`);
     }
   }
 
+  /** Print a warning message to the configured sink. */
   warn(message: string): void {
     if (!this.#quiet) {
       this.#output.write(`${yellow("[WARN]")}  ${message}`);
     }
   }
 
+  /** Print an error message to the configured sink. */
   error(message: string): void {
     this.#output.write(`${red("[ERROR]")} ${message}`);
   }
 
+  /** Print a bold header to the configured sink. */
   header(message: string): void {
     if (!this.#quiet) {
       this.#output.write(bold(message));

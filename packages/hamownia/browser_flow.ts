@@ -1,5 +1,4 @@
 /** Public network leak detection for browser-based E2E tests. @module browser_flow */
-import type { Page } from "playwright";
 
 const DEFAULT_BLOCKED_PUBLIC_HOSTS = [
   "bsky.app",
@@ -7,6 +6,18 @@ const DEFAULT_BLOCKED_PUBLIC_HOSTS = [
   "bsky.network",
   "plc.directory",
 ];
+
+/** Request shape required by the public-network leak guard. */
+export interface BrowserRequestLike {
+  /** Return the request URL. */
+  url(): string;
+}
+
+/** Page shape required by the public-network leak guard. */
+export interface BrowserPageLike {
+  /** Register a request event callback. */
+  on(event: "request", callback: (request: BrowserRequestLike) => void): void;
+}
 
 /** Resolve the set of public hosts to block during tests. */
 export function blockedPublicHosts(): string[] {
@@ -20,7 +31,7 @@ export function blockedPublicHosts(): string[] {
 }
 
 /** Attach a request interceptor to detect unwanted outbound calls to public hosts. */
-export function attachPublicNetworkLeakGuard(page: Page): string[] {
+export function attachPublicNetworkLeakGuard(page: BrowserPageLike): string[] {
   const blockedHosts = blockedPublicHosts();
   const leaks: string[] = [];
   if (blockedHosts.length === 0) return leaks;

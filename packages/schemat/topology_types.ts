@@ -106,7 +106,9 @@ export interface SidecarAdapter {
     port?: number;
     customTest?: string[];
     headers?: Record<string, string>;
-  };  /** Upstream dependencies referenced by name */
+  };
+
+  /** Upstream dependencies referenced by name */
   dependsOn?: string[];
   /** Upstream dependencies referenced by topology role */
   dependsOnRoles?: ServiceRole[];

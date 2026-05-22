@@ -73,7 +73,6 @@ export interface ComposeObject {
   volumes?: Record<string, null>;
 }
 
-/** Options used to compile a topology preset into Docker Compose files. */
 /** OpenTelemetry / SigNoz configuration overrides. */
 export interface OtelOptions {
   /** SigNoz ClickHouse image tag. @defaultValue "25.5" */
@@ -90,6 +89,7 @@ export interface OtelOptions {
   httpPort?: number;
 }
 
+/** Options used to compile a topology preset into Docker Compose files. */
 export interface CompilerOptions {
   /** Preset name (e.g. "garazyk-default") or loaded TopologyPreset */
   preset: string | TopologyPreset;

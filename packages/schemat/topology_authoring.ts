@@ -31,6 +31,8 @@ export type CapabilityInput<R extends RoleKey> =
 /** Canonical topology type stored in the registry. */
 export type RegisteredTopologyPreset = NormalizedTopologyPreset;
 
+export type { InheritedServiceSpec, NormalizedTopologyPreset };
+
 /** Role-scoped scenario requirement emitted by the typed authoring helpers. */
 export interface ScenarioRequirement<R extends RoleKey = RoleKey> {
   /** Service role that must provide the capability. */
@@ -39,7 +41,8 @@ export interface ScenarioRequirement<R extends RoleKey = RoleKey> {
   capability: CapabilityInput<R>;
 }
 
-declare const serviceRefBrand: unique symbol;
+/** Unique symbol branding a direct Docker Compose service reference. */
+export declare const serviceRefBrand: unique symbol;
 
 /** Branded direct Docker Compose service reference for sidecars/support services. */
 export type ServiceRef = string & { readonly [serviceRefBrand]: true };

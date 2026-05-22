@@ -677,6 +677,7 @@ export class DockerApiClient {
     return await resp.json();
   }
 
+  /** Build the absolute Docker API path suffix for a container ID. */
   private containerPath(id: string, suffix: string): string {
     if (!suffix.startsWith("/")) {
       throw new Error(
