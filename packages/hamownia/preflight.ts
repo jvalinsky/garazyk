@@ -24,6 +24,12 @@ export interface PreflightResult {
   fatal: boolean;
 }
 
+interface PlaywrightModule {
+  chromium: {
+    launch(options: { timeout: number }): Promise<{ close(): Promise<void> }>;
+  };
+}
+
 /** Verify that staged Linux ELF binaries exist in the expected location. */
 export async function checkStagedBinaries(): Promise<PreflightResult> {
   const root = await repoRoot();
@@ -68,9 +74,8 @@ export async function checkPlaywright(
   required: boolean,
 ): Promise<PreflightResult> {
   try {
-    // We use a dynamic import to avoid a hard dependency if playwright isn't even used.
-    // In Deno, this will pull from npm if not already cached.
-    const { chromium } = await import("npm:playwright@1.52.0");
+    // Playwright is an optional runtime dependency for browser scenarios.
+    const { chromium } = await import("npm:playwright@1.52.0") as PlaywrightModule;
     const browser = await chromium.launch({ timeout: 2000 });
     await browser.close();
     return { ok: true, fatal: required };
