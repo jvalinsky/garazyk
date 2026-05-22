@@ -3,6 +3,8 @@
 
 #import "Mikrus/MikrusLinkExtractor.h"
 
+static const NSUInteger kMikrusMaxRecursionDepth = 50;
+
 @implementation MikrusLinkExtractor
 
 + (NSArray<NSDictionary<NSString *, NSString *> *> *)linkEntriesInRecord:(NSDictionary *)record {
@@ -10,7 +12,7 @@
 
     NSMutableArray<NSDictionary<NSString *, NSString *> *> *entries = [NSMutableArray array];
     NSMutableSet<NSString *> *seen = [NSMutableSet set];
-    [self collectLinksFromObject:record path:@"" entries:entries seen:seen];
+    [self collectLinksFromObject:record path:@"" entries:entries seen:seen depth:0];
     return [entries copy];
 }
 
@@ -50,13 +52,16 @@
 + (void)collectLinksFromObject:(id)object
                           path:(NSString *)path
                        entries:(NSMutableArray<NSDictionary<NSString *, NSString *> *> *)entries
-                          seen:(NSMutableSet<NSString *> *)seen {
+                          seen:(NSMutableSet<NSString *> *)seen
+                         depth:(NSUInteger)depth {
+    if (depth > kMikrusMaxRecursionDepth) return;
+
     if ([object isKindOfClass:[NSDictionary class]]) {
         NSDictionary *dict = (NSDictionary *)object;
         for (NSString *key in dict) {
             if (![key isKindOfClass:[NSString class]]) continue;
             NSString *childPath = path.length > 0 ? [path stringByAppendingFormat:@".%@", key] : key;
-            [self collectLinksFromObject:dict[key] path:childPath entries:entries seen:seen];
+            [self collectLinksFromObject:dict[key] path:childPath entries:entries seen:seen depth:depth + 1];
         }
         return;
     }
@@ -64,7 +69,7 @@
     if ([object isKindOfClass:[NSArray class]]) {
         NSString *arrayPath = path.length > 0 ? [path stringByAppendingString:@"[]"] : @"[]";
         for (id item in (NSArray *)object) {
-            [self collectLinksFromObject:item path:arrayPath entries:entries seen:seen];
+            [self collectLinksFromObject:item path:arrayPath entries:entries seen:seen depth:depth + 1];
         }
         return;
     }

@@ -10,6 +10,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "Network/RateLimiter.h"
 
 @implementation MikrusXrpcRoutePack {
     MikrusDatabase *_database;
@@ -46,7 +47,24 @@
     }];
 }
 
+- (BOOL)checkRateLimitForRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+    if (rateLimit.allowed) return YES;
+
+    response.statusCode = HttpStatusTooManyRequests;
+    [response setJsonBody:@{
+        @"error": @"RateLimitExceeded",
+        @"message": @"Too many requests"
+    }];
+    [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.limit] forKey:@"X-RateLimit-Limit"];
+    [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
+    [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
+    [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.retryAfter] forKey:@"Retry-After"];
+    return NO;
+}
+
 - (void)handleGetBacklinks:(HttpRequest *)request response:(HttpResponse *)response {
+    if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
@@ -76,6 +94,7 @@
 }
 
 - (void)handleGetBacklinkDids:(HttpRequest *)request response:(HttpResponse *)response {
+    if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
@@ -104,6 +123,7 @@
 }
 
 - (void)handleGetBacklinksCount:(HttpRequest *)request response:(HttpResponse *)response {
+    if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
@@ -119,6 +139,7 @@
 }
 
 - (void)handleGetManyToMany:(HttpRequest *)request response:(HttpResponse *)response {
+    if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
@@ -151,6 +172,7 @@
 }
 
 - (void)handleGetManyToManyCounts:(HttpRequest *)request response:(HttpResponse *)response {
+    if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
@@ -182,6 +204,7 @@
 }
 
 - (void)handleResolveMiniDoc:(HttpRequest *)request response:(HttpResponse *)response {
+    if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *identifier = [self requiredParam:@"identifier" request:request response:response];
     if (!identifier) return;
 
@@ -203,6 +226,7 @@
     NSString *handle = [self handleFromDocument:doc] ?: [_database resolveDIDToHandle:did error:nil] ?: @"handle.invalid";
     NSString *pds = [self pdsEndpointFromDocument:doc] ?: @"";
     NSString *signingKey = [self signingKeyFromDocument:doc] ?: @"";
+    // Populate local handle->DID cache for future lookups (best-effort read-through pattern)
     [_database saveHandle:handle did:did error:nil];
 
     response.statusCode = HttpStatusOK;
@@ -215,6 +239,7 @@
 }
 
 - (void)handleGetRecordByUri:(HttpRequest *)request response:(HttpResponse *)response {
+    if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *atURI = [self requiredParam:@"at_uri" request:request response:response];
     if (!atURI) return;
     NSString *cid = [request queryParamForKey:@"cid"];
@@ -334,6 +359,9 @@
     return [values copy];
 }
 
+// NOTE: Blocks the calling GCD thread up to 5s. Local cache is checked first;
+// network call only fires on cache miss. If HttpServer moves to async handler
+// dispatch, refactor to completion-block pattern.
 - (NSString *)resolveIdentifierToDID:(NSString *)identifier error:(NSError **)error {
     if ([identifier hasPrefix:@"did:"]) return identifier;
 
@@ -349,7 +377,7 @@
         resolvedError = handleError;
         dispatch_semaphore_signal(semaphore);
     }];
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 
     if (resolved.length > 0) {
         [_database saveHandle:identifier did:resolved error:nil];
@@ -405,6 +433,9 @@
     return nil;
 }
 
+// NOTE: Blocks the calling GCD thread up to 5s. Local database is checked
+// first; network fetch only fires on cache miss. If HttpServer moves to async
+// handler dispatch, refactor to completion-block pattern.
 - (nullable NSDictionary *)fetchRemoteRecordForDID:(NSString *)did
                                        collection:(NSString *)collection
                                              rkey:(NSString *)rkey
@@ -437,7 +468,7 @@
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
-    request.timeoutInterval = 10.0;
+    request.timeoutInterval = 5.0;
     [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
     __block NSData *data = nil;
@@ -449,7 +480,7 @@
         if ([response isKindOfClass:[NSHTTPURLResponse class]]) http = (NSHTTPURLResponse *)response;
         dispatch_semaphore_signal(semaphore);
     }] resume];
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 
     if (http.statusCode < 200 || http.statusCode >= 300 || data.length == 0) return nil;
     id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
