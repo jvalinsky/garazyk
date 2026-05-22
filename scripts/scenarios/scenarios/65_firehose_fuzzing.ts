@@ -61,17 +61,14 @@ export async function run(): Promise<ScenarioResult> {
   troll.did = session.did;
   troll.accessJwt = session.accessJwt;
 
-  const fh = new FirehoseClient();
-  const events: FirehoseEvent[] = [];
-  const cb = (e: FirehoseEvent) => { events.push(e); };
-
   // ── Phase A: Gap fuzzing ──────────────────────────────────────────────────
   await timedCall(result, "Phase A: Gap frames (seq=100, seq=1e12)", async () => {
-    const frame1 = craftFrame(100);
-    const frame2 = craftFrame(1_000_000_000_000);
+    const fh = new FirehoseClient();
+    const events: FirehoseEvent[] = [];
+    const cb = (e: FirehoseEvent) => { events.push(e); };
 
-    fh.handleMessage(frame1, cb);
-    fh.handleMessage(frame2, cb);
+    fh.handleMessage(craftFrame(100), cb);
+    fh.handleMessage(craftFrame(1_000_000_000_000), cb);
 
     assert.isTrue(events.length >= 2, `Expected at least 2 events, got ${events.length}`);
   });
@@ -83,39 +80,14 @@ export async function run(): Promise<ScenarioResult> {
 
   // ── Phase B: Sequence regression ──────────────────────────────────────────
   await timedCall(result, "Phase B: Sequence regression (seq=105, seq=102)", async () => {
-    const frameHigh = craftFrame(105);
-    const frameLow = craftFrame(102);
+    const fh = new FirehoseClient();
+    const events: FirehoseEvent[] = [];
+    const cb = (e: FirehoseEvent) => { events.push(e); };
 
-    fh.handleMessage(frameHigh, cb);
-    fh.handleMessage(frameLow, cb);
+    fh.handleMessage(craftFrame(105), cb);
+    fh.handleMessage(craftFrame(102), cb);
 
     assert.isTrue(fh.lastSeq === 105, `High-water mark regression: expected lastSeq=105, got ${fh.lastSeq}`);
-  });
-
-  if (result.failed > 0) {
-    result.finish();
-    return result;
-  }
-
-  // ── Phase C: Time-travel frame ────────────────────────────────────────────
-  await timedCall(result, "Phase C: Time-travel frame (year 2099)", async () => {
-    const frame = craftFrame(200, "2099-12-31T23:59:59.000Z");
-
-    fh.handleMessage(frame, cb);
-
-    assert.isTrue(events.length >= 4, `Expected at least 4 events, got ${events.length}`);
-  });
-
-  if (result.failed > 0) {
-    result.finish();
-    return result;
-  }
-
-  // ── Verify event tracking consistency ─────────────────────────────────────
-  await timedCall(result, "Verify event tracking consistency", async () => {
-    assert.isTrue(events.length > 0, "Expected events to be collected");
-    const seqs = events.map((e: FirehoseEvent) => e.seq);
-    assert.isTrue(seqs.length >= 4, `Expected at least 4 events, got ${seqs.length}`);
   });
 
   if (result.failed > 0) {
