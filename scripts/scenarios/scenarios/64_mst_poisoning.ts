@@ -19,10 +19,20 @@ export async function run(): Promise<ScenarioResult> {
     await client.waitForHealthy(30);
   });
 
-  if (result.failed > 0) return result;
+  if (result.failed > 0) {
+    result.finish();
+    return result;
+  }
 
   const session = await timedCall(result, "Create Troll", async () => {
-    return await client.accounts.createAccount(troll.handle, troll.email, troll.password);
+    try {
+      return await client.accounts.createAccount(troll.handle, troll.email, troll.password);
+    } catch (e: any) {
+      if (e.message?.includes("already exists")) {
+        return await client.accounts.login(troll.handle, troll.password);
+      }
+      throw e;
+    }
   });
 
   if (!session) {
@@ -65,8 +75,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
-    console.log(res.summary());
-    Deno.exit(res.ok ? 0 : 1);
-  });
+  const res = await run();
+  console.log(res.summary());
+  Deno.exit(res.ok ? 0 : 1);
 }
