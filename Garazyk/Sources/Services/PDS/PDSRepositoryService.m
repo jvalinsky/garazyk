@@ -1622,8 +1622,9 @@
     NSMutableArray<PDSDatabaseRecord *> *allRecords = [NSMutableArray array];
     const NSUInteger pageSize = 1000;
     NSUInteger offset = 0;
-    const NSUInteger maxIterations = 1000; // Safety: max 1M records
+    const NSUInteger maxIterations = 100; // Public sync export cap: 100k records.
     NSUInteger iterations = 0;
+    BOOL reachedRecordCap = YES;
 
     while (iterations++ < maxIterations) {
         NSArray<PDSDatabaseRecord *> *page = [store listRecordsForDid:did
@@ -1642,9 +1643,19 @@
 
         [allRecords addObjectsFromArray:page];
         if (page.count < pageSize) {
+            reachedRecordCap = NO;
             break;
         }
         offset += pageSize;
+    }
+
+    if (reachedRecordCap) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                         code:413
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Repository export exceeds 100000 record safety cap"}];
+        }
+        return nil;
     }
 
     return allRecords;
