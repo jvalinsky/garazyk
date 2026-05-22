@@ -28,12 +28,39 @@ import { XrpcClient } from "../../lib/deno/client.ts";
 import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { attachPublicNetworkLeakGuard } from "../../lib/deno/browser_flow.ts";
 import { chromium } from "npm:playwright";
+import type { Browser } from "npm:playwright";
 
 const PDS_URL = SERVICE_URLS.pds;
 const PLC_URL = SERVICE_URLS.plc;
 
+interface OAuthClientMetadata {
+  client_uri?: string;
+  redirect_uris?: string[];
+}
+
 function recent(items: string[], limit = 12): string {
   return items.slice(-limit).join("\n");
+}
+
+async function resolveOAuthClientUrl(
+  configuredClientUrl: string,
+): Promise<string | null> {
+  const metadataUrl = `${configuredClientUrl}/client-metadata.json`;
+  const res = await fetch(metadataUrl);
+  if (res.status !== 200) {
+    return null;
+  }
+
+  const metadata = await res.json() as OAuthClientMetadata;
+  const redirectUri = metadata.redirect_uris?.[0];
+  const browserUrl = metadata.client_uri ?? redirectUri;
+  if (!browserUrl) {
+    throw new Error(
+      `OAuth client metadata at ${metadataUrl} did not include client_uri or redirect_uris`,
+    );
+  }
+
+  return new URL(browserUrl).origin;
 }
 
 async function pageState(page: any): Promise<string> {
@@ -185,17 +212,19 @@ export async function run(): Promise<ScenarioResult> {
     },
   );
 
-  const clientUrl = SERVICE_URLS.oauthClient.replace(/\/$/, "");
+  const configuredClientUrl = SERVICE_URLS.oauthClient.replace(/\/$/, "");
+  let clientUrl = configuredClientUrl;
   try {
-    const res = await fetch(`${clientUrl}/client-metadata.json`);
-    if (res.status !== 200) {
+    const resolvedClientUrl = await resolveOAuthClientUrl(configuredClientUrl);
+    if (!resolvedClientUrl) {
       result.stepSkipped(
         "OAuth Client availability",
-        `Status ${res.status}; skipping browser automation`,
+        "client-metadata.json was not available; skipping browser automation",
       );
       result.finish();
       return result;
     }
+    clientUrl = resolvedClientUrl;
   } catch (e: any) {
     result.stepSkipped(
       "OAuth Client availability",
@@ -205,8 +234,9 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
+  let browser: Browser | null = null;
   try {
-    const browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
     const page = await context.newPage();
     const publicNetworkLeaks = attachPublicNetworkLeakGuard(page);
@@ -247,7 +277,6 @@ export async function run(): Promise<ScenarioResult> {
         "Redirected to PDS authorize page",
         `Timeout waiting for #auth-handle. Screenshot: ${screenshotPath}`,
       );
-      await browser.close();
       result.finish();
       return result;
     }
@@ -255,12 +284,29 @@ export async function run(): Promise<ScenarioResult> {
     await page.fill("#auth-handle", luna.handle);
     await page.fill("#auth-password", luna.password);
     await page.click("#auth-signin-btn");
+
+    const consentButton = page.locator(
+      "#auth-step-consent:not(.hidden) button[type='submit'].btn-primary",
+    );
+    await consentButton.waitFor({ state: "visible", timeout: 10000 });
+    const sessionTokenInput = page.locator(
+      "#auth-step-consent input[name='session_token']",
+    );
+    const sessionTokenDeadline = Date.now() + 10000;
+    let consentSessionToken = "";
+    while (Date.now() < sessionTokenDeadline) {
+      consentSessionToken = await sessionTokenInput.inputValue().catch(() =>
+        ""
+      );
+      if (consentSessionToken.length > 0) break;
+      await page.waitForTimeout(100);
+    }
+    if (!consentSessionToken) {
+      throw new Error("Consent session token was not populated after sign-in");
+    }
     result.stepPassed("PDS Sign-in successful");
 
-    await page.waitForSelector("button[type='submit'].btn-primary", {
-      timeout: 5000,
-    });
-    await page.click("button[type='submit'].btn-primary");
+    await consentButton.click();
     result.stepPassed("Consent granted");
 
     const profileResult = await waitForOAuthClientOutcome(page);
@@ -292,10 +338,12 @@ export async function run(): Promise<ScenarioResult> {
     } else {
       result.stepPassed("Public network leak guard");
     }
-
-    await browser.close();
   } catch (e: any) {
     result.stepFailed("Browser automation", e.message || String(e));
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
   }
 
   result.finish();
