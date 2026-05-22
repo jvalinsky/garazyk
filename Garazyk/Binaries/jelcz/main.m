@@ -25,6 +25,9 @@
 #import "MediaCore/ATProtoMediaServiceConfiguration.h"
 #import "Video/ATProtoVideoProcessor.h"
 #import "Video/VideoHLSGenerator.h"
+#import "Network/HttpServer.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
 static ATProtoMediaServiceRuntime *gRuntime = nil;
@@ -222,9 +225,9 @@ static void registerHLSRoutes(HttpServer *server, ATProtoVideoHLSGenerator *hlsG
         [response setBodyFileAtPath:filePath deleteAfterSend:NO];
     };
 
-    [server addRoute:@"OPTIONS" path:@"/watch" handler:watchHandler];
+    // Only register wildcard routes — bare /watch without trailing slash would
+    // always 404 (the handler strips 7 chars for "/watch/").
     [server addRoute:@"OPTIONS" path:@"/watch/*" handler:watchHandler];
-    [server addRoute:@"GET" path:@"/watch" handler:watchHandler];
     [server addRoute:@"GET" path:@"/watch/*" handler:watchHandler];
 }
 
