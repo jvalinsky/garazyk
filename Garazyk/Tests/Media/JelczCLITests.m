@@ -17,8 +17,8 @@
 #import "Video/ATProtoVideoProcessor.h"
 #import "MediaCore/JelczCLI.h"
 
-/*! Size of redirect buffer for capturing stdout. */
-static const NSUInteger kCaptureBufferSize = 16384;
+/*! Redirect buffer size for capturing stdout. @note enum avoids VLA warning from static const. */
+enum { kCaptureBufferSize = 16384 };
 
 #pragma mark - Helper: Capture stdout of a block
 
