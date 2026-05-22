@@ -5,14 +5,24 @@
 #import "MediaCore/ATProtoMediaWorker.h"
 #import "MediaCore/ATProtoMediaProcessor.h"
 #import "MediaCore/ATProtoMediaServiceConfiguration.h"
+#import "Blob/PDSBlobProvider.h"
+#import "Core/CID.h"
 
 #pragma mark - Mock Media Processor
 
 @interface MockMediaProcessor : NSObject <ATProtoMediaProcessor>
-@property (nonatomic, copy) NSString *mediaTypeIdentifier;
+@property (nonatomic, readonly) NSString *mediaTypeIdentifier;
 @property (nonatomic, assign) BOOL shouldFail;
 @property (nonatomic, assign) NSTimeInterval processingDelay;
 @property (nonatomic, strong) NSDictionary *resultsToReturn;
+@end
+
+/*! Valid CID string used in tests (bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu) */
+static NSString *const kTestProcessedCID = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
+static NSString *const kTestThumbnailCID = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
+
+@interface MockMediaProcessor ()
+@property (nonatomic, readwrite) NSString *mediaTypeIdentifier;
 @end
 
 @implementation MockMediaProcessor
@@ -23,8 +33,8 @@
         _mediaTypeIdentifier = @"app.bsky.test";
         _shouldFail = NO;
         _processingDelay = 0.0;
-        _resultsToReturn = @{@"processedCid": @"bafyreiTest123",
-                             @"thumbnailCid": @"bafyreiThumb123",
+        _resultsToReturn = @{@"processedCid": kTestProcessedCID,
+                             @"thumbnailCid": kTestThumbnailCID,
                              @"metadata": @{@"width": @640, @"height": @360}};
     }
     return self;
@@ -67,20 +77,33 @@
 
 #pragma mark - Mock Blob Provider
 
-@interface MediaCoreMockBlobProvider : NSObject
-- (nullable NSInputStream *)retrieveBlobStreamForCID:(id)cid error:(NSError **)error;
-- (nullable NSURL *)blobFileURLForCID:(id)cid error:(NSError **)error;
+@interface MediaCoreMockBlobProvider : NSObject <PDSBlobProvider>
 @end
 
 @implementation MediaCoreMockBlobProvider
 
-- (nullable NSInputStream *)retrieveBlobStreamForCID:(id)cid error:(NSError **)error {
-    // Return a minimal valid stream with some data
+- (BOOL)storeBlobData:(NSData *)data forCID:(CID *)cid error:(NSError **)error {
+    return YES;
+}
+
+- (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error {
+    return [@"test media data" dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error {
     NSData *dummyData = [@"test media data" dataUsingEncoding:NSUTF8StringEncoding];
     return [NSInputStream inputStreamWithData:dummyData];
 }
 
-- (nullable NSURL *)blobFileURLForCID:(id)cid error:(NSError **)error {
+- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+    return YES;
+}
+
+- (BOOL)hasBlobDataForCID:(CID *)cid {
+    return YES;
+}
+
+- (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error {
     return nil; // Force stream-based path
 }
 
@@ -261,12 +284,12 @@
     [self.store createJobWithId:@"nil-results-job" did:@"did:plc:nil" blobCid:@"cid7" mimeType:@"video/mp4" fileSize:@(100) serviceAuthToken:nil error:nil];
 
     NSError *error = nil;
-    BOOL updated = [self.store updateJobResults:@"nil-results-job" results:nil error:&error];
+    BOOL updated = [self.store updateJobResults:@"nil-results-job" results:@{} error:&error];
     XCTAssertTrue(updated);
 
     NSDictionary *job = [self.store getJobById:@"nil-results-job" error:nil];
     XCTAssertEqualObjects(job[@"state"], @"COMPLETED");
-    // results_json may be nil or null
+    // results_json may be empty JSON object
 }
 
 #pragma mark - SQLiteStore: Query Pending Jobs
@@ -379,7 +402,7 @@
 #pragma mark - Worker with Mock Processor
 
 - (void)testWorkerProcessesSinglePendingJob {
-    [self.store createJobWithId:@"w-job-1" did:@"did:plc:worker" blobCid:@"bafyreiWorker" mimeType:@"video/mp4" fileSize:@(1024) serviceAuthToken:nil error:nil];
+    [self.store createJobWithId:@"w-job-1" did:@"did:plc:worker" blobCid:kTestProcessedCID mimeType:@"video/mp4" fileSize:@(1024) serviceAuthToken:nil error:nil];
 
     ATProtoMediaWorker *worker = [[ATProtoMediaWorker alloc] init];
     worker.jobStore = self.store;
@@ -387,6 +410,7 @@
     worker.blobProvider = [[MediaCoreMockBlobProvider alloc] init];
     worker.maxConcurrentJobs = 2;
     worker.pollInterval = 2.0;
+    worker.enabled = YES;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Job completed"];
     // Trigger immediate processing
@@ -422,7 +446,7 @@
     // Create more jobs than maxConcurrentJobs
     for (int i = 0; i < 5; i++) {
         [self.store createJobWithId:[NSString stringWithFormat:@"conc-job-%d", i]
-                                did:@"did:plc:conc" blobCid:[NSString stringWithFormat:@"cid%d", i]
+                                did:@"did:plc:conc" blobCid:kTestProcessedCID
                           mimeType:@"video/mp4" fileSize:@(1024) serviceAuthToken:nil error:nil];
     }
 
@@ -436,7 +460,7 @@
     worker.maxConcurrentJobs = 2;
     worker.pollInterval = 1.0;
 
-    [worker processPendingJobs];
+    [worker start];
 
     // After a short delay, check how many are PROCESSING
     XCTestExpectation *expectation = [self expectationWithDescription:@"Wait for processing to start"];
@@ -463,7 +487,7 @@
 }
 
 - (void)testWorkerHandlesProcessorFailure {
-    [self.store createJobWithId:@"fail-worker" did:@"did:plc:fail" blobCid:@"bafyreiFail" mimeType:@"video/mp4" fileSize:@(1024) serviceAuthToken:nil error:nil];
+    [self.store createJobWithId:@"fail-worker" did:@"did:plc:fail" blobCid:kTestProcessedCID mimeType:@"video/mp4" fileSize:@(1024) serviceAuthToken:nil error:nil];
 
     self.mockProcessor.shouldFail = YES;
 
@@ -472,6 +496,7 @@
     worker.processor = self.mockProcessor;
     worker.blobProvider = [[MediaCoreMockBlobProvider alloc] init];
     worker.maxConcurrentJobs = 2;
+    worker.enabled = YES;
 
     [worker processPendingJobs];
 
