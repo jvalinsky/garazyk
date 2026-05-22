@@ -432,7 +432,7 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
       @"Lexicon":        @[@"LexiconValidation", @"LexiconResolve"],
       @"Interop":        @[@"LexiconValidatorInterop", @"AtprotoInterop",
                            @"SyntaxInterop", @"MSTInterop"],
-      @"Media":          @[@"PDSVideo", @"ATProtoVideo", @"MimeType"],
+      @"Media":          @[@"ATProtoMedia", @"PDSVideo", @"ATProtoVideo", @"MimeType"],
       @"Metrics":        @[@"PDSMetrics"],
       @"Debug":          @[@"GZLoggerPerformance"],
       @"Deployment":     @[@"DeploymentReadiness"],
@@ -1121,7 +1121,8 @@ int main(int argc, char *argv[]) {
       @"ThreadgateServiceTests",
       @"ThreadgateMigrationTests",
       @"XRPCContractAuditTests",
-      @"ChatGroupLifecycleTests"
+      @"ChatGroupLifecycleTests",
+      @"ATProtoMediaCoreTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

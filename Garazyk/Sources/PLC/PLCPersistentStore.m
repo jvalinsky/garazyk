@@ -122,7 +122,8 @@ static NSString * const kSelectAllDIDsSQL =
         }
     }
     
-    int result = sqlite3_open(self.dbPath.UTF8String, &_db);
+    int result = sqlite3_open_v2(self.dbPath.UTF8String, &_db,
+        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, NULL);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -149,6 +150,19 @@ static NSString * const kSelectAllDIDsSQL =
 }
 
 - (BOOL)configureDatabase:(NSError **)error {
+    // Configure a 5-second busy timeout for concurrent WAL access
+    int busyResult = sqlite3_busy_timeout(self.db, 5000);
+    if (busyResult != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:busyResult
+                                    userInfo:@{NSLocalizedDescriptionKey:
+                                        [NSString stringWithFormat:@"Failed to set busy timeout: %s",
+                                         sqlite3_errmsg(self.db)]}];
+        }
+        return NO;
+    }
+    
     const char *pragmas[] = {
         "PRAGMA journal_mode=WAL",
         "PRAGMA synchronous=NORMAL",
@@ -275,21 +289,23 @@ static NSString * const kSelectAllDIDsSQL =
     if (!self.open) {
         return;
     }
-    
-    for (NSValue *boxedStmt in self.stmtCache.allValues) {
-        sqlite3_stmt *stmt = NULL;
-        [boxedStmt getValue:&stmt];
-        if (stmt) {
-            sqlite3_finalize(stmt);
+
+    dispatch_sync(_transactionQueue, ^{
+        for (NSValue *boxedStmt in self.stmtCache.allValues) {
+            sqlite3_stmt *stmt = NULL;
+            [boxedStmt getValue:&stmt];
+            if (stmt) {
+                sqlite3_finalize(stmt);
+            }
         }
-    }
-    [self.stmtCache removeAllObjects];
-    
-    if (self.db) {
-        sqlite3_close(self.db);
-        self.db = NULL;
-    }
-    
+        [self.stmtCache removeAllObjects];
+
+        if (self.db) {
+            sqlite3_close(self.db);
+            self.db = NULL;
+        }
+    });
+
     self.open = NO;
 }
 
