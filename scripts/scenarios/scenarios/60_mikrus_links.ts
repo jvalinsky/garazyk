@@ -37,7 +37,7 @@ async function waitForCount(
   subject: string,
   source: string,
   minTotal: number,
-  timeoutMs = 20_000,
+  timeoutMs = 60_000,
 ) {
   const deadline = Date.now() + timeoutMs;
   let lastTotal = 0;

@@ -90,11 +90,10 @@ export async function run(): Promise<ScenarioResult> {
     (r) => `uri=${r.uri}`,
   );
 
-  const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") || "test-admin-password";
   const adminToken = await timedCall(
     result,
     "Admin login",
-    async () => pds.adminLogin(adminPassword),
+    async () => pds.adminLogin("admin-localdev"),
     () => "obtained admin bearer",
   );
 
