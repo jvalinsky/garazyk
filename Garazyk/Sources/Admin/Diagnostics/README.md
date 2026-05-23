@@ -102,7 +102,7 @@ subscriber count, and backpressure metrics.
   - Current sequence number from ServiceDatabases
   - Events per second (computed from seq delta)
   - Active subscriber count from SubscribeReposHandler
-  - Backpressure warnings/critical counts from PDSMetrics
+  - Backpressure warnings/critical counts from GZMetrics
   - Queue overflow counts
 - Data is persisted to `sequencer_analytics` table with 24+ month retention
 

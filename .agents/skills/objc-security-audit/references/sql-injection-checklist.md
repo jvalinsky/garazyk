@@ -39,7 +39,7 @@ NSString *sql = [NSString stringWithFormat:@"SELECT * FROM %@", tableName];
 ```
 
 ## Input validation
-- Apply `PDSInputValidator` before any SQL context.
+- Apply `GZInputValidator` before any SQL context.
 - Validate type, length, and format of inputs.
 - Reject known SQL keywords in user input (defense in depth).
 - Log suspicious input patterns for monitoring.
