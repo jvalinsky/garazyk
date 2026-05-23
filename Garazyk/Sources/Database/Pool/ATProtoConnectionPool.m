@@ -6,6 +6,9 @@
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
+// Queue-specific key for re-entrancy detection in dealloc
+static void * const kConnectionPoolQueueKey = (void *)&kConnectionPoolQueueKey;
+
 static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
                                                    NSString *name,
                                                    NSString *value) {
@@ -28,8 +31,8 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 
 @interface ATProtoConnectionPool ()
 // Pool state
-@property (nonatomic, strong) NSMutableArray<NSNumber *> *availablePool;  // sqlite3* as NSNumber
-@property (nonatomic, strong) NSMutableSet<NSNumber *> *inUsePool;
+@property (nonatomic, strong) NSMutableArray<NSValue *> *availablePool;  // sqlite3* as NSValue (pointer)
+@property (nonatomic, strong) NSMutableSet<NSValue *> *inUsePool;
 @property (nonatomic, assign) NSUInteger peakConnCount;
 @property (nonatomic, strong) NSDate *lastPruneTime;
 
@@ -38,7 +41,7 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 @property (nonatomic, PDS_GCD_STRONG) dispatch_semaphore_t connectionSemaphore;
 
 // Connection metadata
-@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSDate *> *connectionLastUsed;
+@property (nonatomic, strong) NSMutableDictionary<NSValue *, NSDate *> *connectionLastUsed;
 
 @end
 
@@ -82,15 +85,16 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
         // Thread safety
         _poolQueue = dispatch_queue_create("com.atproto.pds.connectionpool",
                                           DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_poolQueue, kConnectionPoolQueueKey, kConnectionPoolQueueKey, NULL);
         _connectionSemaphore = dispatch_semaphore_create((NSInteger)maxConnections);
 
         // Create minimum connections
         for (NSUInteger i = 0; i < minConnections; i++) {
             sqlite3 *conn = [self createNewConnection];
             if (conn) {
-                NSNumber *connNumber = @((unsigned long long)conn);
-                [_availablePool addObject:connNumber];
-                _connectionLastUsed[connNumber] = [NSDate date];
+                NSValue *connValue = [NSValue valueWithPointer:conn];
+                [_availablePool addObject:connValue];
+                _connectionLastUsed[connValue] = [NSDate date];
             }
         }
 
@@ -101,7 +105,12 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 }
 
 - (void)dealloc {
-    [self closeAllConnections];
+    if (dispatch_get_specific(kConnectionPoolQueueKey)) {
+        // Already on pool queue — close connections directly to avoid deadlock
+        [self closeAllConnectionsNoSync];
+    } else {
+        [self closeAllConnections];
+    }
 }
 
 #pragma mark - Connection Management
@@ -124,18 +133,18 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
     dispatch_sync(self.poolQueue, ^{
         // Try to get an available connection
         if (self.availablePool.count > 0) {
-            NSNumber *connNumber = self.availablePool.lastObject;
+            NSValue *connValue = self.availablePool.lastObject;
             [self.availablePool removeLastObject];
-            connection = (sqlite3 *)(uintptr_t)[connNumber unsignedLongLongValue];
-            [self.inUsePool addObject:connNumber];
-            self.connectionLastUsed[connNumber] = [NSDate date];
+            connection = [connValue pointerValue];
+            [self.inUsePool addObject:connValue];
+            self.connectionLastUsed[connValue] = [NSDate date];
         } else {
             // Create new connection
             connection = [self createNewConnection];
             if (connection) {
-                NSNumber *connNumber = @((unsigned long long)connection);
-                [self.inUsePool addObject:connNumber];
-                self.connectionLastUsed[connNumber] = [NSDate date];
+                NSValue *connValue = [NSValue valueWithPointer:connection];
+                [self.inUsePool addObject:connValue];
+                self.connectionLastUsed[connValue] = [NSDate date];
 
                 // Update peak
                 NSUInteger total = self.availablePool.count + self.inUsePool.count;
@@ -158,13 +167,13 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 - (void)releaseConnection:(sqlite3 *)connection {
     if (!connection) return;
 
-    NSNumber *connNumber = @((unsigned long long)connection);
+    NSValue *connValue = [NSValue valueWithPointer:connection];
 
     dispatch_sync(self.poolQueue, ^{
-        if ([self.inUsePool containsObject:connNumber]) {
-            [self.inUsePool removeObject:connNumber];
-            [self.availablePool addObject:connNumber];
-            self.connectionLastUsed[connNumber] = [NSDate date];
+        if ([self.inUsePool containsObject:connValue]) {
+            [self.inUsePool removeObject:connValue];
+            [self.availablePool addObject:connValue];
+            self.connectionLastUsed[connValue] = [NSDate date];
 
             // Signal that a connection is available
             dispatch_semaphore_signal(self.connectionSemaphore);
@@ -175,12 +184,12 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 - (void)invalidateConnection:(sqlite3 *)connection {
     if (!connection) return;
 
-    NSNumber *connNumber = @((unsigned long long)connection);
+    NSValue *connValue = [NSValue valueWithPointer:connection];
 
     dispatch_sync(self.poolQueue, ^{
-        [self.inUsePool removeObject:connNumber];
-        [self.availablePool removeObject:connNumber];
-        [self.connectionLastUsed removeObjectForKey:connNumber];
+        [self.inUsePool removeObject:connValue];
+        [self.availablePool removeObject:connValue];
+        [self.connectionLastUsed removeObjectForKey:connValue];
 
         // Close the connection
         sqlite3_close(connection);
@@ -286,13 +295,13 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
             GZ_LOG_DB_INFO(@"Pruning %lu idle connections", (unsigned long)toRemove);
 
             for (NSUInteger i = 0; i < toRemove; i++) {
-                NSNumber *connNumber = self.availablePool.lastObject;
+                NSValue *connValue = self.availablePool.lastObject;
                 [self.availablePool removeLastObject];
 
-                sqlite3 *conn = (sqlite3 *)(uintptr_t)[connNumber unsignedLongLongValue];
+                sqlite3 *conn = [connValue pointerValue];
                 sqlite3_close(conn);
 
-                [self.connectionLastUsed removeObjectForKey:connNumber];
+                [self.connectionLastUsed removeObjectForKey:connValue];
             }
         }
 
@@ -302,25 +311,32 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 
 - (void)closeAllConnections {
     dispatch_sync(self.poolQueue, ^{
-        GZ_LOG_DB_INFO(@"Closing all connections (available: %lu, in use: %lu)",
-                       (unsigned long)self.availablePool.count,
-                       (unsigned long)self.inUsePool.count);
-
-        // Close available connections
-        for (NSNumber *connNumber in self.availablePool) {
-            sqlite3 *conn = (sqlite3 *)(uintptr_t)[connNumber unsignedLongLongValue];
-            sqlite3_close(conn);
-        }
-        [self.availablePool removeAllObjects];
-
-        // Close in-use connections (they may be in the middle of operations)
-        for (NSNumber *connNumber in self.inUsePool) {
-            sqlite3 *conn = (sqlite3 *)(uintptr_t)[connNumber unsignedLongLongValue];
-            sqlite3_close(conn);
-        }
-        [self.inUsePool removeAllObjects];
-        [self.connectionLastUsed removeAllObjects];
+        [self closeAllConnectionsNoSync];
     });
+}
+
+/// Close all connections without synchronizing on poolQueue.
+/// Must be called with poolQueue already held, or from dealloc when
+/// re-entrancy is detected via dispatch_get_specific.
+- (void)closeAllConnectionsNoSync {
+    GZ_LOG_DB_INFO(@"Closing all connections (available: %lu, in use: %lu)",
+                   (unsigned long)self.availablePool.count,
+                   (unsigned long)self.inUsePool.count);
+
+    // Close available connections
+    for (NSValue *connValue in self.availablePool) {
+        sqlite3 *conn = [connValue pointerValue];
+        sqlite3_close(conn);
+    }
+    [self.availablePool removeAllObjects];
+
+    // Close in-use connections (they may be in the middle of operations)
+    for (NSValue *connValue in self.inUsePool) {
+        sqlite3 *conn = [connValue pointerValue];
+        sqlite3_close(conn);
+    }
+    [self.inUsePool removeAllObjects];
+    [self.connectionLastUsed removeAllObjects];
 }
 
 @end

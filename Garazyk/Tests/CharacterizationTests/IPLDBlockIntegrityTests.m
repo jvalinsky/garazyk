@@ -37,7 +37,7 @@
 }
 
 - (void)testCharacterization_RecordCreationPopulatesIpldBlocks {
-    NSString *did = @"did:plc:test-ipld-integrity";
+    NSString *did = @"did:plc:abcdefghijklmnopqrstuvwx";
     NSString *collection = @"app.bsky.feed.post";
     NSString *rkey = @"test-post";
     NSDictionary *value = @{
@@ -95,7 +95,7 @@
 }
 
 - (void)testCharacterization_ApplyWritesPopulatesIpldBlocks {
-    NSString *did = @"did:plc:test-apply-writes";
+    NSString *did = @"did:plc:bcdefghijklmnopqrstuvwxy";
     
     // First create the account
     NSError *error = nil;

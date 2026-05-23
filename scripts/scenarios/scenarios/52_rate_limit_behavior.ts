@@ -32,8 +32,8 @@ function rateLimitRecoveryDelayMs(): number {
   const configuredWindow = Number(Deno.env.get("PDS_RATELIMIT_DID_WINDOW") ?? "0");
   const seconds = Number.isFinite(configuredWindow) && configuredWindow > 0
     ? configuredWindow + 1
-    : 10;
-  return Math.min(Math.max(seconds, 3), 30) * 1000;
+    : 65;
+  return Math.min(Math.max(seconds, 3), 90) * 1000;
 }
 
 export async function run(): Promise<ScenarioResult> {

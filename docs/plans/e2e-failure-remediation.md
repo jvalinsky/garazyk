@@ -13,7 +13,7 @@ Sub-plans for complex steps are linked in each section. See `docs/plans/e2e-<ID>
 | P1 | AppView Handler Gaps | 7 | 39, 45, 55 |
 | P2 | Auth / Token / Session Edge Cases | 5 | 43, 54, 55 |
 | P3 | Rate Limiting / PLC / Firehose | 4 | 31, 32, 33, 30 |
-| P4 | Known Gaps / Stubbed / Pre-existing | 10 | 26, 15, 06, 10, 51, 58, 11, 13 |
+| P4 | Known Gaps / Stubbed / Pre-existing | 9 | 26, 15, 06, 10, 51, 58, 11 |
 
 ---
 
@@ -158,9 +158,10 @@ Sub-plans for complex steps are linked in each section. See `docs/plans/e2e-<ID>
 - **Fix**: Fix client_id URL in scenario; review admin auth middleware
 
 ### 13 — OAuth2 E2E Client Integration
-- **Failure**: DID document PDS endpoint not found
-- **Root cause**: PLC DID document doesn't include `#atproto_pds` service endpoint
-- **Fix**: Ensure PLC service endpoint registration includes the PDS URL
+- **Status**: Resolved / not currently reproducible
+- **Verification**: `./scripts/run_scenarios.ts 13` passed 12/12 on 2026-05-22 local time.
+- **Observed DID endpoint**: `serviceEndpoint=http://127.0.0.1:2583`
+- **Notes**: The current Docker local-network config sets the PDS issuer to `http://127.0.0.1:2583`, account creation writes `services.atproto_pds.endpoint` into the signed PLC operation, and PLC DID rendering emits it as DID `serviceEndpoint`.
 
 ---
 
@@ -198,7 +199,7 @@ Each item links to its sub-plan where one exists.
 - [ ] 51: Fix blob GC keep-alive tracking ([sub-plan](e2e-051-blob-gc-keepalive.md))
 - [ ] 58: Implement account delete cleanup cascade ([sub-plan](e2e-058-account-delete-cascade.md))
 - [ ] 11: Fix OAuth2 lab client_id; debug admin auth
-- [ ] 13: Fix PLC DID document service endpoint registration
+- [x] 13: PLC DID document service endpoint registration verified
 
 ---
 

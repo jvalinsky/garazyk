@@ -48,7 +48,7 @@ static const NSTimeInterval kDPoPNonceTTLSeconds = 300.0; // 5 minutes per AT Pr
 
     NSDate *expiration = [NSDate dateWithTimeIntervalSinceNow:kDPoPNonceTTLSeconds];
     
-    dispatch_async(self.lockQueue, ^{
+    dispatch_sync(self.lockQueue, ^{
         self.issuedNonces[nonce] = expiration;
         [self cleanupNonces];
     });

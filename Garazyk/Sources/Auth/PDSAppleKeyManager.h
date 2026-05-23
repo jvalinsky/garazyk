@@ -115,7 +115,7 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
 /** Verifies a signature with an explicit public key reference. */
 - (BOOL)verifySignature:(NSData *)signature
                forData:(NSData *)data
-               withKey:(SecKeyRef)publicKey
+         withPublicKey:(SecKeyRef)publicKey
                  error:(NSError **)error;
 
 /** Verifies a signature using the public key associated with a stored key identifier. */

@@ -190,7 +190,7 @@
 }
 
 - (void)testOrphanScanEnumeratesServiceDatabaseAccounts {
-    NSString *did = @"did:plc:serviceaccount";
+    NSString *did = @"did:plc:svcacctest234567abcdefgh";
     [self createServiceAccountWithDid:did handle:@"service.example.com"];
 
     __autoreleasing NSError *uploadError = nil;
@@ -216,7 +216,7 @@
 }
 
 - (void)testReferenceScanReportsUnreferencedAndInvalidMetadataCIDs {
-    NSString *did = @"did:plc:references";
+    NSString *did = @"did:plc:refabc234567abcdefghijkl";
     [self createServiceAccountWithDid:did handle:@"references.example.com"];
 
     CID *referencedCID = [CID sha256:[@"referenced" dataUsingEncoding:NSUTF8StringEncoding]];

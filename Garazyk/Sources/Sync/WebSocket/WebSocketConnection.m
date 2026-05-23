@@ -383,6 +383,9 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (NSString *)computeAcceptKey:(NSString *)clientKey {
+    // RFC 6455 Section 4.2.2 requires SHA-1 for the Sec-WebSocket-Accept
+    // handshake computation. SHA-1 is mandated by the WebSocket protocol
+    // spec and is only used here — not for any cryptographic security.
     static NSString * const GUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     NSString *input = [clientKey stringByAppendingString:GUID];
     NSData *data = [input dataUsingEncoding:NSUTF8StringEncoding];

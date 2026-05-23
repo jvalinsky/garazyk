@@ -68,7 +68,7 @@
     XCTAssertNotNil(state, @"Enqueueing an unknown DID should create a pending sync state");
 }
 
-- (void)testEnqueueSyncedDIDMarksDirty {
+- (void)testEnqueueSyncedDIDDoesNotMarkDirty {
     NSError *err = nil;
     AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:synced"];
     s.status = AppViewRepoSyncStatusSynced;
@@ -78,8 +78,8 @@
     [NSThread sleepForTimeInterval:0.05];
 
     AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:synced" error:&err];
-    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty,
-                   @"Synced repo should be marked dirty when re-enqueued");
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced,
+                   @"Live commits should not force a synced repo into dirty backfill");
 }
 
 - (void)testStatusReportContainsExpectedKeys {
