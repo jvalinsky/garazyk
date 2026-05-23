@@ -237,8 +237,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Verify deletion",
       async () => {
-        await client.agent.com.atproto.repo.getRecord({
-          repo: rosa.did,
+        await client.as(rosa).repo.getRecord({
           collection: "app.bsky.feed.post",
           rkey,
         });

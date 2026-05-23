@@ -112,10 +112,7 @@ export async function run(): Promise<ScenarioResult> {
       let lastCount = 0;
       await waitFor(async () => {
         try {
-          const res = await appview.as(luna).raw.get(
-            "app.bsky.graph.getLists",
-            { actor: luna.did, limit: 10 },
-          );
+          const res = await appview.as(luna).graph.getLists(luna.did!, { limit: 10 });
           lastCount = res.lists?.length || 0;
           return lastCount > 0;
         } catch {
@@ -129,10 +126,7 @@ export async function run(): Promise<ScenarioResult> {
       let lastCount = 0;
       await waitFor(async () => {
         try {
-          const res = await appview.as(luna).raw.get(
-            "app.bsky.graph.getList",
-            { list: listUri, limit: 10 },
-          );
+          const res = await appview.as(luna).graph.getList(listUri, { limit: 10 });
           lastCount = res.items?.length || 0;
           return true; // getList succeeded (list is indexed)
         } catch {

@@ -117,11 +117,7 @@ export async function run(): Promise<ScenarioResult> {
     "No auth token returns error",
     async () => {
       try {
-        await client.raw.get(
-          "app.bsky.actor.getProfile",
-          { actor: luna.did },
-          // No token
-        );
+        await client.feed.getProfile(luna.did);
       } catch (e) {
         assert.isTrue(e instanceof XrpcError, "expected XrpcError for no auth");
         assert.isTrue(
@@ -138,7 +134,7 @@ export async function run(): Promise<ScenarioResult> {
     "Invalid token returns error",
     async () => {
       try {
-        await client.as({ accessJwt: "Bearer totally-invalid-token-12345" }).raw.get("app.bsky.actor.getProfile", { actor: luna.did });
+        await client.as({ accessJwt: "Bearer totally-invalid-token-12345" }).feed.getProfile(luna.did);
       } catch (e) {
         assert.isTrue(
           e instanceof XrpcError,
@@ -160,8 +156,7 @@ export async function run(): Promise<ScenarioResult> {
     "createRecord with missing $type returns error",
     async () => {
       try {
-        await client.as(luna).raw.post("com.atproto.repo.createRecord", {
-          repo: luna.did,
+        await client.as(luna).repo.createRecord({
           collection: "app.bsky.feed.post",
           record: {
             // Missing $type
@@ -187,8 +182,7 @@ export async function run(): Promise<ScenarioResult> {
     "createRecord with invalid collection name returns error",
     async () => {
       try {
-        await client.as(luna).raw.post("com.atproto.repo.createRecord", {
-          repo: luna.did,
+        await client.as(luna).repo.createRecord({
           collection: "invalid!!collection!!name",
           record: { $type: "invalid!!collection!!name", text: "hi", createdAt: now() },
         });
@@ -232,14 +226,10 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Retrieve post created after error tests",
       async () => {
-        return await client.as(luna).raw.get(
-          "com.atproto.repo.getRecord",
-          {
-            repo: luna.did,
-            collection: "app.bsky.feed.post",
-            rkey: postRef.uri.split("/").pop()!,
-          },
-        );
+        return await client.as(luna).repo.getRecord({
+          collection: "app.bsky.feed.post",
+          rkey: postRef.uri.split("/").pop()!,
+        });
       },
       (r) => `uri=${r.uri}`,
     );
@@ -274,10 +264,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Get profile after token refresh",
     async () => {
-      const profile = await client.as(luna).raw.get(
-        "app.bsky.actor.getProfile",
-        { actor: luna.did },
-      );
+      const profile = await client.as(luna).feed.getProfile(luna.did);
       assert.equal(
         profile.did,
         luna.did,

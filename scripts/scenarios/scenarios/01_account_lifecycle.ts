@@ -74,9 +74,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Get session",
     async () => {
-      const res = await pds.agent.com.atproto.server.getSession(undefined, {
-        headers: { Authorization: `Bearer ${luna.accessJwt}` },
-      });
+      const res = await pds.as(luna).api.com.atproto.server.getSession();
       return res.data;
     },
     (s) => `did=${s.did}`,
@@ -86,7 +84,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Resolve handle",
     async () => {
-      const res = await pds.agent.com.atproto.identity.resolveHandle({ handle: luna.handle });
+      const res = await pds.api.com.atproto.identity.resolveHandle({ handle: luna.handle });
       return res.data;
     },
     (r) => `did=${r.did}`,
@@ -115,8 +113,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create profile",
     async () => {
-      const res = await pds.agent.com.atproto.repo.createRecord({
-        repo: luna.did,
+      const res = await pds.as(luna).repo.createRecord({
         collection: "app.bsky.actor.profile",
         record: profile,
       });
@@ -143,9 +140,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Refresh session",
       async () => {
-        const res = await pds.agent.com.atproto.server.refreshSession(undefined, {
-          headers: { Authorization: `Bearer ${luna.refreshJwt}` },
-        });
+        const res = await pds.as({ accessJwt: luna.refreshJwt }).api.com.atproto.server.refreshSession();
         return res.data;
       },
       (r) => `accessJwt=${r.accessJwt.substring(0, 20)}...`,
@@ -162,16 +157,14 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Invalid login rejected",
     async () => {
-      await pds.agent.login({ identifier: luna.handle, password: "wrong_password" });
+      await pds.raw.xrpcPost("com.atproto.server.createSession", { identifier: luna.handle, password: "wrong_password" });
     },
     undefined,
     true,
   );
 
   try {
-    await pds.agent.com.atproto.server.deleteSession(undefined, {
-      headers: { Authorization: `Bearer ${luna.refreshJwt || luna.accessJwt}` },
-    });
+    await pds.as(luna).api.com.atproto.server.deleteSession();
     result.stepPassed("Delete session (logout)");
   } catch (exc: any) {
     result.stepSkipped("Delete session", exc.message || String(exc));

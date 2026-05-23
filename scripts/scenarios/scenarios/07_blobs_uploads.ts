@@ -104,8 +104,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Rosa posts with image embed",
       async () => {
-        await client.as(rosa).raw.post("com.atproto.repo.createRecord", {
-          repo: rosa.did,
+        await client.as(rosa).repo.createRecord({
           collection: "app.bsky.feed.post",
           record: {
             $type: "app.bsky.feed.post",
@@ -143,8 +142,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "DJ Volt posts 4-image album",
       async () => {
-        await client.as(volt).raw.post("com.atproto.repo.createRecord", {
-          repo: volt.did,
+        await client.as(volt).repo.createRecord({
           collection: "app.bsky.feed.post",
           record: {
             $type: "app.bsky.feed.post",
@@ -180,8 +178,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna sets profile banner",
       async () => {
-        await client.as(luna).raw.post("com.atproto.repo.createRecord", {
-          repo: luna.did,
+        await client.as(luna).repo.createRecord({
           collection: "app.bsky.actor.profile",
           record: {
             $type: "app.bsky.actor.profile",
@@ -232,8 +229,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Records contain blob refs",
       async () => {
-        return await client.as(rosa).raw.get("com.atproto.repo.listRecords", {
-          repo: rosa.did,
+        return await client.as(rosa).repo.listRecords({
           collection: "app.bsky.feed.post",
         });
       },

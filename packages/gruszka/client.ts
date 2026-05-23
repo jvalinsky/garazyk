@@ -266,6 +266,10 @@ export class XrpcClient {
           this.graph.getActorStarterPacks(actor, { ...options, token }),
         getStarterPacks: (uris: string[]) =>
           this.graph.getStarterPacks(uris, token),
+        getList: (listUri: string, options?: { limit?: number; cursor?: string }) =>
+          this.graph.getList(listUri, { ...options, token }),
+        getLists: (actor: string, options?: { limit?: number; cursor?: string }) =>
+          this.graph.getLists(actor, { ...options, token }),
       },
       feed: {
         getProfile: (actor: string) =>
