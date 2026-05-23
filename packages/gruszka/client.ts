@@ -34,6 +34,124 @@ import {
   SearchClient,
 } from "./clients/index.ts";
 
+/** Raw XRPC/HTTP methods bound to an actor's bearer token. */
+export interface ActorRawClient {
+  /** Send an XRPC GET (deprecated — prefer xrpcGet). */
+  get(method: string, params?: Record<string, unknown>): Promise<any>;
+  /** Send an XRPC POST (deprecated — prefer xrpcPost). */
+  post(method: string, body?: unknown): Promise<any>;
+  /** Send an XRPC query. */
+  query(method: string, params?: Record<string, unknown>): Promise<any>;
+  /** Send an XRPC procedure. */
+  procedure(method: string, body?: unknown): Promise<any>;
+  /** Send a raw HTTP GET request. */
+  httpGet(path: string, params?: Record<string, unknown>): Promise<any>;
+  /** Send a raw HTTP POST request. */
+  httpPost(path: string, body?: unknown): Promise<any>;
+  /** Send an XRPC GET request. */
+  xrpcGet(method: string, params?: Record<string, unknown>): Promise<any>;
+  /** Send an XRPC POST request. */
+  xrpcPost(method: string, body?: unknown): Promise<any>;
+  /** Send an XRPC binary POST request. */
+  postBinary(method: string, data: Uint8Array, contentType: string): Promise<any>;
+}
+
+/** Repository record CRUD operations bound to an actor's DID and token. */
+export interface ActorRepoClient {
+  /** Create a record in the actor's repo. */
+  createRecord(params: Record<string, unknown>): Promise<any>;
+  /** Get a record from the actor's repo. */
+  getRecord(params: Record<string, unknown>): Promise<any>;
+  /** Put (replace) a record in the actor's repo. */
+  putRecord(params: Record<string, unknown>): Promise<any>;
+  /** Delete a record from the actor's repo. */
+  deleteRecord(params: Record<string, unknown>): Promise<any>;
+  /** Apply batch writes to the actor's repo. */
+  applyWrites(params: Record<string, unknown>): Promise<any>;
+  /** List records in the actor's repo collection. */
+  listRecords(params: Record<string, unknown>): Promise<any>;
+  /** Describe the actor's repo. */
+  describeRepo(params?: Record<string, unknown>): Promise<any>;
+  /** List missing blobs in the actor's repo. */
+  listMissingBlobs(params?: Record<string, unknown>): Promise<any>;
+  /** Upload a blob to the actor's repo. */
+  uploadBlob(data: Uint8Array): Promise<any>;
+}
+
+/** Social graph operations bound to an actor's bearer token. */
+export interface ActorGraphClient {
+  /** Get actors followed by a given actor. */
+  getFollows(actor: string, options?: { limit?: number }): Promise<any>;
+  /** Get followers of a given actor. */
+  getFollowers(actor: string, options?: { limit?: number }): Promise<any>;
+  /** Get actors blocked by the authenticated user. */
+  getBlocks(limit?: number): Promise<any>;
+  /** Get actors muted by the authenticated user. */
+  getMutes(limit?: number): Promise<any>;
+  /** Mute an actor by DID. */
+  muteActor(actorDid: string): Promise<any>;
+  /** Unmute an actor by DID. */
+  unmuteActor(actorDid: string): Promise<any>;
+  /** Get relationships between an actor and targets. */
+  getRelationships(actor: string, targets: string[]): Promise<any>;
+  /** Get a starter pack by URI. */
+  getStarterPack(uri: string): Promise<any>;
+  /** Get starter packs created by an actor. */
+  getActorStarterPacks(actor: string, options?: { limit?: number }): Promise<any>;
+  /** Get multiple starter packs by URIs. */
+  getStarterPacks(uris: string[]): Promise<any>;
+  /** Get a list by URI. */
+  getList(listUri: string, options?: { limit?: number; cursor?: string }): Promise<any>;
+  /** Get lists created by an actor. */
+  getLists(actor: string, options?: { limit?: number; cursor?: string }): Promise<any>;
+}
+
+/** Feed and timeline operations bound to an actor's bearer token. */
+export interface ActorFeedClient {
+  /** Get an actor's profile. */
+  getProfile(actor: string): Promise<any>;
+  /** Get the authenticated user's timeline. */
+  getTimeline(limit?: number): Promise<any>;
+  /** Get an actor's authored feed. */
+  getAuthorFeed(actor: string, options?: { limit?: number }): Promise<any>;
+  /** Get a post thread by URI. */
+  getPostThread(uri: string): Promise<any>;
+  /** Get likes for a record. */
+  getLikes(uri: string, options?: { limit?: number }): Promise<any>;
+  /** Search actors by query. */
+  searchActors(query: string, options?: { limit?: number }): Promise<any>;
+  /** Get posts liked by an actor. */
+  getActorLikes(actor: string, options?: { limit?: number }): Promise<any>;
+  /** Get posts by their AT URIs. */
+  getPosts(uris: string[]): Promise<any>;
+  /** Get actors who reposted a post. */
+  getRepostedBy(uri: string, options?: { limit?: number }): Promise<any>;
+  /** Get a custom feed generator's feed. */
+  getFeed(feedUri: string, limit?: number): Promise<any>;
+  /** Get feed generator details by URIs. */
+  getFeedGenerators(uris: string[]): Promise<any>;
+}
+
+/**
+ * Scoped client bound to an actor's identity credentials.
+ *
+ * Returned by {@link XrpcClient.as} and {@link XrpcClient.asAdmin}.
+ * Every request automatically includes the actor's bearer token and
+ * repo-scoped parameters.
+ */
+export interface ActorScopedClient {
+  /** Raw XRPC/HTTP methods with the actor's token pre-attached. */
+  raw: ActorRawClient;
+  /** Generated nested API client with the actor's token. */
+  api: GeneratedClient;
+  /** Repository record CRUD with the actor's DID auto-injected. */
+  repo: ActorRepoClient;
+  /** Social graph operations with the actor's token. */
+  graph: ActorGraphClient;
+  /** Feed and timeline operations with the actor's token. */
+  feed: ActorFeedClient;
+}
+
 /** Response snapshot recorded by {@link TransportLayer}. */
 export interface TransportResponse {
   /** XRPC method or HTTP path used for the request. */
@@ -204,7 +322,7 @@ export class XrpcClient {
    * Returns a scoped client bound to an actor's identity credentials.
    * @param actor - An object providing an accessJwt and did (e.g. an Actor instance)
    */
-  as(actor: { accessJwt?: string; token?: string; did?: string }) {
+  as(actor: { accessJwt?: string; token?: string; did?: string }): ActorScopedClient {
     const token = actor.accessJwt || actor.token;
     const did = actor.did;
     const wrap = <T extends Record<string, unknown>>(params?: T): T | { repo: string } & T => {
@@ -306,7 +424,7 @@ export class XrpcClient {
    *
    * @param token - The admin bearer token
    */
-  asAdmin(token: string) {
+  asAdmin(token: string): ActorScopedClient {
     return this.as({ accessJwt: token });
   }
 
