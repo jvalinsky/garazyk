@@ -1,5 +1,7 @@
 /** API: /api/runs/[runId] — GET run status by ID. @module api/runs/[runId] */
 import { Handlers } from "$fresh/server.ts";
+import { db } from "../../../db/index.ts";
+import { fetchRun } from "../../../db/queries.ts";
 
 /** Response shape for run status endpoint. */
 interface RunStatusResponse {

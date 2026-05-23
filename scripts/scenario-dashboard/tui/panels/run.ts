@@ -5,14 +5,7 @@
  */
 
 import type { RenderCommand } from "@garazyk/tui";
-import {
-  bg,
-  bold,
-  COLORS,
-  dim,
-  fg,
-  truncate,
-} from "@garazyk/tui";
+import { bg, bold, COLORS, dim, fg, truncate } from "@garazyk/tui";
 import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { Run } from "../../services/types.ts";
@@ -74,29 +67,37 @@ export function renderRunPanel(
   });
   row++;
 
-  // Progress bar — two-color: filled (GREEN) and track (BLACK cutout)
+  // One suite-level progress bar: scenarios completed vs scenarios left.
   if (row < area.height) {
     // Use progress.completed (from live report scanning) when available,
     // fall back to the Run object's counts (only updated on completion)
-    const completed = progress?.completed ?? (activeRun.passed + activeRun.failed + activeRun.skipped);
+    const completed = progress?.completed ??
+      (activeRun.passed + activeRun.failed + activeRun.skipped);
     const total = progress?.total ?? activeRun.totalScenarios;
-    const barWidth = Math.min(area.width - 12, 30);
 
     if (total <= 0) {
+      const label = " preparing";
+      const barWidth = Math.max(1, Math.min(30, area.width - label.length - 2));
       // Empty state: dim track color for entire bar
       cmds.push({
         type: "text",
         x: area.x,
         y: area.y + row,
-        text: `[${"─".repeat(barWidth)}]`,
+        text: `[${"─".repeat(barWidth)}]${label}`,
         style: fg(COLORS.progressTrack),
         clip,
       });
     } else {
-      const filledWidth = Math.max(0, Math.min(barWidth, Math.round((completed / total) * barWidth)));
+      const boundedCompleted = Math.max(0, Math.min(completed, total));
+      const remaining = Math.max(0, total - boundedCompleted);
+      const label = ` ${remaining} left (${boundedCompleted}/${total})`;
+      const barWidth = Math.max(1, Math.min(30, area.width - label.length - 2));
+      const filledWidth = Math.max(
+        0,
+        Math.min(barWidth, Math.round((boundedCompleted / total) * barWidth)),
+      );
       const emptyWidth = barWidth - filledWidth;
 
-      // Filled portion — GREEN (progressBar), draws attention to completion
       let col = area.x;
       cmds.push({
         type: "text",
@@ -108,12 +109,11 @@ export function renderRunPanel(
       });
       col += 1 + filledWidth;
 
-      // Unfilled portion — BLACK (progressTrack), darker than panel grey
       cmds.push({
         type: "text",
         x: col,
         y: area.y + row,
-        text: `${emptyWidth > 0 ? "░".repeat(emptyWidth) : ""}] ${completed}/${total}`,
+        text: `${emptyWidth > 0 ? "░".repeat(emptyWidth) : ""}]${label}`,
         style: fg(COLORS.progressTrack),
         clip,
       });

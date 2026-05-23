@@ -28,6 +28,14 @@ function now() {
   return new Date().toISOString();
 }
 
+function rateLimitRecoveryDelayMs(): number {
+  const configuredWindow = Number(Deno.env.get("PDS_RATELIMIT_DID_WINDOW") ?? "0");
+  const seconds = Number.isFinite(configuredWindow) && configuredWindow > 0
+    ? configuredWindow + 1
+    : 10;
+  return Math.min(Math.max(seconds, 3), 30) * 1000;
+}
+
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Rate Limit Client Behavior");
   result.start();
@@ -74,7 +82,7 @@ export async function run(): Promise<ScenarioResult> {
   if (!hitLimit) result.stepSkipped("Rate limit trigger", "Limits might be too high for local dev");
 
   // Recovery
-  await new Promise((r) => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, rateLimitRecoveryDelayMs()));
   await timedCall(result, "Verify recovery", async () => {
     return await pds.accounts.getSession(luna.accessJwt);
   });

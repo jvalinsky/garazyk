@@ -28,6 +28,30 @@ function now() {
   return new Date().toISOString();
 }
 
+async function seedPostsInChunks(
+  client: XrpcClient,
+  did: string,
+  token: string,
+  count: number,
+) {
+  const chunkSize = 25;
+  for (let start = 0; start < count; start += chunkSize) {
+    const writes = Array.from({ length: Math.min(chunkSize, count - start) }, (_, offset) => {
+      const index = start + offset;
+      return {
+        action: "create",
+        collection: "app.bsky.feed.post",
+        value: {
+          $type: "app.bsky.feed.post",
+          text: `Benchmark post ${index}`,
+          createdAt: now(),
+        },
+      };
+    });
+    await client.records.applyWrites(did, writes, token);
+  }
+}
+
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Repo Format Benchmarks");
   result.start();
@@ -63,14 +87,7 @@ export async function run(): Promise<ScenarioResult> {
   });
   if (existing.records.length < 1) {
     console.log(`Seeding ${POST_COUNT} posts...`);
-    for (let i = 0; i < POST_COUNT; i++) {
-      await client.records.createRecord(
-        luna.did,
-        "app.bsky.feed.post",
-        { $type: "app.bsky.feed.post", text: `Benchmark post ${i}`, createdAt: now() },
-        luna.accessJwt,
-      );
-    }
+    await seedPostsInChunks(client, luna.did, luna.accessJwt, POST_COUNT);
     result.stepPassed("Seeding", `Created ${POST_COUNT} posts`);
   }
 

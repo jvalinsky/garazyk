@@ -93,6 +93,7 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
       requireCapability(Role.relay, Cap.relay.subscribeRepos),
     ],
   },
+  "26": { timeout: 300 },
   "11": {
     browserFlows: ["smoke", "login"],
     requires: [

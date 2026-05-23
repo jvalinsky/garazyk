@@ -2,6 +2,8 @@
 import { useEffect } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
+const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
+
 /** Toolbar island for topology selection and run controls. */
 export default function Toolbar() {
   const { state, dispatch } = useRuntime();
@@ -89,6 +91,7 @@ export default function Toolbar() {
             <div style="display: flex; gap: var(--space-sm);">
               {hasParameters && (
                 <button
+                  type="button"
                   class="btn btn-secondary"
                   onClick={() => dispatch({ type: "ux/toggleSettings" })}
                   disabled={busy}
@@ -96,7 +99,7 @@ export default function Toolbar() {
                   Settings
                 </button>
               )}
-              <button class="btn btn-primary" onClick={runAll} disabled={busy}>
+              <button type="button" class="btn btn-primary" onClick={runAll} disabled={busy}>
                 {busy ? "Starting..." : "Run All"}
               </button>
             </div>
@@ -107,10 +110,16 @@ export default function Toolbar() {
                 <span class={`status-dot ${isStopping ? "stopping" : "running"}`} />
                 <span class="text-xs font-mono">{run.id}</span>
               </div>
-              <button class="btn btn-sm" onClick={restartRun} disabled={busy || isStopping}>
+              <button
+                type="button"
+                class="btn btn-sm"
+                onClick={restartRun}
+                disabled={busy || isStopping}
+              >
                 Restart
               </button>
               <button
+                type="button"
                 class="btn btn-destructive btn-sm"
                 onClick={stopRun}
                 disabled={busy || isStopping}
@@ -126,7 +135,11 @@ export default function Toolbar() {
           <div class="settings-modal">
             <div class="settings-modal-header">
               <h3>Scenario Settings</h3>
-              <button class="btn-close" onClick={() => dispatch({ type: "ux/toggleSettings" })}>
+              <button
+                type="button"
+                class="btn-close"
+                onClick={() => dispatch({ type: "ux/toggleSettings" })}
+              >
                 ×
               </button>
             </div>
@@ -194,7 +207,7 @@ export default function Toolbar() {
               })}
             </div>
             <div class="settings-modal-footer">
-              <button class="btn btn-primary" onClick={runAll} disabled={busy}>
+              <button type="button" class="btn btn-primary" onClick={runAll} disabled={busy}>
                 Start Run with These Settings
               </button>
             </div>

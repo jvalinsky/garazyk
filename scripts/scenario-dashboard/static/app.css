@@ -880,30 +880,36 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-sm);
+  gap: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.run-progress-kicker {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+}
+
+.run-progress-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+.run-progress-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
 }
 
 .run-progress-status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-info);
-}
-
-.run-progress-spinner {
-  animation: spin 1.5s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 .run-progress-elapsed {
@@ -941,6 +947,7 @@ html, body {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-primary);
+  min-width: 0;
 }
 
 .run-progress-muted {
@@ -1003,5 +1010,11 @@ html, body {
 
   .drawer {
     width: 100vw;
+  }
+
+  .run-progress-header,
+  .run-progress-body {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
