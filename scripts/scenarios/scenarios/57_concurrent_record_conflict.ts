@@ -149,8 +149,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create initial profile record",
     async () => {
-      return await pds.as(luna).raw.post("com.atproto.repo.createRecord", {
-        repo: luna.did,
+      return await pds.as(luna).repo.createRecord({
         collection: "app.bsky.actor.profile",
         rkey: profileRkey,
         record: {
@@ -228,8 +227,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Create throwaway post for delete-race",
       async () =>
-        pds.as(luna).raw.post("com.atproto.repo.createRecord", {
-          repo: luna.did,
+        pds.as(luna).repo.createRecord({
           collection: "app.bsky.feed.post",
           record: { $type: "app.bsky.feed.post", text: "delete race target", createdAt: now() },
         }),
@@ -292,8 +290,7 @@ export async function run(): Promise<ScenarioResult> {
         result,
         "Create record referencing blob",
         async () =>
-          pds.as(luna).raw.post("com.atproto.repo.createRecord", {
-            repo: luna.did,
+          pds.as(luna).repo.createRecord({
             collection: "app.bsky.feed.post",
             record: {
               $type: "app.bsky.feed.post",

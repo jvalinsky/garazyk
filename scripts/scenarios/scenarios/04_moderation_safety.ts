@@ -296,7 +296,7 @@ export async function run(): Promise<ScenarioResult> {
       "Taken-down content is inaccessible",
       async () => {
         const rkey = trollHarass.uri.split("/").pop()!;
-        await client.agent.com.atproto.repo.getRecord({
+        await client.as(luna).repo.getRecord({
           repo: troll.did,
           collection: "app.bsky.feed.post",
           rkey,
