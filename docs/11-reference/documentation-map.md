@@ -71,6 +71,7 @@ Every document in the repository, organized by subsystem and type.
 
 | Path | Type | Description |
 |---|---|---|
+| `docs/10-tutorials/germ-mailbox-setup.md` | Guide | Germ E2EE Mailbox setup guide |
 | `Garazyk/docs/guides/objective_c_research_guide.md` | Guide | ObjC research guide |
 | `Garazyk/docs/guides/objective_c_tips.md` | Guide | ObjC development tips |
 | `Garazyk/Frameworks/README.md` | Reference | Framework dependencies |

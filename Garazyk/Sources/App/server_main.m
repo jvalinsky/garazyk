@@ -23,10 +23,10 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
-#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 int main(int argc, const char * argv[]) {
-    [[PDSSignalManager sharedManager] installIgnoredSignals];
+    [[GZSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"kaszlak-headless"];
     @autoreleasepool {
         GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS Starting...");
@@ -89,11 +89,11 @@ int main(int argc, const char * argv[]) {
 
         // Register signal handlers for graceful shutdown
         __block volatile sig_atomic_t shouldExit = 0;
-        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
+        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
             shouldExit = 1;
             GZ_LOG_SERVICE_INFO(@"Received SIGINT — shutting down");
         }];
-        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
+        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
             shouldExit = 1;
             GZ_LOG_SERVICE_INFO(@"Received SIGTERM — shutting down");
         }];

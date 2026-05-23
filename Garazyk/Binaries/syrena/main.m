@@ -20,7 +20,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
-#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 #import <execinfo.h>
 #if defined(GNUSTEP)
 #import <curl/curl.h>
@@ -210,7 +210,7 @@ static BOOL parse_appview_options(NSArray<NSString *> *args,
 }
 
 int main(int argc, const char * argv[]) {
-    [[PDSSignalManager sharedManager] installIgnoredSignals];
+    [[GZSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"syrena"];
 
     NSSetUncaughtExceptionHandler(&uncaughtExceptionHandler);
@@ -370,11 +370,11 @@ int main(int argc, const char * argv[]) {
         gShutdownRuntime = runtime;
 
         // Register safe signal handlers (dispatch_source, not raw signal())
-        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
+        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
             [gShutdownRuntime stop];
             exit(0);
         }];
-        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
+        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
             [gShutdownRuntime stop];
             exit(0);
         }];

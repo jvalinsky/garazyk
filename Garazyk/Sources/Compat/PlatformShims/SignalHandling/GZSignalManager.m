@@ -1,32 +1,32 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSSignalManager.m
+ @file GZSignalManager.m
 
  @abstract Implementation of lifecycle signal management.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "PDSSignalManager.h"
+#import "GZSignalManager.h"
 #import "Compat/PDSTypes.h"
 #import <signal.h>
 #import <string.h>
 
-@interface PDSSignalManager () {
+@interface GZSignalManager () {
     dispatch_queue_t _signalQueue;
 }
-@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<PDSSignalHandlerBlock> *> *handlers;
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<GZSignalHandlerBlock> *> *handlers;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSValue *> *sources;
 @end
 
-@implementation PDSSignalManager
+@implementation GZSignalManager
 
 + (instancetype)sharedManager {
-    static PDSSignalManager *shared = nil;
+    static GZSignalManager *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[PDSSignalManager alloc] init];
+        shared = [[GZSignalManager alloc] init];
     });
     return shared;
 }
@@ -57,7 +57,7 @@
 }
 
 - (void)registerHandlerForSignal:(int)signalNumber
-                          handler:(PDSSignalHandlerBlock)handler {
+                          handler:(GZSignalHandlerBlock)handler {
     if (!handler) return;
 
     NSNumber *key = @(signalNumber);
@@ -99,10 +99,10 @@
 
             __weak typeof(self) weakSelf = self;
             dispatch_source_set_event_handler(source, ^{
-                PDSSignalManager *strongSelf = weakSelf;
+                GZSignalManager *strongSelf = weakSelf;
                 if (!strongSelf) return;
 
-                __block NSArray<PDSSignalHandlerBlock> *handlersCopy = nil;
+                __block NSArray<GZSignalHandlerBlock> *handlersCopy = nil;
                 dispatch_sync(strongSelf->_signalQueue, ^{
                     NSMutableArray *list = strongSelf.handlers[key];
                     if (list) {
@@ -110,7 +110,7 @@
                     }
                 });
 
-                for (PDSSignalHandlerBlock block in handlersCopy) {
+                for (GZSignalHandlerBlock block in handlersCopy) {
                     block(signalNumber);
                 }
             });
