@@ -180,8 +180,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus lists follow records (for unfollow)",
     async () => {
-      const res = await client.agent.com.atproto.repo.listRecords({
-        repo: marcus.did,
+      const res = await client.as(marcus).repo.listRecords({
         collection: "app.bsky.graph.follow",
       });
       return res.data;
