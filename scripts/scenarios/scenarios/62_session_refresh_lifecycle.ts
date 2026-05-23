@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -39,7 +39,7 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   // ── Create account and get initial session ─────────────────────────────────
   const initialSession = await timedCall(

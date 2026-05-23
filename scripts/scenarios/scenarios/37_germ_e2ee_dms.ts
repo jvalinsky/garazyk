@@ -22,7 +22,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
 /**
@@ -85,8 +85,8 @@ export async function run(): Promise<ScenarioResult> {
 
   if (!germHealthy) result.stepSkipped("Germ service health check", "Not running on 8082");
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
 
   for (const char of [luna, marcus]) {
     const session = await client.accounts.createAccount(char.handle, char.email, char.password)

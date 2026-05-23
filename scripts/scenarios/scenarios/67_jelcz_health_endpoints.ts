@@ -17,7 +17,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
 /**
@@ -71,7 +71,7 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   // Get upload limits via XRPC
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
   const session = await timedCall(result, "Create or login account", async () => {
     return await pdsClient.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
       () => pdsClient.accounts.createSession(luna.handle, luna.password),
@@ -86,10 +86,9 @@ export async function run(): Promise<ScenarioResult> {
   luna.accessJwt = session.accessJwt;
 
   await timedCall(result, "Get upload limits via XRPC", async () => {
-    const limits = await videoClient.raw.xrpcGet(
+    const limits = await videoClient.as(luna).raw.get(
       "app.bsky.video.getUploadLimits",
       undefined,
-      luna.accessJwt,
     );
     assert.isTrue(limits !== undefined, "Expected upload limits response");
     // Should have at least one of: remaining, maxBytesPerUpload, etc.
@@ -100,10 +99,9 @@ export async function run(): Promise<ScenarioResult> {
   // getJobStatus with a dummy jobId should gracefully error, not crash
   await timedCall(result, "Jelcz getJobStatus with invalid id", async () => {
     try {
-      await videoClient.raw.xrpcGet(
+      await videoClient.as(luna).raw.get(
         "app.bsky.video.getJobStatus",
         { jobId: "dummy-nonexistent-job" },
-        luna.accessJwt,
       );
       // If no error thrown, that's fine — some implementations return an error body
     } catch (_e) {

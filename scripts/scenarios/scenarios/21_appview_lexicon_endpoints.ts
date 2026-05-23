@@ -21,7 +21,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -67,7 +67,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -82,7 +82,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => getActor(n).did);
   if (active.length < 2) {
     result.stepFailed("Account creation", "Not enough accounts created");
     result.finish();
@@ -90,7 +90,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     await timedCall(result, `Set profile: ${char.name}`, async () => {
       return await client.records.createRecord(
         char.did,

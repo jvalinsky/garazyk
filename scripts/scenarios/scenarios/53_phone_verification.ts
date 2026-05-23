@@ -11,9 +11,13 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export {
+  ScenarioResult,
+  StepResult,
+  StepStatus,
+} from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
@@ -34,10 +38,12 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   // ── Connect to or start mock Twilio server ──────────────────────────────
+  const configuredTwilioUrl = Deno.env.get("TWILIO_API_BASE_URL");
   const twilioUrls = [
+    configuredTwilioUrl,
     "http://local-mock-twilio:8081",
     "http://127.0.0.1:8081",
-  ];
+  ].filter((url): url is string => Boolean(url));
   let twilio: MockTwilioServer | null = null;
   let owned = false;
   for (const url of twilioUrls) {
@@ -49,21 +55,25 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
   if (!twilio) {
-    twilio = new MockTwilioServer("http://127.0.0.1:8081");
     try {
-      await twilio.startProcess();
-      await twilio.waitForHealth();
+      const port = configuredTwilioUrl
+        ? Number.parseInt(new URL(configuredTwilioUrl).port, 10)
+        : 0;
+      twilio = await startMockTwilioServer(Number.isFinite(port) ? port : 0);
       owned = true;
-      result.stepPassed("Start mock Twilio server", "port=8081");
+      result.stepPassed("Start mock Twilio server", `url=${twilio.url}`);
     } catch (e: any) {
-      result.stepFailed("Initialize mock Twilio server", e.message || String(e));
+      result.stepFailed(
+        "Initialize mock Twilio server",
+        e.message || String(e),
+      );
       result.finish();
       return result;
     }
   }
 
   const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   // ── Ensure PDS is healthy ────────────────────────────────────────────────
   const healthy = await timedCall(
@@ -77,8 +87,11 @@ export async function run(): Promise<ScenarioResult> {
     () => "ok",
   );
   if (!healthy) {
-    result.stepSkipped("Phone verification", "PDS not healthy, cannot continue");
-    twilio.stopProcess();
+    result.stepSkipped(
+      "Phone verification",
+      "PDS not healthy, cannot continue",
+    );
+    stopMockTwilioServer(twilio);
     result.finish();
     return result;
   }
@@ -131,9 +144,11 @@ export async function run(): Promise<ScenarioResult> {
       "Verify code via mock control API",
       async () => {
         // Simulate a VerificationCheck by calling the mock's Twilio endpoint directly
-        const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
+        const creds = btoa(
+          "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
+        );
         const res = await fetch(
-          "http://127.0.0.1:8081/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
+          `${twilio.url}/v2/Service/VA00000000000000000000000000000000/VerificationCheck`,
           {
             method: "POST",
             headers: {
@@ -172,9 +187,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Wrong code is rejected",
       async () => {
-        const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
+        const creds = btoa(
+          "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
+        );
         const res = await fetch(
-          "http://127.0.0.1:8081/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
+          `${twilio.url}/v2/Service/VA00000000000000000000000000000000/VerificationCheck`,
           {
             method: "POST",
             headers: {
@@ -186,7 +203,9 @@ export async function run(): Promise<ScenarioResult> {
         );
         const body = await res.json();
         if (body.status === "approved") {
-          throw new Error("Wrong code was incorrectly approved — expected rejection");
+          throw new Error(
+            "Wrong code was incorrectly approved — expected rejection",
+          );
         }
         return body;
       },
@@ -200,9 +219,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Always-approve code works",
     async () => {
-      const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
+      const creds = btoa(
+        "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
+      );
       const res = await fetch(
-        "http://127.0.0.1:8081/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
+        `${twilio.url}/v2/Service/VA00000000000000000000000000000000/VerificationCheck`,
         {
           method: "POST",
           headers: {
@@ -227,7 +248,7 @@ export async function run(): Promise<ScenarioResult> {
 
   // ── Cleanup ──────────────────────────────────────────────────────────────
   if (owned) {
-    twilio.stopProcess();
+    stopMockTwilioServer(twilio);
     result.stepPassed("Stop mock Twilio server");
   } else {
     result.stepPassed("Finished scenario (preserved shared mock)");

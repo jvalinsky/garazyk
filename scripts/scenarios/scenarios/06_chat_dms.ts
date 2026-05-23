@@ -21,7 +21,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -72,7 +72,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const client = new XrpcClient(PDS1);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://localhost:2585";
+  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://127.0.0.1:2585";
   const chatContext = createChatServiceContext(
     client,
     chatUrl,
@@ -102,7 +102,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -133,10 +133,10 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
-  const rosa = getCharacter("rosa");
-  const volt = getCharacter("volt");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
+  const rosa = getActor("rosa");
+  const volt = getActor("volt");
 
   if (!luna.did || !marcus.did || !rosa.did || !volt.did) {
     result.stepFailed("Account creation", "Not all accounts created");
