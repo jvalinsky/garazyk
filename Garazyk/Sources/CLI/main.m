@@ -4,7 +4,7 @@
 #import "CLI/PDSCLIDefinitions.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
-#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 /**
@@ -128,7 +128,7 @@ static int fail_with_usage(NSString *errorMessage) {
  */
 int main(int argc, const char * argv[]) {
     [[GZSignalManager sharedManager] installIgnoredSignals];
-    [PDSCrashReporter installCrashHandlersWithExecutableName:"kaszlak"];
+    [GZCrashReporter installCrashHandlersWithExecutableName:"kaszlak"];
     @autoreleasepool {
         PDSCLIRegisterAllCommands();
         // Force linkage of NSDateFormatter category on static builds
