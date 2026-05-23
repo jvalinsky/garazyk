@@ -47,6 +47,8 @@ export interface MockState {
 export interface MockTwilioServerConfig {
   /** Port to listen on. */
   port: number;
+  /** Optional file where the bound port and URL are written. */
+  portFile?: string;
   /** Twilio account SID for basic auth. */
   accountSid: string;
   /** Twilio auth token for basic auth. */
@@ -69,6 +71,7 @@ export function parseMockTwilioConfig(args: string[]): MockTwilioServerConfig {
   const parsed = parseArgs(args, {
     string: [
       "port",
+      "port-file",
       "account-sid",
       "auth-token",
       "always-approve",
@@ -79,6 +82,9 @@ export function parseMockTwilioConfig(args: string[]): MockTwilioServerConfig {
 
   return {
     port: Number(parsed.port ?? Deno.env.get("PORT") ?? "8081"),
+    portFile: parsed["port-file"]
+      ? String(parsed["port-file"])
+      : Deno.env.get("PORT_FILE"),
     accountSid: String(
       parsed["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
         "AC00000000000000000000000000000000",
@@ -335,10 +341,20 @@ export function serveMockTwilio(config: MockTwilioServerConfig): void {
     console.error(`[mock-twilio] Simulated fail rate: ${config.failRate}`);
   }
 
-  void Deno.serve(
+  const server = Deno.serve(
     { port: config.port, hostname: "0.0.0.0" },
     (req) => handleMockTwilioRequest(req, config, state),
   );
+  if (config.portFile) {
+    const addr = server.addr as Deno.NetAddr;
+    Deno.writeTextFileSync(
+      config.portFile,
+      JSON.stringify({
+        port: addr.port,
+        url: `http://127.0.0.1:${addr.port}`,
+      }) + "\n",
+    );
+  }
 }
 
 /** Client for controlling a mock Twilio server via its __control HTTP API. */
@@ -355,6 +371,12 @@ export class MockTwilioServer {
   /** Returns the base URL for the mock Twilio server. */
   get url(): string {
     return this.baseUrl;
+  }
+
+  /** Updates the base URL after a port-0 child process reports its bound port. */
+  setBoundUrl(baseUrl: string): void {
+    this.baseUrl = baseUrl;
+    this.port = new URL(baseUrl).port ? parseInt(new URL(baseUrl).port) : 8081;
   }
 
   /** Waits until the server responds successfully to the health check. @param timeoutMs - Maximum time to wait in milliseconds. @throws If the server does not become healthy before the timeout expires. */
@@ -434,7 +456,7 @@ export class MockTwilioServer {
   }
 
   /** Starts the mock Twilio server process if it is not already running. @returns Nothing. @throws If spawning the process fails. */
-  startProcess(): void {
+  startProcess(options: { portFile?: string } = {}): void {
     if (this.process) return;
     const root = new URL("../../", import.meta.url).pathname;
     const cmd = new Deno.Command("deno", {
@@ -446,6 +468,7 @@ export class MockTwilioServer {
         new URL("./mock_twilio_server.ts", import.meta.url)
           .pathname,
         `--port=${this.port}`,
+        ...(options.portFile ? [`--port-file=${options.portFile}`] : []),
       ],
       stdout: "null",
       stderr: "inherit",
@@ -466,17 +489,42 @@ export class MockTwilioServer {
 
 /** Start a mock Twilio server process and wait for it to become healthy. */
 export async function startMockTwilioServer(
-  port = 8081,
+  port = 0,
 ): Promise<MockTwilioServer> {
   const server = new MockTwilioServer(`http://127.0.0.1:${port}`);
-  server.startProcess();
+  const tempDir = await Deno.makeTempDir({ prefix: "garazyk-mock-twilio-" });
+  const portFile = `${tempDir}/port.json`;
+  server.startProcess({ portFile });
   try {
+    if (port === 0) {
+      const bound = await waitForPortFile(portFile);
+      server.setBoundUrl(bound.url);
+    }
     await server.waitForHealth();
     return server;
   } catch (e) {
     server.stopProcess();
+    await Deno.remove(tempDir, { recursive: true }).catch(() => undefined);
     throw e;
   }
+}
+
+async function waitForPortFile(
+  path: string,
+  timeoutMs = 10000,
+): Promise<{ port: number; url: string }> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      return JSON.parse(await Deno.readTextFile(path)) as {
+        port: number;
+        url: string;
+      };
+    } catch {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  }
+  throw new Error(`Mock Twilio port file not written: ${path}`);
 }
 
 /** Stop a mock Twilio server process. Accepts undefined for safe teardown. */

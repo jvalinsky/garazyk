@@ -25,6 +25,7 @@ export {
   loadTopologyManifest,
   parsePortMapping,
   publicUrlForRole,
+  publicUrlForRoleWithHostPort,
   roleToEnvKey,
   sanitizeTopologyName,
   serviceNameForRole,
@@ -35,6 +36,26 @@ export {
   renderComposeYaml,
   validatePreset,
 } from "./topology_compiler.ts";
+export {
+  applyRunResourceEnvironment,
+  applyRunResourceManifestPath,
+  createRunResourceManifest,
+  loadRunResourceManifest,
+  mockProviderUrlsFromResourceManifest,
+  resourceManifestPathForRunDir,
+  serviceUrlsFromResourceManifest,
+  updateRunResourceManifest,
+  writeRunResourceManifest,
+} from "./resource_manifest.ts";
+export {
+  allocateHostPort,
+  allocateHostPorts,
+  cleanupStalePortLeases,
+  defaultPortLeaseDir,
+  hostUrlForPort,
+  parsePortRange,
+  releaseRunPortLeases,
+} from "./port_allocator.ts";
 
 // Registry and resolution
 export {
@@ -111,6 +132,18 @@ export type {
   CompilerResult,
   OtelOptions,
 } from "./topology_compiler.ts";
+export type {
+  ResourceIsolationMode,
+  RunPortLease,
+  RunResourceCleanupState,
+  RunResourceEndpoint,
+  RunResourceManifest,
+} from "./resource_manifest.ts";
+export type {
+  HostPortAllocationOptions,
+  HostPortLease,
+  PortRange,
+} from "./port_allocator.ts";
 export type {
   AnyCapability,
   CapabilityForRole,

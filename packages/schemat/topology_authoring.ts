@@ -364,6 +364,12 @@ function mikrus(
   return service(Role.mikrus, input);
 }
 
+function beskid(
+  input: AuthoringServiceInput<typeof Role.beskid>,
+): AuthoringServiceSpec<"beskid"> {
+  return service(Role.beskid, input);
+}
+
 function chat(
   input: AuthoringServiceInput<typeof Role.chat>,
 ): AuthoringServiceSpec<"chat"> {
@@ -397,6 +403,7 @@ export const role = {
   relay,
   appview,
   mikrus,
+  beskid,
   chat,
   video,
   ui,
