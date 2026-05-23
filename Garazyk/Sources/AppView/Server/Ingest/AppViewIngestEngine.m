@@ -694,10 +694,22 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         });
     }
 
-    // Auto-register unknown repos in pending state for backfill
-    if (!syncState) {
-        AppViewRepoSyncState *newState = [[AppViewRepoSyncState alloc] initWithDID:did];
-        [_database upsertRepoSyncState:newState error:nil];
+    // Advance the per-repo live cursor only after the commit has been materialized.
+    // Without this, a later event cannot detect a missing intermediate commit via
+    // event.since, and the AppView can report zero global lag while records are absent.
+    if (rev.length > 0) {
+        AppViewRepoSyncState *newState = syncState ? [syncState copy] : [[AppViewRepoSyncState alloc] initWithDID:did];
+        newState.status = AppViewRepoSyncStatusSynced;
+        newState.lastRev = rev;
+        newState.lastError = nil;
+        newState.errorCount = 0;
+        NSError *stateError = nil;
+        if (![_database upsertRepoSyncState:newState error:&stateError]) {
+            GZ_LOG_WARN(@"[AppView Ingest] Failed to advance repo sync state for %@ seq=%lld: %@",
+                         did, (long long)seq, stateError.localizedDescription);
+            [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"sync_state_update_failed"];
+            return;
+        }
     }
 
     [_database markDurableCursor:seq forRelayURL:relayURL];

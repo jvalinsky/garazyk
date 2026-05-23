@@ -36,7 +36,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "PLC/DIDPLCResolver.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
-#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 static const char *executable_name = "zuk";
 
@@ -163,7 +163,7 @@ static BOOL parse_relay_options(NSArray<NSString *> *args,
 extern void NSDateFormatterLinkATProtoCategory(void);
 
 int main(int argc, const char * argv[]) {
-    [[PDSSignalManager sharedManager] installIgnoredSignals];
+    [[GZSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"zuk"];
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);

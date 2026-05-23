@@ -226,7 +226,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
 /*!
  @method recordBackfillError:message:error:
 
- @abstract Increment error_count and store error message; keep processing status.
+ @abstract Increment error_count, store error message, and return the repo to dirty for retry.
  */
 - (BOOL)recordBackfillError:(NSString *)did message:(NSString *)message error:(NSError **)error;
 
