@@ -22,6 +22,8 @@ import {
   applyRunResourceEnvironment,
   compileTopology,
   createRunResourceManifest,
+  DEFAULT_ADMIN_PASSWORD,
+  DEFAULT_MOCK_TWILIO_PORT,
   hostUrlForPort,
   loadTopologyManifest,
   resolvePreset,
@@ -120,6 +122,19 @@ export {
 } from "@garazyk/schemat/runtime";
 export { collectDiagnostics } from "./docker_diagnostics.ts";
 
+let sigpipeListenerRegistered = false;
+
+function ensureSigpipeIgnored(): void {
+  if (sigpipeListenerRegistered) return;
+  if (Deno.env.get("HAMOWNIA_TEST") === "true") return;
+  sigpipeListenerRegistered = true;
+  try {
+    Deno.addSignalListener("SIGPIPE", () => {});
+  } catch {
+    // SIGPIPE is not available on every platform. Best effort only.
+  }
+}
+
 /** Initialize local-network run paths using the orchestration context type. */
 export function initRunDir(requestedId?: string): TopologyRunContext {
   return initTopologyRunDir(requestedId);
@@ -137,6 +152,7 @@ export async function startLocalNetwork(
   dependencies: LocalNetworkDependencies = {},
 ): Promise<void> {
   return await withSpan("localNetwork.start", async () => {
+    ensureSigpipeIgnored();
     const ctx = (dependencies.initRunDir ?? initRunDir)(options.runId);
 
     const latestFile = join(ctx.baseDir, "latest-scenario-run-id");
@@ -210,7 +226,7 @@ export async function startLocalNetwork(
     // Export admin credentials so scenario config picks them up
     Deno.env.set(
       "PDS_ADMIN_PASSWORD",
-      Deno.env.get("PDS_ADMIN_PASSWORD") ?? "admin-localdev",
+      Deno.env.get("PDS_ADMIN_PASSWORD") ?? DEFAULT_ADMIN_PASSWORD,
     );
     Deno.env.set(
       "APPVIEW_ADMIN_SECRET",
@@ -483,7 +499,7 @@ async function writeDockerResourceManifest(
         host: "127.0.0.1",
         hostPort: twilioPort,
         hostUrl: hostUrlForPort(twilioPort),
-        internalUrl: "http://local-mock-twilio:8081",
+        internalUrl: `http://local-mock-twilio:${DEFAULT_MOCK_TWILIO_PORT}`,
         healthPath: "/__control/health",
       },
     };
