@@ -165,6 +165,53 @@
     XCTAssertEqualObjects(events[0][@"event_type"], @"dirty_repair");
 }
 
+- (void)testProcessedLiveCommitAdvancesRepoLastRev {
+    NSError *err = nil;
+    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:live"];
+    state.status = AppViewRepoSyncStatusSynced;
+    state.lastRev = @"rev0";
+    XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
+
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[]];
+    engine.maxLagForBackpressure = 1000;
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 11;
+    event.repo = @"did:plc:live";
+    event.rev = @"rev1";
+    event.since = @"rev0";
+    event.ops = @[];
+
+    [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
+    [NSThread sleepForTimeInterval:0.2];
+
+    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:live" error:&err];
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
+    XCTAssertEqualObjects(loaded.lastRev, @"rev1");
+    XCTAssertEqual([self.db durableCursorForRelayURL:@"wss://test.relay"], 11LL);
+}
+
+- (void)testFirstLiveCommitForUnknownRepoMarksRepoSynced {
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[]];
+    engine.maxLagForBackpressure = 1000;
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 12;
+    event.repo = @"did:plc:newrepo";
+    event.rev = @"rev1";
+    event.ops = @[];
+
+    [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
+    [NSThread sleepForTimeInterval:0.2];
+
+    NSError *err = nil;
+    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:newrepo" error:&err];
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
+    XCTAssertEqualObjects(loaded.lastRev, @"rev1");
+}
+
 - (void)testConcurrencySafety {
     AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[@"wss://relay1", @"wss://relay2"]];
