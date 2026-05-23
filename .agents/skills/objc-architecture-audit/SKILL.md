@@ -41,4 +41,4 @@ This master skill covers structural integrity, platform compatibility, and syste
 - Route platform-sensitive APIs through compat wrappers.
 - Add `TARGET_OS_LINUX` guards.
 - Enforce explicit timeouts and jittered backoff.
-- Use `PDSInputValidator` and `RateLimiter` on all entry points.
+- Use `GZInputValidator` and `RateLimiter` on all entry points.

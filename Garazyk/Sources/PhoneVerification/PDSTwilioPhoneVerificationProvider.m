@@ -9,7 +9,7 @@
  */
 
 #import "PhoneVerification/PDSTwilioPhoneVerificationProvider.h"
-#import "Core/PDSProviderHTTPClient.h"
+#import "Core/GZProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
 #import "Debug/GZLogger.h"
 #import "Debug/GZLogRedactor.h"
@@ -27,7 +27,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
 }
 @property (nonatomic, strong) id<PDSSecretsProvider> secretsProvider;
 @property (nonatomic, copy) NSDictionary *providerConfig;
-@property (nonatomic, strong, nullable) PDSProviderHTTPClient *httpClient;
+@property (nonatomic, strong, nullable) GZProviderHTTPClient *httpClient;
 @property (nonatomic, copy, nullable) NSString *accountSID;
 @property (nonatomic, copy, nullable) NSString *authToken;
 @property (nonatomic, copy, nullable) NSString *verifyServiceSID;
@@ -129,7 +129,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
             [NSString stringWithFormat:@"%@/%@",
                 baseURLString, serviceSID]];
 
-        self->_httpClient = [[PDSProviderHTTPClient alloc]
+        self->_httpClient = [[GZProviderHTTPClient alloc]
             initWithBaseURL:baseURL authHeader:authHeader];
         success = YES;
     });

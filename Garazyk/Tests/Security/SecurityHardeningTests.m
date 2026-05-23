@@ -12,7 +12,7 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "Security/PDSAuthzManager.h"
+#import "Security/GZAuthzManager.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/TOTPGenerator.h"
 
@@ -30,14 +30,14 @@
     // 2. Check if account exists
     // 3. Return NO (deny by default) and set error
 
-    PDSAuthzManager *manager = [PDSAuthzManager sharedManager];
+    GZAuthzManager *manager = [GZAuthzManager sharedManager];
 
     // Test 1: nil requestingDID should fail
     NSError *error = nil;
     BOOL result = [manager isAuthorizedForAdminOperation:nil error:&error];
     XCTAssertFalse(result, @"Should deny nil requestingDID");
     XCTAssertNotNil(error, @"Should set error for nil requestingDID");
-    XCTAssertEqual(error.code, PDSAuthzErrorAdminRequired, @"Should return admin required error");
+    XCTAssertEqual(error.code, GZAuthzErrorAdminRequired, @"Should return admin required error");
 }
 
 - (void)testAdminAuthorizationDenyByDefault {
@@ -45,7 +45,7 @@
     // Even with a valid DID, authorization should fail unless JWT scope is verified
     // This is enforced by the calling code (XrpcMethodRegistry)
 
-    PDSAuthzManager *manager = [PDSAuthzManager sharedManager];
+    GZAuthzManager *manager = [GZAuthzManager sharedManager];
 
     // With a valid-looking DID (even though account doesn't exist),
     // the method should still return NO and encourage JWT scope checking
