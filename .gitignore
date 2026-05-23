@@ -9,6 +9,7 @@
 *.jks
 secrets/
 docker/local-network/secrets/
+keys/
 
 # JupyterLite build output
 _output/

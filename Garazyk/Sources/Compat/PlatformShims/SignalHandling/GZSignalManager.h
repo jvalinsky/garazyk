@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSSignalManager.h
+ @file GZSignalManager.h
 
  @abstract Lifecycle signal management for Garazyk binaries.
 
@@ -30,26 +30,26 @@ NS_ASSUME_NONNULL_BEGIN
  signal handler context. This means it is safe to call any ObjC method,
  allocate memory, acquire locks, etc.
  */
-typedef void (^PDSSignalHandlerBlock)(int signalNumber);
+typedef void (^GZSignalHandlerBlock)(int signalNumber);
 
 /*!
- @class PDSSignalManager
+ @class GZSignalManager
 
  @abstract Manages lifecycle signal handling via dispatch sources.
 
- @discussion PDSSignalManager replaces raw signal() calls with sigaction()
+ @discussion GZSignalManager replaces raw signal() calls with sigaction()
  for signal installation and GCD dispatch sources for safe, main-queue
  delivery of signal events. Multiple handlers can be registered for the
  same signal.
  */
-@interface PDSSignalManager : NSObject
+@interface GZSignalManager : NSObject
 
 /*!
  @method sharedManager
 
  @abstract Returns the shared signal manager singleton.
 
- @return The shared PDSSignalManager instance.
+ @return The shared GZSignalManager instance.
  */
 + (instancetype)sharedManager;
 
@@ -81,7 +81,7 @@ typedef void (^PDSSignalHandlerBlock)(int signalNumber);
  the manager will handle the sigaction setup.
  */
 - (void)registerHandlerForSignal:(int)signalNumber
-                          handler:(PDSSignalHandlerBlock)handler;
+                          handler:(GZSignalHandlerBlock)handler;
 
 /*!
  @method unregisterHandlerForSignal:

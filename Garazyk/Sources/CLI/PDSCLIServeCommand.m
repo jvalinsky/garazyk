@@ -17,7 +17,7 @@
 #import "PDSCLIDefinitions.h"
 #import "Services/PDS/PDSRelayService.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
-#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 @interface PDSCLIServeCommand : PDSBaseCommand
 @end
@@ -62,7 +62,7 @@
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args
                     context:(PDSCLICommandContext *)context {
-  // SIGPIPE is already ignored by PDSSignalManager in main()
+  // SIGPIPE is already ignored by GZSignalManager in main()
 
   NSInteger port = 2583;
   BOOL foreground = NO;
@@ -423,10 +423,10 @@
     GZ_LOG_INFO(@"PDS server started successfully");
   }
 
-  // Setup signal handling for graceful shutdown via PDSSignalManager
+  // Setup signal handling for graceful shutdown via GZSignalManager
   __block volatile sig_atomic_t shouldExit = 0;
 
-  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
+  [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
     shouldExit = 1;
     printf("\nShutting down server...\n");
     [subscribeReposHandler stop];
@@ -439,7 +439,7 @@
                    });
   }];
 
-  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
+  [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
     shouldExit = 1;
     printf("\nShutting down server...\n");
     [subscribeReposHandler stop];
@@ -453,13 +453,13 @@
   }];
 
   // SIGHUP: log rotation trigger
-  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGHUP handler:^(int sig) {
+  [[GZSignalManager sharedManager] registerHandlerForSignal:SIGHUP handler:^(int sig) {
     GZ_LOG_SERVICE_INFO(@"Received SIGHUP — rotating logs");
     [[GZLogger sharedLogger] rotateLogIfNeeded];
   }];
 
   // SIGUSR1: diagnostic dump
-  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGUSR1 handler:^(int sig) {
+  [[GZSignalManager sharedManager] registerHandlerForSignal:SIGUSR1 handler:^(int sig) {
     GZ_LOG_SERVICE_INFO(@"Received SIGUSR1 — diagnostic dump requested");
     // Future: dump goroutine-equivalent (dispatch queue state), connection pool stats, etc.
   }];

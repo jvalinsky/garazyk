@@ -30,6 +30,8 @@ const GERM_URL = (Deno.env.get("GERM_URL") || serviceUrl("germ")).replace(
   /\/$/,
   "",
 );
+const GERM_SERVICE_DID = Deno.env.get("GERM_SERVICE_DID") ||
+  germServiceDidForUrl(GERM_URL);
 const DECLARATION_COLLECTION = "com.germnetwork.declaration";
 const DECLARATION_RKEY = "self";
 
@@ -161,16 +163,21 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Claim Germ mailbox addresses",
     async () => {
+      const method = "com.germnetwork.mailbox.claimAddresses";
+      const [lunaToken, marcusToken] = await Promise.all([
+        serviceAuthForMethod(pds, luna.accessJwt, method),
+        serviceAuthForMethod(pds, marcus.accessJwt, method),
+      ]);
       const [lunaClaim, marcusClaim] = await Promise.all([
         germ.raw.post(
-          "com.germnetwork.mailbox.claimAddresses",
+          method,
           { agentRef: lunaAgentRef, count: 2 },
-          luna.accessJwt,
+          lunaToken,
         ) as Promise<ClaimResponse>,
         germ.raw.post(
-          "com.germnetwork.mailbox.claimAddresses",
+          method,
           { agentRef: marcusAgentRef, count: 2 },
-          marcus.accessJwt,
+          marcusToken,
         ) as Promise<ClaimResponse>,
       ]);
 
@@ -205,22 +212,27 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Deliver Germ ciphertext both directions",
     async () => {
+      const method = "com.germnetwork.mailbox.deliver";
+      const [lunaToken, marcusToken] = await Promise.all([
+        serviceAuthForMethod(pds, luna.accessJwt, method),
+        serviceAuthForMethod(pds, marcus.accessJwt, method),
+      ]);
       const [lunaToMarcus, marcusToLuna] = await Promise.all([
         germ.raw.post(
-          "com.germnetwork.mailbox.deliver",
+          method,
           {
             address: claims.marcusAddress,
             ciphertext: { $bytes: lunaToMarcusCiphertext },
           },
-          luna.accessJwt,
+          lunaToken,
         ) as Promise<DeliveryResponse>,
         germ.raw.post(
-          "com.germnetwork.mailbox.deliver",
+          method,
           {
             address: claims.lunaAddress,
             ciphertext: { $bytes: marcusToLunaCiphertext },
           },
-          marcus.accessJwt,
+          marcusToken,
         ) as Promise<DeliveryResponse>,
       ]);
 
@@ -232,16 +244,21 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   await timedCall(result, "Poll Germ mailbox ciphertexts", async () => {
+    const method = "com.germnetwork.mailbox.poll";
+    const [marcusToken, lunaToken] = await Promise.all([
+      serviceAuthForMethod(pds, marcus.accessJwt, method),
+      serviceAuthForMethod(pds, luna.accessJwt, method),
+    ]);
     const [marcusPoll, lunaPoll] = await Promise.all([
       germ.raw.get(
-        "com.germnetwork.mailbox.poll",
+        method,
         { agentRef: marcusAgentRef },
-        marcus.accessJwt,
+        marcusToken,
       ) as Promise<PollResponse>,
       germ.raw.get(
-        "com.germnetwork.mailbox.poll",
+        method,
         { agentRef: lunaAgentRef },
-        luna.accessJwt,
+        lunaToken,
       ) as Promise<PollResponse>,
     ]);
 
@@ -263,16 +280,21 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Verify Germ mailbox single-read semantics",
     async () => {
+      const method = "com.germnetwork.mailbox.poll";
+      const [marcusToken, lunaToken] = await Promise.all([
+        serviceAuthForMethod(pds, marcus.accessJwt, method),
+        serviceAuthForMethod(pds, luna.accessJwt, method),
+      ]);
       const [marcusPoll, lunaPoll] = await Promise.all([
         germ.raw.get(
-          "com.germnetwork.mailbox.poll",
+          method,
           { agentRef: marcusAgentRef },
-          marcus.accessJwt,
+          marcusToken,
         ) as Promise<PollResponse>,
         germ.raw.get(
-          "com.germnetwork.mailbox.poll",
+          method,
           { agentRef: lunaAgentRef },
-          luna.accessJwt,
+          lunaToken,
         ) as Promise<PollResponse>,
       ]);
 
@@ -288,6 +310,7 @@ export async function run(): Promise<ScenarioResult> {
   }
   result.recordArtifact("germ_mailbox", {
     germUrl: GERM_URL,
+    germServiceDid: GERM_SERVICE_DID,
     messageMeUrl,
     lunaAddress: shortId(claims.lunaAddress),
     marcusAddress: shortId(claims.marcusAddress),
@@ -310,6 +333,24 @@ async function ensureAccount(
   character.accessJwt = session.accessJwt;
   character.refreshJwt = session.refreshJwt || "";
   return session;
+}
+
+async function serviceAuthForMethod(
+  pds: XrpcClient,
+  accessJwt: string,
+  method: string,
+): Promise<string> {
+  const response = await pds.raw.xrpcGet(
+    "com.atproto.server.getServiceAuth",
+    { aud: GERM_SERVICE_DID, lxm: method },
+    accessJwt,
+  ) as { token?: string };
+  if (!response.token) {
+    throw new Error(
+      `com.atproto.server.getServiceAuth did not return a token for ${method}`,
+    );
+  }
+  return response.token;
 }
 
 function createDeclaration(messageMeUrl: string): GermDeclaration {
@@ -372,6 +413,18 @@ function localMessageMeUrl(germUrl: string): string {
   const url = new URL("/mailbox/message-me", `${germUrl}/`);
   url.hash = "";
   return url.toString();
+}
+
+function germServiceDidForUrl(germUrl: string): string {
+  const url = new URL(germUrl);
+  const hostname = url.hostname === "127.0.0.1" || url.hostname === "::1"
+    ? "localhost"
+    : url.hostname;
+  const isDefaultPort = !url.port ||
+    (url.protocol === "https:" && url.port === "443") ||
+    (url.protocol === "http:" && url.port === "80");
+  const didHost = isDefaultPort ? hostname : `${hostname}%3A${url.port}`;
+  return `did:web:${didHost}#germ_mailbox`;
 }
 
 function completedButtonUrl(

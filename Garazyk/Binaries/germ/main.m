@@ -15,6 +15,7 @@
 #import <execinfo.h>
 #import "Germ/Server/Runtime/GermRuntime.h"
 #import "Debug/GZLogger.h"
+#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 static const char *executable_name = "germ";
 static GermRuntime *gShutdownRuntime = nil;
@@ -96,7 +97,7 @@ int main(int argc, const char * argv[]) {
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
-    signal(SIGPIPE, SIG_IGN);
+    [[GZSignalManager sharedManager] installIgnoredSignals];
 
     @autoreleasepool {
         if (argc < 2) {

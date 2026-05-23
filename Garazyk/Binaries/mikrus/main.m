@@ -10,7 +10,7 @@
 #import "Mikrus/MikrusRuntime.h"
 #import "Mikrus/MikrusConfiguration.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
-#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
 #if defined(GNUSTEP)
@@ -110,7 +110,7 @@ static BOOL parse_options(NSArray<NSString *> *args,
 }
 
 int main(int argc, const char *argv[]) {
-    [[PDSSignalManager sharedManager] installIgnoredSignals];
+    [[GZSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"mikrus"];
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
@@ -186,12 +186,12 @@ int main(int argc, const char *argv[]) {
         printf("\nPress Ctrl+C to stop.\n");
 
         gRuntime = runtime;
-        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
+        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
             (void)sig;
             [gRuntime stop];
             exit(0);
         }];
-        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
+        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
             (void)sig;
             [gRuntime stop];
             exit(0);

@@ -37,7 +37,13 @@ Deno.test("hamownia orchestration APIs are explicit subpath exports", () => {
   assertEquals(typeof startLocalNetwork, "function");
   assertEquals(typeof applyTopologyEnvironment, "function");
   assertEquals(typeof startBinaryServices, "function");
-  assertEquals(defaultBinaryServices(), ["plc", "pds", "relay", "appview"]);
+  assertEquals(defaultBinaryServices(), [
+    "plc",
+    "pds",
+    "relay",
+    "appview",
+    "germ",
+  ]);
   assertEquals(typeof stopStaleDockerE2e, "function");
   assertEquals(typeof buildDockerRunnerArgs, "function");
   assertEquals(DOCKER_RUNNER_TIMEOUT_EXIT_CODE, 124);

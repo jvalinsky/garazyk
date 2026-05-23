@@ -727,9 +727,9 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 - (BOOL)recordBackfillError:(NSString *)did message:(NSString *)message error:(NSError **)error {
     NSString *sql =
         @"UPDATE appview_repo_sync_state"
-        " SET error_count = error_count + 1, last_error = ?"
+        " SET status = ?, error_count = error_count + 1, last_error = ?"
         " WHERE did = ?";
-    NSArray *params = @[message, did];
+    NSArray *params = @[@(AppViewRepoSyncStatusDirty), message, did];
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 

@@ -31,6 +31,10 @@ migrating to `@opentui/core`).
 See the `testing-atproto-federation` skill for a workflow to spin up, verify, and debug
 multi-PDS AT Protocol federation.
 
+## Germ E2EE Mailbox Setup
+
+The [Germ E2EE Mailbox Setup Guide](germ-mailbox-setup.md) shows how to generate secure device-bound Ed25519 Anchor keys and automatically publish a `com.germnetwork.declaration` record to a PDS using Deno.
+
 ## Deno Package Development
 
 | Guide | Package |

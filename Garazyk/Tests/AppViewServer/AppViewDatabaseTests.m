@@ -146,12 +146,14 @@
 - (void)testRecordBackfillError {
     NSError *err = nil;
     AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:errors"];
+    s.status = AppViewRepoSyncStatusProcessing;
     [self.db upsertRepoSyncState:s error:nil];
 
     [self.db recordBackfillError:@"did:plc:errors" message:@"HTTP 503" error:nil];
     [self.db recordBackfillError:@"did:plc:errors" message:@"timeout" error:nil];
 
     AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:errors" error:&err];
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty);
     XCTAssertEqual(loaded.errorCount, 2);
     XCTAssertEqualObjects(loaded.lastError, @"timeout");
 }

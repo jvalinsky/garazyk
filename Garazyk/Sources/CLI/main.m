@@ -5,7 +5,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
-#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 /**
  * @file main.m
@@ -127,7 +127,7 @@ static int fail_with_usage(NSString *errorMessage) {
  * Flags before command are rejected.
  */
 int main(int argc, const char * argv[]) {
-    [[PDSSignalManager sharedManager] installIgnoredSignals];
+    [[GZSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"kaszlak"];
     @autoreleasepool {
         PDSCLIRegisterAllCommands();
