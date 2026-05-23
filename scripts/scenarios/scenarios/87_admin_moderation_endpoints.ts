@@ -15,45 +15,14 @@
  */
 
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
-function now(): string {
-  return new Date().toISOString();
-}
 
-/** Try an endpoint, skipping if 404/501/400-not-implemented, failing on other errors. */
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else if (e instanceof XrpcError && e.status === 403) {
-      result.stepSkipped(label, `access denied (HTTP 403) — requires elevated role`);
-    } else if (e instanceof XrpcError && e.status === 400) {
-      const body = typeof e.body === "string" ? e.body : JSON.stringify(e.body ?? "");
-      if (body.toLowerCase().includes("not implemented") || body.toLowerCase().includes("unknown method")) {
-        result.stepSkipped(label, `endpoint not implemented`);
-      } else {
-        result.stepFailed(label, `HTTP 400: ${body.substring(0, 200)}`);
-      }
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Admin Moderation & Action Endpoints");
@@ -152,17 +121,17 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.takeDownAccount (apply + revert)",
     async () => {
-      const body = await pds.raw.post("com.atproto.admin.takeDownAccount", {
+      const body = await pds.asAdmin(adminToken).raw.post("com.atproto.admin.takeDownAccount", {
         did: troll.did,
-      }, adminToken);
+      });
       // Revert immediately
-      await pds.raw.post("com.atproto.admin.updateSubjectStatus", {
+      await pds.asAdmin(adminToken).raw.post("com.atproto.admin.updateSubjectStatus", {
         subject: {
           $type: "com.atproto.admin.defs#repoRef",
           did: troll.did,
         },
         takedown: { applied: false },
-      }, adminToken);
+      });
       return { actionId: body.id ?? body.actionId ?? "present" };
     },
     (r) => `actionId=${r.actionId}`,
@@ -173,9 +142,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getAccountTakedown",
     async () => {
-      const body = await pds.raw.post("com.atproto.admin.getAccountTakedown", {
+      const body = await pds.asAdmin(adminToken).raw.post("com.atproto.admin.getAccountTakedown", {
         did: troll.did,
-      }, adminToken);
+      });
       return { status: body.takedown?.applied ?? "none" };
     },
     (r) => `status=${r.status}`,
@@ -186,11 +155,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.moderateAccount (label)",
     async () => {
-      const body = await pds.raw.post("com.atproto.admin.moderateAccount", {
+      const body = await pds.asAdmin(adminToken).raw.post("com.atproto.admin.moderateAccount", {
         did: troll.did,
         action: "label",
         label: { val: "test-admin-coverage" },
-      }, adminToken);
+      });
       return { id: body.id ?? body.actionId ?? "present" };
     },
     (r) => `id=${r.id}`,
@@ -202,11 +171,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "admin.moderateRecord (label)",
       async () => {
-        const body = await pds.raw.post("com.atproto.admin.moderateRecord", {
+        const body = await pds.asAdmin(adminToken).raw.post("com.atproto.admin.moderateRecord", {
           uri: postRef.uri,
           action: "label",
           label: { val: "test-record-moderation" },
-        }, adminToken);
+        });
         return { id: body.id ?? body.actionId ?? "present" };
       },
       (r) => `id=${r.id}`,
@@ -240,11 +209,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "admin.resolveReport",
       async () => {
-        const body = await pds.raw.post("com.atproto.admin.resolveReport", {
+        const body = await pds.asAdmin(adminToken).raw.post("com.atproto.admin.resolveReport", {
           reportId: reportRef.id,
           action: "tools.ozone.moderation.defs#modEventResolve",
           comment: "Resolved via admin API coverage test",
-        }, adminToken);
+        });
         return { id: body.id ?? "present" };
       },
       (r) => `resolutionId=${r.id}`,
@@ -259,14 +228,14 @@ export async function run(): Promise<ScenarioResult> {
     "admin.updateSubjectStatus (check + cleanup)",
     async () => {
       // Apply a label, then clean up
-      await pds.raw.post("com.atproto.admin.updateSubjectStatus", {
+      await pds.asAdmin(adminToken).raw.post("com.atproto.admin.updateSubjectStatus", {
         subject: {
           $type: "com.atproto.repo.strongRef",
           uri: postRef?.uri ?? `${troll.did}/app.bsky.feed.post/test`,
           cid: postRef?.cid,
         },
         takedown: { applied: false },
-      }, adminToken);
+      });
       return { status: "cleared" };
     },
     (r) => `status=${r.status}`,
@@ -277,9 +246,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.repairRepo",
     async () => {
-      const body = await pds.raw.post("com.atproto.admin.repairRepo", {
+      const body = await pds.asAdmin(adminToken).raw.post("com.atproto.admin.repairRepo", {
         did: troll.did,
-      }, adminToken);
+      });
       return { success: body.success ?? "present" };
     },
     (r) => `success=${r.success}`,
@@ -290,9 +259,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.runBlobAudit",
     async () => {
-      const body = await pds.raw.post("com.atproto.admin.runBlobAudit", {
+      const body = await pds.asAdmin(adminToken).raw.post("com.atproto.admin.runBlobAudit", {
         did: luna.did,
-      }, adminToken);
+      });
       return { blobCount: body.blobs?.length ?? body.count ?? "present" };
     },
     (r) => `blobs=${r.blobCount}`,
@@ -303,9 +272,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.moderation.queryStatuses",
     async () => {
-      const body = await pds.raw.get("tools.ozone.moderation.queryStatuses", {
+      const body = await pds.asAdmin(adminToken).raw.get("tools.ozone.moderation.queryStatuses", {
         limit: 10,
-      }, adminToken);
+      });
       const statuses = body.statuses ?? body.subjectStatuses ?? [];
       return { count: Array.isArray(statuses) ? statuses.length : "present" };
     },
@@ -317,9 +286,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.moderation.getRecords",
     async () => {
-      const body = await pds.raw.post("tools.ozone.moderation.getRecords", {
+      const body = await pds.asAdmin(adminToken).raw.post("tools.ozone.moderation.getRecords", {
         uris: [postRef?.uri ?? `${troll.did}/app.bsky.feed.post/test`],
-      }, adminToken);
+      });
       const records = body.records ?? [];
       return { count: Array.isArray(records) ? records.length : "present" };
     },
@@ -331,9 +300,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.moderation.getEvent",
     async () => {
-      const body = await pds.raw.post("tools.ozone.moderation.getEvent", {
+      const body = await pds.asAdmin(adminToken).raw.post("tools.ozone.moderation.getEvent", {
         id: takedownRef?.actionId ?? 0,
-      }, adminToken);
+      });
       return { id: body.id ?? body.event?.id ?? "present" };
     },
     (r) => `id=${r.id}`,

@@ -20,7 +20,7 @@ import {
 } from "../../lib/deno/instrumentation.ts";
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
 import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -29,21 +29,10 @@ import { createRunContext } from "../../lib/deno/diagnostics.ts";
 import { join } from "@std/path";
 import { timedCall } from "../../lib/deno/runner.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 async function appviewAdminGet(path: string, params?: Record<string, any>): Promise<any> {
-  const url = new URL(path, SERVICE_URLS.appview);
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      url.searchParams.append(k, String(v));
-    }
-  }
-  const res = await fetch(url.toString(), {
-    headers: { "Authorization": `Bearer ${APPVIEW_ADMIN_SECRET}` },
-  });
-  return await res.json();
+  const client = new XrpcClient(SERVICE_URLS.appview);
+  return await client.asAdmin(APPVIEW_ADMIN_SECRET).raw.httpGet(path, params);
 }
 
 function summarizeIngestState(health: any, backfill: any, metrics: any, records: any) {

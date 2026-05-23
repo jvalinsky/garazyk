@@ -62,7 +62,7 @@ export async function tryEndpoint<T>(
 export async function createAccountOrLogin(
   client: XrpcClient,
   params: { handle: string; email: string; password: string },
-): Promise<{ did: string; accessJwt: string; refreshJwt: string; handle: string } | null> {
+): Promise<{ did: string; accessJwt: string; refreshJwt: string; handle: string }> {
   try {
     const res = await client.agent.createAccount({
       handle: params.handle,

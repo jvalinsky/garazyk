@@ -13,16 +13,13 @@
  * - Unauthorized requests receive error responses.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -107,7 +104,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Ingest engine health",
     async () => {
-      return await av.raw.httpGet("/admin/ingest/health", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/ingest/health");
     },
     (r) => `running=${r.running ?? false}`,
   );
@@ -116,7 +113,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill status",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/backfill/status");
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -125,7 +122,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill queue",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/queue", { limit: 10 }, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/backfill/queue", { limit: 10 });
     },
     (r) => `entries=${r.entries?.length || 0}, total=${r.total ?? 0}`,
   );
@@ -134,7 +131,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Metrics stats",
     async () => {
-      return await av.raw.httpGet("/admin/appview/metrics/stats", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/appview/metrics/stats");
     },
     (r) => `repos_total=${r.repos?.total || 0}, queue_depth=${r.queue_depth || 0}`,
   );
@@ -143,7 +140,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List lexicons",
     async () => {
-      return await av.raw.httpGet("/admin/lexicons", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/lexicons");
     },
     (r) => `count=${r.count ?? 0}`,
   );
@@ -152,7 +149,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List collections",
     async () => {
-      return await av.raw.httpGet("/admin/lexicons/collections", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/lexicons/collections");
     },
     (r) => `count=${r.collections?.length || 0}`,
   );
@@ -161,10 +158,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Browse records",
     async () => {
-      return await av.raw.httpGet(
+      return await av.asAdmin(adminToken).raw.httpGet(
         "/admin/records",
         { collection: "app.bsky.feed.post", limit: 10 },
-        adminToken,
       );
     },
     (r) => `records=${r.records?.length || 0}`,
@@ -174,7 +170,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Browse records without collection rejected",
     async () => {
-      return await av.raw.httpGet("/admin/records", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/records");
     },
     undefined,
     true,
@@ -184,7 +180,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List endpoints",
     async () => {
-      return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/endpoints");
     },
     (r) => `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${r.custom_handler_count ?? 0}`,
   );
@@ -193,7 +189,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List hooks",
     async () => {
-      return await av.raw.httpGet("/admin/hooks", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/hooks");
     },
     (r) => `count=${r.count ?? 0}`,
   );
@@ -202,7 +198,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Dead letter hooks",
     async () => {
-      return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 10 }, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/hooks/dead-letter", { limit: 10 });
     },
     (r) => `entries=${r.entries?.length || 0}`,
   );
@@ -211,7 +207,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List handlers",
     async () => {
-      return await av.raw.httpGet("/admin/handlers", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/handlers");
     },
     (r) => `count=${r.count ?? 0}`,
   );
@@ -220,7 +216,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill scope rebuild",
     async () => {
-      return await av.raw.httpPost("/admin/backfill/scope/rebuild", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpPost("/admin/backfill/scope/rebuild");
     },
     (r) => `success=${r.success ?? false}`,
   );

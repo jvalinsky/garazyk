@@ -1,11 +1,10 @@
 export {
-  Actor,
-  createCharacterRegistry,
-  createScenarioConfig,
   postStatus,
   followUser,
   likePost,
   blockUser,
+  muteUser,
+  unmuteUser,
 } from "@garazyk/hamownia";
 export type {
   ScenarioConfig,
