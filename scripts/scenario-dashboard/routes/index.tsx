@@ -10,9 +10,14 @@ import StatusBar from "../components/StatusBar.tsx";
 import SummaryCards from "../components/SummaryCards.tsx";
 import ScenarioGrid from "../components/ScenarioGrid.tsx";
 import NetworkStatus from "../islands/NetworkStatus.tsx";
+import RunProgress from "../islands/RunProgress.tsx";
 import RunHistory from "../components/RunHistory.tsx";
 import { formatDate } from "../utils.ts";
-import type { DiscoveredScenario, Run, ScenarioStatus } from "../services/types.ts";
+import type {
+  DiscoveredScenario,
+  Run,
+  ScenarioStatus,
+} from "../services/types.ts";
 
 /** Enriched scenario type with latest result data from the database. */
 interface ScenarioWithResults extends DiscoveredScenario {
@@ -66,7 +71,14 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
   }));
 
   const latestRun = runs[0];
-  const summaryLabel = latestRun ? `Latest run · ${formatDate(latestRun.startedAt)}` : undefined;
+  const summaryLabel = latestRun
+    ? `Latest run · ${formatDate(latestRun.startedAt)}`
+    : undefined;
+  const activeRun = latestRun &&
+      (latestRun.status === "starting" || latestRun.status === "running" ||
+        latestRun.status === "stopping")
+    ? latestRun
+    : null;
 
   return (
     <Layout title="Dashboard">
@@ -74,6 +86,16 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
       <Sidebar />
       <main class="main-content">
         <NetworkStatus />
+        {activeRun && (
+          <RunProgress
+            runId={activeRun.id}
+            startedAt={activeRun.startedAt}
+            status={activeRun.status}
+            totalScenarios={activeRun.totalScenarios}
+            completedScenarios={activeRun.passed + activeRun.failed +
+              activeRun.skipped}
+          />
+        )}
         <SummaryCards
           passed={latestRun?.passed ?? 0}
           failed={latestRun?.failed ?? 0}

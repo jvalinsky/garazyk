@@ -72,10 +72,18 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
 
         {run && (
           <>
-            <RunProgress runId={runId} startedAt={run.startedAt} status={run.status} />
+            <RunProgress
+              runId={runId}
+              startedAt={run.startedAt}
+              status={run.status}
+              totalScenarios={run.totalScenarios}
+              completedScenarios={run.passed + run.failed + run.skipped}
+            />
             <div style="display: flex; gap: var(--space-xl); margin-bottom: var(--space-lg); font-size: var(--font-size-sm); color: var(--color-text-secondary); flex-wrap: wrap;">
               <span>Started: {formatDate(run.startedAt)}</span>
-              {run.finishedAt && <span>Duration: {formatDurationSec(run.durationS ?? 0)}</span>}
+              {run.finishedAt && (
+                <span>Duration: {formatDurationSec(run.durationS ?? 0)}</span>
+              )}
               <span
                 class={`badge ${
                   run.status === "completed"
@@ -88,7 +96,9 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
                 {run.status}
               </span>
               {run.pds2 && <span class="badge badge-info">PDS2</span>}
-              {run.binaryMode && <span class="badge badge-secondary">binary</span>}
+              {run.binaryMode && (
+                <span class="badge badge-secondary">binary</span>
+              )}
             </div>
           </>
         )}
@@ -96,7 +106,11 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
         {run
           ? (
             <>
-              <SummaryCards passed={run.passed} failed={run.failed} skipped={run.skipped} />
+              <SummaryCards
+                passed={run.passed}
+                failed={run.failed}
+                skipped={run.skipped}
+              />
 
               {scenarioResults.length > 0 && (
                 <div class="scenario-grid">
@@ -105,7 +119,7 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
                       key={sr.scenarioId}
                       id={sr.scenarioId}
                       name={sr.scenarioName}
-                      status={sr.status as any}
+                      status={sr.status}
                       passed={sr.passed}
                       failed={sr.failed}
                       skipped={sr.skipped}
