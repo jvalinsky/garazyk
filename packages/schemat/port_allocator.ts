@@ -152,7 +152,7 @@ export async function allocateHostPorts(
 /** Release all port leases owned by a run id. */
 export async function releaseRunPortLeases(
   runId: string,
-  leaseDir = defaultPortLeaseDir(),
+  leaseDir: string = defaultPortLeaseDir(),
 ): Promise<void> {
   try {
     for await (const entry of Deno.readDir(leaseDir)) {
@@ -170,7 +170,7 @@ export async function releaseRunPortLeases(
 
 /** Remove leases whose owner process is no longer alive. */
 export async function cleanupStalePortLeases(
-  leaseDir = defaultPortLeaseDir(),
+  leaseDir: string = defaultPortLeaseDir(),
 ): Promise<void> {
   try {
     for await (const entry of Deno.readDir(leaseDir)) {
