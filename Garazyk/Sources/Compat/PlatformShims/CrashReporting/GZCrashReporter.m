@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSCrashReporter.m
+ @file GZCrashReporter.m
 
  @abstract Implementation of shared crash signal and exception handler.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "PDSCrashReporter.h"
+#import "GZCrashReporter.h"
 #import <signal.h>
 #import <unistd.h>
 #import <fcntl.h>
@@ -39,7 +39,7 @@ static const char *gExecutableName = "unknown";
  on all supported architectures. Re-raises the signal with default disposition
  to produce a core dump.
  */
-static void PDSCrashSignalHandler(int sig, siginfo_t *si, void *ctx) {
+static void GZCrashSignalHandler(int sig, siginfo_t *si, void *ctx) {
     const char *signame = (sig == SIGSEGV) ? "SIGSEGV" :
                           (sig == SIGABRT) ? "SIGABRT" :
                           (sig == SIGBUS)  ? "SIGBUS"  :
@@ -166,7 +166,7 @@ static void PDSCrashSignalHandler(int sig, siginfo_t *si, void *ctx) {
 /*!
  @abstract Logs an uncaught ObjC exception before the runtime aborts.
  */
-static void PDSCrashUncaughtExceptionHandler(NSException *exception) {
+static void GZCrashUncaughtExceptionHandler(NSException *exception) {
     fprintf(stderr, "\n=== UNCAUGHT EXCEPTION ===\n");
     fprintf(stderr, "Name: %s\n", exception.name.UTF8String ?: "?");
     fprintf(stderr, "Reason: %s\n", exception.reason.UTF8String ?: "?");
@@ -188,9 +188,9 @@ static void PDSCrashUncaughtExceptionHandler(NSException *exception) {
     fflush(stderr);
 }
 
-#pragma mark - PDSCrashReporter
+#pragma mark - GZCrashReporter
 
-@implementation PDSCrashReporter
+@implementation GZCrashReporter
 
 + (void)installCrashHandlersWithExecutableName:(const char *)name {
     gExecutableName = name ?: "unknown";
@@ -207,7 +207,7 @@ static void PDSCrashUncaughtExceptionHandler(NSException *exception) {
     // Install crash signal handlers via sigaction
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
-    sa.sa_sigaction = PDSCrashSignalHandler;
+    sa.sa_sigaction = GZCrashSignalHandler;
     sa.sa_flags = SA_SIGINFO | SA_RESETHAND | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
 
@@ -218,7 +218,7 @@ static void PDSCrashUncaughtExceptionHandler(NSException *exception) {
     sigaction(SIGTRAP, &sa, NULL);
 
     // Install uncaught exception handler
-    NSSetUncaughtExceptionHandler(&PDSCrashUncaughtExceptionHandler);
+    NSSetUncaughtExceptionHandler(&GZCrashUncaughtExceptionHandler);
 }
 
 @end

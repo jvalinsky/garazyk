@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSCrashReporter.h
+ @file GZCrashReporter.h
 
  @abstract Shared crash signal and exception handler for Garazyk binaries.
 
@@ -22,7 +22,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PDSCrashReporter
+ @class GZCrashReporter
 
  @abstract Installs crash signal handlers and uncaught-exception handlers.
 
@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
  before any other initialization. The executable name is used for the crash
  log file path (/tmp/<name>-crash.log).
  */
-@interface PDSCrashReporter : NSObject
+@interface GZCrashReporter : NSObject
 
 /*!
  @method installCrashHandlersWithExecutableName:
