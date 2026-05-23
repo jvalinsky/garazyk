@@ -9,7 +9,7 @@
  */
 
 #import "PhoneVerification/PDSVonagePhoneVerificationProvider.h"
-#import "Core/PDSProviderHTTPClient.h"
+#import "Core/GZProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
 #import "Debug/GZLogger.h"
 #import "Debug/GZLogRedactor.h"
@@ -27,7 +27,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
 }
 @property (nonatomic, strong) id<PDSSecretsProvider> secretsProvider;
 @property (nonatomic, copy) NSDictionary *providerConfig;
-@property (nonatomic, strong, nullable) PDSProviderHTTPClient *httpClient;
+@property (nonatomic, strong, nullable) GZProviderHTTPClient *httpClient;
 @property (nonatomic, copy, nullable) NSString *apiKey;
 @property (nonatomic, copy, nullable) NSString *apiSecret;
 @property (nonatomic, copy, nullable) NSString *brandName;
@@ -107,7 +107,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
         // Vonage uses API key/secret in form body, not headers.
         // Create HTTP client with base URL and empty auth header.
         NSURL *baseURL = [NSURL URLWithString:kVonageVerifyBaseURL];
-        self->_httpClient = [[PDSProviderHTTPClient alloc]
+        self->_httpClient = [[GZProviderHTTPClient alloc]
             initWithBaseURL:baseURL authHeader:@""];
         success = YES;
     });

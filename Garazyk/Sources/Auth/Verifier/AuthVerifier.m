@@ -17,7 +17,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import "Security/PDSSecurityCompare.h"
 #import "Auth/OAuthProvider/OAuthProviderProtocols.h"
 #import <Security/Security.h>
@@ -121,7 +121,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing token"}];
         }
-        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"missing_token"];
+        [[GZMetrics sharedMetrics] incrementAuthFailure:@"missing_token"];
         return nil;
     }
     return [self verifyAuthHeader:[NSString stringWithFormat:@"Bearer %@", token]
@@ -168,7 +168,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorDPoPMissing
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP header"}];
         }
-        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"dpop_missing"];
+        [[GZMetrics sharedMetrics] incrementAuthFailure:@"dpop_missing"];
         return nil;
     }
 
@@ -227,7 +227,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
             if (error) {
                 *error = dpopError;
             }
-            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"dpop_invalid"];
+            [[GZMetrics sharedMetrics] incrementAuthFailure:@"dpop_invalid"];
             return nil;
         }
     }
@@ -239,7 +239,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT format"}];
         }
-        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_token"];
+        [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_token"];
         return nil;
     }
 
@@ -256,7 +256,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing issuer claim"}];
         }
-        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"missing_issuer"];
+        [[GZMetrics sharedMetrics] incrementAuthFailure:@"missing_issuer"];
         return nil;
     }
 
@@ -266,7 +266,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid subject claim"}];
         }
-        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_subject"];
+        [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_subject"];
         return nil;
     }
 
@@ -287,7 +287,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                                             code:AuthVerifierErrorInvalidSignature
                                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT verification failed"}];
             }
-            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
+            [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
             return nil;
         }
     } else if (self.keyResolver && [self.keyResolver isIssuerAllowed:issuer]) {
@@ -299,7 +299,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                              code:AuthVerifierErrorInvalidIssuer
                                          userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to fetch JWKS: %@", jwksError.localizedDescription]}];
             }
-            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_issuer"];
+            [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_issuer"];
             return nil;
         }
 
@@ -322,7 +322,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                              code:AuthVerifierErrorInvalidSignature
                                          userInfo:@{NSLocalizedDescriptionKey: @"No matching key found in JWKS"}];
             }
-            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
+            [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
             return nil;
         }
 
@@ -334,7 +334,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                              code:AuthVerifierErrorInvalidSignature
                                          userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid key in JWKS: %@", verifyError.localizedDescription]}];
             }
-            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
+            [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
             return nil;
         }
 
@@ -346,7 +346,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                              code:AuthVerifierErrorInvalidSignature
                                          userInfo:@{NSLocalizedDescriptionKey: @"JWT signature verification failed for remote issuer"}];
             }
-            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
+            [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
             return nil;
         }
 
@@ -365,7 +365,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidIssuer
                                      userInfo:@{NSLocalizedDescriptionKey: @"Issuer not allowed"}];
         }
-        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_issuer"];
+        [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_issuer"];
         return nil;
     }
 
@@ -412,7 +412,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                                          code:AuthVerifierErrorAccountTakedown
                                                      userInfo:@{NSLocalizedDescriptionKey: @"Account is suspended"}];
         }
-        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"account_suspended"];
+        [[GZMetrics sharedMetrics] incrementAuthFailure:@"account_suspended"];
         return nil;
     }
 

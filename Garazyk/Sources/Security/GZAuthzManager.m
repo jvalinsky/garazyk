@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSAuthzManager.m
+ @file GZAuthzManager.m
 
  @abstract Authorization manager implementation with policy enforcement.
 
@@ -12,22 +12,22 @@
  @copyright Copyright (c) 2024 Jack Valinsky
  */
 
-#import "Security/PDSAuthzManager.h"
+#import "Security/GZAuthzManager.h"
 #import "Database/PDSDatabase.h"
-#import "Security/PDSInputValidator.h"
+#import "Security/GZInputValidator.h"
 
-NSErrorDomain const PDSAuthzErrorDomain = @"com.atproto.pds.authz";
+NSErrorDomain const GZAuthzErrorDomain = @"com.atproto.pds.authz";
 
 static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
 
-@interface PDSAuthzManager ()
+@interface GZAuthzManager ()
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
-@implementation PDSAuthzManager
+@implementation GZAuthzManager
 
 + (void)initialize {
-    if (self == [PDSAuthzManager class]) {
+    if (self == [GZAuthzManager class]) {
         kNonNamespaceAdminMethods = [NSSet setWithArray:@[
             @"com.atproto.temp.addReservedHandle",
         ]];
@@ -35,10 +35,10 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
 }
 
 + (instancetype)sharedManager {
-    static PDSAuthzManager *instance = nil;
+    static GZAuthzManager *instance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [[PDSAuthzManager alloc] init];
+        instance = [[GZAuthzManager alloc] init];
     });
     return instance;
 }
@@ -60,14 +60,14 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
                             error:(NSError **)error {
     if (!repoDID || !requestingDID) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
         }
         return NO;
     }
 
-    if (![[PDSInputValidator sharedValidator] isValidDID:repoDID]) {
+    if (![[GZInputValidator sharedValidator] isValidDID:repoDID]) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid repo DID format"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid repo DID format"}];
         }
         return NO;
     }
@@ -79,14 +79,14 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
     PDSDatabaseRepo *repo = [self.database getRepoForDid:repoDID error:nil];
     if (!repo) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorRepoNotFound userInfo:@{NSLocalizedDescriptionKey: @"Repository not found"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorRepoNotFound userInfo:@{NSLocalizedDescriptionKey: @"Repository not found"}];
         }
         return NO;
     }
 
     if (![repo.ownerDid isEqualToString:requestingDID]) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorRepoOwnershipMismatch userInfo:@{NSLocalizedDescriptionKey: @"Not authorized to access this repository"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorRepoOwnershipMismatch userInfo:@{NSLocalizedDescriptionKey: @"Not authorized to access this repository"}];
         }
         return NO;
     }
@@ -100,14 +100,14 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
                              error:(NSError **)error {
     if (!recordURI || !repositoryDID || !requestingDID) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
         }
         return NO;
     }
 
-    if (![[PDSInputValidator sharedValidator] isValidATURI:recordURI]) {
+    if (![[GZInputValidator sharedValidator] isValidATURI:recordURI]) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid record URI format"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid record URI format"}];
         }
         return NO;
     }
@@ -121,14 +121,14 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
                               error:(NSError **)error {
     if (!collection || !repositoryDID || !requestingDID) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameters"}];
         }
         return NO;
     }
 
-    if (![[PDSInputValidator sharedValidator] isValidCollectionName:collection]) {
+    if (![[GZInputValidator sharedValidator] isValidCollectionName:collection]) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid collection name format"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid collection name format"}];
         }
         return NO;
     }
@@ -158,8 +158,8 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
 
     if (!requestingDID) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain
-                                         code:PDSAuthzErrorAdminRequired
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain
+                                         code:GZAuthzErrorAdminRequired
                                      userInfo:@{NSLocalizedDescriptionKey: @"Admin authentication required"}];
         }
         return NO;
@@ -168,8 +168,8 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
     PDSDatabaseAccount *account = [self.database getAccountByDid:requestingDID error:nil];
     if (!account) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain
-                                         code:PDSAuthzErrorUnauthorized
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain
+                                         code:GZAuthzErrorUnauthorized
                                      userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
         }
         return NO;
@@ -179,8 +179,8 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
     // Caller must check JWT "admin" scope before calling this method.
     // Deny-by-default to prevent accidental privilege escalation.
     if (error) {
-        *error = [NSError errorWithDomain:PDSAuthzErrorDomain
-                                     code:PDSAuthzErrorAdminRequired
+        *error = [NSError errorWithDomain:GZAuthzErrorDomain
+                                     code:GZAuthzErrorAdminRequired
                                  userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (verify JWT 'admin' scope)"}];
     }
     return NO;
@@ -195,9 +195,9 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
         return NO;
     }
 
-    if (![[PDSInputValidator sharedValidator] isValidRecordKey:rkey]) {
+    if (![[GZInputValidator sharedValidator] isValidRecordKey:rkey]) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid record key format"}];
+            *error = [NSError errorWithDomain:GZAuthzErrorDomain code:GZAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Invalid record key format"}];
         }
         return NO;
     }

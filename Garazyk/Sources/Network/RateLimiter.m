@@ -15,7 +15,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import <sqlite3.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -290,7 +290,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (requestCount >= limit) {
         NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
         sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
-        [[PDSMetrics sharedMetrics] incrementRateLimitRejection:
+        [[GZMetrics sharedMetrics] incrementRateLimitRejection:
             (type == RateLimitTypeDID ? @"did" :
              type == RateLimitTypeIP ? @"ip" : @"custom")];
         return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
@@ -416,7 +416,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     
     if (uploadCount >= limit) {
         NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
-        [[PDSMetrics sharedMetrics] incrementRateLimitRejection:@"blob"];
+        [[GZMetrics sharedMetrics] incrementRateLimitRejection:@"blob"];
         return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
     }
     
