@@ -21,7 +21,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { createRunContext } from "../../lib/deno/diagnostics.ts";
 import { join } from "@std/path";
 import {
@@ -66,7 +66,7 @@ export async function run(): Promise<ScenarioResult> {
     const seedNames = ["luna", "marcus", "rosa", "volt", "quiet"];
 
     for (let i = 0; i < seedNames.length; i++) {
-      const char = getCharacter(seedNames[i]);
+      const char = getActor(seedNames[i]);
       accounts.push({
         slot: i + 1,
         label: seedNames[i],
@@ -142,7 +142,7 @@ export async function run(): Promise<ScenarioResult> {
         plan.accessJwt = session.accessJwt;
         createdCount++;
         if (plan.slot <= 5) {
-          const char = getCharacter(plan.label);
+          const char = getActor(plan.label);
           char.did = session.did;
           char.accessJwt = session.accessJwt;
         }

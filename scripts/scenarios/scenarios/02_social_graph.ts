@@ -17,7 +17,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -29,7 +29,7 @@ function now() {
 async function createAccounts(client: XrpcClient, names: string[], result: ScenarioResult) {
   const sessions: Record<string, any> = {};
   for (const name of names) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -69,8 +69,8 @@ async function follow(
   targetName: string,
   result: ScenarioResult,
 ) {
-  const follower = getCharacter(followerName);
-  const target = getCharacter(targetName);
+  const follower = getActor(followerName);
+  const target = getActor(targetName);
 
   if (!follower.did || !follower.accessJwt) {
     result.stepSkipped(`${follower.name} follows ${target.name}`, "Follower account not created");
@@ -85,7 +85,7 @@ async function follow(
     result,
     `${follower.name} follows ${target.name}`,
     async () => {
-      const res = await client.raw.post("com.atproto.repo.createRecord", {
+      const res = await client.as(follower).raw.post("com.atproto.repo.createRecord", {
         repo: follower.did,
         collection: "app.bsky.graph.follow",
         record: {
@@ -93,7 +93,7 @@ async function follow(
           subject: target.did,
           createdAt: now(),
         },
-      }, follower.accessJwt);
+      });
       return res;
     },
     (r) => `uri=${r.uri}`,
@@ -128,7 +128,7 @@ export async function run(): Promise<ScenarioResult> {
   const pds1Chars = ["luna", "marcus", "rosa", "volt", "troll", "quiet", "admin"];
   await createAccounts(client, pds1Chars, result);
 
-  const active = pds1Chars.filter((n) => getCharacter(n).did);
+  const active = pds1Chars.filter((n) => getActor(n).did);
   if (active.length < 4) {
     result.stepFailed(
       "Account creation",
@@ -139,12 +139,12 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     await timedCall(
       result,
       `Set profile: ${char.name}`,
       async () => {
-        const res = await client.raw.post("com.atproto.repo.createRecord", {
+        const res = await client.as(char).raw.post("com.atproto.repo.createRecord", {
           repo: char.did,
           collection: "app.bsky.actor.profile",
           record: {
@@ -152,7 +152,7 @@ export async function run(): Promise<ScenarioResult> {
             displayName: char.name,
             description: char.persona,
           },
-        }, char.accessJwt);
+        });
         return res;
       },
     );
@@ -171,17 +171,16 @@ export async function run(): Promise<ScenarioResult> {
 
   await new Promise((r) => setTimeout(r, 2000));
 
-  const marcus = getCharacter("marcus");
-  const luna = getCharacter("luna");
+  const marcus = getActor("marcus");
+  const luna = getActor("luna");
 
   await timedCall(
     result,
     "Marcus's follows list",
     async () => {
-      const res = await client.raw.get(
+      const res = await client.as(marcus).raw.get(
         "app.bsky.graph.getFollows",
         { actor: marcus.did },
-        marcus.accessJwt,
       );
       return res;
     },
@@ -202,7 +201,7 @@ export async function run(): Promise<ScenarioResult> {
     (f) => `count=${f.followers?.length || 0}`,
   );
 
-  const volt = getCharacter("volt");
+  const volt = getActor("volt");
   const followsResp = await timedCall(
     result,
     "Marcus lists follow records (for unfollow)",
@@ -243,7 +242,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const troll = getCharacter("troll");
+  const troll = getActor("troll");
   if (!luna.did || !luna.accessJwt) {
     result.stepSkipped("Luna blocks Trollface", "Luna account not created");
   } else if (!troll.did) {
@@ -253,7 +252,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna blocks Trollface",
       async () => {
-        const res = await client.raw.post("com.atproto.repo.createRecord", {
+        const res = await client.as(luna).raw.post("com.atproto.repo.createRecord", {
           repo: luna.did,
           collection: "app.bsky.graph.block",
           record: {
@@ -261,7 +260,7 @@ export async function run(): Promise<ScenarioResult> {
             subject: troll.did,
             createdAt: now(),
           },
-        }, luna.accessJwt);
+        });
         return res;
       },
       (r) => `uri=${r.uri}`,
@@ -275,7 +274,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna's blocks list",
       async () => {
-        const res = await client.raw.get("app.bsky.graph.getBlocks", {}, luna.accessJwt);
+        const res = await client.as(luna).raw.get("app.bsky.graph.getBlocks", {});
         return res;
       },
       (b) => `count=${b.blocks?.length || 0}`,
@@ -286,10 +285,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus profile counts",
     async () => {
-      const res = await client.raw.get(
+      const res = await client.as(marcus).raw.get(
         "app.bsky.actor.getProfile",
         { actor: marcus.did },
-        marcus.accessJwt,
       );
       return res;
     },
@@ -303,10 +301,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Search actors",
       async () => {
-        const res = await client.raw.get(
+        const res = await client.as(luna).raw.get(
           "app.bsky.actor.searchActors",
           { q: "Luna" },
-          luna.accessJwt,
         );
         return res;
       },

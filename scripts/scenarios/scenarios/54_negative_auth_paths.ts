@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -40,9 +40,9 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
-  const nova = getCharacter("nova");
-  const volt = getCharacter("volt");
+  const luna = getActor("luna");
+  const nova = getActor("nova");
+  const volt = getActor("volt");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -170,7 +170,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Cross-account write denied",
       async () => {
-        await pds.raw.post("com.atproto.repo.createRecord", {
+        await pds.as(luna).raw.post("com.atproto.repo.createRecord", {
           repo: nova.did,
           collection: "app.bsky.feed.post",
           record: {
@@ -178,7 +178,7 @@ export async function run(): Promise<ScenarioResult> {
             text: "unauthorized cross-account write attempt",
             createdAt: now(),
           },
-        }, luna.accessJwt);
+        });
       },
       undefined,
       true, // must throw 401
@@ -198,7 +198,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Suspended account write denied",
       async () => {
-        await pds.raw.post("com.atproto.repo.createRecord", {
+        await pds.as(volt).raw.post("com.atproto.repo.createRecord", {
           repo: volt.did,
           collection: "app.bsky.feed.post",
           record: {
@@ -206,7 +206,7 @@ export async function run(): Promise<ScenarioResult> {
             text: "deactivated account write attempt",
             createdAt: now(),
           },
-        }, volt.accessJwt);
+        });
       },
       undefined,
       true, // must throw 400/AccountDeactivated or 401

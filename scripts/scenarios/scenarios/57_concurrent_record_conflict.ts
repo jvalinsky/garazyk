@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -114,7 +114,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -152,7 +152,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create initial profile record",
     async () => {
-      return await pds.raw.post("com.atproto.repo.createRecord", {
+      return await pds.as(luna).raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.actor.profile",
         rkey: profileRkey,
@@ -161,7 +161,7 @@ export async function run(): Promise<ScenarioResult> {
           displayName: "Initial Name",
           description: "seed record for conflict test",
         },
-      }, luna.accessJwt);
+      });
     },
   );
 
@@ -231,11 +231,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Create throwaway post for delete-race",
       async () =>
-        pds.raw.post("com.atproto.repo.createRecord", {
+        pds.as(luna).raw.post("com.atproto.repo.createRecord", {
           repo: luna.did,
           collection: "app.bsky.feed.post",
           record: { $type: "app.bsky.feed.post", text: "delete race target", createdAt: now() },
-        }, luna.accessJwt!),
+        }),
       (r) => `uri=${r.uri}`,
     );
 
@@ -295,7 +295,7 @@ export async function run(): Promise<ScenarioResult> {
         result,
         "Create record referencing blob",
         async () =>
-          pds.raw.post("com.atproto.repo.createRecord", {
+          pds.as(luna).raw.post("com.atproto.repo.createRecord", {
             repo: luna.did,
             collection: "app.bsky.feed.post",
             record: {
@@ -311,7 +311,7 @@ export async function run(): Promise<ScenarioResult> {
                 }],
               },
             },
-          }, luna.accessJwt!),
+          }),
         (r) => `uri=${r.uri}`,
       );
 

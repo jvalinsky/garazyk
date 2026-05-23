@@ -18,7 +18,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, PDS_ADMIN_PASSWORD } from "../../lib/deno/config.ts";
+import { getActor, PDS1, PDS_ADMIN_PASSWORD } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -53,7 +53,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "troll", "admin", "mod"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -84,10 +84,10 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const troll = getCharacter("troll");
-  const admin = getCharacter("admin");
-  const mod = getCharacter("mod");
+  const luna = getActor("luna");
+  const troll = getActor("troll");
+  const admin = getActor("admin");
+  const mod = getActor("mod");
 
   if (!luna.did || !troll.did || !admin.did || !mod.did) {
     result.stepFailed("Account creation", "Not all accounts created");
@@ -106,12 +106,12 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     await timedCall(
       result,
       `Set profile: ${char.name}`,
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
+        await client.as(char).raw.post("com.atproto.repo.createRecord", {
           repo: char.did,
           collection: "app.bsky.actor.profile",
           record: {
@@ -119,7 +119,7 @@ export async function run(): Promise<ScenarioResult> {
             displayName: char.name,
             description: char.persona,
           },
-        }, char.accessJwt);
+        });
       },
     );
   }
@@ -128,7 +128,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna posts stargazing content",
     async () => {
-      const res = await client.raw.post("com.atproto.repo.createRecord", {
+      const res = await client.as(luna).raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.feed.post",
         record: {
@@ -136,7 +136,7 @@ export async function run(): Promise<ScenarioResult> {
           text: "Beautiful night for stargazing! The Milky Way is visible tonight.",
           createdAt: now(),
         },
-      }, luna.accessJwt);
+      });
       return res;
     },
   );
@@ -145,7 +145,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Trollface posts spam",
     async () => {
-      const res = await client.raw.post("com.atproto.repo.createRecord", {
+      const res = await client.as(troll).raw.post("com.atproto.repo.createRecord", {
         repo: troll.did,
         collection: "app.bsky.feed.post",
         record: {
@@ -153,7 +153,7 @@ export async function run(): Promise<ScenarioResult> {
           text: "BUY CRYPTO NOW!!! FREE MONEY!!! CLICK HERE!!!",
           createdAt: now(),
         },
-      }, troll.accessJwt);
+      });
       return res;
     },
   );
@@ -164,7 +164,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Trollface harasses Luna",
       async () => {
-        const res = await client.raw.post("com.atproto.repo.createRecord", {
+        const res = await client.as(troll).raw.post("com.atproto.repo.createRecord", {
           repo: troll.did,
           collection: "app.bsky.feed.post",
           record: {
@@ -176,7 +176,7 @@ export async function run(): Promise<ScenarioResult> {
               parent: { uri: lunaPost.uri, cid: lunaPost.cid },
             },
           },
-        }, troll.accessJwt);
+        });
         return res;
       },
     );
@@ -187,7 +187,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna reports harassment",
       async () => {
-        const res = await client.raw.post("com.atproto.moderation.createReport", {
+        const res = await client.as(luna).raw.post("com.atproto.moderation.createReport", {
           reasonType: "com.atproto.moderation.defs#reasonRude",
           subject: {
             $type: "com.atproto.repo.strongRef",
@@ -195,7 +195,7 @@ export async function run(): Promise<ScenarioResult> {
             cid: trollHarass.cid,
           },
           reason: "Targeted harassment and personal attacks",
-        }, luna.accessJwt);
+        });
         return res;
       },
       (r) => `report_id=${r.id}`,
@@ -209,7 +209,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna reports spam",
       async () => {
-        const res = await client.raw.post("com.atproto.moderation.createReport", {
+        const res = await client.as(luna).raw.post("com.atproto.moderation.createReport", {
           reasonType: "com.atproto.moderation.defs#reasonSpam",
           subject: {
             $type: "com.atproto.repo.strongRef",
@@ -217,7 +217,7 @@ export async function run(): Promise<ScenarioResult> {
             cid: trollSpam.cid,
           },
           reason: "Spam content — crypto scam",
-        }, luna.accessJwt);
+        });
         return res;
       },
       (r) => `report_id=${r.id}`,
@@ -336,7 +336,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Admin posts community notice",
     async () => {
-      await client.raw.post("com.atproto.repo.createRecord", {
+      await client.as(admin).raw.post("com.atproto.repo.createRecord", {
         repo: admin.did,
         collection: "app.bsky.feed.post",
         record: {
@@ -344,7 +344,7 @@ export async function run(): Promise<ScenarioResult> {
           text: "We've taken action against a spam/harassment account. Stay safe, everyone!",
           createdAt: now(),
         },
-      }, admin.accessJwt);
+      });
     },
   );
 

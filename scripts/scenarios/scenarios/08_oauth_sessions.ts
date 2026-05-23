@@ -19,7 +19,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -54,7 +54,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -86,8 +86,8 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
 
   if (!luna.did || !marcus.did) {
     result.stepFailed("Account creation", "Not all accounts created");
@@ -227,7 +227,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna gets session info",
     async () => {
-      return await client.raw.get("com.atproto.server.getSession", {}, luna.accessJwt);
+      return await client.as(luna).raw.get("com.atproto.server.getSession", {});
     },
     (s) => `did=${s.did}`,
   );
@@ -267,10 +267,9 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    await client.raw.post(
+    await client.as(marcus).raw.post(
       "com.atproto.server.deleteSession",
       {},
-      marcus.accessJwt,
     );
     result.stepPassed("Marcus deletes session (logout)");
   } catch (exc: any) {

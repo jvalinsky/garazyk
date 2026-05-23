@@ -1,6 +1,6 @@
 import { encode } from "cborg";
 import { parseFirehoseFrame, FirehoseFrameParseError } from "../../lib/deno/firehose.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
@@ -55,7 +55,7 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const troll = getCharacter("troll");
+  const troll = getActor("troll");
   const session = await timedCall(result, "Create troll account", async () => {
     return await client.accounts.createAccount(troll.handle, troll.email, troll.password);
   });
