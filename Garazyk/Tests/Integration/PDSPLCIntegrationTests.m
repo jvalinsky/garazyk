@@ -5,13 +5,15 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
+#import "PLC/PLCMockStore.h"
+#import "PLC/PLCServer.h"
 
 @interface PDSPLCIntegrationTests : XCTestCase
 
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, strong) NSURL *tempURL;
-@property (nonatomic, strong) NSTask *plcTask;
+@property (nonatomic, strong) PLCServer *plcServer;
 @property (nonatomic, assign) NSUInteger plcPort;
 
 @end
@@ -21,58 +23,19 @@
 - (void)setUp {
     [super setUp];
 
-    self.plcPort = 2582 + (arc4random_uniform(100)); // Use a random port to avoid conflicts
-    
-    // Start atproto-plc
-    self.plcTask = [[NSTask alloc] init];
-    // Find the binary path
-    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-    NSArray *candidates = @[
-        @"build/bin/atproto-plc",
-        @"bin/atproto-plc",
-        @"../build/bin/atproto-plc",
-        @"build/Debug/atproto-plc"
-    ];
-
-    NSString *binaryPath = nil;
-    for (NSString *candidate in candidates) {
-        NSString *path = [cwd stringByAppendingPathComponent:candidate];
-        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
-            binaryPath = path;
-            break;
+    id<PLCStore> plcStore = [[PLCMockStore alloc] init];
+    PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:plcStore];
+    self.plcServer = [[PLCServer alloc] initWithStore:plcStore auditor:auditor port:0];
+    NSError *plcError = nil;
+    if (![self.plcServer startWithError:&plcError]) {
+        NSError *underlying = plcError.userInfo[NSUnderlyingErrorKey];
+        if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
+            XCTSkip(@"PLC server cannot listen (EPERM) in this environment");
         }
-    }
-    
-    if (![[NSFileManager defaultManager] fileExistsAtPath:binaryPath]) {
-        self.plcTask = nil;
-        XCTSkip(@"atproto-plc binary not found (searched: %@); build the atproto-plc target to run this test",
-                [candidates componentsJoinedByString:@", "]);
+        XCTFail(@"Failed to start PLC server: %@", plcError);
         return;
     }
-
-    self.plcTask.launchPath = binaryPath;
-    self.plcTask.arguments = @[@"--port", [NSString stringWithFormat:@"%lu", (unsigned long)self.plcPort]];
-    
-    // Redirect output to a file for debugging
-    NSString *logPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"atproto-plc.log"];
-    [[NSFileManager defaultManager] removeItemAtPath:logPath error:nil];
-    [[NSFileManager defaultManager] createFileAtPath:logPath contents:nil attributes:nil];
-    self.plcTask.standardOutput = [NSFileHandle fileHandleForWritingAtPath:logPath];
-    self.plcTask.standardError = [NSFileHandle fileHandleForWritingAtPath:logPath];
-    
-    NSError *error = nil;
-    if (@available(macOS 10.13, *)) {
-        if (![self.plcTask launchAndReturnError:&error]) {
-            self.plcTask = nil;
-            XCTSkip(@"Failed to launch atproto-plc: %@", error);
-            return;
-        }
-    } else {
-        [self.plcTask launch];
-    }
-    
-    // Give it a moment to start
-    [NSThread sleepForTimeInterval:1.0];
+    self.plcPort = self.plcServer.httpServer.port;
 
     self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
@@ -110,9 +73,8 @@
 }
 
 - (void)tearDown {
-    if (self.plcTask && self.plcTask.isRunning) {
-        [self.plcTask terminate];
-    }
+    [self.plcServer stop];
+    self.plcServer = nil;
     [self.database close];
     
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];

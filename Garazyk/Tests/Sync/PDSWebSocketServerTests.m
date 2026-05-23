@@ -67,7 +67,7 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _port = 49152;
+        _port = 0;
     }
     return self;
 }

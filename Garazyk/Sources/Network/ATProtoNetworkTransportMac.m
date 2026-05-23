@@ -14,7 +14,8 @@
 
 static BOOL ATProtoNetworkTransportMacUsesPlainTCP(NSUInteger port) {
     return port == 0 || port == 80 || port == 2583 || port == 2584 ||
-           port == 2582 || port == 3200 || port == 3210 || port == 8082;
+           port == 2582 || port == 3200 || port == 3210 || port == 8082 ||
+           port == 8085;
 }
 
 @implementation ATProtoNetworkTransportFactory
@@ -182,12 +183,9 @@ static BOOL ATProtoNetworkTransportMacUsesPlainTCP(NSUInteger port) {
     self = [super init];
     if (self) {
         _port = port;
-        nw_parameters_t parameters;
-        if (ATProtoNetworkTransportMacUsesPlainTCP(port)) {
-            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
-        } else {
-            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
-        }
+        nw_parameters_t parameters =
+            nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        nw_parameters_set_reuse_local_address(parameters, true);
         char portStr[16];
         snprintf(portStr, sizeof(portStr), "%lu", (unsigned long)port);
         if (host.length > 0) {
