@@ -9,12 +9,7 @@
  * @module tui
  */
 
-import {
-  ScreenBuffer,
-  CLEAR_SCREEN,
-  CURSOR_HOME,
-  RESET,
-} from "@garazyk/tui";
+import { ScreenBuffer } from "@garazyk/tui";
 import {
   enterTerminalMode,
   exitTerminalMode,
@@ -39,10 +34,7 @@ import {
 import { createTuiRuntime, type TuiRuntimeHandle } from "./tui/runtime.ts";
 import { renderView } from "./tui/view.ts";
 import type { DashboardState } from "./dashboard_state.ts";
-import type { Msg } from "./dashboard_state.ts";
 import type { Run } from "./services/types.ts";
-import { fetchRuns } from "./db/queries.ts";
-import { db } from "./db/index.ts";
 import { getScenariosItemCount, getScenariosItemAt } from "./tui/panels/scenarios.ts";
 
 // ---------------------------------------------------------------------------
@@ -81,7 +73,7 @@ export async function runDashboardTui(
 // One-shot mode (replaces old `status` command)
 // ---------------------------------------------------------------------------
 
-async function renderOnce(options: DashboardTuiOptions): Promise<void> {
+async function renderOnce(_options: DashboardTuiOptions): Promise<void> {
   const runtime = createTuiRuntime();
 
   // Wait briefly for boot cmds to complete
@@ -114,7 +106,7 @@ async function renderOnce(options: DashboardTuiOptions): Promise<void> {
 // Interactive mode
 // ---------------------------------------------------------------------------
 
-async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
+async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
   const size = getTerminalSize();
   if (!size) {
     console.error("Cannot determine terminal size.");
@@ -526,7 +518,7 @@ function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle, recentRuns: Run[]
 function handleFilterKey(
   key: Key,
   runtime: TuiRuntimeHandle,
-  focus: FocusRing,
+  _focus: FocusRing,
   onExitFilter: () => void,
 ): void {
   if (isKey(key, Keys.ESCAPE) || isCtrl(key, "c")) {
@@ -617,7 +609,7 @@ export interface DashboardTuiSnapshot {
 
 /** Collect one terminal-dashboard snapshot (kept for backward compatibility). */
 export async function collectTuiSnapshot(
-  options: DashboardTuiOptions = {},
+  _options: DashboardTuiOptions = {},
 ): Promise<DashboardTuiSnapshot> {
   const [networkModule, runModule, dbModule, queryModule, scenarioModule, topologyModule] =
     await Promise.all([
@@ -651,7 +643,6 @@ export async function collectTuiSnapshot(
 /** Render one terminal dashboard frame (kept for backward compatibility). */
 export function renderTuiFrame(snapshot: DashboardTuiSnapshot): string {
   const active = snapshot.activeRun;
-  const latest = snapshot.recentRuns[0] ?? null;
   const fallbackServices: import("./services/types.ts").ServiceStatus[] = [{
     name: "none",
     label: "No services discovered",
@@ -700,12 +691,10 @@ function renderService(service: import("./services/types.ts").ServiceStatus): st
 function renderRun(run: import("./services/types.ts").Run): string {
   const completed = run.passed + run.failed + run.skipped;
   const total = run.totalScenarios;
-  const width = 18;
-  const filled = total > 0 ? Math.max(0, Math.min(width, Math.round((completed / total) * width))) : 0;
-  const bar = `[${"#".repeat(filled)}${"-".repeat(width - filled)}] ${completed}/${total}`;
   const status = run.status === "completed" ? "[done]" : run.status === "running" ? "[run ]" : run.status === "error" ? "[fail]" : "[wait]";
+  const progress = total > 0 ? `${completed}/${total}` : "0/0";
   const failures = run.failed > 0 ? `${run.failed} failed` : `${run.passed} passed`;
-  return `${status} ${run.id.padEnd(23)} ${bar} ${failures}`;
+  return `${status} ${run.id.padEnd(23)} ${progress.padEnd(7)} ${failures}`;
 }
 
 // ---------------------------------------------------------------------------

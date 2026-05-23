@@ -61,7 +61,7 @@ export class DurationCache {
 }
 
 /**
- * CLI Progress Bar with time estimation.
+ * CLI progress bar for the whole scenario suite, with time estimation.
  */
 export class ProgressBar {
   private startTime: number;
@@ -91,12 +91,12 @@ export class ProgressBar {
   /**
    * Update the progress bar position.
    * @param current - Current progress count
-   * @param taskName - Optional new task name
+   * @param taskName - Optional new task name. Pass an empty string to clear it.
    * @returns The rendered progress string (caller writes to terminal)
    */
   update(current: number, taskName?: string): string {
     this.current = current;
-    if (taskName) this.currentTask = taskName;
+    if (taskName !== undefined) this.currentTask = taskName;
     return this.render();
   }
 
@@ -169,8 +169,11 @@ export class ProgressBar {
       timeInfo = ` | Total time: ${this.formatDuration(elapsed)}`;
     }
 
-    const counter = `${this.current}/${this.total}`;
-    const task = this.currentTask ? ` | ${cyan(this.currentTask)}` : "";
+    const remaining = Math.max(0, this.total - this.current);
+    const counter = `${remaining} left (${this.current}/${this.total})`;
+    const task = this.currentTask
+      ? ` | Running: ${cyan(this.currentTask)}`
+      : "";
 
     const output = `\r${bold(percent)}% [${bar}] ${counter}${timeInfo}${task}`;
 
