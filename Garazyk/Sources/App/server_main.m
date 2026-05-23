@@ -22,12 +22,12 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
-#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 int main(int argc, const char * argv[]) {
     [[GZSignalManager sharedManager] installIgnoredSignals];
-    [PDSCrashReporter installCrashHandlersWithExecutableName:"kaszlak-headless"];
+    [GZCrashReporter installCrashHandlersWithExecutableName:"kaszlak-headless"];
     @autoreleasepool {
         GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS Starting...");
 

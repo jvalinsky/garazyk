@@ -11,7 +11,7 @@
  received (SIGINT, SIGTERM, SIGHUP, SIGUSR1, SIGUSR2).
 
  Crash signals (SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGTRAP) are handled by
- PDSCrashReporter, not this class.
+ GZCrashReporter, not this class.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */

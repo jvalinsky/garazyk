@@ -81,7 +81,7 @@ cat > "${BINARY_DIR}/main.m" <<MAIN_EOF
 #endif
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
-#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 
 static const char *executable_name = "${SERVICE_NAME}";
@@ -116,7 +116,7 @@ static int fail_with_usage(NSString *message) {
 
 int main(int argc, const char * argv[]) {
     [[GZSignalManager sharedManager] installIgnoredSignals];
-    [PDSCrashReporter installCrashHandlersWithExecutableName:"${SERVICE_NAME}"];
+    [GZCrashReporter installCrashHandlersWithExecutableName:"${SERVICE_NAME}"];
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif

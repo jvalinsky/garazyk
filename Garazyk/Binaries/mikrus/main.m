@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "Mikrus/MikrusRuntime.h"
 #import "Mikrus/MikrusConfiguration.h"
-#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
@@ -111,7 +111,7 @@ static BOOL parse_options(NSArray<NSString *> *args,
 
 int main(int argc, const char *argv[]) {
     [[GZSignalManager sharedManager] installIgnoredSignals];
-    [PDSCrashReporter installCrashHandlersWithExecutableName:"mikrus"];
+    [GZCrashReporter installCrashHandlersWithExecutableName:"mikrus"];
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif

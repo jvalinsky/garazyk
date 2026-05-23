@@ -19,7 +19,7 @@
 #import "AppView/Server/Config/AppViewConfiguration.h"
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 #import <execinfo.h>
 #if defined(GNUSTEP)
@@ -211,7 +211,7 @@ static BOOL parse_appview_options(NSArray<NSString *> *args,
 
 int main(int argc, const char * argv[]) {
     [[GZSignalManager sharedManager] installIgnoredSignals];
-    [PDSCrashReporter installCrashHandlersWithExecutableName:"syrena"];
+    [GZCrashReporter installCrashHandlersWithExecutableName:"syrena"];
 
     NSSetUncaughtExceptionHandler(&uncaughtExceptionHandler);
 

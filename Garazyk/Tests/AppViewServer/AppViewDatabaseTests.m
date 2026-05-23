@@ -164,18 +164,19 @@
     for (NSInteger i = 0; i < 5; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:repo%ld", (long)i];
         AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:did];
+        s.status = AppViewRepoSyncStatusDirty;
         [self.db upsertRepoSyncState:s error:nil];
         for (NSInteger j = 0; j < i; j++) {
             [self.db recordBackfillError:did message:@"err" error:nil];
         }
     }
 
-    NSArray *pending = [self.db loadRepoSyncStatesWithStatus:AppViewRepoSyncStatusPending
-                                                       limit:10 error:&err];
-    XCTAssertEqual(pending.count, 5u);
+    NSArray *dirty = [self.db loadRepoSyncStatesWithStatus:AppViewRepoSyncStatusDirty
+                                                     limit:10 error:&err];
+    XCTAssertEqual(dirty.count, 5u);
     // Ordered by error_count ASC
-    XCTAssertEqual(((AppViewRepoSyncState *)pending[0]).errorCount, 0);
-    XCTAssertEqual(((AppViewRepoSyncState *)pending[4]).errorCount, 4);
+    XCTAssertEqual(((AppViewRepoSyncState *)dirty[0]).errorCount, 0);
+    XCTAssertEqual(((AppViewRepoSyncState *)dirty[4]).errorCount, 4);
 }
 
 // ---------------------------------------------------------------------------
