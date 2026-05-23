@@ -280,9 +280,11 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
                           @"FROM records r "
                           @"JOIN accounts a ON r.did = a.did "
                           @"WHERE r.collection = 'app.bsky.actor.profile'";
-    BOOL ok = [self.database executeParameterizedUpdate:actorsSQL params:@[] error:error];
+    NSError *popError = nil;
+    BOOL ok = [self.database executeParameterizedUpdate:actorsSQL params:@[] error:&popError];
     if (!ok) {
-        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_actors: %@", error ? *error : @"unknown");
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_actors: %@", popError);
+        if (error) *error = popError;
         return NO;
     }
 
@@ -291,9 +293,10 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
                          @"SELECT 'at://' || r.did || '/app.bsky.feed.post/' || r.rkey, r.did, json_extract(r.value, '$.text') "
                          @"FROM records r "
                          @"WHERE r.collection = 'app.bsky.feed.post'";
-    ok = [self.database executeParameterizedUpdate:postsSQL params:@[] error:error];
+    ok = [self.database executeParameterizedUpdate:postsSQL params:@[] error:&popError];
     if (!ok) {
-        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_posts: %@", error ? *error : @"unknown");
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_posts: %@", popError);
+        if (error) *error = popError;
         return NO;
     }
 
@@ -302,9 +305,10 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
                          @"SELECT 'at://' || r.did || '/app.bsky.graph.starterpack/' || r.rkey, r.did, json_extract(r.value, '$.name') "
                          @"FROM records r "
                          @"WHERE r.collection = 'app.bsky.graph.starterpack'";
-    ok = [self.database executeParameterizedUpdate:packsSQL params:@[] error:error];
+    ok = [self.database executeParameterizedUpdate:packsSQL params:@[] error:&popError];
     if (!ok) {
-        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_starter_packs: %@", error ? *error : @"unknown");
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_starter_packs: %@", popError);
+        if (error) *error = popError;
         return NO;
     }
 

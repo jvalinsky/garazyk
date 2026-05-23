@@ -21,6 +21,9 @@
 #import <unistd.h>
 #import <fcntl.h>
 #import <execinfo.h>
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 #import "MediaCore/ATProtoMediaServiceRuntime.h"
 #import "MediaCore/ATProtoMediaServiceConfiguration.h"
 #import "Video/ATProtoVideoProcessor.h"

@@ -96,6 +96,8 @@ int main(int argc, const char * argv[]) {
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
+    signal(SIGPIPE, SIG_IGN);
+
     @autoreleasepool {
         if (argc < 2) {
             print_usage();

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcAppBskyPack.h"
 #import "Network/XrpcHandler.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 
 #import "App/ATProtoServiceConfiguration.h"
 #import "AppView/Services/ActorService.h"
@@ -105,6 +107,11 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
 
   [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+  [dispatcher registerMethod:@"app.bsky.labeler.getServices"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"views" : @[], @"cursor" : [NSNull null]}];
+                     }];
 
   // Bookmarks, chat, and Ozone are PDS-side concerns
   BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];

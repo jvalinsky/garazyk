@@ -416,6 +416,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     }
 
     // Persist the event envelope durably (fast, on relay thread)
+    // FIXME: replace with actual envelope from FirehoseCommitEvent; dummy is a placeholder
     NSData *dummy = [NSData data]; // raw envelope not available from FirehoseCommitEvent directly
     NSError *storeError = nil;
     if (![_database appendStoredEventWithType:@"live_commit"
@@ -456,6 +457,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     NSString *rev = event.rev;
     NSString *cid = event.commit ? [event.commit stringValue] : nil;
     int64_t seq   = event.seq;
+    // FIXME: replace with actual envelope from FirehoseCommitEvent; dummy is a placeholder
     NSData *dummy = [NSData data];
 
     NSError *err = nil;
@@ -723,6 +725,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
 - (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL {
     @autoreleasepool {
+    // FIXME: replace with actual envelope from FirehoseIdentityEvent; dummy is a placeholder
     NSData *dummy = [NSData data];
     NSError *storeError = nil;
     if (![_database appendStoredEventWithType:@"identity"

@@ -14,7 +14,7 @@
 
 static BOOL ATProtoNetworkTransportMacUsesPlainTCP(NSUInteger port) {
     return port == 0 || port == 80 || port == 2583 || port == 2584 ||
-           port == 2582 || port == 3200 || port == 3210;
+           port == 2582 || port == 3200 || port == 3210 || port == 8082;
 }
 
 @implementation ATProtoNetworkTransportFactory

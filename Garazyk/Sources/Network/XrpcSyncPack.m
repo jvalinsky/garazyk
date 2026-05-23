@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcSyncPack.h"
 #import "App/ATProtoServiceConfiguration.h"
+#import "Admin/PDSAdminController.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSRelayService.h"
@@ -13,6 +14,8 @@
 #import "Core/CID.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSDatabase+Moderation.h"
+#import "Database/PDSDatabaseAccount.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"
@@ -33,6 +36,13 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request,
                                              HttpResponse *response);
 static NSString *normalizedHostnameString(NSString *hostInput);
 static BOOL validateSyncDIDParam(NSString *did, HttpResponse *response);
+static BOOL rejectUnavailableSyncDid(NSString *did,
+                                     PDSServiceDatabases *serviceDatabases,
+                                     id<PDSAdminController> adminController,
+                                     HttpResponse *response);
+static BOOL rejectSyncRecordTakedown(NSString *uri,
+                                     PDSServiceDatabases *serviceDatabases,
+                                     HttpResponse *response);
 static void applyBlobDownloadHeaders(NSString *mimeType, HttpResponse *response);
 static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                         ATProtoServiceConfiguration *config);
@@ -150,6 +160,51 @@ static BOOL validateSyncDIDParam(NSString *did, HttpResponse *response) {
   return YES;
 }
 
+static BOOL rejectUnavailableSyncDid(NSString *did,
+                                     PDSServiceDatabases *serviceDatabases,
+                                     id<PDSAdminController> adminController,
+                                     HttpResponse *response) {
+  NSError *accountError = nil;
+  PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+  if (!account) {
+    response.statusCode = HttpStatusNotFound;
+    [response setJsonBody:@{@"error" : @"RepoNotFound", @"message" : @"Repository not found"}];
+    return YES;
+  }
+
+  NSString *status = [account.status lowercaseString];
+  if (status.length > 0 && ![status isEqualToString:@"active"]) {
+    response.statusCode = HttpStatusForbidden;
+    [response setJsonBody:@{@"error" : @"AccountInactive", @"message" : @"Account is not active"}];
+    return YES;
+  }
+
+  NSError *takedownError = nil;
+  if ([adminController isAccountTakedownActive:did error:&takedownError]) {
+    response.statusCode = HttpStatusGone;
+    [response setJsonBody:@{@"error" : @"AccountTakedown",
+                            @"message" : @"Repository has been taken down by the host"}];
+    return YES;
+  }
+  return NO;
+}
+
+static BOOL rejectSyncRecordTakedown(NSString *uri,
+                                     PDSServiceDatabases *serviceDatabases,
+                                     HttpResponse *response) {
+  NSError *dbError = nil;
+  PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&dbError];
+  if (!database) return NO;
+  NSError *takedownError = nil;
+  if ([database isRecordTakedownActive:uri error:&takedownError]) {
+    response.statusCode = HttpStatusGone;
+    [response setJsonBody:@{@"error" : @"RecordTakedown",
+                            @"message" : @"Record has been taken down by the host"}];
+    return YES;
+  }
+  return NO;
+}
+
 static BOOL blobMimeTypeShouldAttach(NSString *mimeType) {
   NSString *lower = [[mimeType ?: @"" lowercaseString] componentsSeparatedByString:@";"].firstObject ?: @"";
   if ([lower isEqualToString:@"application/octet-stream"]) return YES;
@@ -208,6 +263,9 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     NSString *did = [request queryParamForKey:@"did"];
     NSString *sinceRev = [request queryParamForKey:@"since"];
     if (!validateSyncDIDParam(did, response)) {
+      return;
+    }
+    if (rejectUnavailableSyncDid(did, serviceDatabases, adminController, response)) {
       return;
     }
 
@@ -768,6 +826,9 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     if (!validateSyncDIDParam(did, response)) {
       return;
     }
+    if (rejectUnavailableSyncDid(did, serviceDatabases, adminController, response)) {
+      return;
+    }
     if (cid.length == 0) {
       response.statusCode = HttpStatusBadRequest;
       [response setJsonBody:@{
@@ -875,9 +936,15 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     if (!validateSyncDIDParam(did, response)) {
       return;
     }
+    if (rejectUnavailableSyncDid(did, serviceDatabases, adminController, response)) {
+      return;
+    }
 
     NSString *uri =
         [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    if (rejectSyncRecordTakedown(uri, serviceDatabases, response)) {
+      return;
+    }
     NSError *recordError = nil;
     NSDictionary *record =
         [recordService getRecord:uri forDid:did error:&recordError];

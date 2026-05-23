@@ -561,7 +561,13 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
     }
 
     NSDictionary *row = rows.firstObject;
-    NSString *storedCID = row[@"cid"];
+    NSString *storedCID = [row[@"cid"] isKindOfClass:[NSString class]] ? row[@"cid"] : nil;
+    if (cid.length > 0 && storedCID.length == 0) {
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
+                                                code:404
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Record not found for requested CID"}];
+        return nil;
+    }
     if (cid.length > 0 && storedCID.length > 0 && ![storedCID isEqualToString:cid]) {
         if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:404

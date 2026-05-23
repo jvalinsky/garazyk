@@ -11,11 +11,12 @@ pre-existing issues, not caused by recent infrastructure fixes.
 |----|----------|---------|------------|---------------|
 | 1  | 04, 55   | Admin login: `Invalid admin password` | Admin password config mismatch between services. 7 steps cascade from this single failure. | Check admin password in PDS config vs. what the scenario uses. Default is `admin` but may differ per deployment. |
 | 2  | 11       | `UI Server health check`: Connection refused on `localhost:2590` | `garazyk-ui` not included in default topology or Docker Compose. | Verify UI service is part of the topology preset. Check `docker-compose.yml` and topology compiler for `ui` service inclusion. |
-| 3  | 13       | `DID document inspection`: PDS serviceEndpoint not found | OAuth flow needs the PDS URL in the DID document. If using PLC, the DID document may not contain the PDS endpoint during local dev. | Trace the OAuth DID resolution path: PLC returns DID doc without endpoint → scenario looks for `http://127.0.0.1:2583` in `service` array. |
 | 4  | 53       | `requestPhoneVerification`: `PhoneVerificationNotConfigured` | Twilio/SMS provider not wired in local dev. | Add mock/skip for phone verification in dev mode. `mock_twilio.ts` exists in hamownia. |
 | 5  | 36, 46   | `Token verification failed` on video upload | Video service auth token not configured or mismatched. | Trace video upload token flow. Check if video service requires JWT that matches PDS issuer. |
 | 6  | 59       | Playwright browser executable not found | Chromium not installed. | Fixed via flake dev env + `npx playwright install chromium`. Verify fix works. |
 | 7  | 18       | `BackfillDisabled`: Backfill orchestrator not running | The backfill orchestrator process is not started in the local network. | Check if `campagnola` (backfill service) is included in default Docker Compose. Start it or add conditional skip. |
+
+Resolved note: scenario 13 is no longer an open DID document endpoint concern. On 2026-05-22 local time, `./scripts/run_scenarios.ts 13` passed 12/12 and the DID document inspection reported `serviceEndpoint=http://127.0.0.1:2583`. `build/tests/AllTests -XCTest PDSAccountServiceTests` also passed 23/23. The live PLC integration XCTest was gated and skipped because `build/bin/atproto-plc` was not present.
 
 ### P1: Service handler gaps (missing XRPC endpoints)
 

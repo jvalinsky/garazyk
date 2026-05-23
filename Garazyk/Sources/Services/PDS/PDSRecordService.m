@@ -185,6 +185,28 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     return NO;
 }
 
+static BOOL rejectUnknownBuiltInCollection(NSString *collection,
+                                           PDSValidationMode mode,
+                                           NSError **error) {
+    if (mode == PDSValidationModeOff) {
+        return NO;
+    }
+    if (![collection isKindOfClass:[NSString class]] ||
+        ![collection hasPrefix:@"app.bsky."]) {
+        return NO;
+    }
+    if ([[ATProtoLexiconRegistry sharedRegistry] hasSchemaForNSID:collection]) {
+        return NO;
+    }
+    if (error) {
+        *error = [NSError errorWithDomain:PDSRecordServiceErrorDomain
+                                     code:400
+                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:@"Lexicon schema not found for '%@'", collection]}];
+    }
+    return YES;
+}
+
 @interface PDSRecordService ()
 
 - (BOOL)checkAuthorizationForDid:(NSString *)targetDid actorDid:(NSString *)actorDid error:(NSError **)error;
@@ -468,6 +490,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
         GZ_LOG_ERROR(@"[PDSRecordService] Invalid collection NSID: %@", collection);
         if (error) *error = nsidError;
+        return NO;
+    }
+    if (rejectUnknownBuiltInCollection(collection, mode, error)) {
         return NO;
     }
 
@@ -940,6 +965,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 if (error) *error = nsidError;
                 return nil;
             }
+            if (rejectUnknownBuiltInCollection(collection, mode, error)) {
+                return nil;
+            }
 
             // Validate rkey format
             NSError *rkeyError = nil;
@@ -1073,6 +1101,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 if (error) *error = nsidError;
                 return nil;
             }
+            if (rejectUnknownBuiltInCollection(collection, mode, error)) {
+                return nil;
+            }
 
             if (mode != PDSValidationModeOff) {
                 NSError *shapeError = nil;
@@ -1117,6 +1148,15 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
             GZ_LOG_INFO(@"PDSRecordService _applyWritesSerialized: building uri=%@ for did=%@", uri, did);
             PDSDatabaseRecord *existingRecord = [self.databasePool getRecord:uri forDid:did error:nil];
+            if (!existingRecord) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                                 code:12
+                                             userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:@"Record not found: %@", uri]}];
+                }
+                return nil;
+            }
             NSString *previousRecordCID =
                 ([existingRecord.cid isKindOfClass:[NSString class]] &&
                  existingRecord.cid.length > 0)

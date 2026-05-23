@@ -98,8 +98,8 @@
 
 - (void)testKeyPathForDid {
     ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/tmp/pds"];
-    NSString *result = [paths keyPathForDid:@"did:plc:abc"];
-    XCTAssertEqualObjects(result, @"/tmp/pds/keys/did:plc:abc");
+    NSString *result = [paths keyPathForDid:@"did:plc:abcdefghijklmnopqrstuvwx"];
+    XCTAssertEqualObjects(result, @"/tmp/pds/keys/did:plc:abcdefghijklmnopqrstuvwx");
 }
 
 @end
