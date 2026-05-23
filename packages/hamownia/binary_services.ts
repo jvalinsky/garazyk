@@ -8,10 +8,34 @@
  */
 
 import { join } from "@std/path";
-import { repoRoot, SERVICE_PORTS, serviceUrl } from "@garazyk/schemat/runtime";
-import { logHeader, logInfo, logOk, logWarn } from "@garazyk/schemat";
+import {
+  allocateHostPorts,
+  applyRunResourceEnvironment,
+  createRunResourceManifest,
+  hostUrlForPort,
+  loadRunResourceManifest,
+  releaseRunPortLeases,
+  repoRoot,
+  SERVICE_PORTS,
+  serviceUrl,
+  updateRunResourceManifest,
+  writeRunResourceManifest,
+} from "@garazyk/schemat/runtime";
+import {
+  logHeader,
+  logInfo,
+  logOk,
+  logWarn,
+  roleEnvKey,
+} from "@garazyk/schemat";
 import { waitForHttp } from "@garazyk/laweta";
-import type { TopologyRunContext } from "@garazyk/schemat/runtime";
+import type {
+  PortRange,
+  ResourceIsolationMode,
+  RunResourceEndpoint,
+  RunResourceManifest,
+  TopologyRunContext,
+} from "@garazyk/schemat/runtime";
 
 const PDS_CONFIG = {
   server: {
@@ -85,6 +109,14 @@ export const BINARY_SERVICES = {
     binary: "germ",
     healthPath: "/_health",
   },
+  mikrus: {
+    binary: "mikrus",
+    healthPath: "/_health",
+  },
+  beskid: {
+    binary: "beskid",
+    healthPath: "/_health",
+  },
 } as const;
 
 export type BinaryServiceName = keyof typeof BINARY_SERVICES;
@@ -102,6 +134,8 @@ export async function startBinaryServices(
   const root = await repoRoot();
   const buildBin = Deno.env.get("BUILD_DIR") || join(root, "build/bin");
   const services = defaultBinaryServices(options.services);
+  const resources = await prepareBinaryResources(ctx, services, options);
+  applyRunResourceEnvironment(resources.manifest);
 
   for (const name of services) {
     const svc = BINARY_SERVICES[name];
@@ -141,7 +175,8 @@ export async function startBinaryServices(
     TWILIO_ACCOUNT_SID: "AC00000000000000000000000000000000",
     TWILIO_AUTH_TOKEN: "SK00000000000000000000000000000000",
     TWILIO_VERIFY_SERVICE_SID: "VA00000000000000000000000000000000",
-    TWILIO_API_BASE_URL: "http://127.0.0.1:8081",
+    TWILIO_API_BASE_URL: resources.manifest.mockProviders?.twilio?.hostUrl ??
+      "http://127.0.0.1:8081",
   };
 
   for (const name of services) {
@@ -152,6 +187,8 @@ export async function startBinaryServices(
       dataRoot,
       commonEnv,
       options,
+      servicePorts: resources.ports,
+      serviceUrls: resources.urls,
     });
     const logFile = join(logsDir, `${name}.log`);
     Deno.mkdirSync(plan.dataDir, { recursive: true });
@@ -178,6 +215,15 @@ export async function startBinaryServices(
     pipeProcessLog(child.stdout, stdoutLog);
     pipeProcessLog(child.stderr, stderrLog);
     await appendPid(ctx.pidFile, name.toUpperCase(), child.pid);
+    await recordBinaryServiceProcess(resources.manifestPath, name, {
+      pid: child.pid,
+      dataDir: plan.dataDir,
+      logFile,
+      hostPort: plan.port,
+      hostUrl: plan.serviceUrl,
+      internalUrl: plan.serviceUrl,
+      healthPath: svc.healthPath,
+    });
 
     const headers: Record<string, string> = {};
     if ("adminAuth" in svc && svc.adminAuth) {
@@ -186,7 +232,7 @@ export async function startBinaryServices(
 
     // Wait for health
     const healthy = await waitForHttp(
-      `${serviceUrl(name)}${svc.healthPath}`,
+      `${plan.serviceUrl}${svc.healthPath}`,
       name.toUpperCase(),
       name === "pds" || name === "appview" ? 60 : 30,
       headers,
@@ -226,6 +272,16 @@ export interface StartBinaryOptions {
   env?: Partial<Record<BinaryServiceName, Record<string, string>>>;
   /** Per-service argument overrides. */
   args?: Partial<Record<BinaryServiceName, string[]>>;
+  /** Resource isolation mode. Defaults to auto. */
+  isolation?: ResourceIsolationMode;
+  /** Optional port range for dynamic host-port leases. */
+  portRange?: PortRange;
+  /** Explicit resource manifest path. Defaults to the run context path. */
+  resourceManifestFile?: string;
+  /** Per-service ports, primarily for deterministic tests. */
+  servicePorts?: Partial<Record<BinaryServiceName, number>>;
+  /** Per-service URLs, primarily for deterministic tests. */
+  serviceUrls?: Partial<Record<BinaryServiceName, string>>;
   /** Callback fired after each service starts and passes its health check. */
   onServiceStarted?: (
     name: BinaryServiceName,
@@ -254,6 +310,7 @@ export interface BinaryServiceStatusProbeOptions {
 interface BinaryServiceStartPlan {
   name: BinaryServiceName;
   port: number;
+  serviceUrl: string;
   dataDir: string;
   args: string[];
   env: Record<string, string>;
@@ -265,12 +322,15 @@ interface ResolveBinaryServiceStartPlanOptions {
   dataRoot: string;
   commonEnv: Record<string, string>;
   options?: StartBinaryOptions;
+  servicePorts?: Partial<Record<BinaryServiceName, number>>;
+  serviceUrls?: Partial<Record<BinaryServiceName, string>>;
 }
 
 export function defaultBinaryServices(
   services?: BinaryServiceName[],
 ): BinaryServiceName[] {
-  return services ?? ["plc", "pds", "relay", "appview", "germ"];
+  return services ??
+    ["plc", "pds", "relay", "appview", "germ", "mikrus", "beskid"];
 }
 
 /** @internal Exported for unit tests that must not launch real binaries. */
@@ -281,20 +341,34 @@ export async function resolveBinaryServiceStartPlan(
     dataRoot,
     commonEnv,
     options = {},
+    servicePorts,
+    serviceUrls,
   }: ResolveBinaryServiceStartPlanOptions,
 ): Promise<BinaryServiceStartPlan> {
-  const port = SERVICE_PORTS[name];
+  const ports = { ...SERVICE_PORTS, ...servicePorts, ...options.servicePorts };
+  const urls = {
+    ...fixedServiceUrls(),
+    ...serviceUrls,
+    ...options.serviceUrls,
+  };
+  const port = ports[name] ?? SERVICE_PORTS[name];
+  if (!port) {
+    throw new Error(`No port configured for binary service ${name}`);
+  }
+  const currentServiceUrl = urls[name] ?? hostUrlForPort(port);
   const dataDir = join(dataRoot, name);
   const env: Record<string, string> = {
     ...commonEnv,
     ...(options.env?.[name] ?? {}),
   };
+  applyServiceUrlEnvironment(env, urls);
   const overrideArgs = options.args?.[name];
 
   if (overrideArgs) {
     return {
       name,
       port,
+      serviceUrl: currentServiceUrl,
       dataDir,
       args: overrideArgs,
       env,
@@ -315,6 +389,20 @@ export async function resolveBinaryServiceStartPlan(
         crypto.randomUUID().replace(/-/g, "");
       const pdsConfig = {
         ...PDS_CONFIG,
+        server: {
+          ...PDS_CONFIG.server,
+          port,
+          issuer: currentServiceUrl,
+        },
+        appview: {
+          ...PDS_CONFIG.appview,
+          url: urls.appview ?? PDS_CONFIG.appview.url,
+        },
+        relays: [urls.relay ?? PDS_CONFIG.relays[0]],
+        plc: {
+          ...PDS_CONFIG.plc,
+          url: urls.plc ?? PDS_CONFIG.plc.url,
+        },
         auth: { master_secret: pdsAuthMasterSecret },
       };
       Deno.mkdirSync(dataDir, { recursive: true });
@@ -331,7 +419,7 @@ export async function resolveBinaryServiceStartPlan(
       ];
       env.PDS_ALLOW_HTTP = "1";
       env.PDS_PLC_KEYS_DIR = join(dataDir, "keys");
-      env.PDS_PLC_URL = serviceUrl("plc");
+      env.PDS_PLC_URL = urls.plc ?? serviceUrl("plc");
       break;
     }
     case "relay":
@@ -340,7 +428,9 @@ export async function resolveBinaryServiceStartPlan(
         "--port",
         String(port),
         "--upstream",
-        `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
+        `${
+          toWebSocketUrl(urls.pds ?? serviceUrl("pds"))
+        }/xrpc/com.atproto.sync.subscribeRepos`,
         "--data-dir",
         dataDir,
       ];
@@ -349,20 +439,38 @@ export async function resolveBinaryServiceStartPlan(
       args = [
         "serve",
         "--relay",
-        `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
+        `${
+          toWebSocketUrl(urls.pds ?? serviceUrl("pds"))
+        }/xrpc/com.atproto.sync.subscribeRepos`,
         "--port",
         String(port),
         "--data-dir",
         dataDir,
       ];
       env.APPVIEW_ADMIN_SECRET = "localdevadmin";
-      env.APPVIEW_PLC_URL = serviceUrl("plc");
-      env.APPVIEW_PDS_URL = serviceUrl("pds");
+      env.APPVIEW_PLC_URL = urls.plc ?? serviceUrl("plc");
+      env.APPVIEW_PDS_URL = urls.pds ?? serviceUrl("pds");
       break;
     case "germ":
       args = ["serve", "--port", String(port), "--data-dir", dataDir];
-      env.GERM_PDS_URL = serviceUrl("pds");
-      env.GERM_PLC_URL = serviceUrl("plc");
+      env.GERM_PDS_URL = urls.pds ?? serviceUrl("pds");
+      env.GERM_PLC_URL = urls.plc ?? serviceUrl("plc");
+      break;
+    case "mikrus":
+      args = [
+        "serve",
+        "--relay",
+        toWebSocketUrl(urls.pds ?? serviceUrl("pds")),
+        "--port",
+        String(port),
+      ];
+      env.MIKRUS_PDS_URL = urls.pds ?? serviceUrl("pds");
+      env.MIKRUS_PLC_URL = urls.plc ?? serviceUrl("plc");
+      break;
+    case "beskid":
+      args = ["serve", "--port", String(port), "--data-dir", dataDir];
+      env.BESKID_PDS_URL = urls.pds ?? serviceUrl("pds");
+      env.BESKID_PLC_URL = urls.plc ?? serviceUrl("plc");
       break;
     default:
       args = ["serve", "--port", String(port), "--data-dir", dataDir];
@@ -371,10 +479,165 @@ export async function resolveBinaryServiceStartPlan(
   return {
     name,
     port,
+    serviceUrl: currentServiceUrl,
     dataDir,
     args,
     env,
   };
+}
+
+interface BinaryResourcePlan {
+  manifestPath: string;
+  manifest: RunResourceManifest;
+  ports: Partial<Record<BinaryServiceName, number>>;
+  urls: Partial<Record<BinaryServiceName, string>>;
+}
+
+async function prepareBinaryResources(
+  ctx: TopologyRunContext,
+  services: BinaryServiceName[],
+  options: StartBinaryOptions,
+): Promise<BinaryResourcePlan> {
+  const isolation = options.isolation ?? "auto";
+  const manifestPath = options.resourceManifestFile ?? ctx.resourceManifestFile;
+  const dataRoot = join(ctx.runDir, "data");
+
+  if (isolation === "shared") {
+    const existing = loadRunResourceManifest(manifestPath);
+    if (!existing) {
+      throw new Error(
+        `--isolation shared requires an existing resource manifest: ${manifestPath}`,
+      );
+    }
+    return {
+      manifestPath,
+      manifest: existing,
+      ports: servicePortsFromManifest(existing),
+      urls: serviceUrlsFromManifestForBinary(existing),
+    };
+  }
+
+  await releaseRunPortLeases(ctx.runId);
+  const fixed = isolation === "legacy-fixed";
+  const leases = fixed ? {} : await allocateHostPorts({
+    runId: ctx.runId,
+    resources: [...services, "twilio"],
+    range: options.portRange,
+  });
+
+  const ports: Partial<Record<BinaryServiceName, number>> = {};
+  const urls: Partial<Record<BinaryServiceName, string>> = {};
+  const manifest = createRunResourceManifest({
+    runId: ctx.runId,
+    runDir: ctx.runDir,
+    composeProject: ctx.composeProject,
+    isolation,
+  });
+
+  for (const name of services) {
+    const port = options.servicePorts?.[name] ??
+      (fixed ? SERVICE_PORTS[name] : leases[name].port);
+    const url = options.serviceUrls?.[name] ?? hostUrlForPort(port);
+    ports[name] = port;
+    urls[name] = url;
+    manifest.services[name] = {
+      role: name,
+      host: "127.0.0.1",
+      hostPort: port,
+      hostUrl: url,
+      internalUrl: url,
+      dataDir: join(dataRoot, name),
+      healthPath: BINARY_SERVICES[name].healthPath,
+    };
+  }
+
+  const twilioPort = fixed ? 8081 : leases.twilio.port;
+  manifest.mockProviders = {
+    twilio: {
+      role: "twilio",
+      host: "127.0.0.1",
+      hostPort: twilioPort,
+      hostUrl: hostUrlForPort(twilioPort),
+      internalUrl: hostUrlForPort(twilioPort),
+      healthPath: "/__control/health",
+    },
+  };
+  manifest.portLeases = Object.values(leases).map((lease) => ({
+    resource: lease.resource,
+    port: lease.port,
+    leaseFile: lease.leaseFile,
+  }));
+
+  await writeRunResourceManifest(manifestPath, manifest);
+  return { manifestPath, manifest, ports, urls };
+}
+
+function fixedServiceUrls(): Partial<Record<BinaryServiceName, string>> {
+  return Object.fromEntries(
+    (Object.keys(BINARY_SERVICES) as BinaryServiceName[]).map((name) => [
+      name,
+      serviceUrl(name),
+    ]),
+  ) as Partial<Record<BinaryServiceName, string>>;
+}
+
+function applyServiceUrlEnvironment(
+  env: Record<string, string>,
+  urls: Partial<Record<BinaryServiceName, string>>,
+): void {
+  for (const [role, url] of Object.entries(urls)) {
+    if (!url) continue;
+    const key = roleEnvKey(role);
+    if (!env[key]) env[key] = url;
+  }
+  if (urls.plc && !env.PDS_PLC_URL) env.PDS_PLC_URL = urls.plc;
+}
+
+function toWebSocketUrl(url: string): string {
+  return url.replace(/^http:\/\//, "ws://").replace(/^https:\/\//, "wss://")
+    .replace(/\/$/, "");
+}
+
+function servicePortsFromManifest(
+  manifest: RunResourceManifest,
+): Partial<Record<BinaryServiceName, number>> {
+  const ports: Partial<Record<BinaryServiceName, number>> = {};
+  for (const [role, endpoint] of Object.entries(manifest.services)) {
+    if (role in BINARY_SERVICES && endpoint.hostPort) {
+      ports[role as BinaryServiceName] = endpoint.hostPort;
+    }
+  }
+  return ports;
+}
+
+function serviceUrlsFromManifestForBinary(
+  manifest: RunResourceManifest,
+): Partial<Record<BinaryServiceName, string>> {
+  const urls: Partial<Record<BinaryServiceName, string>> = {};
+  for (const [role, endpoint] of Object.entries(manifest.services)) {
+    if (role in BINARY_SERVICES && endpoint.hostUrl) {
+      urls[role as BinaryServiceName] = endpoint.hostUrl;
+    }
+  }
+  return urls;
+}
+
+async function recordBinaryServiceProcess(
+  manifestPath: string,
+  name: BinaryServiceName,
+  endpoint: Partial<RunResourceEndpoint>,
+): Promise<void> {
+  await updateRunResourceManifest(manifestPath, (manifest) => ({
+    ...manifest,
+    services: {
+      ...manifest.services,
+      [name]: {
+        ...manifest.services[name],
+        role: name,
+        ...endpoint,
+      },
+    },
+  }));
 }
 
 /**
@@ -472,6 +735,17 @@ export async function stopBinaryServices(
   } catch {
     /* ignore */
   }
+
+  if (!services) {
+    await releaseRunPortLeases(ctx.runId);
+    await updateRunResourceManifest(ctx.resourceManifestFile, (manifest) => ({
+      ...manifest,
+      cleanup: {
+        status: "stopped",
+        updatedAt: new Date().toISOString(),
+      },
+    })).catch(() => undefined);
+  }
 }
 
 /**
@@ -491,6 +765,7 @@ export async function getBinaryServiceStatus(
       }
     });
   const fetchHealth = probes.fetchHealth ?? fetch;
+  const manifest = loadRunResourceManifest(ctx.resourceManifestFile);
   const status = Object.fromEntries(
     (Object.keys(BINARY_SERVICES) as BinaryServiceName[]).map((name) => [
       name,
@@ -515,7 +790,8 @@ export async function getBinaryServiceStatus(
         headers["Authorization"] = "Bearer localdevadmin";
       }
       try {
-        const resp = await fetchHealth(`${serviceUrl(name)}${svc.healthPath}`, {
+        const baseUrl = manifest?.services[name]?.hostUrl ?? serviceUrl(name);
+        const resp = await fetchHealth(`${baseUrl}${svc.healthPath}`, {
           headers,
           signal: AbortSignal.timeout(2000),
         });
@@ -552,17 +828,20 @@ export async function printBinaryStatusReport(
   ctx: TopologyRunContext,
 ): Promise<void> {
   const status = await getBinaryServiceStatus(ctx);
+  const manifest = loadRunResourceManifest(ctx.resourceManifestFile);
   logHeader("Service Status Report");
   console.log("");
 
   for (const name of Object.keys(status) as BinaryServiceName[]) {
     const info = status[name];
     const svcName = name.toUpperCase();
-    logHeader(`${svcName} Service (port ${SERVICE_PORTS[name]}):`);
+    const port = manifest?.services[name]?.hostPort ?? SERVICE_PORTS[name];
+    const url = manifest?.services[name]?.hostUrl ?? serviceUrl(name);
+    logHeader(`${svcName} Service (port ${port}):`);
     if (info.running) {
       console.log(`  Status: ${info.running ? "Running" : "Not running"}`);
       console.log(`  PID:    ${info.pid}`);
-      console.log(`  URL:    ${serviceUrl(name)}`);
+      console.log(`  URL:    ${url}`);
       console.log(`  Health: ${info.healthy ? "Healthy" : "Unhealthy"}`);
     } else {
       console.log(`  Status: Not running`);

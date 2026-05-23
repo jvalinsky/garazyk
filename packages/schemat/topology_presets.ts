@@ -294,6 +294,29 @@ const appviewSocialCaps = [
   Cap.appview.feeds,
 ] as const;
 
+const mikrusCaps = [
+  Cap.mikrus.firehoseIndexing,
+  Cap.mikrus.getBacklinks,
+  Cap.mikrus.getBacklinkDids,
+  Cap.mikrus.getBacklinksCount,
+  Cap.mikrus.getManyToMany,
+  Cap.mikrus.getManyToManyCounts,
+  Cap.mikrus.getRecordByUri,
+  Cap.mikrus.resolveMiniDoc,
+] as const;
+
+const beskidCaps = [
+  Cap.beskid.getRecord,
+  Cap.beskid.getUriRecord,
+  Cap.beskid.getRecordByUri,
+  Cap.beskid.resolveHandle,
+  Cap.beskid.resolveMiniDoc,
+  Cap.beskid.resolveService,
+  Cap.beskid.hydrateQueryResponse,
+  Cap.beskid.recordCache,
+  Cap.beskid.identityCache,
+] as const;
+
 const uiBasicCaps = [
   Cap.ui.admin,
   Cap.ui.login,
@@ -346,7 +369,7 @@ function localPdsEnv() {
 const GARAZYK_DEFAULT = defineTopology({
   name: "garazyk-default",
   description:
-    "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Chat (syrena-chat), Video (jelcz). Built from local source.",
+    "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Mikrus, Beskid, Chat (syrena-chat), Video (jelcz). Built from local source.",
   roles: {
     [Role.plc]: role.plc({
       name: "campagnola",
@@ -475,6 +498,70 @@ const GARAZYK_DEFAULT = defineTopology({
       }),
       capabilities: appviewBasicCaps,
       dependsOnRoles: [Role.relay],
+    }),
+    [Role.mikrus]: role.mikrus({
+      name: "mikrus",
+      source: localBuild,
+      entrypoint: ["/usr/local/bin/mikrus"],
+      command: [
+        "serve",
+        "--relay",
+        "ws://local-pds:2583",
+        "--port",
+        "3210",
+        "--data-dir",
+        "/var/lib/atprotopds",
+      ],
+      env: {
+        TZ: "UTC",
+        PDS_ALLOW_PRIVATE_SSRF: "1",
+        PDS_ALLOW_HTTP: "1",
+        PDS_PLC_URL: "http://local-plc:2582",
+        MIKRUS_PDS_URL: "http://local-pds:2583",
+        MIKRUS_RELAY_URLS: "ws://local-pds:2583",
+        MIKRUS_DATA_DIR: "/var/lib/atprotopds",
+        MIKRUS_HTTP_PORT: "3210",
+        MIKRUS_RATELIMIT_ENABLED: "true",
+        MIKRUS_RATELIMIT_IP_LIMIT: "200",
+        MIKRUS_RATELIMIT_IP_WINDOW: "60",
+      },
+      ports: [port(3210)],
+      volumes: [volume.named("local_mikrus_data", "/var/lib/atprotopds")],
+      health: topologyHealth.http("/_health"),
+      capabilities: mikrusCaps,
+      dependsOnRoles: [Role.relay],
+    }),
+    [Role.beskid]: role.beskid({
+      name: "beskid",
+      source: localBuild,
+      entrypoint: ["/usr/local/bin/beskid"],
+      command: [
+        "serve",
+        "--port",
+        "8085",
+        "--data-dir",
+        "/var/lib/atprotopds",
+      ],
+      env: {
+        TZ: "UTC",
+        PDS_ALLOW_PRIVATE_SSRF: "1",
+        PDS_ALLOW_HTTP: "1",
+        PDS_PLC_URL: "http://local-plc:2582",
+        PLC_URL: "http://local-plc:2582",
+        BESKID_PDS_URL: "http://local-pds:2583",
+        BESKID_DATA_DIR: "/var/lib/atprotopds",
+        BESKID_HTTP_PORT: "8085",
+        BESKID_CACHE_RECORD_TTL: "3600",
+        BESKID_CACHE_IDENTITY_TTL: "86400",
+        BESKID_RATELIMIT_ENABLED: "true",
+        BESKID_RATELIMIT_IP_LIMIT: "200",
+        BESKID_RATELIMIT_IP_WINDOW: "60",
+      },
+      ports: [port(8085)],
+      volumes: [volume.named("local_beskid_data", "/var/lib/atprotopds")],
+      health: topologyHealth.http("/_health"),
+      capabilities: beskidCaps,
+      dependsOnRoles: [Role.pds, Role.plc],
     }),
     [Role.chat]: role.chat({
       name: "syrena-chat",

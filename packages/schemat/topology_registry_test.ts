@@ -22,6 +22,7 @@ const expectedKnownRoles = [
   "relay",
   "appview",
   "mikrus",
+  "beskid",
   "chat",
   "video",
   "ui",
@@ -35,6 +36,7 @@ const expectedRole = {
   relay: "relay",
   appview: "appview",
   mikrus: "mikrus",
+  beskid: "beskid",
   chat: "chat",
   video: "video",
   ui: "ui",
@@ -48,6 +50,7 @@ const expectedDefaultServiceNames = {
   plc: "local-plc",
   appview: "local-appview",
   mikrus: "local-mikrus",
+  beskid: "local-beskid",
   chat: "local-chat",
   video: "local-video",
   ui: "local-ui",
@@ -61,6 +64,7 @@ const expectedDefaultPorts = {
   plc: "2582",
   appview: "3200",
   mikrus: "3210",
+  beskid: "8085",
   chat: "2585",
   video: "2586",
   ui: "2590",
@@ -74,6 +78,7 @@ const expectedRoleEnvRegistry = {
   relay: "RELAY_URL",
   appview: "APPVIEW_URL",
   mikrus: "MIKRUS_URL",
+  beskid: "BESKID_URL",
   chat: "CHAT_URL",
   video: "VIDEO_URL",
   ui: "GARAZYK_UI_URL",
@@ -155,7 +160,7 @@ Deno.test("Cap.relay: exposes the relay capability names", () => {
   });
 });
 
-Deno.test("Cap.appview, Cap.mikrus, and Cap.backfill: expose their capability names", () => {
+Deno.test("Cap.appview, Cap.mikrus, Cap.beskid, and Cap.backfill: expose their capability names", () => {
   assertEquals(Cap.appview, {
     admin: "admin",
     adminDashboard: "adminDashboard",
@@ -197,6 +202,18 @@ Deno.test("Cap.appview, Cap.mikrus, and Cap.backfill: expose their capability na
     getManyToManyCounts: "getManyToManyCounts",
     getRecordByUri: "getRecordByUri",
     resolveMiniDoc: "resolveMiniDoc",
+  });
+
+  assertEquals(Cap.beskid, {
+    getRecord: "getRecord",
+    getUriRecord: "getUriRecord",
+    getRecordByUri: "getRecordByUri",
+    resolveHandle: "resolveHandle",
+    resolveMiniDoc: "resolveMiniDoc",
+    resolveService: "resolveService",
+    hydrateQueryResponse: "hydrateQueryResponse",
+    recordCache: "recordCache",
+    identityCache: "identityCache",
   });
 
   assertEquals(Cap.backfill, {
@@ -327,6 +344,10 @@ Deno.test("validateRoleCapability: allows registered capabilities for built-in r
   assertEquals(validateRoleCapability("pds", "createSession"), undefined);
   assertEquals(validateRoleCapability("relay", "subscribeRepos"), undefined);
   assertEquals(validateRoleCapability("ui", "timeline"), undefined);
+  assertEquals(
+    validateRoleCapability("beskid", "hydrateQueryResponse"),
+    undefined,
+  );
 });
 
 Deno.test("validateRoleCapability: permits experimental capabilities", () => {

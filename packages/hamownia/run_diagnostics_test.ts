@@ -1,5 +1,9 @@
 import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
-import { createRunContext, redactDiagnosticText } from "./run_diagnostics.ts";
+import {
+  collectDiagnostics,
+  createRunContext,
+  redactDiagnosticText,
+} from "./run_diagnostics.ts";
 
 Deno.test("redactDiagnosticText preserves JSON strings while redacting secrets", () => {
   const input = JSON.stringify({
@@ -62,6 +66,9 @@ const DIAG_ENV_KEYS = [
   "ATPROTO_E2E_PID_FILE",
   "ATPROTO_E2E_COMPOSE_PROJECT",
   "ATPROTO_E2E_BASE_DIR",
+  "ATPROTO_RESOURCE_MANIFEST",
+  "ATPROTO_TOPOLOGY_MANIFEST",
+  "ATPROTO_BINARY_MODE",
 ];
 
 async function withTempRunContext<T>(
@@ -137,5 +144,22 @@ Deno.test("createRunContext: sets ATPROTO_E2E_RUN_ID env var", async () => {
   await withTempRunContext(async () => {
     const ctx = await createRunContext("env-test-run");
     assertEquals(Deno.env.get("ATPROTO_E2E_RUN_ID"), ctx.runId);
+  });
+});
+
+Deno.test("collectDiagnostics: tolerates missing topology manifest when resource manifest drives the run", async () => {
+  await withTempRunContext(async (dir) => {
+    const ctx = await createRunContext("manifest-only-run");
+    Deno.env.set("ATPROTO_BINARY_MODE", "1");
+    Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", `${dir}/missing-topology.json`);
+    await collectDiagnostics(ctx, {
+      serviceUrls: { pds: "http://127.0.0.1:9" },
+    });
+
+    const metadata = JSON.parse(
+      await Deno.readTextFile(`${ctx.diagnosticsDir}/run-metadata.json`),
+    );
+    assertEquals(metadata.run_id, "manifest-only-run");
+    assertEquals(metadata.service_urls.pds, "http://127.0.0.1:9");
   });
 });

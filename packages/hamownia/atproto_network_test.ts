@@ -32,6 +32,7 @@ Deno.test("topology manifest path stays inside run directory", () => {
     diagnosticsDir: "/tmp/garazyk-run/diagnostics",
     logDir: "/tmp/garazyk-run/logs",
     pidFile: "/tmp/garazyk-run/pids.txt",
+    resourceManifestFile: "/tmp/garazyk-run/resource-manifest.json",
     composeProject: "garazyk-test",
     baseDir: "/tmp",
   };
@@ -50,6 +51,7 @@ Deno.test("binary mode starts binary services with default options", async () =>
     diagnosticsDir: `${dir}/diagnostics`,
     logDir: `${dir}/logs`,
     pidFile: `${dir}/pids.txt`,
+    resourceManifestFile: `${dir}/resource-manifest.json`,
     composeProject: "garazyk-binary-test",
     baseDir: dir,
   };
@@ -68,7 +70,8 @@ Deno.test("binary mode starts binary services with default options", async () =>
 
     assertEquals(calls.length, 1);
     assertEquals(calls[0].ctx, ctx);
-    assertEquals(calls[0].options, undefined);
+    assertEquals(calls[0].options?.isolation, undefined);
+    assertEquals(calls[0].options?.resourceManifestFile, undefined);
     assertEquals(
       await Deno.readTextFile(`${dir}/latest-scenario-run-id`),
       "binary-test",

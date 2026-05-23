@@ -1,7 +1,14 @@
 /** E2E run diagnostics collection — metadata, HTTP probes, log bundling. @module diagnostics */
 import { join } from "@std/path";
 import { copy, exists } from "@std/fs";
-import { loadTopologyManifest, logInfo } from "@garazyk/schemat";
+import {
+  loadRunResourceManifest,
+  loadTopologyManifest,
+  logInfo,
+  mockProviderUrlsFromResourceManifest,
+  serviceUrlsFromResourceManifest,
+  type TopologyManifest,
+} from "@garazyk/schemat";
 
 const BASE_DIR = "/tmp/garazyk-atproto-e2e";
 
@@ -25,6 +32,8 @@ export interface E2ERunContext {
   diagnosticsDir: string;
   /** Path to the PID file for tracked processes. */
   pidFile: string;
+  /** Path to the run-scoped resource manifest. */
+  resourceManifestFile: string;
   /** Docker Compose project name for the run. */
   composeProject: string;
 }
@@ -65,6 +74,8 @@ export async function createRunContext(
     join(resolvedRunDir, "diagnostics");
   const resolvedPidFile = Deno.env.get("ATPROTO_E2E_PID_FILE") ||
     join(resolvedRunDir, "pids.txt");
+  const resolvedResourceManifest = Deno.env.get("ATPROTO_RESOURCE_MANIFEST") ||
+    join(resolvedRunDir, "resource-manifest.json");
 
   const composeRunId = resolvedRunId.replace(/[^a-z0-9-]+/g, "-");
   const composeProject = Deno.env.get("ATPROTO_E2E_COMPOSE_PROJECT") ||
@@ -87,6 +98,7 @@ export async function createRunContext(
   Deno.env.set("ATPROTO_E2E_REPORTS_DIR", resolvedReportsDir);
   Deno.env.set("ATPROTO_E2E_DIAGNOSTICS_DIR", resolvedDiagDir);
   Deno.env.set("ATPROTO_E2E_PID_FILE", resolvedPidFile);
+  Deno.env.set("ATPROTO_RESOURCE_MANIFEST", resolvedResourceManifest);
   Deno.env.set("ATPROTO_E2E_COMPOSE_PROJECT", composeProject);
 
   return {
@@ -96,6 +108,7 @@ export async function createRunContext(
     reportsDir: resolvedReportsDir,
     diagnosticsDir: resolvedDiagDir,
     pidFile: resolvedPidFile,
+    resourceManifestFile: resolvedResourceManifest,
     composeProject,
   };
 }
@@ -128,17 +141,18 @@ async function collectHttpEndpoint(
 ) {
   const target = join(outputDir, "http", `${name}.txt`);
   let text: string;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
   try {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
     const resp = await fetch(url, { headers, signal: controller.signal });
-    clearTimeout(id);
     const body = (await resp.text()).substring(0, 50000);
     text = `url=${url}\nhttp_status=${resp.status}\ncontent_type=${
       resp.headers.get("Content-Type") || ""
     }\n\n${body}\n`;
   } catch (exc) {
     text = `url=${url}\nerror=${exc}\n`;
+  } finally {
+    clearTimeout(id);
   }
   await writeText(target, text);
 }
@@ -214,7 +228,8 @@ export async function collectDiagnostics(
 ): Promise<string> {
   const outputDir = context.diagnosticsDir;
   await Deno.mkdir(outputDir, { recursive: true });
-  const manifest = loadTopologyManifest();
+  const manifest = loadOptionalTopologyManifest();
+  const resourceManifest = loadRunResourceManifest();
   const defaultUrls: Record<string, string> = {
     plc: Deno.env.get("PLC_URL") || "http://localhost:2582",
     pds: Deno.env.get("PDS_URL") || "http://localhost:2583",
@@ -228,8 +243,10 @@ export async function collectDiagnostics(
   const urls = {
     ...defaultUrls,
     ...(manifest?.serviceUrls || {}),
+    ...serviceUrlsFromResourceManifest(resourceManifest),
     ...options.serviceUrls,
   };
+  const mockUrls = mockProviderUrlsFromResourceManifest(resourceManifest);
   const appviewSecret = options.appviewAdminSecret ||
     Deno.env.get("APPVIEW_ADMIN_SECRET") ||
     "localdevadmin";
@@ -243,6 +260,7 @@ export async function collectDiagnostics(
     compose_project: context.composeProject,
     created_at_utc: new Date().toISOString(),
     service_urls: urls,
+    mock_provider_urls: mockUrls,
   };
 
   try {
@@ -266,6 +284,14 @@ export async function collectDiagnostics(
     await copy(context.pidFile, join(outputDir, "pids.txt"), {
       overwrite: true,
     });
+  }
+
+  if (await exists(context.resourceManifestFile)) {
+    await copy(
+      context.resourceManifestFile,
+      join(outputDir, "resource-manifest.json"),
+      { overwrite: true },
+    );
   }
 
   if (await exists(context.logsDir)) {
@@ -371,4 +397,18 @@ export async function collectDiagnostics(
 
   logInfo(`Diagnostics written to ${outputDir}`);
   return outputDir;
+}
+
+function loadOptionalTopologyManifest(): TopologyManifest | undefined {
+  const manifestPath = Deno.env.get("ATPROTO_TOPOLOGY_MANIFEST");
+  if (manifestPath && !existsSync(manifestPath)) return undefined;
+  return loadTopologyManifest();
+}
+
+function existsSync(path: string): boolean {
+  try {
+    return Deno.statSync(path).isFile;
+  } catch {
+    return false;
+  }
 }

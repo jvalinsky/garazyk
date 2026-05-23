@@ -11,6 +11,7 @@ import { neededPorts } from "@garazyk/schemat/runtime";
 import { brightRed, green, yellow } from "@std/fmt/colors";
 import { waitForHttp } from "@garazyk/laweta";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
+import type { ResourceIsolationMode } from "@garazyk/schemat";
 
 /** Results of a preflight check. */
 export interface PreflightResult {
@@ -44,6 +45,7 @@ export async function checkStagedBinaries(): Promise<PreflightResult> {
     "jelcz",
     "syrena-chat",
     "germ",
+    "beskid",
   ];
 
   const missing = [];
@@ -107,6 +109,8 @@ export async function checkHostPorts(
     "syrena-chat",
     "jelcz",
     "germ",
+    "mikrus",
+    "beskid",
   ]);
   for (const port of ports) {
     try {
@@ -237,8 +241,11 @@ export async function runPreflight(options: {
   selectedScenarios: ScenarioInfo[];
   withPds2?: boolean;
   noSetup?: boolean;
+  isolation?: ResourceIsolationMode;
 }): Promise<void> {
-  await checkHostPorts({ withPds2: options.withPds2 });
+  if (options.isolation === "legacy-fixed") {
+    await checkHostPorts({ withPds2: options.withPds2 });
+  }
   const withUi = options.selectedScenarios.some((scenario) =>
     scenario.requires.some((req) => req.role === "ui")
   );

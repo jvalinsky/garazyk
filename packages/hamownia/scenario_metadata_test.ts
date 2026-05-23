@@ -113,6 +113,35 @@ Deno.test("getRequires: scenario 11 requires the garazyk-ui role", () => {
   ]);
 });
 
+Deno.test("getRequires: cache scenarios advertise Mikrus and Beskid requirements", () => {
+  assertEquals(
+    getRequires("60").some((req) =>
+      req.role === Role.mikrus &&
+      req.capability === Cap.mikrus.getBacklinksCount
+    ),
+    true,
+  );
+  assertEquals(
+    getRequires("69").some((req) =>
+      req.role === Role.beskid &&
+      req.capability === Cap.beskid.hydrateQueryResponse
+    ),
+    true,
+  );
+  assertEquals(
+    getRequires("92").some((req) =>
+      req.role === Role.beskid && req.capability === Cap.beskid.recordCache
+    ),
+    true,
+  );
+  assertEquals(
+    getRequires("92").some((req) =>
+      req.role === Role.mikrus && req.capability === Cap.mikrus.getBacklinks
+    ),
+    true,
+  );
+});
+
 // ---------------------------------------------------------------------------
 // getTimeout
 // ---------------------------------------------------------------------------

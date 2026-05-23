@@ -13,7 +13,14 @@ import { bold, brightBlue } from "@std/fmt/colors";
 import { join } from "@std/path";
 import { startLocalNetwork, stopLocalNetwork } from "./atproto_network.ts";
 import { collectDiagnostics, createRunContext } from "./run_diagnostics.ts";
-import { resolveTopology, TopologyRegistry } from "@garazyk/schemat";
+import {
+  applyRunResourceManifestPath,
+  loadRunResourceManifest,
+  parsePortRange,
+  resolveTopology,
+  serviceUrlsFromResourceManifest,
+  TopologyRegistry,
+} from "@garazyk/schemat";
 import type { BrowserFlow, Topology } from "@garazyk/schemat";
 import { formatRequirement } from "./mod.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
@@ -73,7 +80,11 @@ async function runSqliteScript(dbPath: string, script: string): Promise<void> {
     stderr: "piped",
   }).spawn();
   const writer = child.stdin.getWriter();
-  await writer.write(new TextEncoder().encode(script));
+  await writer.write(
+    new TextEncoder().encode(
+      `PRAGMA busy_timeout=5000;\nPRAGMA journal_mode=WAL;\n${script}`,
+    ),
+  );
   await writer.close();
   const output = await child.output();
   if (output.code !== 0) {
@@ -162,6 +173,9 @@ Options:
   --binary                Start services from build/bin instead of Docker
   --pds2                  Include the second PDS
   --run-id ID             Reuse or name the e2e run directory
+  --isolation MODE        Resource isolation: auto, shared, legacy-fixed (default: auto)
+  --resource-manifest PATH Attach to an existing resource manifest
+  --port-range START:END  Port range for dynamic local service leases
   --diagnostics-dir DIR   Write diagnostics to DIR
   --reports-dir DIR       Write scenario JSON reports to DIR
   --collect-diagnostics   Capture diagnostics for the current run and exit
@@ -202,6 +216,7 @@ export function parseRunnerArgs(argv: string[]): RunnerArgs {
     noJson: false,
     keepRunning: false,
     collectDiagnostics: false,
+    isolation: "auto",
     timeout: 120,
     clientFlow: "none",
     allowHybridNetwork: false,
@@ -263,6 +278,9 @@ export function parseRunnerArgs(argv: string[]): RunnerArgs {
       case "--topology":
       case "--runner":
       case "--run-id":
+      case "--isolation":
+      case "--resource-manifest":
+      case "--port-range":
       case "--diagnostics-dir":
       case "--reports-dir":
       case "--timeout":
@@ -274,6 +292,17 @@ export function parseRunnerArgs(argv: string[]): RunnerArgs {
           Deno.exit(2);
         }
         if (arg === "--run-id") args.runId = value;
+        if (arg === "--isolation") {
+          if (!["auto", "shared", "legacy-fixed"].includes(value)) {
+            console.error(
+              "--isolation must be one of: auto, shared, legacy-fixed",
+            );
+            Deno.exit(2);
+          }
+          args.isolation = value as RunnerArgs["isolation"];
+        }
+        if (arg === "--resource-manifest") args.resourceManifest = value;
+        if (arg === "--port-range") args.portRange = value;
         if (arg === "--diagnostics-dir") args.diagnosticsDir = value;
         if (arg === "--reports-dir") args.reportsDir = value;
         if (arg === "--topology") args.topology = value;
@@ -434,12 +463,17 @@ export async function executeRunnerArgs(
   }
 
   const context = await createRunContext(args.runId, args.diagnosticsDir);
+  const resourceManifestPath = args.resourceManifest ||
+    context.resourceManifestFile;
+  if (args.resourceManifest) {
+    Deno.env.set("ATPROTO_RESOURCE_MANIFEST", args.resourceManifest);
+  }
+  if (await pathExists(resourceManifestPath)) {
+    applyRunResourceManifestPath(resourceManifestPath);
+  }
   const reportsDir = args.reportsDir || context.reportsDir;
-  const topologyManifestPath = args.topology
-    ? join(context.runDir, "topology-manifest.json")
-    : undefined;
-  const existingTopologyManifest = topologyManifestPath &&
-    await pathExists(topologyManifestPath);
+  const topologyManifestPath = join(context.runDir, "topology-manifest.json");
+  const existingTopologyManifest = await pathExists(topologyManifestPath);
   if (existingTopologyManifest) {
     Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
   }
@@ -491,6 +525,19 @@ export async function executeRunnerArgs(
       return;
     }
 
+    if (args.noSetup) {
+      const resourceManifest = loadRunResourceManifest(resourceManifestPath);
+      const explicitUrls = Boolean(Deno.env.get("PDS_URL")) ||
+        Object.keys(serviceUrlsFromResourceManifest(resourceManifest)).length >
+          0;
+      if (!resourceManifest && !explicitUrls) {
+        throw new Error(
+          "--no-setup requires --resource-manifest, ATPROTO_RESOURCE_MANIFEST, or explicit service URL env vars",
+        );
+      }
+      if (resourceManifest) applyRunResourceManifestPath(resourceManifestPath);
+    }
+
     if (args.teardownOnly) {
       await stopLocalNetwork({
         useBinary: args.binary,
@@ -522,6 +569,7 @@ export async function executeRunnerArgs(
       selectedScenarios: selected,
       withPds2: args.pds2 || selected.some((s) => s.needsPds2),
       noSetup: args.noSetup,
+      isolation: args.isolation,
     });
 
     if (args.setupOnly) {
@@ -534,9 +582,16 @@ export async function executeRunnerArgs(
         webClient: args.webClient,
         clientFlow: args.clientFlow,
         allowHybridNetwork: args.allowHybridNetwork,
-        topology: args.topology,
+        topology: resolvedTopologyName,
+        otel: args.otel,
+        isolation: args.isolation,
+        resourceManifestFile: resourceManifestPath,
+        portRange: args.portRange ? parsePortRange(args.portRange) : undefined,
       });
       lifecycle.markNetworkStarted();
+      if (args.otel) {
+        initE2eTracing("garazyk-e2e-runner");
+      }
       console.log(`Run directory: ${context.runDir}`);
       if (args.keepRunning) return;
 
@@ -555,14 +610,27 @@ export async function executeRunnerArgs(
         webClient: args.webClient,
         clientFlow: args.clientFlow,
         allowHybridNetwork: args.allowHybridNetwork,
-        topology: args.topology,
+        topology: resolvedTopologyName,
+        otel: args.otel,
+        isolation: args.isolation,
+        resourceManifestFile: resourceManifestPath,
+        portRange: args.portRange ? parsePortRange(args.portRange) : undefined,
       });
       lifecycle.markNetworkStarted();
-      if (topologyManifestPath) {
+      if (args.otel) {
+        initE2eTracing("garazyk-e2e-runner");
+      }
+      if (await pathExists(resourceManifestPath)) {
+        applyRunResourceManifestPath(resourceManifestPath);
+      }
+      const hasTopologyManifest = await pathExists(topologyManifestPath);
+      if (hasTopologyManifest) {
         Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+      } else {
+        Deno.env.delete("ATPROTO_TOPOLOGY_MANIFEST");
       }
       topology = resolveTopology(args.webClient, resolvedTopologyName, {
-        manifestPath: topologyManifestPath,
+        manifestPath: hasTopologyManifest ? topologyManifestPath : undefined,
         includePds2: withPds2,
       });
     }

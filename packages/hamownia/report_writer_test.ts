@@ -74,6 +74,7 @@ function makeArgs(overrides: Partial<RunnerArgs> = {}): RunnerArgs {
     noJson: true, // default to noJson to avoid writing files
     keepRunning: false,
     collectDiagnostics: false,
+    isolation: "auto",
     timeout: 120,
     clientFlow: "none",
     allowHybridNetwork: false,
