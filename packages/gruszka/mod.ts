@@ -10,7 +10,15 @@
  */
 
 export { XrpcClient, XrpcError } from "./client.ts";
-export type { AgentProxy, TransportResponse } from "./client.ts";
+export type {
+  AgentProxy,
+  ActorFeedClient,
+  ActorGraphClient,
+  ActorRawClient,
+  ActorRepoClient,
+  ActorScopedClient,
+  TransportResponse,
+} from "./client.ts";
 export { TransportError, TransportLayer } from "./transport.ts";
 export type { RequestOptions } from "./transport.ts";
 export {
