@@ -114,7 +114,7 @@ export function createRunResourceManifest(options: {
 
 /** Load a run resource manifest from an explicit path or ATPROTO_RESOURCE_MANIFEST. */
 export function loadRunResourceManifest(
-  path = readEnv("ATPROTO_RESOURCE_MANIFEST"),
+  path: string | undefined = readEnv("ATPROTO_RESOURCE_MANIFEST"),
 ): RunResourceManifest | undefined {
   if (!path) return undefined;
   try {
