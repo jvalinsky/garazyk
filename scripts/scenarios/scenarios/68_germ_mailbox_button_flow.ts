@@ -16,7 +16,7 @@
 
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, serviceUrl } from "../../lib/deno/config.ts";
+import { Actor, getActor, PDS1, serviceUrl } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export {
   ScenarioResult,
@@ -24,7 +24,7 @@ export {
   StepStatus,
 } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import type { Character } from "../../lib/deno/config.ts";
+
 
 const GERM_URL = (Deno.env.get("GERM_URL") || serviceUrl("germ")).replace(
   /\/$/,
@@ -76,8 +76,8 @@ export async function run(): Promise<ScenarioResult> {
 
   const pds = new XrpcClient(PDS1);
   const germ = new XrpcClient(GERM_URL);
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -322,7 +322,7 @@ export async function run(): Promise<ScenarioResult> {
 
 async function ensureAccount(
   pds: XrpcClient,
-  character: Character,
+  character: Actor,
 ): Promise<Session> {
   const session = await pds.accounts.createAccount(
     character.handle,
@@ -367,10 +367,10 @@ function createDeclaration(messageMeUrl: string): GermDeclaration {
 
 async function putDeclaration(
   pds: XrpcClient,
-  character: Character,
+  character: Actor,
   declaration: GermDeclaration,
 ): Promise<void> {
-  await pds.raw.post(
+  await pds.as(character).raw.post(
     "com.atproto.repo.putRecord",
     {
       repo: character.did,
@@ -379,7 +379,6 @@ async function putDeclaration(
       validate: true,
       record: declaration,
     },
-    character.accessJwt,
   );
 }
 

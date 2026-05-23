@@ -4,7 +4,7 @@
  * Scenario: MST Exploitation (Merkle Search Tree Poisoning)
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 
@@ -13,7 +13,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
   
   const client = new XrpcClient(PDS1);
-  const troll = getCharacter("troll");
+  const troll = getActor("troll");
 
   await timedCall(result, "Server health check", async () => {
     await client.waitForHealthy(30);

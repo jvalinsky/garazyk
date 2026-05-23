@@ -1,10 +1,13 @@
 export {
-  Character,
+  Actor,
   createCharacterRegistry,
   createScenarioConfig,
+  postStatus,
+  followUser,
+  likePost,
+  blockUser,
 } from "@garazyk/hamownia";
 export type {
-  CharacterRegistry,
   ScenarioConfig,
   ScenarioConfigOptions,
   WebClientConfig,
@@ -20,13 +23,28 @@ import type { WebClientConfig } from "@garazyk/hamownia";
 
 const config = createScenarioConfig();
 
-const pds1 = (Deno.env.get("PDS_URL") ?? Deno.env.get("ATPROTO_PDS_URL") ?? config.pds1).replace(/\/$/, "");
-const pds2 = (Deno.env.get("PDS2_URL") ?? Deno.env.get("ATPROTO_PDS2_URL") ?? config.pds2).replace(/\/$/, "");
+function normalizeHostLoopback(url: string): string {
+  return url.replace(/^http:\/\/localhost(?=[:/]|$)/, "http://127.0.0.1")
+    .replace(/^ws:\/\/localhost(?=[:/]|$)/, "ws://127.0.0.1")
+    .replace(/\/$/, "");
+}
+
+const pds1 = normalizeHostLoopback(
+  Deno.env.get("PDS_URL") ?? Deno.env.get("ATPROTO_PDS_URL") ?? config.pds1,
+);
+const pds2 = normalizeHostLoopback(
+  Deno.env.get("PDS2_URL") ?? Deno.env.get("ATPROTO_PDS2_URL") ?? config.pds2,
+);
 export const PDS1 = pds1;
 export const PDS2 = pds2;
 
 export const SERVICE_URLS: Record<string, string> = {
-  ...config.serviceUrls,
+  ...Object.fromEntries(
+    Object.entries(config.serviceUrls).map(([key, value]) => [
+      key,
+      normalizeHostLoopback(value),
+    ]),
+  ),
   pds: pds1,
   pds2: pds2,
 };
@@ -44,14 +62,14 @@ export function resetCharacters(): void {
   registry = createCharacterRegistry();
 }
 
-export function getCharacter(name: string) {
-  return registry.getCharacter(name);
+export function getActor(name: string) {
+  return registry.getActor(name);
 }
 
-export function getCharactersByRole(role: string) {
-  return registry.getCharactersByRole(role);
+export function getActorsByRole(role: string) {
+  return registry.getActorsByRole(role);
 }
 
-export function getCharactersByPds(pdsUrl: string) {
-  return registry.getCharactersByPds(pdsUrl);
+export function getActorsByPds(pdsUrl: string) {
+  return registry.getActorsByPds(pdsUrl);
 }

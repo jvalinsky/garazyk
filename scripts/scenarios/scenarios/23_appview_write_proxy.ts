@@ -22,7 +22,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -55,14 +55,14 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView health check",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.raw.get("/admin/backfill/status", undefined, adminToken);
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -77,7 +77,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => getActor(n).did);
   if (active.length < 1) {
     result.stepFailed("Account creation", "No accounts created");
     result.finish();
@@ -85,7 +85,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     try {
       await client.records.createRecord(
         char.did,
@@ -98,7 +98,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
   if (luna.did && luna.accessJwt) {
     await timedCall(
       result,
@@ -125,7 +125,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill status",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.raw.get("/admin/backfill/status", undefined, adminToken);
     },
   );
 
@@ -133,7 +133,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Ingest engine health",
     async () => {
-      return await av.raw.httpGet("/admin/ingest/health", undefined, adminToken);
+      return await av.raw.get("/admin/ingest/health", undefined, adminToken);
     },
   );
 
@@ -142,7 +142,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Write proxy: createRecord on AppView (unwired)",
       async () => {
-        return await av.raw.httpPost(
+        return await av.as(luna).raw.post(
           "/xrpc/com.atproto.repo.createRecord",
           {
             repo: luna.did,
@@ -153,7 +153,6 @@ export async function run(): Promise<ScenarioResult> {
               createdAt: now(),
             },
           },
-          luna.accessJwt,
         );
       },
     );
@@ -162,10 +161,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "OAuth2: valid Bearer token on AppView",
       async () => {
-        return await av.raw.httpGet(
+        return await av.as(luna).raw.get(
           "/xrpc/app.bsky.actor.getProfile",
           { actor: luna.did },
-          luna.accessJwt,
         );
       },
       (r) => `handle=${r.handle || "unknown"}`,
@@ -177,7 +175,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "OAuth2: DID-as-token on AppView",
       async () => {
-        return await av.raw.httpGet(
+        return await av.raw.get(
           "/xrpc/app.bsky.actor.getProfile",
           { actor: luna.did },
           luna.did,
@@ -191,7 +189,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "OAuth2: invalid Bearer token on AppView",
     async () => {
-      return await av.raw.httpGet(
+      return await av.raw.get(
         "/xrpc/app.bsky.actor.getProfile",
         { actor: luna.did || "did:plc:unknown" },
         "invalid-garbage-token-xyz",
@@ -203,7 +201,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Endpoint counts after operations",
     async () => {
-      return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
+      return await av.raw.get("/admin/endpoints", undefined, adminToken);
     },
   );
 
@@ -211,7 +209,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView metrics",
     async () => {
-      return await av.raw.httpGet("/admin/appview/metrics/stats", undefined, adminToken);
+      return await av.raw.get("/admin/appview/metrics/stats", undefined, adminToken);
     },
   );
 

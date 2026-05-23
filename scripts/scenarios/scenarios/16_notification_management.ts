@@ -19,7 +19,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -46,7 +46,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -61,9 +61,9 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => getActor(n).did);
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     try {
       await client.records.createRecord(
         char.did,
@@ -76,11 +76,11 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   // Everyone follows Luna and posts
   for (const followerName of ["marcus", "rosa", "volt"]) {
-    const fchar = getCharacter(followerName);
+    const fchar = getActor(followerName);
     if (fchar.did && fchar.accessJwt && luna.did) {
       await timedCall(
         result,
@@ -99,7 +99,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const name of ["marcus", "rosa", "volt"]) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     if (char.did && char.accessJwt) {
       await timedCall(
         result,
@@ -157,11 +157,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna unread count",
       async () => {
-        return await client.raw.xrpcGet(
-          "app.bsky.notification.getUnreadCount",
-          undefined,
-          luna.accessJwt,
-        );
+      return await client.as(luna).raw.get(
+        "app.bsky.notification.getUnreadCount",
+      );
       },
       (r) => `count=${r.count ?? 0}`,
     );
@@ -178,11 +176,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna verifies unread count 0",
       async () => {
-        return await client.raw.xrpcGet(
-          "app.bsky.notification.getUnreadCount",
-          undefined,
-          luna.accessJwt,
-        );
+      return await client.as(luna).raw.get(
+        "app.bsky.notification.getUnreadCount",
+      );
       },
       (r) => `count=${r.count ?? 0}`,
     );
@@ -220,7 +216,7 @@ export async function run(): Promise<ScenarioResult> {
       },
     );
 
-    const rosa = getCharacter("rosa");
+    const rosa = getActor("rosa");
     if (rosa.did && rosa.accessJwt) {
       await timedCall(
         result,
@@ -251,7 +247,7 @@ export async function run(): Promise<ScenarioResult> {
       (r) => `count=${r.notifications?.length || 0}`,
     );
 
-    const marcus = getCharacter("marcus");
+    const marcus = getActor("marcus");
     if (marcus.did) {
       await timedCall(
         result,

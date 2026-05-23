@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -36,8 +36,8 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const troll = getCharacter("troll");
-  const luna = getCharacter("luna");
+  const troll = getActor("troll");
+  const luna = getActor("luna");
 
   for (const char of [troll, luna]) {
     const session = await timedCall(
@@ -63,7 +63,7 @@ export async function run(): Promise<ScenarioResult> {
   let successCount = 0;
   for (let i = 0; i < 60; i++) {
     try {
-      await client.raw.xrpcGet("app.bsky.actor.getProfile", { actor: troll.did }, troll.accessJwt);
+      await client.as(troll).raw.get("app.bsky.actor.getProfile", { actor: troll.did });
       successCount++;
     } catch {
       break;
@@ -81,7 +81,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Troll's 61st request (Expect 429)",
     async () => {
-      await client.raw.xrpcGet("app.bsky.actor.getProfile", { actor: troll.did }, troll.accessJwt);
+      await client.as(troll).raw.get("app.bsky.actor.getProfile", { actor: troll.did });
     },
     undefined,
     true,
@@ -92,10 +92,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna's request (Expect 200 OK)",
     async () => {
-      return await client.raw.xrpcGet(
+      return await client.as(luna).raw.get(
         "app.bsky.actor.getProfile",
         { actor: luna.did },
-        luna.accessJwt,
       );
     },
   );

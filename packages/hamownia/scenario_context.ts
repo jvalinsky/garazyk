@@ -3,14 +3,14 @@
  *
  * A `ScenarioContext` combines the resolved service configuration
  * ({@link ScenarioConfig}) with a character registry
- * ({@link CharacterRegistry}), so scenarios receive everything they need
+ * ({@link ActorRegistry}), so scenarios receive everything they need
  * through a single parameter instead of reading module-level mutable state.
  *
  * @module scenario_context
  */
 
 import { createCharacterRegistry, createScenarioConfig } from "./config.ts";
-import type { CharacterRegistry } from "./config.ts";
+import type { ActorRegistry } from "./config.ts";
 import type { ScenarioConfig } from "./config.ts";
 
 /**
@@ -22,11 +22,11 @@ import type { ScenarioConfig } from "./config.ts";
  * ```ts
  * export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
  *   const pds = new XrpcClient(ctx.pds1);
- *   const luna = ctx.getCharacter("luna");
+ *   const luna = ctx.getActor("luna");
  * }
  * ```
  */
-export type ScenarioContext = ScenarioConfig & CharacterRegistry;
+export type ScenarioContext = ScenarioConfig & ActorRegistry;
 
 /**
  * Create a scenario context from a scenario config.

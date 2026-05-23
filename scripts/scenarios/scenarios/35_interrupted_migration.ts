@@ -18,7 +18,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -107,7 +107,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const pds1 = new XrpcClient(PDS1);
   const pds2 = new XrpcClient(PDS2);
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   for (const [name, client] of [["PDS1", pds1], ["PDS2", pds2]] as const) {
     await timedCall(result, `${name} health check`, async () => {
@@ -145,14 +145,13 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(result, "Reserve signing key on PDS2", async () => {
-    return await pds2.raw.xrpcPost("com.atproto.server.reserveSigningKey", {});
+    return await pds2.raw.post("com.atproto.server.reserveSigningKey", {});
   });
 
   await timedCall(result, "Request PLC operation signature from PDS1", async () => {
-    return await pds1.raw.xrpcPost(
+    return await pds1.as(luna).raw.post(
       "com.atproto.identity.requestPlcOperationSignature",
       {},
-      luna.accessJwt,
     );
   });
 
@@ -160,7 +159,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Initiate failed migration",
     async () => {
-      await pds2.raw.xrpcPost("com.atproto.server.createAccount", {
+      await pds2.raw.post("com.atproto.server.createAccount", {
         handle: luna.handle,
         email: luna.email,
         password: luna.password,
@@ -174,7 +173,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   await timedCall(result, "Verify PDS1 remains authority", async () => {
-    return await pds1.raw.xrpcGet("com.atproto.sync.getHead", { did: luna.did });
+    return await pds1.raw.get("com.atproto.sync.getHead", { did: luna.did });
   });
 
   try {

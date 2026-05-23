@@ -20,7 +20,7 @@
  */
 
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -67,7 +67,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["rosa", "volt", "luna", "marcus"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -98,10 +98,10 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const rosa = getCharacter("rosa");
-  const volt = getCharacter("volt");
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const rosa = getActor("rosa");
+  const volt = getActor("volt");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
 
   if (!rosa.did || !volt.did || !luna.did || !marcus.did) {
     result.stepFailed("Account creation", "Not all accounts created");
@@ -131,7 +131,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Rosa posts with image embed",
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
+        await client.as(rosa).raw.post("com.atproto.repo.createRecord", {
           repo: rosa.did,
           collection: "app.bsky.feed.post",
           record: {
@@ -143,7 +143,7 @@ export async function run(): Promise<ScenarioResult> {
               images: [{ alt: "Fresh sourdough bread", image: rosaBlob }],
             },
           },
-        }, rosa.accessJwt);
+        });
       },
     );
   } else {
@@ -175,7 +175,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "DJ Volt posts 4-image album",
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
+        await client.as(volt).raw.post("com.atproto.repo.createRecord", {
           repo: volt.did,
           collection: "app.bsky.feed.post",
           record: {
@@ -190,7 +190,7 @@ export async function run(): Promise<ScenarioResult> {
               })),
             },
           },
-        }, volt.accessJwt);
+        });
       },
     );
   } else {
@@ -217,7 +217,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna sets profile banner",
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
+        await client.as(luna).raw.post("com.atproto.repo.createRecord", {
           repo: luna.did,
           collection: "app.bsky.actor.profile",
           record: {
@@ -226,7 +226,7 @@ export async function run(): Promise<ScenarioResult> {
             description: "Astronomy enthusiast. Looking up, always.",
             banner: bannerBlob,
           },
-        }, luna.accessJwt);
+        });
       },
     );
   }
@@ -279,10 +279,10 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Records contain blob refs",
       async () => {
-        return await client.raw.get("com.atproto.repo.listRecords", {
+        return await client.as(rosa).raw.get("com.atproto.repo.listRecords", {
           repo: rosa.did,
           collection: "app.bsky.feed.post",
-        }, rosa.accessJwt);
+        });
       },
       (r) => `posts_with_embed=${(r.records || []).some((rec: any) => rec.value?.embed)}`,
     );

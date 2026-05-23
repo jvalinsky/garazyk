@@ -15,7 +15,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -30,7 +30,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   await timedCall(
     result,
@@ -150,10 +150,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Get profile",
     async () => {
-      const res = await pds.raw.get(
+      const res = await pds.as(luna).raw.get(
         "app.bsky.actor.getProfile",
         { actor: luna.did },
-        luna.accessJwt,
       );
       return res;
     },

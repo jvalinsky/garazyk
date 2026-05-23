@@ -18,7 +18,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -45,7 +45,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -60,9 +60,9 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => getActor(n).did);
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     try {
       await client.records.createRecord(
         char.did,
@@ -75,9 +75,9 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
-  const rosa = getCharacter("rosa");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
+  const rosa = getActor("rosa");
 
   const postData = [
     {
@@ -104,7 +104,7 @@ export async function run(): Promise<ScenarioResult> {
   ];
 
   for (const group of postData) {
-    const char = getCharacter(group.name);
+    const char = getActor(group.name);
     if (char.did && char.accessJwt) {
       for (const text of group.texts) {
         await timedCall(

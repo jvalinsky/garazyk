@@ -19,7 +19,7 @@ import {
   StorageMonitor,
 } from "../../lib/deno/instrumentation.ts";
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -69,6 +69,7 @@ export async function run(): Promise<ScenarioResult> {
   const phaseTimer = new PhaseTimer();
 
   const ctx = await createRunContext();
+  const accountSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const promScraper = new PrometheusScraper({
     pds: `${PDS1}/metrics`,
     appview: `${SERVICE_URLS.appview}/admin/appview/metrics/stats`,
@@ -90,7 +91,7 @@ export async function run(): Promise<ScenarioResult> {
   const activeAccounts: any[] = [];
 
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -110,14 +111,14 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (let i = 1; i <= 4; i++) {
-    const handle = `ingest-${i}.test`;
+    const handle = `ingest-${i}-${accountSuffix}.test`;
     const session = await timedCall(
       result,
       `Create account: Ingest ${i}`,
       async () => {
         return await timer.measure(
           "create_account",
-          () => client.accounts.createAccount(handle, `ingest-${i}@test.com`, `pass-${i}`),
+          () => client.accounts.createAccount(handle, `ingest-${i}-${accountSuffix}@test.com`, `pass-${i}`),
         );
       },
     );

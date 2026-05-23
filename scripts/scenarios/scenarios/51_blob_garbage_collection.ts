@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -112,7 +112,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -170,11 +170,10 @@ export async function run(): Promise<ScenarioResult> {
       });
 
       await timedCall(result, "Delete orphaned blob", async () => {
-        return await pds.raw.xrpcPost(
-          "com.atproto.repo.deleteBlob",
-          { blob: doomedCid },
-          luna.accessJwt,
-        );
+      return await pds.as(luna).raw.post(
+        "com.atproto.repo.deleteBlob",
+        { blob: doomedCid },
+      );
       });
 
       // Verification

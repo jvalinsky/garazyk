@@ -10,7 +10,7 @@ Deno.test("createScenarioConfig reads PDS_URL from env", () => {
     assertEquals(config.pds1, "http://localhost:3999");
     assertEquals(config.serviceUrls.pds, "http://localhost:3999");
     assertEquals(
-      createCharacterRegistry(config).getCharacter("luna").pdsUrl,
+      createCharacterRegistry(config).getActor("luna").pdsUrl,
       "http://localhost:3999",
     );
   } finally {

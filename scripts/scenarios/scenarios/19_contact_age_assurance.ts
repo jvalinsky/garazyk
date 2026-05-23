@@ -18,7 +18,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 
 /**
  * Executes the scenario logic.
@@ -41,7 +41,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -56,8 +56,8 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
 
   if (luna.accessJwt) {
     try {

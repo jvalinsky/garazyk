@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -54,8 +54,8 @@ export async function run(): Promise<ScenarioResult> {
 
   const pds = new XrpcClient(PDS1);
   const appview = new XrpcClient(SERVICE_URLS.appview);
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -115,10 +115,9 @@ export async function run(): Promise<ScenarioResult> {
       let lastCount = 0;
       await waitFor(async () => {
         try {
-          const res = await appview.raw.xrpcGet(
+          const res = await appview.as(luna).raw.get(
             "app.bsky.graph.getLists",
             { actor: luna.did, limit: 10 },
-            luna.accessJwt,
           );
           lastCount = res.lists?.length || 0;
           return lastCount > 0;
@@ -133,10 +132,9 @@ export async function run(): Promise<ScenarioResult> {
       let lastCount = 0;
       await waitFor(async () => {
         try {
-          const res = await appview.raw.xrpcGet(
+          const res = await appview.as(luna).raw.get(
             "app.bsky.graph.getList",
             { list: listUri, limit: 10 },
-            luna.accessJwt,
           );
           lastCount = res.items?.length || 0;
           return true; // getList succeeded (list is indexed)

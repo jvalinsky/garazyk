@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -29,7 +29,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const client = new XrpcClient(PDS1);
-  const rosa = getCharacter("rosa");
+  const rosa = getActor("rosa");
 
   await timedCall(result, "PDS health check", async () => {
     await client.waitForHealthy(30);
@@ -54,15 +54,14 @@ export async function run(): Promise<ScenarioResult> {
   let successCount = 0;
   for (let i = 0; i < rotations; i++) {
     try {
-      const tokenResp = await client.raw.xrpcPost(
+      const tokenResp = await client.as(rosa).raw.post(
         "com.atproto.identity.requestPlcOperationSignature",
         {},
-        rosa.accessJwt,
       );
-      const signResp = await client.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
+      const signResp = await client.as(rosa).raw.post("com.atproto.identity.signPlcOperation", {
         token: tokenResp.token,
         alsoKnownAs: [`at://rev-${i}-${rosa.handle}`],
-      }, rosa.accessJwt);
+      });
 
       const op = { ...signResp.operation };
       delete op.did;
@@ -89,15 +88,14 @@ export async function run(): Promise<ScenarioResult> {
     result.stepPassed("Quota Exhaustion", `Successfully performed ${successCount} rotations`);
 
     // Final rotation should fail
-    const tokenResp = await client.raw.xrpcPost(
+    const tokenResp = await client.as(rosa).raw.post(
       "com.atproto.identity.requestPlcOperationSignature",
       {},
-      rosa.accessJwt,
     );
-    const signResp = await client.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
+    const signResp = await client.as(rosa).raw.post("com.atproto.identity.signPlcOperation", {
       token: tokenResp.token,
       alsoKnownAs: [`at://final-${rosa.handle}`],
-    }, rosa.accessJwt);
+    });
 
     const op = { ...signResp.operation };
     delete op.did;

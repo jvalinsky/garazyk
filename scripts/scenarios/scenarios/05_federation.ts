@@ -16,7 +16,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -52,8 +52,8 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
   for (const char of [luna, marcus]) {
     const session = await timedCall(
       result,
@@ -85,8 +85,8 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const nova = getCharacter("nova");
-  const rex = getCharacter("rex");
+  const nova = getActor("nova");
+  const rex = getActor("rex");
   for (const char of [nova, rex]) {
     const session = await timedCall(
       result,
@@ -134,7 +134,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Set profile: ${char.name}`,
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
+        await client.as(char).raw.post("com.atproto.repo.createRecord", {
           repo: char.did,
           collection: "app.bsky.actor.profile",
           record: {
@@ -142,7 +142,7 @@ export async function run(): Promise<ScenarioResult> {
             displayName: char.name,
             description: char.persona,
           },
-        }, char.accessJwt);
+        });
       },
     );
   }
@@ -151,7 +151,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna posts on PDS 1",
     async () => {
-      const res = await pds1.raw.post("com.atproto.repo.createRecord", {
+      const res = await pds1.as(luna).raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.feed.post",
         record: {
@@ -159,7 +159,7 @@ export async function run(): Promise<ScenarioResult> {
           text: "Hello from PDS 1! Can anyone on PDS 2 see this?",
           createdAt: now(),
         },
-      }, luna.accessJwt);
+      });
       return res;
     },
   );
@@ -168,7 +168,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus posts on PDS 1",
     async () => {
-      const res = await pds1.raw.post("com.atproto.repo.createRecord", {
+      const res = await pds1.as(marcus).raw.post("com.atproto.repo.createRecord", {
         repo: marcus.did,
         collection: "app.bsky.feed.post",
         record: {
@@ -176,7 +176,7 @@ export async function run(): Promise<ScenarioResult> {
           text: "Federation is the future of social media! Building bridges across PDSes.",
           createdAt: now(),
         },
-      }, marcus.accessJwt);
+      });
       return res;
     },
   );
@@ -216,7 +216,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Nova follows Luna (cross-PDS)",
     async () => {
-      const res = await pds2.raw.post("com.atproto.repo.createRecord", {
+      const res = await pds2.as(nova).raw.post("com.atproto.repo.createRecord", {
         repo: nova.did,
         collection: "app.bsky.graph.follow",
         record: {
@@ -224,7 +224,7 @@ export async function run(): Promise<ScenarioResult> {
           subject: luna.did,
           createdAt: now(),
         },
-      }, nova.accessJwt);
+      });
       return res;
     },
     (r) => `uri=${r.uri}`,
@@ -234,7 +234,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Rex follows Marcus (cross-PDS)",
     async () => {
-      const res = await pds2.raw.post("com.atproto.repo.createRecord", {
+      const res = await pds2.as(rex).raw.post("com.atproto.repo.createRecord", {
         repo: rex.did,
         collection: "app.bsky.graph.follow",
         record: {
@@ -242,7 +242,7 @@ export async function run(): Promise<ScenarioResult> {
           subject: marcus.did,
           createdAt: now(),
         },
-      }, rex.accessJwt);
+      });
       return res;
     },
     (r) => `uri=${r.uri}`,
@@ -253,7 +253,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Rex replies to Marcus (cross-PDS)",
       async () => {
-        await pds2.raw.post("com.atproto.repo.createRecord", {
+        await pds2.as(rex).raw.post("com.atproto.repo.createRecord", {
           repo: rex.did,
           collection: "app.bsky.feed.post",
           record: {
@@ -265,7 +265,7 @@ export async function run(): Promise<ScenarioResult> {
               parent: { uri: marcusPost.uri, cid: marcusPost.cid },
             },
           },
-        }, rex.accessJwt);
+        });
       },
     );
   }
@@ -318,7 +318,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Nova views Luna's profile via AppView",
     async () => {
-      return await pds2.raw.get("app.bsky.actor.getProfile", { actor: luna.did }, nova.accessJwt);
+      return await pds2.as(nova).raw.get("app.bsky.actor.getProfile", { actor: luna.did });
     },
     (p) => `displayName=${p.displayName}`,
   );
@@ -327,7 +327,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Nova sees Luna's feed via AppView",
     async () => {
-      return await pds2.raw.get("app.bsky.feed.getAuthorFeed", { actor: luna.did }, nova.accessJwt);
+      return await pds2.as(nova).raw.get("app.bsky.feed.getAuthorFeed", { actor: luna.did });
     },
     (f) => `items=${f.feed?.length || 0}`,
   );
@@ -337,11 +337,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Cross-PDS record retrieval",
       async () => {
-        return await pds2.raw.get("com.atproto.repo.getRecord", {
+        return await pds2.as(nova).raw.get("com.atproto.repo.getRecord", {
           repo: luna.did,
           collection: "app.bsky.feed.post",
           rkey: lunaPost.uri.split("/").pop(),
-        }, nova.accessJwt);
+        });
       },
       (r) => `uri=${r.uri}`,
     );

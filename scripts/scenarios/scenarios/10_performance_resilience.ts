@@ -20,7 +20,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -55,7 +55,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt", "quiet"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -86,7 +86,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => getActor(n).did);
   if (active.length < 3) {
     result.stepFailed("Account creation", "Not enough accounts");
     result.finish();
@@ -102,11 +102,11 @@ export async function run(): Promise<ScenarioResult> {
 
   const promises = [];
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     for (let i = 0; i < POSTS_PER_USER; i++) {
       promises.push((async () => {
         try {
-          await client.raw.post("com.atproto.repo.createRecord", {
+          await client.as(char).raw.post("com.atproto.repo.createRecord", {
             repo: char.did,
             collection: "app.bsky.feed.post",
             record: {
@@ -114,7 +114,7 @@ export async function run(): Promise<ScenarioResult> {
               text: `Burst post #${i + 1} from ${char.name}! Load testing the PDS.`,
               createdAt: now(),
             },
-          }, char.accessJwt);
+          });
           return true;
         } catch {
           return false;
@@ -139,15 +139,15 @@ export async function run(): Promise<ScenarioResult> {
 
   let totalRecords = 0;
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const records = await timedCall(
       result,
       `Verify posts: ${char.name}`,
       async () => {
-        return await client.raw.get("com.atproto.repo.listRecords", {
+        return await client.as(char).raw.get("com.atproto.repo.listRecords", {
           repo: char.did,
           collection: "app.bsky.feed.post",
-        }, char.accessJwt);
+        });
       },
     );
     if (records) {
@@ -157,7 +157,7 @@ export async function run(): Promise<ScenarioResult> {
 
   result.stepPassed("Verify posts exist", `total_records_across_users=${totalRecords}`);
 
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
   const batchWrites: Array<Record<string, unknown>> = [];
   for (let i = 0; i < 5; i++) {
     batchWrites.push({
@@ -172,10 +172,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Batch applyWrites",
     async () => {
-      return await client.raw.post("com.atproto.repo.applyWrites", {
+      return await client.as(luna).raw.post("com.atproto.repo.applyWrites", {
         repo: luna.did,
         writes: batchWrites,
-      }, luna.accessJwt);
+      });
     },
     () => "5 records created",
   );
@@ -184,18 +184,18 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Invalid record rejected",
     async () => {
-      await client.raw.post("com.atproto.repo.createRecord", {
+      await client.as(luna).raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.feed.post",
         record: { $type: "app.bsky.feed.post" },
-      }, luna.accessJwt);
+      });
     },
     undefined,
     true,
   );
 
   try {
-    await client.raw.post("com.atproto.repo.createRecord", {
+    await client.as(luna).raw.post("com.atproto.repo.createRecord", {
       repo: luna.did,
       collection: "app.bsky.feed.post",
       record: {
@@ -204,13 +204,13 @@ export async function run(): Promise<ScenarioResult> {
         createdAt: now(),
       },
       rkey: "duplicate-test-rkey",
-    }, luna.accessJwt);
+    });
 
     await timedCall(
       result,
       "Duplicate rkey rejected",
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
+        await client.as(luna).raw.post("com.atproto.repo.createRecord", {
           repo: luna.did,
           collection: "app.bsky.feed.post",
           record: {
@@ -219,7 +219,7 @@ export async function run(): Promise<ScenarioResult> {
             createdAt: now(),
           },
           rkey: "duplicate-test-rkey",
-        }, luna.accessJwt);
+        });
       },
       undefined,
       true,
@@ -246,11 +246,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Non-existent collection rejected",
     async () => {
-      await client.raw.post("com.atproto.repo.createRecord", {
+      await client.as(luna).raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.feed.nonexistent",
         record: { $type: "app.bsky.feed.nonexistent", text: "test", createdAt: now() },
-      }, luna.accessJwt);
+      });
     },
     undefined,
     true,
@@ -275,7 +275,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Timeline has content after burst",
     async () => {
-      return await client.raw.get("app.bsky.feed.getTimeline", {}, luna.accessJwt);
+      return await client.as(luna).raw.get("app.bsky.feed.getTimeline", {});
     },
     (t) => `items=${t.feed?.length || 0}`,
   );

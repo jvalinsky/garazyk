@@ -1,7 +1,13 @@
 /** Test character definitions, registry, and service URL configuration. @module config */
-import { resolveTopology } from "@garazyk/schemat";
+import {
+  loadRunResourceManifest,
+  resolveTopology,
+  serviceUrlsFromResourceManifest,
+} from "@garazyk/schemat";
 import type { Topology } from "@garazyk/schemat";
 export type { ScenarioContext } from "./scenario_context.ts";
+import { Actor, ActorTemplate, ActorFactory } from "./actor.ts";
+export { Actor, type ActorTemplate, ActorFactory } from "./actor.ts";
 
 /** Browser client topology exposed through scenario configuration. */
 export interface WebClientConfig {
@@ -101,10 +107,15 @@ export function createScenarioConfig(
   options: ScenarioConfigOptions = {},
 ): ScenarioConfig {
   const resolvedTopology = options.topology ?? resolveScenarioTopology();
+  const resourceUrls = serviceUrlsFromResourceManifest(
+    loadRunResourceManifest(),
+  );
   const pds1 = options.pds1 ?? Deno.env.get("PDS_URL") ??
+    resourceUrls.pds ??
     resolvedTopology.serviceUrls.pds ??
     "http://localhost:2583";
   const pds2 = options.pds2 ?? Deno.env.get("PDS2_URL") ??
+    resourceUrls.pds2 ??
     resolvedTopology.serviceUrls.pds2 ??
     "http://localhost:2587";
   return {
@@ -123,6 +134,7 @@ export function createScenarioConfig(
       "admin-localdev",
     serviceUrls: {
       ...resolvedTopology.serviceUrls,
+      ...resourceUrls,
       ...options.serviceUrls,
       pds: pds1,
       pds2,
@@ -137,82 +149,20 @@ export function createScenarioConfig(
   };
 }
 
-/** A test character with PDS-issued credentials. */
-export class Character {
-  /** DID assigned after account creation. */
-  public did: string = "";
-  /** Access JWT assigned after account creation or login. */
-  public accessJwt: string = "";
-  /** Refresh JWT assigned after account creation or login. */
-  public refreshJwt: string = "";
-
-  /**
-   * Create a test character template.
-   * @param name - Human-readable display name
-   * @param handle - ATProto handle
-   * @param email - Account email
-   * @param password - Account password
-   * @param persona - Scenario persona description
-   * @param role - Scenario role
-   * @param pdsUrl - PDS URL assigned to the character
-   */
-  constructor(
-    public name: string,
-    public handle: string,
-    public email: string,
-    public password: string,
-    public persona: string,
-    public role: "user" | "admin" | "mod" = "user",
-    public pdsUrl: string = "",
-  ) {}
-
-  /** Current access token for authenticated calls. */
-  get token(): string {
-    return this.accessJwt;
-  }
-}
-
 // ---------------------------------------------------------------------------
-// Character Registry — pure factory, no global mutable state
+// Actor Registry
 // ---------------------------------------------------------------------------
 
-/** A registry of test characters, scoped to specific PDS URLs. */
-export interface CharacterRegistry {
-  /**
-   * Look up a character by registry key.
-   * @param name - Character key
-   * @returns The matching character
-   */
-  getCharacter(name: string): Character;
-  /**
-   * Get all characters assigned to a role.
-   * @param role - Role name
-   * @returns Matching characters
-   */
-  getCharactersByRole(role: string): Character[];
-  /**
-   * Get all characters assigned to a PDS URL.
-   * @param pdsUrl - PDS URL
-   * @returns Matching characters
-   */
-  getCharactersByPds(pdsUrl: string): Character[];
-  /** Return all characters keyed by registry name. */
-  all(): Record<string, Character>;
+/** A registry of test actors. */
+export interface ActorRegistry {
+  /** Get an actor by registry key. */
+  getActor(name: string): Actor;
+  getActorsByRole(role: string): Actor[];
+  getActorsByPds(pdsUrl: string): Actor[];
+  all(): Record<string, Actor>;
 }
 
-/** Character template — no PDS URLs baked in. */
-interface CharacterTemplate {
-  name: string;
-  handle: string;
-  email: string;
-  password: string;
-  persona: string;
-  role: "user" | "admin" | "mod";
-  /** Which PDS to assign to: "pds1" or "pds2" */
-  pds: "pds1" | "pds2";
-}
-
-const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
+const BASE_TEMPLATES: Record<string, ActorTemplate> = {
   luna: {
     name: "Luna Starfield",
     handle: "luna.test",
@@ -309,75 +259,47 @@ const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
   },
 };
 
-let _registryCounter = 0;
-
 /**
- * Create a fresh character registry with unique handles/emails.
- *
- * Each call produces a new set of characters with a unique suffix,
- * so multiple registries can coexist without handle collisions.
- *
- * @example
- * ```ts
- * const config = createScenarioConfig();
- * const registry = createCharacterRegistry(config);
- * const luna = registry.getCharacter("luna");
- * const admins = registry.getCharactersByRole("admin");
- * ```
+ * Create a fresh actor registry with unique handles/emails.
  *
  * @param configOrPds1Url - Explicit scenario config or primary PDS URL
  * @param pds2Url - URL for the secondary PDS when the first argument is a string
+ * @param additionalTemplates - Optional additional actor templates to register
  */
 export function createCharacterRegistry(
   configOrPds1Url: ScenarioConfig | string = "http://localhost:2583",
   pds2Url: string = "http://localhost:2587",
-): CharacterRegistry {
+  additionalTemplates: Record<string, ActorTemplate> = {},
+): ActorRegistry {
   const pds1Url = typeof configOrPds1Url === "string"
     ? configOrPds1Url
     : configOrPds1Url.pds1;
   const resolvedPds2Url = typeof configOrPds1Url === "string"
     ? pds2Url
     : configOrPds1Url.pds2;
-  const suffix = `${Deno.pid}-${
-    (++_registryCounter).toString(16).padStart(4, "0")
-  }`;
-  const chars: Record<string, Character> = {};
 
-  for (const [key, tpl] of Object.entries(BASE_TEMPLATES)) {
-    const handleParts = tpl.handle.split(".");
-    const handle = handleParts.length > 1
-      ? `${handleParts[0]}-${suffix}.${handleParts.slice(1).join(".")}`
-      : `${tpl.handle}-${suffix}`;
+  const factory = new ActorFactory(pds1Url, resolvedPds2Url);
+  const chars: Record<string, Actor> = {};
 
-    const emailParts = tpl.email.split("@");
-    const email = `${emailParts[0]}-${suffix}@${emailParts[1]}`;
+  const allTemplates = { ...BASE_TEMPLATES, ...additionalTemplates };
 
-    const pdsUrl = tpl.pds === "pds2" ? resolvedPds2Url : pds1Url;
-
-    chars[key] = new Character(
-      tpl.name,
-      handle,
-      email,
-      tpl.password,
-      tpl.persona,
-      tpl.role,
-      pdsUrl,
-    );
+  for (const [key, tpl] of Object.entries(allTemplates)) {
+    chars[key] = factory.createFromTemplate(tpl);
   }
 
   return {
-    getCharacter(name: string): Character {
+    getActor(name: string): Actor {
       const char = chars[name.toLowerCase()];
-      if (!char) throw new Error(`Character not found: ${name}`);
+      if (!char) throw new Error(`Actor not found: ${name}`);
       return char;
     },
-    getCharactersByRole(role: string): Character[] {
+    getActorsByRole(role: string): Actor[] {
       return Object.values(chars).filter((c) => c.role === role);
     },
-    getCharactersByPds(pdsUrl: string): Character[] {
+    getActorsByPds(pdsUrl: string): Actor[] {
       return Object.values(chars).filter((c) => c.pdsUrl === pdsUrl);
     },
-    all(): Record<string, Character> {
+    all(): Record<string, Actor> {
       return { ...chars };
     },
   };

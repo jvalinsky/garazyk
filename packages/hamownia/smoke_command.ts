@@ -8,7 +8,7 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
 
   const client = new XrpcClient(pdsUrl);
   const chars = createCharacterRegistry(pdsUrl);
-  const luna = chars.getCharacter("luna");
+  const luna = chars.getActor("luna");
 
   await timedCall(result, "Server health check", async () => {
     const res = await fetch(`${pdsUrl}/xrpc/com.atproto.server.describeServer`);

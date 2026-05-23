@@ -29,8 +29,8 @@ Deno.test("hamownia config factory supports explicit registry defaults", () => {
   });
   const registry = createCharacterRegistry(config);
 
-  assertEquals(registry.getCharacter("luna").pdsUrl, "http://pds-one.test");
-  assertEquals(registry.getCharacter("nova").pdsUrl, "http://pds-two.test");
+  assertEquals(registry.getActor("luna").pdsUrl, "http://pds-one.test");
+  assertEquals(registry.getActor("nova").pdsUrl, "http://pds-two.test");
 });
 
 Deno.test("hamownia orchestration APIs are explicit subpath exports", () => {
@@ -43,6 +43,8 @@ Deno.test("hamownia orchestration APIs are explicit subpath exports", () => {
     "relay",
     "appview",
     "germ",
+    "mikrus",
+    "beskid",
   ]);
   assertEquals(typeof stopStaleDockerE2e, "function");
   assertEquals(typeof buildDockerRunnerArgs, "function");
