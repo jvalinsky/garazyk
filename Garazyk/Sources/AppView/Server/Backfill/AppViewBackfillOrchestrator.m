@@ -118,10 +118,10 @@
             if (!state) {
                 state = [[AppViewRepoSyncState alloc] initWithDID:did];
                 [self.database upsertRepoSyncState:state error:nil];
-            } else if (state.status == AppViewRepoSyncStatusSynced) {
-                [self.database markRepoDirty:did error:nil];
             } else if (state.status == AppViewRepoSyncStatusProcessing) {
                 continue; // Already being processed
+            } else if (state.status == AppViewRepoSyncStatusSynced) {
+                continue; // Live ingest already handles current commits; gap repair marks dirty explicitly.
             }
             if (![self.pendingQueue containsObject:did])
                 [self.pendingQueue addObject:did];

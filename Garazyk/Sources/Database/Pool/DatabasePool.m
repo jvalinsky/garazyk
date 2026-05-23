@@ -10,6 +10,9 @@
 
 NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 
+// Queue-specific key for re-entrancy detection in dealloc
+static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
+
 @interface PDSDatabasePoolTimerProxy : NSObject
 @property (nonatomic, weak) id pool;
 @end
@@ -26,6 +29,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 @property (nonatomic, assign, readwrite) NSUInteger maxSize;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, PDSActorStore *> *stores;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *lastAccessTime;
+@property (nonatomic, strong) NSMutableSet<NSString *> *knownDids;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t evictionQueue;
 @property (nonatomic, strong) NSTimer *evictionTimer;
@@ -49,8 +53,10 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         _stores = [NSMutableDictionary dictionary];
         _lastAccessTime = [NSMutableDictionary dictionary];
         _poolQueue = dispatch_queue_create("com.atproto.pds.databasepool", DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_poolQueue, kDatabasePoolQueueKey, kDatabasePoolQueueKey, NULL);
         _evictionQueue = dispatch_queue_create("com.atproto.pds.databasepool.eviction", DISPATCH_QUEUE_SERIAL);
         _openFileHandleCount = 0;
+        _knownDids = [NSMutableSet set];
         
         NSFileManager *fm = [NSFileManager defaultManager];
         if (![fm fileExistsAtPath:dbDirectory]) {
@@ -74,7 +80,12 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 
 - (void)dealloc {
     [self.evictionTimer invalidate];
-    [self closeAll];
+    if (dispatch_get_specific(kDatabasePoolQueueKey)) {
+        // Already on pool queue — close stores directly to avoid deadlock
+        [self closeAllNoSync];
+    } else {
+        [self closeAll];
+    }
 }
 
 #pragma mark - Store Management
@@ -156,6 +167,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             self.stores[did] = store;
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;
+            [self.knownDids addObject:did];
         } else {
             GZ_LOG_DB_ERROR(@"Failed to open store for %@: %@", did, blockError);
         }
@@ -220,6 +232,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         [store close];
         [self.stores removeObjectForKey:did];
         [self.lastAccessTime removeObjectForKey:did];
+        [self.knownDids removeObject:did];
         self.openFileHandleCount--;
     }
 }
@@ -228,14 +241,22 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
     [self.evictionTimer invalidate];
     self.evictionTimer = nil;
     dispatch_sync(self.poolQueue, ^{
-        for (NSString *did in self.stores) {
-            PDSActorStore *store = self.stores[did];
-            [store close];
-        }
-        [self.stores removeAllObjects];
-        [self.lastAccessTime removeAllObjects];
-        self.openFileHandleCount = 0;
+        [self closeAllNoSync];
     });
+}
+
+/// Close all stores without synchronizing on poolQueue.
+/// Must be called with poolQueue already held, or from dealloc when
+/// re-entrancy is detected via dispatch_get_specific.
+- (void)closeAllNoSync {
+    for (NSString *did in self.stores) {
+        PDSActorStore *store = self.stores[did];
+        [store close];
+    }
+    [self.stores removeAllObjects];
+    [self.lastAccessTime removeAllObjects];
+    [self.knownDids removeAllObjects];
+    self.openFileHandleCount = 0;
 }
 
 #pragma mark - Transaction Support
@@ -319,7 +340,24 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 }
 
 // Walks {dbDir}/{method}/{prefix}/{did} looking for files starting with "did:".
+// Uses knownDids set as a cache when available, falling back to filesystem walk
+// only when the set is empty (e.g., on first call after restart).
 - (void)enumerateDidFiles:(void (^)(NSString *did))block {
+    __block NSArray<NSString *> *cachedDids = nil;
+    dispatch_sync(self.poolQueue, ^{
+        if (self.knownDids.count > 0) {
+            cachedDids = [self.knownDids allObjects];
+        }
+    });
+
+    if (cachedDids) {
+        for (NSString *did in cachedDids) {
+            block(did);
+        }
+        return;
+    }
+
+    // Fallback: walk the filesystem
     NSFileManager *fm = [NSFileManager defaultManager];
     NSArray<NSString *> *methodDirs = [fm contentsOfDirectoryAtPath:self.dbDirectory error:nil];
     for (NSString *methodEntry in methodDirs) {
@@ -338,6 +376,9 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
                     continue;
                 }
                 if ([file hasPrefix:@"did:"]) {
+                    dispatch_sync(self.poolQueue, ^{
+                        [self.knownDids addObject:file];
+                    });
                     block(file);
                 }
             }
