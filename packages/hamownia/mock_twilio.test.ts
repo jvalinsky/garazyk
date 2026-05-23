@@ -5,17 +5,15 @@ import {
   stopMockTwilioServer,
 } from "./mock_twilio.ts";
 
-const PORT = 8098;
-
 Deno.test("MockTwilioServer end-to-end", async (t) => {
   let server: MockTwilioServer;
 
   await t.step(
     "startMockTwilioServer spawns process and waits for health",
     async () => {
-      server = await startMockTwilioServer(PORT);
+      server = await startMockTwilioServer();
       assertExists(server);
-      assertEquals(server.url, `http://127.0.0.1:${PORT}`);
+      assertEquals(server.url.startsWith("http://127.0.0.1:"), true);
       const healthy = await server.getHealth();
       assertEquals(healthy, true);
     },
