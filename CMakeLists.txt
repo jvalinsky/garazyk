@@ -748,6 +748,31 @@ target_link_libraries(ATProtoMikrus PRIVATE
   ${SECP256K1_LIBRARIES}
 )
 
+# Beskid-style edge record and identity cache service library
+file(GLOB_RECURSE ATPROTO_BESKID_SOURCES
+  "Garazyk/Sources/Beskid/*.m"
+  "Garazyk/Sources/Beskid/*.c"
+)
+
+add_library(ATProtoBeskid STATIC ${ATPROTO_BESKID_SOURCES})
+
+target_include_directories(ATProtoBeskid PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(ATProtoBeskid PRIVATE
+  ATProtoAppViewServer
+  ATProtoStorage
+  ATProtoServices
+  ATProtoSync
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoPLC
+  ATProtoCore
+)
+
 # AppView Server binary (syrena)
 add_executable(syrena
   Garazyk/Binaries/syrena/main.m
@@ -849,6 +874,60 @@ target_compile_definitions(mikrus PRIVATE
 )
 
 set_target_properties(mikrus PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
+# Beskid edge record and identity cache binary
+add_executable(beskid
+  Garazyk/Binaries/beskid/main.m
+)
+
+target_include_directories(beskid PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(beskid PRIVATE
+    ATProtoBeskid
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(beskid PRIVATE
+    -Wl,--whole-archive
+    ATProtoBeskid
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
+
+target_compile_definitions(beskid PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(beskid PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   LINK_FLAGS "-ObjC"
 )
@@ -1489,6 +1568,7 @@ if(BUILD_TESTS)
     ATProtoCore
     ATProtoPLC
     ATProtoMikrus
+    ATProtoBeskid
     ATProtoAppViewServer
     ATProtoMediaCore
     ${PLATFORM_LIBRARIES}
@@ -1519,6 +1599,7 @@ if(BUILD_TESTS)
        ATProtoCore
        ATProtoPLC
        ATProtoMikrus
+       ATProtoBeskid
        ATProtoAppViewServer
        ATProtoMediaCore
        -Wl,--no-whole-archive
@@ -1713,6 +1794,7 @@ message(STATUS "  campagnola        - PLC directory server")
 message(STATUS "  zuk               - Relay server")
 message(STATUS "  syrena            - Standalone AppView server")
 message(STATUS "  mikrus     - Standalone link index service")
+message(STATUS "  beskid            - Standalone edge record/identity cache service")
 message(STATUS "  garazyk-ui        - Dedicated admin UI server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
