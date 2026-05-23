@@ -27,16 +27,19 @@ export {
   blockedPublicHosts,
 } from "./browser_flow.ts";
 export {
-  Character,
+  Actor,
+  ActorFactory,
   createCharacterRegistry,
   createScenarioConfig,
 } from "./config.ts";
 export type {
-  CharacterRegistry,
+  ActorRegistry,
+  ActorTemplate,
   ScenarioConfig,
   ScenarioConfigOptions,
   WebClientConfig,
 } from "./config.ts";
+export * from "./tasks.ts";
 export {
   InstrumentationReport,
   OperationTimer,

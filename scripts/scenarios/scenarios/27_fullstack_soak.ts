@@ -19,9 +19,9 @@ import {
   StorageMonitor,
 } from "../../lib/deno/instrumentation.ts";
 import {
+  Actor,
   APPVIEW_ADMIN_SECRET,
-  Character,
-  getCharacter,
+  getActor,
   PDS1,
   SERVICE_URLS,
 } from "../../lib/deno/config.ts";
@@ -47,8 +47,8 @@ function now() {
   return new Date().toISOString();
 }
 
-function makeSoakCharacter(index: number): Character {
-  return new Character(
+function makeSoakCharacter(index: number): Actor {
+  return new Actor(
     `Soak ${index}`,
     `soak-${index}.test`,
     `soak-${index}@test.local`,
@@ -91,15 +91,15 @@ export async function run(): Promise<ScenarioResult> {
 
     if (result.failed > 0) return result;
 
-    const accounts: Character[] = [];
+    const accounts: Actor[] = [];
     for (const name of ["luna", "marcus", "rosa", "volt", "quiet"]) {
-      accounts.push(getCharacter(name));
+      accounts.push(getActor(name));
     }
     for (let i = 1; i <= 12; i++) {
       accounts.push(makeSoakCharacter(i));
     }
 
-    const activeAccounts: Character[] = [];
+    const activeAccounts: Actor[] = [];
     for (const acc of accounts) {
       const session = await timedCall(
         result,

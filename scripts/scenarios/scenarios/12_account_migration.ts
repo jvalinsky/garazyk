@@ -19,7 +19,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 /**
  * Executes the scenario logic.
@@ -31,8 +31,8 @@ export async function run(): Promise<ScenarioResult> {
 
   const pds1 = new XrpcClient(PDS1);
   const pds2 = new XrpcClient(PDS2);
-  const luna = getCharacter("luna");
-  const admin = getCharacter("admin");
+  const luna = getActor("luna");
+  const admin = getActor("admin");
 
   for (const [name, client] of [["PDS1", pds1], ["PDS2", pds2]] as const) {
     await timedCall(
@@ -99,10 +99,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Request PLC operation signature",
       async () => {
-        return await pds1.raw.xrpcPost(
+        return await pds1.as(luna).raw.post(
           "com.atproto.identity.requestPlcOperationSignature",
           {},
-          luna.accessJwt,
         );
       },
     );
@@ -113,10 +112,10 @@ export async function run(): Promise<ScenarioResult> {
         result,
         `Sign handle rotation: ${newHandle1}`,
         async () => {
-          return await pds1.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
+          return await pds1.as(luna).raw.post("com.atproto.identity.signPlcOperation", {
             token,
             alsoKnownAs: [`at://${newHandle1}`],
-          }, luna.accessJwt);
+          });
         },
       );
 
@@ -143,10 +142,9 @@ export async function run(): Promise<ScenarioResult> {
         result,
         "Request PLC signature (2nd)",
         async () => {
-          return await pds1.raw.xrpcPost(
+          return await pds1.as(luna).raw.post(
             "com.atproto.identity.requestPlcOperationSignature",
             {},
-            luna.accessJwt,
           );
         },
       );
@@ -157,10 +155,10 @@ export async function run(): Promise<ScenarioResult> {
           result,
           `Sign handle rotation: ${newHandle2}`,
           async () => {
-            return await pds1.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
+            return await pds1.as(luna).raw.post("com.atproto.identity.signPlcOperation", {
               token: token2,
               alsoKnownAs: [`at://${newHandle2}`],
-            }, luna.accessJwt);
+            });
           },
         );
 

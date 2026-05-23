@@ -20,7 +20,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -80,7 +80,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -111,9 +111,9 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
-  const rosa = getCharacter("rosa");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
+  const rosa = getActor("rosa");
 
   if (!luna.did || !marcus.did || !rosa.did) {
     result.stepFailed("Account creation", "Not all accounts created");
@@ -136,7 +136,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna creates firehose test post",
     async () => {
-      return await client.raw.post("com.atproto.repo.createRecord", {
+      return await client.as(luna).raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.feed.post",
         record: {
@@ -144,7 +144,7 @@ export async function run(): Promise<ScenarioResult> {
           text: "Firehose test post! If you can see this on the relay, streaming works!",
           createdAt: now(),
         },
-      }, luna.accessJwt);
+      });
     },
   );
 
@@ -152,7 +152,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus follows Luna (firehose event)",
     async () => {
-      return await client.raw.post("com.atproto.repo.createRecord", {
+      return await client.as(marcus).raw.post("com.atproto.repo.createRecord", {
         repo: marcus.did,
         collection: "app.bsky.graph.follow",
         record: {
@@ -160,7 +160,7 @@ export async function run(): Promise<ScenarioResult> {
           subject: luna.did,
           createdAt: now(),
         },
-      }, marcus.accessJwt);
+      });
     },
   );
 
@@ -169,7 +169,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Rosa likes Luna's post (firehose event)",
       async () => {
-        return await client.raw.post("com.atproto.repo.createRecord", {
+        return await client.as(rosa).raw.post("com.atproto.repo.createRecord", {
           repo: rosa.did,
           collection: "app.bsky.feed.like",
           record: {
@@ -177,7 +177,7 @@ export async function run(): Promise<ScenarioResult> {
             subject: { uri: lunaPost.uri, cid: lunaPost.cid },
             createdAt: now(),
           },
-        }, rosa.accessJwt);
+        });
       },
     );
   }
@@ -186,7 +186,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna updates profile (firehose event)",
     async () => {
-      return await client.raw.post("com.atproto.repo.createRecord", {
+      return await client.as(luna).raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.actor.profile",
         record: {
@@ -194,7 +194,7 @@ export async function run(): Promise<ScenarioResult> {
           displayName: "Luna Starfield",
           description: "Astronomy enthusiast. Firehose tester.",
         },
-      }, luna.accessJwt);
+      });
     },
   );
 
@@ -289,10 +289,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView indexed Luna's posts",
     async () => {
-      return await client.raw.get(
+      return await client.as(luna).raw.get(
         "app.bsky.feed.getAuthorFeed",
         { actor: luna.did },
-        luna.accessJwt,
       );
     },
     (f) => `items=${f.feed?.length || 0}`,

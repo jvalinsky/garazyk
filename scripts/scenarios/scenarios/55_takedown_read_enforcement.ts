@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -41,7 +41,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const troll = getCharacter("troll");
+  const troll = getActor("troll");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -77,7 +77,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Troll creates post",
     async () => {
-      return await pds.raw.post("com.atproto.repo.createRecord", {
+      return await pds.as(troll).raw.post("com.atproto.repo.createRecord", {
         repo: troll.did,
         collection: "app.bsky.feed.post",
         record: {
@@ -85,7 +85,7 @@ export async function run(): Promise<ScenarioResult> {
           text: "Bad content that will be taken down.",
           createdAt: now(),
         },
-      }, troll.accessJwt);
+      });
     },
     (r) => `uri=${r.uri}`,
   );
