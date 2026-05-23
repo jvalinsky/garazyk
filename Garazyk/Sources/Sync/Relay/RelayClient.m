@@ -12,6 +12,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
 @interface RelayClient () <FirehoseSubscriptionDelegate> {
     BOOL _readingPaused;
+    BOOL _shouldReconnect;
 }
 
 @property (nonatomic, strong, readwrite) NSURL *serverURL;
@@ -51,6 +52,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
 - (void)connect {
     self.reconnectAttempts = 0;
+    _shouldReconnect = YES;
     [self establishConnection];
 }
 
@@ -73,10 +75,13 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (NSURL *)buildWebSocketURL {
+    NSString *inputScheme = self.serverURL.scheme.lowercaseString ?: @"";
     NSString *scheme = @"wss";
-    if ([self.serverURL.scheme.lowercaseString isEqualToString:@"http"]) {
+    if ([inputScheme isEqualToString:@"ws"] || [inputScheme isEqualToString:@"wss"]) {
+        scheme = inputScheme;
+    } else if ([inputScheme isEqualToString:@"http"]) {
         scheme = @"ws";
-    } else {
+    } else if ([inputScheme isEqualToString:@"https"]) {
         scheme = @"wss";
     }
 
@@ -100,6 +105,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
 - (void)disconnect {
     _readingPaused = NO;
+    _shouldReconnect = NO;
     [self.subscription cancel];
     [self.firehose disconnect];
     self.firehose = nil;
@@ -253,7 +259,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
         }
     });
 
-    if (error) {
+    if (_shouldReconnect) {
         [self scheduleReconnect];
     }
 }

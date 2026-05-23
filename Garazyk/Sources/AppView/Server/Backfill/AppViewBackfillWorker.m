@@ -122,7 +122,7 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
 
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     req.timeoutInterval = 120.0;
-    [req setValue:@"application/vnd.atproto.star-lite, application/vnd.atproto.star;q=0.9, application/vnd.ipld.car;q=0.8" forHTTPHeaderField:@"Accept"];
+    [req setValue:@"application/vnd.ipld.car" forHTTPHeaderField:@"Accept"];
     [req setValue:@"garazyk-appview/1.0" forHTTPHeaderField:@"User-Agent"];
 
     // Synchronous fetch via NSURLSession (we're already on a background queue)
@@ -401,7 +401,7 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
             }
 
             NSError *decodeError = nil;
-            id decoded = [ATProtoDagCBOR decodeData:block.data error:&decodeError];
+            id decoded = [ATProtoDagCBOR decodeDataAsJSON:block.data error:&decodeError];
             if ([decoded isKindOfClass:[NSDictionary class]]) {
                 NSDictionary *record = (NSDictionary *)decoded;
                 // Ensure $type is set from the collection key if not already present
@@ -418,11 +418,12 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
 
                 NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey ?: @""];
                 NSString *jsonValue = nil;
-                NSData *jsonData = [NSJSONSerialization dataWithJSONObject:mutableRecord.count > 0 ? [mutableRecord copy] : record
-                                                                    options:0
-                                                                      error:nil];
-                if (jsonData) {
-                    jsonValue = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                NSDictionary *targetDict = mutableRecord.count > 0 ? [mutableRecord copy] : record;
+                if ([NSJSONSerialization isValidJSONObject:targetDict]) {
+                    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:targetDict options:0 error:nil];
+                    if (jsonData) {
+                        jsonValue = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                    }
                 }
                 NSMutableDictionary *snapshotRecord = [@{
                     @"uri": uri,
@@ -468,8 +469,10 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
                 if (!ok && indexErr) {
                     GZ_LOG_DEBUG(@"[AppView BackfillWorker] Dead-letter %@ for %@: %@",
                                   collection, did, indexErr.localizedDescription);
-                    NSData *raw = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil]
-                                  ?: [NSData data];
+                    NSData *raw = [NSData data];
+                    if ([NSJSONSerialization isValidJSONObject:record]) {
+                        raw = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil] ?: [NSData data];
+                    }
                     [_database recordDeadLetterEvent:collection
                                                 seq:0
                                                 did:did

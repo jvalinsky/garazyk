@@ -369,7 +369,7 @@
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:8080];
+    HttpServer *server = [HttpServer serverWithPort:0];
 
     NSError *error = nil;
     BOOL result = [builder configureServer:server error:&error];
@@ -415,7 +415,7 @@
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:8080];
+    HttpServer *server = [HttpServer serverWithPort:0];
     NSError *error = nil;
     BOOL result = [builder configureServer:server error:&error];
 
@@ -439,7 +439,7 @@
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:8080];
+    HttpServer *server = [HttpServer serverWithPort:0];
     NSError *error = nil;
     BOOL result = [builder configureServer:server error:&error];
 
@@ -595,7 +595,7 @@
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:8080];
+    HttpServer *server = [HttpServer serverWithPort:0];
     
     NSError *error1 = nil;
     BOOL result1 = [builder configureServer:server error:&error1];

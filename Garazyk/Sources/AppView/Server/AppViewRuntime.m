@@ -480,6 +480,12 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event {
     [_orchestrator enqueueDIDs:@[event.did]];
 }
 
+- (void)ingestEngine:(AppViewIngestEngine *)engine
+  didDetectGapForDID:(NSString *)did
+               atSeq:(int64_t)seq {
+    [_orchestrator notifyGapDetectedForDID:did atSeq:seq];
+}
+
 // ---------------------------------------------------------------------------
 // AppViewBackfillOrchestratorDelegate
 // ---------------------------------------------------------------------------

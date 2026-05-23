@@ -69,7 +69,6 @@
     
     // Setup OAuth Server first (so it doesn't overwrite our manual seeding later)
     self.oauthServer = [[OAuth2Server alloc] initWithDatabase:self.db];
-    self.oauthServer.issuer = @"http://127.0.0.1:8443";
     
     // Setup HTTP Server
     self.server = [HttpServer serverWithPort:0];
@@ -114,7 +113,9 @@
 	        }
 	        XCTFail(@"Failed to start HttpServer: %@", startError);
 	    }
-}
+    self.oauthServer.issuer = [NSString stringWithFormat:@"http://127.0.0.1:%lu",
+                                                         (unsigned long)self.server.port];
+	}
 
 - (void)tearDown {
     [self.server stop];

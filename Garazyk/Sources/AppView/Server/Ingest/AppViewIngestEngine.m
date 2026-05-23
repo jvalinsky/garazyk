@@ -169,6 +169,13 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     }
 }
 
+- (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+    GZ_LOG_WARN(@"[AppView Ingest] Relay %@ sent error %@: %@",
+                 self.relayURL,
+                 event.error ?: @"unknown",
+                 event.message ?: @"");
+}
+
 - (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
     self.currentSeq = cursor;
 }
@@ -468,6 +475,12 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         ![event.since isEqualToString:syncState.lastRev]) {
         GZ_LOG_WARN(@"[AppView Ingest] Gap for %@: event.since=%@ stored=%@", did, event.since, syncState.lastRev);
         [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"continuity_gap"];
+        id<AppViewIngestEngineDelegate> delegate = self.delegate;
+        if (delegate && [delegate respondsToSelector:@selector(ingestEngine:didDetectGapForDID:atSeq:)]) {
+            dispatch_async(_eventQueue, ^{
+                [delegate ingestEngine:self didDetectGapForDID:did atSeq:seq];
+            });
+        }
         return;
     }
 

@@ -68,6 +68,15 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event;
   didReconnectToRelay:(NSString *)relayURL
                atSeq:(int64_t)seq;
 
+/*!
+ @method ingestEngine:didDetectGapForDID:atSeq:
+
+ @abstract Called when commit continuity is broken and the repo needs backfill repair.
+ */
+- (void)ingestEngine:(AppViewIngestEngine *)engine
+  didDetectGapForDID:(NSString *)did
+               atSeq:(int64_t)seq;
+
 @end
 
 /*!
