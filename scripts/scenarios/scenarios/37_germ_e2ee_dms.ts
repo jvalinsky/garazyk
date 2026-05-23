@@ -17,7 +17,7 @@ import {
   chatSendMessage,
   createChatServiceContext,
 } from "../../lib/deno/seed.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
@@ -32,29 +32,21 @@ import { timedCall } from "../../lib/deno/runner.ts";
 
 const GERM_URL = Deno.env.get("GERM_URL") || "http://127.0.0.1:8082";
 
-function now() {
-  return new Date().toISOString();
+
+async function germPost(client: XrpcClient, method: string, body: any, token: string) {
+  try {
+    return await client.raw.httpPost(`/xrpc/${method}`, body, token);
+  } catch {
+    return null;
+  }
 }
 
-async function germPost(method: string, body: any, token: string) {
-  const url = `${GERM_URL}/xrpc/${method}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 200) return await res.json();
-  return null;
-}
-
-async function germGet(method: string, params: Record<string, any>, token: string) {
-  const url = new URL(`${GERM_URL}/xrpc/${method}`);
-  for (const [k, v] of Object.entries(params)) url.searchParams.append(k, String(v));
-  const res = await fetch(url.toString(), {
-    headers: { "Authorization": `Bearer ${token}` },
-  });
-  if (res.status === 200) return await res.json();
-  return null;
+async function germGet(client: XrpcClient, method: string, params: Record<string, any>, token: string) {
+  try {
+    return await client.raw.httpGet(`/xrpc/${method}`, params, token);
+  } catch {
+    return null;
+  }
 }
 
 export async function run(): Promise<ScenarioResult> {
@@ -62,6 +54,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const client = new XrpcClient(PDS1);
+  const germClient = new XrpcClient(GERM_URL);
   const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://localhost:2585";
   const chatContext = createChatServiceContext(
     client,
@@ -79,8 +72,8 @@ export async function run(): Promise<ScenarioResult> {
 
   let germHealthy = false;
   try {
-    const res = await fetch(`${GERM_URL}/_health`);
-    germHealthy = res.status === 200;
+    await germClient.waitForHealthy(5);
+    germHealthy = true;
   } catch { /* ignore */ }
 
   if (!germHealthy) result.stepSkipped("Germ service health check", "Not running on 8082");
@@ -101,7 +94,7 @@ export async function run(): Promise<ScenarioResult> {
   const convo = await timedCall(result, "Vanilla: Get convo", async () => {
     return await chatGetConvoForMembers(chatContext, luna.accessJwt, [luna.did, marcus.did]);
   });
-  const convoId = convo?.convo?.id;
+  const convoId = (convo as any)?.convo?.id;
 
   const plaintext = "Hey Marcus! Plaintext message.";
   if (convoId) {
@@ -112,7 +105,7 @@ export async function run(): Promise<ScenarioResult> {
     const messages = await timedCall(result, "Vanilla: Server returns plaintext", async () => {
       return await chatGetMessages(chatContext, marcus.accessJwt, convoId, 20);
     });
-    const found = messages?.messages?.some((m: any) => m.text === plaintext);
+    const found = (messages as any)?.messages?.some((m: any) => m.text === plaintext);
     assert.isTrue(found ?? false, "Plaintext not found");
   }
 
@@ -140,13 +133,13 @@ export async function run(): Promise<ScenarioResult> {
     });
 
     const claim = await timedCall(result, "Germ: Luna claims addresses", async () => {
-      return await germPost("com.germnetwork.mailbox.claimAddresses", {
+      return await germPost(germClient, "com.germnetwork.mailbox.claimAddresses", {
         agentRef: "luna-1",
         count: 3,
       }, luna.accessJwt);
     });
 
-    const mClaim = await germPost("com.germnetwork.mailbox.claimAddresses", {
+    const mClaim = await germPost(germClient, "com.germnetwork.mailbox.claimAddresses", {
       agentRef: "marcus-1",
       count: 3,
     }, marcus.accessJwt);
@@ -157,7 +150,7 @@ export async function run(): Promise<ScenarioResult> {
       const ctB64 = btoa(String.fromCharCode(...ciphertext));
 
       await timedCall(result, "Germ: Deliver ciphertext", async () => {
-        return await germPost("com.germnetwork.mailbox.deliver", {
+        return await germPost(germClient, "com.germnetwork.mailbox.deliver", {
           address: mClaim.addresses[0],
           ciphertext: { $bytes: ctB64 },
         }, luna.accessJwt);
@@ -165,6 +158,7 @@ export async function run(): Promise<ScenarioResult> {
 
       const poll = await timedCall(result, "Germ: Marcus polls mailbox", async () => {
         return await germGet(
+          germClient,
           "com.germnetwork.mailbox.poll",
           { agentRef: "marcus-1" },
           marcus.accessJwt,

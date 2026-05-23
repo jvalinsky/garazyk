@@ -18,13 +18,10 @@
 
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, postStatus } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 async function createPost(
   client: XrpcClient,
@@ -60,8 +57,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error("Server not healthy");
+      await client.raw.xrpcGet("com.atproto.server.describeServer");
     },
   );
 
@@ -76,25 +72,7 @@ export async function run(): Promise<ScenarioResult> {
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
-      async () => {
-        try {
-          const res = await client.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(client, char),
       (s) => `did=${s.did}`,
     );
     if (session) {

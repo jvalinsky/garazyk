@@ -16,7 +16,7 @@
  * - Repository state reflects all successful operations across accounts.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
@@ -32,9 +32,6 @@ import {
   StorageMonitor,
 } from "../../lib/deno/instrumentation.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.

@@ -17,13 +17,10 @@
 
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -35,14 +32,14 @@ export async function run(): Promise<ScenarioResult> {
 
   const pds1 = new XrpcClient(PDS1);
   const pds2 = new XrpcClient(PDS2);
+  const av = new XrpcClient(SERVICE_URLS.appview);
 
   for (const { name, client } of [{ name: "PDS1", client: pds1 }, { name: "PDS2", client: pds2 }]) {
     await timedCall(
       result,
       `${name} health check`,
       async () => {
-        const res = await fetch(`${client.baseUrl}/xrpc/com.atproto.server.describeServer`);
-        if (!res.ok) throw new Error(`${name} not healthy`);
+        await client.raw.xrpcGet("com.atproto.server.describeServer");
       },
     );
   }
@@ -58,25 +55,7 @@ export async function run(): Promise<ScenarioResult> {
     const session = await timedCall(
       result,
       `Create account on PDS1: ${char.name}`,
-      async () => {
-        try {
-          const res = await pds1.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
-            const res = await pds1.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(pds1, char),
       (s) => `did=${s.did}`,
     );
     if (session) {
@@ -91,25 +70,7 @@ export async function run(): Promise<ScenarioResult> {
     const session = await timedCall(
       result,
       `Create account on PDS2: ${char.name}`,
-      async () => {
-        try {
-          const res = await pds2.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
-            const res = await pds2.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(pds2, char),
       (s) => `did=${s.did}`,
     );
     if (session) {
@@ -182,16 +143,11 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const plcResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
-    if (plcResp.ok) {
-      const didDoc = await plcResp.json();
-      result.stepPassed(
-        "PLC resolves Luna's DID",
-        `alsoKnownAs=${JSON.stringify(didDoc.alsoKnownAs)}`,
-      );
-    } else {
-      result.stepSkipped("PLC resolves Luna's DID", `PLC returned ${plcResp.status}`);
-    }
+    const didDoc = await pds1.raw.httpGet(`${SERVICE_URLS.plc}/${luna.did}`);
+    result.stepPassed(
+      "PLC resolves Luna's DID",
+      `alsoKnownAs=${JSON.stringify(didDoc.alsoKnownAs)}`,
+    );
   } catch (exc: any) {
     result.stepSkipped("PLC resolves Luna's DID", exc.message || String(exc));
   }
@@ -273,43 +229,30 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 5000));
 
   try {
-    const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
-    if (relayResp.ok) {
-      result.stepPassed("Relay health check", `body=${(await relayResp.text()).substring(0, 100)}`);
-    } else {
-      result.stepSkipped("Relay health check", `status=${relayResp.status}`);
-    }
+    const relayClient = new XrpcClient(SERVICE_URLS.relay);
+    const relayHealth = await relayClient.raw.httpGet("/api/relay/health");
+    result.stepPassed("Relay health check", `body=${JSON.stringify(relayHealth).substring(0, 100)}`);
   } catch (exc: any) {
     result.stepSkipped("Relay health check", exc.message || String(exc));
   }
 
   try {
-    const upstreamsResp = await fetch(`${SERVICE_URLS.relay}/api/relay/upstreams`);
-    if (upstreamsResp.ok) {
-      const upstreams = await upstreamsResp.json();
-      const count = Array.isArray(upstreams)
-        ? upstreams.length
-        : (upstreams.upstreams?.length || 0);
-      result.stepPassed("Relay upstreams", `count=${count}`);
-    } else {
-      result.stepSkipped("Relay upstreams", `status=${upstreamsResp.status}`);
-    }
+    const relayClient = new XrpcClient(SERVICE_URLS.relay);
+    const upstreams = await relayClient.raw.httpGet("/api/relay/upstreams");
+    const count = Array.isArray(upstreams)
+      ? upstreams.length
+      : (upstreams.upstreams?.length || 0);
+    result.stepPassed("Relay upstreams", `count=${count}`);
   } catch (exc: any) {
     result.stepSkipped("Relay upstreams", exc.message || String(exc));
   }
 
   try {
-    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
-      headers: { "Authorization": "Bearer localdevadmin" },
-    });
-    if (appviewResp.ok) {
-      result.stepPassed(
-        "AppView backfill status",
-        `body=${(await appviewResp.text()).substring(0, 100)}`,
-      );
-    } else {
-      result.stepSkipped("AppView backfill status", `status=${appviewResp.status}`);
-    }
+    const appviewResp = await av.asAdmin("localdevadmin").raw.httpGet("/admin/backfill/status");
+    result.stepPassed(
+      "AppView backfill status",
+      `body=${JSON.stringify(appviewResp).substring(0, 100)}`,
+    );
   } catch (exc: any) {
     result.stepSkipped("AppView backfill status", exc.message || String(exc));
   }

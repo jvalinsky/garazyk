@@ -340,10 +340,9 @@ async function serviceAuthForMethod(
   accessJwt: string,
   method: string,
 ): Promise<string> {
-  const response = await pds.raw.xrpcGet(
+  const response = await pds.as({ accessJwt }).raw.xrpcGet(
     "com.atproto.server.getServiceAuth",
     { aud: GERM_SERVICE_DID, lxm: method },
-    accessJwt,
   ) as { token?: string };
   if (!response.token) {
     throw new Error(

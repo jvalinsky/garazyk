@@ -12,7 +12,7 @@
  */
 
 import { PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -33,9 +33,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
 //   com.atproto.repo.listRecords, com.atproto.sync.getRepo/getBlob,
 //   com.atproto.server.getSession.
 
-function now() {
-  return new Date().toISOString();
-}
 
 // Minimal 1×1 PNG for blob test.
 const TINY_PNG = new Uint8Array([
@@ -154,17 +151,17 @@ export async function run(): Promise<ScenarioResult> {
 
   // Seed records before deleting.
   await timedCall(result, "Ghost creates profile + post", async () => {
-    await pds.raw.post("com.atproto.repo.createRecord", {
+    await pds.as({ accessJwt: ghostAccessJwt }).repo.createRecord({
       repo: ghostDid,
       collection: "app.bsky.actor.profile",
       rkey: "self",
       record: { $type: "app.bsky.actor.profile", displayName: "Ghost Account" },
-    }, ghostAccessJwt);
-    await pds.raw.post("com.atproto.repo.createRecord", {
+    });
+    await pds.as({ accessJwt: ghostAccessJwt }).repo.createRecord({
       repo: ghostDid,
       collection: "app.bsky.feed.post",
       record: { $type: "app.bsky.feed.post", text: "Soon to be deleted.", createdAt: now() },
-    }, ghostAccessJwt);
+    });
   });
 
   // Upload a blob so we can verify it becomes inaccessible after account deletion.

@@ -16,16 +16,13 @@
  * - Unregistered endpoints and unauthorized admin requests are rejected.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 const THIRD_PARTY_QUERY_NSIDS = [
   "com.shinolabs.pinksea.getRecent",
@@ -60,7 +57,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView health check",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/backfill/status");
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -127,7 +124,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List loaded lexicons",
     async () => {
-      return await av.raw.httpGet("/admin/lexicons", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/lexicons");
     },
     (r) => `count=${r.count ?? 0}`,
   );
@@ -149,7 +146,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List dynamic endpoints",
     async () => {
-      return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/endpoints");
     },
     (r) => `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${r.custom_handler_count ?? 0}`,
   );
@@ -158,7 +155,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List indexed collections",
     async () => {
-      return await av.raw.httpGet("/admin/lexicons/collections", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/lexicons/collections");
     },
     (r) => `count=${r.collections?.length || 0}`,
   );
@@ -167,7 +164,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List custom handlers",
     async () => {
-      return await av.raw.httpGet("/admin/handlers", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/handlers");
     },
     (r) => `count=${r.count ?? 0}`,
   );
@@ -210,10 +207,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Browse indexed records",
     async () => {
-      return await av.raw.httpGet(
+      return await av.asAdmin(adminToken).raw.httpGet(
         "/admin/records",
         { collection: "app.bsky.feed.post", limit: 10 },
-        adminToken,
       );
     },
     (r) => `records=${r.records?.length || 0}`,
@@ -223,7 +219,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Admin auth: wrong secret rejected",
     async () => {
-      const resp = await av.raw.httpGet("/admin/lexicons", undefined, "wrong-secret-value");
+      const resp = await av.as({ accessJwt: "wrong-secret-value" }).raw.httpGet("/admin/lexicons");
       // If we get here, the request didn't throw — that's a bug
       // (wrong secret should be rejected with 401/403)
       if (resp && typeof resp === "object" && !("error" in resp)) {
