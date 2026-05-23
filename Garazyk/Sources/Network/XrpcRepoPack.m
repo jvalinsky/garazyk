@@ -24,6 +24,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
+#import "App/PDSController.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Repository/CAR.h"
 #import "Repository/STAR.h"
@@ -67,6 +68,10 @@ static BOOL rejectUnavailableRepoDid(NSString *did,
                                      PDSServiceDatabases *serviceDatabases,
                                      id<PDSAdminController> adminController,
                                      HttpResponse *response);
+static BOOL rejectUnavailableRepoDidIfKnown(NSString *did,
+                                            PDSServiceDatabases *serviceDatabases,
+                                            id<PDSAdminController> adminController,
+                                            HttpResponse *response);
 static BOOL rejectRecordTakedown(NSString *uri,
                                  PDSServiceDatabases *serviceDatabases,
                                  HttpResponse *response);
@@ -85,9 +90,14 @@ static BOOL rejectUnavailableRepoDid(NSString *did,
         return YES;
     }
 
+    PDSServiceDatabases *resolvedDatabases = serviceDatabases ?: [PDSController sharedController].serviceDatabases;
+    id<PDSAdminController> resolvedAdminController = adminController ?: [PDSController sharedController].adminController;
+
     NSError *accountError = nil;
-    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+    PDSDatabaseAccount *account = [resolvedDatabases getAccountByDid:did error:&accountError];
     if (!account) {
+        GZ_LOG_WARN(@"repo availability: account lookup failed for did=%@ error=%@",
+                    did, accountError.localizedDescription ?: @"none");
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
         return YES;
@@ -101,7 +111,48 @@ static BOOL rejectUnavailableRepoDid(NSString *did,
     }
 
     NSError *takedownError = nil;
-    if ([adminController isAccountTakedownActive:did error:&takedownError]) {
+    if ([resolvedAdminController isAccountTakedownActive:did error:&takedownError]) {
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"AccountTakedown",
+            @"message": @"Repository has been taken down by the host",
+        }];
+        return YES;
+    }
+
+    return NO;
+}
+
+static BOOL rejectUnavailableRepoDidIfKnown(NSString *did,
+                                            PDSServiceDatabases *serviceDatabases,
+                                            id<PDSAdminController> adminController,
+                                            HttpResponse *response) {
+    if (did.length == 0) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
+        return YES;
+    }
+
+    PDSServiceDatabases *resolvedDatabases = serviceDatabases ?: [PDSController sharedController].serviceDatabases;
+    id<PDSAdminController> resolvedAdminController = adminController ?: [PDSController sharedController].adminController;
+
+    NSError *accountError = nil;
+    PDSDatabaseAccount *account = [resolvedDatabases getAccountByDid:did error:&accountError];
+    if (!account) {
+        GZ_LOG_WARN(@"repo availability: allowing existing record with missing account row did=%@ error=%@",
+                    did, accountError.localizedDescription ?: @"none");
+        return NO;
+    }
+
+    NSString *status = [account.status lowercaseString];
+    if (status.length > 0 && ![status isEqualToString:@"active"]) {
+        response.statusCode = HttpStatusForbidden;
+        [response setJsonBody:@{@"error": @"AccountInactive", @"message": @"Account is not active"}];
+        return YES;
+    }
+
+    NSError *takedownError = nil;
+    if ([resolvedAdminController isAccountTakedownActive:did error:&takedownError]) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"AccountTakedown",
@@ -739,10 +790,6 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return;
         }
 
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
-            return;
-        }
-
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
         if (rejectRecordTakedown(uri, serviceDatabases, response)) {
             return;
@@ -755,6 +802,10 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             GZ_LOG_INFO(@"getRecord: not found uri=%@ (error=%@)", uri, error.localizedDescription);
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record not found"}];
+            return;
+        }
+
+        if (rejectUnavailableRepoDidIfKnown(did, serviceDatabases, adminController, response)) {
             return;
         }
 
