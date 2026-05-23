@@ -46,21 +46,20 @@ async function resolveOAuthClientUrl(
   configuredClientUrl: string,
 ): Promise<string | null> {
   const metadataUrl = `${configuredClientUrl}/client-metadata.json`;
-  const res = await fetch(metadataUrl);
-  if (res.status !== 200) {
+  try {
+    const metadata = await new XrpcClient(configuredClientUrl).raw.httpGet(metadataUrl) as OAuthClientMetadata;
+    const redirectUri = metadata.redirect_uris?.[0];
+    const browserUrl = metadata.client_uri ?? redirectUri;
+    if (!browserUrl) {
+      throw new Error(
+        `OAuth client metadata at ${metadataUrl} did not include client_uri or redirect_uris`,
+      );
+    }
+
+    return new URL(browserUrl).origin;
+  } catch {
     return null;
   }
-
-  const metadata = await res.json() as OAuthClientMetadata;
-  const redirectUri = metadata.redirect_uris?.[0];
-  const browserUrl = metadata.client_uri ?? redirectUri;
-  if (!browserUrl) {
-    throw new Error(
-      `OAuth client metadata at ${metadataUrl} did not include client_uri or redirect_uris`,
-    );
-  }
-
-  return new URL(browserUrl).origin;
 }
 
 async function pageState(page: any): Promise<string> {
@@ -153,8 +152,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "DID document inspection",
     async () => {
-      const res = await fetch(`${PLC_URL}/${luna.did}`);
-      const didDoc = await res.json();
+      const didDoc = await pds.raw.httpGet(`${PLC_URL}/${luna.did}`);
       const services = didDoc.service || [];
       const pdsEndpoint = services.find((s: any) =>
         s.id === "#atproto_pds" || s.id.includes("atproto_pds")
@@ -172,7 +170,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Protected resource metadata",
     async () => {
-      const res = await fetch(
+      const body = await pds.raw.httpGet(
         `${PDS_URL}/.well-known/oauth-protected-resource`,
         {
           headers: {
@@ -181,8 +179,6 @@ export async function run(): Promise<ScenarioResult> {
           },
         },
       );
-      const body = await res.json();
-      assert.isTrue(res.status === 200, `status=${res.status}`);
       assert.isTrue(
         body.resource === PDS_URL,
         `unexpected resource: ${body.resource}`,
@@ -194,7 +190,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Authorization server metadata",
     async () => {
-      const res = await fetch(
+      const body = await pds.raw.httpGet(
         `${PDS_URL}/.well-known/oauth-authorization-server`,
         {
           headers: {
@@ -203,8 +199,6 @@ export async function run(): Promise<ScenarioResult> {
           },
         },
       );
-      const body = await res.json();
-      assert.isTrue(res.status === 200, `status=${res.status}`);
       assert.isTrue(
         body.issuer === PDS_URL,
         `unexpected issuer: ${body.issuer}`,

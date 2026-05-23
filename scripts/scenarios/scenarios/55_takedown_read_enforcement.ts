@@ -12,7 +12,7 @@
  */
 
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -32,9 +32,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Production paths: com.atproto.admin.updateSubjectStatus, com.atproto.repo.getRecord/listRecords,
 //   com.atproto.admin.getRecord.
 
-function now() {
-  return new Date().toISOString();
-}
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Takedown Read Enforcement");
@@ -102,14 +99,14 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Admin applies record takedown",
       async () => {
-        await pds.raw.post("com.atproto.admin.updateSubjectStatus", {
+        await pds.as({ accessJwt: adminToken }).raw.post("com.atproto.admin.updateSubjectStatus", {
           subject: {
             $type: "com.atproto.repo.strongRef",
             uri: post.uri,
             cid: post.cid,
           },
           takedown: { applied: true, ref: "takedown-e2e-test" },
-        }, adminToken);
+        });
       },
     );
   } else {
@@ -167,13 +164,13 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Admin applies account-level takedown",
       async () => {
-        await pds.raw.post("com.atproto.admin.updateSubjectStatus", {
+        await pds.as({ accessJwt: adminToken }).raw.post("com.atproto.admin.updateSubjectStatus", {
           subject: {
             $type: "com.atproto.admin.defs#repoRef",
             did: troll.did,
           },
           takedown: { applied: true, ref: "account-takedown-e2e" },
-        }, adminToken);
+        });
       },
     );
 

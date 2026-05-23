@@ -13,7 +13,7 @@
 
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -25,9 +25,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-function now() {
-  return new Date().toISOString();
-}
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Firehose Cursor Recovery");

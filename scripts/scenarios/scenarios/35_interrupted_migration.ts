@@ -13,16 +13,13 @@
  * - PDS1 remains the authoritative PDS for the identity following the failed migration attempt.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 const MINIMAL_PNG = new Uint8Array([
   0x89,
@@ -177,16 +174,15 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   try {
-    const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
-    const doc = await plcRes.json();
+    const doc = await pds1.raw.httpGet(`${SERVICE_URLS.plc}/${luna.did}`);
     const pdsEndpoint = doc.service?.find((s: any) => s.id === "#atproto_pds")?.serviceEndpoint;
     if (pdsEndpoint === PDS1) {
       result.stepPassed("PLC audit: Still points to PDS1");
     } else {
       result.stepFailed("PLC audit: Points to wrong PDS", `expected=${PDS1}, got=${pdsEndpoint}`);
     }
-  } catch (e) {
-    result.stepFailed("PLC audit", String(e));
+  } catch (e: any) {
+    result.stepFailed("PLC audit", e.message || String(e));
   }
 
   result.finish();

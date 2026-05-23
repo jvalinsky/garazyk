@@ -18,10 +18,10 @@
  */
 
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
@@ -31,39 +31,8 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // add dedicated coverage with createLabel, getLabels, and expanded queryLabels
 // filters. Runs against the PDS admin endpoints with admin authentication.
 
-function now() {
-  return new Date().toISOString();
-}
 
-/** Try an endpoint, skipping if 404/501/403, failing on other errors. */
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else if (e instanceof XrpcError && e.status === 403) {
-      result.stepSkipped(label, `access denied (HTTP 403) — requires elevated role`);
-    } else if (e instanceof XrpcError && e.status === 400) {
-      const body = typeof e.body === "string" ? e.body : JSON.stringify(e.body ?? "");
-      if (body.toLowerCase().includes("not implemented") || body.toLowerCase().includes("unknown method")) {
-        result.stepSkipped(label, `endpoint not implemented`);
-      } else {
-        result.stepFailed(label, `HTTP 400: ${body.substring(0, 200)}`);
-      }
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Labeling Endpoints");
@@ -166,13 +135,13 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.createLabel (repo-level)",
     async () => {
-      const body = await pds.raw.post("com.atproto.label.createLabel", {
+      const body = await pds.asAdmin(adminToken).raw.post("com.atproto.label.createLabel", {
         uri: marcus.did,
         val: "test-repo-label",
         neg: false,
         cid: undefined,
         expiresAt: undefined,
-      }, adminToken);
+      });
       return { uri: body.uri ?? marcus.did, val: body.val };
     },
     (r) => `uri=${r.uri}, val=${r.val}`,
@@ -184,13 +153,13 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "label.createLabel (record-level)",
       async () => {
-        const body = await pds.raw.post("com.atproto.label.createLabel", {
+        const body = await pds.asAdmin(adminToken).raw.post("com.atproto.label.createLabel", {
           uri: marcusPost.uri,
           val: "test-record-label",
           neg: false,
           cid: marcusPost.cid,
           expiresAt: undefined,
-        }, adminToken);
+        });
         return { uri: body.uri, val: body.val };
       },
       (r) => `uri=${r.uri}, val=${r.val}`,
@@ -202,13 +171,13 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.createLabel (negative label)",
     async () => {
-      const body = await pds.raw.post("com.atproto.label.createLabel", {
+      const body = await pds.asAdmin(adminToken).raw.post("com.atproto.label.createLabel", {
         uri: marcus.did,
         val: "test-negated-label",
         neg: true,
         cid: undefined,
         expiresAt: undefined,
-      }, adminToken);
+      });
       return { uri: body.uri, val: body.val, neg: body.neg ?? true };
     },
     (r) => `uri=${r.uri}, neg=${r.neg}`,
@@ -222,10 +191,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.getLabels (by DID)",
     async () => {
-      const body = await pds.raw.get("com.atproto.label.getLabels", {
+      const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.getLabels", {
         uri: marcus.did,
         limit: 10,
-      }, adminToken);
+      });
       const labels = body.labels ?? [];
       return { count: Array.isArray(labels) ? labels.length : "present" };
     },
@@ -238,10 +207,10 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "label.getLabels (by record URI)",
       async () => {
-        const body = await pds.raw.get("com.atproto.label.getLabels", {
+        const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.getLabels", {
           uri: marcusPost.uri,
           limit: 10,
-        }, adminToken);
+        });
         const labels = body.labels ?? [];
         return { count: Array.isArray(labels) ? labels.length : "present" };
       },
@@ -254,10 +223,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.getLabels (nonexistent URI — empty)",
     async () => {
-      const body = await pds.raw.get("com.atproto.label.getLabels", {
+      const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.getLabels", {
         uri: "at://did:plc:nonexistent/app.bsky.feed.post/nonexistent",
         limit: 10,
-      }, adminToken);
+      });
       const labels = body.labels ?? [];
       return { count: Array.isArray(labels) ? labels.length : 0 };
     },
@@ -273,10 +242,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.queryLabels (URI pattern — DID prefix)",
     async () => {
-      const body = await pds.raw.get("com.atproto.label.queryLabels", {
+      const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.queryLabels", {
         uriPatterns: [`${marcus.did!.slice(0, 20)}*`],
         limit: 10,
-      }, adminToken);
+      });
       const labels = body.labels ?? [];
       return { count: Array.isArray(labels) ? labels.length : "present" };
     },
@@ -288,10 +257,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.queryLabels (with cursor — first page)",
     async () => {
-      const body = await pds.raw.get("com.atproto.label.queryLabels", {
+      const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.queryLabels", {
         uriPatterns: ["*"],
         limit: 1,
-      }, adminToken);
+      });
       const labels = body.labels ?? [];
       return { cursor: body.cursor, count: Array.isArray(labels) ? labels.length : 0 };
     },
@@ -303,11 +272,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "label.queryLabels (with cursor — second page)",
       async () => {
-        const body = await pds.raw.get("com.atproto.label.queryLabels", {
+        const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.queryLabels", {
           uriPatterns: ["*"],
           cursor: firstPage.cursor,
           limit: 10,
-        }, adminToken);
+        });
         const labels = body.labels ?? [];
         return { cursor: body.cursor, count: Array.isArray(labels) ? labels.length : 0 };
       },
@@ -320,11 +289,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.queryLabels (with sources filter)",
     async () => {
-      const body = await pds.raw.get("com.atproto.label.queryLabels", {
+      const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.queryLabels", {
         uriPatterns: ["*"],
         sources: [marcus.did!],
         limit: 10,
-      }, adminToken);
+      });
       const labels = body.labels ?? [];
       return { count: Array.isArray(labels) ? labels.length : "present" };
     },
@@ -336,10 +305,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "label.queryLabels (nonexistent URI pattern — empty)",
     async () => {
-      const body = await pds.raw.get("com.atproto.label.queryLabels", {
+      const body = await pds.asAdmin(adminToken).raw.get("com.atproto.label.queryLabels", {
         uriPatterns: ["at://did:plc:zzzzzzzzzzzzz/app.bsky.feed.post/*"],
         limit: 10,
-      }, adminToken);
+      });
       const labels = body.labels ?? [];
       return { count: Array.isArray(labels) ? labels.length : 0 };
     },

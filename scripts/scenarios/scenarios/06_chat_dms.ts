@@ -22,45 +22,31 @@
 
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcError } from "../../lib/deno/transport.ts";
 import { chatXrpcGet, chatXrpcPost, createChatServiceContext } from "../../lib/deno/seed.ts";
 
-async function putChatDeclaration(did: string, token: string, allowIncoming: "all" | "none") {
-  const response = await fetch(`${PDS1}/xrpc/com.atproto.repo.putRecord`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
+async function putChatDeclaration(client: XrpcClient, did: string, token: string, allowIncoming: "all" | "none") {
+  const response = await client.as({ accessJwt: token }).raw.xrpcPost("com.atproto.repo.putRecord", {
+    repo: did,
+    collection: "chat.bsky.actor.declaration",
+    rkey: "self",
+    record: {
+      $type: "chat.bsky.actor.declaration",
+      allowIncoming,
     },
-    body: JSON.stringify({
-      repo: did,
-      collection: "chat.bsky.actor.declaration",
-      rkey: "self",
-      record: {
-        $type: "chat.bsky.actor.declaration",
-        allowIncoming,
-      },
-    }),
   });
-  const body = await response.text();
-  if (!response.ok) {
-    throw new Error(`putRecord chat declaration failed (${response.status}): ${body}`);
-  }
 
-  const readback = await fetch(
-    `${PDS1}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(did)}&collection=chat.bsky.actor.declaration&rkey=self`,
-  );
-  const readbackBody = await readback.text();
-  if (!readback.ok) {
-    throw new Error(`chat declaration readback failed (${readback.status}): ${readbackBody}`);
-  }
-  const parsed = JSON.parse(readbackBody);
-  assert.equal(parsed.value?.allowIncoming, allowIncoming, `Expected allowIncoming=${allowIncoming}`);
-  return JSON.parse(body);
+  const readback = await client.raw.xrpcGet("com.atproto.repo.getRecord", {
+    repo: did,
+    collection: "chat.bsky.actor.declaration",
+    rkey: "self",
+  });
+  assert.equal(readback.value?.allowIncoming, allowIncoming, `Expected allowIncoming=${allowIncoming}`);
+  return response;
 }
 
 /**
@@ -83,8 +69,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error("Server not healthy");
+      await client.raw.xrpcGet("com.atproto.server.describeServer");
     },
   );
   await timedCall(
@@ -106,25 +91,7 @@ export async function run(): Promise<ScenarioResult> {
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
-      async () => {
-        try {
-          const res = await client.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e) {
-          if (e instanceof Error && e.message.includes("already exists")) {
-            const res = await client.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(client, char),
       (s) => `did=${s.did}`,
     );
     if (session) {
@@ -257,7 +224,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus blocks new incoming conversations",
     async () => {
-      return await putChatDeclaration(marcus.did!, marcus.accessJwt!, "none");
+      return await putChatDeclaration(client, marcus.did!, marcus.accessJwt!, "none");
     },
   );
 
@@ -283,7 +250,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus restores incoming chat declaration",
     async () => {
-      return await putChatDeclaration(marcus.did!, marcus.accessJwt!, "all");
+      return await putChatDeclaration(client, marcus.did!, marcus.accessJwt!, "all");
     },
   );
 
