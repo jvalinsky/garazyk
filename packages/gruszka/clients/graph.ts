@@ -168,4 +168,40 @@ export class GraphClient {
       token,
     );
   }
+
+  /**
+   * Get a list by URI
+   * @param listUri - The list URI
+   * @param options - Options for retrieving the list
+   * @returns A promise that resolves to the list object
+   * @throws XrpcError if the request fails
+   */
+  async getList(
+    listUri: string,
+    options: { token?: string; limit?: number; cursor?: string } = {},
+  ): Promise<any> {
+    return await this.transport.get(
+      "app.bsky.graph.getList",
+      { list: listUri, limit: options.limit ?? 50, cursor: options.cursor },
+      options.token,
+    );
+  }
+
+  /**
+   * Get lists created by an actor
+   * @param actor - The actor's DID or handle
+   * @param options - Options for retrieving lists
+   * @returns A promise that resolves to the list of lists
+   * @throws XrpcError if the request fails
+   */
+  async getLists(
+    actor: string,
+    options: { token?: string; limit?: number; cursor?: string } = {},
+  ): Promise<any> {
+    return await this.transport.get(
+      "app.bsky.graph.getLists",
+      { actor, limit: options.limit ?? 50, cursor: options.cursor },
+      options.token,
+    );
+  }
 }

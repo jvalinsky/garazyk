@@ -163,8 +163,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const created = await timedCall(result, "Publish post with app.bsky.embed.video", async () => {
-    return await pds.as(luna).raw.post("com.atproto.repo.createRecord", {
-      repo: luna.did,
+    return await pds.as(luna).repo.createRecord({
       collection: "app.bsky.feed.post",
       record: {
         $type: "app.bsky.feed.post",
@@ -183,10 +182,7 @@ export async function run(): Promise<ScenarioResult> {
   await timedCall(result, "AppView returns playable video embed", async () => {
     let post = null;
     for (let i = 0; i < 20; i++) {
-      const body = await appview.as(luna).raw.get(
-        "app.bsky.feed.getPosts",
-        { uris: created.uri },
-      );
+      const body = await appview.as(luna).feed.getPosts([created.uri]);
       post = body.posts?.[0] || null;
       if (post?.embed?.$type === "app.bsky.embed.video#view") break;
       await new Promise((resolve) => setTimeout(resolve, 1000));
