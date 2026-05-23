@@ -14,7 +14,7 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Core/PDSProviderRegistry.h"
+#import "Core/GZProviderRegistry.h"
 
 /**
  * @abstract Defines the PDSEmailProvider protocol contract.
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Factory for creating email provider instances from configuration.
  */
-@interface PDSEmailProviderFactory : NSObject <PDSProviderFactory>
+@interface PDSEmailProviderFactory : NSObject <GZProviderFactory>
 
 /*!
  @method providerWithName:configuration:secretsProvider:error:

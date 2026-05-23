@@ -21,7 +21,7 @@ This master skill consolidates security auditing for SQL injection, cryptography
 ### 1. SQL Injection
 - **Goal**: Identify direct concatenation of user input into SQL queries.
 - **Priority**: P0 if `sqlite3_exec` or `executeQuery` uses formatted strings with user data.
-- **Fix**: Use `sqlite3_bind_*` or `PDSInputValidator`.
+- **Fix**: Use `sqlite3_bind_*` or `GZInputValidator`.
 
 ### 2. Cryptographic Security
 - **Goal**: Detect weak algorithms (MD5, SHA1), hardcoded keys/IVs, and timing attacks.

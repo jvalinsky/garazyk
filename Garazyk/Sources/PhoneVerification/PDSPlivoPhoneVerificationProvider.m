@@ -9,7 +9,7 @@
  */
 
 #import "PhoneVerification/PDSPlivoPhoneVerificationProvider.h"
-#import "Core/PDSProviderHTTPClient.h"
+#import "Core/GZProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
 #import "Debug/GZLogger.h"
 #import "Debug/GZLogRedactor.h"
@@ -25,7 +25,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
 }
 @property (nonatomic, strong) id<PDSSecretsProvider> secretsProvider;
 @property (nonatomic, copy) NSDictionary *providerConfig;
-@property (nonatomic, strong, nullable) PDSProviderHTTPClient *httpClient;
+@property (nonatomic, strong, nullable) GZProviderHTTPClient *httpClient;
 @property (nonatomic, copy, nullable) NSString *authID;
 @property (nonatomic, copy, nullable) NSString *authToken;
 @end
@@ -103,7 +103,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
         NSURL *baseURL = [NSURL URLWithString:
             [NSString stringWithFormat:kPlivoVerifyBaseURLTemplate, authID]];
 
-        self->_httpClient = [[PDSProviderHTTPClient alloc]
+        self->_httpClient = [[GZProviderHTTPClient alloc]
             initWithBaseURL:baseURL authHeader:authHeader];
         success = YES;
     });
