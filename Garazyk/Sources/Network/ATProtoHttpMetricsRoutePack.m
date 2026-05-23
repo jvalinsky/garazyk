@@ -10,7 +10,7 @@
 
 #import "Network/ATProtoHttpMetricsRoutePack.h"
 
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -25,7 +25,7 @@
              response.statusCode = HttpStatusOK;
              [response setHeader:@"text/plain; version=0.0.4; charset=utf-8"
                           forKey:@"Content-Type"];
-             [response setBodyString:[[PDSMetrics sharedMetrics] exportPrometheus]];
+             [response setBodyString:[[GZMetrics sharedMetrics] exportPrometheus]];
            }];
 
   GZ_LOG_DEBUG(@"ATProtoHttpMetricsRoutePack: Metrics endpoint registered");

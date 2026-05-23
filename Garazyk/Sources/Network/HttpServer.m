@@ -15,7 +15,7 @@
 #import "Network/HttpServer.h"
 #import "Compat/PDSTypes.h"
 #import "Debug/GZLogger.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import "Network/HttpBufferPool.h"
 #import "Network/HttpParsing.h"
 #import "Network/HttpRequest.h"
@@ -330,7 +330,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 - (void)handleNewConnection:(id<ATProtoNetworkConnection>)connection {
   dispatch_async(_connectionQueue, ^{
     [self->_activeConnections addObject:connection];
-    [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)self->_activeConnections.count];
+    [[GZMetrics sharedMetrics] setActiveConnections:(NSInteger)self->_activeConnections.count];
   });
 
   HttpConnectionState *connectionState =
@@ -382,7 +382,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
             dispatch_async(s.connectionQueue, ^{
               [s.activeConnections removeObject:c];
               [s.connectionStates removeObjectForKey:c];
-              [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)s.activeConnections.count];
+              [[GZMetrics sharedMetrics] setActiveConnections:(NSInteger)s.activeConnections.count];
             });
             HttpResponse *response = [HttpResponse responseWithStatusCode:error.code ?: 400];
             response.keepAlive = NO;
@@ -404,7 +404,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           dispatch_async(strongSelf.connectionQueue, ^{
             [strongSelf.activeConnections removeObject:strongConnection];
             [strongSelf.connectionStates removeObjectForKey:strongConnection];
-            [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
+            [[GZMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
           });
           [strongConnection cancel];
           break;
@@ -413,7 +413,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           dispatch_async(strongSelf.connectionQueue, ^{
             [strongSelf.activeConnections removeObject:strongConnection];
             [strongSelf.connectionStates removeObjectForKey:strongConnection];
-            [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
+            [[GZMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
           });
           break;
         }
@@ -554,10 +554,10 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           response.keepAlive = NO;
         }
         NSTimeInterval latency = [NSDate timeIntervalSinceReferenceDate] - requestStart;
-        [[PDSMetrics sharedMetrics] incrementHttpRequestsForMethod:requestRef.methodString
+        [[GZMetrics sharedMetrics] incrementHttpRequestsForMethod:requestRef.methodString
                                                           endpoint:requestRef.path
                                                             status:response.statusCode];
-        [[PDSMetrics sharedMetrics] observeRequestLatency:latency
+        [[GZMetrics sharedMetrics] observeRequestLatency:latency
                                                    method:requestRef.methodString
                                                  endpoint:requestRef.path
                                                    status:response.statusCode];

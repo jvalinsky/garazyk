@@ -13,7 +13,7 @@
 #import "Core/CID.h"
 #import "Core/NSDictionary+CID.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Core/PDSPerDidWriteDispatcher.h"
+#import "Core/GZPerDidWriteDispatcher.h"
 #import "Core/TID.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
@@ -245,7 +245,7 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t statsCacheQueue;
 
 /*! Per-DID write dispatcher. */
-@property (nonatomic, strong) PDSPerDidWriteDispatcher *writeDispatcher;
+@property (nonatomic, strong) GZPerDidWriteDispatcher *writeDispatcher;
 
 @end
 
@@ -257,7 +257,7 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
         self.recordRepository = [[PDSSQLiteRecordRepository alloc] initWithDatabasePool:databasePool];
         _statsCacheByDid = [NSMutableDictionary dictionary];
         _statsCacheQueue = dispatch_queue_create("com.atproto.pds.recordservice.stats", DISPATCH_QUEUE_SERIAL);
-        _writeDispatcher = [[PDSPerDidWriteDispatcher alloc] initWithConcurrencyLimit:32
+        _writeDispatcher = [[GZPerDidWriteDispatcher alloc] initWithConcurrencyLimit:32
                                                               idleEvictionSeconds:60];
     }
     return self;
@@ -1676,7 +1676,7 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
     }
 
     // Load or retrieve MST — no serial queue needed
-    // Per-DID serialization is guaranteed by PDSPerDidWriteDispatcher
+    // Per-DID serialization is guaranteed by GZPerDidWriteDispatcher
     // MSTCacheManager uses MSTAtomicReference for thread-safe access
     MST *mst = [[MSTCacheManager sharedManager] mstForDid:did];
     if (!mst) {

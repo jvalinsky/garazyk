@@ -9,7 +9,7 @@
  */
 
 #import "PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h"
-#import "Core/PDSProviderHTTPClient.h"
+#import "Core/GZProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
 #import "Debug/GZLogger.h"
 #import "Debug/GZLogRedactor.h"
@@ -25,7 +25,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
 }
 @property (nonatomic, strong) id<PDSSecretsProvider> secretsProvider;
 @property (nonatomic, copy) NSDictionary *providerConfig;
-@property (nonatomic, strong, nullable) PDSProviderHTTPClient *httpClient;
+@property (nonatomic, strong, nullable) GZProviderHTTPClient *httpClient;
 @property (nonatomic, copy, nullable) NSString *gatewayToken;
 @end
 
@@ -91,7 +91,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
 
         // Telegram Gateway uses Bearer token authentication.
         NSURL *baseURL = [NSURL URLWithString:baseURLString];
-        self->_httpClient = [[PDSProviderHTTPClient alloc]
+        self->_httpClient = [[GZProviderHTTPClient alloc]
             initWithBaseURL:baseURL
                     apiKey:gatewayToken];
         success = YES;

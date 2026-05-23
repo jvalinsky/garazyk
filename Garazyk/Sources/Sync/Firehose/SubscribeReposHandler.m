@@ -23,7 +23,7 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
 #import "Sync/WebSocket/WebSocketServer.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import "Sync/Relay/RelayMetrics.h"
 
 NSString *const SubscribeReposHandlerErrorDomain =
@@ -306,7 +306,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [_attachedConnections addObject:webSocketConnection];
     count = _attachedConnections.count;
   });
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
+  [[GZMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
   [self.relayMetrics recordDownstreamConnected];
 
   if ([self.delegate respondsToSelector:@selector(
@@ -335,7 +335,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [_attachedConnections addObject:connection];
     count = _attachedConnections.count;
   });
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
+  [[GZMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
   [self.relayMetrics recordDownstreamConnected];
 
   if ([self.delegate respondsToSelector:@selector
@@ -625,9 +625,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     [strongSelf broadcastEventData:eventData];
-    [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"commit"];
-    [[PDSMetrics sharedMetrics] incrementRepoCommits];
-    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
+    [[GZMetrics sharedMetrics] incrementFirehoseEvent:@"commit"];
+    [[GZMetrics sharedMetrics] incrementRepoCommits];
+    [[GZMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
     GZ_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
                       repoDid, (unsigned long)strongSelf.session.sequenceNumber);
   };
@@ -676,8 +676,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                    seq:strongSelf.session.sequenceNumber];
 
       [strongSelf broadcastEventData:eventData];
-      [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
-      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
+      [[GZMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
+      [[GZMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
       GZ_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
                         (unsigned long)strongSelf.session.sequenceNumber);
     }
@@ -722,8 +722,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                    seq:strongSelf.session.sequenceNumber];
 
       [strongSelf broadcastEventData:eventData];
-      [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
-      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
+      [[GZMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
+      [[GZMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
       GZ_LOG_SYNC_INFO(@"Broadcast account status event for DID %@ (active=%d, status=%@), seq %lu",
                         did, active, status ?: @"(null)", (unsigned long)strongSelf.session.sequenceNumber);
     }
@@ -1138,7 +1138,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (removed) {
     GZ_LOG_SYNC_INFO(@"[Firehose] Detached subscriber %@ (remaining=%lu)",
                        connection.remoteAddress, (unsigned long)count);
-    [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
+    [[GZMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
     [self.relayMetrics recordDownstreamDisconnected];
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
       [self.delegate subscribeReposHandler:self didCloseConnection:connection];

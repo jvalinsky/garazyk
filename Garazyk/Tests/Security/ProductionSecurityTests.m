@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Network/XrpcMethodRegistry.h"
-#import "Security/PDSAuthzManager.h"
+#import "Security/GZAuthzManager.h"
 #import "Admin/PDSAdminAuth.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "App/ATProtoServiceConfiguration.h"
@@ -13,14 +13,14 @@
 @implementation ProductionSecurityTests
 
 - (void)testAdminAuthHardening {
-    // 1. Verify PDSAuthzManager no longer allows handle/DID based admin
-    PDSAuthzManager *authz = [PDSAuthzManager sharedManager];
+    // 1. Verify GZAuthzManager no longer allows handle/DID based admin
+    GZAuthzManager *authz = [GZAuthzManager sharedManager];
     NSError *error = nil;
     
-    // Valid looking admin handle/did but NO JWT logic here (PDSAuthzManager was the old heuristic way)
+    // Valid looking admin handle/did but NO JWT logic here (GZAuthzManager was the old heuristic way)
     // We expect this to fail now.
     BOOL authorized = [authz isAuthorizedForAdminOperation:@"did:plc:admin" error:&error];
-    XCTAssertFalse(authorized, @"PDSAuthzManager must return NO for heuristic admin checks");
+    XCTAssertFalse(authorized, @"GZAuthzManager must return NO for heuristic admin checks");
     XCTAssertNotNil(error);
 }
 

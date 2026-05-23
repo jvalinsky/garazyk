@@ -40,7 +40,7 @@ static dispatch_queue_t sRegistryQueue = nil;
     }
 }
 
-#pragma mark - PDSProviderFactory
+#pragma mark - GZProviderFactory
 
 + (NSArray<NSString *> *)supportedIdentifiers {
     return @[@"mock", @"smtp", @"resend"];

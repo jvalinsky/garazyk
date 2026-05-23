@@ -32,7 +32,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/PDSDatabase+Sessions.h"
 #import "Debug/GZLogger.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import "Core/DID.h"
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSKeyManagerFactory.h"
@@ -916,13 +916,13 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                           expiresAt:session.refreshTokenExpiresAt
                               error:nil];
 
-    [[PDSMetrics sharedMetrics] incrementOAuthTokenGrant:@"authorization_code"];
+    [[GZMetrics sharedMetrics] incrementOAuthTokenGrant:@"authorization_code"];
     {
         __block NSInteger count = 0;
         dispatch_sync(self.sessionQueue, ^{
             count = (NSInteger)self.activeSessions.count;
         });
-        [[PDSMetrics sharedMetrics] setActiveAuthSessions:count];
+        [[GZMetrics sharedMetrics] setActiveAuthSessions:count];
     }
     completion(session, nil);
 }
@@ -1009,8 +1009,8 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                           expiresAt:newSession.refreshTokenExpiresAt
                               error:nil];
 
-    [[PDSMetrics sharedMetrics] incrementOAuthTokenGrant:@"refresh_token"];
-    [[PDSMetrics sharedMetrics] setActiveAuthSessions:(NSInteger)self.activeSessions.count];
+    [[GZMetrics sharedMetrics] incrementOAuthTokenGrant:@"refresh_token"];
+    [[GZMetrics sharedMetrics] setActiveAuthSessions:(NSInteger)self.activeSessions.count];
     completion(newSession, nil);
 }
 

@@ -35,7 +35,7 @@
   - `RelayUpstreamManager`: Connection lifecycle, event processing.
 - **Verification:** Ensure metrics/buffer logic is fully annotated.
 
-## 5. Security (Target: PDSKeyEnvelope.h, PDSAuthzManager.h, PDSSecurityCompare.h, PDSBiometricKeychain.h)
+## 5. Security (Target: PDSKeyEnvelope.h, GZAuthzManager.h, PDSSecurityCompare.h, PDSBiometricKeychain.h)
 
 - **Strategy:** Focus on security contracts. Ensure all cryptographic/authz methods define
   input/output security guarantees.

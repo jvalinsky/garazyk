@@ -6,7 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSServiceDatabases;
 @class SubscribeReposHandler;
-@class PDSMetrics;
+@class GZMetrics;
 
 /**
  * @class PDSSequencerAnalyticsCollector

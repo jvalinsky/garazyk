@@ -3,7 +3,7 @@
 #import "PDSSequencerAnalyticsCollector.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
@@ -100,7 +100,7 @@
     NSInteger subscriberCount = strongHandler.attachedConnections.count;
 
     // Get backpressure metrics
-    PDSMetrics *metrics = [PDSMetrics sharedMetrics];
+    GZMetrics *metrics = [GZMetrics sharedMetrics];
     NSInteger warnings = metrics.websocketBackpressureWarningsTotal;
     NSInteger critical = metrics.websocketBackpressureCriticalTotal;
     NSInteger overflows = metrics.websocketQueueOverflowClosuresTotal;
@@ -208,7 +208,7 @@
 
         SubscribeReposHandler *strongHandler = strongSelf.subscribeHandler;
         NSInteger subscriberCount = strongHandler.attachedConnections.count;
-        PDSMetrics *metrics = [PDSMetrics sharedMetrics];
+        GZMetrics *metrics = [GZMetrics sharedMetrics];
 
         snapshot = @{
             @"currentSeq": @(currentSeq),

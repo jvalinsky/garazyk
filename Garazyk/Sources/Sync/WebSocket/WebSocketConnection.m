@@ -6,7 +6,7 @@
 #import "Network/HttpParsing.h"
 #import "Sync/WebSocket/WebSocketProtocolSession.h"
 #import "Debug/GZLogger.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import <CommonCrypto/CommonDigest.h>
 
 static const NSUInteger WS_DEFAULT_MAX_QUEUE_BYTES = 10 * 1024 * 1024; // 10MB default
@@ -728,8 +728,8 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
   GZ_LOG_SYNC_WARN(@"[%@] WebSocket backpressure warning: queue %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, fillPercentage * 100,
                     bytes, self.session.maxOutboundQueueBytes);
-  [[PDSMetrics sharedMetrics] recordWebSocketBackpressureWarning];
-  [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:YES];
+  [[GZMetrics sharedMetrics] recordWebSocketBackpressureWarning];
+  [[GZMetrics sharedMetrics] recordWebSocketBackpressureStateChange:YES];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnection:didReachBackpressureWarning:queueBytes:)]) {
       [self.delegate webSocketConnection:self
@@ -743,7 +743,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
   GZ_LOG_SYNC_WARN(@"[%@] WebSocket backpressure critical: queue %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, fillPercentage * 100,
                     bytes, self.session.maxOutboundQueueBytes);
-  [[PDSMetrics sharedMetrics] recordWebSocketBackpressureCritical];
+  [[GZMetrics sharedMetrics] recordWebSocketBackpressureCritical];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnection:didReachBackpressureCritical:queueBytes:)]) {
       [self.delegate webSocketConnection:self
@@ -757,7 +757,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
   GZ_LOG_SYNC_INFO(@"[%@] WebSocket backpressure cleared: queue now %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, (double)self.queuedSendBytes / (double)self.session.maxOutboundQueueBytes * 100,
                     self.queuedSendBytes, self.session.maxOutboundQueueBytes);
-  [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
+  [[GZMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnectionDidClearBackpressure:)]) {
       [self.delegate webSocketConnectionDidClearBackpressure:self];
@@ -768,8 +768,8 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (void)notifyQueueOverflow:(NSUInteger)bytes {
   GZ_LOG_SYNC_ERROR(@"[%@] WebSocket queue overflow: %lu bytes exceeds limit %lu, closing connection",
                      self.remoteAddress, bytes, self.session.maxOutboundQueueBytes);
-  [[PDSMetrics sharedMetrics] recordWebSocketQueueOverflowClosure];
-  [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
+  [[GZMetrics sharedMetrics] recordWebSocketQueueOverflowClosure];
+  [[GZMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnection:willCloseForQueueOverflow:limit:)]) {
       [self.delegate webSocketConnection:self

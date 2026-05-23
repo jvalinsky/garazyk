@@ -22,7 +22,7 @@
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "App/ATProtoServiceConfiguration.h"
-#import "Metrics/PDSMetrics.h"
+#import "Metrics/GZMetrics.h"
 #import "Debug/GZLogger.h"
 
 @implementation XrpcVendorPack
@@ -179,7 +179,7 @@
 
         // Check soft quotas and emit metrics if configured
         ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-        PDSMetrics *metrics = [PDSMetrics sharedMetrics];
+        GZMetrics *metrics = [GZMetrics sharedMetrics];
 
         unsigned long long blobBytes = [usage[@"blobBytes"] unsignedLongLongValue];
         NSUInteger recordCount = [usage[@"recordCount"] unsignedIntegerValue];
