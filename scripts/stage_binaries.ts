@@ -24,6 +24,7 @@ const BINARIES = [
   "zuk",
   "syrena",
   "mikrus",
+  "beskid",
   "garazyk-ui",
   "jelcz",
   "syrena-chat",
@@ -66,7 +67,10 @@ async function checkMode() {
       continue;
     }
 
-    const infoProc = new Deno.Command("file", { args: ["-b", path], stdout: "piped" });
+    const infoProc = new Deno.Command("file", {
+      args: ["-b", path],
+      stdout: "piped",
+    });
     const { stdout } = await infoProc.output();
     const info = new TextDecoder().decode(stdout).trim();
 
@@ -87,7 +91,11 @@ async function checkMode() {
   }
 }
 
-async function runDocker(cmd: string, args: string[], options: Deno.CommandOptions = {}) {
+async function runDocker(
+  cmd: string,
+  args: string[],
+  options: Deno.CommandOptions = {},
+) {
   const proc = new Deno.Command("docker", {
     args: [cmd, ...args],
     ...options,
@@ -138,21 +146,33 @@ async function buildMode() {
 
     for (const binary of BINARIES) {
       console.log(`[stage] Copying ${binary}...`);
-      await runDocker("cp", [`${containerId}:/src/build/bin/${binary}`, join(binDir, binary)]);
+      await runDocker("cp", [
+        `${containerId}:/src/build/bin/${binary}`,
+        join(binDir, binary),
+      ]);
       await Deno.chmod(join(binDir, binary), 0o755);
     }
 
     console.log("[stage] Copying UI assets for garazyk-ui...");
     const assetsDir = join(binDir, "Assets");
     await Deno.mkdir(assetsDir, { recursive: true });
-    await runDocker("cp", [`${containerId}:/src/build/bin/Assets/.`, assetsDir]);
+    await runDocker("cp", [
+      `${containerId}:/src/build/bin/Assets/.`,
+      assetsDir,
+    ]);
 
     console.log("[stage] Extracting libraries...");
     const libDir = join(stagingDir, "lib");
     await Deno.mkdir(libDir, { recursive: true });
-    await runDocker("cp", [`${containerId}:/usr/GNUstep/Local/Library/Libraries/.`, libDir]);
+    await runDocker("cp", [
+      `${containerId}:/usr/GNUstep/Local/Library/Libraries/.`,
+      libDir,
+    ]);
     try {
-      await runDocker("cp", [`${containerId}:/usr/GNUstep/Local/lib/.`, libDir]);
+      await runDocker("cp", [
+        `${containerId}:/usr/GNUstep/Local/lib/.`,
+        libDir,
+      ]);
     } catch {
       // Ignore if /usr/GNUstep/Local/lib doesn't exist
     }
@@ -161,7 +181,10 @@ async function buildMode() {
     const lexiconStaging = join(stagingDir, "lexicons");
     await Deno.remove(lexiconStaging, { recursive: true }).catch(() => {});
     await Deno.mkdir(lexiconStaging, { recursive: true });
-    await runDocker("cp", [`${containerId}:/src/Garazyk/Resources/lexicons/.`, lexiconStaging]);
+    await runDocker("cp", [
+      `${containerId}:/src/Garazyk/Resources/lexicons/.`,
+      lexiconStaging,
+    ]);
 
     // Assets copies
     const copyAsset = async (name: string, containerPath: string) => {
