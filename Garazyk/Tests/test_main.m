@@ -1125,7 +1125,10 @@ int main(int argc, char *argv[]) {
       @"ChatGroupLifecycleTests",
       @"ATProtoMediaCoreTests",
       @"JelczCLITests",
-      @"ATProtoMediaServiceRuntimeTests"
+      @"ATProtoMediaServiceRuntimeTests",
+      @"BeskidConfigurationTests",
+      @"BeskidDatabaseTests",
+      @"BeskidXrpcRoutePackTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
