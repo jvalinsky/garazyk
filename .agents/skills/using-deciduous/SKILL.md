@@ -24,3 +24,7 @@ Use `deciduous archaeology pivot FROM_ID "Observation" "New Approach"` to docume
 ## Scratchpad Integration
 
 Link major goals and decisions to scratchpad plans using `deciduous doc attach NODE_ID path/to/plan.md`.
+
+## Memory Sync
+
+For bidirectional sync between Letta agent memory and the deciduous graph, use the `deciduous-memory-sync` skill.

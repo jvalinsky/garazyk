@@ -19,10 +19,10 @@
  */
 
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
@@ -32,39 +32,8 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Extends coverage from scenarios 45 (labeler subscription), 61 (graph read verification),
 // and 82 (graph advanced). Runs against PDS and AppView.
 
-function now() {
-  return new Date().toISOString();
-}
 
-/** Try an endpoint, skipping if 404/501/403, failing on other errors. */
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else if (e instanceof XrpcError && e.status === 403) {
-      result.stepSkipped(label, `access denied (HTTP 403) — requires elevated role`);
-    } else if (e instanceof XrpcError && e.status === 400) {
-      const body = typeof e.body === "string" ? e.body : JSON.stringify(e.body ?? "");
-      if (body.toLowerCase().includes("not implemented") || body.toLowerCase().includes("unknown method")) {
-        result.stepSkipped(label, `endpoint not implemented`);
-      } else {
-        result.stepFailed(label, `HTTP 400: ${body.substring(0, 200)}`);
-      }
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Graph Verification & Labeler");
@@ -263,9 +232,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "labeler.getServices via PDS (no auth)",
     async () => {
-      const body = await pds.raw.get("app.bsky.labeler.getServices", {
+      const body = await pds.asAdmin("").raw.get("app.bsky.labeler.getServices", {
         dids: [marcus.did],
-      }, "");
+      });
       const views = body.views ?? [];
       return { count: Array.isArray(views) ? views.length : "present" };
     },

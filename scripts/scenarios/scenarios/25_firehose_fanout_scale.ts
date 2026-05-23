@@ -17,7 +17,7 @@
  * - Post creation p95 latency remains under 2 seconds.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
@@ -33,9 +33,6 @@ import {
 } from "../../lib/deno/instrumentation.ts";
 import { join } from "@std/path";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -191,8 +188,7 @@ export async function run(): Promise<ScenarioResult> {
   result.stepPassed("Backpressure burst", `created=${burstPosts}`);
 
   try {
-    const res = await fetch(`${SERVICE_URLS.pds}/metrics`);
-    const text = await res.text();
+    const text = await client.raw.httpGet("/metrics") as string;
     let bpWarnings = 0;
     let bpCritical = 0;
     for (const line of text.split("\n")) {

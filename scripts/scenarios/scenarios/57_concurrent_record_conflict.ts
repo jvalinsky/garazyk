@@ -12,7 +12,7 @@
  */
 
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
@@ -32,9 +32,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Production paths: com.atproto.repo.{putRecord,deleteRecord,createRecord,getRecord},
 //   com.atproto.sync.getBlob.
 
-function now() {
-  return new Date().toISOString();
-}
 
 // Minimal 1×1 PNG (67 bytes) for blob tests.
 const TINY_PNG = new Uint8Array([

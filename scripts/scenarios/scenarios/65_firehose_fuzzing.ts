@@ -14,13 +14,10 @@
 import { encode } from "cborg";
 import { FirehoseClient, FirehoseEvent } from "../../lib/deno/firehose.ts";
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 
-function now(): string {
-  return new Date().toISOString();
-}
 
 function craftFrame(seq: number, time?: string): Uint8Array {
   const headerBytes = encode({ op: 1, t: "#commit" });

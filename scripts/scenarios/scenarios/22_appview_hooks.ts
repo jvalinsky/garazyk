@@ -17,16 +17,13 @@
  * - Admin record browsing correctly enforces collection filtering and returns results.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -55,7 +52,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView health check",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/backfill/status");
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -124,7 +121,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Hook registry status",
     async () => {
-      return await av.raw.httpGet("/admin/hooks", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/hooks");
     },
     (r) => `count=${r.count ?? 0}`,
   );
@@ -140,10 +137,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Search index: actor search",
     async () => {
-      return await av.raw.httpGet(
+      return await av.asAdmin(adminToken).raw.httpGet(
         "/xrpc/app.bsky.actor.searchActors",
         { q: "Luna", limit: 5 },
-        adminToken,
       );
     },
     (r) => `actors=${r.actors?.length || 0}`,
@@ -153,7 +149,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Dead letter table: empty",
     async () => {
-      return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 10 }, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/hooks/dead-letter", { limit: 10 });
     },
     (r) => `entries=${r.entries?.length || 0}`,
   );
@@ -169,7 +165,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Dead letter with limit=1",
     async () => {
-      return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 1 }, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/hooks/dead-letter", { limit: 1 });
     },
   );
 
@@ -177,10 +173,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Browse records: collection filter",
     async () => {
-      return await av.raw.httpGet(
+      return await av.asAdmin(adminToken).raw.httpGet(
         "/admin/records",
         { collection: "app.bsky.feed.post", limit: 5 },
-        adminToken,
       );
     },
     (r) => `records=${r.records?.length || 0}`,
@@ -191,11 +186,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Browse records: DID filter",
       async () => {
-        return await av.raw.httpGet("/admin/records", {
+        return await av.asAdmin(adminToken).raw.httpGet("/admin/records", {
           collection: "app.bsky.feed.post",
           did: luna.did,
           limit: 10,
-        }, adminToken);
+        });
       },
       (r) => `records=${r.records?.length || 0}`,
     );
@@ -206,11 +201,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Browse records: pagination (page 2)",
       async () => {
-        return await av.raw.httpGet("/admin/records", {
+        return await av.asAdmin(adminToken).raw.httpGet("/admin/records", {
           collection: "app.bsky.feed.post",
           limit: 2,
           cursor: recData.cursor,
-        }, adminToken);
+        });
       },
       (r) => `records=${r.records?.length || 0}`,
     );
@@ -220,10 +215,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Browse records: invalid collection",
     async () => {
-      return await av.raw.httpGet("/admin/records", {
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/records", {
         collection: "nonexistent.collection.type",
         limit: 5,
-      }, adminToken);
+      });
     },
   );
 
@@ -231,7 +226,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Browse records: missing collection rejected",
     async () => {
-      return await av.raw.httpGet("/admin/records", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.httpGet("/admin/records");
     },
     undefined,
     true,

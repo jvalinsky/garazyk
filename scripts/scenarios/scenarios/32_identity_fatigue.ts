@@ -66,16 +66,11 @@ export async function run(): Promise<ScenarioResult> {
       const op = { ...signResp.operation };
       delete op.did;
 
-      const plcRes = await fetch(`${SERVICE_URLS.plc}/${rosa.did}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(op),
-      });
-
-      if (plcRes.status === 200) {
+      try {
+        await client.raw.httpPost(`${SERVICE_URLS.plc}/${rosa.did}`, op);
         successCount++;
-      } else {
-        result.stepFailed("Exhaust Quota", `Failed at iteration ${i}: ${plcRes.status}`);
+      } catch (e: any) {
+        result.stepFailed("Exhaust Quota", `Failed at iteration ${i}: ${e.message}`);
         break;
       }
     } catch (e) {
@@ -100,20 +95,18 @@ export async function run(): Promise<ScenarioResult> {
     const op = { ...signResp.operation };
     delete op.did;
 
-    const plcRes = await fetch(`${SERVICE_URLS.plc}/${rosa.did}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(op),
-    });
-
-    const body = await plcRes.text();
-    if (plcRes.status === 400 && body.includes("Too many operations")) {
-      result.stepPassed("Verify Hourly Limit", "Rejected operation after limit reached");
-    } else {
-      result.stepFailed(
-        "Verify Hourly Limit",
-        `Expected 400 rejection, got ${plcRes.status}: ${body}`,
-      );
+    try {
+      await client.raw.httpPost(`${SERVICE_URLS.plc}/${rosa.did}`, op);
+      result.stepFailed("Verify Hourly Limit", "Expected rejection, but operation succeeded");
+    } catch (e: any) {
+      if (e.status === 400 && e.message.includes("Too many operations")) {
+        result.stepPassed("Verify Hourly Limit", "Rejected operation after limit reached");
+      } else {
+        result.stepFailed(
+          "Verify Hourly Limit",
+          `Expected 400 rejection with "Too many operations", got status ${e.status}: ${e.message}`,
+        );
+      }
     }
   }
 

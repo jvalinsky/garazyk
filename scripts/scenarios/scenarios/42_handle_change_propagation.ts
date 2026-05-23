@@ -63,13 +63,12 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 3000));
 
   try {
-    const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
-    const doc = await plcRes.json();
+    const doc = await pds.raw.httpGet(`${SERVICE_URLS.plc}/${luna.did}`);
     const hasNewHandle = doc.alsoKnownAs?.some((h: string) => h.includes(newHandle));
     assert.isTrue(hasNewHandle, "New handle not found in PLC DID doc");
     result.stepPassed("PLC handle verification");
-  } catch (e) {
-    result.stepSkipped("PLC handle verification", String(e));
+  } catch (e: any) {
+    result.stepSkipped("PLC handle verification", e.message || String(e));
   }
 
   await timedCall(result, "Verify AppView profile has new handle", async () => {

@@ -14,16 +14,13 @@
  * - Scenario completes successfully without errors.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -141,11 +138,7 @@ export async function run(): Promise<ScenarioResult> {
     "Invalid token returns error",
     async () => {
       try {
-        await client.raw.get(
-          "app.bsky.actor.getProfile",
-          { actor: luna.did },
-          "Bearer totally-invalid-token-12345",
-        );
+        await client.as({ accessJwt: "Bearer totally-invalid-token-12345" }).raw.get("app.bsky.actor.getProfile", { actor: luna.did });
       } catch (e) {
         assert.isTrue(
           e instanceof XrpcError,
