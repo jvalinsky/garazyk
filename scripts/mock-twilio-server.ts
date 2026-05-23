@@ -15,21 +15,37 @@ const store: VerificationsStore = {};
 let alwaysApproveCodes: string[] = ["000000"];
 
 function parseFlags(): typeof defaults {
-  const args = parseArgs(Deno.args, { string: ["always-approve"] });
+  const args = parseArgs(Deno.args, {
+    string: ["always-approve", "port-file"],
+  });
   return {
     port: parseInt(String(args.port ?? Deno.env.get("PORT") ?? "8081"), 10),
-    accountSid: String(args["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
-      "AC00000000000000000000000000000000"),
-    authToken: String(args["auth-token"] ?? Deno.env.get("TWILIO_AUTH_TOKEN") ??
-      "SK00000000000000000000000000000000"),
-    alwaysApprove: String(args["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ?? "000000"),
-    latency: parseInt(String(args.latency ?? Deno.env.get("LATENCY_MS") ?? "0"), 10),
-    failRate: parseFloat(String(args["fail-rate"] ?? Deno.env.get("FAIL_RATE") ?? "0")),
+    portFile: args["port-file"] ? String(args["port-file"]) : undefined,
+    accountSid: String(
+      args["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
+        "AC00000000000000000000000000000000",
+    ),
+    authToken: String(
+      args["auth-token"] ?? Deno.env.get("TWILIO_AUTH_TOKEN") ??
+        "SK00000000000000000000000000000000",
+    ),
+    alwaysApprove: String(
+      args["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ??
+        "000000",
+    ),
+    latency: parseInt(
+      String(args.latency ?? Deno.env.get("LATENCY_MS") ?? "0"),
+      10,
+    ),
+    failRate: parseFloat(
+      String(args["fail-rate"] ?? Deno.env.get("FAIL_RATE") ?? "0"),
+    ),
   };
 }
 
 const defaults = {
   port: 8081,
+  portFile: undefined as string | undefined,
   accountSid: "AC00000000000000000000000000000000",
   authToken: "SK00000000000000000000000000000000",
   alwaysApprove: "000000",
@@ -50,7 +66,9 @@ function randomSid(): string {
   return sid;
 }
 
-function parseBasicAuth(authHeader: string | null): { user: string; pass: string } | null {
+function parseBasicAuth(
+  authHeader: string | null,
+): { user: string; pass: string } | null {
   if (!authHeader || !authHeader.startsWith("Basic ")) return null;
   try {
     const decoded = atob(authHeader.slice(6));
@@ -78,7 +96,10 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): Promise<Response> {
+async function handleRequest(
+  req: Request,
+  cfg: ReturnType<typeof parseFlags>,
+): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname;
 
@@ -103,7 +124,11 @@ async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): 
     if (!body.phone || !body.code) {
       return jsonResponse({ error: "phone and code required" }, 400);
     }
-    store[body.phone] = { code: body.code, createdAt: Date.now(), verified: false };
+    store[body.phone] = {
+      code: body.code,
+      createdAt: Date.now(),
+      verified: false,
+    };
     return jsonResponse({ status: "ok" });
   }
 
@@ -119,22 +144,38 @@ async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): 
   // ── Twilio Verify API ────────────────────────────────────────────────────
 
   // Match: /v2/Service/{serviceSID}/Verifications
-  const verificationsMatch = path.match(/^\/v2\/Service\/([^/]+)\/Verifications$/);
+  const verificationsMatch = path.match(
+    /^\/v2\/Service\/([^/]+)\/Verifications$/,
+  );
   if (verificationsMatch && req.method === "POST") {
     await maybeLatency(cfg.latency);
     if (await maybeFail(cfg.failRate)) {
-      return jsonResponse({ status: 500, message: "Simulated server error", code: 20001 }, 500);
+      return jsonResponse({
+        status: 500,
+        message: "Simulated server error",
+        code: 20001,
+      }, 500);
     }
 
     const creds = parseBasicAuth(req.headers.get("authorization"));
-    if (!creds || creds.user !== cfg.accountSid || creds.pass !== cfg.authToken) {
-      return jsonResponse({ status: 401, message: "Invalid credentials", code: 20003 }, 401);
+    if (
+      !creds || creds.user !== cfg.accountSid || creds.pass !== cfg.authToken
+    ) {
+      return jsonResponse({
+        status: 401,
+        message: "Invalid credentials",
+        code: 20003,
+      }, 401);
     }
 
     const body = await req.json();
     const phone: string = body.To || "";
     if (!phone) {
-      return jsonResponse({ status: 400, message: "Missing 'To' parameter", code: 60202 }, 400);
+      return jsonResponse({
+        status: 400,
+        message: "Missing 'To' parameter",
+        code: 60202,
+      }, 400);
     }
 
     const code = generateCode();
@@ -159,12 +200,22 @@ async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): 
   if (checkMatch && req.method === "POST") {
     await maybeLatency(cfg.latency);
     if (await maybeFail(cfg.failRate)) {
-      return jsonResponse({ status: 500, message: "Simulated server error", code: 20001 }, 500);
+      return jsonResponse({
+        status: 500,
+        message: "Simulated server error",
+        code: 20001,
+      }, 500);
     }
 
     const creds = parseBasicAuth(req.headers.get("authorization"));
-    if (!creds || creds.user !== cfg.accountSid || creds.pass !== cfg.authToken) {
-      return jsonResponse({ status: 401, message: "Invalid credentials", code: 20003 }, 401);
+    if (
+      !creds || creds.user !== cfg.accountSid || creds.pass !== cfg.authToken
+    ) {
+      return jsonResponse({
+        status: 401,
+        message: "Invalid credentials",
+        code: 20003,
+      }, 401);
     }
 
     const body = await req.json();
@@ -172,11 +223,16 @@ async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): 
     const code: string = body.Code || "";
 
     if (!phone || !code) {
-      return jsonResponse({ status: 400, message: "Missing 'To' or 'Code'", code: 60202 }, 400);
+      return jsonResponse({
+        status: 400,
+        message: "Missing 'To' or 'Code'",
+        code: 60202,
+      }, 400);
     }
 
     const state = store[phone];
-    const isApproved = (state && state.code === code) || alwaysApproveCodes.includes(code);
+    const isApproved = (state && state.code === code) ||
+      alwaysApproveCodes.includes(code);
 
     if (isApproved && state) {
       state.verified = true;
@@ -208,9 +264,24 @@ const startTime = Date.now();
 alwaysApproveCodes = cfg.alwaysApprove.split(",").map((s: string) => s.trim());
 
 console.error(`[mock-twilio] Starting on port ${cfg.port}`);
-console.error(`[mock-twilio] Always-approve codes: ${alwaysApproveCodes.join(", ")}`);
+console.error(
+  `[mock-twilio] Always-approve codes: ${alwaysApproveCodes.join(", ")}`,
+);
 console.error(`[mock-twilio] Account SID: ${cfg.accountSid}`);
-if (cfg.latency > 0) console.error(`[mock-twilio] Simulated latency: ${cfg.latency}ms`);
-if (cfg.failRate > 0) console.error(`[mock-twilio] Simulated fail rate: ${cfg.failRate}`);
+if (cfg.latency > 0) {
+  console.error(`[mock-twilio] Simulated latency: ${cfg.latency}ms`);
+}
+if (cfg.failRate > 0) {
+  console.error(`[mock-twilio] Simulated fail rate: ${cfg.failRate}`);
+}
 
-Deno.serve({ port: cfg.port, hostname: "127.0.0.1" }, (req) => handleRequest(req, cfg));
+const server = Deno.serve(
+  { port: cfg.port, hostname: "127.0.0.1" },
+  (req) => handleRequest(req, cfg),
+);
+if (cfg.portFile) {
+  await Deno.writeTextFile(
+    cfg.portFile,
+    `http://127.0.0.1:${server.addr.port}\n`,
+  );
+}

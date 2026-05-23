@@ -1,17 +1,16 @@
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 
-const PORT = 8099;
 const SID = "AC00000000000000000000000000000000";
 const TOKEN = "SK00000000000000000000000000000000";
-const BASE = `http://127.0.0.1:${PORT}`;
 const SERVICE_PATH = "/v2/Service/VA00000000000000000000000000000000";
+let base = "";
 
 function auth(): string {
   return `Basic ${btoa(`${SID}:${TOKEN}`)}`;
 }
 
 async function jsonRes(path: string, opts: RequestInit = {}): Promise<any> {
-  const res = await fetch(`${BASE}${path}`, opts);
+  const res = await fetch(`${base}${path}`, opts);
   const text = await res.text();
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
   return JSON.parse(text);
@@ -19,6 +18,10 @@ async function jsonRes(path: string, opts: RequestInit = {}): Promise<any> {
 
 Deno.test("Mock Twilio server integration", async (t) => {
   let proc: Deno.ChildProcess | null = null;
+  const portFile = await Deno.makeTempFile({
+    prefix: "mock-twilio-",
+    suffix: ".url",
+  });
 
   // ── Start server ───────────────────────────────────────────────────────────
   await t.step("start mock server", async () => {
@@ -29,7 +32,8 @@ Deno.test("Mock Twilio server integration", async (t) => {
         "--config",
         "deno.json",
         "scripts/mock-twilio-server.ts",
-        `--port=${PORT}`,
+        "--port=0",
+        `--port-file=${portFile}`,
         "--always-approve=000000",
       ],
       cwd: Deno.cwd(),
@@ -39,7 +43,8 @@ Deno.test("Mock Twilio server integration", async (t) => {
     proc = cmd.spawn();
     for (let i = 0; i < 30; i++) {
       try {
-        const r = await (await fetch(`${BASE}/__control/health`)).json();
+        base = (await Deno.readTextFile(portFile)).trim();
+        const r = await (await fetch(`${base}/__control/health`)).json();
         if (r.status === "ok") break;
       } catch { /* retry */ }
       await new Promise((r) => setTimeout(r, 200));
@@ -55,25 +60,31 @@ Deno.test("Mock Twilio server integration", async (t) => {
     assertNotEquals(r.uptime, undefined);
   });
 
-  await t.step("GET /__control/state returns empty store initially", async () => {
-    const r = await jsonRes("/__control/state");
-    assertEquals(r.store, {});
-    assertEquals(r.alwaysApproveCodes, ["000000"]);
-  });
+  await t.step(
+    "GET /__control/state returns empty store initially",
+    async () => {
+      const r = await jsonRes("/__control/state");
+      assertEquals(r.store, {});
+      assertEquals(r.alwaysApproveCodes, ["000000"]);
+    },
+  );
 
-  await t.step("POST /__control/setCode stores a verification code", async () => {
-    await jsonRes("/__control/setCode", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ phone: "+1555control", code: "555555" }),
-    });
-    const state = await jsonRes("/__control/state");
-    assertEquals(state.store["+1555control"].code, "555555");
-    assertEquals(state.store["+1555control"].verified, false);
-  });
+  await t.step(
+    "POST /__control/setCode stores a verification code",
+    async () => {
+      await jsonRes("/__control/setCode", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone: "+1555control", code: "555555" }),
+      });
+      const state = await jsonRes("/__control/state");
+      assertEquals(state.store["+1555control"].code, "555555");
+      assertEquals(state.store["+1555control"].verified, false);
+    },
+  );
 
   await t.step("POST /__control/setCode rejects missing phone", async () => {
-    const res = await fetch(`${BASE}/__control/setCode`, {
+    const res = await fetch(`${base}/__control/setCode`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ code: "123" }),
@@ -82,15 +93,18 @@ Deno.test("Mock Twilio server integration", async (t) => {
     await res.body?.cancel();
   });
 
-  await t.step("POST /__control/setAlwaysApprove replaces codes list", async () => {
-    await jsonRes("/__control/setAlwaysApprove", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ codes: ["alpha", "beta"] }),
-    });
-    const state = await jsonRes("/__control/state");
-    assertEquals(state.alwaysApproveCodes, ["alpha", "beta"]);
-  });
+  await t.step(
+    "POST /__control/setAlwaysApprove replaces codes list",
+    async () => {
+      await jsonRes("/__control/setAlwaysApprove", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ codes: ["alpha", "beta"] }),
+      });
+      const state = await jsonRes("/__control/state");
+      assertEquals(state.alwaysApproveCodes, ["alpha", "beta"]);
+    },
+  );
 
   await t.step("POST /__control/reset clears all state", async () => {
     await jsonRes("/__control/setCode", {
@@ -118,22 +132,25 @@ Deno.test("Mock Twilio server integration", async (t) => {
     assertEquals(r.valid, false);
   });
 
-  await t.step("POST /Verifications stores generated code in state", async () => {
-    const r = await jsonRes(`${SERVICE_PATH}/Verifications`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: auth() },
-      body: JSON.stringify({ To: "+1555store", Channel: "sms" }),
-    });
-    const state = await jsonRes("/__control/state");
-    const entry = state.store[r.to];
-    assertExists(entry, "No entry in store for phone");
-    assertEquals(typeof entry.code, "string");
-    assertEquals(entry.code.length, 6, "Code should be 6 digits");
-    assertEquals(entry.verified, false);
-  });
+  await t.step(
+    "POST /Verifications stores generated code in state",
+    async () => {
+      const r = await jsonRes(`${SERVICE_PATH}/Verifications`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: auth() },
+        body: JSON.stringify({ To: "+1555store", Channel: "sms" }),
+      });
+      const state = await jsonRes("/__control/state");
+      const entry = state.store[r.to];
+      assertExists(entry, "No entry in store for phone");
+      assertEquals(typeof entry.code, "string");
+      assertEquals(entry.code.length, 6, "Code should be 6 digits");
+      assertEquals(entry.verified, false);
+    },
+  );
 
   await t.step("POST /Verifications rejects missing To", async () => {
-    const res = await fetch(`${BASE}${SERVICE_PATH}/Verifications`, {
+    const res = await fetch(`${base}${SERVICE_PATH}/Verifications`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: auth() },
       body: JSON.stringify({ Channel: "sms" }),
@@ -143,24 +160,27 @@ Deno.test("Mock Twilio server integration", async (t) => {
   });
 
   // ── Twilio Verify API — VerificationCheck ──────────────────────────────────
-  await t.step("POST /VerificationCheck with correct code returns approved", async () => {
-    await jsonRes(`${SERVICE_PATH}/Verifications`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: auth() },
-      body: JSON.stringify({ To: "+1555check1", Channel: "sms" }),
-    });
-    const state = await jsonRes("/__control/state");
-    const code = state.store["+1555check1"].code;
+  await t.step(
+    "POST /VerificationCheck with correct code returns approved",
+    async () => {
+      await jsonRes(`${SERVICE_PATH}/Verifications`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: auth() },
+        body: JSON.stringify({ To: "+1555check1", Channel: "sms" }),
+      });
+      const state = await jsonRes("/__control/state");
+      const code = state.store["+1555check1"].code;
 
-    const r = await jsonRes(`${SERVICE_PATH}/VerificationCheck`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: auth() },
-      body: JSON.stringify({ To: "+1555check1", Code: code }),
-    });
-    assertEquals(r.status, "approved");
-    assertEquals(r.valid, true);
-    assertEquals(r.to, "+1555check1");
-  });
+      const r = await jsonRes(`${SERVICE_PATH}/VerificationCheck`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: auth() },
+        body: JSON.stringify({ To: "+1555check1", Code: code }),
+      });
+      assertEquals(r.status, "approved");
+      assertEquals(r.valid, true);
+      assertEquals(r.to, "+1555check1");
+    },
+  );
 
   await t.step("VerificationCheck marks state as verified", async () => {
     await jsonRes(`${SERVICE_PATH}/Verifications`, {
@@ -180,20 +200,23 @@ Deno.test("Mock Twilio server integration", async (t) => {
     assertEquals(after.store["+1555check2"].verified, true);
   });
 
-  await t.step("POST /VerificationCheck with wrong code returns pending", async () => {
-    await jsonRes(`${SERVICE_PATH}/Verifications`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: auth() },
-      body: JSON.stringify({ To: "+1555wrong", Channel: "sms" }),
-    });
-    const r = await jsonRes(`${SERVICE_PATH}/VerificationCheck`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: auth() },
-      body: JSON.stringify({ To: "+1555wrong", Code: "999999" }),
-    });
-    assertEquals(r.status, "pending");
-    assertEquals(r.valid, false);
-  });
+  await t.step(
+    "POST /VerificationCheck with wrong code returns pending",
+    async () => {
+      await jsonRes(`${SERVICE_PATH}/Verifications`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: auth() },
+        body: JSON.stringify({ To: "+1555wrong", Channel: "sms" }),
+      });
+      const r = await jsonRes(`${SERVICE_PATH}/VerificationCheck`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: auth() },
+        body: JSON.stringify({ To: "+1555wrong", Code: "999999" }),
+      });
+      assertEquals(r.status, "pending");
+      assertEquals(r.valid, false);
+    },
+  );
 
   await t.step("Always-approve code 000000 returns approved", async () => {
     const r = await jsonRes(`${SERVICE_PATH}/VerificationCheck`, {
@@ -233,7 +256,7 @@ Deno.test("Mock Twilio server integration", async (t) => {
 
   // ── Auth ───────────────────────────────────────────────────────────────────
   await t.step("Missing auth header returns 401", async () => {
-    const res = await fetch(`${BASE}${SERVICE_PATH}/Verifications`, {
+    const res = await fetch(`${base}${SERVICE_PATH}/Verifications`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ To: "+1555" }),
@@ -243,9 +266,12 @@ Deno.test("Mock Twilio server integration", async (t) => {
   });
 
   await t.step("Bad auth returns 401", async () => {
-    const res = await fetch(`${BASE}${SERVICE_PATH}/Verifications`, {
+    const res = await fetch(`${base}${SERVICE_PATH}/Verifications`, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: "Basic " + btoa("BAD:CREDS") },
+      headers: {
+        "content-type": "application/json",
+        authorization: "Basic " + btoa("BAD:CREDS"),
+      },
       body: JSON.stringify({ To: "+1555" }),
     });
     assertEquals(res.status, 401);
@@ -254,7 +280,7 @@ Deno.test("Mock Twilio server integration", async (t) => {
 
   // ── Edge cases ─────────────────────────────────────────────────────────────
   await t.step("Unknown path returns 404", async () => {
-    const res = await fetch(`${BASE}/nonexistent`);
+    const res = await fetch(`${base}/nonexistent`);
     assertEquals(res.status, 404);
     await res.body?.cancel();
   });
@@ -312,11 +338,12 @@ Deno.test("Mock Twilio server integration", async (t) => {
     await new Promise((r) => setTimeout(r, 300));
     // Verify it's dead
     try {
-      const r = await fetch(`${BASE}/__control/health`);
+      const r = await fetch(`${base}/__control/health`);
       await r.body?.cancel();
       throw new Error("Server still running after kill");
     } catch {
       // Expected — connection refused
     }
+    await Deno.remove(portFile).catch(() => {});
   });
 });

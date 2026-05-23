@@ -1,6 +1,6 @@
 {
   "name": "garazyk-default",
-  "description": "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Chat (syrena-chat), Video (jelcz), UI (garazyk-ui). Built from local source.",
+  "description": "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Mikrus, Beskid, Chat (syrena-chat), Video (jelcz), UI (garazyk-ui). Built from local source.",
   "roles": {
     "plc": {
       "name": "campagnola",
@@ -40,7 +40,12 @@
       "name": "kaszlak",
       "buildContext": "docker/local-network",
       "dockerfile": "Dockerfile.local",
-      "command": ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"],
+      "command": [
+        "serve",
+        "--config",
+        "/var/lib/atprotopds/config.json",
+        "--foreground"
+      ],
       "env": {
         "TZ": "UTC",
         "PDS_ALLOW_PRIVATE_SSRF": "1",
@@ -100,7 +105,12 @@
       "name": "kaszlak-pds2",
       "buildContext": "docker/local-network",
       "dockerfile": "Dockerfile.local",
-      "command": ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"],
+      "command": [
+        "serve",
+        "--config",
+        "/var/lib/atprotopds/config.json",
+        "--foreground"
+      ],
       "env": {
         "TZ": "UTC",
         "PDS_ALLOW_PRIVATE_SSRF": "1",
@@ -181,7 +191,12 @@
       "healthCheck": {
         "path": "/api/relay/health"
       },
-      "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck", "upstreams"],
+      "capabilities": [
+        "subscribeRepos",
+        "requestCrawl",
+        "healthCheck",
+        "upstreams"
+      ],
       "dependsOn": ["local-pds"]
     },
     "appview": {
@@ -217,15 +232,117 @@
         "path": "/admin/backfill/status",
         "headers": { "Authorization": "Bearer localdevadmin" }
       },
-      "capabilities": ["getTimeline", "getProfile", "getFeed", "search", "backfill", "admin"],
+      "capabilities": [
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "search",
+        "backfill",
+        "admin"
+      ],
       "dependsOn": ["local-relay"]
+    },
+    "mikrus": {
+      "name": "mikrus",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/mikrus"],
+      "command": [
+        "serve",
+        "--relay",
+        "ws://local-pds:2583",
+        "--port",
+        "3210",
+        "--data-dir",
+        "/var/lib/atprotopds"
+      ],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_PLC_URL": "http://local-plc:2582",
+        "MIKRUS_PDS_URL": "http://local-pds:2583",
+        "MIKRUS_RELAY_URLS": "ws://local-pds:2583",
+        "MIKRUS_DATA_DIR": "/var/lib/atprotopds",
+        "MIKRUS_HTTP_PORT": "3210",
+        "MIKRUS_RATELIMIT_ENABLED": "true",
+        "MIKRUS_RATELIMIT_IP_LIMIT": "200",
+        "MIKRUS_RATELIMIT_IP_WINDOW": "60"
+      },
+      "ports": ["3210:3210"],
+      "volumes": ["local_mikrus_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/_health"
+      },
+      "capabilities": [
+        "firehoseIndexing",
+        "getBacklinks",
+        "getBacklinkDids",
+        "getBacklinksCount",
+        "getManyToMany",
+        "getManyToManyCounts",
+        "getRecordByUri",
+        "resolveMiniDoc"
+      ],
+      "dependsOn": ["local-relay"]
+    },
+    "beskid": {
+      "name": "beskid",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/beskid"],
+      "command": [
+        "serve",
+        "--port",
+        "8085",
+        "--data-dir",
+        "/var/lib/atprotopds"
+      ],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_PLC_URL": "http://local-plc:2582",
+        "PLC_URL": "http://local-plc:2582",
+        "BESKID_PDS_URL": "http://local-pds:2583",
+        "BESKID_DATA_DIR": "/var/lib/atprotopds",
+        "BESKID_HTTP_PORT": "8085",
+        "BESKID_CACHE_RECORD_TTL": "3600",
+        "BESKID_CACHE_IDENTITY_TTL": "86400",
+        "BESKID_RATELIMIT_ENABLED": "true",
+        "BESKID_RATELIMIT_IP_LIMIT": "200",
+        "BESKID_RATELIMIT_IP_WINDOW": "60"
+      },
+      "ports": ["8085:8085"],
+      "volumes": ["local_beskid_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/_health"
+      },
+      "capabilities": [
+        "getRecord",
+        "getUriRecord",
+        "getRecordByUri",
+        "resolveHandle",
+        "resolveMiniDoc",
+        "resolveService",
+        "hydrateQueryResponse",
+        "recordCache",
+        "identityCache"
+      ],
+      "dependsOn": ["local-pds", "local-plc"]
     },
     "chat": {
       "name": "syrena-chat",
       "buildContext": "docker/local-network",
       "dockerfile": "Dockerfile.local",
       "entrypoint": ["/usr/local/bin/syrena-chat"],
-      "command": ["serve", "--port", "2585", "--data-dir", "/var/lib/atprotopds"],
+      "command": [
+        "serve",
+        "--port",
+        "2585",
+        "--data-dir",
+        "/var/lib/atprotopds"
+      ],
       "env": {
         "TZ": "UTC",
         "CHAT_PDS_URL": "http://local-pds:2583",

@@ -35,6 +35,7 @@ COPY staging/bin/campagnola /usr/local/bin/campagnola
 COPY staging/bin/zuk /usr/local/bin/zuk
 COPY staging/bin/syrena /usr/local/bin/syrena
 COPY staging/bin/mikrus /usr/local/bin/mikrus
+COPY staging/bin/beskid /usr/local/bin/beskid
 COPY staging/bin/garazyk-ui /usr/local/bin/garazyk-ui
 COPY staging/bin/jelcz /usr/local/bin/jelcz
 COPY staging/bin/syrena-chat /usr/local/bin/syrena-chat

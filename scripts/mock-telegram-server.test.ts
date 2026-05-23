@@ -1,15 +1,14 @@
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 
-const PORT = 8100;
 const TOKEN = "TG_MOCK_TOKEN";
-const BASE = `http://127.0.0.1:${PORT}`;
+let base = "";
 
 function auth(): string {
   return `Bearer ${TOKEN}`;
 }
 
 async function jsonRes(path: string, opts: RequestInit = {}): Promise<any> {
-  const res = await fetch(`${BASE}${path}`, opts);
+  const res = await fetch(`${base}${path}`, opts);
   const text = await res.text();
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
   return JSON.parse(text);
@@ -17,6 +16,10 @@ async function jsonRes(path: string, opts: RequestInit = {}): Promise<any> {
 
 Deno.test("Mock Telegram server integration", async (t) => {
   let proc: Deno.ChildProcess | null = null;
+  const portFile = await Deno.makeTempFile({
+    prefix: "mock-telegram-",
+    suffix: ".url",
+  });
 
   // ── Start server ───────────────────────────────────────────────────────────
   await t.step("start mock server", async () => {
@@ -27,7 +30,8 @@ Deno.test("Mock Telegram server integration", async (t) => {
         "--config",
         "deno.json",
         "scripts/mock-telegram-server.ts",
-        `--port=${PORT}`,
+        "--port=0",
+        `--port-file=${portFile}`,
         `--token=${TOKEN}`,
       ],
       cwd: Deno.cwd(),
@@ -37,7 +41,8 @@ Deno.test("Mock Telegram server integration", async (t) => {
     proc = cmd.spawn();
     for (let i = 0; i < 30; i++) {
       try {
-        const r = await (await fetch(`${BASE}/__control/health`)).json();
+        base = (await Deno.readTextFile(portFile)).trim();
+        const r = await (await fetch(`${base}/__control/health`)).json();
         if (r.status === "ok") break;
       } catch { /* retry */ }
       await new Promise((r) => setTimeout(r, 200));
@@ -63,7 +68,11 @@ Deno.test("Mock Telegram server integration", async (t) => {
     await jsonRes("/__control/setCode", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ phone: "+1555", code: "123456", requestId: "test_req" }),
+      body: JSON.stringify({
+        phone: "+1555",
+        code: "123456",
+        requestId: "test_req",
+      }),
     });
     const state = await jsonRes("/__control/state");
     assertEquals(state.store["test_req"].code, "123456");
@@ -143,7 +152,7 @@ Deno.test("Mock Telegram server integration", async (t) => {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   await t.step("Missing auth returns 401", async () => {
-    const res = await fetch(`${BASE}/checkSendAbility`, {
+    const res = await fetch(`${base}/checkSendAbility`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ phone_number: "+1555" }),
@@ -161,5 +170,6 @@ Deno.test("Mock Telegram server integration", async (t) => {
       proc = null;
     }
     await new Promise((r) => setTimeout(r, 300));
+    await Deno.remove(portFile).catch(() => {});
   });
 });
