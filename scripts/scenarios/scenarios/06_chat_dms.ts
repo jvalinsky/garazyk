@@ -29,6 +29,40 @@ import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcError } from "../../lib/deno/transport.ts";
 import { chatXrpcGet, chatXrpcPost, createChatServiceContext } from "../../lib/deno/seed.ts";
 
+async function putChatDeclaration(did: string, token: string, allowIncoming: "all" | "none") {
+  const response = await fetch(`${PDS1}/xrpc/com.atproto.repo.putRecord`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      repo: did,
+      collection: "chat.bsky.actor.declaration",
+      rkey: "self",
+      record: {
+        $type: "chat.bsky.actor.declaration",
+        allowIncoming,
+      },
+    }),
+  });
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(`putRecord chat declaration failed (${response.status}): ${body}`);
+  }
+
+  const readback = await fetch(
+    `${PDS1}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(did)}&collection=chat.bsky.actor.declaration&rkey=self`,
+  );
+  const readbackBody = await readback.text();
+  if (!readback.ok) {
+    throw new Error(`chat declaration readback failed (${readback.status}): ${readbackBody}`);
+  }
+  const parsed = JSON.parse(readbackBody);
+  assert.equal(parsed.value?.allowIncoming, allowIncoming, `Expected allowIncoming=${allowIncoming}`);
+  return JSON.parse(body);
+}
+
 /**
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
@@ -223,10 +257,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus blocks new incoming conversations",
     async () => {
-      return await client.records.putRecord(marcus.did!, "chat.bsky.actor.declaration", "self", {
-        $type: "chat.bsky.actor.declaration",
-        allowIncoming: "none",
-      }, marcus.accessJwt!);
+      return await putChatDeclaration(marcus.did!, marcus.accessJwt!, "none");
     },
   );
 
@@ -252,10 +283,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus restores incoming chat declaration",
     async () => {
-      return await client.records.putRecord(marcus.did!, "chat.bsky.actor.declaration", "self", {
-        $type: "chat.bsky.actor.declaration",
-        allowIncoming: "all",
-      }, marcus.accessJwt!);
+      return await putChatDeclaration(marcus.did!, marcus.accessJwt!, "all");
     },
   );
 
