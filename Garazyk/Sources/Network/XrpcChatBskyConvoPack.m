@@ -21,6 +21,7 @@
 #import "Chat/Server/Config/ChatSchemaManager.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Services/PDS/PDSRecordService.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
 
@@ -152,10 +153,34 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
     return @"all";
 }
 
+static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
+                                                     PDSRecordService *recordService) {
+    if (!recordService || targetDid.length == 0) {
+        return XrpcChatAllowIncomingForDID(targetDid);
+    }
+
+    NSString *uri = [NSString stringWithFormat:@"at://%@/chat.bsky.actor.declaration/self", targetDid];
+    NSError *error = nil;
+    NSDictionary *record = [recordService getRecord:uri forDid:targetDid error:&error];
+    if (!record) {
+        return XrpcChatAllowIncomingForDID(targetDid);
+    }
+
+    NSDictionary *value = [record[@"value"] isKindOfClass:[NSDictionary class]] ? record[@"value"] : nil;
+    NSString *allowIncoming = [value[@"allowIncoming"] isKindOfClass:[NSString class]] ? value[@"allowIncoming"] : nil;
+    if ([allowIncoming isEqualToString:@"none"] ||
+        [allowIncoming isEqualToString:@"following"] ||
+        [allowIncoming isEqualToString:@"all"]) {
+        return allowIncoming;
+    }
+    return @"all";
+}
+
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     id<PDSQueryDatabase> appViewDatabase = services.appViewDatabase;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    PDSRecordService *recordService = services.recordService;
 
     // Ensure chat schema tables exist
     PDSDatabase *db = (PDSDatabase *)appViewDatabase;
@@ -202,7 +227,7 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
         for (NSString *memberDid in members) {
             if ([memberDid isEqualToString:actorDID]) continue;
 
-            NSString *allowIncoming = XrpcChatAllowIncomingForDID(memberDid);
+            NSString *allowIncoming = XrpcChatAllowIncomingForDIDFromRepo(memberDid, recordService);
             if ([allowIncoming isEqualToString:@"none"]) {
                 response.statusCode = 403;
                 [response setJsonBody:@{

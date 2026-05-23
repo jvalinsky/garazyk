@@ -6,7 +6,7 @@
 
 @implementation PDSReplayCache {
     sqlite3 *_db;
-    NSTimer *_cleanupTimer;
+    dispatch_source_t _cleanupTimer;
     dispatch_queue_t _databaseQueue;
 }
 
@@ -50,16 +50,32 @@
             return nil;
         }
 
-        // Setup periodic cleanup
-        _cleanupTimer = [NSTimer timerWithTimeInterval:300 target:self selector:@selector(cleanup) userInfo:nil repeats:YES];
-        [[NSRunLoop mainRunLoop] addTimer:_cleanupTimer forMode:NSRunLoopCommonModes];
+        // Setup periodic cleanup via dispatch_source on database queue
+        // (replaces NSTimer on main run loop to avoid thread hops)
+        _cleanupTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _databaseQueue);
+        if (_cleanupTimer) {
+            dispatch_source_set_timer(_cleanupTimer,
+                                      dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_SEC),
+                                      300 * NSEC_PER_SEC,
+                                      0);
+            __weak typeof(self) weakSelf = self;
+            dispatch_source_set_event_handler(_cleanupTimer, ^{
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (strongSelf) {
+                    [strongSelf cleanup];
+                }
+            });
+            dispatch_resume(_cleanupTimer);
+        }
     }
     return self;
 }
 
 - (void)invalidate {
-    [_cleanupTimer invalidate];
-    _cleanupTimer = nil;
+    if (_cleanupTimer) {
+        dispatch_source_cancel(_cleanupTimer);
+        _cleanupTimer = nil;
+    }
     dispatch_sync(_databaseQueue, ^{
         if (_db) {
             sqlite3_close(_db);

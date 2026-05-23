@@ -15,6 +15,8 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSDatabase+Moderation.h"
+#import "Database/PDSDatabaseAccount.h"
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Core/DID.h"
@@ -61,9 +63,74 @@ static BOOL isActiveUploadMimeType(NSString *contentType);
 static void applyRepoBlobDownloadHeaders(NSString *mimeType, HttpResponse *response);
 static BOOL validateApplyWritesPayload(id writes, NSError **error);
 static NSError *repoPackValidationError(PDSRepoPackValidationErrorCode code, NSString *message);
+static BOOL rejectUnavailableRepoDid(NSString *did,
+                                     PDSServiceDatabases *serviceDatabases,
+                                     id<PDSAdminController> adminController,
+                                     HttpResponse *response);
+static BOOL rejectRecordTakedown(NSString *uri,
+                                 PDSServiceDatabases *serviceDatabases,
+                                 HttpResponse *response);
 
 static BOOL isReplyNotAllowedError(NSError *error) {
     return [error.localizedDescription containsString:@"ReplyNotAllowed"];
+}
+
+static BOOL rejectUnavailableRepoDid(NSString *did,
+                                     PDSServiceDatabases *serviceDatabases,
+                                     id<PDSAdminController> adminController,
+                                     HttpResponse *response) {
+    if (did.length == 0) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
+        return YES;
+    }
+
+    NSError *accountError = nil;
+    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+    if (!account) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
+        return YES;
+    }
+
+    NSString *status = [account.status lowercaseString];
+    if (status.length > 0 && ![status isEqualToString:@"active"]) {
+        response.statusCode = HttpStatusForbidden;
+        [response setJsonBody:@{@"error": @"AccountInactive", @"message": @"Account is not active"}];
+        return YES;
+    }
+
+    NSError *takedownError = nil;
+    if ([adminController isAccountTakedownActive:did error:&takedownError]) {
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"AccountTakedown",
+            @"message": @"Repository has been taken down by the host",
+        }];
+        return YES;
+    }
+
+    return NO;
+}
+
+static BOOL rejectRecordTakedown(NSString *uri,
+                                 PDSServiceDatabases *serviceDatabases,
+                                 HttpResponse *response) {
+    NSError *dbError = nil;
+    PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&dbError];
+    if (!database) {
+        return NO;
+    }
+    NSError *takedownError = nil;
+    if ([database isRecordTakedownActive:uri error:&takedownError]) {
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"RecordTakedown",
+            @"message": @"Record has been taken down by the host",
+        }];
+        return YES;
+    }
+    return NO;
 }
 
 static PDSValidationMode validationModeFromValidateParameter(id validateParam) {
@@ -608,13 +675,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return;
         }
 
-        NSError *takedownError = nil;
-        if ([adminController isAccountTakedownActive:did error:&takedownError]) {
-            response.statusCode = HttpStatusGone;
-            [response setJsonBody:@{
-                @"error": @"AccountTakedown",
-                @"message": @"Repository has been taken down by the host",
-            }];
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
             return;
         }
 
@@ -678,17 +739,14 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return;
         }
 
-        NSError *takedownError = nil;
-        if ([adminController isAccountTakedownActive:did error:&takedownError]) {
-            response.statusCode = HttpStatusGone;
-            [response setJsonBody:@{
-                @"error": @"AccountTakedown",
-                @"message": @"Repository has been taken down by the host",
-            }];
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
             return;
         }
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        if (rejectRecordTakedown(uri, serviceDatabases, response)) {
+            return;
+        }
         GZ_LOG_INFO(@"getRecord: resolving uri=%@ for did=%@", uri, did);
         NSError *error = nil;
         NSDictionary *record = [recordService getRecord:uri forDid:did error:&error];
@@ -728,6 +786,10 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
             [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot create record for another user"}];
+            return;
+        }
+
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
             return;
         }
 
@@ -798,6 +860,10 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return;
         }
 
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+            return;
+        }
+
         if (!collection || !rkey) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey"}];
@@ -839,6 +905,10 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             }
+            return;
+        }
+
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
             return;
         }
 
@@ -945,6 +1015,10 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
         if (![blobDid isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
             [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot fetch blob for another user"}];
+            return;
+        }
+
+        if (rejectUnavailableRepoDid(blobDid, serviceDatabases, adminController, response)) {
             return;
         }
 
@@ -1330,6 +1404,10 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return;
         }
 
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+            return;
+        }
+
         if (!collection || !rkey || !record) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection, rkey, or record"}];
@@ -1451,6 +1529,10 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return;
         }
 
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+            return;
+        }
+
         NSError *writeValidationError = nil;
         if (!validateApplyWritesPayload(writes, &writeValidationError)) {
             response.statusCode = (writeValidationError.code == PDSRepoPackValidationErrorPayloadTooLarge)
@@ -1498,6 +1580,9 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
+        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+            return;
+        }
         NSString *cid = body[@"blob"];
         if (cid.length == 0) {
             response.statusCode = HttpStatusBadRequest;

@@ -137,7 +137,8 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   const doomedBlob = await timedCall(result, "Upload doomed snapshot", async () => {
-    return await pds.blobs.uploadBlob(makePng(), "image/png", luna.accessJwt);
+    const doomedBytes = new Uint8Array([...makePng(), 0]);
+    return await pds.blobs.uploadBlob(doomedBytes, "image/png", luna.accessJwt);
   });
 
   const keepCid = blobCid(keepBlob);

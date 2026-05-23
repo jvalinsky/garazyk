@@ -575,7 +575,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 
 - (BOOL)verifySignature:(NSData *)signature
                forData:(NSData *)data
-               withKey:(SecKeyRef)publicKey
+         withPublicKey:(SecKeyRef)publicKey
                   error:(NSError **)error {
     BOOL isValid = SecKeyVerifySignature(publicKey,
                                           self.signingAlgorithm,
@@ -837,7 +837,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
         return [[Secp256k1 shared] verifySignature:signature forHash:hashData withPublicKey:kp.compressedPublicKey error:error];
     }
 
-    return [self verifySignature:signature forData:data withKey:keyPair.publicKey error:error];
+    return [self verifySignature:signature forData:data withPublicKey:keyPair.publicKey error:error];
 }
 
 @end

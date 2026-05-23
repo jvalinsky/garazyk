@@ -203,7 +203,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
 /*!
  @method markReposAsProcessing:error:
 
- @abstract Atomically transition a batch of DIDs from pending → processing.
+ @abstract Atomically transition a batch of DIDs from pending/dirty → processing.
  Returns the DIDs that were actually transitioned (already-processing are skipped).
  */
 - (nullable NSArray<NSString *> *)markReposAsProcessing:(NSArray<NSString *> *)dids

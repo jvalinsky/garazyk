@@ -19,8 +19,10 @@
 #import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSDatabase+Moderation.h"
 #import "Admin/PDSAdminController.h"
 #import "Services/PDS/PDSRepositoryService.h"
+#import "Services/PDS/PDSRecordService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
@@ -59,6 +61,7 @@ static BOOL updateAccountSigningKey(PDSServiceDatabases *serviceDatabases,
                                     NSString *did,
                                     NSString *signingKey,
                                     NSError **error);
+static NSDictionary *subjectStatusSubjectFromRequestBody(NSDictionary *body);
 static BOOL isLikelyEmail(NSString *email);
 static BOOL parseStrictIntegerString(NSString *str, NSInteger *outValue);
 static BOOL resolveAccountIdentifierToDid(PDSServiceDatabases *serviceDatabases,
@@ -90,6 +93,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     JWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     PDSRepositoryService *repositoryService = services.repositoryService;
+    PDSRecordService *recordService = services.recordService;
     PDSBlobAuditManager *auditManager = services.blobAuditManager;
     
     // Register com.atproto.admin.searchAccounts
@@ -888,17 +892,29 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
             return;
         }
 
-        NSString *did = body[@"subject"][@"did"];
+        NSDictionary *subject = subjectStatusSubjectFromRequestBody(body);
+        NSString *did = subject[@"did"];
+        NSString *uri = subject[@"uri"];
         NSString *reason = body[@"reason"];
 
-        if (!did) {
+        if (did.length == 0 && uri.length == 0) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing subject DID"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing subject DID or record URI"}];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [adminController takeDownAccount:did reason:reason error:&error];
+        BOOL success = NO;
+        if (did.length > 0) {
+            success = [adminController takeDownAccount:did reason:reason error:&error];
+        } else {
+            NSDictionary *result = [adminController moderateRecord:@{
+                @"uri": uri,
+                @"action": @"takedown",
+                @"reason": reason ?: @""
+            } error:&error];
+            success = [result[@"status"] isEqualToString:@"success"];
+        }
 
         if (!success) {
             response.statusCode = 400;
@@ -908,6 +924,47 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"success": @YES}];
+    }];
+
+    [dispatcher registerComAtprotoAdminGetRecord:^(HttpRequest *request, HttpResponse *response) {
+        if (![XrpcAuthHelper authorizeAdminRequest:request
+                                           response:response
+                                   serviceDatabases:serviceDatabases
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController]) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *uri = [request queryParamForKey:@"uri"];
+        if (uri.length == 0 || ![uri hasPrefix:@"at://"]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid uri parameter"}];
+            return;
+        }
+
+        NSArray<NSString *> *parts = [[uri substringFromIndex:5] componentsSeparatedByString:@"/"];
+        if (parts.count < 3) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid AT-URI"}];
+            return;
+        }
+        NSString *did = parts[0];
+        NSError *error = nil;
+        NSDictionary *record = [recordService getRecord:uri forDid:did error:&error];
+        if (!record) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RecordNotFound", @"message": error.localizedDescription ?: @"Record not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:record];
     }];
 
     // Register com.atproto.admin.getSubjectStatus
@@ -1440,6 +1497,23 @@ static BOOL deleteAccountAsAdmin(PDSServiceDatabases *serviceDatabases,
     BOOL deleted = [db deleteAccount:did error:error];
     [db close];
     return deleted;
+}
+
+static NSDictionary *subjectStatusSubjectFromRequestBody(NSDictionary *body) {
+    id subjectValue = body[@"subject"];
+    if (![subjectValue isKindOfClass:[NSDictionary class]]) {
+        return @{};
+    }
+    NSDictionary *subject = (NSDictionary *)subjectValue;
+    NSString *did = [subject[@"did"] isKindOfClass:[NSString class]] ? subject[@"did"] : nil;
+    NSString *uri = [subject[@"uri"] isKindOfClass:[NSString class]] ? subject[@"uri"] : nil;
+    if (uri.length == 0 && [subject[@"$type"] isEqualToString:@"com.atproto.repo.strongRef"]) {
+        uri = [subject[@"uri"] isKindOfClass:[NSString class]] ? subject[@"uri"] : nil;
+    }
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    if (did.length > 0) result[@"did"] = did;
+    if (uri.length > 0) result[@"uri"] = uri;
+    return result;
 }
 
 static NSData *pbkdf2HashPassword(NSString *password, NSData *salt, NSError **error) {

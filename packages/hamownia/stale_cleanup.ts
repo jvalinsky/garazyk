@@ -140,6 +140,7 @@ export async function stopStaleHostProcesses(
     "syrena",
     "syrena-chat",
     "jelcz",
+    "germ",
   ]);
 
   for (const port of ports) {

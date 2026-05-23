@@ -112,6 +112,27 @@
     return result;
 }
 
+- (BOOL)isRecordTakedownActive:(NSString *)uri error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
+    if (!uri) {
+        result = NO;
+        return;
+    }
+    NSString *sql = @"SELECT applied FROM admin_takedowns WHERE subjectId = ? AND subjectType = 'record' ORDER BY createdAt DESC LIMIT 1";
+    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[uri] error:error];
+    if (rows.count == 0) {
+        result = NO;
+        return;
+    }
+    NSNumber *applied = rows.firstObject[@"applied"];
+    result = applied ? applied.boolValue : NO;
+    return;
+    }];
+    return result;
+}
+
 - (BOOL)createLabel:(NSDictionary *)label error:(NSError **)error {
     __block BOOL result = NO;
     [self safeExecuteSync:^{

@@ -28,6 +28,13 @@ function now() {
   return new Date().toISOString();
 }
 
+function hasWebSocketCloseFrame(data: Uint8Array): boolean {
+  for (let i = 0; i < data.length; i++) {
+    if ((data[i] & 0x0f) === 0x08) return true;
+  }
+  return false;
+}
+
 async function connectRawWs(url: string) {
   const parsed = new URL(url);
   const host = parsed.hostname;
@@ -119,17 +126,24 @@ export async function run(): Promise<ScenarioResult> {
     await new Promise((r) => setTimeout(r, 1000));
   }
 
-  // Try a read to detect if connection was closed
-  try {
-    const n = await Promise.race([
-      conn.read(buf),
-      new Promise<number>((resolve) => setTimeout(() => resolve(-1), 2000)),
-    ]);
-    if (n === null) {
+  // The socket can still have buffered frames after the server has sent a
+  // close frame and FIN. Drain briefly so buffered firehose data does not mask
+  // a correctly closed slow-consumer connection.
+  const readDeadline = Date.now() + 5000;
+  while (!closed && Date.now() < readDeadline) {
+    try {
+      const n = await Promise.race([
+        conn.read(buf),
+        new Promise<number>((resolve) => setTimeout(() => resolve(-1), 1000)),
+      ]);
+      if (n === null) {
+        closed = true;
+      } else if (typeof n === "number" && n > 0 && hasWebSocketCloseFrame(buf.subarray(0, n))) {
+        closed = true;
+      }
+    } catch {
       closed = true;
     }
-  } catch {
-    closed = true;
   }
 
   if (closed) {

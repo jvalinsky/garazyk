@@ -16,7 +16,7 @@ import type {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const basePorts = [2582, 2583, 2584, 3200, 2590, 8080, 8081];
+const basePorts = [2582, 2583, 2584, 3200, 8082, 2590, 8080, 8081];
 
 /** Build a mock EnvSource from a plain record. */
 function mockEnv(
@@ -42,7 +42,7 @@ class MockFs implements FileSystemOps {
 
 Deno.test("neededPorts: returns the base set of ports when no options are given", () => {
   const ports = neededPorts({});
-  assertEquals(ports.length, 7);
+  assertEquals(ports.length, 8);
   for (const p of basePorts) {
     assert(ports.includes(p), `expected ${p} in ports`);
   }
@@ -71,7 +71,7 @@ Deno.test("neededPorts: returns a new array each time", () => {
   const b = neededPorts({});
   assertEquals(a, b);
   a.push(9999);
-  assertEquals(neededPorts({}).length, 7);
+  assertEquals(neededPorts({}).length, 8);
 });
 
 // ---------------------------------------------------------------------------
@@ -80,6 +80,7 @@ Deno.test("neededPorts: returns a new array each time", () => {
 
 Deno.test("serviceUrl: uses the default port from SERVICE_PORTS", () => {
   assertEquals(serviceUrl("pds", emptyEnv), "http://127.0.0.1:2583");
+  assertEquals(serviceUrl("germ", emptyEnv), "http://127.0.0.1:8082");
 });
 
 Deno.test("serviceUrl: falls back to port 0 for unknown services", () => {

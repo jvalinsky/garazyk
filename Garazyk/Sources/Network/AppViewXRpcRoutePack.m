@@ -198,6 +198,14 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                  [self handleGetRepostedBy:request response:response];
              }];
 
+    // --- app.bsky.labeler ---
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.labeler.getServices"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 response.statusCode = HttpStatusOK;
+                 [response setJsonBody:@{@"views" : @[], @"cursor" : [NSNull null]}];
+             }];
+
     // --- app.bsky.graph ---
     if (_graphService) {
         [server addRoute:@"GET"

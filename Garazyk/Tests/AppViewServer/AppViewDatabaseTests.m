@@ -105,6 +105,20 @@
     XCTAssertEqual(second.count, 0u, @"Already processing — no transitions");
 }
 
+- (void)testMarkDirtyReposAsProcessing {
+    NSError *err = nil;
+    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:dirty-processing"];
+    state.status = AppViewRepoSyncStatusDirty;
+    XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
+
+    NSArray<NSString *> *transitioned = [self.db markReposAsProcessing:@[state.did] error:&err];
+    XCTAssertNil(err);
+    XCTAssertEqual(transitioned.count, 1u);
+
+    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:state.did error:&err];
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusProcessing);
+}
+
 - (void)testMarkRepoSynced {
     NSError *err = nil;
     AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:synced"];

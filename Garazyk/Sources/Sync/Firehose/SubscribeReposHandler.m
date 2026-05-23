@@ -298,6 +298,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (request.remoteAddress.length > 0) {
     webSocketConnection.remoteAddress = request.remoteAddress;
   }
+  webSocketConnection.heartbeatInterval = 5.0;
+  webSocketConnection.heartbeatTimeout = 5.0;
   webSocketConnection.delegate = self;
   __block NSUInteger count = 0;
   dispatch_sync(_connectionsQueue, ^{
@@ -326,6 +328,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       @"[%@] Accepted new WebSocket connection for subscribeRepos",
       connection.remoteAddress);
 
+  connection.heartbeatInterval = 5.0;
+  connection.heartbeatTimeout = 5.0;
   __block NSUInteger count = 0;
   dispatch_sync(_connectionsQueue, ^{
     [_attachedConnections addObject:connection];

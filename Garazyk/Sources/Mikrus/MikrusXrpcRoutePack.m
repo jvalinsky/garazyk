@@ -10,6 +10,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/RateLimiter.h"
 
 @implementation MikrusXrpcRoutePack {
@@ -239,6 +240,7 @@
 }
 
 - (void)handleGetRecordByUri:(HttpRequest *)request response:(HttpResponse *)response {
+    @try {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *atURI = [self requiredParam:@"at_uri" request:request response:response];
     if (!atURI) return;
@@ -277,6 +279,13 @@
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:record];
+    } @catch (NSException *exception) {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+            @"error": @"InternalServerError",
+            @"message": exception.reason ?: @"Record lookup failed"
+        }];
+    }
 }
 
 #pragma mark - Helpers
@@ -442,7 +451,9 @@
                                               cid:(nullable NSString *)cid {
     NSError *error = nil;
     DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:&error];
-    NSString *endpoint = doc ? [self pdsEndpointFromDocument:doc] : nil;
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSString *endpointOverride = env[@"MIKRUS_PDS_URL"];
+    NSString *endpoint = endpointOverride.length > 0 ? endpointOverride : (doc ? [self pdsEndpointFromDocument:doc] : nil);
     if (endpoint.length == 0) return nil;
 
     NSURLComponents *components = [NSURLComponents componentsWithString:endpoint];
@@ -471,18 +482,17 @@
     request.timeoutInterval = 5.0;
     [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-    __block NSData *data = nil;
-    __block NSHTTPURLResponse *http = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    [[[NSURLSession sharedSession] dataTaskWithRequest:request
-                                     completionHandler:^(NSData *body, NSURLResponse *response, NSError *fetchError) {
-        data = body;
-        if ([response isKindOfClass:[NSHTTPURLResponse class]]) http = (NSHTTPURLResponse *)response;
-        dispatch_semaphore_signal(semaphore);
-    }] resume];
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.allowHTTP = YES;
+    options.allowPrivateHosts = YES;
+    NSHTTPURLResponse *http = nil;
+    NSError *fetchError = nil;
+    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
+                                                                        options:options
+                                                                       response:&http
+                                                                          error:&fetchError];
 
-    if (http.statusCode < 200 || http.statusCode >= 300 || data.length == 0) return nil;
+    if (fetchError || http.statusCode < 200 || http.statusCode >= 300 || data.length == 0) return nil;
     id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     return [json isKindOfClass:[NSDictionary class]] ? json : nil;
 }

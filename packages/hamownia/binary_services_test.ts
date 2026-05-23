@@ -7,8 +7,14 @@ import {
   resolveBinaryServiceStartPlan,
 } from "./binary_services.ts";
 
-Deno.test("binary services default to PLC, PDS, Relay, and AppView", () => {
-  assertEquals(defaultBinaryServices(), ["plc", "pds", "relay", "appview"]);
+Deno.test("binary services default to PLC, PDS, Relay, AppView, and Germ", () => {
+  assertEquals(defaultBinaryServices(), [
+    "plc",
+    "pds",
+    "relay",
+    "appview",
+    "germ",
+  ]);
 });
 
 Deno.test("binary service start plan applies per-service args and env overrides", async () => {

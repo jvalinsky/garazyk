@@ -51,7 +51,7 @@ function summarizeIngestState(health: any, backfill: any, metrics: any, records:
     !!(health?.running === false || backfill?.enabled === false || metrics?.backpressure);
   const queueDepth = metrics?.queue_depth || health?.queue_depth || 0;
   const ingestLag = metrics?.ingest_lag || 0;
-  const indexedRecords = records?.records?.length || records?.total || 0;
+  const indexedRecords = Number(records?.total ?? records?.records?.length ?? 0);
 
   return { backpressureActive, queueDepth, ingestLag, indexedRecords };
 }
@@ -187,6 +187,7 @@ export async function run(): Promise<ScenarioResult> {
   phaseTimer.startPhase("Resume verification");
   const expectedTotal = sustainedCreated + burstCreated;
   let cleared = false;
+  let lastSummary: ReturnType<typeof summarizeIngestState> | null = null;
   for (let attempt = 0; attempt < 60; attempt++) {
     const h = await appviewAdminGet("/admin/ingest/health");
     const b = await appviewAdminGet("/admin/backfill/status");
@@ -196,6 +197,7 @@ export async function run(): Promise<ScenarioResult> {
       limit: 1,
     });
     const s = summarizeIngestState(h, b, m, r);
+    lastSummary = s;
     if (s.indexedRecords >= expectedTotal && !s.backpressureActive && s.ingestLag <= 5) {
       cleared = true;
       result.stepPassed("Resume verification", `indexed=${s.indexedRecords}, lag=${s.ingestLag}`);
@@ -203,7 +205,12 @@ export async function run(): Promise<ScenarioResult> {
     }
     await new Promise((r) => setTimeout(r, 2000));
   }
-  if (!cleared) result.stepFailed("Resume verification", "Ingest did not clear in time");
+  if (!cleared) {
+    const detail = lastSummary
+      ? `Ingest did not clear in time: expected=${expectedTotal}, indexed=${lastSummary.indexedRecords}, lag=${lastSummary.ingestLag}, queue=${lastSummary.queueDepth}, backpressure=${lastSummary.backpressureActive}`
+      : `Ingest did not clear in time: expected=${expectedTotal}`;
+    result.stepFailed("Resume verification", detail);
+  }
   phaseTimer.endPhase();
 
   // Consistency

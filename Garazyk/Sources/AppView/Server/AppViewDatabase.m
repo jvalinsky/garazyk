@@ -687,13 +687,16 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 
     BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *db, NSError **innerError) {
         for (NSString *did in dids) {
-            NSString *sql = @"UPDATE appview_repo_sync_state SET status = ? WHERE did = ? AND status = ?";
-            NSArray *params = @[@(AppViewRepoSyncStatusProcessing), did, @(AppViewRepoSyncStatusPending)];
-            
-            // We need to know if any rows were changed. 
-            // Since executeParameterizedUpdate doesn't return change count, we might need to handle this differently.
-            // However, the original code used sqlite3_changes(self->_db).
-            // Let's assume we can check changes within the queue.
+            NSString *sql =
+                @"UPDATE appview_repo_sync_state"
+                " SET status = ?"
+                " WHERE did = ? AND status IN (?, ?)";
+            NSArray *params = @[
+                @(AppViewRepoSyncStatusProcessing),
+                did,
+                @(AppViewRepoSyncStatusPending),
+                @(AppViewRepoSyncStatusDirty)
+            ];
             
             [db executeParameterizedUpdate:sql params:params error:nil];
             if (sqlite3_changes(db->_db) > 0) {

@@ -430,6 +430,16 @@ export class TransportLayer {
           continue;
         }
 
+        if (response.status >= 400) {
+          let body: unknown = new TextDecoder().decode(data);
+          try {
+            body = JSON.parse(body as string);
+          } catch {
+            // Binary endpoints can return arbitrary error bodies; preserve the decoded text.
+          }
+          throw new XrpcError(method, response.status, body);
+        }
+
         return [
           response.status,
           response.headers.get("Content-Type") || "",

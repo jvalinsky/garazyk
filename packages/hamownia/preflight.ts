@@ -106,6 +106,7 @@ export async function checkHostPorts(
     "syrena",
     "syrena-chat",
     "jelcz",
+    "germ",
   ]);
   for (const port of ports) {
     try {
@@ -162,6 +163,7 @@ const DEFAULT_PROBES: HealthProbe[] = [
   { key: "relay", path: "/api/relay/health", timeoutSeconds: 5 },
   { key: "appview", path: "/admin/backfill/status", timeoutSeconds: 10 },
   { key: "chat", path: "/_health", timeoutSeconds: 5 },
+  { key: "germ", path: "/_health", timeoutSeconds: 5 },
 ];
 
 const PDS2_PROBE: HealthProbe = {

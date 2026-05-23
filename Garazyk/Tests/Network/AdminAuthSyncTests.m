@@ -720,11 +720,10 @@
 }
 
 - (void)testApplicationSyncGetRepoStatusReturnsNotFoundForInvalidDid {
-  NSString *query = @"did=did:plc:invalid";
-  HttpResponse *response =
+  NSString *query = @"did=did:plc:aaaaaaaaaaaaaaaaaaaaaaaa";    HttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
                        queryString:query
-                       queryParams:@{@"did" : @"did:plc:invalid"}
+                       queryParams:@{@"did" : @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa"}
                            headers:@{}];
   XCTAssertEqual(response.statusCode, 404);
   XCTAssertEqualObjects(response.jsonBody[@"error"], @"RepoNotFound");

@@ -97,6 +97,7 @@ static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     const char *cStr = [combined UTF8String];
     unsigned char digest[CC_SHA1_DIGEST_LENGTH];
 
+    // CC_SHA1 required by RFC 6455 §4.2.2 for Sec-WebSocket-Accept key derivation.
     CC_SHA1(cStr, (CC_LONG)strlen(cStr), digest);
 
     NSData *data = [NSData dataWithBytes:digest length:CC_SHA1_DIGEST_LENGTH];

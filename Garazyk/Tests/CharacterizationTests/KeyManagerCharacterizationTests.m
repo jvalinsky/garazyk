@@ -236,7 +236,7 @@
     XCTAssertNotNil(signature, @"Signature failed: %@", error);
     XCTAssertNil(error);
 
-    BOOL verified = [self.subject verifySignature:signature forData:data withKey:keyPair.publicKey error:&error];
+    BOOL verified = [self.subject verifySignature:signature forData:data withPublicKey:keyPair.publicKey error:&error];
     XCTAssertTrue(verified);
     XCTAssertNil(error);
 }
@@ -291,7 +291,7 @@
     NSData *signature = [self.subject signData:data withKeyID:keyPair.keyID error:&error];
     XCTAssertNotNil(signature, @"Signature failed: %@", error);
 
-    BOOL verified = [self.subject verifySignature:signature forData:data withKey:keyPair.publicKey error:&error];
+    BOOL verified = [self.subject verifySignature:signature forData:data withPublicKey:keyPair.publicKey error:&error];
     XCTAssertTrue(verified);
     XCTAssertNil(error);
 }

@@ -81,6 +81,10 @@ export const BINARY_SERVICES = {
     binary: "jelcz",
     healthPath: "/_health",
   },
+  germ: {
+    binary: "germ",
+    healthPath: "/_health",
+  },
 } as const;
 
 export type BinaryServiceName = keyof typeof BINARY_SERVICES;
@@ -266,14 +270,14 @@ interface ResolveBinaryServiceStartPlanOptions {
 export function defaultBinaryServices(
   services?: BinaryServiceName[],
 ): BinaryServiceName[] {
-  return services ?? ["plc", "pds", "relay", "appview"];
+  return services ?? ["plc", "pds", "relay", "appview", "germ"];
 }
 
 /** @internal Exported for unit tests that must not launch real binaries. */
 export async function resolveBinaryServiceStartPlan(
   {
     name,
-    root,
+    root: _root,
     dataRoot,
     commonEnv,
     options = {},
@@ -354,6 +358,11 @@ export async function resolveBinaryServiceStartPlan(
       env.APPVIEW_ADMIN_SECRET = "localdevadmin";
       env.APPVIEW_PLC_URL = serviceUrl("plc");
       env.APPVIEW_PDS_URL = serviceUrl("pds");
+      break;
+    case "germ":
+      args = ["serve", "--port", String(port), "--data-dir", dataDir];
+      env.GERM_PDS_URL = serviceUrl("pds");
+      env.GERM_PLC_URL = serviceUrl("plc");
       break;
     default:
       args = ["serve", "--port", String(port), "--data-dir", dataDir];

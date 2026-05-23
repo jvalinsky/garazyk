@@ -17,6 +17,7 @@ export const SERVICE_PORTS: Record<string, number> = {
   appview: 3200,
   chat: 2585,
   video: 2586,
+  germ: 8082,
   pds2: 2587,
   ui: 2590,
 };
@@ -86,6 +87,7 @@ export function neededPorts(
     SERVICE_PORTS.pds,
     SERVICE_PORTS.relay,
     SERVICE_PORTS.appview,
+    SERVICE_PORTS.germ,
     SERVICE_PORTS.ui,
     8080,
     8081,
