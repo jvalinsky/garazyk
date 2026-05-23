@@ -58,6 +58,7 @@ export {
   loadTopologyManifest,
   parsePortMapping,
   publicUrlForRole,
+  publicUrlForRoleWithHostPort,
   roleToEnvKey,
   sanitizeTopologyName,
   serviceNameForRole,
@@ -101,6 +102,10 @@ import {
   KnownServiceRole,
   roleEnvKey,
 } from "./topology_registry.ts";
+import {
+  loadRunResourceManifest,
+  serviceUrlsFromResourceManifest,
+} from "./resource_manifest.ts";
 
 // ---------------------------------------------------------------------------
 // Web client presets
@@ -367,12 +372,17 @@ function capabilitiesByRoleToSets(
 function defaultServiceUrls(
   webClient?: WebClientTopology,
 ): Record<string, string> {
+  const resourceUrls = serviceUrlsFromResourceManifest(
+    loadRunResourceManifest(),
+  );
   const urls: Record<string, string> = {
     pds: readEnv("PDS_URL") || "http://localhost:2583",
     pds2: readEnv("PDS2_URL") || "http://localhost:2587",
     plc: readEnv("PLC_URL") || "http://localhost:2582",
     relay: readEnv("RELAY_URL") || "http://localhost:2584",
     appview: readEnv("APPVIEW_URL") || "http://localhost:3200",
+    mikrus: readEnv("MIKRUS_URL") || "http://localhost:3210",
+    beskid: readEnv("BESKID_URL") || "http://localhost:8085",
     chat: readEnv("CHAT_URL") || "http://localhost:2585",
     video: readEnv("VIDEO_URL") || "http://localhost:2586",
     ui: readEnv("GARAZYK_UI_URL") || "http://localhost:2590",
@@ -380,6 +390,7 @@ function defaultServiceUrls(
     oauthClient: oauthClientUrl || webClient?.publicUrl ||
       "http://localhost:8080",
   };
+  Object.assign(urls, resourceUrls);
   if (webClient) urls.webClient = webClient.publicUrl;
   return urls;
 }
@@ -483,6 +494,10 @@ export function resolveTopology(
       serviceUrls[role] = publicUrlForRole(role, adapter);
     }
   }
+  Object.assign(
+    serviceUrls,
+    serviceUrlsFromResourceManifest(loadRunResourceManifest()),
+  );
   internalUrls = { ...defaultInternalUrls(serviceUrls), ...internalUrls };
 
   return {

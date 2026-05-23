@@ -44,6 +44,7 @@ function toE2ERunContext(
     reportsDir: join(ctx.runDir, "reports"),
     diagnosticsDir: overrides.diagnosticsDir ?? ctx.diagnosticsDir,
     pidFile: ctx.pidFile,
+    resourceManifestFile: ctx.resourceManifestFile,
     composeProject: ctx.composeProject,
   };
 }

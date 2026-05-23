@@ -1,6 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import {
   buildDockerScenarioRunnerOptions,
+  buildHostScenarioEnv,
   runScenario,
 } from "./scenario_runner.ts";
 import { buildDockerRunnerArgs } from "./docker_runner.ts";
@@ -23,6 +24,7 @@ function args(): RunnerArgs {
     noJson: true,
     keepRunning: false,
     collectDiagnostics: false,
+    isolation: "auto",
     timeout: 1,
     clientFlow: "none",
     allowHybridNetwork: false,
@@ -90,6 +92,40 @@ Deno.test("runScenario host child succeeds and returns report", async () => {
   assertEquals(result.passed, 1);
   assertEquals(result.artifacts.artifact, { ok: true });
   assertEquals(result.metadata.source, "child");
+});
+
+Deno.test("buildHostScenarioEnv exposes normalized host service URLs", () => {
+  const topo = topology();
+  topo.serviceUrls = {
+    pds: "http://localhost:2583",
+    pds2: "http://localhost:2587",
+    chat: "http://localhost:2585",
+    mikrus: "http://localhost:3210",
+    beskid: "http://localhost:8085",
+    relay: "ws://localhost:2584",
+  };
+  topo.manifest = {
+    version: 1,
+    name: "test",
+    networkName: "test-net",
+    serviceUrls: topo.serviceUrls,
+    internalUrls: {},
+    serviceNames: {},
+    scenarioEnv: {
+      CHAT_URL: "http://localhost:2585",
+      CUSTOM_VALUE: "localhost",
+    },
+  } as unknown as Topology["manifest"];
+
+  const env = buildHostScenarioEnv(args(), topo);
+
+  assertEquals(env.PDS_URL, "http://127.0.0.1:2583");
+  assertEquals(env.PDS2_URL, "http://127.0.0.1:2587");
+  assertEquals(env.CHAT_URL, "http://127.0.0.1:2585");
+  assertEquals(env.MIKRUS_URL, "http://127.0.0.1:3210");
+  assertEquals(env.BESKID_URL, "http://127.0.0.1:8085");
+  assertEquals(env.RELAY_URL, "ws://127.0.0.1:2584");
+  assertEquals(env.CUSTOM_VALUE, "localhost");
 });
 
 Deno.test("runScenario host child reports missing run export", async () => {

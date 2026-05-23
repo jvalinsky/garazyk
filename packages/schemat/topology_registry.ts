@@ -8,6 +8,7 @@ export const KNOWN_SERVICE_ROLES = [
   "relay",
   "appview",
   "mikrus",
+  "beskid",
   "chat",
   "video",
   "ui",
@@ -29,6 +30,7 @@ export const Role: {
   readonly relay: "relay";
   readonly appview: "appview";
   readonly mikrus: "mikrus";
+  readonly beskid: "beskid";
   readonly chat: "chat";
   readonly video: "video";
   readonly ui: "ui";
@@ -40,6 +42,7 @@ export const Role: {
   relay: "relay",
   appview: "appview",
   mikrus: "mikrus",
+  beskid: "beskid",
   chat: "chat",
   video: "video",
   ui: "ui",
@@ -64,6 +67,7 @@ export const DEFAULT_SERVICE_NAMES: Record<KnownServiceRole, string> = {
   plc: "local-plc",
   appview: "local-appview",
   mikrus: "local-mikrus",
+  beskid: "local-beskid",
   chat: "local-chat",
   video: "local-video",
   ui: "local-ui",
@@ -78,6 +82,7 @@ export const DEFAULT_PORTS: Record<KnownServiceRole, string> = {
   plc: "2582",
   appview: "3200",
   mikrus: "3210",
+  beskid: "8085",
   chat: "2585",
   video: "2586",
   ui: "2590",
@@ -92,6 +97,7 @@ export const ROLE_ENV_REGISTRY: Record<KnownServiceRole, string> = {
   relay: "RELAY_URL",
   appview: "APPVIEW_URL",
   mikrus: "MIKRUS_URL",
+  beskid: "BESKID_URL",
   chat: "CHAT_URL",
   video: "VIDEO_URL",
   ui: "GARAZYK_UI_URL",
@@ -211,6 +217,17 @@ export const CAPABILITY_REGISTRY: {
     "getManyToManyCounts",
     "getRecordByUri",
     "resolveMiniDoc",
+  ];
+  readonly beskid: readonly [
+    "getRecord",
+    "getUriRecord",
+    "getRecordByUri",
+    "resolveHandle",
+    "resolveMiniDoc",
+    "resolveService",
+    "hydrateQueryResponse",
+    "recordCache",
+    "identityCache",
   ];
   readonly backfill: readonly [
     "backfill",
@@ -359,6 +376,17 @@ export const CAPABILITY_REGISTRY: {
     "getRecordByUri",
     "resolveMiniDoc",
   ],
+  beskid: [
+    "getRecord",
+    "getUriRecord",
+    "getRecordByUri",
+    "resolveHandle",
+    "resolveMiniDoc",
+    "resolveService",
+    "hydrateQueryResponse",
+    "recordCache",
+    "identityCache",
+  ],
   backfill: [
     "backfill",
     "collectionFiltering",
@@ -420,6 +448,7 @@ export const Cap: {
   relay: capabilityConstants(CAPABILITY_REGISTRY.relay),
   appview: capabilityConstants(CAPABILITY_REGISTRY.appview),
   mikrus: capabilityConstants(CAPABILITY_REGISTRY.mikrus),
+  beskid: capabilityConstants(CAPABILITY_REGISTRY.beskid),
   chat: capabilityConstants(CAPABILITY_REGISTRY.chat),
   video: capabilityConstants(CAPABILITY_REGISTRY.video),
   ui: capabilityConstants(CAPABILITY_REGISTRY.ui),

@@ -6,6 +6,7 @@
  * @module run_scenarios_types
  */
 import type { BrowserFlow } from "@garazyk/schemat";
+import type { ResourceIsolationMode } from "@garazyk/schemat";
 
 /** CLI arguments parsed for the scenario runner
  *
@@ -49,6 +50,12 @@ export interface RunnerArgs {
   allowHybridNetwork: boolean;
   /** Existing run identifier to reuse */
   runId?: string;
+  /** Resource isolation mode for local services */
+  isolation: ResourceIsolationMode;
+  /** Existing resource manifest to attach to */
+  resourceManifest?: string;
+  /** Optional START:END port range for dynamic leases */
+  portRange?: string;
   /** Directory where diagnostics are written */
   diagnosticsDir?: string;
   /** Directory where reports are written */

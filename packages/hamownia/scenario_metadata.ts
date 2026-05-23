@@ -127,7 +127,15 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
   "37": { requires: [requireCapability(Role.chat, Cap.chat.chat)] },
   "42": { requires: [requireCapability(Role.plc, Cap.plc.didResolution)] },
   "47": { requires: [requireCapability(Role.chat, Cap.chat.groupChat)] },
-  "60": { timeout: 240 },
+  "60": {
+    timeout: 240,
+    requires: [
+      requireCapability(Role.mikrus, Cap.mikrus.getBacklinkDids),
+      requireCapability(Role.mikrus, Cap.mikrus.getBacklinksCount),
+      requireCapability(Role.mikrus, Cap.mikrus.getManyToManyCounts),
+      requireCapability(Role.mikrus, Cap.mikrus.getRecordByUri),
+    ],
+  },
   "64": {
     requires: [requireCapability(Role.plc, Cap.plc.didResolution)],
   },
@@ -139,6 +147,16 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
   },
   "67": {
     requires: [requireCapability(Role.plc, Cap.plc.didResolution)],
+  },
+  "69": {
+    requires: [
+      requireCapability(Role.beskid, Cap.beskid.resolveHandle),
+      requireCapability(Role.beskid, Cap.beskid.resolveMiniDoc),
+      requireCapability(Role.beskid, Cap.beskid.getUriRecord),
+      requireCapability(Role.beskid, Cap.beskid.hydrateQueryResponse),
+      requireCapability(Role.beskid, Cap.beskid.recordCache),
+      requireCapability(Role.beskid, Cap.beskid.identityCache),
+    ],
   },
   "59": {
     browserFlows: ["smoke", "login", "deep"],
@@ -154,6 +172,172 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
         description: "Maximum reply depth",
       },
     },
+  },
+  "70": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.sync),
+      requireCapability(Role.relay, Cap.relay.subscribeRepos),
+      requireCapability(Role.relay, Cap.relay.requestCrawl),
+    ],
+  },
+  "71": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.admin),
+      requireCapability(Role.pds, Cap.pds.moderation),
+    ],
+  },
+  "72": {
+    requires: [
+      requireCapability(Role.chat, Cap.chat.chat),
+      requireCapability(Role.chat, Cap.chat.dm),
+    ],
+  },
+  "73": {
+    requires: [
+      requireCapability(Role.appview, Cap.appview.posts),
+      requireCapability(Role.appview, Cap.appview.getFeed),
+      requireCapability(Role.appview, Cap.appview.feeds),
+    ],
+  },
+  "74": {
+    requires: [
+      requireCapability(Role.appview, Cap.appview.backfill),
+      requireCapability(Role.appview, Cap.appview.admin),
+    ],
+  },
+  "75": {
+    requires: [
+      requireCapability(Role.mikrus, Cap.mikrus.getBacklinks),
+      requireCapability(Role.mikrus, Cap.mikrus.getBacklinkDids),
+      requireCapability(Role.mikrus, Cap.mikrus.getBacklinksCount),
+      requireCapability(Role.mikrus, Cap.mikrus.getManyToManyCounts),
+      requireCapability(Role.mikrus, Cap.mikrus.getRecordByUri),
+    ],
+  },
+  "76": {
+    requires: [
+      requireCapability(Role.video, Cap.video.getVideoStatus),
+      requireCapability(Role.video, Cap.video.uploadVideo),
+    ],
+  },
+  "77": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.pds, Cap.pds.getRecord),
+      requireCapability(Role.appview, Cap.appview.getProfile),
+      requireCapability(Role.appview, Cap.appview.search),
+    ],
+  },
+  "78": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.pds, Cap.pds.getRecord),
+      requireCapability(Role.pds, Cap.pds.moderation),
+    ],
+  },
+  "79": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.pds, Cap.pds.createSession),
+      requireCapability(Role.pds, Cap.pds.getRecord),
+      requireCapability(Role.pds, Cap.pds.getSession),
+    ],
+  },
+  "80": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.appview, Cap.appview.getFeed),
+      requireCapability(Role.appview, Cap.appview.feeds),
+    ],
+  },
+  "81": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.pds, Cap.pds.identity),
+      requireCapability(Role.pds, Cap.pds.createSession),
+      requireCapability(Role.pds, Cap.pds.getSession),
+      requireCapability(Role.appview, Cap.appview.getProfile),
+    ],
+  },
+  "82": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.pds, Cap.pds.getRecord),
+      requireCapability(Role.appview, Cap.appview.getProfile),
+    ],
+  },
+  "83": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.admin),
+      requireCapability(Role.pds, Cap.pds.moderation),
+    ],
+  },
+  "84": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.pds, Cap.pds.getRecord),
+      requireCapability(Role.appview, Cap.appview.getProfile),
+      requireCapability(Role.appview, Cap.appview.labels),
+    ],
+  },
+  "85": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.admin),
+      requireCapability(Role.pds, Cap.pds.labeling),
+      requireCapability(Role.appview, Cap.appview.labels),
+    ],
+  },
+  "86": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.admin),
+    ],
+  },
+  "87": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.admin),
+      requireCapability(Role.pds, Cap.pds.moderation),
+    ],
+  },
+  "88": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.admin),
+    ],
+  },
+  "89": {
+    requires: [
+      requireCapability(Role.chat, Cap.chat.chat),
+      requireCapability(Role.chat, Cap.chat.dm),
+      requireCapability(Role.chat, Cap.chat.groupChat),
+    ],
+  },
+  "90": {
+    requires: [
+      requireCapability(Role.appview, Cap.appview.search),
+      requireCapability(Role.appview, Cap.appview.getProfile),
+    ],
+  },
+  "91": {
+    requires: [
+      requireCapability(Role.pds, Cap.pds.admin),
+      requireCapability(Role.pds, Cap.pds.identity),
+      requireCapability(Role.pds, Cap.pds.repo),
+    ],
+  },
+  "92": {
+    timeout: 420,
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.pds, Cap.pds.getRecord),
+      requireCapability(Role.pds, Cap.pds.deleteRecord),
+      requireCapability(Role.beskid, Cap.beskid.resolveHandle),
+      requireCapability(Role.beskid, Cap.beskid.getUriRecord),
+      requireCapability(Role.beskid, Cap.beskid.hydrateQueryResponse),
+      requireCapability(Role.beskid, Cap.beskid.recordCache),
+      requireCapability(Role.mikrus, Cap.mikrus.getBacklinks),
+      requireCapability(Role.mikrus, Cap.mikrus.getBacklinksCount),
+      requireCapability(Role.mikrus, Cap.mikrus.getManyToManyCounts),
+      requireCapability(Role.mikrus, Cap.mikrus.getRecordByUri),
+    ],
   },
 };
 

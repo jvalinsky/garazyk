@@ -18,12 +18,23 @@ import {
   waitForService,
   waitForServiceCLI,
 } from "@garazyk/laweta";
-import { compileTopology, loadTopologyManifest } from "@garazyk/schemat";
 import {
+  applyRunResourceEnvironment,
+  compileTopology,
+  createRunResourceManifest,
+  hostUrlForPort,
+  loadTopologyManifest,
+  resolvePreset,
+  writeRunResourceManifest,
+} from "@garazyk/schemat";
+import {
+  allocateHostPorts,
   initRunDir as initTopologyRunDir,
+  releaseRunPortLeases,
   repoRoot,
   type TopologyRunContext,
 } from "@garazyk/schemat/runtime";
+import type { PortRange, ResourceIsolationMode } from "@garazyk/schemat";
 import { startBinaryServices, stopBinaryServices } from "./binary_services.ts";
 import { collectDiagnostics } from "./docker_diagnostics.ts";
 import { formatBytes } from "./format.ts";
@@ -68,6 +79,12 @@ export interface LocalNetworkOptions {
   waitOnly?: boolean;
   /** Collect extra diagnostics on failure or shutdown */
   collectDiagnostics?: boolean;
+  /** Resource isolation mode */
+  isolation?: ResourceIsolationMode;
+  /** Existing or target resource manifest path */
+  resourceManifestFile?: string;
+  /** Port range for dynamic host-port leases */
+  portRange?: PortRange;
 }
 
 /**
@@ -131,7 +148,11 @@ export async function startLocalNetwork(
     }
 
     if (options.useBinary) {
-      await (dependencies.startBinaryServices ?? startBinaryServices)(ctx);
+      await (dependencies.startBinaryServices ?? startBinaryServices)(ctx, {
+        isolation: options.isolation,
+        resourceManifestFile: options.resourceManifestFile,
+        portRange: options.portRange,
+      });
       return;
     }
 
@@ -143,6 +164,23 @@ export async function startLocalNetwork(
     const topologyManifest = topologyManifestPath(ctx);
 
     if (options.topology) {
+      const hostPortOverrides = await allocateTopologyHostPorts(
+        ctx,
+        options.topology,
+        {
+          includePds2: options.withPds2,
+          isolation: options.isolation,
+          portRange: options.portRange,
+          otel: options.otel,
+        },
+      );
+      const otelHttpPort = hostPortOverrides["signoz-otel-collector-http"];
+      if (options.otel && otelHttpPort) {
+        Deno.env.set(
+          "OTEL_EXPORTER_OTLP_ENDPOINT",
+          hostUrlForPort(otelHttpPort),
+        );
+      }
       await compileTopology({
         preset: options.topology,
         runDir: ctx.runDir,
@@ -151,9 +189,17 @@ export async function startLocalNetwork(
         includePds2: options.withPds2,
         otel: options.otel,
         manifestFile: topologyManifest,
+        publishMode: options.isolation === "legacy-fixed"
+          ? "static"
+          : "dynamic",
+        hostPortOverrides,
       });
       composeFiles.push(topologyComposeFile);
       applyTopologyEnvironment(options.topology, topologyManifest);
+      await writeDockerResourceManifest(ctx, topologyManifest, {
+        isolation: options.isolation ?? "auto",
+        hostPortOverrides,
+      });
     } else {
       composeFiles.push(join(composeDir, "docker-compose.yml"));
       if (options.withPds2) {
@@ -174,8 +220,10 @@ export async function startLocalNetwork(
     if (!options.waitOnly) {
       console.log("[INFO]  Starting local network (Docker)...");
 
-      await stopStaleHostProcesses(options);
-      await stopStaleDockerE2e(options, ctx.composeProject);
+      if (options.isolation === "legacy-fixed") {
+        await stopStaleHostProcesses(options);
+        await stopStaleDockerE2e(options, ctx.composeProject);
+      }
 
       await composeDown(ctx.composeProject, composeFiles);
       await composeUp(ctx.composeProject, composeFiles);
@@ -324,13 +372,132 @@ export async function stopLocalNetwork(
       console.log("[INFO]  Stopping Docker services...");
       const root = await repoRoot();
       const composeDir = join(root, "docker/local-network");
-      const composeFiles = [join(composeDir, "docker-compose.yml")];
+      const generatedCompose = join(ctx.runDir, "docker-compose.topology.yml");
+      const composeFiles = await fileExists(generatedCompose)
+        ? [generatedCompose]
+        : [join(composeDir, "docker-compose.yml")];
       if (options.withPds2 || options.collectDiagnostics) {
         composeFiles.push(join(composeDir, "docker-compose.scenarios.yml"));
       }
       await composeDown(ctx.composeProject, composeFiles);
+      await releaseRunPortLeases(ctx.runId);
     }
 
     console.log("[OK]    Teardown complete");
   });
+}
+
+async function allocateTopologyHostPorts(
+  ctx: TopologyRunContext,
+  topology: string,
+  options: {
+    includePds2?: boolean;
+    isolation?: ResourceIsolationMode;
+    portRange?: PortRange;
+    otel?: boolean;
+  },
+): Promise<Record<string, number>> {
+  if (options.isolation === "legacy-fixed") return {};
+
+  await releaseRunPortLeases(ctx.runId);
+  const preset = resolvePreset(topology, { includePds2: options.includePds2 });
+  const resources: string[] = [];
+  for (const [role, adapter] of Object.entries(preset.roles)) {
+    if ("inherit" in adapter) continue;
+    if (adapter.ports?.length) resources.push(role);
+    for (
+      const [sidecarName, sidecar] of Object.entries(adapter.sidecars || {})
+    ) {
+      if (sidecar.ports?.length) resources.push(sidecarName);
+    }
+  }
+  if (options.otel) {
+    resources.push(
+      "signoz",
+      "signoz-otel-collector-grpc",
+      "signoz-otel-collector-http",
+    );
+  }
+  const leases = await allocateHostPorts({
+    runId: ctx.runId,
+    resources,
+    range: options.portRange,
+  });
+  return Object.fromEntries(
+    Object.entries(leases).map(([role, lease]) => [role, lease.port]),
+  );
+}
+
+async function writeDockerResourceManifest(
+  ctx: TopologyRunContext,
+  topologyManifest: string,
+  options: {
+    isolation: ResourceIsolationMode;
+    hostPortOverrides: Record<string, number>;
+  },
+): Promise<void> {
+  const manifest = loadTopologyManifest(topologyManifest);
+  if (!manifest) return;
+  const hostUrls = manifest.version === 2
+    ? manifest.urls.host
+    : manifest.serviceUrls;
+  const dockerUrls = manifest.version === 2
+    ? manifest.urls.docker
+    : manifest.internalUrls;
+
+  const resourceManifest = createRunResourceManifest({
+    runId: ctx.runId,
+    runDir: ctx.runDir,
+    composeProject: ctx.composeProject,
+    dockerNetwork: `${ctx.composeProject}_${manifest.networkName}`,
+    isolation: options.isolation,
+  });
+
+  for (const [role, url] of Object.entries(hostUrls)) {
+    const parsed = new URL(String(url));
+    const hostPort = Number.parseInt(parsed.port, 10);
+    resourceManifest.services[role] = {
+      role,
+      host: parsed.hostname,
+      hostPort: Number.isFinite(hostPort) ? hostPort : undefined,
+      hostUrl: String(url),
+      internalUrl: dockerUrls[role],
+      healthPath: manifest.health.find((probe) => probe.role === role)?.path ??
+        undefined,
+    };
+  }
+
+  resourceManifest.portLeases = Object.entries(options.hostPortOverrides).map(
+    ([role, port]) => ({
+      resource: role,
+      port,
+      leaseFile: "",
+    }),
+  );
+  const twilioPort = options.hostPortOverrides["local-mock-twilio"];
+  if (twilioPort) {
+    resourceManifest.mockProviders = {
+      ...resourceManifest.mockProviders,
+      twilio: {
+        role: "twilio",
+        host: "127.0.0.1",
+        hostPort: twilioPort,
+        hostUrl: hostUrlForPort(twilioPort),
+        internalUrl: "http://local-mock-twilio:8081",
+        healthPath: "/__control/health",
+      },
+    };
+  }
+
+  await writeRunResourceManifest(ctx.resourceManifestFile, resourceManifest);
+  applyRunResourceEnvironment(resourceManifest);
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    const stat = await Deno.stat(path);
+    return stat.isFile;
+  } catch {
+    return false;
+  }
 }

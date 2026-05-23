@@ -107,6 +107,10 @@ export interface CompilerOptions {
   otel?: boolean;
   /** OpenTelemetry / SigNoz configuration overrides (only used when otel is true) */
   otelConfig?: OtelOptions;
+  /** Host port publication mode. Static preserves preset mappings; dynamic rewrites host-side mappings. */
+  publishMode?: "static" | "dynamic";
+  /** Host-side port overrides keyed by role or sidecar service name. */
+  hostPortOverrides?: Record<string, number | string>;
 }
 
 /** Result of compiling a topology preset into Docker Compose files and manifest. */
@@ -199,6 +203,8 @@ function renderSigNozServices(
   services: Record<string, ComposeService>,
   volumes: Set<string>,
   config?: OtelOptions,
+  compilerOptions: Pick<CompilerOptions, "publishMode" | "hostPortOverrides"> =
+    {},
 ): void {
   const clickhouseImage = `clickhouse/clickhouse-server:${
     config?.clickhouseImage ?? "25.5"
@@ -213,7 +219,6 @@ function renderSigNozServices(
   // ClickHouse
   services["clickhouse"] = {
     image: clickhouseImage,
-    container_name: "signoz-clickhouse",
     volumes: [
       "signoz_clickhouse_data:/var/lib/clickhouse",
       "signoz_clickhouse_logs:/var/log/clickhouse-server",
@@ -234,7 +239,6 @@ function renderSigNozServices(
   // Zookeeper
   services["signoz-zookeeper"] = {
     image: "bitnami/zookeeper:3.7",
-    container_name: "signoz-zookeeper",
     environment: {
       ALLOW_ANONYMOUS_LOGIN: "yes",
       ZOO_ENABLE_PROMETHEUS_METRICS: "no",
@@ -255,7 +259,6 @@ function renderSigNozServices(
   // OTel Collector
   services["signoz-otel-collector"] = {
     image: collectorImage,
-    container_name: "signoz-otel-collector",
     entrypoint: ["/bin/sh"],
     command: [
       "-c",
@@ -274,8 +277,16 @@ function renderSigNozServices(
       SIGNOZ_OTEL_COLLECTOR_TIMEOUT: "10m",
     },
     ports: [
-      `${grpcPort}:${grpcPort}`,
-      `${httpPort}:${httpPort}`,
+      renderPublishedPort(
+        "signoz-otel-collector-grpc",
+        `${grpcPort}:${grpcPort}`,
+        compilerOptions,
+      ),
+      renderPublishedPort(
+        "signoz-otel-collector-http",
+        `${httpPort}:${httpPort}`,
+        compilerOptions,
+      ),
     ],
     depends_on: {
       clickhouse: { condition: "service_healthy" },
@@ -294,9 +305,8 @@ function renderSigNozServices(
   // SigNoz UI
   services["signoz"] = {
     image: signozImage,
-    container_name: "signoz",
     ports: [
-      `${signozPort}:8080`,
+      renderPublishedPort("signoz", `${signozPort}:8080`, compilerOptions),
     ],
     volumes: [
       "signoz_sqlite_data:/var/lib/signoz/",
@@ -388,7 +398,11 @@ export function renderComposeYaml(
     if (adapter.command) service.command = adapter.command;
 
     // Ports
-    if (adapter.ports) service.ports = adapter.ports;
+    if (adapter.ports) {
+      service.ports = adapter.ports.map((mapping) =>
+        renderPublishedPort(role, mapping, options)
+      );
+    }
 
     // Volumes
     if (adapter.volumes && adapter.volumes.length > 0) {
@@ -494,6 +508,7 @@ export function renderComposeYaml(
           options.runDir,
           preset.roles,
           parentCloneDir,
+          options,
         );
         services[sidecarName] = sidecarService;
       }
@@ -502,7 +517,7 @@ export function renderComposeYaml(
 
   // Add SigNoz OTel infrastructure when --otel is set
   if (options.otel) {
-    renderSigNozServices(services, volumes, options.otelConfig);
+    renderSigNozServices(services, volumes, options.otelConfig, options);
   }
 
   const composeObj: ComposeObject = {
@@ -555,6 +570,7 @@ export async function compileTopology(
     runDir: options.runDir,
     repoRoot: options.repoRoot,
     composeFile,
+    hostPortOverrides: options.hostPortOverrides,
   });
 
   // Render compose YAML
@@ -596,6 +612,24 @@ function extractContainerPort(
   }
   if (!adapter.ports || adapter.ports.length === 0) return undefined;
   return parsePortMapping(adapter.ports[0]).containerPort;
+}
+
+function renderPublishedPort(
+  resourceKey: string,
+  mapping: string,
+  options: Pick<CompilerOptions, "publishMode" | "hostPortOverrides">,
+): string {
+  const override = options.hostPortOverrides?.[resourceKey];
+  if (override === undefined && options.publishMode !== "dynamic") {
+    return mapping;
+  }
+
+  const parsed = parsePortMapping(mapping);
+  const container = parsed.containerPort || parsed.hostPort || mapping;
+  if (override === undefined) {
+    return `127.0.0.1::${container}`;
+  }
+  return `127.0.0.1:${override}:${container}`;
 }
 
 function ensurePathIsWithinBase(
@@ -667,6 +701,8 @@ function renderSidecarService(
   runDir?: string,
   roles: TopologyPreset["roles"] = {},
   parentCloneDir?: string,
+  compilerOptions: Pick<CompilerOptions, "publishMode" | "hostPortOverrides"> =
+    {},
 ): ComposeService {
   const service: ComposeService = {};
 
@@ -691,7 +727,11 @@ function renderSidecarService(
   }
 
   if (sidecar.command) service.command = sidecar.command;
-  if (sidecar.ports) service.ports = sidecar.ports;
+  if (sidecar.ports) {
+    service.ports = sidecar.ports.map((mapping) =>
+      renderPublishedPort(name, mapping, compilerOptions)
+    );
+  }
 
   // Collect all volume mounts (named volumes + config file bind mounts)
   const allVolumes: string[] = [];

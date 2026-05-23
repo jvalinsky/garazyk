@@ -66,6 +66,9 @@ Deno.test("parseRunnerArgs: defaults", () => {
   assertEquals(args.noJson, false);
   assertEquals(args.keepRunning, false);
   assertEquals(args.collectDiagnostics, false);
+  assertEquals(args.isolation, "auto");
+  assertEquals(args.resourceManifest, undefined);
+  assertEquals(args.portRange, undefined);
   assertEquals(args.allowHybridNetwork, false);
   assertEquals(args.otel, false);
   assertEquals(args.timeout, 120);
@@ -158,6 +161,20 @@ Deno.test("parseRunnerArgs: --otel", () => {
 
 Deno.test("parseRunnerArgs: --run-id", () => {
   assertEquals(parseRunnerArgs(["--run-id", "my-run-001"]).runId, "my-run-001");
+});
+
+Deno.test("parseRunnerArgs: resource isolation flags", () => {
+  const args = parseRunnerArgs([
+    "--isolation",
+    "shared",
+    "--resource-manifest",
+    "/tmp/resources.json",
+    "--port-range",
+    "30000:30100",
+  ]);
+  assertEquals(args.isolation, "shared");
+  assertEquals(args.resourceManifest, "/tmp/resources.json");
+  assertEquals(args.portRange, "30000:30100");
 });
 
 Deno.test("parseRunnerArgs: --diagnostics-dir", () => {

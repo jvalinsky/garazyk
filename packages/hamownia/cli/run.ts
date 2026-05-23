@@ -141,6 +141,7 @@ export const runCommand = new Command()
       noJson: noJson ?? false,
       keepRunning: keepRunning ?? false,
       collectDiagnostics: collectDiagnostics ?? false,
+      isolation: "auto",
       timeout: timeout ?? 120,
       clientFlow: clientFlow ?? "none",
       allowHybridNetwork: allowHybridNetwork ?? false,

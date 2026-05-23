@@ -1,9 +1,11 @@
 import { assert, assertEquals } from "@std/assert";
+import { join } from "@std/path";
 import {
   computeRunDir,
   initRunDir,
   neededPorts,
   serviceUrl,
+  serviceUrlFromManifest,
 } from "./docker_config.ts";
 import type {
   ClockSource,
@@ -92,6 +94,14 @@ Deno.test("serviceUrl: honors the env-var override via EnvSource", () => {
   assertEquals(serviceUrl("pds", env), "http://127.0.0.1:9090");
 });
 
+Deno.test("serviceUrl: URL env override wins over port env override", () => {
+  const env = mockEnv({
+    PDS_URL: "http://127.0.0.1:34567/",
+    PDS_PORT: "9090",
+  });
+  assertEquals(serviceUrl("pds", env), "http://127.0.0.1:34567");
+});
+
 Deno.test("serviceUrl: constructs the URL with case-insensitive env lookup", () => {
   const env = mockEnv({ RELAY_PORT: "7777" });
   assertEquals(serviceUrl("relay", env), "http://127.0.0.1:7777");
@@ -121,6 +131,7 @@ Deno.test("computeRunDir: returns default paths with no overrides", () => {
   assert(ctx.diagnosticsDir.endsWith("/diagnostics"));
   assert(ctx.logDir.endsWith("/logs"));
   assert(ctx.pidFile.endsWith("/pids.txt"));
+  assert(ctx.resourceManifestFile.endsWith("/resource-manifest.json"));
   assert(ctx.composeProject.startsWith("garazyk-e2e-"));
 });
 
@@ -167,6 +178,12 @@ Deno.test("computeRunDir: respects ATPROTO_E2E_PID_FILE env override", () => {
   const env = mockEnv({ ATPROTO_E2E_PID_FILE: "/custom/pids.txt" });
   const ctx = computeRunDir("test", { env });
   assertEquals(ctx.pidFile, "/custom/pids.txt");
+});
+
+Deno.test("computeRunDir: respects ATPROTO_RESOURCE_MANIFEST env override", () => {
+  const env = mockEnv({ ATPROTO_RESOURCE_MANIFEST: "/custom/resources.json" });
+  const ctx = computeRunDir("test", { env });
+  assertEquals(ctx.resourceManifestFile, "/custom/resources.json");
 });
 
 Deno.test("computeRunDir: respects ATPROTO_E2E_COMPOSE_PROJECT env override", () => {
@@ -229,6 +246,151 @@ Deno.test("initRunDir: returns same context shape as computeRunDir", () => {
   assert(typeof ctx.diagnosticsDir === "string");
   assert(typeof ctx.logDir === "string");
   assert(typeof ctx.pidFile === "string");
+  assert(typeof ctx.resourceManifestFile === "string");
   assert(typeof ctx.composeProject === "string");
   assert(typeof ctx.baseDir === "string");
+});
+
+// ---------------------------------------------------------------------------
+// serviceUrlFromManifest (filesystem-aware)
+// ---------------------------------------------------------------------------
+
+Deno.test("serviceUrlFromManifest: returns undefined when no manifest env is set", () => {
+  const result = serviceUrlFromManifest("pds", emptyEnv);
+  assertEquals(result, undefined);
+});
+
+Deno.test("serviceUrlFromManifest: returns undefined when manifest file does not exist", async (t) => {
+  const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
+  const manifestPath = join(dir, "nonexistent.json");
+  const env = mockEnv({ ATPROTO_RESOURCE_MANIFEST: manifestPath });
+  const result = serviceUrlFromManifest("pds", env);
+  assertEquals(result, undefined);
+  await Deno.remove(dir, { recursive: true });
+});
+
+Deno.test("serviceUrlFromManifest: returns hostUrl from services in manifest", async (t) => {
+  const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
+  const manifestPath = join(dir, "manifest.json");
+  const manifest = {
+    services: {
+      pds: { hostUrl: "http://127.0.0.1:35000" },
+      plc: { hostUrl: "http://127.0.0.1:35001" },
+    },
+  };
+  await Deno.writeTextFile(manifestPath, JSON.stringify(manifest));
+  const env = mockEnv({ ATPROTO_RESOURCE_MANIFEST: manifestPath });
+  assertEquals(serviceUrlFromManifest("pds", env), "http://127.0.0.1:35000");
+  assertEquals(serviceUrlFromManifest("plc", env), "http://127.0.0.1:35001");
+  assertEquals(serviceUrlFromManifest("relay", env), undefined);
+  await Deno.remove(dir, { recursive: true });
+});
+
+Deno.test("serviceUrlFromManifest: returns hostUrl from mockProviders in manifest", async (t) => {
+  const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
+  const manifestPath = join(dir, "manifest.json");
+  const manifest = {
+    mockProviders: {
+      twilio: { hostUrl: "http://127.0.0.1:38000" },
+    },
+  };
+  await Deno.writeTextFile(manifestPath, JSON.stringify(manifest));
+  const env = mockEnv({ ATPROTO_RESOURCE_MANIFEST: manifestPath });
+  assertEquals(serviceUrlFromManifest("twilio", env), "http://127.0.0.1:38000");
+  await Deno.remove(dir, { recursive: true });
+});
+
+Deno.test("serviceUrl: prefers manifest URL over SERVICE_PORTS default", async (t) => {
+  const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
+  const manifestPath = join(dir, "manifest.json");
+  const manifest = {
+    services: {
+      pds: { hostUrl: "http://127.0.0.1:35000" },
+    },
+  };
+  await Deno.writeTextFile(manifestPath, JSON.stringify(manifest));
+  // Set the env var so serviceUrl() can find the manifest
+  const originalValue = Deno.env.get("ATPROTO_RESOURCE_MANIFEST");
+  Deno.env.set("ATPROTO_RESOURCE_MANIFEST", manifestPath);
+  try {
+    assertEquals(serviceUrl("pds"), "http://127.0.0.1:35000");
+    // Other services without manifest entries still fall back to SERVICE_PORTS
+    assertEquals(serviceUrl("relay"), "http://127.0.0.1:2584");
+  } finally {
+    if (originalValue !== undefined) {
+      Deno.env.set("ATPROTO_RESOURCE_MANIFEST", originalValue);
+    } else {
+      Deno.env.delete("ATPROTO_RESOURCE_MANIFEST");
+    }
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// neededPorts (manifest-aware)
+// ---------------------------------------------------------------------------
+
+Deno.test("neededPorts: returns manifest ports when a manifest is available", async (t) => {
+  const dir = await Deno.makeTempDir({ prefix: "needed-ports-manifest-test-" });
+  const manifestPath = join(dir, "manifest.json");
+  const manifest = {
+    services: {
+      pds: { hostPort: 35000 },
+      plc: { hostPort: 35001 },
+      relay: { hostPort: 35002 },
+    },
+    mockProviders: {
+      twilio: { hostPort: 38000 },
+    },
+    portLeases: [
+      { port: 35000 },
+      { port: 35001 },
+      { port: 35002 },
+      { port: 38000 },
+    ],
+  };
+  await Deno.writeTextFile(manifestPath, JSON.stringify(manifest));
+  const originalValue = Deno.env.get("ATPROTO_RESOURCE_MANIFEST");
+  Deno.env.set("ATPROTO_RESOURCE_MANIFEST", manifestPath);
+  try {
+    const ports = neededPorts({});
+    assert(ports.includes(35000), "expected pds port 35000");
+    assert(ports.includes(35001), "expected plc port 35001");
+    assert(ports.includes(35002), "expected relay port 35002");
+    assert(ports.includes(38000), "expected twilio port 38000");
+    // Should NOT include the fixed default ports
+    assert(!ports.includes(2583), "should not include fixed pds port 2583");
+  } finally {
+    if (originalValue !== undefined) {
+      Deno.env.set("ATPROTO_RESOURCE_MANIFEST", originalValue);
+    } else {
+      Deno.env.delete("ATPROTO_RESOURCE_MANIFEST");
+    }
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("neededPorts: adds otel ports even with manifest", async (t) => {
+  const dir = await Deno.makeTempDir({ prefix: "needed-ports-manifest-test-" });
+  const manifestPath = join(dir, "manifest.json");
+  const manifest = {
+    services: { pds: { hostPort: 35000 } },
+    portLeases: [{ port: 35000 }],
+  };
+  await Deno.writeTextFile(manifestPath, JSON.stringify(manifest));
+  const originalValue = Deno.env.get("ATPROTO_RESOURCE_MANIFEST");
+  Deno.env.set("ATPROTO_RESOURCE_MANIFEST", manifestPath);
+  try {
+    const ports = neededPorts({ otel: true });
+    assert(ports.includes(4317), "expected otel port 4317");
+    assert(ports.includes(4318), "expected otel port 4318");
+    assert(ports.includes(3301), "expected otel port 3301");
+  } finally {
+    if (originalValue !== undefined) {
+      Deno.env.set("ATPROTO_RESOURCE_MANIFEST", originalValue);
+    } else {
+      Deno.env.delete("ATPROTO_RESOURCE_MANIFEST");
+    }
+    await Deno.remove(dir, { recursive: true });
+  }
 });

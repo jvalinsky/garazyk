@@ -14,7 +14,28 @@ export {
   repoRoot,
   SERVICE_PORTS,
   serviceUrl,
+  serviceUrlFromManifest,
 } from "./docker_config.ts";
+export {
+  allocateHostPort,
+  allocateHostPorts,
+  cleanupStalePortLeases,
+  defaultPortLeaseDir,
+  hostUrlForPort,
+  parsePortRange,
+  releaseRunPortLeases,
+} from "./port_allocator.ts";
+export {
+  applyRunResourceEnvironment,
+  applyRunResourceManifestPath,
+  createRunResourceManifest,
+  loadRunResourceManifest,
+  mockProviderUrlsFromResourceManifest,
+  resourceManifestPathForRunDir,
+  serviceUrlsFromResourceManifest,
+  updateRunResourceManifest,
+  writeRunResourceManifest,
+} from "./resource_manifest.ts";
 export type {
   ClockSource,
   ComputeRunDirOptions,
@@ -24,3 +45,15 @@ export type {
   ProcessInfo,
   TopologyRunContext,
 } from "./docker_config.ts";
+export type {
+  HostPortAllocationOptions,
+  HostPortLease,
+  PortRange,
+} from "./port_allocator.ts";
+export type {
+  ResourceIsolationMode,
+  RunPortLease,
+  RunResourceCleanupState,
+  RunResourceEndpoint,
+  RunResourceManifest,
+} from "./resource_manifest.ts";

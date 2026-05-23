@@ -112,6 +112,17 @@ export function publicUrlForRole(
   return `http://localhost:${port}`;
 }
 
+/** Build the public URL for a role with an optional host-port override. */
+export function publicUrlForRoleWithHostPort(
+  role: string,
+  adapter: ServiceAdapter,
+  hostPortOverrides?: Record<string, string | number>,
+): string {
+  const override = hostPortOverrides?.[role];
+  if (override !== undefined) return `http://127.0.0.1:${override}`;
+  return publicUrlForRole(role, adapter);
+}
+
 /** Build the internal Docker URL for a role. */
 export function internalUrlForRole(
   role: string,
@@ -167,6 +178,7 @@ export function createTopologyManifest(
     runDir: string;
     repoRoot: string;
     composeFile?: string;
+    hostPortOverrides?: Record<string, string | number>;
   },
 ): TopologyManifestV2 {
   const serviceUrls: Record<string, string> = {};
@@ -192,7 +204,11 @@ export function createTopologyManifest(
     }
     const adapter = adapterValue as ServiceAdapter;
     const serviceName = serviceNameForRole(role, adapter);
-    const pubUrl = publicUrlForRole(role, adapter);
+    const pubUrl = publicUrlForRoleWithHostPort(
+      role,
+      adapter,
+      options.hostPortOverrides,
+    );
     const intUrl = internalUrlForRole(role, adapter);
 
     serviceUrls[role] = pubUrl;

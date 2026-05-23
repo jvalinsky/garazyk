@@ -10,6 +10,8 @@ Deno.test("schemat root exposes pure topology parsing and resolution", () => {
 
   const topology = resolveTopology(undefined, "garazyk-default");
   assertEquals(topology.serviceUrls.pds, "http://localhost:2583");
+  assertEquals(topology.serviceUrls.mikrus, "http://localhost:3210");
+  assertEquals(topology.serviceUrls.beskid, "http://localhost:8085");
   assertEquals(
     TopologyRegistry.listPresets().includes("garazyk-default"),
     true,

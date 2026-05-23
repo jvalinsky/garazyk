@@ -168,6 +168,38 @@ Deno.test("defineTopology: typed service returns registry-ready normalized prese
   assertEquals(pds.dependsOn, ["local-plc"]);
 });
 
+Deno.test("defineTopology: Beskid role exposes typed capabilities", () => {
+  const typed = defineTopology({
+    name: "typed-beskid",
+    description: "Beskid topology role",
+    roles: {
+      [Role.beskid]: role.beskid({
+        name: "beskid",
+        source: source.image("example/beskid:latest"),
+        ports: [port(8085)],
+        health: health.http("/_health"),
+        capabilities: [
+          Cap.beskid.getUriRecord,
+          Cap.beskid.resolveHandle,
+          Cap.beskid.hydrateQueryResponse,
+          Cap.beskid.recordCache,
+        ],
+      }),
+    },
+  });
+
+  const beskid = typed.roles.beskid;
+  if (!beskid || "inherit" in beskid) {
+    throw new Error("beskid should be concrete");
+  }
+  assertEquals(beskid.ports, [{
+    host: "8085",
+    container: "8085",
+    protocol: "tcp",
+  }]);
+  assertEquals(beskid.capabilities.includes("hydrateQueryResponse"), true);
+});
+
 Deno.test("defineTopology: source, port, and volume helpers normalize to raw schema", () => {
   const typed = defineTopology({
     name: "typed-helper-forms",

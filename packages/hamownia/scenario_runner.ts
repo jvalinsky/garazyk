@@ -133,11 +133,28 @@ export function buildDockerScenarioRunnerOptions(
       ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
       ...(args.webClient ? { ATPROTO_WEB_CLIENT: args.webClient } : {}),
       ...(topologyName ? { ATPROTO_TOPOLOGY: topologyName } : {}),
+      ...(Deno.env.get("ATPROTO_RESOURCE_MANIFEST")
+        ? {
+          ATPROTO_RESOURCE_MANIFEST: Deno.env.get("ATPROTO_RESOURCE_MANIFEST")!,
+        }
+        : {}),
+      ...(Deno.env.get("TWILIO_API_BASE_URL")
+        ? { TWILIO_API_BASE_URL: Deno.env.get("TWILIO_API_BASE_URL")! }
+        : {}),
     },
   };
 }
 
-function buildHostScenarioEnv(
+function normalizeHostLoopbackUrl(url: string): string {
+  return url.replace(/^http:\/\/localhost(?=[:/]|$)/, "http://127.0.0.1")
+    .replace(/^ws:\/\/localhost(?=[:/]|$)/, "ws://127.0.0.1");
+}
+
+function normalizeHostScenarioEnvValue(key: string, value: string): string {
+  return key.endsWith("_URL") ? normalizeHostLoopbackUrl(value) : value;
+}
+
+export function buildHostScenarioEnv(
   args: RunnerArgs,
   topology: Topology,
 ): Record<string, string> {
@@ -151,6 +168,15 @@ function buildHostScenarioEnv(
   if (args.webClient) env.ATPROTO_WEB_CLIENT = args.webClient;
   const topologyName = args.topology ?? topology.preset?.name;
   if (topologyName) env.ATPROTO_TOPOLOGY = topologyName;
+  const resourceManifest = Deno.env.get("ATPROTO_RESOURCE_MANIFEST");
+  if (resourceManifest) env.ATPROTO_RESOURCE_MANIFEST = resourceManifest;
+  const twilioBaseUrl = Deno.env.get("TWILIO_API_BASE_URL");
+  if (twilioBaseUrl) env.TWILIO_API_BASE_URL = twilioBaseUrl;
+
+  for (const [role, url] of Object.entries(topology.serviceUrls)) {
+    env[roleEnvKey(role)] = normalizeHostLoopbackUrl(String(url));
+  }
+
   if (topology.manifest) {
     const manifestV2 = topology.manifest as TopologyManifestV2;
     const runnerEnv = manifestV2.env?.hostRunner ||
@@ -159,7 +185,7 @@ function buildHostScenarioEnv(
     for (
       const [key, value] of Object.entries({ ...runnerEnv, ...scenarioEnv })
     ) {
-      env[key] = String(value);
+      env[key] = normalizeHostScenarioEnvValue(key, String(value));
     }
   }
   return env;

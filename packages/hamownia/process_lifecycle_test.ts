@@ -153,6 +153,19 @@ Deno.test("createProcessLifecycle: finalizeRun collects diagnostics when fatalEr
   assertEquals(collected, true);
 });
 
+Deno.test("createProcessLifecycle: finalizeRun still stops network when diagnostics fail", async () => {
+  const { lifecycle, callCount } = makeLifecycle();
+  lifecycle.markNetworkStarted();
+  await lifecycle.finalizeRun({
+    results: [],
+    fatalError: new Error("fatal"),
+    collectDiagnostics: async () => {
+      throw new Error("diagnostics failed");
+    },
+  });
+  assertEquals(callCount(), 1);
+});
+
 // ---------------------------------------------------------------------------
 // finalizeRun — teardown paths
 // ---------------------------------------------------------------------------

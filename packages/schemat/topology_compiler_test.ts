@@ -3,6 +3,7 @@ import { parse } from "jsr:@std/yaml@0.224.0";
 import {
   Cap,
   compileTopology,
+  createRunResourceManifest,
   defineTopology,
   health,
   port,
@@ -14,6 +15,7 @@ import {
   TopologyRegistry,
   validatePreset,
   volume,
+  writeRunResourceManifest,
 } from "./mod.ts";
 import {
   createTopologyManifest,
@@ -202,7 +204,7 @@ Deno.test("compileTopology: writes compose file and returns URLs", async () => {
   }
 });
 
-Deno.test("compileTopology: garazyk-default includes garazyk-ui on port 2590", async () => {
+Deno.test("compileTopology: garazyk-default includes cache services and garazyk-ui", async () => {
   const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
   try {
     const result = await compileTopology({
@@ -214,8 +216,30 @@ Deno.test("compileTopology: garazyk-default includes garazyk-ui on port 2590", a
 
     const parsed = parse(await Deno.readTextFile(result.composeFile)) as any;
     const ui = parsed.services["local-ui"];
+    const mikrus = parsed.services["local-mikrus"];
+    const beskid = parsed.services["local-beskid"];
+    assertEquals(result.serviceUrls.mikrus, "http://localhost:3210");
+    assertEquals(result.internalUrls.mikrus, "http://local-mikrus:3210");
+    assertEquals(result.serviceUrls.beskid, "http://localhost:8085");
+    assertEquals(result.internalUrls.beskid, "http://local-beskid:8085");
+    assertEquals(
+      result.capabilitiesByRole.mikrus.includes("getBacklinks"),
+      true,
+    );
+    assertEquals(
+      result.capabilitiesByRole.beskid.includes("hydrateQueryResponse"),
+      true,
+    );
     assertEquals(result.serviceUrls.ui, "http://localhost:2590");
     assertEquals(result.internalUrls.ui, "http://local-ui:2590");
+    assertEquals(
+      result.manifest.env?.hostRunner.MIKRUS_URL,
+      "http://localhost:3210",
+    );
+    assertEquals(
+      result.manifest.env?.hostRunner.BESKID_URL,
+      "http://localhost:8085",
+    );
     assertEquals(
       result.manifest.env?.hostRunner.GARAZYK_UI_URL,
       "http://localhost:2590",
@@ -226,6 +250,11 @@ Deno.test("compileTopology: garazyk-default includes garazyk-ui on port 2590", a
         Deno.env.get("UI_ADMIN_PASSWORD") ??
         "admin-localdev",
     );
+    assertEquals(mikrus.entrypoint, ["/usr/local/bin/mikrus"]);
+    assertEquals(mikrus.ports.includes("3210:3210"), true);
+    assertEquals(beskid.entrypoint, ["/usr/local/bin/beskid"]);
+    assertEquals(beskid.ports.includes("8085:8085"), true);
+    assertEquals(beskid.environment.BESKID_PDS_URL, "http://local-pds:2583");
     assertEquals(ui.entrypoint, ["/usr/local/bin/garazyk-ui"]);
     assertEquals(ui.ports.includes("2590:2590"), true);
     assertEquals(
@@ -588,6 +617,39 @@ Deno.test("resolveTopology: inherited capabilities are visible by role", () => {
   assertEquals(topology.capabilitiesByRole.relay.has("subscribeRepos"), true);
 });
 
+Deno.test("resolveTopology: resource manifest URLs override preset public ports", async () => {
+  const previousManifest = Deno.env.get("ATPROTO_RESOURCE_MANIFEST");
+  const dir = await Deno.makeTempDir();
+  const path = `${dir}/resource-manifest.json`;
+  try {
+    const manifest = createRunResourceManifest({
+      runId: "test-run",
+      runDir: dir,
+      composeProject: "garazyk-test",
+      isolation: "auto",
+    });
+    manifest.services.plc = {
+      role: "plc",
+      host: "127.0.0.1",
+      hostPort: 43123,
+      hostUrl: "http://127.0.0.1:43123",
+      internalUrl: "http://127.0.0.1:43123",
+    };
+    await writeRunResourceManifest(path, manifest);
+    Deno.env.set("ATPROTO_RESOURCE_MANIFEST", path);
+
+    const topology = resolveTopology(undefined, "garazyk-default");
+    assertEquals(topology.serviceUrls.plc, "http://127.0.0.1:43123");
+  } finally {
+    if (previousManifest === undefined) {
+      Deno.env.delete("ATPROTO_RESOURCE_MANIFEST");
+    } else {
+      Deno.env.set("ATPROTO_RESOURCE_MANIFEST", previousManifest);
+    }
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("createTopologyManifest: public and internal URLs use host and container ports", () => {
   const preset: TopologyPreset = {
     name: "port-test",
@@ -670,6 +732,87 @@ Deno.test("compileTopology: typed port and volume objects survive registry loadi
     assertEquals(
       result.manifest.internalUrls.appview,
       "http://local-appview:3000",
+    );
+  } finally {
+    await Deno.remove(runDir, { recursive: true });
+  }
+});
+
+Deno.test("compileTopology: dynamic publish mode rewrites host ports and manifest URLs", async () => {
+  const runDir = await Deno.makeTempDir({ prefix: "topology-dynamic-" });
+  const preset = defineTopology({
+    name: "dynamic-object-form",
+    description: "Dynamic host port form",
+    roles: {
+      [Role.appview]: role.appview({
+        name: "dynamic-appview",
+        source: source.image("example/appview:latest"),
+        ports: [port({ host: 3300, container: 3000 })],
+        health: health.http("/health"),
+        capabilities: [Cap.appview.getTimeline],
+      }),
+    },
+  });
+  TopologyRegistry.register(preset);
+  try {
+    const result = await compileTopology({
+      preset: "dynamic-object-form",
+      runDir,
+      repoRoot: "/repo",
+      composeProject: "test",
+      publishMode: "dynamic",
+      hostPortOverrides: { appview: 45678 },
+    });
+
+    const parsed = parse(await Deno.readTextFile(result.composeFile)) as any;
+    assertEquals(
+      parsed.services["local-appview"].ports.includes("127.0.0.1:45678:3000"),
+      true,
+    );
+    assertEquals(result.serviceUrls.appview, "http://127.0.0.1:45678");
+    assertEquals(result.internalUrls.appview, "http://local-appview:3000");
+    assertEquals(
+      result.manifest.env?.hostRunner.APPVIEW_URL,
+      "http://127.0.0.1:45678",
+    );
+  } finally {
+    await Deno.remove(runDir, { recursive: true });
+  }
+});
+
+Deno.test("compileTopology: dynamic publish mode rewrites OTel host ports", async () => {
+  const runDir = await Deno.makeTempDir({ prefix: "topology-dynamic-otel-" });
+  try {
+    const result = await compileTopology({
+      preset: "garazyk-default",
+      runDir,
+      repoRoot: Deno.cwd(),
+      composeProject: "test",
+      otel: true,
+      publishMode: "dynamic",
+      hostPortOverrides: {
+        "signoz-otel-collector-grpc": 34317,
+        "signoz-otel-collector-http": 34318,
+        signoz: 33301,
+      },
+    });
+
+    const parsed = parse(await Deno.readTextFile(result.composeFile)) as any;
+    assertEquals(
+      parsed.services["signoz-otel-collector"].ports.includes(
+        "127.0.0.1:34317:4317",
+      ),
+      true,
+    );
+    assertEquals(
+      parsed.services["signoz-otel-collector"].ports.includes(
+        "127.0.0.1:34318:4318",
+      ),
+      true,
+    );
+    assertEquals(
+      parsed.services.signoz.ports.includes("127.0.0.1:33301:8080"),
+      true,
     );
   } finally {
     await Deno.remove(runDir, { recursive: true });

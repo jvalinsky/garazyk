@@ -7,13 +7,15 @@ import {
   resolveBinaryServiceStartPlan,
 } from "./binary_services.ts";
 
-Deno.test("binary services default to PLC, PDS, Relay, AppView, and Germ", () => {
+Deno.test("binary services default to the local scenario service set", () => {
   assertEquals(defaultBinaryServices(), [
     "plc",
     "pds",
     "relay",
     "appview",
     "germ",
+    "mikrus",
+    "beskid",
   ]);
 });
 
@@ -41,11 +43,62 @@ Deno.test("binary service start plan applies per-service args and env overrides"
 
   assertEquals(plan.name, "pds");
   assertEquals(plan.port, 2583);
+  assertEquals(plan.serviceUrl, "http://127.0.0.1:2583");
   assertEquals(plan.dataDir, "/run/data/pds");
   assertEquals(plan.args, ["serve", "--config", "/tmp/pds.json"]);
   assertEquals(plan.env.PDS_RUNNING_TESTS, "true");
   assertEquals(plan.env.PDS_ADMIN_PASSWORD, "override-password");
   assertEquals(plan.env.PDS_CUSTOM_FLAG, "1");
+});
+
+Deno.test("binary service start plan uses manifest-derived ports and upstream URLs", async () => {
+  const plan = await resolveBinaryServiceStartPlan({
+    name: "appview",
+    root: "/repo",
+    dataRoot: "/run/data",
+    commonEnv: { PDS_RUNNING_TESTS: "true" },
+    servicePorts: { appview: 45678, pds: 45679, plc: 45680 },
+    serviceUrls: {
+      appview: "http://127.0.0.1:45678",
+      pds: "http://127.0.0.1:45679",
+      plc: "http://127.0.0.1:45680",
+    },
+  });
+
+  assertEquals(plan.port, 45678);
+  assertEquals(plan.serviceUrl, "http://127.0.0.1:45678");
+  assertEquals(
+    plan.args.includes(
+      "ws://127.0.0.1:45679/xrpc/com.atproto.sync.subscribeRepos",
+    ),
+    true,
+  );
+  assertEquals(plan.env.APPVIEW_PDS_URL, "http://127.0.0.1:45679");
+  assertEquals(plan.env.APPVIEW_PLC_URL, "http://127.0.0.1:45680");
+  assertEquals(plan.env.PDS_URL, "http://127.0.0.1:45679");
+  assertEquals(plan.env.PDS_PLC_URL, "http://127.0.0.1:45680");
+});
+
+Deno.test("binary service start plan exports service URL env for cache services", async () => {
+  const plan = await resolveBinaryServiceStartPlan({
+    name: "beskid",
+    root: "/repo",
+    dataRoot: "/run/data",
+    commonEnv: { PDS_RUNNING_TESTS: "true" },
+    servicePorts: { beskid: 45681, pds: 45679, plc: 45680 },
+    serviceUrls: {
+      beskid: "http://127.0.0.1:45681",
+      pds: "http://127.0.0.1:45679",
+      plc: "http://127.0.0.1:45680",
+    },
+  });
+
+  assertEquals(plan.env.BESKID_URL, "http://127.0.0.1:45681");
+  assertEquals(plan.env.PDS_URL, "http://127.0.0.1:45679");
+  assertEquals(plan.env.PLC_URL, "http://127.0.0.1:45680");
+  assertEquals(plan.env.PDS_PLC_URL, "http://127.0.0.1:45680");
+  assertEquals(plan.env.BESKID_PDS_URL, "http://127.0.0.1:45679");
+  assertEquals(plan.env.BESKID_PLC_URL, "http://127.0.0.1:45680");
 });
 
 Deno.test("binary service status parses PID file with typed deterministic probes", async () => {
@@ -69,6 +122,7 @@ Deno.test("binary service status parses PID file with typed deterministic probes
     diagnosticsDir: `${dir}/diagnostics`,
     logDir: `${dir}/logs`,
     pidFile,
+    resourceManifestFile: `${dir}/resource-manifest.json`,
     composeProject: "garazyk-test",
     baseDir: dir,
   };
