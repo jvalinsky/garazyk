@@ -22,7 +22,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
 import { createRunContext } from "../../lib/deno/diagnostics.ts";
 import {
@@ -70,7 +70,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt", "quiet"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -88,7 +88,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => getActor(n).did);
   phaseTimer.endPhase();
 
   phaseTimer.startPhase("subscriber_rampup");
@@ -136,7 +136,7 @@ export async function run(): Promise<ScenarioResult> {
   const POSTS_PER_USER = 20;
   let totalPosts = 0;
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     for (let i = 0; i < POSTS_PER_USER; i++) {
       try {
         await timer.measure("create_post", () =>
@@ -170,7 +170,7 @@ export async function run(): Promise<ScenarioResult> {
   const BURST_PER_USER = 40;
   let burstPosts = 0;
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     for (let i = 0; i < BURST_PER_USER; i++) {
       try {
         await timer.measure("create_post_burst", () =>

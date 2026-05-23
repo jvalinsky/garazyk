@@ -13,7 +13,7 @@
 
 import {
   APPVIEW_ADMIN_SECRET,
-  getCharacter,
+  getActor,
   PDS1,
   SERVICE_URLS,
   VIDEO_SERVICE_DID,
@@ -65,7 +65,7 @@ async function uploadVideo(data: Uint8Array, did: string, token: string, accessJ
 
 async function waitForVideoJob(video: XrpcClient, jobId: string, token: string) {
   for (let i = 0; i < 60; i++) {
-    const body = await video.raw.xrpcGet("app.bsky.video.getJobStatus", { jobId }, token);
+    const body = await video.raw.get("app.bsky.video.getJobStatus", { jobId }, token);
     const status = body.jobStatus || body;
     if (status.state === "JOB_STATE_COMPLETED" || status.state === "JOB_STATE_FAILED") {
       return status;
@@ -98,7 +98,7 @@ export async function run(): Promise<ScenarioResult> {
   const pds = new XrpcClient(PDS1);
   const appview = new XrpcClient(SERVICE_URLS.appview);
   const video = new XrpcClient(SERVICE_URLS.video);
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -129,10 +129,10 @@ export async function run(): Promise<ScenarioResult> {
   luna.accessJwt = session.accessJwt;
 
   const serviceAuth = await timedCall(result, "Get video service auth token", async () => {
-    return await pds.raw.xrpcGet("com.atproto.server.getServiceAuth", {
+    return await pds.as(luna).raw.get("com.atproto.server.getServiceAuth", {
       aud: VIDEO_SERVICE_DID,
       lxm: "app.bsky.video.uploadVideo",
-    }, luna.accessJwt);
+    });
   });
 
   if (!serviceAuth?.token) {
@@ -165,7 +165,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const created = await timedCall(result, "Publish post with app.bsky.embed.video", async () => {
-    return await pds.raw.xrpcPost("com.atproto.repo.createRecord", {
+    return await pds.as(luna).raw.post("com.atproto.repo.createRecord", {
       repo: luna.did,
       collection: "app.bsky.feed.post",
       record: {
@@ -179,16 +179,15 @@ export async function run(): Promise<ScenarioResult> {
           aspectRatio: finalJob.aspectRatio,
         },
       },
-    }, luna.accessJwt);
+    });
   }, (body) => `uri=${body.uri}`);
 
   await timedCall(result, "AppView returns playable video embed", async () => {
     let post = null;
     for (let i = 0; i < 20; i++) {
-      const body = await appview.raw.xrpcGet(
+      const body = await appview.as(luna).raw.get(
         "app.bsky.feed.getPosts",
         { uris: created.uri },
-        luna.accessJwt,
       );
       post = body.posts?.[0] || null;
       if (post?.embed?.$type === "app.bsky.embed.video#view") break;

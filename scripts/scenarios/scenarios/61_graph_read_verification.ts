@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -65,8 +65,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   // Create two accounts
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
 
   const lunaSession = await timedCall(
     result,
@@ -166,7 +166,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   // ── Block: Luna blocks Troll ─────────────────────────────────────────────
-  const troll = getCharacter("troll");
+  const troll = getActor("troll");
   const trollSession = await timedCall(
     result,
     `Create account: ${troll.name}`,

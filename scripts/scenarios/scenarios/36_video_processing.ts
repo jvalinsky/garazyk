@@ -16,7 +16,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
-import { getCharacter, PDS1, SERVICE_URLS, VIDEO_SERVICE_DID } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS, VIDEO_SERVICE_DID } from "../../lib/deno/config.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
 /**
@@ -85,7 +85,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const luna = getCharacter("luna");
+  const luna = getActor("luna");
   const session = await timedCall(result, "Create or login account", async () => {
     return await pdsClient.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
       () => pdsClient.accounts.createSession(luna.handle, luna.password),
@@ -100,10 +100,10 @@ export async function run(): Promise<ScenarioResult> {
   luna.accessJwt = session.accessJwt;
 
   const serviceAuth = await timedCall(result, "Get video service auth token", async () => {
-    return await pdsClient.raw.xrpcGet("com.atproto.server.getServiceAuth", {
-      aud: VIDEO_SERVICE_DID,
-      lxm: "app.bsky.video.uploadVideo",
-    }, luna.accessJwt);
+    return await pdsClient.as(luna).raw.get("com.atproto.server.getServiceAuth", {
+        aud: VIDEO_SERVICE_DID,
+        lxm: "app.bsky.video.uploadVideo",
+      });
   });
 
   if (!serviceAuth?.token) {
@@ -115,11 +115,10 @@ export async function run(): Promise<ScenarioResult> {
   const videoAuthToken = serviceAuth.token;
 
   await timedCall(result, "Check upload limits", async () => {
-    return await videoClient.raw.xrpcGet(
-      "app.bsky.video.getUploadLimits",
-      undefined,
-      luna.accessJwt,
-    );
+    return await videoClient.as(luna).raw.get(
+        "app.bsky.video.getUploadLimits",
+        undefined,
+      );
   });
 
   const videoData = await downloadTestVideo();
@@ -140,10 +139,9 @@ export async function run(): Promise<ScenarioResult> {
 
       for (let i = 0; i < 60; i++) {
         try {
-          jobResp = await videoClient.raw.xrpcGet(
+          jobResp = await videoClient.as(luna).raw.get(
             "app.bsky.video.getJobStatus",
             { jobId },
-            luna.accessJwt,
           );
           const state = (jobResp.jobStatus || jobResp).state;
           if (state === "JOB_STATE_COMPLETED" || state === "JOB_STATE_FAILED") {

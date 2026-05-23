@@ -21,7 +21,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1 } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -48,7 +48,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "troll", "quiet", "admin"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -63,9 +63,9 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => getActor(n).did);
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = getActor(name);
     try {
       await client.records.createRecord(
         char.did,
@@ -78,16 +78,16 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
-  const rosa = getCharacter("rosa");
-  const troll = getCharacter("troll");
-  const quiet = getCharacter("quiet");
+  const luna = getActor("luna");
+  const marcus = getActor("marcus");
+  const rosa = getActor("rosa");
+  const troll = getActor("troll");
+  const quiet = getActor("quiet");
 
   // Establish follows
   for (const [f, t] of [["luna", "marcus"], ["marcus", "luna"]] as const) {
-    const ff = getCharacter(f);
-    const tt = getCharacter(t);
+    const ff = getActor(f);
+    const tt = getActor(t);
     if (ff.did && tt.did) {
       await timedCall(
         result,
