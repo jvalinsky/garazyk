@@ -650,7 +650,16 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         }
 
         NSError *error = nil;
-        BOOL success = [serviceDatabases deleteRefreshTokensForAccount:did error:&error];
+        NSString *sessionID = nil;
+        if ([authHeader hasPrefix:@"Bearer "]) {
+            NSString *token = [authHeader substringFromIndex:7];
+            JWT *jwt = [JWT jwtWithToken:token error:nil];
+            NSDictionary *payload = jwt ? payloadDictionaryFromJWT(jwt, nil) : nil;
+            sessionID = [payload[@"sid"] isKindOfClass:[NSString class]] ? payload[@"sid"] : nil;
+        }
+        BOOL success = sessionID.length > 0
+            ? [serviceDatabases revokeSession:sessionID error:&error]
+            : [serviceDatabases deleteRefreshTokensForAccount:did error:&error];
         if (!success) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"SessionDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete session"}];

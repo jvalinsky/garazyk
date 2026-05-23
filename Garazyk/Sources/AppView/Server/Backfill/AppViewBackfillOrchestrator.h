@@ -126,8 +126,8 @@ didFailBackfillForDID:(NSString *)did
 /*!
  @method enqueueDIDs:
 
- @abstract Add DIDs to the work queue. Already-processing DIDs are skipped.
- Already-synced DIDs are re-enqueued as dirty for re-check.
+ @abstract Add unknown/pending/dirty DIDs to the work queue.
+ Already-processing and already-synced DIDs are skipped.
  */
 - (void)enqueueDIDs:(NSArray<NSString *> *)dids;
 

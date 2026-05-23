@@ -881,6 +881,10 @@ static XrpcDispatcher *_sharedInstance = nil;
     [self registerMethod:@"com.atproto.admin.getSubjectStatus" handler:handler];
 }
 
+- (void)registerComAtprotoAdminGetRecord:(XrpcMethodHandler)handler {
+    [self registerMethod:@"com.atproto.admin.getRecord" handler:handler];
+}
+
 - (void)registerComAtprotoAdminGetAccountTakedown:(XrpcMethodHandler)handler {
     [self registerMethod:@"com.atproto.admin.getAccountTakedown" handler:handler];
 }

@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)activateAccount:(NSString *)did error:(NSError **)error;
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error;
 - (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error;
+- (BOOL)isRecordTakedownActive:(NSString *)uri error:(NSError **)error;
 - (nullable NSString *)accountStatusForDid:(NSString *)did error:(NSError **)error;
 /**
  * @abstract Create label.

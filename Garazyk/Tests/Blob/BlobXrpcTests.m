@@ -154,7 +154,7 @@
     HttpResponse *response = [[HttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
-    XCTAssertEqual(response.statusCode, 400, @"Should return 400 for invalid mime type");
+    XCTAssertEqual(response.statusCode, 415, @"Should return 415 (Unsupported Media Type) for invalid mime type");
 }
 
 - (void)testUploadBlobTooLarge {
