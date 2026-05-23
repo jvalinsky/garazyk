@@ -7,6 +7,8 @@ import {
 } from "./atproto_network.ts";
 import type { StartBinaryOptions } from "./binary_services.ts";
 
+Deno.env.set("HAMOWNIA_TEST", "true");
+
 Deno.test("topology mode records topology name and manifest path in env", () => {
   const oldTopology = Deno.env.get("ATPROTO_TOPOLOGY");
   const oldManifest = Deno.env.get("ATPROTO_TOPOLOGY_MANIFEST");
