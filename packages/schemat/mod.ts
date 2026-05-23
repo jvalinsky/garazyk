@@ -10,6 +10,10 @@
 // Topology model and schema
 export * from "./logging.ts";
 export {
+  DEFAULT_ADMIN_PASSWORD,
+  DEFAULT_MOCK_TWILIO_PORT,
+} from "./topology_presets.ts";
+export {
   loadTopologyPreset,
   resolvePreset,
   resolveTopology,
@@ -86,6 +90,7 @@ export {
   volume,
 } from "./topology_authoring.ts";
 export { listTopologyPresets } from "./topology_list.ts";
+
 export {
   ROLE_TO_ENV,
   ROLE_TO_PORT,
