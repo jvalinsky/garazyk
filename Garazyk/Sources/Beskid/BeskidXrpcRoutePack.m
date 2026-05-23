@@ -322,6 +322,7 @@
     } else {
         serviceEndpoint = proxyService;
     }
+    serviceEndpoint = [self effectivePDSEndpointForEndpoint:serviceEndpoint];
 
     if (serviceEndpoint.length == 0) {
         response.statusCode = HttpStatusBadRequest;
@@ -572,6 +573,32 @@
     return nil;
 }
 
+- (nullable NSString *)configuredPDSEndpointOverride {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSString *beskidOverride = env[@"BESKID_PDS_URL"];
+    if (beskidOverride.length > 0) return beskidOverride;
+    NSString *genericOverride = env[@"PDS_URL"];
+    if (genericOverride.length > 0) return genericOverride;
+    return nil;
+}
+
+- (BOOL)isLoopbackEndpoint:(NSString *)endpoint {
+    NSURLComponents *components = [NSURLComponents componentsWithString:endpoint ?: @""];
+    NSString *host = components.host.lowercaseString;
+    if (host.length == 0) return NO;
+    return [host isEqualToString:@"localhost"] ||
+           [host isEqualToString:@"127.0.0.1"] ||
+           [host isEqualToString:@"::1"];
+}
+
+- (nullable NSString *)effectivePDSEndpointForEndpoint:(nullable NSString *)endpoint {
+    NSString *override = [self configuredPDSEndpointOverride];
+    if (override.length > 0 && (endpoint.length == 0 || [self isLoopbackEndpoint:endpoint])) {
+        return override;
+    }
+    return endpoint;
+}
+
 - (nullable NSString *)signingKeyFromDocument:(DIDDocument *)doc {
     id verificationMethods = doc.jsonDictionary[@"verificationMethod"];
     if ([verificationMethods isKindOfClass:[NSArray class]]) {
@@ -595,7 +622,7 @@
                                                       cid:(nullable NSString *)cid {
     NSError *error = nil;
     DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:&error];
-    NSString *endpoint = doc ? [self pdsEndpointFromDocument:doc] : nil;
+    NSString *endpoint = [self effectivePDSEndpointForEndpoint:(doc ? [self pdsEndpointFromDocument:doc] : nil)];
     if (endpoint.length == 0) return nil;
 
     NSURLComponents *components = [NSURLComponents componentsWithString:endpoint];

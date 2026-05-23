@@ -217,11 +217,13 @@ static BOOL PDSHandleResolverRunningTests(void) {
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
 
+    BOOL envAllowPrivate = [[[[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_HOSTS"] lowercaseString] isEqualToString:@"true"] ||
+                            [[[[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_HOSTS"] lowercaseString] isEqualToString:@"1"];
     ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
     safeOptions.timeout = 10.0;
     safeOptions.maxResponseBytes = 1024; // DID responses are tiny
-    safeOptions.allowHTTP = NO;
-    safeOptions.allowPrivateHosts = PDSHandleResolverRunningTests();
+    safeOptions.allowHTTP = PDSHandleResolverRunningTests() || envAllowPrivate;
+    safeOptions.allowPrivateHosts = PDSHandleResolverRunningTests() || envAllowPrivate;
     safeOptions.followRedirects = YES;
 
     [self executeSafeHTTPSRequest:request
