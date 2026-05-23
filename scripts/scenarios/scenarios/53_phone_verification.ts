@@ -167,6 +167,7 @@ export async function run(): Promise<ScenarioResult> {
 
   // ── Test wrong code rejection ────────────────────────────────────────────
   if (storedForPhone) {
+    await twilio.setAlwaysApprove([]);
     await timedCall(
       result,
       "Wrong code is rejected",
@@ -180,7 +181,7 @@ export async function run(): Promise<ScenarioResult> {
               "content-type": "application/json",
               "authorization": `Basic ${creds}`,
             },
-            body: JSON.stringify({ To: phoneNumber, Code: "000000" }),
+            body: JSON.stringify({ To: phoneNumber, Code: "999999" }),
           },
         );
         const body = await res.json();

@@ -195,7 +195,7 @@ export async function runScenarioLoop(
           reportPaths.push(reportPath);
           console.log(`  Report: ${reportPath}`);
         }
-        writeProgressLine(progress.update(results.length));
+        writeProgressLine(progress.update(results.length, ""));
         await writeProgress(results.length, null, false);
         abortedForCrash = true;
         break;
@@ -261,10 +261,10 @@ export async function runScenarioLoop(
         console.log(`  Report: ${reportPath}`);
       }
 
-      writeProgressLine(progress.update(i + 1));
+      writeProgressLine(progress.update(i + 1, ""));
       await writeProgress(
         i + 1,
-        i + 1 < selected.length ? selected[i + 1] : null,
+        null,
         i + 1 < selected.length,
       );
     }

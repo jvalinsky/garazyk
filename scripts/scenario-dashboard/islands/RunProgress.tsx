@@ -7,6 +7,8 @@ interface RunProgressProps {
   runId: string;
   startedAt: number;
   status: string;
+  totalScenarios?: number;
+  completedScenarios?: number;
 }
 
 /** Format ms as a short human-readable elapsed time. */
@@ -26,10 +28,15 @@ function staleLevel(secondsSinceUpdate: number): "active" | "slow" | "stale" {
 }
 
 /** RunProgress island for live progress, elapsed time, and activity indicator. */
-export default function RunProgress({ runId, startedAt, status }: RunProgressProps) {
+export default function RunProgress(
+  { runId, startedAt, status, totalScenarios = 0, completedScenarios = 0 }:
+    RunProgressProps,
+) {
   const { state, dispatch } = useRuntime();
   const progress = state.value.runs.progressByRunId[runId];
   const startedAtMs = startedAt < 10_000_000_000 ? startedAt * 1000 : startedAt;
+  const isActive = status === "running" || status === "starting" ||
+    status === "stopping";
 
   const [elapsed, setElapsed] = useState(() => Date.now() - startedAtMs);
   const [secondsSinceUpdate, setSecondsSinceUpdate] = useState(0);
@@ -39,7 +46,7 @@ export default function RunProgress({ runId, startedAt, status }: RunProgressPro
   }, [runId]);
 
   useEffect(() => {
-    if (status !== "running") return;
+    if (!isActive) return;
     const tick = setInterval(() => {
       const now = Date.now();
       setElapsed(now - startedAtMs);
@@ -48,26 +55,53 @@ export default function RunProgress({ runId, startedAt, status }: RunProgressPro
       }
     }, 1000);
     return () => clearInterval(tick);
-  }, [startedAtMs, status, progress?.updatedAt]);
+  }, [startedAtMs, isActive, progress?.updatedAt]);
 
-  if (status !== "running") return null;
+  if (!isActive) return null;
 
   const level = staleLevel(secondsSinceUpdate);
-  const pct = progress && progress.total > 0
-    ? Math.round((progress.completed / progress.total) * 100)
+  const total = Math.max(0, progress?.total ?? totalScenarios);
+  const completed = total > 0
+    ? Math.max(0, Math.min(progress?.completed ?? completedScenarios, total))
     : 0;
+  const remaining = Math.max(0, total - completed);
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const statusLabel = status === "starting"
+    ? "Starting"
+    : status === "stopping"
+    ? "Stopping"
+    : "Running";
+  const currentScenario = progress?.currentScenario
+    ? `${
+      progress.currentScenarioId ? `${progress.currentScenarioId}: ` : ""
+    }${progress.currentScenario}`
+    : null;
 
   return (
     <div class="run-progress">
       <div class="run-progress-header">
-        <span class="run-progress-status">
-          <span class="run-progress-spinner">⟳</span>
-          Running
-        </span>
-        <span class="run-progress-elapsed">{formatElapsedShort(elapsed)}</span>
+        <div>
+          <div class="run-progress-kicker">Run progress</div>
+          <div class="run-progress-title">
+            {total > 0 ? `${remaining} scenarios left` : "Preparing scenarios"}
+          </div>
+        </div>
+        <div class="run-progress-meta">
+          <span class="run-progress-status">{statusLabel}</span>
+          <span class="run-progress-elapsed">
+            {formatElapsedShort(elapsed)}
+          </span>
+        </div>
       </div>
 
-      <div class="run-progress-bar-track">
+      <div
+        class="run-progress-bar-track"
+        role="progressbar"
+        aria-label="Scenario run progress"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={completed}
+      >
         <div
           class="run-progress-bar-fill"
           style={{ width: `${pct}%` }}
@@ -75,23 +109,25 @@ export default function RunProgress({ runId, startedAt, status }: RunProgressPro
       </div>
 
       <div class="run-progress-body">
-        {progress?.exists && progress.total > 0
+        {progress?.exists && total > 0
           ? (
             <div class="run-progress-scenario">
-              Scenario {Math.min(progress.completed + 1, progress.total)}
-              /{progress.total}: {progress.currentScenario ?? "..."}
+              {completed}/{total} complete
+              {currentScenario ? ` - ${currentScenario}` : ""}
             </div>
           )
           : (
             <div class="run-progress-scenario run-progress-muted">
-              Starting...
+              Waiting for the first scenario update
             </div>
           )}
 
         <div class={`run-progress-activity run-progress-activity--${level}`}>
           <span class="run-progress-dot" />
           {secondsSinceUpdate > 0
-            ? `Last activity: ${formatElapsedShort(secondsSinceUpdate * 1000)} ago`
+            ? `Last activity: ${
+              formatElapsedShort(secondsSinceUpdate * 1000)
+            } ago`
             : "Waiting for activity..."}
         </div>
       </div>

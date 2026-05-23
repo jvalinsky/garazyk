@@ -14,6 +14,7 @@ Deno.test("ProgressBar: start returns a string with task name", () => {
   const plain = stripAnsi(output);
   assertMatch(plain, /test-scenario/);
   assertMatch(plain, /0%/);
+  assertMatch(plain, /10 left/);
   assertMatch(plain, /0\/10/);
 });
 
@@ -24,8 +25,18 @@ Deno.test("ProgressBar: update returns a string with progress", () => {
   assertEquals(typeof output, "string");
   const plain = stripAnsi(output);
   assertMatch(plain, /50%/);
+  assertMatch(plain, /5 left/);
   assertMatch(plain, /5\/10/);
   assertMatch(plain, /second/);
+});
+
+Deno.test("ProgressBar: update can clear the current task", () => {
+  const bar = new ProgressBar(2);
+  bar.start("first");
+  const output = bar.update(1, "");
+  const plain = stripAnsi(output);
+  assertMatch(plain, /1 left/);
+  assertEquals(plain.includes("Running:"), false);
 });
 
 Deno.test("ProgressBar: finish returns a string with total time", () => {
