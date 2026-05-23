@@ -202,10 +202,16 @@ export class XrpcClient {
 
   /**
    * Returns a scoped client bound to an actor's identity credentials.
-   * @param actor - An object providing an accessJwt (e.g. an Actor instance)
+   * @param actor - An object providing an accessJwt and did (e.g. an Actor instance)
    */
-  as(actor: { accessJwt?: string; token?: string }) {
+  as(actor: { accessJwt?: string; token?: string; did?: string }) {
     const token = actor.accessJwt || actor.token;
+    const did = actor.did;
+    const wrap = <T extends Record<string, unknown>>(params?: T): T | { repo: string } & T => {
+      const merged = { ...params } as { repo: string } & T;
+      if (did) merged.repo = did;
+      return merged;
+    };
     return {
       raw: {
         get: (method: string, params?: Record<string, unknown>) => this.raw.get(method, params, token),
@@ -214,6 +220,26 @@ export class XrpcClient {
         procedure: (method: string, body?: unknown) => this.raw.procedure(method, body, token),
       },
       api: token ? this.auth(token) : this.api,
+      repo: {
+        createRecord: (params: Record<string, unknown>) =>
+          this.raw.post("com.atproto.repo.createRecord", wrap(params), token),
+        getRecord: (params: Record<string, unknown>) =>
+          this.raw.get("com.atproto.repo.getRecord", wrap(params), token),
+        putRecord: (params: Record<string, unknown>) =>
+          this.raw.post("com.atproto.repo.putRecord", wrap(params), token),
+        deleteRecord: (params: Record<string, unknown>) =>
+          this.raw.post("com.atproto.repo.deleteRecord", wrap(params), token),
+        applyWrites: (params: Record<string, unknown>) =>
+          this.raw.post("com.atproto.repo.applyWrites", wrap(params), token),
+        listRecords: (params: Record<string, unknown>) =>
+          this.raw.get("com.atproto.repo.listRecords", wrap(params), token),
+        describeRepo: (params?: Record<string, unknown>) =>
+          this.raw.get("com.atproto.repo.describeRepo", wrap(params), token),
+        listMissingBlobs: (params?: Record<string, unknown>) =>
+          this.raw.get("com.atproto.repo.listMissingBlobs", wrap(params), token),
+        uploadBlob: (data: Uint8Array) =>
+          this.raw.postBinary("com.atproto.repo.uploadBlob", data, "application/octet-stream", token),
+      },
     };
   }
 
