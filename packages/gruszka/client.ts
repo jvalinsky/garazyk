@@ -201,6 +201,23 @@ export class XrpcClient {
   }
 
   /**
+   * Returns a scoped client bound to an actor's identity credentials.
+   * @param actor - An object providing an accessJwt (e.g. an Actor instance)
+   */
+  as(actor: { accessJwt?: string; token?: string }) {
+    const token = actor.accessJwt || actor.token;
+    return {
+      raw: {
+        get: (method: string, params?: Record<string, unknown>) => this.raw.get(method, params, token),
+        post: (method: string, body?: unknown) => this.raw.post(method, body, token),
+        query: (method: string, params?: Record<string, unknown>) => this.raw.query(method, params, token),
+        procedure: (method: string, body?: unknown) => this.raw.procedure(method, body, token),
+      },
+      api: token ? this.auth(token) : this.api,
+    };
+  }
+
+  /**
    * Log in as the admin user
    * @param password - The admin password
    * @defaultValue "test-admin-password"

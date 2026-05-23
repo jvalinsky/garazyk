@@ -233,6 +233,49 @@ services:
     networks:
       - local_net
 
+  local-beskid:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    entrypoint: ["/usr/local/bin/beskid"]
+    command:
+      - "serve"
+      - "--port"
+      - "8085"
+      - "--data-dir"
+      - "/var/lib/atprotopds"
+    ports:
+      - "8085:8085"
+    volumes:
+      - local_beskid_data:/var/lib/atprotopds
+    environment:
+      - TZ=UTC
+      - PDS_ALLOW_PRIVATE_SSRF=1
+      - PDS_ALLOW_HTTP=1
+      - PDS_PLC_URL=http://local-plc:2582
+      - PLC_URL=http://local-plc:2582
+      - BESKID_PDS_URL=http://local-pds:2583
+      - BESKID_DATA_DIR=/var/lib/atprotopds
+      - BESKID_HTTP_PORT=8085
+      - BESKID_CACHE_RECORD_TTL=3600
+      - BESKID_CACHE_IDENTITY_TTL=86400
+      - BESKID_RATELIMIT_ENABLED=true
+      - BESKID_RATELIMIT_IP_LIMIT=200
+      - BESKID_RATELIMIT_IP_WINDOW=60
+    depends_on:
+      local-pds:
+        condition: service_healthy
+      local-plc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - local_net
+
   local-chat:
     build:
       context: .
@@ -408,6 +451,8 @@ services:
       - VIDEO_PORT=2586
       - MIKRUS_HOST=local-mikrus
       - MIKRUS_PORT=3210
+      - BESKID_HOST=local-beskid
+      - BESKID_PORT=8085
       - PLC_HOST=local-plc
       - PLC_PORT=2582
       - GERM_HOST=local-germ
@@ -418,6 +463,7 @@ services:
       - local-pds
       - local-appview
       - local-mikrus
+      - local-beskid
       - local-chat
       - local-germ
     networks:
@@ -434,6 +480,7 @@ volumes:
   local_relay_data:
   local_appview_data:
   local_mikrus_data:
+  local_beskid_data:
   local_chat_data:
   local_germ_data:
   local_video_data:

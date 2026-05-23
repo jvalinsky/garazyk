@@ -17,13 +17,26 @@ let alwaysApproveCodes: string[] = ["000000"];
 const startTime = Date.now();
 
 function parseFlags() {
-  const args = parseArgs(Deno.args, { string: ["always-approve", "token"] });
+  const args = parseArgs(Deno.args, {
+    string: ["always-approve", "port-file", "token"],
+  });
   return {
     port: parseInt(String(args.port ?? Deno.env.get("PORT") ?? "8082"), 10),
-    token: String(args.token ?? Deno.env.get("TELEGRAM_GATEWAY_TOKEN") ?? "TG_MOCK_TOKEN"),
-    alwaysApprove: String(args["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ?? "000000"),
-    latency: parseInt(String(args.latency ?? Deno.env.get("LATENCY_MS") ?? "0"), 10),
-    failRate: parseFloat(String(args["fail-rate"] ?? Deno.env.get("FAIL_RATE") ?? "0")),
+    portFile: args["port-file"] ? String(args["port-file"]) : undefined,
+    token: String(
+      args.token ?? Deno.env.get("TELEGRAM_GATEWAY_TOKEN") ?? "TG_MOCK_TOKEN",
+    ),
+    alwaysApprove: String(
+      args["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ??
+        "000000",
+    ),
+    latency: parseInt(
+      String(args.latency ?? Deno.env.get("LATENCY_MS") ?? "0"),
+      10,
+    ),
+    failRate: parseFloat(
+      String(args["fail-rate"] ?? Deno.env.get("FAIL_RATE") ?? "0"),
+    ),
   };
 }
 
@@ -59,12 +72,19 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function createRequestStatus(requestId: string, phone: string, status: string = "pending") {
+function createRequestStatus(
+  requestId: string,
+  phone: string,
+  status: string = "pending",
+) {
   return {
     request_id: requestId,
     phone_number: phone,
     request_cost: 0.0,
-    delivery_status: { status: "sent", updated_at: Math.floor(Date.now() / 1000) },
+    delivery_status: {
+      status: "sent",
+      updated_at: Math.floor(Date.now() / 1000),
+    },
     verification_status: { status, updated_at: Math.floor(Date.now() / 1000) },
   };
 }
@@ -92,9 +112,17 @@ async function handleRequest(req: Request): Promise<Response> {
   if (path === "/__control/setCode" && req.method === "POST") {
     const body = await req.json();
     if (!body.phone || !body.code || !body.requestId) {
-      return jsonResponse({ error: "phone, code, and requestId required" }, 400);
+      return jsonResponse(
+        { error: "phone, code, and requestId required" },
+        400,
+      );
     }
-    store[body.requestId] = { phone: body.phone, code: body.code, createdAt: Date.now(), verified: false };
+    store[body.requestId] = {
+      phone: body.phone,
+      code: body.code,
+      createdAt: Date.now(),
+      verified: false,
+    };
     return jsonResponse({ status: "ok" });
   }
 
@@ -142,7 +170,9 @@ async function handleRequest(req: Request): Promise<Response> {
     const requestId = body.request_id || randomRequestId();
     const code = generateCode();
     store[requestId] = { phone, code, createdAt: Date.now(), verified: false };
-    console.error(`[mock-telegram] sendVerificationMessage: ${phone} (${requestId}) -> code=${code}`);
+    console.error(
+      `[mock-telegram] sendVerificationMessage: ${phone} (${requestId}) -> code=${code}`,
+    );
     return jsonResponse({
       ok: true,
       result: createRequestStatus(requestId, phone),
@@ -158,7 +188,8 @@ async function handleRequest(req: Request): Promise<Response> {
     }
 
     const state = store[requestId];
-    const isApproved = (state && state.code === code) || alwaysApproveCodes.includes(code);
+    const isApproved = (state && state.code === code) ||
+      alwaysApproveCodes.includes(code);
 
     if (isApproved && state) {
       state.verified = true;
@@ -172,7 +203,11 @@ async function handleRequest(req: Request): Promise<Response> {
 
     return jsonResponse({
       ok: true,
-      result: createRequestStatus(requestId, state?.phone || "unknown", isApproved ? "code_valid" : "code_invalid"),
+      result: createRequestStatus(
+        requestId,
+        state?.phone || "unknown",
+        isApproved ? "code_valid" : "code_invalid",
+      ),
     });
   }
 
@@ -181,8 +216,23 @@ async function handleRequest(req: Request): Promise<Response> {
 }
 
 console.error(`[mock-telegram] Starting on port ${cfg.port}`);
-console.error(`[mock-telegram] Always-approve codes: ${alwaysApproveCodes.join(", ")}`);
-if (cfg.latency > 0) console.error(`[mock-telegram] Simulated latency: ${cfg.latency}ms`);
-if (cfg.failRate > 0) console.error(`[mock-telegram] Simulated fail rate: ${cfg.failRate}`);
+console.error(
+  `[mock-telegram] Always-approve codes: ${alwaysApproveCodes.join(", ")}`,
+);
+if (cfg.latency > 0) {
+  console.error(`[mock-telegram] Simulated latency: ${cfg.latency}ms`);
+}
+if (cfg.failRate > 0) {
+  console.error(`[mock-telegram] Simulated fail rate: ${cfg.failRate}`);
+}
 
-Deno.serve({ port: cfg.port, hostname: "127.0.0.1" }, (req) => handleRequest(req));
+const server = Deno.serve(
+  { port: cfg.port, hostname: "127.0.0.1" },
+  (req) => handleRequest(req),
+);
+if (cfg.portFile) {
+  await Deno.writeTextFile(
+    cfg.portFile,
+    `http://127.0.0.1:${server.addr.port}\n`,
+  );
+}
