@@ -74,7 +74,7 @@ static BOOL XrpcChatConversationIncludesActor(NSDictionary *convo, NSString *act
 /*! Fetch the allowIncoming preference for a DID from the PDS repo.
     Returns "all" (default), "none", or "following".
     On any error, returns "all" (fail-open for availability). */
-static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
+static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid, NSString *authHeader) {
     NSString *pdsUrl = [ChatAuthManager sharedManager].pdsUrl;
     if (pdsUrl.length == 0) {
         pdsUrl = @"http://127.0.0.1:2583";
@@ -98,6 +98,9 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
                                 cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
                             timeoutInterval:5.0];
     [request setHTTPMethod:@"GET"];
+    if (authHeader.length > 0) {
+        [request setValue:authHeader forHTTPHeaderField:@"Authorization"];
+    }
 
     ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
     options.allowHTTP = YES;
@@ -154,16 +157,17 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
 }
 
 static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
-                                                     PDSRecordService *recordService) {
+                                                     PDSRecordService *recordService,
+                                                     NSString *authHeader) {
     if (!recordService || targetDid.length == 0) {
-        return XrpcChatAllowIncomingForDID(targetDid);
+        return XrpcChatAllowIncomingForDID(targetDid, authHeader);
     }
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/chat.bsky.actor.declaration/self", targetDid];
     NSError *error = nil;
     NSDictionary *record = [recordService getRecord:uri forDid:targetDid error:&error];
     if (!record) {
-        return XrpcChatAllowIncomingForDID(targetDid);
+        return XrpcChatAllowIncomingForDID(targetDid, authHeader);
     }
 
     NSDictionary *value = [record[@"value"] isKindOfClass:[NSDictionary class]] ? record[@"value"] : nil;
@@ -227,7 +231,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         for (NSString *memberDid in members) {
             if ([memberDid isEqualToString:actorDID]) continue;
 
-            NSString *allowIncoming = XrpcChatAllowIncomingForDIDFromRepo(memberDid, recordService);
+            NSString *allowIncoming = XrpcChatAllowIncomingForDIDFromRepo(memberDid, recordService, authHeader);
             if ([allowIncoming isEqualToString:@"none"]) {
                 response.statusCode = 403;
                 [response setJsonBody:@{

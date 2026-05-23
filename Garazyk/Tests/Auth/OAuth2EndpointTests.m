@@ -11,6 +11,8 @@
 @property (nonatomic, strong) HttpServer *server;
 @property (nonatomic, strong) OAuth2Handler *oauthHandler;
 @property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, copy) NSString *baseURL;
+@property (nonatomic, copy) NSString *tempPath;
 @end
 
 @implementation OAuth2EndpointTests
@@ -18,14 +20,26 @@
 - (void)setUp {
     [super setUp];
     
-    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"oauth_test.db"];
-    self.database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
+    self.tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"oauth-test-%@.db", NSUUID.UUID.UUIDString]];
+    self.database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:self.tempPath]];
     NSError *error = nil;
     [self.database openWithError:&error];
     
-    self.server = [HttpServer serverWithPort:8443];
+    self.server = [HttpServer serverWithPort:0];
     self.oauthHandler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     [self.oauthHandler registerRoutesWithServer:self.server];
+    NSError *startError = nil;
+    if (![self.server startWithError:&startError]) {
+        NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
+        if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
+            XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
+        }
+        XCTFail(@"Failed to start OAuth test server: %@", startError);
+        return;
+    }
+    self.baseURL = [NSString stringWithFormat:@"http://127.0.0.1:%lu",
+                                              (unsigned long)self.server.port];
 }
 
 - (void)tearDown {
@@ -34,6 +48,11 @@
     self.server = nil;
     self.database = nil;
     self.oauthHandler = nil;
+    self.baseURL = nil;
+    if (self.tempPath) {
+        [[NSFileManager defaultManager] removeItemAtPath:self.tempPath error:nil];
+        self.tempPath = nil;
+    }
     [super tearDown];
 }
 
@@ -41,7 +60,8 @@
 
 #ifndef GNUSTEP
 - (void)testOAuthAuthorizeEndpointRequiresRequestURI {
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&scope=atproto:identify&state=test123"]];
+    NSString *url = [self.baseURL stringByAppendingString:@"/oauth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&scope=atproto:identify&state=test123"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
     request.HTTPMethod = @"GET";
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"OAuth authorize PAR required"];
@@ -67,7 +87,8 @@
 #ifndef GNUSTEP
 - (void)testOAuthAuthorizeEndpointBlocksBadClient {
     // Test with invalid client_id
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/authorize?client_id=invalid-client&redirect_uri=http://localhost:3000/callback&response_type=code"]];
+    NSString *url = [self.baseURL stringByAppendingString:@"/oauth/authorize?client_id=invalid-client&redirect_uri=http://localhost:3000/callback&response_type=code"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
     request.HTTPMethod = @"GET";
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"OAuth authorize invalid client"];
@@ -90,7 +111,8 @@
 #ifndef GNUSTEP
 - (void)testOAuthTokenEndpointExchangesCodeForTokens {
     // Test token exchange with authorization code
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/token"]];
+    NSString *url = [self.baseURL stringByAppendingString:@"/oauth/token"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
@@ -127,7 +149,8 @@
 #ifndef GNUSTEP
 - (void)testOAuthTokenEndpointBlocksBadClient {
     // Test with invalid client_id
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/token"]];
+    NSString *url = [self.baseURL stringByAppendingString:@"/oauth/token"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
@@ -154,7 +177,8 @@
 #ifndef GNUSTEP
 - (void)testOAuthRevokeEndpointReturnsStatus200ForSuccessfulRevocation {
     // Test token revocation
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/revoke"]];
+    NSString *url = [self.baseURL stringByAppendingString:@"/oauth/revoke"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
