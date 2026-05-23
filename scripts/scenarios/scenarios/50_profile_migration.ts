@@ -12,7 +12,7 @@
  */
 
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
@@ -24,9 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-function now() {
-  return new Date().toISOString();
-}
 
 function makePng(width: number, height: number): Uint8Array {
   // Simple 1x1 PNG-like or just enough for a blob

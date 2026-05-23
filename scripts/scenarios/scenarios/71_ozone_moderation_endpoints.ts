@@ -15,10 +15,10 @@
  */
 
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
@@ -30,40 +30,8 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Extends 04_moderation_safety.ts (createReport/emitEvent) to add read-side
 // moderation API coverage. Runs against the PDS admin endpoints.
 
-function now() {
-  return new Date().toISOString();
-}
 
-/** Try an endpoint, skipping if 404/501, failing on other errors. */
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else if (e instanceof XrpcError && e.status === 403) {
-      result.stepSkipped(label, `access denied (HTTP 403) — requires elevated role`);
-    } else if (e instanceof XrpcError && e.status === 400) {
-      // 400 could be "MethodNotImplemented" or similar error messages
-      const body = typeof e.body === "string" ? e.body : JSON.stringify(e.body ?? "");
-      if (body.toLowerCase().includes("not implemented") || body.toLowerCase().includes("unknown method")) {
-        result.stepSkipped(label, `endpoint not implemented`);
-      } else {
-        result.stepFailed(label, `HTTP 400: ${body.substring(0, 200)}`);
-      }
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Ozone Moderation Endpoints");
@@ -162,9 +130,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.moderation.getRecord",
     async () => {
-      const body = await pds.raw.post("tools.ozone.moderation.getRecord", {
+      const body = await pds.asAdmin(adminToken).raw.post("tools.ozone.moderation.getRecord", {
         uri: postRef?.uri ?? `${troll.did}/app.bsky.feed.post/test`,
-      }, adminToken);
+      });
       return { uri: body.uri ?? body.record?.uri ?? "present" };
     },
     (r) => `uri=${r.uri}`,
@@ -176,9 +144,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.moderation.getRepo",
     async () => {
-      const body = await pds.raw.post("tools.ozone.moderation.getRepo", {
+      const body = await pds.asAdmin(adminToken).raw.post("tools.ozone.moderation.getRepo", {
         did: troll.did,
-      }, adminToken);
+      });
       return { did: body.did, modStatus: body.moderation?.currentAction ?? "none" };
     },
     (r) => `did=${r.did}`,
@@ -190,10 +158,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.moderation.searchRepos",
     async () => {
-      const body = await pds.raw.get("tools.ozone.moderation.searchRepos", {
+      const body = await pds.asAdmin(adminToken).raw.get("tools.ozone.moderation.searchRepos", {
         q: "troll",
         limit: 10,
-      }, adminToken);
+      });
       const repos = body.repos ?? body.repositories ?? [];
       return { count: Array.isArray(repos) ? repos.length : "present" };
     },
@@ -206,9 +174,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.signature.findRelatedAccounts",
     async () => {
-      const body = await pds.raw.post("tools.ozone.signature.findRelatedAccounts", {
+      const body = await pds.asAdmin(adminToken).raw.post("tools.ozone.signature.findRelatedAccounts", {
         did: troll.did,
-      }, adminToken);
+      });
       const accounts = body.accounts ?? [];
       return { count: Array.isArray(accounts) ? accounts.length : "present" };
     },
@@ -221,10 +189,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.signature.searchAccounts",
     async () => {
-      const body = await pds.raw.get("tools.ozone.signature.searchAccounts", {
+      const body = await pds.asAdmin(adminToken).raw.get("tools.ozone.signature.searchAccounts", {
         q: "troll",
         limit: 10,
-      }, adminToken);
+      });
       const accounts = body.accounts ?? [];
       return { count: Array.isArray(accounts) ? accounts.length : "present" };
     },
@@ -237,9 +205,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getRecord (existing endpoint for comparison)",
     async () => {
-      const body = await pds.raw.get("com.atproto.admin.getRecord", {
+      const body = await pds.asAdmin(adminToken).raw.get("com.atproto.admin.getRecord", {
         uri: postRef?.uri ?? `${troll.did}/app.bsky.feed.post/test`,
-      }, adminToken);
+      });
       return { uri: body.uri ?? "present" };
     },
     (r) => `uri=${r.uri}`,
@@ -269,7 +237,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.moderation.emitEvent",
     async () => {
-      const body = await pds.raw.post("tools.ozone.moderation.emitEvent", {
+      const body = await pds.asAdmin(adminToken).raw.post("tools.ozone.moderation.emitEvent", {
         event: {
           $type: "tools.ozone.moderation.defs#modEventLabel",
           labels: [{ val: "test-ozone-coverage" }],
@@ -281,7 +249,7 @@ export async function run(): Promise<ScenarioResult> {
         },
         subjectBlobCids: [],
         createdBy: luna.did,
-      }, adminToken);
+      });
       return { id: body.id };
     },
     (r) => `id=${r.id}`,

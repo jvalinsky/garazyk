@@ -53,8 +53,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "PLC health check",
     async () => {
-      const res = await fetch(`${SERVICE_URLS.plc}/_health`);
-      if (res.status !== 200) throw new Error(`PLC status=${res.status}`);
+      await pds1.raw.httpGet(`${SERVICE_URLS.plc}/_health`);
     },
   );
 
@@ -122,17 +121,13 @@ export async function run(): Promise<ScenarioResult> {
       if (signResp1) {
         const op1 = { ...signResp1.operation };
         delete op1.did;
-        const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(op1),
-        });
-        if (plcRes.status === 200) {
+        try {
+          await pds1.raw.httpPost(`${SERVICE_URLS.plc}/${luna.did}`, op1);
           result.stepPassed("First handle rotation (Direct PLC)", `handle=${newHandle1}`);
-        } else {
+        } catch (exc: any) {
           result.stepFailed(
             "First handle rotation (Direct PLC)",
-            `status=${plcRes.status} body=${await plcRes.text()}`,
+            `error=${exc.message || String(exc)}`,
           );
         }
       }
@@ -165,17 +160,13 @@ export async function run(): Promise<ScenarioResult> {
         if (signResp2) {
           const op2 = { ...signResp2.operation };
           delete op2.did;
-          const plcRes2 = await fetch(`${SERVICE_URLS.plc}/${luna.did}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(op2),
-          });
-          if (plcRes2.status === 200) {
+          try {
+            await pds1.raw.httpPost(`${SERVICE_URLS.plc}/${luna.did}`, op2);
             result.stepPassed("Second handle rotation (Direct PLC)", `handle=${newHandle2}`);
-          } else {
+          } catch (exc: any) {
             result.stepFailed(
               "Second handle rotation (Direct PLC)",
-              `status=${plcRes2.status} body=${await plcRes2.text()}`,
+              `error=${exc.message || String(exc)}`,
             );
           }
         }
@@ -187,14 +178,12 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const logResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}/log`);
-    if (logResp.status === 200) {
-      const operations = await logResp.json();
-      result.stepPassed("Fetch PLC operation log", `total_operations=${operations.length}`);
+    const operations = await pds1.raw.httpGet(`${SERVICE_URLS.plc}/${luna.did}/log`);
+    result.stepPassed("Fetch PLC operation log", `total_operations=${operations.length}`);
 
-      if (operations.length === 0) {
-        result.stepFailed("PLC log audit", "Log is empty");
-      } else {
+    if (operations.length === 0) {
+      result.stepFailed("PLC log audit", "Log is empty");
+    } else {
         let isValid = true;
         let failureReason = "";
 
@@ -247,9 +236,6 @@ export async function run(): Promise<ScenarioResult> {
           );
         }
       }
-    } else {
-      result.stepFailed("Fetch PLC operation log", `status=${logResp.status}`);
-    }
   } catch (exc: any) {
     result.stepFailed("Fetch PLC operation log", exc.message || String(exc));
   }

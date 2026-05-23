@@ -21,13 +21,10 @@
 
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 function makePng(width = 100, height = 100): Uint8Array {
   const b64 =
@@ -55,8 +52,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error("Server not healthy");
+      await client.raw.xrpcGet("com.atproto.server.describeServer");
     },
   );
 
@@ -71,25 +67,7 @@ export async function run(): Promise<ScenarioResult> {
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
-      async () => {
-        try {
-          const res = await client.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(client, char),
       (s) => `did=${s.did}`,
     );
     if (session) {
@@ -114,12 +92,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Rosa uploads food photo",
     async () => {
-      return await client.raw.postBinary(
-        "com.atproto.repo.uploadBlob",
-        pngData,
-        "image/png",
-        rosa.accessJwt,
-      );
+      return await client.as(rosa).raw.postBinary("com.atproto.repo.uploadBlob", pngData, "image/png");
     },
     (r) => `size=${r.blob?.size || "unknown"}`,
   );
@@ -157,12 +130,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `DJ Volt uploads image ${i + 1}`,
       async () => {
-        return await client.raw.postBinary(
-          "com.atproto.repo.uploadBlob",
-          data,
-          "image/png",
-          volt.accessJwt,
-        );
+        return await client.as(volt).raw.postBinary("com.atproto.repo.uploadBlob", data, "image/png");
       },
     );
     if (blobResp?.blob) {
@@ -202,12 +170,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna uploads banner image",
     async () => {
-      return await client.raw.postBinary(
-        "com.atproto.repo.uploadBlob",
-        bannerData,
-        "image/png",
-        luna.accessJwt,
-      );
+      return await client.as(luna).raw.postBinary("com.atproto.repo.uploadBlob", bannerData, "image/png");
     },
   );
   const bannerBlob = bannerBlobResp?.blob;
@@ -235,14 +198,9 @@ export async function run(): Promise<ScenarioResult> {
     try {
       const cid = rosaBlob.ref?.$link || rosaBlob.cid || rosaBlob.ref;
       if (cid) {
-        const blobUrl = `${PDS1}/xrpc/com.atproto.sync.getBlob?did=${rosa.did}&cid=${cid}`;
-        const resp = await fetch(blobUrl);
-        if (resp.ok) {
-          const buf = await resp.arrayBuffer();
-          result.stepPassed("Blob retrieval", `size=${buf.byteLength} bytes`);
-        } else {
-          result.stepFailed("Blob retrieval", `status=${resp.status}`);
-        }
+        const blobResp = await client.raw.xrpcGetBinary("com.atproto.sync.getBlob", { params: { did: rosa.did, cid } });
+        const buf = blobResp[2];
+        result.stepPassed("Blob retrieval", `size=${buf.byteLength} bytes`);
       } else {
         result.stepSkipped("Blob retrieval", "No blob CID available");
       }
@@ -257,12 +215,7 @@ export async function run(): Promise<ScenarioResult> {
     "Oversized blob upload",
     async () => {
       try {
-        await client.raw.postBinary(
-          "com.atproto.repo.uploadBlob",
-          largeData,
-          "application/octet-stream",
-          marcus.accessJwt,
-        );
+        await client.as(marcus).raw.postBinary("com.atproto.repo.uploadBlob", largeData, "application/octet-stream");
       } catch (e) {
         if (e instanceof XrpcError && e.status === 400 && (e.body as Record<string, unknown>)?.error === "BlobTooLarge") {
           return e.body as { error: string };

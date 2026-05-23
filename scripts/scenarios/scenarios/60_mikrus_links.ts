@@ -12,7 +12,7 @@
  */
 
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -28,9 +28,6 @@ const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ||
   SERVICE_URLS.mikrus ||
   "http://127.0.0.1:3210";
 
-function now() {
-  return new Date().toISOString();
-}
 
 async function waitForCount(
   mikrus: XrpcClient,

@@ -16,16 +16,13 @@
  * - User interactions adhere to the expected graph API behavior.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.

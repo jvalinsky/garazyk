@@ -13,45 +13,11 @@
  */
 
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
-
-function now(): string {
-  return new Date().toISOString();
-}
-
-/** Try an endpoint, skipping if 404/501/400-not-implemented, failing on other errors. */
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else if (e instanceof XrpcError && e.status === 403) {
-      result.stepSkipped(label, `access denied (HTTP 403) — requires elevated role`);
-    } else if (e instanceof XrpcError && e.status === 400) {
-      const body = typeof e.body === "string" ? e.body : JSON.stringify(e.body ?? "");
-      if (body.toLowerCase().includes("not implemented") || body.toLowerCase().includes("unknown method")) {
-        result.stepSkipped(label, `endpoint not implemented`);
-      } else {
-        result.stepFailed(label, `HTTP 400: ${body.substring(0, 200)}`);
-      }
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Admin Query & Discovery Endpoints");
@@ -131,9 +97,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getAccountInfo (by DID)",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.getAccountInfo", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.getAccountInfo", {
         did: luna.did,
-      }, adminToken);
+      });
       return { did: body.did, handle: body.handle ?? body.email ?? "present" };
     },
     (r) => `did=${r.did}`,
@@ -144,9 +110,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getAccountInfos (batch)",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.getAccountInfos", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.getAccountInfos", {
         dids: [luna.did!, troll.did!],
-      }, adminToken);
+      });
       const infos = body.infos ?? body.accounts ?? [];
       return { count: Array.isArray(infos) ? infos.length : "present" };
     },
@@ -158,10 +124,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.searchAccounts (by email partial)",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.searchAccounts", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.searchAccounts", {
         email: luna.email?.split("@")[0] ?? "luna",
         limit: 10,
-      }, adminToken);
+      });
       const accounts = body.accounts ?? [];
       return { count: Array.isArray(accounts) ? accounts.length : "present" };
     },
@@ -173,9 +139,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getSubjectStatus (by DID)",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.getSubjectStatus", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.getSubjectStatus", {
         did: troll.did,
-      }, adminToken);
+      });
       return { status: body.takedown?.applied ?? "none" };
     },
     (r) => `status=${r.status}`,
@@ -186,7 +152,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getServerStats",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.getServerStats", {}, adminToken);
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.getServerStats", {});
       return { stats: Object.keys(body).join(",") };
     },
     (r) => `keys=${r.stats}`,
@@ -197,10 +163,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getBlobAuditStatus",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.getBlobAuditStatus", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.getBlobAuditStatus", {
         did: luna.did,
         limit: 10,
-      }, adminToken);
+      });
       const blobs = body.blobs ?? body.entries ?? [];
       return { count: Array.isArray(blobs) ? blobs.length : "present" };
     },
@@ -212,9 +178,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getInviteCodes",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.getInviteCodes", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.getInviteCodes", {
         limit: 10,
-      }, adminToken);
+      });
       const codes = body.codes ?? [];
       return { count: Array.isArray(codes) ? codes.length : "present" };
     },
@@ -226,9 +192,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.queryAuditLog",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.queryAuditLog", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.queryAuditLog", {
         limit: 10,
-      }, adminToken);
+      });
       const entries = body.entries ?? body.auditLog ?? [];
       return { count: Array.isArray(entries) ? entries.length : "present" };
     },
@@ -240,9 +206,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "admin.getAccountUsage",
     async () => {
-      const body = await pds.raw.xrpcGet("com.atproto.admin.getAccountUsage", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("com.atproto.admin.getAccountUsage", {
         did: luna.did,
-      }, adminToken);
+      });
       const usage = body.usage ?? body.daily ?? {};
       return { fields: Object.keys(usage).join(",") };
     },

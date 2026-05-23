@@ -75,14 +75,12 @@ async function waitForVideoJob(video: XrpcClient, jobId: string, token: string) 
   throw new Error("video job did not complete before timeout");
 }
 
-async function waitForAppViewHealthy(timeout = 30): Promise<void> {
+async function waitForAppViewHealthy(appview: XrpcClient, timeout = 30): Promise<void> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeout * 1000) {
     try {
-      const res = await fetch(`${SERVICE_URLS.appview}/admin/ingest/health`, {
-        headers: { Authorization: `Bearer ${APPVIEW_ADMIN_SECRET}` },
-      });
-      if (res.ok) return;
+      await appview.asAdmin(APPVIEW_ADMIN_SECRET).raw.httpGet("/admin/ingest/health");
+      return;
     } catch {
       // Retry until timeout; containers may still be binding ports.
     }
@@ -104,7 +102,7 @@ export async function run(): Promise<ScenarioResult> {
     await pds.waitForHealthy(30);
   });
   await timedCall(result, "AppView health check", async () => {
-    await waitForAppViewHealthy(30);
+    await waitForAppViewHealthy(appview, 30);
   });
   await timedCall(result, "Jelcz health check", async () => {
     await video.waitForHealthy(30);

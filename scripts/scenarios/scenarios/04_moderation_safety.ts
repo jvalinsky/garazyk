@@ -19,13 +19,10 @@
 
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, PDS_ADMIN_PASSWORD } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -41,8 +38,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error("Server not healthy");
+      await client.raw.xrpcGet("com.atproto.server.describeServer");
     },
   );
 
@@ -57,25 +53,7 @@ export async function run(): Promise<ScenarioResult> {
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
-      async () => {
-        try {
-          const res = await client.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(client, char),
       (s) => `did=${s.did}`,
     );
     if (session) {
@@ -229,10 +207,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Admin checks Trollface status",
       async () => {
-        return await client.raw.get(
+        return await client.asAdmin(adminToken).raw.get(
           "com.atproto.admin.getSubjectStatus",
           { did: troll.did },
-          adminToken,
         );
       },
       (s) => `status=${JSON.stringify(s)}`,
@@ -246,10 +223,10 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Mod queries reports via Ozone",
       async () => {
-        return await client.raw.get("tools.ozone.moderation.queryEvents", {
+        return await client.asAdmin(adminToken).raw.get("tools.ozone.moderation.queryEvents", {
           types: "tools.ozone.moderation.defs#modEventReport",
           subject: troll.did,
-        }, adminToken);
+        });
       },
       (e) => `count=${e.events?.length || 0}`,
     );
@@ -262,7 +239,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Mod applies takedown via Ozone",
       async () => {
-        await client.raw.post("tools.ozone.moderation.emitEvent", {
+        await client.asAdmin(adminToken).raw.post("tools.ozone.moderation.emitEvent", {
           event: {
             $type: "tools.ozone.moderation.defs#modEventTakedown",
             comment: "Harassment and spam — takedown applied by Mod Justice",
@@ -272,7 +249,7 @@ export async function run(): Promise<ScenarioResult> {
             did: troll.did,
           },
           createdBy: mod.did,
-        }, adminToken);
+        });
       },
     );
   }
@@ -282,7 +259,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Admin applies takedown on Trollface",
       async () => {
-        await client.raw.post("com.atproto.admin.updateSubjectStatus", {
+        await client.asAdmin(adminToken).raw.post("com.atproto.admin.updateSubjectStatus", {
           subject: {
             $type: "com.atproto.admin.defs#repoRef",
             did: troll.did,
@@ -291,7 +268,7 @@ export async function run(): Promise<ScenarioResult> {
             applied: true,
             ref: "takedown-harassment-spam",
           },
-        }, adminToken);
+        });
       },
     );
   } else {
@@ -303,9 +280,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Labels query",
       async () => {
-        return await client.raw.get("com.atproto.label.queryLabels", {
+        return await client.asAdmin(adminToken).raw.get("com.atproto.label.queryLabels", {
           uriPatterns: trollHarass ? [trollHarass.uri] : [],
-        }, adminToken);
+        });
       },
       (l) => `labels=${JSON.stringify(l)}`,
     );

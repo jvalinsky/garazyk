@@ -165,3 +165,35 @@ export async function repost(
     record: record("app.bsky.feed.repost", { subject: targetPost }),
   });
 }
+
+/**
+ * Task: An actor mutes another user.
+ *
+ * @example
+ * ```ts
+ * await muteUser(client, luna, troll.did);
+ * ```
+ */
+export async function muteUser(
+  client: XrpcClient,
+  actor: Actor,
+  targetDid: string,
+): Promise<any> {
+  return await client.as(actor).graph.muteActor(targetDid);
+}
+
+/**
+ * Task: An actor unmutes another user.
+ *
+ * @example
+ * ```ts
+ * await unmuteUser(client, luna, troll.did);
+ * ```
+ */
+export async function unmuteUser(
+  client: XrpcClient,
+  actor: Actor,
+  targetDid: string,
+): Promise<any> {
+  return await client.as(actor).graph.unmuteActor(targetDid);
+}

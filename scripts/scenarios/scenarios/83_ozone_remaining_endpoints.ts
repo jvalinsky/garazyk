@@ -16,10 +16,10 @@
  */
 
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
@@ -31,39 +31,8 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Extends coverage from 71_ozone_moderation_endpoints.ts to cover the remaining ozone
 // namespaces. Runs against the PDS admin endpoints with admin authentication.
 
-function now() {
-  return new Date().toISOString();
-}
 
-/** Try an endpoint, skipping if 404/501/403, failing on other errors. */
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else if (e instanceof XrpcError && e.status === 403) {
-      result.stepSkipped(label, `access denied (HTTP 403) — requires elevated role`);
-    } else if (e instanceof XrpcError && e.status === 400) {
-      const body = typeof e.body === "string" ? e.body : JSON.stringify(e.body ?? "");
-      if (body.toLowerCase().includes("not implemented") || body.toLowerCase().includes("unknown method")) {
-        result.stepSkipped(label, `endpoint not implemented`);
-      } else {
-        result.stepFailed(label, `HTTP 400: ${body.substring(0, 200)}`);
-      }
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Ozone Remaining Endpoints");
@@ -130,10 +99,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.set.upsertSet (create)",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.set.upsertSet", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.set.upsertSet", {
         name: setName,
         description: "Set created during ozone scenario coverage test",
-      }, adminToken);
+      });
       setName = body.name ?? setName;
       return { name: body.name, description: body.description };
     },
@@ -146,10 +115,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.set.addValues",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.set.addValues", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.set.addValues", {
         name: setName,
         values: testValues,
-      }, adminToken);
+      });
       return { count: body.set?.values?.length ?? "present" };
     },
     (r) => `values=${r.count}`,
@@ -160,10 +129,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.set.getValues",
     async () => {
-      const body = await pds.raw.xrpcGet("tools.ozone.set.getValues", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("tools.ozone.set.getValues", {
         name: setName,
         limit: 10,
-      }, adminToken);
+      });
       const vals = body.values ?? [];
       return { name: body.set?.name ?? body.name, count: Array.isArray(vals) ? vals.length : "present" };
     },
@@ -175,9 +144,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.set.querySets",
     async () => {
-      const body = await pds.raw.xrpcGet("tools.ozone.set.querySets", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("tools.ozone.set.querySets", {
         limit: 10,
-      }, adminToken);
+      });
       const sets = body.sets ?? [];
       return { count: Array.isArray(sets) ? sets.length : "present" };
     },
@@ -189,10 +158,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.set.deleteValues",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.set.deleteValues", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.set.deleteValues", {
         name: setName,
         values: [`did:plc:testvalue1`],
-      }, adminToken);
+      });
       return { status: "deleted" };
     },
   );
@@ -202,9 +171,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.set.deleteSet",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.set.deleteSet", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.set.deleteSet", {
         name: setName,
-      }, adminToken);
+      });
       return { status: "deleted" };
     },
   );
@@ -219,10 +188,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.team.addMember",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.team.addMember", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.team.addMember", {
         did: testMemberDid,
         role: "tools.ozone.team.defs#roleViewer",
-      }, adminToken);
+      });
       return { did: body.did ?? testMemberDid };
     },
     (r) => `did=${r.did}`,
@@ -233,9 +202,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.team.listMembers",
     async () => {
-      const body = await pds.raw.xrpcGet("tools.ozone.team.listMembers", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("tools.ozone.team.listMembers", {
         limit: 10,
-      }, adminToken);
+      });
       const members = body.members ?? [];
       return { count: Array.isArray(members) ? members.length : "present" };
     },
@@ -247,10 +216,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.team.updateMember",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.team.updateMember", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.team.updateMember", {
         did: testMemberDid,
         role: "tools.ozone.team.defs#roleTriage",
-      }, adminToken);
+      });
       return { did: body.did ?? testMemberDid };
     },
     (r) => `did=${r.did}`,
@@ -261,9 +230,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.team.deleteMember",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.team.deleteMember", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.team.deleteMember", {
         did: testMemberDid,
-      }, adminToken);
+      });
       return { status: "deleted" };
     },
   );
@@ -278,11 +247,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.setting.upsertOption",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.setting.upsertOption", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.setting.upsertOption", {
         key: optionKey,
         value: { $type: "tools.ozone.setting.defs#string", value: "test-value" },
         scope: "tools.ozone.setting.defs#scopePersonal",
-      }, adminToken);
+      });
       return { key: body.key ?? optionKey };
     },
     (r) => `key=${r.key}`,
@@ -293,9 +262,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.setting.listOptions",
     async () => {
-      const body = await pds.raw.xrpcGet("tools.ozone.setting.listOptions", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("tools.ozone.setting.listOptions", {
         limit: 10,
-      }, adminToken);
+      });
       const options = body.options ?? [];
       return { count: Array.isArray(options) ? options.length : "present" };
     },
@@ -307,9 +276,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.setting.removeOptions",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.setting.removeOptions", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.setting.removeOptions", {
         keys: [optionKey],
-      }, adminToken);
+      });
       return { status: "removed" };
     },
   );
@@ -325,13 +294,13 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.communication.createTemplate",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.communication.createTemplate", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.communication.createTemplate", {
         name: templateName,
         contentMarkdown: templateContent,
         subject: "Test Moderation Notice",
         lang: "en",
         createdBy: luna.did,
-      }, adminToken);
+      });
       return { id: body.id, name: body.name };
     },
     (r) => `id=${r.id}, name=${r.name}`,
@@ -342,7 +311,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.communication.listTemplates",
     async () => {
-      const body = await pds.raw.xrpcGet("tools.ozone.communication.listTemplates", {}, adminToken);
+      const body = await pds.asAdmin(adminToken).raw.xrpcGet("tools.ozone.communication.listTemplates", {});
       const templates = body.communicationTemplates ?? body.templates ?? [];
       return { count: Array.isArray(templates) ? templates.length : "present" };
     },
@@ -354,14 +323,14 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.communication.updateTemplate",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.communication.updateTemplate", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.communication.updateTemplate", {
         id: templateRef?.id ?? "",
         name: templateName,
         contentMarkdown: `${templateContent}\n\nUpdated for coverage test.`,
         subject: "Updated: Test Moderation Notice",
         lang: "en",
         updatedBy: luna.did,
-      }, adminToken);
+      });
       return { id: body.id, name: body.name };
     },
     (r) => `id=${r.id}`,
@@ -372,9 +341,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "ozone.communication.deleteTemplate",
     async () => {
-      const body = await pds.raw.xrpcPost("tools.ozone.communication.deleteTemplate", {
+      const body = await pds.asAdmin(adminToken).raw.xrpcPost("tools.ozone.communication.deleteTemplate", {
         id: templateRef?.id ?? "",
-      }, adminToken);
+      });
       return { status: "deleted" };
     },
   );

@@ -17,16 +17,13 @@
  * - Admin diagnostic endpoints return valid metrics.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { APPVIEW_ADMIN_SECRET, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -55,7 +52,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView health check",
     async () => {
-      return await av.raw.get("/admin/backfill/status", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.get("/admin/backfill/status");
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -125,7 +122,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill status",
     async () => {
-      return await av.raw.get("/admin/backfill/status", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.get("/admin/backfill/status");
     },
   );
 
@@ -133,7 +130,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Ingest engine health",
     async () => {
-      return await av.raw.get("/admin/ingest/health", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.get("/admin/ingest/health");
     },
   );
 
@@ -175,10 +172,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "OAuth2: DID-as-token on AppView",
       async () => {
-        return await av.raw.get(
+        return await av.as({ accessJwt: luna.did }).raw.get(
           "/xrpc/app.bsky.actor.getProfile",
           { actor: luna.did },
-          luna.did,
         );
       },
       (r) => `status=200`,
@@ -189,10 +185,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "OAuth2: invalid Bearer token on AppView",
     async () => {
-      return await av.raw.get(
+      return await av.as({ accessJwt: "invalid-garbage-token-xyz" }).raw.get(
         "/xrpc/app.bsky.actor.getProfile",
         { actor: luna.did || "did:plc:unknown" },
-        "invalid-garbage-token-xyz",
       );
     },
   );
@@ -201,7 +196,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Endpoint counts after operations",
     async () => {
-      return await av.raw.get("/admin/endpoints", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.get("/admin/endpoints");
     },
   );
 
@@ -209,7 +204,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView metrics",
     async () => {
-      return await av.raw.get("/admin/appview/metrics/stats", undefined, adminToken);
+      return await av.asAdmin(adminToken).raw.get("/admin/appview/metrics/stats");
     },
   );
 

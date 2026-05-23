@@ -21,14 +21,11 @@
 
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { FirehoseClient, FirehoseEvent } from "../../lib/deno/firehose.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.
@@ -39,13 +36,13 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const client = new XrpcClient(PDS1);
+  const av = new XrpcClient(SERVICE_URLS.appview);
 
   await timedCall(
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error("Server not healthy");
+      await client.raw.xrpcGet("com.atproto.server.describeServer");
     },
   );
 
@@ -55,25 +52,18 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
-    if (relayResp.ok) {
-      result.stepPassed("Relay health check");
-    } else {
-      result.stepSkipped("Relay health check", `status=${relayResp.status}`);
-    }
+    const relayClient = new XrpcClient(SERVICE_URLS.relay);
+    await relayClient.raw.httpGet("/api/relay/health");
+    result.stepPassed("Relay health check");
   } catch (exc: any) {
     result.stepSkipped("Relay health check", String(exc));
   }
 
   try {
-    const upstreamsResp = await fetch(`${SERVICE_URLS.relay}/api/relay/upstreams`);
-    if (upstreamsResp.ok) {
-      const upstreams = await upstreamsResp.json();
-      const count = Array.isArray(upstreams) ? upstreams.length : 0;
-      result.stepPassed("Relay upstreams", `count=${count}`);
-    } else {
-      result.stepSkipped("Relay upstreams", `status=${upstreamsResp.status}`);
-    }
+    const relayClient = new XrpcClient(SERVICE_URLS.relay);
+    const upstreams = await relayClient.raw.httpGet("/api/relay/upstreams");
+    const count = Array.isArray(upstreams) ? upstreams.length : 0;
+    result.stepPassed("Relay upstreams", `count=${count}`);
   } catch (exc: any) {
     result.stepSkipped("Relay upstreams", String(exc));
   }
@@ -84,25 +74,7 @@ export async function run(): Promise<ScenarioResult> {
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
-      async () => {
-        try {
-          const res = await client.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(client, char),
       (s) => `did=${s.did}`,
     );
     if (session) {
@@ -245,13 +217,8 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Sync getRepo",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.sync.getRepo?did=${luna.did}`);
-      const buf = await res.arrayBuffer();
-      return {
-        status: res.status,
-        contentType: res.headers.get("Content-Type") || "",
-        body: new Uint8Array(buf),
-      };
+      const [status, contentType, body] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", { params: { did: luna.did } });
+      return { status, contentType, body };
     },
     (r) => `car bytes=${r.body.length} content_type=${r.contentType}`,
   );
@@ -270,17 +237,11 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 3000));
 
   try {
-    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
-      headers: { "Authorization": "Bearer localdevadmin" },
-    });
-    if (appviewResp.ok) {
-      result.stepPassed(
-        "AppView backfill status",
-        `body=${(await appviewResp.text()).substring(0, 100)}`,
-      );
-    } else {
-      result.stepFailed("AppView backfill status", `status=${appviewResp.status}`);
-    }
+    const appviewResp = await av.asAdmin("localdevadmin").raw.httpGet("/admin/backfill/status");
+    result.stepPassed(
+      "AppView backfill status",
+      `body=${JSON.stringify(appviewResp).substring(0, 100)}`,
+    );
   } catch (exc: any) {
     result.stepFailed("AppView backfill status", String(exc));
   }

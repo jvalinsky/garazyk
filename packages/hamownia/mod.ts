@@ -22,6 +22,7 @@ export type {
   TargetIdentity,
 } from "./account_discovery.ts";
 export { assert } from "./assertions.ts";
+export { createAccountOrLogin, now, tryEndpoint } from "./boilerplate.ts";
 export {
   attachPublicNetworkLeakGuard,
   blockedPublicHosts,

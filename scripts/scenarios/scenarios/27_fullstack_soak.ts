@@ -25,7 +25,7 @@ import {
   PDS1,
   SERVICE_URLS,
 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -43,9 +43,6 @@ const WORKLOAD_SECONDS = 60;
 const WORKER_COUNT = 4;
 const POSTS_PER_ACCOUNT = 5;
 
-function now() {
-  return new Date().toISOString();
-}
 
 function makeSoakCharacter(index: number): Actor {
   return new Actor(
@@ -200,7 +197,7 @@ export async function run(): Promise<ScenarioResult> {
     });
 
     await timedCall(result, "AppView check", async () => {
-      return await appview.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await appview.asAdmin(adminToken).raw.httpGet("/admin/backfill/status");
     });
     phaseTimer.endPhase();
   } finally {

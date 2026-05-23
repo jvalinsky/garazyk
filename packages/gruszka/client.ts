@@ -218,6 +218,11 @@ export class XrpcClient {
         post: (method: string, body?: unknown) => this.raw.post(method, body, token),
         query: (method: string, params?: Record<string, unknown>) => this.raw.query(method, params, token),
         procedure: (method: string, body?: unknown) => this.raw.procedure(method, body, token),
+        httpGet: (path: string, params?: Record<string, unknown>) => this.raw.httpGet(path, params, token),
+        httpPost: (path: string, body?: unknown) => this.raw.httpPost(path, body, token),
+        xrpcGet: (method: string, params?: Record<string, unknown>) => this.raw.xrpcGet(method, params, token),
+        xrpcPost: (method: string, body?: unknown) => this.raw.xrpcPost(method, body, token),
+        postBinary: (method: string, data: Uint8Array, contentType: string) => this.raw.postBinary(method, data, contentType, token),
       },
       api: token ? this.auth(token) : this.api,
       repo: {
@@ -240,7 +245,65 @@ export class XrpcClient {
         uploadBlob: (data: Uint8Array) =>
           this.raw.postBinary("com.atproto.repo.uploadBlob", data, "application/octet-stream", token),
       },
+      graph: {
+        getFollows: (actor: string, options?: { limit?: number }) =>
+          this.graph.getFollows(actor, { ...options, token }),
+        getFollowers: (actor: string, options?: { limit?: number }) =>
+          this.graph.getFollowers(actor, { ...options, token }),
+        getBlocks: (limit?: number) =>
+          this.graph.getBlocks(token!, limit),
+        getMutes: (limit?: number) =>
+          this.graph.getMutes(token!, limit),
+        muteActor: (actorDid: string) =>
+          this.graph.muteActor(actorDid, token!),
+        unmuteActor: (actorDid: string) =>
+          this.graph.unmuteActor(actorDid, token!),
+        getRelationships: (actor: string, targets: string[]) =>
+          this.graph.getRelationships(actor, targets, token),
+        getStarterPack: (uri: string) =>
+          this.graph.getStarterPack(uri, token),
+        getActorStarterPacks: (actor: string, options?: { limit?: number }) =>
+          this.graph.getActorStarterPacks(actor, { ...options, token }),
+        getStarterPacks: (uris: string[]) =>
+          this.graph.getStarterPacks(uris, token),
+      },
+      feed: {
+        getProfile: (actor: string) =>
+          this.feed.getProfile(actor, token),
+        getTimeline: (limit?: number) =>
+          this.feed.getTimeline(token!, limit),
+        getAuthorFeed: (actor: string, options?: { limit?: number }) =>
+          this.feed.getAuthorFeed(actor, { ...options, token }),
+        getPostThread: (uri: string) =>
+          this.feed.getPostThread(uri, token),
+        getLikes: (uri: string, options?: { limit?: number }) =>
+          this.feed.getLikes(uri, { ...options, token }),
+        searchActors: (query: string, options?: { limit?: number }) =>
+          this.feed.searchActors(query, { ...options, token }),
+        getActorLikes: (actor: string, options?: { limit?: number }) =>
+          this.feed.getActorLikes(actor, { ...options, token }),
+        getPosts: (uris: string[]) =>
+          this.feed.getPosts(uris, token),
+        getRepostedBy: (uri: string, options?: { limit?: number }) =>
+          this.feed.getRepostedBy(uri, { ...options, token }),
+        getFeed: (feedUri: string, limit?: number) =>
+          this.feed.getFeed(feedUri, token!, limit),
+        getFeedGenerators: (uris: string[]) =>
+          this.feed.getFeedGenerators(uris, token),
+      },
     };
+  }
+
+  /**
+   * Returns a scoped client bound to an admin bearer token.
+   *
+   * This is equivalent to `client.as({ accessJwt: token })` but provides
+   * a shorter, intent-revealing API for admin/moderation operations.
+   *
+   * @param token - The admin bearer token
+   */
+  asAdmin(token: string) {
+    return this.as({ accessJwt: token });
   }
 
   /**

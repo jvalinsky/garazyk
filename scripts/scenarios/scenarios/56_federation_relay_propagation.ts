@@ -12,7 +12,7 @@
  */
 
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
@@ -32,9 +32,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Production paths: com.atproto.sync.getLatestCommit (Relay), app.bsky.feed.getPosts (AppView),
 //   com.atproto.identity.{updateHandle,resolveHandle}.
 
-function now() {
-  return new Date().toISOString();
-}
 
 async function pollUntil<T>(
   fn: () => Promise<T | null>,
@@ -71,9 +68,9 @@ export async function run(): Promise<ScenarioResult> {
   // --- Relay availability ---
   let relayAvailable = false;
   try {
-    const relayHealth = await fetch(`${SERVICE_URLS.relay}/_health`);
-    relayAvailable = relayHealth.ok;
-    result.stepPassed("Relay health check", `status=${relayHealth.status}`);
+    await relay.raw.httpGet("/_health");
+    relayAvailable = true;
+    result.stepPassed("Relay health check");
   } catch (e: any) {
     result.stepSkipped("Relay health check", `Relay not reachable: ${e.message}`);
   }

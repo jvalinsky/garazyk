@@ -16,7 +16,7 @@
 
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
@@ -36,8 +36,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error("Server not healthy");
+      await pds.raw.xrpcGet("com.atproto.server.describeServer");
     },
   );
 
@@ -58,23 +57,7 @@ export async function run(): Promise<ScenarioResult> {
   const session = await timedCall(
     result,
     "Create account",
-    async () => {
-      try {
-        const res = await pds.agent.createAccount({
-          handle: luna.handle,
-          email: luna.email,
-          password: luna.password,
-        });
-        return res.data;
-      } catch (e: any) {
-        if (e.message && e.message.includes("already exists")) {
-          // If running locally multiple times without wiping db
-          const res = await pds.agent.login({ identifier: luna.handle, password: luna.password });
-          return res.data;
-        }
-        throw e;
-      }
-    },
+    () => createAccountOrLogin(pds, luna),
     (s) => `did=${s.did}`,
   );
 
@@ -110,18 +93,14 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const plcResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
-    if (plcResp.ok) {
-      const didDoc = await plcResp.json();
-      const didField = didDoc.id || didDoc.did;
+    const plcResp = await pds.raw.httpGet(`${SERVICE_URLS.plc}/${luna.did}`);
+    const didDoc = plcResp;
+    const didField = didDoc.id || didDoc.did;
       assert.equal(didField, luna.did, `PLC DID mismatch: expected ${luna.did}, got ${didField}`);
       result.stepPassed(
         "PLC DID resolution",
         `method=${didDoc.verificationMethod ? "present" : "N/A"}`,
       );
-    } else {
-      result.stepSkipped("PLC DID resolution", `PLC returned ${plcResp.status}`);
-    }
   } catch (exc: any) {
     result.stepSkipped("PLC DID resolution", exc.message || String(exc));
   }

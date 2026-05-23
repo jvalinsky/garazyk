@@ -18,13 +18,10 @@
 
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { createAccountOrLogin, now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 async function createAccounts(client: XrpcClient, names: string[], result: ScenarioResult) {
   const sessions: Record<string, any> = {};
@@ -33,25 +30,7 @@ async function createAccounts(client: XrpcClient, names: string[], result: Scena
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
-      async () => {
-        try {
-          const res = await client.agent.createAccount({
-            handle: char.handle,
-            email: char.email,
-            password: char.password,
-          });
-          return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({
-              identifier: char.handle,
-              password: char.password,
-            });
-            return res.data;
-          }
-          throw e;
-        }
-      },
+      () => createAccountOrLogin(client, char),
       (s) => `did=${s.did}`,
     );
     if (session) {
@@ -115,8 +94,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error("Server not healthy");
+      await client.raw.xrpcGet("com.atproto.server.describeServer");
     },
   );
 
@@ -191,11 +169,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna's followers list",
     async () => {
-      const res = await client.raw.get(
-        "app.bsky.graph.getFollowers",
-        { actor: luna.did },
-        luna.accessJwt,
-      );
+      const res = await client.as(luna).graph.getFollowers(luna.did);
       return res;
     },
     (f) => `count=${f.followers?.length || 0}`,
@@ -229,11 +203,7 @@ export async function run(): Promise<ScenarioResult> {
         result,
         "Marcus unfollows DJ Volt",
         async () => {
-          await client.raw.post("com.atproto.repo.deleteRecord", {
-            repo: marcus.did,
-            collection: "app.bsky.graph.follow",
-            rkey,
-          }, marcus.accessJwt);
+          await client.as(marcus).repo.deleteRecord({ collection: "app.bsky.graph.follow", rkey });
         },
         () => `deleted rkey=${rkey}`,
       );

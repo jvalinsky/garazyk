@@ -80,9 +80,8 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "PDS health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
-      if (!res.ok) throw new Error(`PDS not healthy: ${res.status}`);
-      return res.status;
+      const res = await pds.raw.xrpcGet("com.atproto.server.describeServer");
+      return res;
     },
     () => "ok",
   );
@@ -147,18 +146,12 @@ export async function run(): Promise<ScenarioResult> {
         const creds = btoa(
           "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
         );
-        const res = await fetch(
-          `${twilio.url}/v2/Service/VA00000000000000000000000000000000/VerificationCheck`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              "authorization": `Basic ${creds}`,
-            },
-            body: JSON.stringify({ To: phoneNumber, Code: code }),
-          },
+        const client = new XrpcClient(twilio.url);
+        const body = await client.raw.httpPost(
+          "/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
+          { To: phoneNumber, Code: code },
+          creds,
         );
-        const body = await res.json();
         if (body.status !== "approved") {
           throw new Error(`VerificationCheck returned: ${body.status}`);
         }
@@ -190,24 +183,26 @@ export async function run(): Promise<ScenarioResult> {
         const creds = btoa(
           "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
         );
-        const res = await fetch(
-          `${twilio.url}/v2/Service/VA00000000000000000000000000000000/VerificationCheck`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              "authorization": `Basic ${creds}`,
-            },
-            body: JSON.stringify({ To: phoneNumber, Code: "999999" }),
-          },
-        );
-        const body = await res.json();
-        if (body.status === "approved") {
-          throw new Error(
-            "Wrong code was incorrectly approved — expected rejection",
+        const client = new XrpcClient(twilio.url);
+        try {
+          const body = await client.raw.httpPost(
+            "/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
+            { To: phoneNumber, Code: "999999" },
+            creds,
           );
+          if (body.status === "approved") {
+            throw new Error(
+              "Wrong code was incorrectly approved — expected rejection",
+            );
+          }
+          return body;
+        } catch (exc: any) {
+          // If it throws status 400 or returns status !== approved, it's correct
+          if (exc.status === 400 || (exc.body && (exc.body as any).status !== "approved")) {
+            return exc.body || { status: "rejected" };
+          }
+          throw exc;
         }
-        return body;
       },
       (r) => `status=${r.status} (correctly rejected)`,
     );
@@ -222,18 +217,12 @@ export async function run(): Promise<ScenarioResult> {
       const creds = btoa(
         "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
       );
-      const res = await fetch(
-        `${twilio.url}/v2/Service/VA00000000000000000000000000000000/VerificationCheck`,
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "authorization": `Basic ${creds}`,
-          },
-          body: JSON.stringify({ To: phoneNumber, Code: "123456" }),
-        },
+      const client = new XrpcClient(twilio.url);
+      const body = await client.raw.httpPost(
+        "/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
+        { To: phoneNumber, Code: "123456" },
+        creds,
       );
-      const body = await res.json();
       if (body.status !== "approved") {
         throw new Error(`Expected approved, got: ${body.status}`);
       }

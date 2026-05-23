@@ -12,7 +12,7 @@
  */
 
 import { getActor, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
@@ -24,9 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-function now() {
-  return new Date().toISOString();
-}
 
 function makePng(): Uint8Array {
   return new Uint8Array([
@@ -179,22 +176,21 @@ export async function run(): Promise<ScenarioResult> {
       // Verification
       let doomed404 = false;
       for (let i = 0; i < 10; i++) {
-        const res = await fetch(
-          `${PDS1}/xrpc/com.atproto.sync.getBlob?did=${luna.did}&cid=${doomedCid}`,
-        );
-        if (res.status === 404) {
-          doomed404 = true;
-          break;
+        try {
+          await pds.raw.xrpcGet("com.atproto.sync.getBlob", { did: luna.did, cid: doomedCid });
+        } catch (e) {
+          if (e instanceof XrpcError && e.status === 404) {
+            doomed404 = true;
+            break;
+          }
         }
         await new Promise((r) => setTimeout(r, 1000));
       }
       assert.isTrue(doomed404, "Doomed blob not deleted");
       result.stepPassed("Doomed blob returns 404");
 
-      const keepRes = await fetch(
-        `${PDS1}/xrpc/com.atproto.sync.getBlob?did=${luna.did}&cid=${keepCid}`,
-      );
-      assert.isTrue(keepRes.status === 200, "Keep-alive blob missing");
+      const keepRes = await pds.raw.xrpcGetBinary("com.atproto.sync.getBlob", { params: { did: luna.did, cid: keepCid } });
+      assert.isTrue(keepRes[0] === 200, "Keep-alive blob missing");
       result.stepPassed("Keep-alive blob still downloads");
     }
   }

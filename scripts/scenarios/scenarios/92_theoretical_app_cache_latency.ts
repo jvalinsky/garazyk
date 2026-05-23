@@ -9,7 +9,7 @@ import { OperationTimer, PhaseTimer } from "@garazyk/hamownia";
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export {
   ScenarioResult,
   StepResult,
@@ -55,9 +55,6 @@ interface CardSummary {
   hydratedRecordCount?: number;
 }
 
-function now(): string {
-  return new Date().toISOString();
-}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

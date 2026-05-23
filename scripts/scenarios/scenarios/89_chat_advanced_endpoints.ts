@@ -29,7 +29,7 @@
 
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall, tryEndpoint } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import {
@@ -38,26 +38,7 @@ import {
   createChatServiceContext,
 } from "../../lib/deno/seed.ts";
 
-/** Try an endpoint, skipping if 404/501/403, failing on other errors. */
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501 || e.status === 403)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Chat Advanced Endpoints");

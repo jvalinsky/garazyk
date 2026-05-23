@@ -15,7 +15,7 @@
  */
 
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
@@ -28,29 +28,7 @@ import { timedCall } from "../../lib/deno/runner.ts";
 //   com.atproto.sync.getRepoStatus.
 // Production paths: sync CAR endpoints used by relays and PDSes for repo exchange.
 
-function now() {
-  return new Date().toISOString();
-}
 
-async function tryEndpoint<T>(
-  result: ScenarioResult,
-  label: string,
-  fn: () => Promise<T>,
-  summary?: (t: T) => string,
-): Promise<T | null> {
-  try {
-    const val = await fn();
-    result.stepPassed(label, summary ? summary(val) : undefined);
-    return val;
-  } catch (e: any) {
-    if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
-      result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
-    } else {
-      result.stepFailed(label, String(e.message ?? e));
-    }
-    return null;
-  }
-}
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Sync Endpoint Coverage");

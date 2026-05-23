@@ -13,7 +13,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { now, ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export {
   ScenarioResult,
   StepResult,
@@ -29,9 +29,6 @@ import {
   SERVICE_URLS,
 } from "../../lib/deno/config.ts";
 
-function now() {
-  return new Date().toISOString();
-}
 
 /**
  * Executes the scenario logic.

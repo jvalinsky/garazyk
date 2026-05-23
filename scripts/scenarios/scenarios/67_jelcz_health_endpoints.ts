@@ -43,10 +43,7 @@ export async function run(): Promise<ScenarioResult> {
 
   // Check raw /_health endpoint returns expected JSON schema
   await timedCall(result, "Jelcz /_health endpoint", async () => {
-    const url = new URL("/_health", videoUrl);
-    const resp = await fetch(url.toString());
-    assert.isTrue(resp.ok, `/_health returned HTTP ${resp.status}`);
-    const body = await resp.json();
+    const body = await videoClient.raw.httpGet("/_health");
     assert.isTrue(body.status === "ok", `Expected status "ok", got "${body.status}"`);
     assert.isTrue(typeof body === "object" && body !== null, "Expected JSON object");
     // service field is optional (not all builds include it)
@@ -57,17 +54,18 @@ export async function run(): Promise<ScenarioResult> {
 
   // Check admin jobs list endpoint (may 404 on older builds)
   await timedCall(result, "Jelcz admin jobs endpoint", async () => {
-    const url = new URL("/admin/api/media/jobs", videoUrl);
-    const resp = await fetch(url.toString());
-    // 404 is acceptable if the build doesn't include admin API
-    if (resp.status === 404) {
-      assert.isTrue(true, "Admin endpoint not available (older build)");
-      return;
+    try {
+      const body = await videoClient.raw.httpGet("/admin/api/media/jobs");
+      assert.isTrue(body.jobs !== undefined, "Expected jobs field in response");
+      assert.isTrue(Array.isArray(body.jobs), "Expected jobs to be an array");
+    } catch (exc: any) {
+      // 404 is acceptable if the build doesn't include admin API
+      if (exc.status === 404) {
+        assert.isTrue(true, "Admin endpoint not available (older build)");
+        return;
+      }
+      throw exc;
     }
-    assert.isTrue(resp.ok, `admin jobs returned HTTP ${resp.status}`);
-    const body = await resp.json();
-    assert.isTrue(body.jobs !== undefined, "Expected jobs field in response");
-    assert.isTrue(Array.isArray(body.jobs), "Expected jobs to be an array");
   });
 
   // Get upload limits via XRPC
