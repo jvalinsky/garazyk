@@ -11,11 +11,9 @@ interface TopologySummary {
   exitCode: number;
 }
 
-const DEFAULT_BASE_PORT = 2600;
-const PORTS_PER_RUN = 10;
-
 function usage() {
-  console.log(`Usage: scripts/run_topology_matrix.ts [topology_filter] [run_scenarios_args...]
+  console.log(
+    `Usage: scripts/run_topology_matrix.ts [topology_filter] [run_scenarios_args...]
 
 Options:
   --parallel               Run topologies in parallel (experimental)
@@ -25,7 +23,8 @@ Examples:
   scripts/run_topology_matrix.ts            # Run all topologies, all scenarios
   scripts/run_topology_matrix.ts pds        # Run topologies containing "pds"
   scripts/run_topology_matrix.ts --parallel # Run all topologies in parallel
-`);
+`,
+  );
   Deno.exit(0);
 }
 
@@ -67,7 +66,13 @@ async function main() {
       }
     }
   } catch (err) {
-    console.error(red(`Failed to discover topologies in ${topologyDir}: ${(err as Error).message}`));
+    console.error(
+      red(
+        `Failed to discover topologies in ${topologyDir}: ${
+          (err as Error).message
+        }`,
+      ),
+    );
     Deno.exit(1);
   }
   topologies.sort();
@@ -78,39 +83,22 @@ async function main() {
   }
 
   console.log(
-    bold(`\nStarting Topology Matrix Run: ${topologies.length} configurations selected\n`),
+    bold(
+      `\nStarting Topology Matrix Run: ${topologies.length} configurations selected\n`,
+    ),
   );
 
   const summaries: TopologySummary[] = [];
 
-  const runTopology = async (topology: string, index: number): Promise<TopologySummary> => {
+  const runTopology = async (
+    topology: string,
+    index: number,
+  ): Promise<TopologySummary> => {
     try {
       console.log(bold(brightBlue(`\n>>> Testing Topology: ${topology}`)));
       const topologyReportsDir = join(reportsDir, topology);
 
       const runId = `matrix-${topology}-${Date.now()}`;
-      const basePort = DEFAULT_BASE_PORT + (index * PORTS_PER_RUN);
-
-      const env = {
-        ...Deno.env.toObject(),
-        "PLC_PORT": String(basePort),
-        "PDS_PORT": String(basePort + 1),
-        "RELAY_PORT": String(basePort + 2),
-        "APPVIEW_PORT": String(basePort + 3),
-        "CHAT_PORT": String(basePort + 4),
-        "VIDEO_PORT": String(basePort + 5),
-        "PDS2_PORT": String(basePort + 6),
-        "UI_PORT": String(basePort + 7),
-        "PLC_URL": `http://localhost:${basePort}`,
-        "PDS_URL": `http://localhost:${basePort + 1}`,
-        "RELAY_URL": `http://localhost:${basePort + 2}`,
-        "APPVIEW_URL": `http://localhost:${basePort + 3}`,
-        "CHAT_URL": `http://localhost:${basePort + 4}`,
-        "VIDEO_URL": `http://localhost:${basePort + 5}`,
-        "PDS2_URL": `http://localhost:${basePort + 6}`,
-        "GARAZYK_UI_URL": `http://localhost:${basePort + 7}`,
-      };
-
       const command = new Deno.Command(Deno.execPath(), {
         args: [
           "run",
@@ -120,6 +108,8 @@ async function main() {
           topology,
           "--reports-dir",
           topologyReportsDir,
+          "--isolation",
+          "auto",
           "--teardown",
           "--run-id",
           runId,
@@ -127,7 +117,7 @@ async function main() {
         ],
         stdout: "inherit",
         stderr: "inherit",
-        env,
+        env: Deno.env.toObject(),
       });
 
       const { code } = await command.output();
@@ -140,7 +130,15 @@ async function main() {
         );
         summary = JSON.parse(summaryText).summary;
       } catch (err) {
-        if (!parallel) console.error(red(`Failed to read summary for ${topology}: ${(err as Error).message}`));
+        if (!parallel) {
+          console.error(
+            red(
+              `Failed to read summary for ${topology}: ${
+                (err as Error).message
+              }`,
+            ),
+          );
+        }
       }
 
       return {
@@ -152,7 +150,13 @@ async function main() {
         exitCode: code,
       };
     } catch (err) {
-      console.error(red(`Unexpected error running topology ${topology}: ${(err as Error).message}`));
+      console.error(
+        red(
+          `Unexpected error running topology ${topology}: ${
+            (err as Error).message
+          }`,
+        ),
+      );
       return {
         topology,
         passed: 0,
@@ -166,7 +170,9 @@ async function main() {
 
   // 2. Run Matrix
   if (parallel) {
-    const results = await Promise.all(topologies.map((t, i) => runTopology(t, i)));
+    const results = await Promise.all(
+      topologies.map((t, i) => runTopology(t, i)),
+    );
     summaries.push(...results);
   } else {
     for (let i = 0; i < topologies.length; i++) {
@@ -186,7 +192,9 @@ async function main() {
     const resultText = s.ok ? green("PASS") : red("FAIL");
     if (s.ok) totalPassedTopologies++;
     console.log(
-      `  ${s.topology.padEnd(25)} ${resultText.padEnd(19)} ${s.passed}/${s.failed}/${s.skipped}`,
+      `  ${s.topology.padEnd(25)} ${
+        resultText.padEnd(19)
+      } ${s.passed}/${s.failed}/${s.skipped}`,
     );
   }
 
@@ -194,7 +202,11 @@ async function main() {
   const total = summaries.length;
   const color = totalPassedTopologies === total ? green : red;
   console.log(
-    bold(`Overall: ${color(`${totalPassedTopologies}/${total} topologies passed`)}\n`),
+    bold(
+      `Overall: ${
+        color(`${totalPassedTopologies}/${total} topologies passed`)
+      }\n`,
+    ),
   );
 
   if (totalPassedTopologies < total) {
