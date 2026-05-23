@@ -101,8 +101,13 @@ export function createProcessLifecycle(
       finalizeOptions.results.some(({ result }) => result.failed > 0) ||
       finalizeOptions.fatalError;
     if (shouldCollect) {
-      await finalizeOptions.collectDiagnostics();
-      console.log(`Diagnostics: ${options.context.diagnosticsDir}`);
+      try {
+        await finalizeOptions.collectDiagnostics();
+        console.log(`Diagnostics: ${options.context.diagnosticsDir}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(red(`Error collecting diagnostics: ${message}`));
+      }
     }
     if (
       options.args.teardown ||

@@ -4,6 +4,10 @@
  * Stale-process cleanup is ATProto-specific (hardcoded binary names, port
  * sets) and belongs in hamownia.
  *
+ * Under non-legacy isolation, these functions are no-ops because each run
+ * owns its own port set and Docker project — there are no "shared" ports
+ * to conflict on. Callers should gate on `isolation === "legacy-fixed"`.
+ *
  * @module stale_cleanup
  */
 
@@ -13,16 +17,24 @@ import {
   findStaleProjectsOnPorts,
 } from "@garazyk/laweta";
 import { neededPorts } from "@garazyk/schemat/runtime";
+import type { ResourceIsolationMode } from "@garazyk/schemat";
 
 // ---------------------------------------------------------------------------
 // Stale container cleanup
 // ---------------------------------------------------------------------------
 
-/** Stop Docker Compose projects holding ports needed by the current run. */
+/** Stop Docker Compose projects holding ports needed by the current run.
+ *
+ * Under non-legacy isolation, this is a no-op because each run has its own
+ * port set and Docker project. */
 export async function stopStaleDockerE2e(
-  opts: { withPds2?: boolean; otel?: boolean },
+  opts: { withPds2?: boolean; otel?: boolean; isolation?: ResourceIsolationMode },
   currentProject: string,
 ): Promise<string[]> {
+  if (opts.isolation && opts.isolation !== "legacy-fixed") {
+    return [];
+  }
+
   const client = await createDockerClient();
   if (!client) {
     return stopStaleDockerE2eCLI(opts, currentProject);
@@ -127,10 +139,18 @@ async function stopStaleDockerE2eCLI(
 // Stale host process cleanup
 // ---------------------------------------------------------------------------
 
-/** Kill host processes (local ATProto binaries) that are holding needed ports. */
+/** Kill host processes (local ATProto binaries) that are holding needed ports.
+ *
+ * Under non-legacy isolation, this is a no-op because each run has its own
+ * port set — killing processes on those ports would only kill the current
+ * run's own services. */
 export async function stopStaleHostProcesses(
-  opts: { withPds2?: boolean; otel?: boolean },
+  opts: { withPds2?: boolean; otel?: boolean; isolation?: ResourceIsolationMode },
 ): Promise<void> {
+  if (opts.isolation && opts.isolation !== "legacy-fixed") {
+    return;
+  }
+
   const ports = neededPorts(opts);
   const knownBinaries = new Set([
     "kaszlak",
@@ -141,6 +161,8 @@ export async function stopStaleHostProcesses(
     "syrena-chat",
     "jelcz",
     "germ",
+    "mikrus",
+    "beskid",
   ]);
 
   for (const port of ports) {
@@ -165,15 +187,16 @@ export async function stopStaleHostProcesses(
         if (pc !== 0) continue;
 
         const cmd = new TextDecoder().decode(pout).trim();
+        const baseCmd = cmd.split('/').pop() || cmd;
         if (
-          knownBinaries.has(cmd) || cmd.startsWith("garazyk") ||
-          cmd.startsWith("atproto")
+          knownBinaries.has(baseCmd) || baseCmd.startsWith("garazyk") ||
+          baseCmd.startsWith("atproto")
         ) {
           console.log(
             `[WARN] Stale host process holding port ${port} (PID: ${pid}, cmd: ${cmd})`,
           );
           try {
-            const killProc = new Deno.Command("kill", { args: ["-9", pid] });
+            const killProc = new Deno.Command("kill", { args: ["-15", pid] });
             await killProc.output();
           } catch {
             /* cleanup */

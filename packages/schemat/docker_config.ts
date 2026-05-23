@@ -20,6 +20,8 @@ export const SERVICE_PORTS: Record<string, number> = {
   germ: 8082,
   pds2: 2587,
   ui: 2590,
+  mikrus: 3210,
+  beskid: 8085,
 };
 
 // ---------------------------------------------------------------------------
@@ -60,7 +62,14 @@ export interface ClockSource {
 // ---------------------------------------------------------------------------
 
 /**
- * Build the HTTP URL for a service from env vars or SERVICE_PORTS defaults.
+ * Build the HTTP URL for a service from the resource manifest, env vars, or
+ * SERVICE_PORTS defaults.
+ *
+ * Resolution order:
+ * 1. Explicit `{KEY}_URL` env var
+ * 2. Resource manifest (`ATPROTO_RESOURCE_MANIFEST`) service URL
+ * 3. `{KEY}_PORT` env var
+ * 4. `SERVICE_PORTS` fixed default (legacy-dev compatibility)
  *
  * @param key - Service name (e.g., "pds", "relay").
  * @param env - Optional environment source. Defaults to `Deno.env`.
@@ -68,13 +77,49 @@ export interface ClockSource {
  */
 export function serviceUrl(key: string, env?: EnvSource): string {
   const source = env ?? Deno.env;
+  const explicitUrl = source.get(`${key.toUpperCase()}_URL`);
+  if (explicitUrl) return explicitUrl.replace(/\/$/, "");
+  const manifestUrl = serviceUrlFromManifest(key, source);
+  if (manifestUrl) return manifestUrl;
   const port = source.get(`${key.toUpperCase()}_PORT`) ||
     String(SERVICE_PORTS[key] || 0);
   return `http://127.0.0.1:${port}`;
 }
 
 /**
+ * Try to resolve a service URL from the resource manifest.
+ *
+ * @param key - Service name (e.g., "pds", "relay").
+ * @param env - Environment source for locating the manifest.
+ * @returns The manifest URL, or undefined if no manifest is available.
+ */
+export function serviceUrlFromManifest(
+  key: string,
+  env: EnvSource,
+): string | undefined {
+  const manifestPath = env.get("ATPROTO_RESOURCE_MANIFEST");
+  if (!manifestPath) return undefined;
+  try {
+    const manifest = JSON.parse(Deno.readTextFileSync(manifestPath)) as {
+      services?: Record<string, { hostUrl?: string }>;
+      mockProviders?: Record<string, { hostUrl?: string }>;
+    };
+    return manifest.services?.[key]?.hostUrl ??
+      manifest.mockProviders?.[key]?.hostUrl;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * List the host ports required by the local network.
+ *
+ * When a resource manifest is available (via `ATPROTO_RESOURCE_MANIFEST`),
+ * returns the actual ports from the manifest instead of fixed defaults.
+ * This is safe under isolation because each run owns its own port set.
+ *
+ * Without a manifest, falls back to the fixed `SERVICE_PORTS` defaults
+ * (legacy-dev compatibility).
  *
  * @param opts - Flags that enable additional required ports.
  * @returns The host ports that must be available.
@@ -82,6 +127,11 @@ export function serviceUrl(key: string, env?: EnvSource): string {
 export function neededPorts(
   opts: { withPds2?: boolean; otel?: boolean },
 ): number[] {
+  const manifestPorts = portsFromManifest();
+  if (manifestPorts.length > 0) {
+    if (opts.otel) manifestPorts.push(4317, 4318, 3301);
+    return manifestPorts;
+  }
   const ports = [
     SERVICE_PORTS.plc,
     SERVICE_PORTS.pds,
@@ -95,6 +145,45 @@ export function neededPorts(
   if (opts.withPds2) ports.push(SERVICE_PORTS.pds2);
   if (opts.otel) ports.push(4317, 4318, 3301);
   return ports;
+}
+
+/**
+ * Extract actual host ports from the resource manifest, if available.
+ *
+ * @returns An array of host ports from the manifest, or an empty array
+ *          if no manifest exists.
+ */
+function portsFromManifest(): number[] {
+  const manifestPath = readEnvValue("ATPROTO_RESOURCE_MANIFEST");
+  if (!manifestPath) return [];
+  try {
+    const manifest = JSON.parse(Deno.readTextFileSync(manifestPath)) as {
+      services?: Record<string, { hostPort?: number }>;
+      mockProviders?: Record<string, { hostPort?: number }>;
+      portLeases?: Array<{ port: number }>;
+    };
+    const ports: number[] = [];
+    for (const svc of Object.values(manifest.services ?? {})) {
+      if (svc.hostPort) ports.push(svc.hostPort);
+    }
+    for (const provider of Object.values(manifest.mockProviders ?? {})) {
+      if (provider.hostPort) ports.push(provider.hostPort);
+    }
+    for (const lease of manifest.portLeases ?? []) {
+      if (lease.port && !ports.includes(lease.port)) ports.push(lease.port);
+    }
+    return ports;
+  } catch {
+    return [];
+  }
+}
+
+function readEnvValue(name: string): string | undefined {
+  try {
+    return Deno.env.get(name) || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -113,6 +202,8 @@ export interface TopologyRunContext {
   logDir: string;
   /** Path to the file storing child process PIDs. */
   pidFile: string;
+  /** Path to the run-scoped resource manifest. */
+  resourceManifestFile: string;
   /** Docker Compose project name. */
   composeProject: string;
   /** Base directory for the current execution. */
@@ -162,6 +253,8 @@ export function computeRunDir(
     `${runDir}/diagnostics`;
   const logDir = env.get("ATPROTO_E2E_LOG_DIR") || `${runDir}/logs`;
   const pidFile = env.get("ATPROTO_E2E_PID_FILE") || `${runDir}/pids.txt`;
+  const resourceManifestFile = env.get("ATPROTO_RESOURCE_MANIFEST") ||
+    `${runDir}/resource-manifest.json`;
   const composeRunId = runId.replace(/[._]/g, "-").replace(/[^a-z0-9-]/g, "-");
   const composeProject = env.get("ATPROTO_E2E_COMPOSE_PROJECT") ||
     `garazyk-e2e-${composeRunId}`;
@@ -172,6 +265,7 @@ export function computeRunDir(
     diagnosticsDir,
     logDir,
     pidFile,
+    resourceManifestFile,
     composeProject,
     baseDir,
   };
@@ -229,6 +323,7 @@ export function initRunDir(
     Deno.env.set("ATPROTO_E2E_DIAGNOSTICS_DIR", ctx.diagnosticsDir);
     Deno.env.set("ATPROTO_E2E_LOG_DIR", ctx.logDir);
     Deno.env.set("ATPROTO_E2E_PID_FILE", ctx.pidFile);
+    Deno.env.set("ATPROTO_RESOURCE_MANIFEST", ctx.resourceManifestFile);
     Deno.env.set("ATPROTO_E2E_COMPOSE_PROJECT", ctx.composeProject);
   }
 
