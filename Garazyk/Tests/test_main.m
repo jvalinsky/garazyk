@@ -857,6 +857,7 @@ int main(int argc, char *argv[]) {
       @"PDSDatabaseRecordsTests",
       @"PDSDatabaseTransactionsTests",
       @"ATProtoDatabaseUtilitiesTests",
+      @"ATProtoDatabaseQueryRunnerTests",
       @"PDSControllerTests",
       @"PDSPLCIntegrationTests",
       @"PDSAdminServiceTests",
