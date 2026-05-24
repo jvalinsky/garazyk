@@ -52,7 +52,7 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
   const loading = s.logs.fetchInFlight && !logs;
 
   return (
-    <div style="margin-top: var(--space-xl);">
+    <div id="system-logs" style="margin-top: var(--space-xl);">
       <h2
         class="section-heading"
         style="display: flex; align-items: center; justify-content: space-between;"
