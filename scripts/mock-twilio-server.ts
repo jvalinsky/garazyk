@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
+import { DEFAULT_MOCK_TWILIO_PORT } from "@garazyk/schemat";
 
 interface VerificationState {
   code: string;
@@ -19,7 +20,10 @@ function parseFlags(): typeof defaults {
     string: ["always-approve", "port-file"],
   });
   return {
-    port: parseInt(String(args.port ?? Deno.env.get("PORT") ?? "8081"), 10),
+    port: parseInt(
+      String(args.port ?? Deno.env.get("PORT") ?? DEFAULT_MOCK_TWILIO_PORT),
+      10,
+    ),
     portFile: args["port-file"] ? String(args["port-file"]) : undefined,
     accountSid: String(
       args["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
@@ -44,7 +48,7 @@ function parseFlags(): typeof defaults {
 }
 
 const defaults = {
-  port: 8081,
+  port: DEFAULT_MOCK_TWILIO_PORT,
   portFile: undefined as string | undefined,
   accountSid: "AC00000000000000000000000000000000",
   authToken: "SK00000000000000000000000000000000",
