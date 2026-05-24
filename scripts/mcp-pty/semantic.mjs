@@ -1883,6 +1883,228 @@ export function visualizeTuiVdom(node, prefix = "", isLast = true, isRoot = true
   return out;
 }
 
+// ── Game Element Detection ───────────────────────────────────────────────
+
+/**
+ * Detect game-specific elements: game board, player character, entities, score bar.
+ *
+ * Game board: bordered area filled with wall characters (▒, █, ░, etc.)
+ * Player: @ symbol (roguelike convention) or colored cursor-like character
+ * Entities: o (body segments), $ (food/treasure), * (bonus), # (wall)
+ * Score bar: line containing Score/Hi-Score/Level/Speed/Lives patterns
+ */
+export function detectGameElements(grid, lines) {
+  const elements = [];
+  const rows = lines.length;
+  const cols = lines[0]?.length || 0;
+
+  // ── 1. Detect game board (bordered area with wall chars) ──
+  const wallChars = new Set("▒░█▄▀■□▪▫▬▓");
+  let boardTop = -1, boardBottom = -1, boardLeft = -1, boardRight = -1;
+  let wallLineCount = 0;
+
+  for (let y = 0; y < rows; y++) {
+    const line = lines[y] || "";
+    let wallCount = 0;
+    for (let x = 0; x < Math.min(line.length, cols); x++) {
+      if (wallChars.has(line[x])) wallCount++;
+    }
+    // A wall line has >40% wall characters
+    if (wallCount > cols * 0.4) {
+      wallLineCount++;
+      if (boardTop === -1) boardTop = y;
+      boardBottom = y;
+    }
+  }
+
+  // If we found wall lines, look for the board interior
+  if (wallLineCount >= 2) {
+    // Find left/right boundaries from the first wall line
+    const firstWallLine = lines[boardTop] || "";
+    const lastWallLine = lines[boardBottom] || "";
+
+    // Find the left wall (first ▒ on the first wall line)
+    for (let x = 0; x < firstWallLine.length; x++) {
+      if (wallChars.has(firstWallLine[x])) { boardLeft = x; break; }
+    }
+    // Find the right wall (last ▒ on the first wall line)
+    for (let x = firstWallLine.length - 1; x >= 0; x--) {
+      if (wallChars.has(firstWallLine[x])) { boardRight = x; break; }
+    }
+
+    // The interior is between the top and bottom wall lines
+    const interiorTop = boardTop + 1;
+    const interiorBottom = boardBottom - 1;
+
+    if (interiorBottom > interiorTop && boardRight > boardLeft) {
+      elements.push({
+        role: "gameBoard",
+        id: "game_board",
+        bounds: { startY: boardTop, endY: boardBottom },
+        interiorBounds: { startY: interiorTop, endY: interiorBottom, startX: boardLeft + 1, endX: boardRight - 1 },
+        label: "Game Board",
+        wallChar: lines[boardTop]?.[boardLeft] || "▒",
+      });
+    }
+  }
+
+  // ── 2. Detect player character and entities ──
+  // Scan the interior for game characters
+  const playerChar = "@";  // roguelike convention
+  const bodyChars = new Set(["o", "O"]);
+  const foodChars = new Set(["$", "★", "✦", "✱", "♥", "♦", "♣", "♠", "✿", "◉"]);
+  const bonusChars = new Set(["*", "✹", "⚡", "✧"]);
+
+  const board = elements.find(e => e.role === "gameBoard");
+  const hasBoard = !!board;
+  const scanTop = board?.interiorBounds?.startY ?? 0;
+  const scanBottom = board?.interiorBounds?.endY ?? (rows - 1);
+  const scanLeft = board?.interiorBounds?.startX ?? 0;
+  const scanRight = board?.interiorBounds?.endX ?? (cols - 1);
+
+  let playerPos = null;
+  const entities = [];
+  const playerCandidates = [];
+
+  for (let y = scanTop; y <= scanBottom; y++) {
+    const line = lines[y] || "";
+    for (let x = scanLeft; x <= Math.min(scanRight, line.length); x++) {
+      const ch = line[x];
+      if (!ch || ch === " " || ch === "│" || wallChars.has(ch)) continue;
+
+      // Get cell color for classification
+      const cell = grid[y]?.[x];
+      const fg = cell?.fg;
+
+      if (ch === playerChar) {
+        playerCandidates.push({ x, y, fg });
+      } else if (foodChars.has(ch)) {
+        entities.push({ role: "food", x, y, char: ch, fg });
+      } else if (bonusChars.has(ch)) {
+        entities.push({ role: "bonus", x, y, char: ch, fg });
+      } else if (bodyChars.has(ch) && hasBoard) {
+        // Only detect body segments inside a bordered game board
+        // (without a board, 'o'/'O' are too common in regular text)
+        entities.push({ role: "body", x, y, char: ch, fg });
+      }
+    }
+  }
+
+  // Player detection: if there's a game board, use the @ inside it.
+  // If no board, only detect @ as player if there's exactly one
+  // (multiple @ are likely ASCII art, not a player character).
+  if (playerCandidates.length === 1) {
+    const p = playerCandidates[0];
+    playerPos = { x: p.x, y: p.y };
+    elements.push({
+      role: "player",
+      id: "player",
+      bounds: { startY: p.y, endY: p.y },
+      position: { x: p.x, y: p.y },
+      label: "Player",
+      char: playerChar,
+      fg: p.fg,
+    });
+  } else if (playerCandidates.length > 1 && hasBoard) {
+    // Multiple @ inside a game board — pick the one with colored fg
+    // (the actual player is usually highlighted)
+    const colored = playerCandidates.filter(p => p.fg && p.fg !== 7);
+    const chosen = colored.length === 1 ? colored[0] : playerCandidates[0];
+    playerPos = { x: chosen.x, y: chosen.y };
+    elements.push({
+      role: "player",
+      id: "player",
+      bounds: { startY: chosen.y, endY: chosen.y },
+      position: { x: chosen.x, y: chosen.y },
+      label: "Player",
+      char: playerChar,
+      fg: chosen.fg,
+    });
+  }
+
+  // Group body segments into a single entity
+  if (entities.length > 0) {
+    const byRole = {};
+    for (const e of entities) {
+      if (!byRole[e.role]) byRole[e.role] = [];
+      byRole[e.role].push(e);
+    }
+
+    for (const [role, items] of Object.entries(byRole)) {
+      const ys = items.map(i => i.y);
+      const xs = items.map(i => i.x);
+      const label = role === "body" ? `Snake Body (${items.length} segments)`
+        : role === "food" ? "Food"
+        : "Bonus";
+
+      elements.push({
+        role: "gameEntity",
+        id: `entity_${role}`,
+        bounds: {
+          startY: Math.min(...ys),
+          endY: Math.max(...ys),
+        },
+        label,
+        entityRole: role,
+        count: items.length,
+        positions: items,
+        char: items[0]?.char,
+      });
+    }
+  }
+
+  // ── 3. Detect score/status bar ──
+  // Look for lines containing Score/Hi-Score/Level/Speed/Lives patterns
+  // Exclude lines that are table separators (├───┼───┤)
+  const scorePatterns = /\b(Score|Hi-Score|High Score|Level|Speed|Lives|Health|HP|MP|Gold|Points|Time)\b/i;
+  const tableSepPattern = /^[│├┤┼].*[┼┤├]/;
+  for (let y = 0; y < rows; y++) {
+    const line = lines[y] || "";
+    if (scorePatterns.test(line) && !tableSepPattern.test(line)) {
+      // Parse key-value pairs: "Label Value  Label Value  ..."
+      // Split on multi-space gaps, then parse each chunk
+      const pairs = [];
+      const chunks = line.split(/\s{2,}/).filter(c => c.trim());
+      for (const chunk of chunks) {
+        const kvMatch = chunk.match(/^([\w\s-]+?)\s+(\d+)$/);
+        if (kvMatch) {
+          pairs.push({ label: kvMatch[1].trim(), value: kvMatch[2] });
+        }
+      }
+
+      elements.push({
+        role: "scoreBar",
+        id: `score_bar_${y}`,
+        bounds: { startY: y, endY: y },
+        label: "Score Bar",
+        pairs,
+      });
+    }
+  }
+
+  // ── 4. Detect title bar ──
+  // First line with app name + mode
+  const titlePattern = /^[┌╔]\s*(\w[\w .-]+)\s*[─═]+/;
+  for (let y = 0; y < Math.min(3, rows); y++) {
+    const line = lines[y] || "";
+    const titleMatch = line.match(titlePattern);
+    if (titleMatch) {
+      // Also check for mode suffix (e.g., "Arcade Mode")
+      const modeMatch = line.match(/[─═]+\s*([\w\s]+)\s*[┐╗]/);
+      elements.push({
+        role: "titleBar",
+        id: `title_bar_${y}`,
+        bounds: { startY: y, endY: y },
+        label: titleMatch[1].trim(),
+        mode: modeMatch?.[1]?.trim() || null,
+      });
+      break;
+    }
+  }
+
+  return elements;
+}
+
 // ── Build Semantic Snapshot (improved) ────────────────────────────────────
 
 export function buildSemanticSnapshot(session, detail = "compact", includePrompt = false) {
@@ -1910,6 +2132,7 @@ export function buildSemanticSnapshot(session, detail = "compact", includePrompt
   const lists = detectLists(grid, lines);
   const statusBars = detectStatusBar(grid, lines);
   const popups = detectPopups(grid, lines);
+  const gameElements = detectGameElements(grid, lines);
 
   const regions = [...containers];
 
@@ -1933,6 +2156,7 @@ export function buildSemanticSnapshot(session, detail = "compact", includePrompt
     lists,
     statusBars,
     popups,
+    gameElements,
   };
 
   const vdom = buildTuiVdom(snapshot, rows);
