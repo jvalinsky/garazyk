@@ -7,6 +7,9 @@ export default function NetworkStatus() {
   const { services } = state.value.network;
   const busy = state.value.ux.busy;
   const runner = state.value.ux.runner;
+  const runningServices =
+    services.filter((service) => service.status === "running").length;
+  const serviceCount = services.length;
 
   function startAll() {
     dispatch({ type: "network/startRequested", pds2: false, runner });
@@ -23,16 +26,38 @@ export default function NetworkStatus() {
   return (
     <div class="card" style="margin-bottom: var(--space-xl);">
       <div class="card-header">
-        <h2 class="card-title">Network Status</h2>
-        <div style="display: flex; gap: var(--space-sm);">
-          <button class="btn btn-primary btn-sm" onClick={startAll} disabled={busy}>
-            {busy ? "Starting..." : "Start All"}
+        <div>
+          <h2 class="card-title">Network Status</h2>
+          <div class="control-scope-line">
+            <span>runner: {runner}</span>
+            <span>services: {runningServices}/{serviceCount}</span>
+            <span>PDS2: optional</span>
+          </div>
+        </div>
+        <div class="network-actions">
+          <button
+            class="btn btn-primary btn-sm"
+            onClick={startAll}
+            disabled={busy}
+            title={`Start ${serviceCount} services with ${runner} runner`}
+          >
+            {busy ? "Starting..." : `Start ${serviceCount || "All"}`}
           </button>
-          <button class="btn btn-sm" onClick={startPds2} disabled={busy}>
+          <button
+            class="btn btn-sm"
+            onClick={startPds2}
+            disabled={busy}
+            title={`Start ${serviceCount} services with PDS2 using ${runner} runner`}
+          >
             Start with PDS2
           </button>
-          <button class="btn btn-destructive btn-sm" onClick={stopAll} disabled={busy}>
-            Stop All
+          <button
+            class="btn btn-destructive btn-sm"
+            onClick={stopAll}
+            disabled={busy}
+            title={`Stop ${serviceCount} services managed by the ${runner} runner`}
+          >
+            Stop {serviceCount || "All"}
           </button>
         </div>
       </div>

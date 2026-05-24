@@ -15,6 +15,34 @@ The dashboard renders, but several headline interactions silently fail or displa
 
 ---
 
+## 2026-05-24 implementation update
+
+Commit: `b27b3982` (`Fix scenario dashboard run state and network health`)
+
+This pass handled the visible regression cluster reported from the dashboard screenshots rather than the whole May 13 backlog:
+
+- Fixed stale run progress rendering by reading polled progress state and using `finishedAt`/`stoppedAt` for completed elapsed time.
+- Added the missing recent-runs API route and refreshed recent runs after terminal run events.
+- Normalized persisted run timestamps from run IDs when stored epochs are bogus, preventing 2016/2017 display for 2026 run IDs.
+- Normalized network API route responses to arrays so web and TUI runtimes interpret service status consistently.
+- Seeded host-mode network service state from topology defaults so the dashboard does not show `0/0 services` before Docker discovery succeeds.
+- Reworked runner-aware host/docker start/stop handling and reduced expected binary-service startup probe noise.
+- Reconciled stale running rows at dashboard startup and skipped non-scenario JSON artifacts during report import.
+- Added focused dashboard persistence, runner, and run-detail tests.
+
+Verification:
+
+- `deno check scripts/scenario-dashboard/main.ts`
+- `deno test -A scripts/scenario-dashboard`
+- `deno test -A packages/laweta/docker_health_test.ts`
+
+Remaining from this plan:
+
+- Several May 13 P1/P2 polish items remain open, especially sidebar/mobile behavior, JSON report links, per-service controls, and deeper browser visual QA.
+- Docker-mode should be re-smoked with live Docker logs if connection failures persist after the runner-aware network fixes.
+
+---
+
 ## P0 — Wrong data or broken primary flows
 
 ### P0.1 Sidebar status dots are dead (prop name mismatch)

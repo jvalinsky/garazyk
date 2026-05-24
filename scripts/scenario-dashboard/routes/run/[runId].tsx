@@ -1,6 +1,6 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { db } from "../../db/index.ts";
-import { fetchRun } from "../../db/queries.ts";
+import { fetchRun, fetchScenarioResults } from "../../db/queries.ts";
 import Layout from "../../components/Layout.tsx";
 import Toolbar from "../../islands/Toolbar.tsx";
 import RunProgress from "../../islands/RunProgress.tsx";
@@ -8,20 +8,14 @@ import LogViewer from "../../islands/LogViewer.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
 import ScenarioCard from "../../islands/ScenarioCard.tsx";
 import SummaryCards from "../../components/SummaryCards.tsx";
+import FailureTriage from "../../components/FailureTriage.tsx";
 import { formatDate, formatDurationSec } from "../../utils.ts";
-import { Run, ScenarioStatus } from "../../services/types.ts";
+import { Run, ScenarioResultView } from "../../services/types.ts";
 
 interface RunPageData {
   runId: string;
   run?: Run;
-  scenarioResults: Array<{
-    scenarioId: string;
-    scenarioName: string;
-    status: ScenarioStatus;
-    passed: number;
-    failed: number;
-    skipped: number;
-  }>;
+  scenarioResults: ScenarioResultView[];
 }
 
 /** Page handler for run detail data. */
@@ -32,16 +26,7 @@ export const handler: Handlers<RunPageData> = {
     try {
       const run = fetchRun(db, runId);
 
-      let scenarioResults: RunPageData["scenarioResults"] = [];
-
-      if (run) {
-        scenarioResults = db.prepare(`
-          SELECT scenario_id as scenarioId, scenario_name as scenarioName, status, passed, failed, skipped
-          FROM scenario_results
-          WHERE run_id = ?
-          ORDER BY scenario_id ASC
-        `).all(runId) as RunPageData["scenarioResults"];
-      }
+      const scenarioResults = run ? fetchScenarioResults(db, runId) : [];
 
       return ctx.render({ runId, run, scenarioResults });
     } catch (e) {
@@ -54,6 +39,14 @@ export const handler: Handlers<RunPageData> = {
 /** Page component for run details. */
 export default function RunDetailPage({ data }: PageProps<RunPageData>) {
   const { runId, run, scenarioResults = [] } = data;
+  const orderedScenarioResults = [...scenarioResults].sort((a, b) => {
+    const aRank = a.status === "failed" || a.failed > 0 ? 0 : 1;
+    const bRank = b.status === "failed" || b.failed > 0 ? 0 : 1;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.scenarioId.localeCompare(b.scenarioId, undefined, {
+      numeric: true,
+    });
+  });
 
   return (
     <Layout title={`Run ${runId}`}>
@@ -110,15 +103,17 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
         {run
           ? (
             <>
+              <FailureTriage run={run} results={scenarioResults} />
+
               <SummaryCards
                 passed={run.passed}
                 failed={run.failed}
                 skipped={run.skipped}
               />
 
-              {scenarioResults.length > 0 && (
+              {orderedScenarioResults.length > 0 && (
                 <div class="scenario-grid">
-                  {scenarioResults.map((sr) => (
+                  {orderedScenarioResults.map((sr) => (
                     <ScenarioCard
                       key={sr.scenarioId}
                       id={sr.scenarioId}

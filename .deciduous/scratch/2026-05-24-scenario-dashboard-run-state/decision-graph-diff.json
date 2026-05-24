@@ -1,0 +1,161 @@
+{
+  "version": "1.0",
+  "author": "Codex",
+  "branch": "main",
+  "created_at": "2026-05-24T02:18:28.426444-04:00",
+  "base_commit": "HEAD",
+  "nodes": [
+    {
+      "change_id": "1866f960-6370-4e66-9abb-8fcb2fe67801",
+      "node_type": "goal",
+      "title": "Fix scenario dashboard UI and runner connectivity glitches",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"there are a lot ui glitches for scenario-dashboard and the docker client or something isn't connecting correctly for running scenarios\\n\\nScreenshots show stale run state, 2016 timestamps for 2026 run IDs, huge elapsed durations, empty network service status, and noisy HTTP probe failures while binary scenario services become healthy.\"}",
+      "created_at": "2026-05-24T01:08:48.861340-04:00"
+    },
+    {
+      "change_id": "e86ec538-b955-4a17-b885-7702dc0f45b0",
+      "node_type": "goal",
+      "title": "Set impeccable design context",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"[$impeccable](/Users/jack/.agents/skills/impeccable/SKILL.md) teach\"}",
+      "created_at": "2026-05-24T01:13:37.197410-04:00"
+    },
+    {
+      "change_id": "d736b238-07c7-45ae-8f5e-ec25669624bf",
+      "node_type": "action",
+      "title": "Explore scenario dashboard design context",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"scripts/scenario-dashboard\"]}",
+      "created_at": "2026-05-24T01:17:02.240107-04:00"
+    },
+    {
+      "change_id": "b3fe4e46-501b-42d0-befe-a0bc074b408c",
+      "node_type": "outcome",
+      "title": "Scenario dashboard product context captured",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}",
+      "created_at": "2026-05-24T01:20:48.750079-04:00"
+    },
+    {
+      "change_id": "73b58035-7a1e-46ba-adb1-3884be4db65c",
+      "node_type": "action",
+      "title": "Document scenario dashboard visual system",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"scripts/scenario-dashboard/DESIGN.md\",\"scripts/scenario-dashboard/.impeccable/design.json\"]}",
+      "created_at": "2026-05-24T01:23:44.471022-04:00"
+    },
+    {
+      "change_id": "469339e1-1674-4b9b-8f6c-25b49d5404f3",
+      "node_type": "outcome",
+      "title": "Scenario dashboard design docs and UX audit completed",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}",
+      "created_at": "2026-05-24T01:28:51.378391-04:00"
+    },
+    {
+      "change_id": "39efefe1-e5f7-47d8-9afd-72964e8b644d",
+      "node_type": "goal",
+      "title": "Scope-first dashboard controls and failure-first run detail",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}",
+      "created_at": "2026-05-24T01:56:48.052025-04:00"
+    },
+    {
+      "change_id": "d5c1c033-e443-42a0-abf5-8411a564c56c",
+      "node_type": "goal",
+      "title": "Implement scope-first command bar and failure-first run detail",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"do a+b\"}",
+      "created_at": "2026-05-24T01:56:58.328756-04:00"
+    },
+    {
+      "change_id": "6e3dfc77-0d94-4b7f-a9f0-23b4a6cf4e77",
+      "node_type": "action",
+      "title": "Implemented scope-first dashboard controls and failure-first run triage panel",
+      "description": null,
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"scripts/scenario-dashboard/islands/Toolbar.tsx\",\"scripts/scenario-dashboard/islands/NetworkStatus.tsx\",\"scripts/scenario-dashboard/routes/run/[runId].tsx\",\"scripts/scenario-dashboard/components/FailureTriage.tsx\",\"scripts/scenario-dashboard/static/app.css\"]}",
+      "created_at": "2026-05-24T02:00:27.583633-04:00"
+    },
+    {
+      "change_id": "bd47521e-4e5c-460b-b3ca-c4323580f6fc",
+      "node_type": "action",
+      "title": "Fix scenario dashboard run state and network health",
+      "description": "Implemented dashboard fixes for stale run progress, recent run refresh, timestamp normalization, runner-aware network service state, startup probe log noise, stale run reconciliation, and report scanner filtering.",
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"b27b3982\",\"confidence\":90,\"files\":[\"scripts/scenario-dashboard\",\"packages/laweta/docker_health.ts\",\".agents/scratchpad/2026-05-13-scenario-dashboard-fix-plan.md\",\".deciduous/scratch/2026-05-24-scenario-dashboard-run-state/summary.md\"]}",
+      "created_at": "2026-05-24T02:13:34.351440-04:00"
+    },
+    {
+      "change_id": "cd0b0c8d-c7e7-465d-bd62-2e3bdbddc4bd",
+      "node_type": "outcome",
+      "title": "Scenario dashboard run state and network health fixes committed",
+      "description": "Commit b27b3982 fixes the reported stale dashboard state, bogus 2016/2017 dates, huge elapsed durations, empty host-mode service status, and noisy expected startup HTTP probe stack traces. Verified with dashboard deno check, dashboard test suite, and laweta docker health tests.",
+      "status": "completed",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"b27b3982\",\"confidence\":95}",
+      "created_at": "2026-05-24T02:13:39.635045-04:00"
+    }
+  ],
+  "edges": [
+    {
+      "from_change_id": "d5c1c033-e443-42a0-abf5-8411a564c56c",
+      "to_change_id": "6e3dfc77-0d94-4b7f-a9f0-23b4a6cf4e77",
+      "edge_type": "leads_to",
+      "rationale": "Action implements the requested A+B dashboard UX changes"
+    },
+    {
+      "from_change_id": "1866f960-6370-4e66-9abb-8fcb2fe67801",
+      "to_change_id": "bd47521e-4e5c-460b-b3ca-c4323580f6fc",
+      "edge_type": "leads_to",
+      "rationale": "Action implements the reported scenario-dashboard UI and runner connectivity fixes"
+    },
+    {
+      "from_change_id": "bd47521e-4e5c-460b-b3ca-c4323580f6fc",
+      "to_change_id": "cd0b0c8d-c7e7-465d-bd62-2e3bdbddc4bd",
+      "edge_type": "leads_to",
+      "rationale": "Committed and verified the implementation"
+    },
+    {
+      "from_change_id": "e86ec538-b955-4a17-b885-7702dc0f45b0",
+      "to_change_id": "d736b238-07c7-45ae-8f5e-ec25669624bf",
+      "edge_type": "leads_to",
+      "rationale": "Design context request led to dashboard design exploration"
+    },
+    {
+      "from_change_id": "d736b238-07c7-45ae-8f5e-ec25669624bf",
+      "to_change_id": "b3fe4e46-501b-42d0-befe-a0bc074b408c",
+      "edge_type": "leads_to",
+      "rationale": "Exploration produced product context"
+    },
+    {
+      "from_change_id": "b3fe4e46-501b-42d0-befe-a0bc074b408c",
+      "to_change_id": "73b58035-7a1e-46ba-adb1-3884be4db65c",
+      "edge_type": "leads_to",
+      "rationale": "Product context informed the visual system documentation"
+    },
+    {
+      "from_change_id": "73b58035-7a1e-46ba-adb1-3884be4db65c",
+      "to_change_id": "469339e1-1674-4b9b-8f6c-25b49d5404f3",
+      "edge_type": "leads_to",
+      "rationale": "Documentation work produced design docs and UX audit"
+    },
+    {
+      "from_change_id": "39efefe1-e5f7-47d8-9afd-72964e8b644d",
+      "to_change_id": "d5c1c033-e443-42a0-abf5-8411a564c56c",
+      "edge_type": "leads_to",
+      "rationale": "Scoped dashboard control and run-detail goal led to the implementation request"
+    }
+  ],
+  "themes": [],
+  "node_theme_tags": [],
+  "documents": []
+}

@@ -15,6 +15,7 @@ export default function Toolbar() {
   const showSettings = s.ux.settingsOpen;
   const params = s.ux.scenarioParams;
   const scenarios = s.scenarios.all;
+  const services = s.network.services;
 
   useEffect(() => {
     if (!IS_BROWSER) return;
@@ -66,6 +67,15 @@ export default function Toolbar() {
   const hasParameters = scenarios.some((sc) =>
     sc.parameters && Object.keys(sc.parameters).length > 0
   );
+  const needsPds2 = scenarios.some((sc) => sc.needsPds2);
+  const runningServices =
+    services.filter((service) => service.status === "running").length;
+  const serviceScope = services.length > 0
+    ? `${runningServices}/${services.length}`
+    : "0";
+  const runScopeLabel = isActive && run
+    ? `${run.status} run ${run.id}`
+    : `${scenarios.length} scenarios`;
 
   function runAll() {
     const ids = scenarios.map((sc) => sc.id);
@@ -94,6 +104,32 @@ export default function Toolbar() {
     <header class="toolbar">
       <div class="toolbar-section">
         <span class="toolbar-title">Garazyk Scenarios</span>
+      </div>
+
+      <div class="command-scope" aria-label="Current command scope">
+        <span class="scope-pill scope-pill-strong">Garazyk</span>
+        <span class="scope-pill">
+          <span class="scope-label">topology</span>
+          <span class="scope-value">{s.topology.selected}</span>
+        </span>
+        <span class="scope-pill">
+          <span class="scope-label">runner</span>
+          <span class="scope-value">{s.ux.runner}</span>
+        </span>
+        <span class="scope-pill">
+          <span class="scope-label">scope</span>
+          <span class="scope-value">{runScopeLabel}</span>
+        </span>
+        <span class="scope-pill">
+          <span class="scope-label">services</span>
+          <span class="scope-value">{serviceScope}</span>
+        </span>
+        <span class="scope-pill">
+          <span class="scope-label">PDS2</span>
+          <span class="scope-value">
+            {needsPds2 ? "included" : "not required"}
+          </span>
+        </span>
       </div>
 
       <div class="toolbar-spacer" />
@@ -175,6 +211,9 @@ export default function Toolbar() {
                 class="btn btn-primary"
                 onClick={runAll}
                 disabled={busy}
+                title={`Run ${scenarios.length} scenarios on ${s.topology.selected} with ${s.ux.runner} runner${
+                  needsPds2 ? " and PDS2" : ""
+                }`}
               >
                 {busy ? "Starting..." : "Run All"}
               </button>
@@ -193,6 +232,7 @@ export default function Toolbar() {
                 class="btn btn-sm"
                 onClick={restartRun}
                 disabled={busy || isStopping}
+                title={`Restart run ${run.id} on ${s.topology.selected}`}
               >
                 Restart
               </button>
@@ -201,6 +241,7 @@ export default function Toolbar() {
                 class="btn btn-destructive btn-sm"
                 onClick={stopRun}
                 disabled={busy || isStopping}
+                title={`Stop run ${run.id}`}
               >
                 {isStopping ? "Stopping..." : "Stop"}
               </button>
