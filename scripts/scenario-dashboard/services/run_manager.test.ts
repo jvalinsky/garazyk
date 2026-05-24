@@ -317,7 +317,89 @@ Deno.test("mapAgentEventLine: full lifecycle sequence", () => {
 
 // ── Stream-based e2e: simulate parseAgentNdjson pipeline ──────────────
 
-Deno.test("agent NDJSON stream → mapAgentEventLine: full pipeline e2e", async () => {
+Deno.test("mapAgentEventLine: run_start malformed fields fall back safely", () => {
+  // total is a string, timestamp is a string — both should default
+  const line = makeNdjsonRunStart({ total: "not-a-number", timestamp: "bad" });
+  const event = mapAgentEventLine(line, "dr-1") as Extract<RunEvent, { type: "run_started" }>;
+
+  assertExists(event);
+  assertEquals(event.type, "run_started");
+  assertEquals(event.totalScenarios, 0);
+  // timestamp defaults to Date.now() — just verify it's a reasonable number
+  assertEquals(typeof event.startedAt, "number");
+  assertExists(event.startedAt > 0);
+});
+
+Deno.test("mapAgentEventLine: scenario_start malformed fields fall back safely", () => {
+  // scenarioId is null, name is a number — both should default
+  const line = makeNdjsonScenarioStart({ scenarioId: null, name: 123 });
+  const event = mapAgentEventLine(line, "dr-1") as Extract<RunEvent, { type: "scenario_started" }>;
+
+  assertExists(event);
+  assertEquals(event.type, "scenario_started");
+  assertEquals(event.scenarioId, "??");
+  assertEquals(event.scenarioName, "unknown");
+});
+
+Deno.test("mapAgentEventLine: scenario_complete malformed fields fall back safely", () => {
+  // passed/failed/skipped/durationS are all strings — should default to 0
+  const line = makeNdjsonScenarioComplete({
+    ok: true,
+    passed: "three",
+    failed: null,
+    skipped: true,
+    durationS: "two-seconds",
+  });
+  const event = mapAgentEventLine(line, "dr-1") as Extract<RunEvent, { type: "scenario_finished" }>;
+
+  assertExists(event);
+  assertEquals(event.type, "scenario_finished");
+  assertEquals(event.status, "passed");
+  assertEquals(event.passed, 0);
+  assertEquals(event.failed, 0);
+  assertEquals(event.skipped, 0);
+  assertEquals(event.durationMs, 0);
+});
+
+Deno.test("mapAgentEventLine: service_failure missing message defaults", () => {
+  const line = makeNdjsonServiceFailure({ message: undefined });
+  const event = mapAgentEventLine(line, "dr-1") as Extract<RunEvent, { type: "log_line" }>;
+
+  assertExists(event);
+  assertEquals(event.type, "log_line");
+  assertEquals(event.line, "[service_failure] unknown failure");
+});
+
+Deno.test("mapAgentEventLine: run_finished malformed totals fall back safely", () => {
+  // totalPassed/totalFailed/totalSkipped/timestamp are all strings
+  const line = makeNdjsonRunFinished({
+    ok: true,
+    totalPassed: "six",
+    totalFailed: null,
+    totalSkipped: false,
+    timestamp: "not-a-ts",
+  });
+  const event = mapAgentEventLine(line, "dr-1") as Extract<RunEvent, { type: "run_completed" }>;
+
+  assertExists(event);
+  assertEquals(event.type, "run_completed");
+  assertEquals(event.passed, 0);
+  assertEquals(event.failed, 0);
+  assertEquals(event.skipped, 0);
+  assertEquals(typeof event.finishedAt, "number");
+  assertExists(event.finishedAt > 0);
+});
+
+Deno.test("mapAgentEventLine: run_start missing runId falls back to arg", () => {
+  const line = makeNdjsonRunStart({ runId: undefined });
+  const event = mapAgentEventLine(line, "fallback-run-id") as Extract<RunEvent, { type: "run_started" }>;
+
+  assertExists(event);
+  assertEquals(event.type, "run_started");
+  assertEquals(event.runId, "fallback-run-id");
+});
+
+Deno.test("mapAgentEventLine: agent NDJSON stream → mapAgentEventLine: full pipeline e2e", async () => {
   const runId = "e2e-stream-run";
   const captured: RunEvent[] = [];
 
