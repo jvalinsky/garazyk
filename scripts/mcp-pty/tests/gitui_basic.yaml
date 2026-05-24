@@ -1,0 +1,20 @@
+name: Gitui Navigate Tabs
+description: Launch gitui, navigate between tabs, and quit
+command: /opt/homebrew/bin/gitui
+cwd: /Users/jack/Software/garazyk
+cols: 120
+rows: 30
+settleMs: 2000
+
+steps:
+  - type: navigate_panel
+    target: Status
+    label: Jump to Status tab
+  - type: navigate_panel
+    target: Log
+    label: Jump to Log tab
+  - type: navigate_panel
+    target: Stashing
+    label: Jump to Stashing tab
+  - type: quit
+    label: Quit gitui
