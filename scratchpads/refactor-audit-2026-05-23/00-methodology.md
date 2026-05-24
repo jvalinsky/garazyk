@@ -1,76 +1,112 @@
 # Refactoring Audit Methodology: Mikrus, Beskid, and Syrena
 
-This document outlines the systematic methodology for researching and auditing
-shared code, patterns, and refactoring opportunities between the three services:
-**Mikrus** (link index service), **Beskid** (edge/identity cache), and
-**Syrena** (standalone AppView).
+This audit reviews shared code, repeated patterns, and refactoring opportunities
+across three service binaries:
+
+- **Mikrus**: link index service.
+- **Beskid**: edge record and identity cache service.
+- **Syrena**: standalone AppView service.
+
+The original audit identified the right high-value areas, but the follow-up
+review tightened several claims against source truth. The final plan should
+distinguish exact duplication from similar implementation patterns and should
+prefer existing shared helpers before introducing new broad utility classes.
 
 ## Audit Objectives
 
-1. Identify and inventory overlapping architectural patterns across the three
-   binaries.
-2. Pinpoint duplicate and boilerplate code in entrypoints, runtime bootstrap,
-   database initialization, configuration loading, and XRPC routing.
-3. Quantitatively score duplication targets based on safety, structural drag,
-   and refactor payoff.
-4. Draft a modular architecture design that extracts common patterns into
-   reusable core/shared library primitives without compromising service
-   boundaries.
-5. Define a safe, staged execution roadmap to implement the recommended
-   refactors.
+1. Inventory overlapping architecture in entrypoints, runtime bootstrap,
+   database setup, configuration loading, and XRPC routing.
+2. Separate exact copy/paste from similar-but-not-identical code paths.
+3. Score extraction targets by boundary risk, structural drag, test leverage,
+   change safety, and payoff.
+4. Produce staged refactoring candidates that keep service behavior intact.
+5. Define characterization tests before any implementation refactor.
 
 ## Evidence Sources
 
-We will analyze the following primary files and source directories in the
-repository:
+Primary files reviewed:
 
-- **Binaries**:
+- **Binaries**
   - `Garazyk/Binaries/mikrus/main.m`
   - `Garazyk/Binaries/beskid/main.m`
   - `Garazyk/Binaries/syrena/main.m`
-- **Configuration Layers**:
+- **Configuration Layers**
   - `Garazyk/Sources/Mikrus/MikrusConfiguration.[hm]`
   - `Garazyk/Sources/Beskid/BeskidConfiguration.[hm]`
   - `Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.[hm]`
-- **Runtime Layers**:
+  - `Garazyk/Sources/MediaCore/ATProtoMediaServiceConfiguration.[hm]`
+- **Runtime Layers**
   - `Garazyk/Sources/Mikrus/MikrusRuntime.[hm]`
   - `Garazyk/Sources/Beskid/BeskidRuntime.[hm]`
   - `Garazyk/Sources/AppView/Server/AppViewRuntime.[hm]`
-- **Database Layers**:
+- **Database Layers**
   - `Garazyk/Sources/Mikrus/MikrusDatabase.[hm]`
   - `Garazyk/Sources/Beskid/BeskidDatabase.[hm]`
   - `Garazyk/Sources/AppView/Server/AppViewDatabase.[hm]`
-- **XRPC Route Packs**:
+  - `Garazyk/Sources/Database/Connection/ATProtoConnectionManager*.h`
+  - `Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.h`
+  - `Garazyk/Sources/Database/Utils/PDSSQLiteUtils.h`
+- **XRPC, Rate Limit, and Identity Helpers**
   - `Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.[hm]`
   - `Garazyk/Sources/Beskid/BeskidXrpcRoutePack.[hm]`
-  - `Garazyk/Sources/AppView/Server/Lexicon/` or other routes.
+  - `Garazyk/Sources/Network/XrpcErrorHelper.[hm]`
+  - `Garazyk/Sources/Network/RateLimiter.[hm]`
+  - `Garazyk/Sources/Network/XrpcIdentityHelper.[hm]`
+  - `Garazyk/Sources/Core/DID.[hm]`
+
+Useful verification commands:
+
+```bash
+rg -n "executeQuery:|executeUpdate:|performWriteTransaction:" Garazyk/Sources/Mikrus Garazyk/Sources/Beskid
+rg -n "executeParameterizedQuery:|executeParameterizedUpdate:" Garazyk/Sources/AppView/Server/AppViewDatabase.m
+rg -n "RateLimitExceeded|X-RateLimit-Limit|requiredParam:|handleFromDocument:|pdsEndpointFromDocument:|signingKeyFromDocument:" Garazyk/Sources
+rg -n "alsoKnownAs|AtprotoPersonalDataServer|verificationMethod|verificationMethods" Garazyk/Sources
+```
 
 ## Scoring Criteria
 
-Each candidate for extraction will be scored from 1 (low/unfavorable) to 5
-(high/favorable) on:
+Each candidate is scored from 1 to 5:
 
-1. **Boundary Risk**: Risk of cross-contamination or leaking service-specific
-   business logic into shared libraries. (Higher score = lower risk).
-2. **Structural Drag**: The amount of boilerplate or complexity this duplication
-   currently introduces. (Higher score = high drag/high benefit to remove).
-3. **Test Leverage**: Whether extracting this component into a shared library
-   creates a single, clean interface that dramatically simplifies unit testing.
-4. **Change Safety**: Safety of extraction; likelihood of side effects during
-   refactoring.
-5. **Refactor Payoff**: Total complexity/LOC reduced vs effort required to
-   extract.
+1. **Boundary Risk**: higher means lower risk of leaking service-specific
+   behavior into shared code.
+2. **Structural Drag**: higher means more duplicate boilerplate or operational
+   friction.
+3. **Test Leverage**: higher means a shared module can be tested more directly
+   than the current code.
+4. **Change Safety**: higher means lower chance of behavioral regressions during
+   extraction.
+5. **Refactor Payoff**: higher means the extraction materially reduces future
+   maintenance cost.
 
-## Staging & Rollback Strategy
+## Review Corrections
 
-Any recommended refactor must use safe, progressive extraction:
+- The final report file named by the initial summary was missing from the
+  workspace. This review creates `refactor_opportunity_audit_report.md`.
+- The SQLite query/update helpers are exact in shape between Mikrus and Beskid,
+  but not character-for-character because each service uses its own error
+  constructor/domain.
+- AppView has similar parameterized SQL logic, but it is not the same extraction
+  target in phase 1. It uses a raw serialized `sqlite3` connection,
+  `safeExecuteSync`, and `PDS_SQLITE_AUTORELEASE_STMT`.
+- The XRPC route-pack duplication should build on existing helpers
+  (`XrpcErrorHelper`, `RateLimiter`, `DIDDocument`/`DIDResolver`) instead of
+  creating a broad helper that re-implements them.
+- Configuration duplication is real, but inheritance is not the safest first
+  move. Shared parser functions or a small configuration parsing helper are
+  safer than a base class that forces AppView and rate-limited services into one
+  shape.
 
-- **Step 1**: Create a shared core capability or protocol (e.g., in a
-  `GZServiceCore` or `GZDatabaseCore` module).
-- **Step 2**: Write unit/characterization tests for the new shared module.
-- **Step 3**: Port a single service (e.g. Beskid, which is simpler) to use the
-  new shared component.
-- **Step 4**: Verify functionality against scenario/E2E tests.
-- **Step 5**: Port the remaining services (Mikrus and Syrena).
-- **Rollback Path**: Retain old implementations under temporary namespace
-  switches if necessary, relying on Git branches for absolute recovery.
+## Staging and Rollback Strategy
+
+Recommended refactors should use progressive extraction:
+
+1. Add characterization tests around the current behavior.
+2. Add the shared primitive without changing callers.
+3. Port Beskid first where the surface area is smaller.
+4. Port Mikrus next.
+5. Treat AppView database concurrency changes as a separate migration after the
+   helper has proven stable.
+
+Rollback should be code-level and per phase: keep each extraction in a small
+branch/commit so the changed service can return to its local implementation
+without schema changes or data migrations.

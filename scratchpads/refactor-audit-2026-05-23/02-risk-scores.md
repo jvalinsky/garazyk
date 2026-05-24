@@ -1,135 +1,115 @@
-# Refactoring Risk & Impact Scores: Mikrus, Beskid, and Syrena
+# Refactoring Risk and Impact Scores: Mikrus, Beskid, and Syrena
 
-This document ranks and scores each extraction candidate from 1
-(low/unfavorable) to 5 (high/favorable) to identify the highest leverage
-refactoring targets.
+Scores are from 1 to 5. Higher is better for boundary risk, test leverage,
+change safety, and payoff. Higher structural drag means there is more
+maintenance cost to remove.
 
-## Candidates Under Consideration
+## Candidate A: Entrypoint and Lifecycle Bootstrap
 
-### Candidate A: Service Entrypoint & Lifecycle Bootstrap
+Consolidate common setup in the service `main.m` files: signal ignore setup,
+crash reporter install, GNUstep `curl_global_init`, category link forcing, and
+graceful shutdown registration.
 
-Consolidate bootstrapping boilerplate (signals, crash reporters, curl setup,
-category checks) in `main.m` files.
+- **Boundary Risk**: 4/5. Common setup is generic, but Syrena has additional
+  exception/SIGABRT and category-verification behavior.
+- **Structural Drag**: 3/5. The duplication is visible but small.
+- **Test Leverage**: 2/5. Most behavior is process-level and better covered by
+  smoke tests.
+- **Change Safety**: 4/5. Safe if hooks stay explicit and service-owned.
+- **Refactor Payoff**: 3/5. Cleans entrypoints but does not change core
+  maintenance cost much.
+- **Overall Score**: **16/25**
 
-- **Boundary Risk**: 5/5 (Zero risk. Bootstrapping is standard system setup and
-  contains no business logic.)
-- **Structural Drag**: 3/5 (Boilerplate is ~30 LOC per service, easily copied
-  but annoying.)
-- **Test Leverage**: 2/5 (Unlikely to be unit tested; mostly system-level
-  hooks.)
-- **Change Safety**: 4/5 (Extremely safe; only risk is incorrect signal
-  routing.)
-- **Refactor Payoff**: 3/5 (Cleans up `main.m` entries to be highly clean and
-  legible.)
-- **Overall Score**: **17 / 25**
+## Candidate B: CLI Argument Parser and Option Standardizer
 
----
+Create a small schema-driven command-line parser for service binaries.
 
-### Candidate B: CLI Argument Parser & Option Standardizer
+- **Boundary Risk**: 4/5. Option schemas can keep service-specific flags
+  separate.
+- **Structural Drag**: 4/5. Each binary has a manual array loop with repeated
+  missing-value and unknown-option checks.
+- **Test Leverage**: 4/5. Parser behavior can be tested without starting
+  runtimes.
+- **Change Safety**: 4/5. Deterministic input/output makes regressions easy to
+  catch.
+- **Refactor Payoff**: 4/5. Removes repeated control flow and makes new service
+  flags less error-prone.
+- **Overall Score**: **20/25**
 
-Create a unified command-line option parser wrapper in the shared network or CLI
-module.
+## Candidate C: Configuration Parsing Utilities
 
-- **Boundary Risk**: 4/5 (Low risk. Different services accept slightly different
-  flags, but they can be passed in as a schema.)
-- **Structural Drag**: 4/5 (Highly boilerplate-heavy. Each service currently
-  maintains manual array loop scanning.)
-- **Test Leverage**: 4/5 (High leverage. CLI parser schemas can be thoroughly
-  unit tested in isolation.)
-- **Change Safety**: 4/5 (Safe. Option parsing is deterministic and stateless.)
-- **Refactor Payoff**: 4/5 (Removes massive manual `for` loops in each `main.m`
-  file.)
-- **Overall Score**: **20 / 25**
+Extract shared configuration parsing helpers for environment lookup, CSV
+splitting, numeric parsing, boolean parsing, and bounded port validation.
 
----
+- **Boundary Risk**: 4/5. Parsing primitives are generic; service properties are
+  not.
+- **Structural Drag**: 4/5. Mikrus/Beskid repeat several loaders, and AppView
+  has similar but larger logic.
+- **Test Leverage**: 4/5. Parser functions can get direct unit coverage.
+- **Change Safety**: 3/5. A base class or inheritance swap would be riskier than
+  parser helpers.
+- **Refactor Payoff**: 3/5. Useful cleanup, but less urgent than database and
+  route helpers.
+- **Overall Score**: **18/25**
 
-### Candidate C: Base Service Configuration Class
+## Candidate D: SQLite Query Runner Extraction
 
-Extract shared properties (`httpPort`, `dataDirectory`, rate limits) and
-lifecycle utilities into a common configuration parent class
-`GZBaseServiceConfiguration`.
+Extract Mikrus/Beskid query, update, and transaction wrapper code into a shared
+database utility that uses `ATProtoConnectionManager`.
 
-- **Boundary Risk**: 4/5 (Low risk. Properties like directory and port are
-  universal across all service layers.)
-- **Structural Drag**: 4/5 (High. All configuration classes implement identical
-  CSV split, dictionary mapping, and validation.)
-- **Test Leverage**: 4/5 (Allows unified testing of environment overrides and
-  dictionary parser mappings.)
-- **Change Safety**: 3/5 (Medium. Must ensure service-specific configurations
-  maintain custom load-order overrides.)
-- **Refactor Payoff**: 4/5 (Substantially reduces duplicate parsing and
-  validation boilerplate.)
-- **Overall Score**: **19 / 25**
+- **Boundary Risk**: 5/5. The duplicated behavior is generic SQLite statement
+  execution.
+- **Structural Drag**: 5/5. Mikrus and Beskid repeat the same
+  prepare/bind/step/row/finalize control flow.
+- **Test Leverage**: 5/5. A shared runner can be tested against an in-memory or
+  temporary SQLite database.
+- **Change Safety**: 4/5. Error domains, null handling, and finalization
+  behavior must be preserved.
+- **Refactor Payoff**: 5/5. Removes the most direct copy/paste while creating a
+  reusable primitive for later services.
+- **Overall Score**: **24/25** (top priority)
 
----
+## Candidate E: AppView Database Connection Unification
 
-### Candidate D: SQLite Connection-Pool Helper Extraction
+Move Syrena/AppView from a raw serialized SQLite connection toward the
+`ATProtoConnectionManager`/pool framework.
 
-Extract the pooled `executeQuery:params:error:` and
-`executeUpdate:params:connection:error:` wrappers into a database category or
-shared base class (e.g., `GZDatabaseBase`).
+- **Boundary Risk**: 3/5. The desired primitive is shared, but AppView has a
+  larger concurrency surface.
+- **Structural Drag**: 3/5. AppView has repeated parameterized SQL code, but it
+  is not the same as the Mikrus/Beskid path.
+- **Test Leverage**: 3/5. Existing AppView database tests help, but concurrency
+  behavior needs characterization first.
+- **Change Safety**: 2/5. Backfills, write-proxy paths, and serialized access
+  assumptions make this high-risk.
+- **Refactor Payoff**: 4/5. Potentially valuable, but only after the smaller
+  runner extraction proves stable.
+- **Overall Score**: **15/25** (deferred)
 
-- **Boundary Risk**: 5/5 (No risk. These are generic SQLite statement binding
-  and execution routines.)
-- **Structural Drag**: 5/5 (High drag. The exact same ~100 lines of SQLite
-  execution code are duplicated in Mikrus and Beskid.)
-- **Test Leverage**: 4/5 (Allows testing SQLite bindings and error mapping in
-  one central test suite.)
-- **Change Safety**: 5/5 (Extremely safe. Query and update logic is simple and
-  well-defined.)
-- **Refactor Payoff**: 5/5 (Removes identical C-level SQLite prepare/step
-  loops.)
-- **Overall Score**: **24 / 25** (Top Priority)
+## Candidate F: XRPC Route Support and DID Document Field Extraction
 
----
+Extract duplicated Mikrus/Beskid route helpers and consolidate DID document
+field parsing through existing network/identity primitives.
 
-### Candidate E: Database Connection Unification for AppView (Syrena)
-
-Upgrade Syrena's raw single-connection serialized dispatch queue system to
-utilize the common connection-pool framework (`ATProtoConnectionPool`).
-
-- **Boundary Risk**: 4/5 (Low risk. AppView is a heavy read-heavy query service,
-  which would benefit enormously from pooling.)
-- **Structural Drag**: 3/5 (Medium drag. Currently runs on a private serialized
-  queue which restricts concurrent read scaling.)
-- **Test Leverage**: 3/5 (Testing is already established, but pooling would
-  improve mock isolation.)
-- **Change Safety**: 2/5 (High risk. AppView has complex background backfills
-  and write proxies; modifying its concurrency engine could introduce
-  regressions.)
-- **Refactor Payoff**: 5/5 (Huge performance and architectural payoff by
-  bringing AppView in line with PDS connection pooling standards.)
-- **Overall Score**: **17 / 25**
-
----
-
-### Candidate F: XRPC HTTP & Identity Parsing Utilities
-
-Move duplicate rate-limiter assertions (`checkRateLimitForRequest:...`),
-parameter requirements, and DID document parser helpers (`handleFromDocument:`,
-`pdsEndpointFromDocument:`) into a shared network/identity framework.
-
-- **Boundary Risk**: 5/5 (Zero risk. Standard ATProto specs dictate how handles
-  and endpoint structures are loaded from DID documents.)
-- **Structural Drag**: 4/5 (Identical route helpers and DID resolution snippets
-  are copied across multiple route packs.)
-- **Test Leverage**: 5/5 (High leverage. Allows DID parser helpers to be
-  verified against mock PLC documents in isolation.)
-- **Change Safety**: 4/5 (Very safe; parser code is functional, stateless, and
-  simple.)
-- **Refactor Payoff**: 4/5 (Cleans up bloated route packs to focus solely on
-  route mapping and execution.)
-- **Overall Score**: **22 / 25** (High Priority)
-
----
+- **Boundary Risk**: 4/5. Query-parameter and rate-limit response helpers are
+  generic; DID parsing must preserve legacy and current document shapes.
+- **Structural Drag**: 4/5. Route packs repeat the same rate-limit, parameter,
+  and identity parsing snippets.
+- **Test Leverage**: 5/5. DID field extraction and HTTP error response helpers
+  can be covered with direct fixtures.
+- **Change Safety**: 4/5. Safe if it delegates to `XrpcErrorHelper`,
+  `RateLimiter`, and `DIDDocument` helpers rather than replacing them wholesale.
+- **Refactor Payoff**: 4/5. Route packs become smaller and identity parsing
+  becomes less fragmented.
+- **Overall Score**: **21/25** (high priority)
 
 ## Ranked Roadmap Matrix
 
-| Rank  | Candidate                               | Category    | Score     | Complexity | Safety         | Refactor Priority |
-| ----- | --------------------------------------- | ----------- | --------- | ---------- | -------------- | ----------------- |
-| **1** | **D**: SQLite Query/Update Helpers      | Database    | **24/25** | Low        | Extremely High | Immediate         |
-| **2** | **F**: XRPC & Identity Parsing Helpers  | Network/ID  | **22/25** | Low-Med    | High           | Immediate         |
-| **3** | **B**: CLI Argument Option Parser       | CLI/Tooling | **20/25** | Medium     | High           | Secondary         |
-| **4** | **C**: Base Configuration Model         | Core        | **19/25** | Medium     | Medium         | Secondary         |
-| **5** | **A**: Entrypoint & Signal Setup        | Core        | **17/25** | Low        | High           | Tertiary          |
-| **6** | **E**: AppView Database Connection Pool | Database    | **17/25** | High       | Low-Med        | Deferred          |
+| Rank | Candidate                            |         Category | Score | Complexity | Safety      | Priority  |
+| ---- | ------------------------------------ | ---------------: | ----: | ---------- | ----------- | --------- |
+| 1    | D: SQLite Query Runner               |         Database | 24/25 | Low-medium | High        | Immediate |
+| 2    | F: XRPC Route Support and DID Fields | Network/Identity | 21/25 | Medium     | High        | Immediate |
+| 3    | B: CLI Option Parser                 |      CLI/Tooling | 20/25 | Medium     | High        | Secondary |
+| 4    | C: Configuration Parsing Utilities   |             Core | 18/25 | Medium     | Medium      | Secondary |
+| 5    | A: Entrypoint Lifecycle Bootstrap    |             Core | 16/25 | Low        | Medium-high | Tertiary  |
+| 6    | E: AppView Connection Unification    |         Database | 15/25 | High       | Low-medium  | Deferred  |
