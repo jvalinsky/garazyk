@@ -130,8 +130,10 @@ NS_ASSUME_NONNULL_BEGIN
     [client setValue:delegate forKey:@"delegate"];
     [client setValue:@(77) forKey:@"currentSeq"];
     [client setValue:@NO forKey:@"isConnected"];
+    [client setValue:@YES forKey:@"shouldReconnect"];
     [client setValue:@(10) forKey:@"maxReconnectAttempts"];
     [client setValue:@(10) forKey:@"reconnectAttempts"];
+
 
     FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
     NSError *closeError = [NSError errorWithDomain:@"test" code:9 userInfo:nil];
