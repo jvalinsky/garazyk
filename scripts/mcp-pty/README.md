@@ -106,6 +106,8 @@ Other defaults:
 - `GARAZYK_PTY_MCP_MAX_SESSIONS=4`
 - idle sessions stop after 10 minutes
 - input is not recorded unless `recordInput: true` is passed to `pty_rec_start`
+- semantic bounding-box overlay is available in replay HTML with `semanticOverlay: true`
+- recordings store the terminal size in the asciicast header and as an initial resize event, then record later `pty_resize` calls as additional resize events
 
 ## Examples
 
@@ -149,5 +151,20 @@ Open `less` for a temporary file, search, then quit:
   }
 }
 ```
+
+Record with semantic overlay enabled:
+
+```json
+{
+  "name": "pty_rec_start",
+  "arguments": {
+    "sessionId": "s1",
+    "title": "btop with boxes",
+    "semanticOverlay": true
+  }
+}
+```
+
+The overlay is a browser-side heuristic parser for arbitrary PTY output. It scans the replay grid for box-drawing containers and draws their bounding boxes. Dashboard-specific semantic metadata still belongs to `garazyk-tui`.
 
 If Codex cannot spawn local processes from MCP in a particular sandbox mode, keep the server allowlist intact and adjust the Codex launch or approval boundary instead.

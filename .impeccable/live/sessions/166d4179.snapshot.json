@@ -1,0 +1,23 @@
+{
+  "id": "166d4179",
+  "phase": "discarded",
+  "pageUrl": "/",
+  "sourceFile": "scripts/scenario-dashboard/islands/ScenarioCard.tsx",
+  "expectedVariants": 3,
+  "arrivedVariants": 3,
+  "visibleVariant": 1,
+  "paramValues": {
+    "scale-intensity": "1.02",
+    "shadow-glow": "12px"
+  },
+  "pendingEventSeq": null,
+  "pendingEvent": null,
+  "deliveryLease": null,
+  "checkpointRevision": 24,
+  "activeOwner": "0db1afbf",
+  "sourceMarkers": {},
+  "fallbackMode": null,
+  "annotationArtifacts": [],
+  "diagnostics": [],
+  "updatedAt": "2026-05-24T06:55:09.365Z"
+}

@@ -64,6 +64,8 @@ Deno.test("createInitialState: returns valid default state", () => {
   assertEquals(state.topology.selected, "garazyk-default");
   assertEquals(state.ux.busy, false);
   assertEquals(state.ux.settingsOpen, false);
+  assertEquals(state.ux.agentLaunch, false);
+  assertEquals(state.ux.agentMode, false);
   assertEquals(state.ux.collapsedCategories, new Set(["edge"]));
 });
 
@@ -132,10 +134,12 @@ Deno.test("network/startSucceeded: clears busy and re-fetches health", () => {
     ux: {
       busy: true,
       settingsOpen: false,
+      mobileNavPanel: null,
       scenarioParams: {},
       collapsedCategories: new Set(),
       searchTerm: "",
       runner: "host",
+      agentLaunch: false,
       agentMode: false,
     },
     lastTickMs: 0,
@@ -151,10 +155,12 @@ Deno.test("network/startFailed: clears busy", () => {
     ux: {
       busy: true,
       settingsOpen: false,
+      mobileNavPanel: null,
       scenarioParams: {},
       collapsedCategories: new Set(),
       searchTerm: "",
       runner: "host",
+      agentLaunch: false,
       agentMode: false,
     },
     lastTickMs: 0,
@@ -362,10 +368,12 @@ Deno.test("runs/startSucceeded: navigates to run page", () => {
     ux: {
       busy: true,
       settingsOpen: false,
+      mobileNavPanel: null,
       scenarioParams: {},
       collapsedCategories: new Set(),
       searchTerm: "",
       runner: "host",
+      agentLaunch: false,
       agentMode: false,
     },
     lastTickMs: 0,
@@ -448,6 +456,31 @@ Deno.test("topology/selected: guarded while active run exists", () => {
   assertEquals(cmds.length, 0);
 });
 
+Deno.test("logs/failed: stores error by run id", () => {
+  const state = initState({
+    logs: {
+      textByRunId: {},
+      lastErrorByRunId: {},
+      fetchInFlight: true,
+      inFlightRunId: "run-A",
+      token: 1,
+      delayMs: 5000,
+      lastUpdateMs: 0,
+    },
+  });
+  const [next] = step(state, {
+    type: "logs/failed",
+    error: "Run logs are not available.",
+    runId: "run-A",
+    token: 1,
+  });
+  assertEquals(
+    next.logs.lastErrorByRunId["run-A"],
+    "Run logs are not available.",
+  );
+  assertEquals(next.logs.fetchInFlight, false);
+});
+
 Deno.test("logs: stores text by viewed run id", () => {
   const [polling] = step(initState({ runs: { ...initState().runs, viewedRunId: "old-run" } }), {
     type: "logs/timeout",
@@ -465,6 +498,18 @@ Deno.test("logs: stores text by viewed run id", () => {
 // ---------------------------------------------------------------------------
 // UX
 // ---------------------------------------------------------------------------
+
+Deno.test("ux/toggleMobileNav: opens and closes drawer panel", () => {
+  const state = initState();
+  const [open] = step(state, { type: "ux/toggleMobileNav", panel: "scenarios" });
+  assertEquals(open.ux.mobileNavPanel, "scenarios");
+  const [closed] = step(open, { type: "ux/toggleMobileNav", panel: "scenarios" });
+  assertEquals(closed.ux.mobileNavPanel, null);
+  const [network] = step(closed, { type: "ux/toggleMobileNav", panel: "network" });
+  assertEquals(network.ux.mobileNavPanel, "network");
+  const [close] = step(network, { type: "ux/closeMobileNav" });
+  assertEquals(close.ux.mobileNavPanel, null);
+});
 
 Deno.test("ux/toggleSettings: toggles settings modal", () => {
   const state = initState();
@@ -515,12 +560,13 @@ Deno.test("tick: updates elapsed time counters", () => {
 
 Deno.test("bootCmds: returns initial fetch commands", () => {
   const cmds = bootCmds();
-  assertEquals(cmds.length, 5);
+  assertEquals(cmds.length, 6);
   const urls = fetchCmds(cmds).map((c) => c.url);
   assertEquals(urls.includes("/api/network/health"), true);
   assertEquals(urls.includes("/api/runs/active"), true);
   assertEquals(urls.includes("/api/scenarios"), true);
   assertEquals(urls.includes("/api/topologies"), true);
+  assertEquals(urls.includes("/api/config"), true);
   assertEquals(urls.includes("/api/runs/recent?limit=6"), true);
 });
 
@@ -989,13 +1035,34 @@ Deno.test("createInitialState: defaults runner to host", () => {
 // ux/setAgentMode
 // ---------------------------------------------------------------------------
 
-Deno.test("ux/setAgentMode: updates agentMode field", () => {
+Deno.test("config/received: enables agent mode only for agent launch", () => {
   const state = initState();
-  assertEquals(state.ux.agentMode, false);
-  const [next] = step(state, { type: "ux/setAgentMode", agentMode: true });
+  const [next] = step(state, { type: "config/received", agentLaunch: true });
+  assertEquals(next.ux.agentLaunch, true);
   assertEquals(next.ux.agentMode, true);
-  const [next2] = step(next, { type: "ux/setAgentMode", agentMode: false });
-  assertEquals(next2.ux.agentMode, false);
+});
+
+Deno.test("config/received: does not enable agent mode for human launch", () => {
+  const state = initState();
+  const [next] = step(state, { type: "config/received", agentLaunch: false });
+  assertEquals(next.ux.agentLaunch, false);
+  assertEquals(next.ux.agentMode, false);
+});
+
+Deno.test("ux/setAgentMode: ignores enable when not agent launch", () => {
+  const state = initState();
+  const [next] = step(state, { type: "ux/setAgentMode", agentMode: true });
+  assertEquals(next.ux.agentMode, false);
+});
+
+Deno.test("ux/setAgentMode: updates agentMode field when agent launch", () => {
+  const state = initState({
+    ux: { ...initState().ux, agentLaunch: true, agentMode: true },
+  });
+  const [next] = step(state, { type: "ux/setAgentMode", agentMode: false });
+  assertEquals(next.ux.agentMode, false);
+  const [next2] = step(next, { type: "ux/setAgentMode", agentMode: true });
+  assertEquals(next2.ux.agentMode, true);
 });
 
 Deno.test("createInitialState: defaults agentMode to false", () => {
