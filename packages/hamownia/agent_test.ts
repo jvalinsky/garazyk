@@ -1,15 +1,96 @@
 /**
- * Unit tests for agent CLI classification, triage, and NDJSON output.
+ * Unit tests for agent CLI classification, triage, list JSON shape,
+ * and NDJSON output.
  *
  * @module agent_test
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { classifyBoundary, triageReports } from "./cli/agent.ts";
-import type { AgentTriageResult } from "./cli/agent.ts";
+import { classifyBoundary, toSummary, triageReports } from "./cli/agent.ts";
+import type { AgentScenarioSummary, AgentTriageResult } from "./cli/agent.ts";
+import type { ScenarioInfo } from "./scenario_metadata.ts";
 import { MultiSink, NdjsonSink } from "./events.ts";
 import type { ScenarioRunEvent } from "./events.ts";
+
+// ── toSummary — list JSON shape ────────────────────────────────────────
+
+Deno.test("toSummary: produces valid AgentScenarioSummary shape", () => {
+  const scenario: ScenarioInfo = {
+    id: "01",
+    name: "Account Lifecycle",
+    path: "/tmp/scenarios/01_account.ts",
+    requires: [
+      { role: "plc" as const, capability: "didResolution" as const },
+    ],
+    optional: [],
+    needsPds2: false,
+    browserFlows: ["smoke" as const],
+    timeout: 120,
+    parameters: {},
+  };
+
+  const summary = toSummary(scenario);
+
+  // All fields present
+  assertEquals(summary.id, "01");
+  assertEquals(summary.name, "Account Lifecycle");
+  assertEquals(summary.path, "/tmp/scenarios/01_account.ts");
+  assertEquals(summary.requires, ["plc:didResolution"]);
+  assertEquals(summary.optional, []);
+  assertEquals(summary.needsPds2, false);
+  assertEquals(summary.browserFlows.length, 1);
+
+  // Optional fields
+  assertEquals(summary.timeout, undefined); // no manifest entry for "01"
+  assertEquals(summary.parameters, {});
+});
+
+Deno.test("toSummary: picks up timeout and parameters from SCENARIO_MANIFESTS", () => {
+  // Scenario 59 has timeout: undefined in manifest but 26 has timeout: 300
+  const scenario: ScenarioInfo = {
+    id: "59",
+    name: "Thread Scale",
+    path: "/tmp/scenarios/59_thread.ts",
+    requires: [],
+    optional: [],
+    needsPds2: false,
+    browserFlows: ["smoke" as const, "login" as const, "deep" as const],
+    timeout: undefined,
+    parameters: {},
+  };
+
+  const summary = toSummary(scenario);
+
+  // From SCENARIO_MANIFESTS["59"]
+  assertEquals(summary.browserFlows.length, 3);
+  assertEquals(summary.parameters.scale, 1);
+  assertEquals(summary.parameters.depth, 2);
+});
+
+Deno.test("toSummary: optional requirements are mapped correctly", () => {
+  const scenario: ScenarioInfo = {
+    id: "99",
+    name: "Custom Scenario",
+    path: "/tmp/scenarios/99_custom.ts",
+    requires: [
+      { role: "pds" as const, capability: "createRecord" as const },
+    ],
+    optional: [
+      { role: "relay" as const, capability: "subscribeRepos" as const },
+    ],
+    needsPds2: true,
+    browserFlows: [],
+    timeout: undefined,
+    parameters: {},
+  };
+
+  const summary = toSummary(scenario);
+
+  assertEquals(summary.needsPds2, true);
+  assertEquals(summary.requires, ["pds:createRecord"]);
+  assertEquals(summary.optional, ["relay:subscribeRepos"]);
+});
 
 // ── classifyBoundary ───────────────────────────────────────────────────
 
@@ -335,30 +416,30 @@ Deno.test("triageReports: missing — falls back to directory scan", async () =>
 // ── triageReports — non-existent directory ─────────────────────────────
 
 Deno.test("triageReports: missing dir — returns ok with evidence of absence", async () => {
-  const nonExistent = join(
-    await Deno.makeTempDir({ prefix: "hamownia-triage-" }),
-    "nonexistent",
-  );
+  const tmp = await Deno.makeTempDir({ prefix: "hamownia-triage-" });
+  try {
+    const nonExistent = join(tmp, "nonexistent");
 
-  const result = await triageReports(nonExistent, "run-005");
+    const result = await triageReports(nonExistent, "run-005");
 
-  assertEquals(result.runId, "run-005");
-  assertEquals(result.ok, true);
-  assertEquals(result.evidence.length, 1);
-  assertStringIncludes(result.evidence[0], "No overall-summary.json");
-  assertEquals(result.reportPaths.length, 0);
+    assertEquals(result.runId, "run-005");
+    assertEquals(result.ok, true);
+    assertEquals(result.evidence.length, 1);
+    assertStringIncludes(result.evidence[0], "No overall-summary.json");
+    assertEquals(result.reportPaths.length, 0);
+  } finally {
+    await Deno.remove(tmp, { recursive: true });
+  }
 });
 
 // ── NdjsonSink — emits valid JSON lines ────────────────────────────────
 
 Deno.test("NdjsonSink: emits each event as a single JSON line", () => {
-  const captured: string[] = [];
-
   // Use a helper class that captures instead of writing to real stdout
   class CaptureNdjsonSink extends NdjsonSink {
+    captured: string[] = [];
     override emit(event: ScenarioRunEvent): void {
-      // Override to capture instead of writing to real stdout
-      captured.push(JSON.stringify(event));
+      this.captured.push(JSON.stringify(event));
     }
   }
 
@@ -395,26 +476,26 @@ Deno.test("NdjsonSink: emits each event as a single JSON line", () => {
     timestamp: 1_700_000_003_500,
   });
 
-  assertEquals(captured.length, 3);
+  assertEquals(captureSink.captured.length, 3);
 
   // Each captured string must be valid JSON
-  for (const line of captured) {
+  for (const line of captureSink.captured) {
     const parsed = JSON.parse(line);
     assertEquals(typeof parsed.type, "string");
   }
 
   // First event is run_start
-  const first = JSON.parse(captured[0]);
+  const first = JSON.parse(captureSink.captured[0]);
   assertEquals(first.type, "run_start");
   assertEquals(first.runId, "test-run");
 
   // Second event is scenario_start
-  const second = JSON.parse(captured[1]);
+  const second = JSON.parse(captureSink.captured[1]);
   assertEquals(second.type, "scenario_start");
   assertEquals(second.scenarioId, "01");
 
   // Third event is scenario_complete
-  const third = JSON.parse(captured[2]);
+  const third = JSON.parse(captureSink.captured[2]);
   assertEquals(third.type, "scenario_complete");
   assertEquals(third.ok, true);
   assertEquals(third.passed, 3);
