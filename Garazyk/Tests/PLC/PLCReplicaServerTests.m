@@ -56,6 +56,17 @@
                                                     readOnlyMode:YES];
 }
 
+- (void)testReplicaHostAwareInitializer {
+    PLCReplicaServer *server = [[PLCReplicaServer alloc] initWithStore:self.store
+                                                               auditor:self.auditor
+                                                                  host:@"127.0.0.1"
+                                                                  port:0
+                                                          readOnlyMode:YES];
+    XCTAssertNotNil(server);
+    XCTAssertTrue(server.isReadOnlyMode);
+    [server stop];
+}
+
 - (void)tearDown {
     [self.replicaServer stop];
     [super tearDown];
