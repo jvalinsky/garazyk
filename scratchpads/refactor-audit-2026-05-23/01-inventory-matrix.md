@@ -1,91 +1,135 @@
 # Refactoring Inventory Matrix: Mikrus, Beskid, and Syrena
 
-This document lists and maps the matching capabilities, duplicate logic, and
-boilerplate code across **Mikrus**, **Beskid**, and **Syrena (AppView)**.
+This inventory maps matching capabilities, duplicate logic, and similar
+boilerplate across Mikrus, Beskid, and Syrena. Exact duplication is called out
+separately from related implementation patterns.
 
 ## Core Capability Comparison
 
-| Feature / Domain              | Mikrus                           | Beskid                           | Syrena (AppView)                      | Implementation State                     |
-| ----------------------------- | -------------------------------- | -------------------------------- | ------------------------------------- | ---------------------------------------- |
-| **Signal Trapping**           | `GZSignalManager`                | `GZSignalManager`                | `GZSignalManager`                     | Duplicated signal block registration     |
-| **Crash Reporting**           | `GZCrashReporter`                | `GZCrashReporter`                | `GZCrashReporter`                     | Duplicated initialization                |
-| **Linux Compat Checks**       | -                                | -                                | Category verification check           | GNUstep-specific categories              |
-| **CLI Parser**                | Custom `parse_options`           | Custom `parse_options`           | Custom `parse_appview_options`        | Highly similar scanner-based parsing     |
-| **Configuration Model**       | `MikrusConfiguration`            | `BeskidConfiguration`            | `AppViewConfiguration`                | Identical pattern (load env, parse dict) |
-| **IP Rate-Limiting Config**   | Yes                              | Yes                              | No (handled differently)              | Duplicate dictionary keys and env-vars   |
-| **SQLite Connection**         | Pooled (`ATProtoConnectionPool`) | Pooled (`ATProtoConnectionPool`) | Raw (`sqlite3_open_v2` + queue)       | Architectural divergence                 |
-| **WAL & Pragma Setup**        | Managed by Pool                  | Managed by Pool                  | Direct `ATProtoDBConfigurePragmas`    | Partially shared via `Database/Utils/`   |
-| **DB Query Helpers**          | `executeQuery:params:error:`     | `executeQuery:params:error:`     | `executeParameterizedQuery:...`       | Character-for-character duplication      |
-| **DB Update Helpers**         | `executeUpdate:params:error:`    | `executeUpdate:params:error:`    | `executeParameterizedUpdate:...`      | Character-for-character duplication      |
-| **Local Identity Cache**      | Yes (`mikrus_handles`)           | Yes (`beskid_identities`)        | Yes (`handles` / `appview_relevance`) | Shared concepts, separate tables         |
-| **HTTP Parameter Validation** | Duplicated helpers               | Duplicated helpers               | Handled in handler methods            | Standard validation helpers              |
-| **HTTP Rate-Limiting**        | `checkRateLimitForRequest:...`   | `checkRateLimitForRequest:...`   | -                                     | Character-for-character duplication      |
-| **DID Doc Property Parsers**  | `handleFromDocument:` etc.       | `handleFromDocument:` etc.       | Handled in identity helper classes    | Character-for-character duplication      |
-| **Network Read-Throughs**     | `fetchRemoteRecord...`           | `fetchAndCacheRemoteRecord...`   | Managed by backfill orchestrator      | Overlapping safe HTTP requests           |
-
----
+| Feature / Domain              | Mikrus                                   | Beskid                                   | Syrena (AppView)                                              | Implementation State                                                                                         |
+| ----------------------------- | ---------------------------------------- | ---------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Signal setup                  | `GZSignalManager`                        | `GZSignalManager`                        | `GZSignalManager` plus custom exception/SIGABRT handlers      | Shared primitive, different lifecycle details                                                                |
+| Crash reporting               | `GZCrashReporter`                        | `GZCrashReporter`                        | `GZCrashReporter` plus uncaught exception/SIGABRT diagnostics | Shared primitive, Syrena has extra behavior                                                                  |
+| Linux category check          | Category link function                   | Category link function                   | Category link function plus runtime selector assertion        | Syrena-specific guard must stay                                                                              |
+| CLI parser                    | `parse_options`                          | `parse_options`                          | `parse_appview_options`                                       | Similar scanner loops, different option sets                                                                 |
+| Configuration model           | `MikrusConfiguration`                    | `BeskidConfiguration`                    | `AppViewConfiguration`                                        | Similar loading shape; not identical                                                                         |
+| IP rate-limit config          | Yes                                      | Yes                                      | No equivalent in `AppViewConfiguration`                       | Shared only between Mikrus/Beskid                                                                            |
+| SQLite connection             | `ATProtoConnectionManagerPooled`         | `ATProtoConnectionManagerPooled`         | raw `sqlite3_open_v2` with serialized queue                   | AppView is a separate concurrency migration                                                                  |
+| WAL/pragma setup              | Managed by connection manager            | Managed by connection manager            | Direct `ATProtoDBConfigurePragmas`                            | Partially shared through `Database/Utils`                                                                    |
+| DB query helpers              | `executeQuery:params:error:`             | `executeQuery:params:error:`             | `executeParameterizedQuery:params:error:`                     | Exact pattern in Mikrus/Beskid; AppView is similar but distinct                                              |
+| DB update helpers             | `executeUpdate:params:connection:error:` | `executeUpdate:params:connection:error:` | `executeParameterizedUpdate:params:error:`                    | Exact pattern in Mikrus/Beskid; AppView is similar but distinct                                              |
+| Local identity cache          | `mikrus_handles`                         | `beskid_identities`                      | `handles` and relevance tables                                | Shared concept, separate schemas                                                                             |
+| HTTP parameter validation     | duplicated helper                        | duplicated helper                        | mostly inline or generic handler-local checks                 | Shared helper opportunity                                                                                    |
+| HTTP rate-limit response      | duplicated route helper                  | duplicated route helper                  | handled elsewhere                                             | Exact Mikrus/Beskid duplication; `RateLimiter` already exposes header helpers                                |
+| DID document field extraction | local helper methods                     | local helper methods                     | separate AppView/PDS helpers                                  | Wider duplication already exists in `Core/DID.m`, `XrpcIdentityHelper.m`, `XrpcRepoPack.m`, and related code |
+| Network read-through          | `fetchRemoteRecord...`                   | `fetchAndCacheRemoteRecord...`           | backfill/write proxy paths                                    | Similar concerns, not a first extraction target                                                              |
 
 ## Detailed Duplication Breakdown
 
-### 1. Main Entrypoint Boilerplate (`main.m`)
+### 1. Entrypoint Bootstrap
 
-- **Bootstrapping**:
-  ```objc
-  [[GZSignalManager sharedManager] installIgnoredSignals];
-  [GZCrashReporter installCrashHandlersWithExecutableName:"..."];
-  #if defined(GNUSTEP)
-      curl_global_init(CURL_GLOBAL_ALL);
-  #endif
-  @autoreleasepool {
-      NSDateFormatterLinkATProtoCategory();
-  ```
-  Found in:
-  - [mikrus/main.m](file:///Users/jack/Software/garazyk/Garazyk/Binaries/mikrus/main.m#L113-L119)
-  - [beskid/main.m](file:///Users/jack/Software/garazyk/Garazyk/Binaries/beskid/main.m#L97-L103)
-  - [syrena/main.m](file:///Users/jack/Software/garazyk/Garazyk/Binaries/syrena/main.m#L213-L228)
+All three binaries install ignored signals, install crash handlers, call
+`curl_global_init` under GNUstep, force-link the `NSDateFormatter+ATProto`
+category, parse command-line options, apply configuration overrides, start a
+runtime, and install SIGINT/SIGTERM handlers.
 
-- **Graceful Shutdown Trapping**: Registering `SIGINT`/`SIGTERM` handlers that
-  call `[runtime stop]` followed by `exit(0)`.
+Evidence:
 
-### 2. Configuration Class Structure
+- `Garazyk/Binaries/mikrus/main.m`
+- `Garazyk/Binaries/beskid/main.m`
+- `Garazyk/Binaries/syrena/main.m`
 
-All three configure themselves by mapping environment variables and config files
-to properties.
+Important correction: Syrena is not just a copy of the Mikrus/Beskid lifecycle.
+It also registers an uncaught exception handler, a SIGABRT backtrace handler,
+and a Linux category selector assertion. A lifecycle helper must allow
+service-specific hooks before and after common setup.
 
-- **Environment Value Overrides**: Duplicate logic in
-  `+configurationFromEnvironment` extracting parameters using
-  `[[NSProcessInfo processInfo] environment]`.
-- **String/Number Port Parsing**: Scanner-based numeric check to guarantee the
-  HTTP port fits in a `uint16_t` range. Found in:
-  - [MikrusConfiguration.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Mikrus/MikrusConfiguration.m#L68-L79)
-  - [BeskidConfiguration.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Beskid/BeskidConfiguration.m#L61-L72)
+### 2. CLI Option Parsing
 
-### 3. Database Execution Engine
+The three binaries maintain manual array-scanning parsers:
 
-The `MikrusDatabase` and `BeskidDatabase` run execution helper methods to
-prepare SQL statements, bind arguments via `ATProtoDBBindParams`, step rows, and
-fetch column values using `ATProtoDBColumnValue`.
+- Mikrus accepts `--port`, `--relay`, `--data-dir`, `--config`, `--no-ingest`,
+  and verbosity flags.
+- Beskid accepts `--port`, `--data-dir`, `--config`, and verbosity flags.
+- Syrena accepts those plus AppView-specific partial/backfill options and a
+  `status` command.
 
-- **`executeQuery:params:error:`** and
-  **`executeUpdate:params:connection:error:`**: Identical logic that converts
-  SQL statement outputs to a standard `NSArray<NSDictionary *>` representation.
-  Found in:
-  - [MikrusDatabase.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Mikrus/MikrusDatabase.m#L627-L688)
-  - [BeskidDatabase.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Beskid/BeskidDatabase.m#L395-L456)
+This is a good secondary refactor candidate because it can be tested without
+starting services. It should be schema-driven and command-aware rather than a
+one-off shared loop.
 
-### 4. XRPC Route Packs
+### 3. Configuration Loading
 
-The HTTP routers handle incoming parameters, serialize responses, and assert
-caller constraints.
+Mikrus and Beskid have close duplication in defaults, environment overrides,
+dictionary loading, and `uint16_t` port validation. AppView shares the general
+shape but has a larger configuration surface and currently accepts port values
+through `integerValue` without the same dictionary-side `UINT16_MAX` validation.
 
-- **Rate-Limit Auditing**: `checkRateLimitForRequest:response:` query checker
-  that interacts with the `RateLimiter` singleton to return a standard
-  `TooManyRequests` payload. Found in:
-  - [MikrusXrpcRoutePack.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m#L51-L65)
-  - [BeskidXrpcRoutePack.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Beskid/BeskidXrpcRoutePack.m#L61-L75)
+Existing related code:
 
-- **Identity Parsing**: `handleFromDocument:`, `pdsEndpointFromDocument:`, and
-  `signingKeyFromDocument:` extract specific properties from DID documents
-  (`alsoKnownAs`, `service`, `verificationMethod`). Found in:
-  - [MikrusXrpcRoutePack.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Mikrus/MikrusXrpcRoutePack.m#L401-L443)
-  - [BeskidXrpcRoutePack.m](file:///Users/jack/Software/garazyk/Garazyk/Sources/Beskid/BeskidXrpcRoutePack.m#L555-L574)
+- `Garazyk/Sources/MediaCore/ATProtoMediaServiceConfiguration.m` already has
+  prefix-based environment helpers (`envInt`, `envDouble`, `envBool`).
+- `Garazyk/Sources/App/ATProtoServiceConfiguration.[hm]` is a much larger
+  PDS-specific configuration object and should not be made a parent of these
+  services.
+
+Refactor implication: start with small parsing utilities rather than
+inheritance.
+
+### 4. Database Execution Helpers
+
+Mikrus and Beskid duplicate the same SQLite execution structure:
+
+- `executeQuery:params:error:` prepares a statement through the connection
+  manager, binds params with `ATProtoDBBindParams`, collects rows with
+  `ATProtoDBColumnValue`, finalizes manually, and returns
+  `NSArray<NSDictionary *>`.
+- `executeUpdate:params:connection:error:` prepares and steps an update on an
+  existing transaction connection.
+- `performWriteTransaction:error:` wraps `connectionManager transact:`.
+
+Evidence:
+
+- `Garazyk/Sources/Mikrus/MikrusDatabase.m`
+- `Garazyk/Sources/Beskid/BeskidDatabase.m`
+
+Important correction: these methods are structurally identical but use
+service-specific error helpers (`MikrusDBError`, `BeskidDBError`). A shared
+runner must preserve error domains and row null semantics.
+
+### 5. AppView Database Similarity
+
+AppView implements `executeParameterizedQuery:params:error:` and
+`executeParameterizedUpdate:params:error:` with the same low-level primitives,
+but the execution context differs:
+
+- raw `_db` connection,
+- serialized `safeExecuteSync`,
+- `PDS_SQLITE_AUTORELEASE_STMT`,
+- different null handling (AppView omits null values where Mikrus/Beskid store
+  `[NSNull null]`).
+
+This supports a later AppView cleanup, but it should not be bundled with the
+first Mikrus/Beskid query-runner extraction.
+
+### 6. XRPC Route Helpers
+
+Mikrus and Beskid duplicate:
+
+- `checkRateLimitForRequest:response:`
+- `requiredParam:request:response:`
+- invalid request and database error response helpers
+- DID document field helpers such as handle, PDS endpoint, and signing key
+  extraction
+
+Existing related code already covers part of this:
+
+- `XrpcErrorHelper` centralizes error response construction.
+- `RateLimiter` exposes rate-limit header helpers.
+- `Core/DID.m`, `XrpcIdentityHelper.m`, `XrpcRepoPack.m`,
+  `AppViewIdentityHelper.m`, and `VideoJWTAuthProvider.m` contain overlapping
+  DID document field extraction.
+
+Refactor implication: split route support from DID document parsing. A single
+`GZXrpcHelper` class would become too broad if it owns rate limiting, query
+params, error responses, and identity parsing.
