@@ -1,6 +1,6 @@
 ---
 name: narratives
-description: Understand how a system evolved - narratives are the source of truth
+description: Understand how a system evolved by writing decision-history narratives.
 compatibility: opencode
 ---
 
@@ -30,7 +30,7 @@ Edit `.deciduous/narratives.md`. For each section:
 2. Infer the **evolution** (how it likely got this way)
 3. Identify **PIVOTs** (when the conceptual model changed)
 4. Find evidence (PRs, commits, docs) - optional
-5. Check attached documents (`deciduous doc list`)
+5. Check attached documents (`deciduous doc list`) - diagrams or specs may provide evidence
 
 Signs of a pivot:
 - Two approaches coexisting (migration in progress)
@@ -49,6 +49,8 @@ deciduous narratives show
 ```bash
 deciduous narratives pivots
 ```
+
+This shows all revisit nodes already in the graph with their full chains.
 
 ## Output Format
 

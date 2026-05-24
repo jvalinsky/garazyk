@@ -1,6 +1,6 @@
 ---
 name: archaeology
-description: Transform narratives into a queryable decision graph
+description: Transform narratives into a queryable decision graph.
 compatibility: opencode
 ---
 
