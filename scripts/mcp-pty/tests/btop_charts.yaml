@@ -1,0 +1,35 @@
+name: btop Charts and Navigation
+description: Launch btop, verify chart detection, navigate tabs, then quit
+command: /etc/profiles/per-user/jack/bin/btop
+cols: 80
+rows: 24
+settleMs: 3000
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for btop to render
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: press_key
+    value: tab
+    label: Switch back to first tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: press_key
+    value: q
+    label: Quit btop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
