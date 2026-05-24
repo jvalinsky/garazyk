@@ -92,6 +92,8 @@ export interface RunConfig {
   timeout?: number;
   /** Skip setup lifecycle phase */
   noSetup?: boolean;
+  /** Use hamownia agent run (NDJSON stdout) instead of scripts/run_scenarios.ts */
+  agentMode?: boolean;
 }
 
 /** A run record, in progress or historical
@@ -158,6 +160,8 @@ export interface Run {
   timeout?: number;
   /** Skip setup lifecycle phase */
   noSetup?: boolean;
+  /** Whether the run used hamownia agent mode (NDJSON stdout). */
+  agentMode?: boolean;
 }
 
 // ---------------------------------------------------------------------------
