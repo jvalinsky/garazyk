@@ -75,7 +75,7 @@ export async function run(): Promise<ScenarioResult> {
     "Get session",
     async () => {
       const res = await pds.as(luna).api.com.atproto.server.getSession();
-      return res.data;
+      return res;
     },
     (s) => `did=${s.did}`,
   );
@@ -85,7 +85,7 @@ export async function run(): Promise<ScenarioResult> {
     "Resolve handle",
     async () => {
       const res = await pds.api.com.atproto.identity.resolveHandle({ handle: luna.handle });
-      return res.data;
+      return res;
     },
     (r) => `did=${r.did}`,
   );
@@ -117,7 +117,7 @@ export async function run(): Promise<ScenarioResult> {
         collection: "app.bsky.actor.profile",
         record: profile,
       });
-      return res.data;
+      return res;
     },
     (r) => `uri=${r.uri}`,
   );
@@ -132,7 +132,7 @@ export async function run(): Promise<ScenarioResult> {
       );
       return res;
     },
-    (p) => `displayName=${p?.displayName || p?.record?.displayName}`,
+    (p) => `displayName=${p?.displayName}`,
   );
 
   if (luna.refreshJwt) {
@@ -141,7 +141,7 @@ export async function run(): Promise<ScenarioResult> {
       "Refresh session",
       async () => {
         const res = await pds.as({ accessJwt: luna.refreshJwt }).api.com.atproto.server.refreshSession();
-        return res.data;
+        return res;
       },
       (r) => `accessJwt=${r.accessJwt.substring(0, 20)}...`,
     );
