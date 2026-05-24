@@ -16,6 +16,7 @@ export default function Toolbar() {
   const scenarios = s.scenarios.all;
 
   const [agentMode, setAgentMode] = useState(false);
+  const [runner, setRunner] = useState<"host" | "docker">("host");
 
   useEffect(() => {
     if (!IS_BROWSER) return;
@@ -51,6 +52,7 @@ export default function Toolbar() {
       scenarioIds: ids,
       pds2: ids.some((id) => byId.get(id)?.needsPds2),
       agentMode,
+      runner,
     });
   }
 
@@ -85,6 +87,20 @@ export default function Toolbar() {
               {t.name}
             </option>
           ))}
+        </select>
+      </div>
+
+      <div class="toolbar-section">
+        <label class="toolbar-label" for="runner-select">Runner</label>
+        <select
+          id="runner-select"
+          class="form-select"
+          value={runner}
+          disabled={isActive}
+          onChange={(e) => setRunner((e.target as HTMLSelectElement).value as "host" | "docker")}
+        >
+          <option value="host">host</option>
+          <option value="docker">docker</option>
         </select>
       </div>
 

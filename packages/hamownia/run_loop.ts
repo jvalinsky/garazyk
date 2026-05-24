@@ -2,6 +2,10 @@
  * Scenario execution loop with crash detection, progress tracking,
  * and OTel stats sampling.
  *
+ * Uses a pure TEA state machine ({@link RunLoopState}) so all accumulated
+ * state is in one immutable snapshot.  The loop becomes a thin shell that
+ * feeds results into the state machine.
+ *
  * @module run_loop
  */
 
@@ -19,6 +23,17 @@ import { ScenarioResult } from "./runner.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology, TopologyManifestV2 } from "@garazyk/schemat";
 import { HumanReadableSink, type ScenarioRunEventSink } from "./events.ts";
+import {
+  createInitialRunLoopState,
+  recordScenarioResult,
+  setAbortedForCrash,
+  setCrashedContainer,
+  totalFailed,
+  totalPassed,
+  totalSkipped,
+  type CrashedContainer,
+  type RunLoopState,
+} from "./run_loop_state.ts";
 
 /** Result returned by the scenario execution loop. */
 export interface ScenarioExecutionResult {
@@ -82,13 +97,12 @@ export async function runScenarioLoop(
   runContext: { runId: string; runDir: string; diagnosticsDir: string },
   sinks?: ScenarioRunEventSink[],
 ): Promise<ScenarioExecutionResult> {
-  const results: Array<{ scenario: ScenarioInfo; result: ScenarioResult }> = [];
-  const reportPaths: string[] = [];
-
   const durationCache = new DurationCache(repoRoot);
   const effectiveSinks: ScenarioRunEventSink[] = sinks && sinks.length > 0
     ? sinks
     : [new HumanReadableSink({ durationCache })];
+
+  let runState: RunLoopState = createInitialRunLoopState();
 
   const emit = (event: Parameters<ScenarioRunEventSink["emit"]>[0]) => {
     for (const s of effectiveSinks) s.emit(event);
@@ -131,20 +145,16 @@ export async function runScenarioLoop(
 
   const crashWatcher = await ContainerEventWatcher.create({ composeProject });
   const monitoredServices = new Set(Object.values(topology.serviceNames));
-  let crashedContainer: {
-    serviceName: string;
-    exitCode: number;
-    oomKilled: boolean;
-  } | null = null;
   if (crashWatcher) {
     crashWatcher.subscribe((event: WatcherEvent) => {
       if (event.kind === "died" || event.kind === "oom") {
         if (!monitoredServices.has(event.serviceName)) return;
-        crashedContainer = {
+        const crash: CrashedContainer = {
           serviceName: event.serviceName,
           exitCode: event.kind === "died" ? event.exitCode : 137,
           oomKilled: event.kind === "oom" || event.oomKilled,
         };
+        runState = setCrashedContainer(runState, crash);
       }
     });
   }
@@ -172,7 +182,6 @@ export async function runScenarioLoop(
   }
 
   try {
-    let abortedForCrash = false;
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
       emit({
@@ -186,14 +195,8 @@ export async function runScenarioLoop(
       await writeProgress(i, scenario, true);
 
       const health = await checkEssentialServicesHealth(topology);
-      // crashedContainer is reassigned asynchronously by the crash watcher callback,
-      // so TypeScript's flow analysis can't see the non-null path. Read it at the
-      // checkpoint and assert the union type explicitly.
-      const crashSnapshot = crashedContainer as {
-        serviceName: string;
-        exitCode: number;
-        oomKilled: boolean;
-      } | null;
+      const crashSnapshot = runState.crashedContainer;
+
       if (!health.ok || crashSnapshot !== null) {
         const crashInfo = health.message ||
           (crashSnapshot
@@ -213,14 +216,22 @@ export async function runScenarioLoop(
         crashResult.start();
         crashResult.stepFailed("Pre-scenario container check", crashInfo);
         crashResult.finish();
-        results.push({ scenario, result: crashResult });
+
+        let reportPath: string | undefined;
         if (!args.noJson) {
-          const reportPath = await crashResult.writeReport(
+          reportPath = await crashResult.writeReport(
             reportsDir,
             `${scenario.id}_${scenario.name}`,
           );
-          reportPaths.push(reportPath);
         }
+
+        runState = recordScenarioResult(
+          runState,
+          scenario,
+          crashResult,
+          reportPath,
+        );
+        runState = setAbortedForCrash(runState);
 
         const crashNow = Date.now();
         emit({
@@ -235,20 +246,19 @@ export async function runScenarioLoop(
             ? (crashResult.finishedAt - crashResult.startedAt) / 1000
             : 0,
           summaryText: crashResult.summary(),
-          reportPath: reportPaths[reportPaths.length - 1] || undefined,
+          reportPath,
           timestamp: crashNow,
         });
         emit({
           type: "run_progress",
-          completed: results.length,
+          completed: runState.results.length,
           total: selected.length,
           currentScenarioId: null,
           currentScenarioName: null,
           running: false,
           timestamp: crashNow,
         });
-        await writeProgress(results.length, null, false);
-        abortedForCrash = true;
+        await writeProgress(runState.results.length, null, false);
         break;
       }
 
@@ -290,19 +300,24 @@ export async function runScenarioLoop(
         runner: args.runner,
       };
 
-      results.push({ scenario, result });
-
       if (result.startedAt && result.finishedAt) {
         durationCache.set(scenario.id, result.finishedAt - result.startedAt);
       }
 
+      let reportPath: string | undefined;
       if (!args.noJson) {
-        const reportPath = await result.writeReport(
+        reportPath = await result.writeReport(
           reportsDir,
           `${scenario.id}_${scenario.name}`,
         );
-        reportPaths.push(reportPath);
       }
+
+      runState = recordScenarioResult(
+        runState,
+        scenario,
+        result,
+        reportPath,
+      );
 
       const scenarioCompleteTime = Date.now();
       const durationS = result.startedAt && result.finishedAt
@@ -318,13 +333,13 @@ export async function runScenarioLoop(
         skipped: result.skipped,
         durationS,
         summaryText: result.summary(),
-        reportPath: reportPaths[reportPaths.length - 1] || undefined,
+        reportPath,
         timestamp: scenarioCompleteTime,
       });
 
       emit({
         type: "run_progress",
-        completed: i + 1,
+        completed: runState.results.length,
         total: selected.length,
         currentScenarioId: null,
         currentScenarioName: null,
@@ -332,27 +347,25 @@ export async function runScenarioLoop(
         timestamp: scenarioCompleteTime,
       });
       await writeProgress(
-        i + 1,
+        runState.results.length,
         null,
         i + 1 < selected.length,
       );
     }
-    if (!abortedForCrash) {
-      await writeProgress(results.length, null, false);
+
+    if (!runState.abortedForCrash) {
+      await writeProgress(runState.results.length, null, false);
     }
 
-    const totalPassed = results.reduce((sum, r) => sum + r.result.passed, 0);
-    const totalFailed = results.reduce((sum, r) => sum + r.result.failed, 0);
-    const totalSkipped = results.reduce((sum, r) => sum + r.result.skipped, 0);
     emit({
       type: "run_finished",
       runId: runContext.runId,
-      ok: !abortedForCrash && totalFailed === 0,
-      totalPassed,
-      totalFailed,
-      totalSkipped,
+      ok: !runState.abortedForCrash && totalFailed(runState) === 0,
+      totalPassed: totalPassed(runState),
+      totalFailed: totalFailed(runState),
+      totalSkipped: totalSkipped(runState),
       reportsDir,
-      crashedContainer: crashedContainer !== null,
+      crashedContainer: runState.crashedContainer !== null,
       timestamp: Date.now(),
     });
   } finally {
@@ -365,5 +378,9 @@ export async function runScenarioLoop(
     dockerClient?.close();
   }
 
-  return { results, reportPaths, crashedContainer: crashedContainer !== null };
+  return {
+    results: runState.results,
+    reportPaths: runState.reportPaths,
+    crashedContainer: runState.crashedContainer !== null,
+  };
 }
