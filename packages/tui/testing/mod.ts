@@ -24,7 +24,6 @@ export {
 export {
   createDashboardHarness,
   type DashboardState,
-  handleMcpMessage,
   startMcpServer,
 } from "./mcp_server.ts";
 
