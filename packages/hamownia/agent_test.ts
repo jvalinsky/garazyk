@@ -7,7 +7,7 @@
  * - triageReports (pass, fail, fatal, missing, non-existent)
  * - NdjsonSink full event lifecycle (all 6 event types, valid JSON, correct fields)
  * - MultiSink fan-out
- * - agent run CLI argument parsing (boolean flags, value flags, enum validation)
+ * - CLI integration tests (spawn process: agent --help, agent list, agent run --help, agent triage --help)
  */
 // spell-checker: disable
 
@@ -920,4 +920,233 @@ Deno.test("NdjsonSink: reportsDir may contain empty string", () => {
 
   const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
   assertEquals(parsed.reportsDir, "");
+});
+
+// ── CLI integration tests (spawn actual process) ───────────────────────
+
+/**
+ * Resolve the CLI entry point relative to the repo root.
+ * When running tests, CWD is typically the repo root.
+ */
+function cliPath(): string {
+  return "packages/hamownia/cli.ts";
+}
+
+/** Spawn the hamownia CLI and return { stdout, stderr, code }. */
+async function spawnCli(
+  args: string[],
+): Promise<{ stdout: string; stderr: string; code: number }> {
+  const cmd = new Deno.Command("deno", {
+    args: ["run", "-A", cliPath(), ...args],
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const { code, stdout, stderr } = await cmd.output();
+  return {
+    stdout: new TextDecoder().decode(stdout),
+    stderr: new TextDecoder().decode(stderr),
+    code,
+  };
+}
+
+Deno.test("CLI: agent --help lists all subcommands", async () => {
+  const { stdout, stderr, code } = await spawnCli(["agent", "--help"]);
+
+  assertEquals(code, 0);
+  assertEquals(stderr, "");
+
+  // Should mention all three subcommands
+  assertMatch(stdout, /list/);
+  assertMatch(stdout, /run/);
+  assertMatch(stdout, /triage/);
+  // Should mention the agent command description
+  assertMatch(stdout, /Machine-readable/);
+});
+
+Deno.test("CLI: agent list produces valid JSON array", async () => {
+  const { stdout, stderr, code } = await spawnCli(["agent", "list"]);
+
+  assertEquals(code, 0);
+
+  // Stderr may have some logs but should not have errors
+  // (some Deno modules may emit deprecation warnings to stderr)
+
+  // stdout must be valid JSON
+  const parsed = JSON.parse(stdout.trim());
+  assertEquals(Array.isArray(parsed), true);
+
+  // Each element should have the required AgentScenarioSummary fields
+  if (parsed.length > 0) {
+    const first = parsed[0];
+    assertEquals(typeof first.id, "string");
+    assertEquals(typeof first.name, "string");
+    assertEquals(typeof first.path, "string");
+    assertEquals(Array.isArray(first.requires), true);
+    assertEquals(Array.isArray(first.optional), true);
+    assertEquals(typeof first.needsPds2, "boolean");
+    assertEquals(Array.isArray(first.browserFlows), true);
+    assertEquals(typeof first.parameters, "object");
+  }
+});
+
+Deno.test("CLI: agent list --topology produces valid filtered JSON", async () => {
+  const { stdout, code } = await spawnCli([
+    "agent",
+    "list",
+    "--topology",
+    "garazyk-default",
+  ]);
+
+  assertEquals(code, 0);
+
+  // Must be valid JSON array
+  const parsed = JSON.parse(stdout.trim());
+  assertEquals(Array.isArray(parsed), true);
+
+  // Each element must have the required AgentScenarioSummary shape
+  for (const s of parsed) {
+    assertEquals(typeof s.id, "string");
+    assertEquals(typeof s.name, "string");
+    assertEquals(typeof s.path, "string");
+    assertEquals(Array.isArray(s.requires), true);
+    assertEquals(Array.isArray(s.optional), true);
+    assertEquals(typeof s.needsPds2, "boolean");
+    assertEquals(Array.isArray(s.browserFlows), true);
+    assertEquals(typeof s.parameters, "object");
+  }
+});
+
+Deno.test("CLI: agent list with specific scenario IDs", async () => {
+  const { stdout, stderr, code } = await spawnCli([
+    "agent",
+    "list",
+    "01",
+    "02",
+  ]);
+
+  assertEquals(code, 0);
+  const parsed = JSON.parse(stdout.trim());
+  assertEquals(Array.isArray(parsed), true);
+
+  // Should only return matching IDs
+  for (const s of parsed) {
+    const valid = s.id === "01" || s.id === "02";
+    assertEquals(valid, true, `Unexpected scenario ID: ${s.id}`);
+  }
+});
+
+Deno.test("CLI: agent run --help shows all options", async () => {
+  const { stdout, stderr, code } = await spawnCli(["agent", "run", "--help"]);
+
+  assertEquals(code, 0);
+  assertEquals(stderr, "");
+
+  // Verify key options are documented
+  assertMatch(stdout, /--setup/);
+  assertMatch(stdout, /--no-setup/);
+  assertMatch(stdout, /--binary/);
+  assertMatch(stdout, /--pds2/);
+  assertMatch(stdout, /--keep-running/);
+  assertMatch(stdout, /--topology/);
+  assertMatch(stdout, /--runner/);
+  assertMatch(stdout, /--run-id/);
+  assertMatch(stdout, /--timeout/);
+  assertMatch(stdout, /--web-client/);
+  assertMatch(stdout, /--client-flow/);
+  assertMatch(stdout, /--allow-hybrid-network/);
+  assertMatch(stdout, /NDJSON/);
+});
+
+Deno.test("CLI: agent triage --help shows options", async () => {
+  const { stdout, stderr, code } = await spawnCli(["agent", "triage", "--help"]);
+
+  assertEquals(code, 0);
+  assertEquals(stderr, "");
+
+  assertMatch(stdout, /--run-id/);
+  assertMatch(stdout, /--reports-dir/);
+  assertMatch(stdout, /Parse existing/);
+});
+
+Deno.test("CLI: agent run with invalid runner enum exits non-zero", async () => {
+  const { stderr, code } = await spawnCli([
+    "agent",
+    "run",
+    "--runner",
+    "k8s",
+    "01",
+  ]);
+
+  // Should fail with non-zero exit code due to invalid enum value
+  assertEquals(code !== 0, true);
+  assertMatch(stderr, /runner/);
+});
+
+Deno.test("CLI: agent run with invalid client-flow enum exits non-zero", async () => {
+  const { stderr, code } = await spawnCli([
+    "agent",
+    "run",
+    "--client-flow",
+    "super-deep",
+    "01",
+  ]);
+
+  // Should fail with non-zero exit code due to invalid enum value
+  assertEquals(code !== 0, true);
+  assertMatch(stderr, /client-flow/);
+});
+
+Deno.test("CLI: agent run stdout contains valid NDJSON among log lines", async () => {
+  // Run without --setup and a short timeout so it fails quickly.
+  // Stdout may mix [INFO] log lines with NDJSON events; filter for JSON lines.
+  const { stdout } = await spawnCli([
+    "agent",
+    "run",
+    "--no-setup",
+    "--timeout",
+    "5",
+  ]);
+
+  // Filter for lines that look like JSON objects (start with {)
+  const jsonLines = stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("{"));
+
+  // Every JSON-like line must parse as valid JSON
+  const events: Array<{ type: string; runId?: unknown }> = [];
+  for (const line of jsonLines) {
+    try {
+      events.push(JSON.parse(line));
+    } catch {
+      assertEquals(
+        true,
+        false,
+        `JSON-like line did not parse: ${line.slice(0, 80)}`,
+      );
+    }
+  }
+
+  // If events are emitted, verify well-formedness
+  const runStart = events.find((e) => e.type === "run_start");
+  if (runStart) {
+    assertEquals(typeof runStart.runId, "string");
+  }
+});
+
+Deno.test("CLI: agent triage with non-existent reports-dir returns valid JSON", async () => {
+  const { stdout, stderr, code } = await spawnCli([
+    "agent",
+    "triage",
+    "--reports-dir",
+    "/tmp/nonexistent-hamownia-cli-test",
+  ]);
+
+  assertEquals(code, 0);
+
+  const parsed = JSON.parse(stdout.trim());
+  assertEquals(typeof parsed.runId, "string");
+  assertEquals(typeof parsed.ok, "boolean");
+  assertEquals(Array.isArray(parsed.evidence), true);
+  assertEquals(Array.isArray(parsed.reportPaths), true);
 });
