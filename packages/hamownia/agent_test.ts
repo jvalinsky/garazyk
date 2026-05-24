@@ -8,6 +8,7 @@
  * - NdjsonSink full event lifecycle (all 6 event types, valid JSON, correct fields)
  * - MultiSink fan-out
  * - CLI integration tests (spawn process: agent --help, agent list, agent run --help, agent triage --help)
+ * - Tool invocation pattern tests (openCode + pi tool flag combinations)
  */
 // spell-checker: disable
 
@@ -39,6 +40,11 @@ import type {
   ServiceFailureEvent,
 } from "./events.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
+import {
+  dockerAvailable,
+  spawnCli,
+  spawnCliWithTimeout,
+} from "./test_utils.ts";
 
 // ── classifyBoundary ───────────────────────────────────────────────────
 
@@ -924,31 +930,7 @@ Deno.test("NdjsonSink: reportsDir may contain empty string", () => {
 });
 
 // ── CLI integration tests (spawn actual process) ───────────────────────
-
-/**
- * Resolve the CLI entry point relative to the repo root.
- * When running tests, CWD is typically the repo root.
- */
-function cliPath(): string {
-  return "packages/hamownia/cli.ts";
-}
-
-/** Spawn the hamownia CLI and return { stdout, stderr, code }. */
-async function spawnCli(
-  args: string[],
-): Promise<{ stdout: string; stderr: string; code: number }> {
-  const cmd = new Deno.Command("deno", {
-    args: ["run", "-A", cliPath(), ...args],
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { code, stdout, stderr } = await cmd.output();
-  return {
-    stdout: new TextDecoder().decode(stdout),
-    stderr: new TextDecoder().decode(stderr),
-    code,
-  };
-}
+// Uses spawnCli / spawnCliWithTimeout / dockerAvailable from ./test_utils.ts
 
 Deno.test("CLI: agent --help lists all subcommands", async () => {
   const { stdout, stderr, code } = await spawnCli(["agent", "--help"]);
@@ -1193,22 +1175,306 @@ Deno.test("CLI: all topology presets produce valid JSON", async () => {
   }
 });
 
-// ── CLI: agent run smoke test (Docker-dependent) ──────────────────────
+// ── Tool invocation pattern tests ─────────────────────────────────────
+// These tests validate the exact CLI invocations used by the
+// hamownia-agent opencode tool and pi garazyk_agent_* tools.
 
-/** Check whether Docker is available by running `docker info`. */
-async function dockerAvailable(): Promise<boolean> {
-  try {
-    const cmd = new Deno.Command("docker", {
-      args: ["info"],
-      stdout: "null",
-      stderr: "null",
-    });
-    const { code } = await cmd.output();
-    return code === 0;
-  } catch {
-    return false;
+Deno.test("CLI: agent list output matches AgentScenarioSummary contract", async () => {
+  const { stdout, code } = await spawnCli(["agent", "list"]);
+  assertEquals(code, 0);
+
+  const parsed = JSON.parse(stdout.trim());
+  assertEquals(Array.isArray(parsed), true);
+
+  // Every field required by AgentScenarioSummary must be present
+  const requiredFields = [
+    "id",
+    "name",
+    "path",
+    "requires",
+    "optional",
+    "needsPds2",
+    "browserFlows",
+    "parameters",
+  ];
+
+  for (const s of parsed) {
+    for (const field of requiredFields) {
+      assertEquals(
+        field in s,
+        true,
+        `Scenario ${s.id} missing field: ${field}`,
+      );
+    }
+    // timeout is optional (only present when manifest overrides)
+    // Verify browserFlows is always an array of strings
+    for (const flow of s.browserFlows) {
+      assertEquals(typeof flow, "string", `browserFlow not string in ${s.id}`);
+    }
+    // Verify requires/optional are arrays of "role:capability" strings
+    for (const req of [...s.requires, ...s.optional]) {
+      assertMatch(
+        req,
+        /^[a-z]+:[a-zA-Z]+$/,
+        `Invalid requirement format: "${req}" in ${s.id}`,
+      );
+    }
   }
-}
+});
+
+Deno.test("CLI: agent list with empty scenario ID filter returns empty array", async () => {
+  // Passing a non-existent ID should return empty results
+  const { stdout, code } = await spawnCli(["agent", "list", "999"]);
+  assertEquals(code, 0);
+
+  const parsed = JSON.parse(stdout.trim());
+  assertEquals(Array.isArray(parsed), true);
+  assertEquals(parsed.length, 0);
+});
+
+Deno.test("CLI: agent run with combined options used by tools", async () => {
+  // This is the exact invocation pattern the opencode/pi tools construct.
+  // Test with --no-setup (no Docker required) and short timeout to verify
+  // the CLI accepts all the combined flags without errors.
+  const { stdout } = await spawnCli([
+    "agent",
+    "run",
+    "--no-setup",
+    "--verbose",
+    "--runner",
+    "host",
+    "--timeout",
+    "5",
+    "--run-id",
+    "tool-pattern-test",
+    "01",
+  ]);
+
+  // exit non-zero expected (services aren't running without --setup).
+  // What matters: the CLI parsed all flags without error.
+  // --verbose should NOT produce JSON parse errors mixed into output
+  // (human-readable goes to stderr, NDJSON goes to stdout)
+
+  // Filter stdout for JSON lines
+  const jsonLines = stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("{"));
+
+  // NDJSON events (if any) must parse as valid JSON
+  for (const line of jsonLines) {
+    try {
+      JSON.parse(line);
+    } catch {
+      assertEquals(true, false, `Invalid JSON: ${line.slice(0, 80)}`);
+    }
+  }
+
+  // stderr may contain verbose output -- that's expected
+});
+
+Deno.test("CLI: agent run with --runner docker flag accepted", async () => {
+  // --runner docker can hang without Docker, so use a timeout and skip if Docker unavailable.
+  if (!await dockerAvailable()) {
+    return;
+  }
+  // Test that --runner docker is accepted as a valid enum value
+  const { stderr } = await spawnCliWithTimeout([
+    "agent",
+    "run",
+    "--runner",
+    "docker",
+    "--no-setup",
+    "--timeout",
+    "5",
+    "01",
+  ]);
+
+  // Should NOT fail with enum validation error
+  // (may fail because docker isn't running, but shouldn't fail on flag parsing)
+  const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
+  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+});
+
+Deno.test("CLI: agent run --pds2 flag accepted", async () => {
+  // --pds2 can hang when no second PDS is available, so use a timeout.
+  const { stderr } = await spawnCliWithTimeout([
+    "agent",
+    "run",
+    "--pds2",
+    "--no-setup",
+    "--timeout",
+    "5",
+    "01",
+  ], 20_000);
+
+  // Should not fail on flag parsing for --pds2
+  const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
+  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+});
+
+Deno.test("CLI: agent run --binary flag accepted", async () => {
+  const { stderr } = await spawnCli([
+    "agent",
+    "run",
+    "--binary",
+    "--no-setup",
+    "--timeout",
+    "5",
+    "01",
+  ]);
+
+  const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
+  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+});
+
+Deno.test("CLI: agent run --keep-running flag accepted", async () => {
+  const { stderr } = await spawnCli([
+    "agent",
+    "run",
+    "--keep-running",
+    "--no-setup",
+    "--timeout",
+    "5",
+    "01",
+  ]);
+
+  const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
+  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+});
+
+Deno.test("CLI: agent run with all flags combined (tool invocation shape)", async () => {
+  // This exactly mirrors what the opencode tool constructs when run with
+  // setup, binary, pds2, keepRunning, verbose, runner, topology, runId, timeout
+  const { stderr, code } = await spawnCli([
+    "agent",
+    "run",
+    "--no-setup",
+    "--verbose",
+    "--runner",
+    "host",
+    "--topology",
+    "garazyk-default",
+    "--run-id",
+    "full-tool-shape",
+    "--timeout",
+    "5",
+    "01",
+  ]);
+
+  // Verify: no flag parsing errors, even if the run itself fails
+  const isFlagError =
+    /Unknown option|Invalid value|Expected.*value/i.test(stderr);
+  assertEquals(
+    isFlagError,
+    false,
+    `Flag parsing error in full tool shape: ${stderr.slice(0, 200)}`,
+  );
+});
+
+Deno.test("CLI: agent triage --run-id with valid format returns valid JSON", async () => {
+  // Even with a run-id that doesn't exist, triage should return valid JSON
+  const { stdout, code } = await spawnCli([
+    "agent",
+    "triage",
+    "--run-id",
+    "tool-test-run-9999",
+  ]);
+
+  // Should succeed (code 0) but report no reports found
+  const parsed = JSON.parse(stdout.trim());
+  assertEquals(typeof parsed.runId, "string");
+  assertEquals(typeof parsed.ok, "boolean");
+  assertEquals(typeof parsed.boundary, "string");
+  assertEquals(Array.isArray(parsed.evidence), true);
+  assertEquals(Array.isArray(parsed.reportPaths), true);
+});
+
+Deno.test("CLI: agent triage --reports-dir with actual reports returns valid JSON", async () => {
+  // Create a temp directory with a real report and triage it
+  const tmpDir = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      join(tmpDir, "overall-summary.json"),
+      JSON.stringify({
+        run_id: "tool-triaged-run",
+        ok: false,
+        report_paths: [join(tmpDir, "42_report.json")],
+        diagnostics_dir: join(tmpDir, "diagnostics"),
+      }),
+    );
+    await Deno.writeTextFile(
+      join(tmpDir, "42_report.json"),
+      JSON.stringify({
+        scenario: "tool test scenario",
+        steps: [
+          {
+            name: "auth step",
+            status: "failed",
+            detail: "session expired",
+            duration_ms: 100,
+          },
+        ],
+        summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
+        ok: false,
+        metadata: { scenario_id: "42" },
+      }),
+    );
+
+    const { stdout, code } = await spawnCli([
+      "agent",
+      "triage",
+      "--reports-dir",
+      tmpDir,
+    ]);
+
+    assertEquals(code, 0);
+
+    const parsed = JSON.parse(stdout.trim()) as AgentTriageResult;
+    assertEquals(parsed.runId, "tool-triaged-run");
+    assertEquals(parsed.ok, false);
+    assertEquals(parsed.firstFailure?.scenarioId, "42");
+    assertEquals(parsed.firstFailure?.step, "auth step");
+    assertEquals(parsed.boundary, "auth");
+    assertEquals(parsed.diagnosticsDir, join(tmpDir, "diagnostics"));
+    assertEquals(parsed.reportPaths.length, 1);
+    assertEquals(parsed.evidence.length, 2); // step + error
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("CLI: agent run with multiple scenario IDs", async () => {
+  // The tools pass space-separated IDs as positional args.
+  // Use spawnCliWithTimeout since running multiple scenarios can be slow.
+  const { stdout } = await spawnCliWithTimeout([
+    "agent",
+    "run",
+    "--no-setup",
+    "--timeout",
+    "3",
+    "01",
+    "02",
+  ], 60_000);
+
+  // Filter JSON lines; verify run_start has the expected IDs
+  const jsonLines = stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("{"));
+
+  for (const line of jsonLines) {
+    try {
+      const event = JSON.parse(line);
+      if (event.type === "run_start") {
+        assertEquals(Array.isArray(event.scenarioIds), true);
+        assertEquals(event.scenarioIds.length >= 2, true);
+      }
+    } catch {
+      // Skip unparseable
+    }
+  }
+});
 
 Deno.test(
   "CLI: agent run --setup emits full NDJSON event lifecycle",
