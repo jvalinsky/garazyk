@@ -71,10 +71,11 @@ Inbound links: **15**
 
 ## `docs/11-reference/deno-packages.md`
 
-Inbound links: **6**
+Inbound links: **8**
 
 - [README.md](../../README.md)
 - [docs/index.md](../index.md)
+- [docs/plans/2026-05-23-agent-scenario-testing-plan.md](../plans/2026-05-23-agent-scenario-testing-plan.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 
@@ -203,10 +204,11 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **91**
+Inbound links: **92**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
+- [docs/plans/2026-05-23-agent-scenario-testing-plan.md](../plans/2026-05-23-agent-scenario-testing-plan.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -228,10 +230,12 @@ Inbound links: **2**
 
 ## `docs/plans/2026-05-23-agent-scenario-testing-plan.md`
 
-Inbound links: **3**
+Inbound links: **6**
 
+- [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md)
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/e2e-006-chat-allow-incoming.md`

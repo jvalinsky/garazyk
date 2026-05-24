@@ -189,3 +189,27 @@ This validates HTML/CSS/JS files for inline styles and design token usage.
 | Integration tests | `PDS_RUN_INTEGRATION_TESTS=1 build/tests/AllTests` |
 | Socket tests | `PDS_RUN_SOCKET_TESTS=1 build/tests/AllTests` |
 | UI design check | `scripts/test/check_ui_design_system.sh` |
+
+## Deno Scenario & Package Testing
+
+In addition to XCTest, Garazyk features a comprehensive suite of Deno package unit tests and 92+ end-to-end integration scenarios.
+
+### Running Deno Package Tests
+To run the Deno package unit/integration tests:
+```bash
+deno task test
+```
+
+### Running E2E Scenario Tests
+To execute scenario integration tests:
+```bash
+deno task hamownia run
+```
+
+### Programmatic Agent-First Execution
+For AI agents executing tests programmatically, use the dedicated [agent-scenario-testing](file:///.agents/skills/agent-scenario-testing/SKILL.md) skill to run tests and stream NDJSON output:
+```bash
+deno task hamownia agent list
+deno task hamownia agent run <id>
+```
+

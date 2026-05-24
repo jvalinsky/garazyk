@@ -25,3 +25,7 @@ For the full lexicon resolution pipeline architecture (5-layer sans-IO design), 
 
 For detailed package status including JSR publish blockers and test coverage gaps, see
 [Next Steps](../plans/next-steps.md).
+
+For programmatic integration and AI agent automated test execution, see the
+[Agent Scenario Testing Plan](../plans/2026-05-23-agent-scenario-testing-plan.md).
+

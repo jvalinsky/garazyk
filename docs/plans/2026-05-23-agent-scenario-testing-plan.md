@@ -151,3 +151,12 @@ Follow-up scope:
 - Integration-test `agent run --no-setup --resource-manifest <fixture>` after
   run-loop event output exists.
 - Assert stdout is valid JSON/NDJSON and human logs do not appear on stdout.
+
+## References & Deep Crosslinks
+
+- **Programmatic Skill**: [agent-scenario-testing](/.agents/skills/agent-scenario-testing/SKILL.md) — instructions for agent execution and log/JSON parsing.
+- **Triage Protocols**: [garazyk-scenario-triage](/.agents/skills/garazyk-scenario-triage/SKILL.md) — manual and automated triage procedures.
+- **Deno CLI reference**: [Deno Packages](/docs/11-reference/deno-packages.md) — directory structure and module design.
+- **Root Index**: [Garazyk Documentation Index](/docs/index.md) — core map.
+
+
