@@ -791,3 +791,78 @@ Deno.test("run detail: initial state has null detailRunId and detailRun", () => 
   assertEquals(state.runs.detailCursor, 0);
   assertEquals(state.runs.detailScrollOffset, 0);
 });
+
+// ---------------------------------------------------------------------------
+// Agent mode + runner e2e flow
+// ---------------------------------------------------------------------------
+
+Deno.test("runs/startRequested: includes agentMode: true in API body", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+    agentMode: true,
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals(cmd.url, "/api/runs/start");
+  assertEquals((cmd.body as Record<string, unknown>).agentMode, true);
+});
+
+Deno.test("runs/startRequested: includes agentMode: false by default", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).agentMode, false);
+});
+
+Deno.test("runs/startRequested: includes runner: host by default", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).runner, "host");
+});
+
+Deno.test("runs/startRequested: passes runner: docker when requested", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+    runner: "docker",
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).runner, "docker");
+});
+
+Deno.test("runs/startRequested: full agent + runner + pds2 + topology body", () => {
+  const state = initState({ topology: { ...initState().topology, selected: "minimal" } });
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01", "05"],
+    pds2: true,
+    agentMode: true,
+    runner: "docker",
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  const body = cmd.body as Record<string, unknown>;
+  assertEquals(body.topology, "minimal");
+  assertEquals(body.runner, "docker");
+  assertEquals(body.agentMode, true);
+  assertEquals(body.pds2, true);
+  assertEquals(body.scenarioIds, ["01", "05"]);
+  assertEquals(body.binaryMode, false);
+});
