@@ -52,6 +52,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Whether this operation has been nullified by a later operation. */
 @property (nonatomic, assign) BOOL nullified;
 
+/*! Directory-assigned export sequence number. Not part of signed operation data. */
+@property (nonatomic, strong, nullable) NSNumber *sequence;
+
 /*!
  @method calculateDIDForData:
 

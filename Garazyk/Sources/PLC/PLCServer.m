@@ -9,8 +9,9 @@
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "PLC/PLCConstants.h"
+#import "Sync/WebSocket/PDSWebSocketNetworkAdapter.h"
 
-static const NSUInteger kPLCMaxOperationBytes = 4000;
 static const NSUInteger kPLCMaxAlsoKnownAsEntries = 10;
 static const NSUInteger kPLCMaxAlsoKnownAsLength = 258;
 static const NSUInteger kPLCMaxRotationKeyEntries = 10;
@@ -67,7 +68,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         if (error) *error = cborError;
         return NO;
     }
-    if (cbor.length > kPLCMaxOperationBytes) {
+    if (cbor.length > PLCMaxDAGCborOperationBytes) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
                                          code:4
@@ -332,17 +333,24 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             return NO;
         }
         NSString *key = verificationMethods[methodId];
-        if (![key isKindOfClass:[NSString class]] || key.length > kPLCMaxDidKeyLength) {
-            if (error) {
-                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:24
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid verificationMethod key"}];
-            }
+        if (![key isKindOfClass:[NSString class]] || key.length > kPLCMaxDidKeyLength || !PLCValidateDidKey(key, error)) {
             return NO;
         }
     }
 
     return YES;
+}
+
+static BOOL PLCStringIsUnsignedInteger(NSString *value) {
+    if (value.length == 0) return NO;
+    NSCharacterSet *digits = [NSCharacterSet decimalDigitCharacterSet];
+    return [[value stringByTrimmingCharactersInSet:digits] length] == 0;
+}
+
+static NSNumber *PLCParseUnsignedInteger(NSString *value) {
+    if (!PLCStringIsUnsignedInteger(value)) return nil;
+    unsigned long long parsed = strtoull(value.UTF8String, NULL, 10);
+    return @(parsed);
 }
 
 @interface PLCServer ()
@@ -381,20 +389,11 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
     NSString *origin = [request headerForKey:@"Origin"];
-    if (origin && ([origin hasPrefix:@"http://127.0.0.1"] || [origin hasPrefix:@"http://localhost"])) {
-        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
-        [response setHeader:@"true" forKey:@"Access-Control-Allow-Credentials"];
-    } else if (origin) {
-        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
-        [response setHeader:@"true" forKey:@"Access-Control-Allow-Credentials"];
-    } else {
-        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
-    }
+    [response setHeader:(origin.length > 0 ? origin : @"*") forKey:@"Access-Control-Allow-Origin"];
 
     [response setHeader:@"GET, POST, OPTIONS, HEAD" forKey:@"Access-Control-Allow-Methods"];
     [response setHeader:@"DPoP, Authorization, Content-Type, *" forKey:@"Access-Control-Allow-Headers"];
     [response setHeader:@"DPoP-Nonce, WWW-Authenticate" forKey:@"Access-Control-Expose-Headers"];
-    [response setHeader:@"true" forKey:@"Access-Control-Allow-Private-Network"];
     [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
     [response setHeader:@"Origin" forKey:@"Vary"];
 }
@@ -411,9 +410,11 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     [self.httpServer addRoute:@"OPTIONS" path:@"/_health" handler:optionsHandler];
     [self.httpServer addRoute:@"OPTIONS" path:@"/_list" handler:optionsHandler];
     [self.httpServer addRoute:@"OPTIONS" path:@"/_metrics" handler:optionsHandler];
-    [self.httpServer addRoute:@"OPTIONS" path:@"/export" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:PLCRouteExport handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:PLCRouteExportStream handler:optionsHandler];
     [self.httpServer addRoute:@"OPTIONS" path:@"/:did" handler:optionsHandler];
     [self.httpServer addRoute:@"OPTIONS" path:@"/:did/log" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:PLCRouteLogAudit handler:optionsHandler];
     [self.httpServer addRoute:@"OPTIONS" path:@"/:did/log/last" handler:optionsHandler];
     [self.httpServer addRoute:@"OPTIONS" path:@"/:did/data" handler:optionsHandler];
 
@@ -461,9 +462,14 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [resp setBodyString:@"___                                                _        \n  / (_)                                              | |       \n |      __,   _  _  _     _   __,   __,  _  _    __  | |  __,  \n |     /  |  / |/ |/ |  |/ \\_/  |  /  | / |/ |  /  \\_|/  /  |  \n  \\___/\\_/|_/  |  |  |_/|__/ \\_/|_/\\_/|/  |  |_/\\__/ |__/\\_/|_/\n                       /|            /|                        \n                       \\|            \\| \n"];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:PLCRouteExport handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleExport:req response:resp];
+    }];
+
+    [self.httpServer addWebSocketRoute:PLCRouteExportStream
+                               handler:^(HttpRequest *request, HttpResponse *response, id<ATProtoNetworkConnection> connection) {
+        [weakSelf handleExportStream:request connection:connection];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did/log/last" handler:^(HttpRequest *req, HttpResponse *resp) {
@@ -474,6 +480,11 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetLog:req response:resp includeNullified:NO includeMetadata:NO];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:PLCRouteLogAudit handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
+        [weakSelf handleGetLog:req response:resp includeNullified:YES includeMetadata:YES];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did/data" handler:^(HttpRequest *req, HttpResponse *resp) {
@@ -747,54 +758,187 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     [resp setJsonBody:[data copy]];
 }
 
+- (NSDictionary *)legacyExportEntryForOperation:(PLCOperation *)op {
+    return @{
+        @"did": op.did ?: @"",
+        @"operation": [op toDictionary],
+        @"cid": op.cid ?: @"",
+        @"nullified": @(op.nullified),
+        @"createdAt": [NSDateFormatter atproto_stringFromDate:op.createdAt ?: [NSDate date]]
+    };
+}
+
+- (NSDictionary *)sequencedExportEntryForOperation:(PLCOperation *)op {
+    return @{
+        @"type": @"sequenced_op",
+        @"did": op.did ?: @"",
+        @"operation": [op toDictionary],
+        @"cid": op.cid ?: @"",
+        @"createdAt": [NSDateFormatter atproto_stringFromDate:op.createdAt ?: [NSDate date]],
+        @"seq": op.sequence ?: @0
+    };
+}
+
+- (BOOL)parseExportCountFromRequest:(HttpRequest *)req count:(NSUInteger *)count response:(HttpResponse *)resp {
+    NSString *countStr = req.queryParams[@"count"];
+    NSUInteger parsedCount = PLCExportDefaultCount;
+    if (countStr.length > 0) {
+        NSNumber *number = PLCParseUnsignedInteger(countStr);
+        if (!number || number.unsignedIntegerValue < 1 || number.unsignedIntegerValue > PLCExportMaxCount) {
+            resp.statusCode = HttpStatusBadRequest;
+            [resp setJsonBody:@{@"error": @"Invalid count"}];
+            return NO;
+        }
+        parsedCount = number.unsignedIntegerValue;
+    }
+    *count = parsedCount;
+    return YES;
+}
+
 - (void)handleExport:(HttpRequest *)req response:(HttpResponse *)resp {
     [[PLCMetrics sharedMetrics] recordRequest];
-    
-    NSString *countStr = req.queryParams[@"count"];
-    __block NSInteger remaining = 10;
-    if (countStr) {
-        remaining = [countStr integerValue];
-        if (remaining < 1) remaining = 10;
-        if (remaining > 1000) remaining = 1000;
+
+    NSUInteger requestedCount = 0;
+    if (![self parseExportCountFromRequest:req count:&requestedCount response:resp]) {
+        return;
     }
-    
+
     NSString *afterStr = req.queryParams[@"after"];
     __block NSDate *cursorDate = nil;
-    if (afterStr) {
+    __block NSNumber *cursorSeq = nil;
+    __block BOOL sequencedMode = NO;
+    if (afterStr.length > 0 && PLCStringIsUnsignedInteger(afterStr)) {
+        cursorSeq = PLCParseUnsignedInteger(afterStr);
+        sequencedMode = YES;
+    } else if (afterStr.length > 0) {
         cursorDate = [NSDateFormatter atproto_dateFromString:afterStr];
+        if (!cursorDate) {
+            resp.statusCode = HttpStatusBadRequest;
+            [resp setJsonBody:@{@"error": @"Invalid after cursor"}];
+            return;
+        }
     }
-    
+
     resp.statusCode = HttpStatusOK;
-    resp.contentType = @"application/jsonlines; charset=utf-8";
-    
+    resp.contentType = PLCJSONLinesContentType;
+
+    __block NSInteger remaining = (NSInteger)requestedCount;
     __weak typeof(self) weakSelf = self;
     [resp setBodyChunkProducer:^NSData * _Nullable(NSError * _Nullable __autoreleasing * _Nullable error) {
         if (remaining <= 0) return [NSData data]; // Done
-        
+
         NSInteger batchSize = MIN(remaining, 100);
-        NSArray<PLCOperation *> *ops = [weakSelf.store exportOperationsAfter:cursorDate count:batchSize error:error];
+        NSArray<PLCOperation *> *ops = nil;
+        if (sequencedMode) {
+            ops = [weakSelf.store exportOperationsAfterSequence:cursorSeq ?: @0 count:batchSize error:error];
+        } else {
+            ops = [weakSelf.store exportOperationsAfter:cursorDate count:batchSize error:error];
+        }
         if (!ops || ops.count == 0) return [NSData data]; // Done or error
-        
+
         NSMutableData *chunkData = [NSMutableData data];
         for (PLCOperation *op in ops) {
-            NSMutableDictionary *entry = [NSMutableDictionary dictionary];
-            entry[@"did"] = op.did;
-            entry[@"operation"] = [op toDictionary];
-            entry[@"cid"] = op.cid;
-            entry[@"nullified"] = @(op.nullified);
-            entry[@"createdAt"] = [NSDateFormatter atproto_stringFromDate:op.createdAt ?: [NSDate date]];
-            
+            NSDictionary *entry = sequencedMode ? [weakSelf sequencedExportEntryForOperation:op] : [weakSelf legacyExportEntryForOperation:op];
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
             if (jsonData) {
                 [chunkData appendData:jsonData];
                 [chunkData appendBytes:"\n" length:1];
             }
-            cursorDate = op.createdAt;
+            if (sequencedMode) {
+                cursorSeq = op.sequence ?: cursorSeq;
+            } else {
+                cursorDate = op.createdAt;
+            }
         }
-        
+
         remaining -= ops.count;
         return [chunkData copy];
     } chunkedTransferEncoding:YES];
+}
+
+- (void)handleExportStream:(HttpRequest *)req connection:(id<ATProtoNetworkConnection>)connection {
+    NSNumber *cursor = nil;
+    NSString *cursorString = req.queryParams[@"cursor"];
+    if (cursorString.length > 0) {
+        cursor = PLCParseUnsignedInteger(cursorString);
+        if (!cursor) {
+            PDSWebSocketNetworkAdapter *adapter = [[PDSWebSocketNetworkAdapter alloc] initWithConnection:connection];
+            [adapter closeWithCode:1008 reason:@"FutureCursor" completion:^(NSError * _Nullable error) {}];
+            return;
+        }
+    }
+
+    PDSWebSocketNetworkAdapter *adapter = [[PDSWebSocketNetworkAdapter alloc] initWithConnection:connection];
+    [adapter start];
+
+    __block NSInteger liveCursor = cursor.integerValue;
+    if (!cursor) {
+        NSError *snapshotError = nil;
+        NSArray<PLCOperation *> *snapshot = [self.store exportOperationsAfterSequence:@0 count:PLCExportMaxCount error:&snapshotError];
+        PLCOperation *lastSnapshotOp = snapshot.lastObject;
+        liveCursor = lastSnapshotOp.sequence.integerValue;
+    }
+
+    NSError *error = nil;
+    NSArray<PLCOperation *> *ops = cursor ? [self.store exportOperationsAfterSequence:cursor count:PLCExportMaxCount error:&error] : @[];
+    if (error) {
+        [adapter closeWithCode:1011 reason:@"InternalError" completion:^(NSError * _Nullable error) {}];
+        return;
+    }
+
+    for (PLCOperation *op in ops) {
+        NSDictionary *entry = [self sequencedExportEntryForOperation:op];
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
+        if (!jsonData) {
+            continue;
+        }
+        [adapter sendMessage:jsonData completion:^(NSError * _Nullable sendError) {
+            if (sendError) {
+                [adapter closeWithCode:1011 reason:@"ConsumerTooSlow" completion:^(NSError * _Nullable error) {}];
+            }
+        }];
+        liveCursor = op.sequence.integerValue;
+    }
+
+    dispatch_queue_t streamQueue = dispatch_queue_create("com.atproto.plc.exportstream", DISPATCH_QUEUE_SERIAL);
+    __block dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, streamQueue);
+    __weak typeof(self) weakSelf = self;
+    adapter.closeHandler = ^(NSInteger code, NSString *reason) {
+        if (timer) {
+            dispatch_source_cancel(timer);
+            timer = nil;
+        }
+    };
+    dispatch_source_set_timer(timer,
+                              dispatch_time(DISPATCH_TIME_NOW, (int64_t)(PLCReplicaDefaultPollInterval * NSEC_PER_SEC)),
+                              (uint64_t)(PLCReplicaDefaultPollInterval * NSEC_PER_SEC),
+                              (uint64_t)(0.1 * NSEC_PER_SEC));
+    dispatch_source_set_event_handler(timer, ^{
+        NSError *pollError = nil;
+        NSArray<PLCOperation *> *newOps = [weakSelf.store exportOperationsAfterSequence:@(liveCursor)
+                                                                                  count:PLCExportDefaultCount
+                                                                                  error:&pollError];
+        if (pollError) {
+            [adapter closeWithCode:1011 reason:@"InternalError" completion:^(NSError * _Nullable error) {}];
+            if (timer) {
+                dispatch_source_cancel(timer);
+                timer = nil;
+            }
+            return;
+        }
+        for (PLCOperation *op in newOps) {
+            NSDictionary *entry = [weakSelf sequencedExportEntryForOperation:op];
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
+            if (!jsonData) continue;
+            [adapter sendMessage:jsonData completion:^(NSError * _Nullable sendError) {
+                if (sendError) {
+                    [adapter closeWithCode:1011 reason:@"ConsumerTooSlow" completion:^(NSError * _Nullable error) {}];
+                }
+            }];
+            liveCursor = op.sequence.integerValue;
+        }
+    });
+    dispatch_resume(timer);
 }
 
 - (BOOL)startWithError:(NSError **)error {

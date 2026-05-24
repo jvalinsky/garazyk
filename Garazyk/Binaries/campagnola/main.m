@@ -32,6 +32,7 @@ void print_usage(const char *executable_name) {
     printf("  --host <address>   Address to bind to (default: 127.0.0.1)\n");
     printf("  --port <number>    Port to listen on (default: 2582)\n");
     printf("  --database <path>  Path to SQLite database\n");
+    printf("  --in-memory        Use an in-memory store for dev/test\n");
     printf("  --replica          Run serve command in read-only replica mode\n");
     printf("  --upstream <url>   Upstream PLC URL for replica sync\n");
     printf("  --data-dir <path>  Data directory for replica\n");
@@ -120,6 +121,7 @@ static BOOL parse_server_options(NSArray<NSString *> *args,
                                  NSString **dataDir,
                                  NSString **upstreamURL,
                                  BOOL *replicaMode,
+                                 BOOL *inMemory,
                                  NSString **errorMessage) {
     for (NSUInteger i = 0; i < args.count; i++) {
         NSString *arg = args[i];
@@ -184,6 +186,10 @@ static BOOL parse_server_options(NSArray<NSString *> *args,
         } else if ([arg isEqualToString:@"--replica"] || [arg isEqualToString:@"-r"]) {
             if (replicaMode) {
                 *replicaMode = YES;
+            }
+        } else if ([arg isEqualToString:@"--in-memory"]) {
+            if (inMemory) {
+                *inMemory = YES;
             }
         } else if ([arg hasPrefix:@"-"]) {
             if (errorMessage) {
@@ -271,15 +277,16 @@ int main(int argc, const char * argv[]) {
         NSString *dataDir = nil;
         NSString *upstreamURL = nil;
         BOOL replicaMode = NO;
+        BOOL inMemory = NO;
         NSString *parseError = nil;
         if ([command isEqualToString:@"status"] || [command isEqualToString:@"health"]) {
-            if (!parse_server_options(args, &host, &port, nil, nil, nil, nil, &parseError)) {
+            if (!parse_server_options(args, &host, &port, nil, nil, nil, nil, nil, &parseError)) {
                 return fail_with_usage(binaryName, parseError);
             }
             return run_status_command(host, port);
         }
         if ([command isEqualToString:@"repl"]) {
-            if (!parse_server_options(args, nil, nil, nil, &dataDir, nil, nil, &parseError)) {
+            if (!parse_server_options(args, nil, nil, nil, &dataDir, nil, nil, nil, &parseError)) {
                 return fail_with_usage(binaryName, parseError);
             }
             run_repl(dataDir);
@@ -288,7 +295,7 @@ int main(int argc, const char * argv[]) {
         if (![command isEqualToString:@"serve"] && ![command isEqualToString:@"replica"]) {
             return fail_with_usage(binaryName, [NSString stringWithFormat:@"Unknown command: %@", command]);
         }
-        if (!parse_server_options(args, &host, &port, &dbPath, &dataDir, &upstreamURL, &replicaMode, &parseError)) {
+        if (!parse_server_options(args, &host, &port, &dbPath, &dataDir, &upstreamURL, &replicaMode, &inMemory, &parseError)) {
             return fail_with_usage(binaryName, parseError);
         }
         if ([command isEqualToString:@"replica"]) {
@@ -311,8 +318,7 @@ int main(int argc, const char * argv[]) {
                 replicaDBPath = [dataDir stringByAppendingPathComponent:@"plc-replica.db"];
             }
             if (!replicaDBPath) {
-                replicaDBPath = [NSFileManager.defaultManager.currentDirectoryPath
-                    stringByAppendingPathComponent:@"plc-replica.db"];
+                return fail_with_usage(binaryName, @"Replica mode requires --database or --data-dir");
             }
 
             NSError *storeError = nil;
@@ -330,12 +336,12 @@ int main(int argc, const char * argv[]) {
                                                        client:syncClient
                                                       auditor:auditor];
             syncEngine.batchSize = 1000;
-            syncEngine.pollInterval = 5.0;
 
             printf("Starting PLC replica server on port %lu (upstream: %s)\n",
                    (unsigned long)port, [upstreamURL UTF8String]);
             server = [[PLCReplicaServer alloc] initWithStore:replicaStore
                                                       auditor:auditor
+                                                         host:host
                                                          port:port
                                                  readOnlyMode:YES];
         } else {
@@ -350,9 +356,11 @@ int main(int argc, const char * argv[]) {
                     return 1;
                 }
                 printf("Using persistent store at %s\n", [dbPath UTF8String]);
-            } else {
+            } else if (inMemory) {
                 store = [[PLCMockStore alloc] init];
                 printf("Using in-memory mock store\n");
+            } else {
+                return fail_with_usage(binaryName, @"serve requires --database or explicit --in-memory");
             }
 
             PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:store];

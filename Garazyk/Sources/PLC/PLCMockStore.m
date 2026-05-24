@@ -8,6 +8,7 @@
 @interface PLCMockStore ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<PLCOperation *> *> *storage;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
+@property (nonatomic, assign) NSInteger nextSequence;
 @end
 
 @implementation PLCMockStore
@@ -17,6 +18,7 @@
     if (self) {
         _storage = [NSMutableDictionary dictionary];
         _queue = dispatch_queue_create("com.atproto.pds.plcmockstore", DISPATCH_QUEUE_SERIAL);
+        _nextSequence = 1;
     }
     return self;
 }
@@ -64,6 +66,11 @@
         }
         if (!op.createdAt) {
             op.createdAt = [NSDate date];
+        }
+        if (!op.sequence) {
+            op.sequence = @(self.nextSequence++);
+        } else if (op.sequence.integerValue >= self.nextSequence) {
+            self.nextSequence = op.sequence.integerValue + 1;
         }
         if (!op.cid) {
             NSError *cidError = nil;
@@ -137,6 +144,27 @@
         } else {
             result = [allOps copy];
         }
+    });
+    return result ?: @[];
+}
+
+- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+                                                              count:(NSUInteger)count
+                                                              error:(NSError **)error {
+    __block NSArray<PLCOperation *> *result = nil;
+    dispatch_sync(self.queue, ^{
+        NSMutableArray<PLCOperation *> *allOps = [NSMutableArray array];
+        for (NSArray<PLCOperation *> *didOps in self.storage.allValues) {
+            [allOps addObjectsFromArray:didOps];
+        }
+        NSInteger cursor = sequence.integerValue;
+        [allOps filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(PLCOperation *op, NSDictionary *bindings) {
+            return op.sequence.integerValue > cursor;
+        }]];
+        [allOps sortUsingComparator:^NSComparisonResult(PLCOperation *op1, PLCOperation *op2) {
+            return [op1.sequence compare:op2.sequence];
+        }];
+        result = (allOps.count > count) ? [allOps subarrayWithRange:NSMakeRange(0, count)] : [allOps copy];
     });
     return result ?: @[];
 }
