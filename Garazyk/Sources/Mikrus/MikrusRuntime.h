@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
+#import "Runtime/GZServiceLifecycle.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -16,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Coordinates the initialization and lifecycle of the Mikrus service.
  */
-@interface MikrusRuntime : NSObject <AppViewIngestEngineDelegate>
+@interface MikrusRuntime : NSObject <AppViewIngestEngineDelegate, GZServiceRuntimeProtocol>
 
 /**
  * @abstract Current service configuration.

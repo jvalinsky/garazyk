@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
 #import "Beskid/BeskidConfiguration.h"
+#import "Shared/GZConfigurationParsing.h"
 
 @implementation BeskidConfiguration
 
@@ -23,79 +24,32 @@
     return [[self alloc] init];
 }
 
++ (GZConfigurationParsing *)sharedParser {
+    static GZConfigurationParsing *parser = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        parser = [[GZConfigurationParsing alloc] initWithProperties:@[
+            [GZConfigurationProperty propertyWithTargetKey:@"dataDirectory" jsonKeys:@[@"data_directory", @"data_dir"] envVar:@"BESKID_DATA_DIR" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"httpPort" jsonKeys:@[@"http.port", @"port"] envVar:@"BESKID_HTTP_PORT" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"domain" jsonKeys:@[@"domain"] envVar:@"BESKID_DOMAIN" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"cacheRecordTtlSeconds" jsonKeys:@[@"cache_record_ttl", @"cache_record_ttl_seconds"] envVar:@"BESKID_CACHE_RECORD_TTL" type:GZConfigurationPropertyTypeDouble],
+            [GZConfigurationProperty propertyWithTargetKey:@"cacheIdentityTtlSeconds" jsonKeys:@[@"cache_identity_ttl", @"cache_identity_ttl_seconds"] envVar:@"BESKID_CACHE_IDENTITY_TTL" type:GZConfigurationPropertyTypeDouble],
+            [GZConfigurationProperty propertyWithTargetKey:@"rateLimitEnabled" jsonKeys:@[@"rate_limit.enabled", @"rate_limit_enabled"] envVar:@"BESKID_RATELIMIT_ENABLED" type:GZConfigurationPropertyTypeBoolean],
+            [GZConfigurationProperty propertyWithTargetKey:@"rateLimitIpLimit" jsonKeys:@[@"rate_limit.ip_limit", @"rate_limit_ip_limit"] envVar:@"BESKID_RATELIMIT_IP_LIMIT" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"rateLimitIpWindowSeconds" jsonKeys:@[@"rate_limit.ip_window", @"rate_limit_ip_window"] envVar:@"BESKID_RATELIMIT_IP_WINDOW" type:GZConfigurationPropertyTypeDouble]
+        ]];
+    });
+    return parser;
+}
+
 + (instancetype)configurationFromEnvironment {
     BeskidConfiguration *config = [[self alloc] init];
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-
-    NSString *dataDir = env[@"BESKID_DATA_DIR"];
-    if (dataDir.length > 0) config.dataDirectory = dataDir;
-
-    NSString *port = env[@"BESKID_HTTP_PORT"];
-    if (port.integerValue > 0) config.httpPort = (NSUInteger)port.integerValue;
-
-    NSString *domain = env[@"BESKID_DOMAIN"];
-    if (domain.length > 0) config.domain = domain;
-
-    NSString *recTtl = env[@"BESKID_CACHE_RECORD_TTL"];
-    if (recTtl.doubleValue > 0) config.cacheRecordTtlSeconds = recTtl.doubleValue;
-
-    NSString *idTtl = env[@"BESKID_CACHE_IDENTITY_TTL"];
-    if (idTtl.doubleValue > 0) config.cacheIdentityTtlSeconds = idTtl.doubleValue;
-
-    NSString *rlEnabled = env[@"BESKID_RATELIMIT_ENABLED"];
-    if (rlEnabled.length > 0) config.rateLimitEnabled = [rlEnabled boolValue];
-
-    NSString *rlIpLimit = env[@"BESKID_RATELIMIT_IP_LIMIT"];
-    if (rlIpLimit.integerValue > 0) config.rateLimitIpLimit = rlIpLimit.integerValue;
-
-    NSString *rlIpWindow = env[@"BESKID_RATELIMIT_IP_WINDOW"];
-    if (rlIpWindow.doubleValue > 0) config.rateLimitIpWindowSeconds = rlIpWindow.doubleValue;
-
+    [[self sharedParser] applyEnvironmentVariables:[[NSProcessInfo processInfo] environment] toTarget:config];
     return config;
 }
 
 - (void)loadFromDictionary:(NSDictionary *)dictionary {
-    NSString *dataDir = dictionary[@"data_directory"] ?: dictionary[@"data_dir"];
-    if (dataDir.length > 0) self.dataDirectory = dataDir;
-
-    id port = dictionary[@"http.port"] ?: dictionary[@"port"];
-    if ([port isKindOfClass:[NSNumber class]]) {
-        NSInteger value = [port integerValue];
-        if (value >= 0 && value <= UINT16_MAX) self.httpPort = (NSUInteger)value;
-    } else if ([port isKindOfClass:[NSString class]] && [(NSString *)port length] > 0) {
-        NSInteger value = -1;
-        NSScanner *scanner = [NSScanner scannerWithString:(NSString *)port];
-        scanner.charactersToBeSkipped = nil;
-        if ([scanner scanInteger:&value] && scanner.isAtEnd && value >= 0 && value <= UINT16_MAX) {
-            self.httpPort = (NSUInteger)value;
-        }
-    }
-
-    NSString *domain = dictionary[@"domain"];
-    if (domain.length > 0) self.domain = domain;
-
-    id recTtl = dictionary[@"cache_record_ttl"] ?: dictionary[@"cache_record_ttl_seconds"];
-    if ([recTtl respondsToSelector:@selector(doubleValue)] && [recTtl doubleValue] > 0) {
-        self.cacheRecordTtlSeconds = [recTtl doubleValue];
-    }
-
-    id idTtl = dictionary[@"cache_identity_ttl"] ?: dictionary[@"cache_identity_ttl_seconds"];
-    if ([idTtl respondsToSelector:@selector(doubleValue)] && [idTtl doubleValue] > 0) {
-        self.cacheIdentityTtlSeconds = [idTtl doubleValue];
-    }
-
-    id rlEnabled = dictionary[@"rate_limit.enabled"] ?: dictionary[@"rate_limit_enabled"];
-    if (rlEnabled) self.rateLimitEnabled = [rlEnabled boolValue];
-
-    id rlIpLimit = dictionary[@"rate_limit.ip_limit"] ?: dictionary[@"rate_limit_ip_limit"];
-    if ([rlIpLimit respondsToSelector:@selector(integerValue)] && [rlIpLimit integerValue] > 0) {
-        self.rateLimitIpLimit = [rlIpLimit integerValue];
-    }
-
-    id rlIpWindow = dictionary[@"rate_limit.ip_window"] ?: dictionary[@"rate_limit_ip_window"];
-    if ([rlIpWindow respondsToSelector:@selector(doubleValue)] && [rlIpWindow doubleValue] > 0) {
-        self.rateLimitIpWindowSeconds = [rlIpWindow doubleValue];
-    }
+    [[[self class] sharedParser] applyDictionary:dictionary toTarget:self];
 }
 
 - (BOOL)validate:(NSError **)error {

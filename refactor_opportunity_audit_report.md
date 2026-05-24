@@ -3,10 +3,12 @@
 ## Review Status
 
 This report is the revised final audit. The initial summary referenced
-`refactor_opportunity_audit_report.md`, but that file was missing from the
-workspace. The scratchpad notes under `scratchpads/refactor-audit-2026-05-23/`
-were reviewed against source files and corrected where the claims were too
-broad.
+`refactor_opportunity_audit_report.md`, but that file was not present in the
+repo workspace. The original Gemini artifact was later found under
+`~/.gemini/antigravity-cli/brain/d517cead-09f6-4f12-a0f4-9015e5a89c3c/`.
+That report and the scratchpad notes under
+`scratchpads/refactor-audit-2026-05-23/` were reviewed against source files and
+corrected where the claims were too broad.
 
 ## Executive Summary
 

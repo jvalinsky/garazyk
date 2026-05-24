@@ -8,18 +8,13 @@
 #import <Foundation/Foundation.h>
 #import "Beskid/BeskidRuntime.h"
 #import "Beskid/BeskidConfiguration.h"
-#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import "Runtime/GZServiceLifecycle.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
-#if defined(GNUSTEP)
-#import <curl/curl.h>
-#endif
+#import "CLI/GZCommandLineOptions.h"
 
 static const char *executable_name = "beskid";
-static BeskidRuntime *gRuntime = nil;
-
-extern void NSDateFormatterLinkATProtoCategory(void);
 
 static void print_usage(void) {
     printf("Usage: %s <command> [options]\n\n", executable_name);
@@ -52,55 +47,10 @@ static int fail_with_usage(NSString *message) {
     return 2;
 }
 
-static BOOL parse_options(NSArray<NSString *> *args,
-                          NSUInteger *port,
-                          NSString **dataDir,
-                          NSString **configPath,
-                          NSString **errorMessage) {
-    for (NSUInteger i = 0; i < args.count; i++) {
-        NSString *arg = args[i];
-        if ([arg isEqualToString:@"--port"] || [arg isEqualToString:@"-p"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) *errorMessage = @"Missing value for --port";
-                return NO;
-            }
-            if (port) *port = (NSUInteger)[args[++i] integerValue];
-            else i++;
-        } else if ([arg isEqualToString:@"--data-dir"] || [arg isEqualToString:@"-d"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) *errorMessage = @"Missing value for --data-dir";
-                return NO;
-            }
-            if (dataDir) *dataDir = args[++i];
-            else i++;
-        } else if ([arg isEqualToString:@"--config"] || [arg isEqualToString:@"-c"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) *errorMessage = @"Missing value for --config";
-                return NO;
-            }
-            if (configPath) *configPath = args[++i];
-            else i++;
-        } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
-            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
-        } else if ([arg hasPrefix:@"-"]) {
-            if (errorMessage) *errorMessage = [NSString stringWithFormat:@"Unknown option: %@", arg];
-            return NO;
-        } else {
-            if (errorMessage) *errorMessage = [NSString stringWithFormat:@"Unexpected argument: %@", arg];
-            return NO;
-        }
-    }
-    return YES;
-}
 
 int main(int argc, const char *argv[]) {
-    [[GZSignalManager sharedManager] installIgnoredSignals];
-    [GZCrashReporter installCrashHandlersWithExecutableName:"beskid"];
-#if defined(GNUSTEP)
-    curl_global_init(CURL_GLOBAL_ALL);
-#endif
+    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
     @autoreleasepool {
-        NSDateFormatterLinkATProtoCategory();
         if (argc < 2) return fail_with_usage(@"Missing command");
 
         NSString *command = [NSString stringWithUTF8String:argv[1]];
@@ -121,16 +71,29 @@ int main(int argc, const char *argv[]) {
             return fail_with_usage([NSString stringWithFormat:@"Unknown command: %@", command]);
         }
 
-        NSUInteger port = 0;
-        NSString *dataDir = nil;
-        NSString *configPath = nil;
-        NSString *parseError = nil;
-        if (!parse_options(args, &port, &dataDir, &configPath, &parseError)) {
-            return fail_with_usage(parseError);
+        GZCommandLineOptions *parser = [[GZCommandLineOptions alloc] init];
+        [parser registerOptions:@[
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"data-dir" shortName:@"d" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"config" shortName:@"c" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ] forCommand:@"serve"];
+
+        NSError *parseError = nil;
+        NSDictionary *parsedArgs = [parser parseArguments:args forCommand:@"serve" error:&parseError];
+        if (!parsedArgs) {
+            return fail_with_usage(parseError.localizedDescription);
         }
 
+        if ([parsedArgs[@"verbose"] boolValue]) {
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
+        }
+
+        NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 0;
+        NSString *dataDir = parsedArgs[@"data-dir"];
+        NSString *configPath = parsedArgs[@"config"];
+
         BeskidRuntime *runtime = [BeskidRuntime sharedRuntime];
-        gRuntime = runtime;
 
         if (configPath.length > 0) {
             NSError *configError = nil;
@@ -146,25 +109,8 @@ int main(int argc, const char *argv[]) {
         if (port > 0) config.httpPort = port;
         if (dataDir.length > 0) config.dataDirectory = dataDir;
 
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
-            printf("\nReceived SIGINT, shutting down...\n");
-            [gRuntime stop];
-            exit(0);
+        return [GZServiceLifecycle runServiceWithRuntime:runtime serviceName:@"Beskid" onStart:^{
+            printf("Beskid edge cache service running on port %lu\n", (unsigned long)config.httpPort);
         }];
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
-            printf("\nReceived SIGTERM, shutting down...\n");
-            [gRuntime stop];
-            exit(0);
-        }];
-
-        NSError *startError = nil;
-        if (![runtime startWithError:&startError]) {
-            fprintf(stderr, "Failed to start Beskid: %s\n", startError.localizedDescription.UTF8String ?: "unknown");
-            return 1;
-        }
-
-        printf("Beskid edge cache service running on port %lu\n", (unsigned long)config.httpPort);
-        [[NSRunLoop currentRunLoop] run];
     }
-    return 0;
 }
