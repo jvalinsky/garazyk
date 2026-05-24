@@ -196,3 +196,72 @@ deno run -A packages/hamownia/cli.ts test
 # Check boundary violations
 deno task narzedzia
 ```
+
+## Scenario Manifests (`SCENARIO_MANIFESTS`)
+
+`SCENARIO_MANIFESTS` (`packages/hamownia/scenario_metadata.ts`) is the
+single source of truth for every scenario's requirements,
+capabilities, and configurable parameters. The `agent list` command
+reads discovered scenario files and merges manifest data to produce
+the `AgentScenarioSummary` output.
+
+### Manifest fields and their effect on agent list output
+
+| Manifest Field | Type | Effect on `agent list` output |
+|---|---|---|
+| `requires` | `ScenarioRequirement[]` | Populates `requires` as `"role:capability"` strings. Scenarios where the topology lacks a required capability are excluded from `agent list --topology`. |
+| `optional` | `ScenarioRequirement[]` | Populates `optional` as `"role:capability"` strings. Optional requirements do not affect filtering. |
+| `needsPds2` | `boolean` | Maps to `needsPds2`. If `true` and the topology lacks a PDS2 role, the scenario is filtered out. |
+| `browserFlows` | `BrowserFlow[]` | Maps to `browserFlows`. Documents which browser automation flows the scenario supports (e.g. `["smoke","login"]`). |
+| `timeout` | `number` (seconds) | Maps to `timeout`. Per-scenario override for the default 120s timeout. Only three scenarios set this: `26` (300s), `60` (240s), `92` (420s). |
+| `parameters` | `Record<string, {type, default, description}>` | Maps to `parameters` with each parameter's default value extracted (not the full type descriptor). E.g. `{scale: {type:"number", default:1}}` → `{scale: 1}`. |
+
+### `toSummary()` mapping
+
+The `toSummary()` function in `packages/hamownia/cli/agent.ts` performs
+the merge between discovered `ScenarioInfo` and the manifest lookup:
+
+```typescript
+// pseudocode
+export function toSummary(scenario: ScenarioInfo): AgentScenarioSummary {
+  const manifest = SCENARIO_MANIFESTS[scenario.id] ?? {};
+  return {
+    id: scenario.id,
+    name: scenario.name,
+    path: scenario.path,
+    requires: scenario.requires.map(formatRequirement),
+    optional: scenario.optional.map(formatRequirement),
+    needsPds2: scenario.needsPds2,
+    browserFlows: scenario.browserFlows,
+    timeout: manifest.timeout,            // from manifest, not scenario file
+    parameters: /* defaults extracted */,  // from manifest, not scenario file
+  };
+}
+```
+
+Key detail: `timeout` and `parameters` come exclusively from the manifest,
+not from the scenario file's self-declared metadata. This means the manifest
+is authoritative for these fields.
+
+### Adding a new manifest entry
+
+1. Add a key to `SCENARIO_MANIFESTS` matching the scenario's two-digit ID.
+2. Declare `requires` for all role:capability dependencies the scenario needs.
+3. Set `needsPds2: true` if the scenario spawns a second PDS.
+4. Set `browserFlows` if the scenario includes browser automation steps.
+5. Set `timeout` if the scenario needs longer than 120s.
+6. Declare `parameters` with type, default, and description for any
+   configurable knobs.
+
+```typescript
+// Example manifest entry
+export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
+  "59": {
+    browserFlows: ["smoke", "login", "deep"],
+    parameters: {
+      scale: { type: "number", default: 1, description: "Number of threads/posts to create" },
+      depth: { type: "number", default: 2, description: "Maximum reply depth" },
+    },
+  },
+};
+```
