@@ -1,0 +1,31 @@
+name: Dashboard Navigate and Run
+description: Navigate to the Scenarios panel, select the first scenario, and verify it can be triggered
+command: /etc/profiles/per-user/jack/bin/deno
+args: task, tui
+cwd: /Users/jack/Software/garazyk/scripts/scenario-dashboard
+cols: 120
+rows: 30
+settleMs: 5000
+
+steps:
+  - type: navigate_panel
+    target: Scenarios
+    label: Jump to Scenarios panel
+  - type: select_item
+    target: 01 account lifecycle
+    label: Select the first scenario
+  - type: run_scenario
+    target: 01 account lifecycle
+    label: Run the account lifecycle scenario
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for scenario to start
+  - type: assert
+    target: active_run
+    expected: running
+    label: Verify a scenario is running
+  - type: quit
+    label: Quit the dashboard
+  - type: press_key
+    value: q
+    label: Press q again to confirm quit
