@@ -17,16 +17,19 @@ import { runManager } from "./run_manager.ts";
 import { getTopologyServiceUrls } from "./topology_service.ts";
 import {
   composeServiceName,
+  ContainerEventWatcher,
   type ContainerSummary,
   cpuPercent,
   createDockerClient,
   DockerApiClient,
   formatMemory,
   healthStatus,
-  ContainerEventWatcher, 
-  type WatcherEvent
+  type WatcherEvent,
 } from "@garazyk/laweta";
-import { startLocalNetwork, stopLocalNetwork } from "@garazyk/hamownia/atproto_network.ts";
+import {
+  startLocalNetwork,
+  stopLocalNetwork,
+} from "@garazyk/hamownia/atproto_network.ts";
 
 const SCRIPTS_DIR = join(
   fromFileUrl(new URL("../../scenarios", import.meta.url)),
@@ -295,14 +298,14 @@ class NetworkManager {
 
         for (const container of containers) {
           const serviceName = container.Service;
-          let mappedName = serviceName.replace("local-", "");
+          let mappedName = this.normalizeServiceRole(serviceName);
           foundServices.add(mappedName);
 
           if (!this.services.has(mappedName)) {
             this.services.set(mappedName, {
               name: mappedName,
               label: mappedName.toUpperCase(),
-              url: this.resolveTopologyServiceUrl(serviceName),
+              url: this.resolveTopologyServiceUrl(mappedName),
               port: 0,
               status: "stopped",
             });
@@ -337,9 +340,18 @@ class NetworkManager {
 
   private resolveTopologyServiceUrl(name: string): string {
     const activeRun = runManager.getActiveRun();
-    const topologyName = activeRun?.topology ?? Deno.env.get("ATPROTO_TOPOLOGY") ?? undefined;
-    const serviceUrls = getTopologyServiceUrls(topologyName, name === "pds2" || activeRun?.pds2 === true);
-    return serviceUrls[name] ?? "";
+    const roleName = this.normalizeServiceRole(name);
+    const topologyName = activeRun?.topology ??
+      Deno.env.get("ATPROTO_TOPOLOGY") ?? undefined;
+    const serviceUrls = getTopologyServiceUrls(
+      topologyName,
+      roleName === "pds2" || activeRun?.pds2 === true,
+    );
+    return serviceUrls[roleName] ?? "";
+  }
+
+  private normalizeServiceRole(name: string): string {
+    return name.replace(/^local-/, "");
   }
 
   async healthCheck(): Promise<Record<string, ServiceStatus>> {
@@ -550,7 +562,7 @@ class NetworkManager {
    * Updates service status immediately instead of waiting for the next poll.
    */
   private handleWatcherEvent(event: WatcherEvent): void {
-    const { serviceName } = event;
+    const serviceName = this.normalizeServiceRole(event.serviceName);
 
     switch (event.kind) {
       case "started":
