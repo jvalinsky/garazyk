@@ -31,6 +31,13 @@ interface PlaywrightModule {
   };
 }
 
+const PLAYWRIGHT_PACKAGE = "playwright";
+const PLAYWRIGHT_VERSION = "1.52.0";
+
+function playwrightSpecifier(): string {
+  return `npm:${PLAYWRIGHT_PACKAGE}@${PLAYWRIGHT_VERSION}`;
+}
+
 /** Verify that staged Linux ELF binaries exist in the expected location. */
 export async function checkStagedBinaries(): Promise<PreflightResult> {
   const root = await repoRoot();
@@ -77,8 +84,10 @@ export async function checkPlaywright(
 ): Promise<PreflightResult> {
   try {
     // Playwright is an optional runtime dependency for browser scenarios.
+    // Keep the specifier opaque so JSR publish does not typecheck
+    // Playwright's Node-only declaration surface for this optional check.
     const { chromium } = await import(
-      "npm:playwright@1.52.0"
+      playwrightSpecifier()
     ) as PlaywrightModule;
     const browser = await chromium.launch({ timeout: 2000 });
     await browser.close();
