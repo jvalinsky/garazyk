@@ -237,8 +237,14 @@ const agentRunCommand = new Command()
     "--topology <preset:string>",
     `Use a topology preset (${TopologyRegistry.listPresets().join(", ")}).`,
   )
+  .type(
+    "runner",
+    new EnumType(
+      ["host", "docker"] as const,
+    ),
+  )
   .option(
-    "--runner <mode:string>",
+    "--runner <mode:runner>",
     "Scenario runner mode: host or docker.",
     { default: "host" as const },
   )
