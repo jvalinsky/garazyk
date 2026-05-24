@@ -107,6 +107,39 @@
     [store close];
 }
 
+- (void)testPersistentStoreSequenceExport {
+    NSError *error = nil;
+    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    XCTAssertNotNil(store);
+
+    NSString *did = @"did:plc:sequence_test";
+    PLCOperation *op1 = [[PLCOperation alloc] init];
+    op1.did = did;
+    op1.sig = @"sig1";
+    op1.data = @{@"type": @"create", @"prev": [NSNull null]};
+
+    PLCOperation *op2 = [[PLCOperation alloc] init];
+    op2.did = did;
+    op2.sig = @"sig2";
+    op2.data = @{@"type": @"create", @"prev": [NSNull null]};
+
+    XCTAssertTrue([store appendOperation:op1 nullifyCIDs:@[] error:&error]);
+    XCTAssertTrue([store appendOperation:op2 nullifyCIDs:@[] error:&error]);
+    XCTAssertEqualObjects(op1.sequence, @1);
+    XCTAssertEqualObjects(op2.sequence, @2);
+
+    NSArray<PLCOperation *> *exported = [store exportOperationsAfterSequence:@0 count:10 error:&error];
+    XCTAssertEqual(exported.count, 2);
+    XCTAssertEqualObjects(exported[0].sequence, @1);
+    XCTAssertEqualObjects(exported[1].sequence, @2);
+
+    NSArray<PLCOperation *> *afterFirst = [store exportOperationsAfterSequence:@1 count:10 error:&error];
+    XCTAssertEqual(afterFirst.count, 1);
+    XCTAssertEqualObjects(afterFirst[0].sequence, @2);
+
+    [store close];
+}
+
 - (void)testPersistentStoreMultipleDIDs {
     NSError *error = nil;
     PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];

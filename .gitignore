@@ -230,6 +230,8 @@ plc/
 plc_data/
 !Garazyk/Sources/PLC/
 !Garazyk/Sources/PLC/**
+!Garazyk/Tests/PLC/
+!Garazyk/Tests/PLC/**
 .letta/
 
 # OAuth client Vite build output (built in Dockerfile)

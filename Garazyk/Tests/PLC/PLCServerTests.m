@@ -234,6 +234,32 @@
     XCTAssertEqual(history.count, 1);
 }
 
+- (void)testSequenceExportAfterZero {
+    PLCOperation *op = [self insertTestOperationForDID:nil];
+    XCTAssertNotNil(op.sequence);
+
+    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                              methodString:@"GET"
+                                                      path:@"/export"
+                                               queryString:@"after=0"
+                                               queryParams:@{@"after": @"0"}
+                                                   version:@"HTTP/1.1"
+                                                   headers:@{}
+                                                      body:[NSData data]
+                                             remoteAddress:@"127.0.0.1"];
+    HttpResponse *resp = [HttpResponse response];
+    [self.server handleExport:req response:resp];
+
+    XCTAssertEqual(resp.statusCode, 200);
+    XCTAssertEqualObjects(resp.contentType, @"application/jsonlines; charset=utf-8");
+    NSError *error = nil;
+    NSData *chunk = resp.bodyChunkProducer(&error);
+    XCTAssertNil(error);
+    NSString *line = [[NSString alloc] initWithData:chunk encoding:NSUTF8StringEncoding];
+    XCTAssertTrue([line containsString:@"\"type\":\"sequenced_op\""]);
+    XCTAssertTrue([line containsString:@"\"seq\":1"]);
+}
+
 - (void)testPostInvalidDID {
     NSString *wrongDid = @"did:plc:wrong";
     Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];

@@ -63,6 +63,25 @@
     XCTAssertEqualObjects(op.data[@"type"], @"plc_operation");
 }
 
+- (void)testToDictionaryPreservesGenesisPrevNull {
+    PLCOperation *op = [[PLCOperation alloc] init];
+    op.did = @"did:plc:abcdefghijklmnopqrstuvwx";
+    op.sig = @"sig789";
+    op.data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[@"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"],
+        @"verificationMethods": @{@"atproto": @"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"},
+        @"alsoKnownAs": @[@"at://handle.example.com"],
+        @"services": @{}
+    };
+
+    NSDictionary *dict = [op toDictionary];
+    XCTAssertEqualObjects(dict[@"prev"], [NSNull null]);
+    XCTAssertEqualObjects(dict[@"sig"], @"sig789");
+    XCTAssertNil(dict[@"did"]);
+    XCTAssertNil(dict[@"cid"]);
+}
+
 - (void)testParseFromDictionaryMissingRequiredField {
     NSDictionary *json = @{
         @"did": @"did:plc:abcdefghijklmnopqrstuvwx"
