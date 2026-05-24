@@ -1999,9 +1999,11 @@ export function detectGameElements(grid, lines) {
 
       if (ch === playerChar) {
         playerCandidates.push({ x, y, fg });
-      } else if (foodChars.has(ch)) {
+      } else if (foodChars.has(ch) && hasBoard) {
+        // Only detect food inside a game board (too common in text otherwise)
         entities.push({ role: "food", x, y, char: ch, fg });
-      } else if (bonusChars.has(ch)) {
+      } else if (bonusChars.has(ch) && hasBoard) {
+        // Only detect bonus inside a game board (* is too common in text)
         entities.push({ role: "bonus", x, y, char: ch, fg });
       } else if (bodyChars.has(ch) && hasBoard) {
         // Only detect body segments inside a bordered game board
@@ -2163,8 +2165,8 @@ export function detectGameElements(grid, lines) {
       }
     }
 
-    // Card backs: small bordered boxes
-    for (const match of line.matchAll(/┌─+┐/g)) {
+    // Card backs: small bordered boxes (5+ chars wide to exclude UI buttons)
+    for (const match of line.matchAll(/┌────+┐/g)) {
       const before = line.substring(0, match.index);
       const x = [...before].length;
       const width = match[0].length;
@@ -2172,7 +2174,9 @@ export function detectGameElements(grid, lines) {
     }
   }
 
-  if (cardFaces.length > 0 || cardBacks.length > 0) {
+  // Only detect card game if there are actual card faces (suit symbols)
+  // Card backs alone aren't enough — btop's UI buttons also use ┌────┐
+  if (cardFaces.length >= 2) {
     // Detect piles by grouping cards by position
     // Stock: top-left card backs
     // Waste: second card from top-left
@@ -2228,13 +2232,20 @@ export function detectGameElements(grid, lines) {
 
     // Build game element
     const allYs = [...cardFaces.map(c => c.y), ...cardBacks.map(b => b.y)];
+    const allXs = [
+      ...cardFaces.map(c => c.x),
+      ...cardBacks.map(b => b.x),
+      ...cardBacks.map(b => b.x + b.width - 1),
+    ];
     const minY = Math.min(...allYs);
     const maxY = Math.max(...allYs);
+    const minX = Math.max(0, Math.min(...allXs));
+    const maxX = Math.min(cols - 1, Math.max(...allXs));
 
     elements.push({
       role: "cardGame",
       id: "card_game",
-      bounds: { startY: minY, endY: maxY },
+      bounds: { startY: minY, endY: maxY, startX: minX, endX: maxX },
       label: "Card Game",
       cardCount: cardFaces.length,
       faceDownCount: cardBacks.length,
@@ -2249,7 +2260,7 @@ export function detectGameElements(grid, lines) {
       elements.push({
         role: "cardFace",
         id: `card_${cf.x}_${cf.y}`,
-        bounds: { startY: cf.y, endY: cf.y },
+        bounds: { startY: cf.y, endY: cf.y, startX: cf.x, endX: Math.min(cols - 1, cf.x + cf.label.length - 1) },
         position: { x: cf.x, y: cf.y },
         label: cf.label,
         rank: cf.rank,
@@ -2261,6 +2272,205 @@ export function detectGameElements(grid, lines) {
   }
 
   return elements;
+}
+
+// ── Chart Detection ─────────────────────────────────────────────────────
+
+/**
+ * Detect data visualizations: Braille charts, block bars, pipe meters.
+ *
+ * Braille chart: Lines with 3+ Braille characters (U+2800–U+28FF)
+ *   Used by: btop (CPU core graphs, network sparklines)
+ *
+ * Block bar: Lines with ■/█ block elements forming horizontal bars
+ *   Used by: btop (summary bars), progress indicators
+ *
+ * Pipe meter: [||||||    XX.X%] pattern
+ *   Used by: htop (CPU/memory meters)
+ */
+export function detectCharts(grid, lines) {
+  const charts = [];
+  const rows = lines.length;
+  const cols = lines[0]?.length || 0;
+
+  // ── 1. Pipe meters: label[||||    XX.X%] ──
+  // htop: "  0[||||||||||               26.2%]"
+  //       "Mem[|||||||||||||||||||||11.9G/16.0G]"
+  const pipeMeterPattern = /(\w+)\[([|]+)\s*([^\]]+)\]/;
+  for (let y = 0; y < rows; y++) {
+    const line = lines[y] || "";
+    const match = line.match(pipeMeterPattern);
+    if (match) {
+      const label = match[1];
+      const fillLen = match[2].length;
+      // Calculate total meter width (fill + spaces inside brackets)
+      const bracketStart = line.indexOf("[");
+      const bracketEnd = line.indexOf("]", bracketStart);
+      const totalWidth = bracketEnd - bracketStart - 1;
+      const pct = parseFloat(match[3]);
+
+      // Check for multiple meters on same line (htop pairs cores)
+      const allMeters = [];
+      for (const m of line.matchAll(/(\w+)\[([|]+)\s*([^\]]+)\]/g)) {
+        allMeters.push({
+          label: m[1],
+          fillLength: m[2].length,
+          totalWidth: line.indexOf("]", line.indexOf(m[0])) - line.indexOf(m[0]) - m[0].indexOf("[") - 1,
+          value: m[3].trim(),
+          percent: parseFloat(m[3]),
+        });
+      }
+
+      charts.push({
+        role: "pipeMeter",
+        id: `pipe_meter_${y}`,
+        bounds: { startY: y, endY: y },
+        label: "Pipe Meter",
+        meters: allMeters,
+      });
+    }
+  }
+
+  // ── 2. Braille charts: lines with 3+ Braille characters ──
+  // btop: "C0 ⣀⣀⣀⣀⢠⢠ 40%"  (inline bar)
+  //       "⢰⣷" (sparkline in a 2D chart)
+  //
+  // Distinguish between:
+  //   - Chart region: multiple rows forming a 2D visualization
+  //     (e.g., btop CPU sparkline: ⡀⢰⣷⠸⡿⠁ across 3+ rows)
+  //   - Inline bar: single row with Braille bar next to a label
+  //     (e.g., btop process list: "⣀⣀⣀⣀⢀ 0.5%")
+  const brailleRange = [0x2800, 0x28FF];
+  const brailleLines = [];
+
+  for (let y = 0; y < rows; y++) {
+    const line = lines[y] || "";
+    let brailleCount = 0;
+    let brailleStart = -1, brailleEnd = -1;
+    let brailleChars = [];
+
+    for (let x = 0; x < cols; x++) {
+      const ch = line[x];
+      if (!ch) continue;
+      const code = ch.codePointAt(0);
+      if (code >= brailleRange[0] && code <= brailleRange[1]) {
+        brailleCount++;
+        if (brailleStart === -1) brailleStart = x;
+        brailleEnd = x;
+        brailleChars.push(ch);
+      }
+    }
+
+    if (brailleCount >= 3) {
+      // Check for associated label/value nearby
+      const labelMatch = line.match(/(\w+)\s*⣀/);
+      const valueMatch = line.match(/(\d+\.?\d*%)/);
+
+      brailleLines.push({
+        y,
+        startX: brailleStart,
+        endX: brailleEnd,
+        count: brailleCount,
+        chars: brailleChars.join(""),
+        label: labelMatch?.[1] || null,
+        value: valueMatch?.[1] || null,
+      });
+    }
+  }
+
+  // Group adjacent braille lines into chart regions
+  if (brailleLines.length > 0) {
+    // Group consecutive lines (gap of <=2 rows)
+    const groups = [];
+    let currentGroup = [brailleLines[0]];
+
+    for (let i = 1; i < brailleLines.length; i++) {
+      if (brailleLines[i].y - brailleLines[i - 1].y <= 2) {
+        currentGroup.push(brailleLines[i]);
+      } else {
+        groups.push(currentGroup);
+        currentGroup = [brailleLines[i]];
+      }
+    }
+    groups.push(currentGroup);
+
+    for (const group of groups) {
+      const ys = group.map(g => g.y);
+      const startX = Math.min(...group.map(g => g.startX));
+      const endX = Math.max(...group.map(g => g.endX));
+      const labels = group.map(g => g.label).filter(Boolean);
+      const values = group.map(g => g.value).filter(Boolean);
+      const totalChars = group.reduce((sum, g) => sum + g.count, 0);
+
+      // Determine chart type:
+      // - "sparkline": 2D chart with few chars per line but multiple rows
+      //   (e.g., btop network: ⢀⣸ / ⠈⢹ across 2 rows)
+      // - "barChart": multiple inline bars in a group (e.g., CPU cores)
+      // - "inlineBar": single row with Braille next to a value
+      //   (e.g., process list entries)
+      const avgCharsPerLine = totalChars / group.length;
+      const is2D = group.length >= 2 && avgCharsPerLine <= 8;
+      const isInlineBar = group.length === 1 && avgCharsPerLine >= 3;
+
+      if (is2D) {
+        charts.push({
+          role: "brailleChart",
+          chartType: "sparkline",
+          id: `braille_sparkline_${Math.min(...ys)}_${Math.max(...ys)}`,
+          bounds: { startY: Math.min(...ys), endY: Math.max(...ys) },
+          label: "Braille Sparkline",
+          lineCount: group.length,
+          charCount: totalChars,
+          labels,
+          values,
+          startX,
+          endX,
+        });
+      } else if (isInlineBar || group.length >= 1) {
+        // Inline Braille bars (like CPU core bars in btop)
+        charts.push({
+          role: "brailleChart",
+          chartType: "barChart",
+          id: `braille_bars_${Math.min(...ys)}_${Math.max(...ys)}`,
+          bounds: { startY: Math.min(...ys), endY: Math.max(...ys) },
+          label: "Braille Bar Chart",
+          lineCount: group.length,
+          charCount: totalChars,
+          labels,
+          values,
+          startX,
+          endX,
+        });
+      }
+    }
+  }
+
+  // ── 3. Block bars: ■/█ horizontal bars ──
+  // btop: "CPU ■■■■■■■■■■■■■■■■■■■■  24%"
+  // Also: Braille inline bars with label+value pattern
+  // btop: "Used  ⢠⣤ 7.01 GiB"
+  const blockBarPattern = /(\w[\w\s]*?)\s*([■█▓▒░]+)\s*([\d.]+%)/;
+  const brailleBarPattern = /(\w[\w\s]*?)\s*([⣀-⣿⢀-⢿]+)\s*([\d.]+\s*[KMG]i?B)/;
+  for (let y = 0; y < rows; y++) {
+    const line = lines[y] || "";
+    const blockMatch = line.match(blockBarPattern);
+    const brailleMatch = line.match(brailleBarPattern);
+    const match = blockMatch || brailleMatch;
+    if (match) {
+      charts.push({
+        role: "blockBar",
+        id: `block_bar_${y}`,
+        bounds: { startY: y, endY: y },
+        label: "Block Bar",
+        barLabel: match[1].trim(),
+        fillChars: match[2],
+        fillLength: match[2].length,
+        value: match[3],
+      });
+    }
+  }
+
+  return charts;
 }
 
 // ── Build Semantic Snapshot (improved) ────────────────────────────────────
@@ -2291,6 +2501,7 @@ export function buildSemanticSnapshot(session, detail = "compact", includePrompt
   const statusBars = detectStatusBar(grid, lines);
   const popups = detectPopups(grid, lines);
   const gameElements = detectGameElements(grid, lines);
+  const charts = detectCharts(grid, lines);
 
   const regions = [...containers];
 
@@ -2315,6 +2526,7 @@ export function buildSemanticSnapshot(session, detail = "compact", includePrompt
     statusBars,
     popups,
     gameElements,
+    charts,
   };
 
   const vdom = buildTuiVdom(snapshot, rows);

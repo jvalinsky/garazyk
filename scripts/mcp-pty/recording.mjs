@@ -114,7 +114,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
     .terminal-frame { position: relative; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #000; }
-    #terminal { white-space: pre; padding: 12px; margin: 0; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+    #terminal { white-space: pre; padding: 12px; margin: 0; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-variant-ligatures: none; tab-size: 1; }
     #overlay { position: absolute; top: 12px; left: 12px; pointer-events: none; }
 
     /* ── Overlay element styles ── */
@@ -171,7 +171,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     .conf-fill { height: 100%; background: #3fb950; border-radius: 2px; transition: width .3s; }
 
     #meta { color: var(--muted); font-size: 12px; margin-top: 10px; }
-    #measure { position: absolute; visibility: hidden; white-space: pre; left: -1000px; top: -1000px; }
+    #measure { position: absolute; visibility: hidden; white-space: pre; left: -1000px; top: -1000px; display: inline-block; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-variant-ligatures: none; tab-size: 1; }
   </style>
 </head>
 <body>
@@ -215,7 +215,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         </div>
       </div>
     </div>
-    <span id="measure">M</span>
+    <span id="measure">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span>
   </main>
   <script id="cast" type="application/octet-stream">${encodedCast}</script>
   <script>
@@ -411,13 +411,39 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     // ── Semantic overlay renderer ──
 
     function charMetrics() {
+      if (measure.textContent.length < 64) {
+        measure.textContent = "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM";
+      }
       const rect = measure.getBoundingClientRect();
-      return { charW: rect.width || 8, lineH: rect.height || 16 };
+      const computed = window.getComputedStyle(measure);
+      const lineHeight = Number.parseFloat(computed.lineHeight);
+      return {
+        charW: (rect.width / measure.textContent.length) || 8,
+        lineH: Number.isFinite(lineHeight) ? lineHeight : (rect.height || 16),
+      };
+    }
+
+    function boundsToPixels(bounds, charW, lineH) {
+      const startX = Number.isFinite(bounds?.startX) ? bounds.startX : 0;
+      const endX = Number.isFinite(bounds?.endX) ? bounds.endX : width - 1;
+      const startY = Number.isFinite(bounds?.startY) ? bounds.startY : 0;
+      const endY = Number.isFinite(bounds?.endY) ? bounds.endY : startY;
+      return {
+        x: startX * charW,
+        y: startY * lineH,
+        w: Math.max(charW, (endX - startX + 1) * charW),
+        h: Math.max(lineH, (endY - startY + 1) * lineH),
+      };
+    }
+
+    function makeBoundsBox(type, bounds, charW, lineH, label, extra) {
+      const b = boundsToPixels(bounds, charW, lineH);
+      return makeBox(type, b.x, b.y, b.w, b.h, label, extra);
     }
 
     function makeBox(type, x, y, w, h, label, extra) {
       const el = document.createElement("div");
-      el.className = "ov ov-" + type;
+      el.className = "semantic-box ov ov-" + type;
       el.style.left = x + "px"; el.style.top = y + "px";
       el.style.width = w + "px"; el.style.height = h + "px";
       if (label) {
@@ -444,10 +470,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       // 1. Popups (outermost containers)
       for (const p of (snap.popups || [])) {
         if (!p.bounds) continue;
-        const b = p.bounds;
-        overlay.appendChild(makeBox("popup",
-          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
-          p.title || "popup"));
+        overlay.appendChild(makeBoundsBox("popup", p.bounds, charW, lineH, p.title || "popup"));
       }
 
       // 2. Panes (layout containers)
@@ -455,10 +478,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       for (const p of (snap.panes || [])) {
         if (!p.bounds || seenPanes.has(p.id)) continue;
         seenPanes.add(p.id);
-        const b = p.bounds;
-        overlay.appendChild(makeBox("pane",
-          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
-          p.title || null));
+        overlay.appendChild(makeBoundsBox("pane", p.bounds, charW, lineH, p.title || null));
       }
 
       // 3. Lists (container) + list items (individual rows)
@@ -466,46 +486,32 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         if (!l.bounds) continue;
         if (l.role === "list") {
           // List container
-          const b = l.bounds;
-          overlay.appendChild(makeBox("list",
-            0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
-            l.label || "list"));
+          overlay.appendChild(makeBoundsBox("list", l.bounds, charW, lineH, l.label || "list"));
         } else if (l.role === "list_item") {
-          const b = l.bounds;
           const isSelected = l.selected === true;
           const type = isSelected ? "item-selected" : "item";
           const labelText = (l.label || "").substring(0, 40).trim();
-          overlay.appendChild(makeBox(type,
-            0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
-            labelText || "item"));
+          overlay.appendChild(makeBoundsBox(type, l.bounds, charW, lineH, labelText || "item"));
         }
       }
 
       // 4. Status bars
       for (const sb of (snap.statusBars || [])) {
         if (!sb.bounds) continue;
-        const b = sb.bounds;
         const keyBadges = (sb.keyActions || []).map(ka => ka.key + "→" + ka.action).join("  ");
-        overlay.appendChild(makeBox("status",
-          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
-          "status", keyBadges || null));
+        overlay.appendChild(makeBoundsBox("status", sb.bounds, charW, lineH, "status", keyBadges || null));
       }
 
       // 5. Tables
       for (const t of (snap.tables || [])) {
         if (!t.bounds) continue;
-        const b = t.bounds;
-        overlay.appendChild(makeBox("table",
-          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
-          t.label || "table"));
+        overlay.appendChild(makeBoundsBox("table", t.bounds, charW, lineH, t.label || "table"));
       }
 
       // 6. Facts with source bounds
       for (const f of (snap.facts || [])) {
         if (!f.sourceBounds) continue;
-        const b = f.sourceBounds;
-        overlay.appendChild(makeBox("fact",
-          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+        overlay.appendChild(makeBoundsBox("fact", f.sourceBounds, charW, lineH,
           f.label + ": " + (f.value || "").substring(0, 20)));
       }
 
@@ -522,9 +528,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
 
         if (ge.role === "gameBoard") {
           // Board: full-width box spanning the wall lines
-          overlay.appendChild(makeBox("gameBoard",
-            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
-            ge.label));
+          overlay.appendChild(makeBoundsBox("gameBoard", ge.bounds, charW, lineH, ge.label));
         } else if (ge.role === "player") {
           // Player: single-cell highlight with pulsing glow
           overlay.appendChild(makeBox("player",
@@ -552,21 +556,15 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         } else if (ge.role === "scoreBar") {
           // Score bar: full-width with parsed pairs
           const pairsText = (ge.pairs || []).map(p => p.label + ": " + p.value).join("  ");
-          overlay.appendChild(makeBox("scoreBar",
-            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
-            ge.label, pairsText || null));
+          overlay.appendChild(makeBoundsBox("scoreBar", ge.bounds, charW, lineH, ge.label, pairsText || null));
         } else if (ge.role === "titleBar") {
           // Title bar: full-width with mode
           const titleText = ge.mode ? ge.label + " · " + ge.mode : ge.label;
-          overlay.appendChild(makeBox("titleBar",
-            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
-            titleText));
+          overlay.appendChild(makeBoundsBox("titleBar", ge.bounds, charW, lineH, titleText));
         } else if (ge.role === "cardGame") {
           // Card game: summary box spanning the card area
           const cardText = ge.cardCount + " cards, " + ge.faceDownCount + " face-down, " + ge.tableauColumns + " tableau cols";
-          overlay.appendChild(makeBox("cardGame",
-            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
-            ge.label, cardText));
+          overlay.appendChild(makeBoundsBox("cardGame", ge.bounds, charW, lineH, ge.label, cardText));
         } else if (ge.role === "cardFace") {
           // Individual card face: small badge at the card position
           const cls = ge.suitColor === "red" ? "cardFace cardFace-red" : "cardFace";

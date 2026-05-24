@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { guessApplication, detectStatusLines, detectTables, detectContainers, parseKeyHints, detectStatusBar } from "../semantic.mjs";
+import { guessApplication, detectStatusLines, detectTables, detectContainers, parseKeyHints, detectStatusBar, detectGameElements } from "../semantic.mjs";
 
 test("guessApplication", () => {
   const topGuess = guessApplication("/usr/bin/top", []);
@@ -176,4 +176,34 @@ test("parseKeyHints rejects pure numeric keys from colon pattern", () => {
   const hints = parseKeyHints(text);
   const map = hints.map(h => `${h.key}→${h.action}`);
   assert.ok(!map.some(m => m === "1→1"));
+});
+
+test("detectGameElements preserves horizontal bounds for card overlays", () => {
+  const lines = [
+    "                                                            ",
+    "  ┌─────┐        K♠                         A♥             ",
+    "                                                            ",
+    "      5♦                                                    ",
+    "                                                            ",
+  ];
+  const grid = lines.map((line) => [...line].map((char) => ({ char, fg: -1, bg: -1 })));
+
+  const elements = detectGameElements(grid, lines);
+  const cardGame = elements.find((element) => element.role === "cardGame");
+  const fiveDiamond = elements.find((element) => element.role === "cardFace" && element.label === "5♦");
+
+  assert.ok(cardGame);
+  assert.deepStrictEqual(cardGame.bounds, {
+    startY: 1,
+    endY: 3,
+    startX: 2,
+    endX: 44,
+  });
+  assert.ok(fiveDiamond);
+  assert.deepStrictEqual(fiveDiamond.bounds, {
+    startY: 3,
+    endY: 3,
+    startX: 6,
+    endX: 7,
+  });
 });
