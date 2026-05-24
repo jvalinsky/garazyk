@@ -17,6 +17,7 @@ import {
   assertMatch,
 } from "@std/assert";
 import { join } from "@std/path";
+import { TopologyRegistry } from "@garazyk/schemat";
 import type { AgentTriageResult } from "./cli/agent.ts";
 import {
   classifyBoundary,
@@ -1105,6 +1106,7 @@ Deno.test("CLI: agent run stdout contains valid NDJSON among log lines", async (
     "--no-setup",
     "--timeout",
     "5",
+    "01",
   ]);
 
   // Filter for lines that look like JSON objects (start with {)
@@ -1150,3 +1152,115 @@ Deno.test("CLI: agent triage with non-existent reports-dir returns valid JSON", 
   assertEquals(Array.isArray(parsed.evidence), true);
   assertEquals(Array.isArray(parsed.reportPaths), true);
 });
+
+// ── CLI: all topology presets produce valid JSON ──────────────────────
+
+// Validate every registered topology preset returns valid agent list JSON.
+// Spawns all preset queries in parallel via Promise.all for speed.
+Deno.test("CLI: all topology presets produce valid JSON", async () => {
+  const presets = TopologyRegistry.listPresets();
+  if (presets.length === 0) {
+    throw new Error("TopologyRegistry.listPresets() returned empty — presets not loaded");
+  }
+
+  // Spawn all preset queries concurrently (not sequentially).
+  const results = await Promise.all(presets.map(async (preset) => {
+    const { stdout, code } = await spawnCli([
+      "agent",
+      "list",
+      "--topology",
+      preset,
+    ]);
+    return { preset, stdout, code };
+  }));
+
+  for (const { preset, stdout, code } of results) {
+    assertEquals(code, 0, `topology "${preset}" exited non-zero`);
+
+    const parsed = JSON.parse(stdout.trim());
+    assertEquals(Array.isArray(parsed), true, `topology "${preset}" not an array`);
+
+    for (const s of parsed) {
+      assertEquals(typeof s.id, "string", `${preset}: id not string`);
+      assertEquals(typeof s.name, "string", `${preset}: name not string`);
+      assertEquals(typeof s.path, "string", `${preset}: path not string`);
+      assertEquals(Array.isArray(s.requires), true, `${preset}: requires not array`);
+      assertEquals(Array.isArray(s.optional), true, `${preset}: optional not array`);
+      assertEquals(typeof s.needsPds2, "boolean", `${preset}: needsPds2 not boolean`);
+      assertEquals(Array.isArray(s.browserFlows), true, `${preset}: browserFlows not array`);
+      assertEquals(typeof s.parameters, "object", `${preset}: parameters not object`);
+    }
+  }
+});
+
+// ── CLI: agent run smoke test (Docker-dependent) ──────────────────────
+
+/** Check whether Docker is available by running `docker info`. */
+async function dockerAvailable(): Promise<boolean> {
+  try {
+    const cmd = new Deno.Command("docker", {
+      args: ["info"],
+      stdout: "null",
+      stderr: "null",
+    });
+    const { code } = await cmd.output();
+    return code === 0;
+  } catch {
+    return false;
+  }
+}
+
+Deno.test(
+  "CLI: agent run --setup emits full NDJSON event lifecycle",
+  async () => {
+    if (!await dockerAvailable()) {
+      // Docker not available — skip this integration test gracefully.
+      return;
+    }
+
+    // Run scenario 01 with --setup (starts Docker services, runs, tears down).
+    // 90s CLI timeout accounts for Docker container startup + scenario execution.
+    const { stdout } = await spawnCli([
+      "agent",
+      "run",
+      "--setup",
+      "--timeout",
+      "90",
+      "01",
+    ]);
+
+    // Filter JSON lines from stdout (ignore [INFO] log lines).
+    const events = stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith("{"))
+      .map((l) => {
+        try {
+          return JSON.parse(l) as Record<string, unknown>;
+        } catch {
+          // Skip unparseable lines (partial NDJSON during flush).
+          return null;
+        }
+      })
+      .filter((e): e is Record<string, unknown> => e !== null);
+
+    // Verify at least the core lifecycle events are present.
+    const types = events.map((e) => e.type);
+    assertEquals(types.includes("run_start"), true, "missing run_start");
+    assertEquals(
+      types.includes("scenario_start"),
+      true,
+      "missing scenario_start",
+    );
+    assertEquals(
+      types.includes("scenario_complete"),
+      true,
+      "missing scenario_complete",
+    );
+    assertEquals(types.includes("run_finished"), true, "missing run_finished");
+
+    // Verify the finished event reports success.
+    const finished = events.find((e) => e.type === "run_finished");
+    assertEquals(finished?.ok, true);
+  },
+);
