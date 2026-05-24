@@ -2,7 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import pty from "node-pty";
 import xtermHeadless from "@xterm/headless";
-import { buildSemanticSnapshot } from "./semantic.mjs";
+import { buildSemanticSnapshot, diffSnapshots } from "./semantic.mjs";
 
 const { Terminal } = xtermHeadless;
 
@@ -51,10 +51,14 @@ function positiveInt(value, fallback, min = 1, max = 1000) {
 export function encodeKey(name) {
   const key = String(name ?? "").toLowerCase();
   const bytes = KEY_BYTES.get(key);
-  if (bytes === undefined) {
-    throw new Error(`Unsupported key: ${name}`);
+  if (bytes !== undefined) {
+    return bytes;
   }
-  return bytes;
+  // Single printable ASCII character: send as-is
+  if (key.length === 1 && /^[\x20-\x7e]$/.test(key)) {
+    return key;
+  }
+  throw new Error(`Unsupported key: ${name}`);
 }
 
 export function parseAllowlist(env = process.env) {
@@ -201,6 +205,75 @@ export class TerminalSession {
     await this.writeQueue;
     await new Promise((resolve) => setTimeout(resolve, ms));
     await this.writeQueue;
+  }
+
+  /**
+   * Wait for the screen to stabilize (no changes for stableMs).
+   * Polls the screen every pollMs and returns when content hasn't changed
+   * for stableMs, or when maxMs is reached.
+   * Returns the final snapshot.
+   */
+  async waitForStable({ maxMs = 5000, stableMs = 300, pollMs = 100 } = {}) {
+    const started = Date.now();
+    let lastHash = this._snapshotHash();
+    let stableSince = Date.now();
+
+    while (Date.now() - started < maxMs) {
+      await new Promise(r => setTimeout(r, pollMs));
+      await this.writeQueue;
+      const currentHash = this._snapshotHash();
+      if (currentHash !== lastHash) {
+        lastHash = currentHash;
+        stableSince = Date.now();
+      }
+      if (Date.now() - stableSince >= stableMs) {
+        return; // Screen is stable
+      }
+    }
+    // Max time reached — return whatever we have
+  }
+
+  /**
+   * Quick hash of the current screen content for change detection.
+   */
+  _snapshotHash() {
+    const buffer = this.term.buffer.active;
+    const lines = [];
+    for (let row = 0; row < this.rows; row++) {
+      const line = buffer.getLine(buffer.viewportY + row);
+      lines.push(line ? line.translateToString(true) : "");
+    }
+    return lines.join("\n");
+  }
+
+  /**
+   * Take a semantic snapshot, perform an action, wait for stable, then take
+   * another semantic snapshot and return the diff.
+   * This is the core of the VERIFY step in the observe-decide-act-verify loop.
+   * @param {string} keyName - Key name (e.g., 'j', 'enter', 'tab') or single character
+   * @param {Object} options
+   * @param {number} options.maxWaitMs - Maximum time to wait for screen to stabilize
+   * @param {number} options.stableMs - Time screen must be stable before returning
+   */
+  async actAndVerify(keyName, { maxWaitMs = 2000, stableMs = 300 } = {}) {
+    const before = this.semanticSnapshot("compact", false).snapshot;
+    const beforeRunning = this.running;
+    // Send the key — try pressKey for named keys, type for single chars
+    try {
+      await this.pressKey(keyName);
+    } catch {
+      await this.type(keyName);
+    }
+    await this.waitForStable({ maxMs: maxWaitMs, stableMs });
+    const after = this.semanticSnapshot("compact", false).snapshot;
+    const afterRunning = this.running;
+    const diff = diffSnapshots(before, after);
+    diff.processExited = beforeRunning && !afterRunning;
+    return {
+      before,
+      after,
+      diff,
+    };
   }
 
   async write(data, recordInput = true) {
