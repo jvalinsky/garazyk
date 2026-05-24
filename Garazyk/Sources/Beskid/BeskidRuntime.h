@@ -7,6 +7,8 @@
 
 #import <Foundation/Foundation.h>
 
+#import "Runtime/GZServiceLifecycle.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @class BeskidConfiguration;
@@ -15,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Coordinates the initialization and lifecycle of the Beskid service.
  */
-@interface BeskidRuntime : NSObject
+@interface BeskidRuntime : NSObject <GZServiceRuntimeProtocol>
 
 /**
  * @abstract Current service configuration.
