@@ -3,21 +3,66 @@
  */
 
 import { Database } from "sqlite3";
-import { Run, ScenarioResult, ScenarioResultView, ScenarioStatus, ScenarioStep } from "../services/types.ts";
+import {
+  Run,
+  ScenarioResult,
+  ScenarioResultView,
+  ScenarioStatus,
+  ScenarioStep,
+} from "../services/types.ts";
 
 /** Normalize epoch timestamps: second-based values are converted to ms. */
-export function normalizeEpochMs(value: number | null | undefined): number | undefined {
+export function normalizeEpochMs(
+  value: number | null | undefined,
+): number | undefined {
   if (value === null || value === undefined) return undefined;
   return value < 10_000_000_000 ? value * 1000 : value;
 }
 
+/** Parse dashboard run IDs like 2026-05-24T05-06-45-159 into epoch ms. */
+export function parseRunIdEpochMs(
+  runId: string | undefined,
+): number | undefined {
+  if (!runId) return undefined;
+  const match = runId.match(
+    /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2})-?(\d{2})(?:-?(\d{2}))?/,
+  );
+  if (!match) return undefined;
+  const [, year, month, day, hour, minute, second] = match;
+  const epoch = Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    second ? Number(second) : 0,
+  );
+  return Number.isFinite(epoch) ? epoch : undefined;
+}
+
 function normalizeRun(row: Run | undefined): Run | undefined {
   if (!row) return undefined;
+  const storedStartedAt = normalizeEpochMs(row.startedAt) ?? row.startedAt;
+  const runIdStartedAt = parseRunIdEpochMs(row.id);
+  const startedAt = runIdStartedAt !== undefined &&
+      Math.abs(storedStartedAt - runIdStartedAt) > 24 * 60 * 60 * 1000
+    ? runIdStartedAt
+    : storedStartedAt;
+  const finishedAt = normalizeEpochMs(row.finishedAt);
+  const stoppedAt = normalizeEpochMs(row.stoppedAt);
+  const durationFinishedAt =
+    typeof row.durationS === "number" && row.durationS >= 0
+      ? startedAt + row.durationS * 1000
+      : undefined;
   const run = {
     ...row,
-    startedAt: normalizeEpochMs(row.startedAt) ?? row.startedAt,
-    finishedAt: normalizeEpochMs(row.finishedAt),
-    stoppedAt: normalizeEpochMs(row.stoppedAt),
+    startedAt,
+    finishedAt: finishedAt !== undefined && finishedAt >= startedAt
+      ? finishedAt
+      : durationFinishedAt,
+    stoppedAt: stoppedAt !== undefined && stoppedAt >= startedAt
+      ? stoppedAt
+      : undefined,
   };
   return run;
 }

@@ -14,11 +14,7 @@
  * @module cmd_interpreter
  */
 
-import type {
-  Msg,
-  RunProgress,
-  TopologyPreview,
-} from "./dashboard_state.ts";
+import type { Msg, RunProgress, TopologyPreview } from "./dashboard_state.ts";
 
 import type {
   Run,
@@ -125,16 +121,37 @@ export function constructMsg(
 
   switch (onSuccess) {
     case "network/healthReceived":
-      if (!isRecord(data) || !Array.isArray(d.services)) {
-        return { type: "network/healthFailed", error: "Malformed health response", ...tokenField };
+      if (
+        !isRecord(data) || (!Array.isArray(d.services) && !isRecord(d.services))
+      ) {
+        return {
+          type: "network/healthFailed",
+          error: "Malformed health response",
+          ...tokenField,
+        };
       }
-      return { type: "network/healthReceived", services: d.services as ServiceStatus[], ...tokenField };
+      return {
+        type: "network/healthReceived",
+        services:
+          (Array.isArray(d.services)
+            ? d.services
+            : Object.values(d.services)) as ServiceStatus[],
+        ...tokenField,
+      };
 
     case "runs/activeReceived":
       if (!isRecord(data)) {
-        return { type: "runs/activeFailed", error: "Malformed active run response", ...tokenField };
+        return {
+          type: "runs/activeFailed",
+          error: "Malformed active run response",
+          ...tokenField,
+        };
       }
-      return { type: "runs/activeReceived", run: (d.activeRun ?? null) as Run | null, ...tokenField };
+      return {
+        type: "runs/activeReceived",
+        run: (d.activeRun ?? null) as Run | null,
+        ...tokenField,
+      };
 
     case "runs/startSucceeded":
       if (!isRecord(data) || !("runId" in d)) {
@@ -144,27 +161,70 @@ export function constructMsg(
 
     case "runs/progressReceived":
       if (!isRunProgress(data)) {
-        return { type: "runs/progressFailed", error: "Malformed progress response", ...runField, ...tokenField };
+        return {
+          type: "runs/progressFailed",
+          error: "Malformed progress response",
+          ...runField,
+          ...tokenField,
+        };
       }
-      return { type: "runs/progressReceived", progress: data, ...runField, ...tokenField };
+      return {
+        type: "runs/progressReceived",
+        progress: data,
+        ...runField,
+        ...tokenField,
+      };
+
+    case "runs/recentReceived":
+      if (!Array.isArray(data)) {
+        return {
+          type: "runs/recentFailed",
+          error: "Malformed recent runs response",
+          ...tokenField,
+        };
+      }
+      return {
+        type: "runs/recentReceived",
+        runs: data as Run[],
+        ...tokenField,
+      };
 
     case "scenarios/received":
       if (!isRecord(data) || !Array.isArray(d.scenarios)) {
-        return { type: "scenarios/failed", error: "Malformed scenarios response" };
+        return {
+          type: "scenarios/failed",
+          error: "Malformed scenarios response",
+        };
       }
       return { type: "scenarios/received", scenarios: d.scenarios as never };
 
     case "topology/listReceived":
       if (!isRecord(data) || !Array.isArray(d.topologies)) {
-        return { type: "topology/listFailed", error: "Malformed topologies response" };
+        return {
+          type: "topology/listFailed",
+          error: "Malformed topologies response",
+        };
       }
-      return { type: "topology/listReceived", topologies: d.topologies as never };
+      return {
+        type: "topology/listReceived",
+        topologies: d.topologies as never,
+      };
 
     case "topology/previewReceived":
       if (!isTopologyPreview(data)) {
-        return { type: "topology/previewFailed", error: "Malformed topology response", ...nameField, ...tokenField };
+        return {
+          type: "topology/previewFailed",
+          error: "Malformed topology response",
+          ...nameField,
+          ...tokenField,
+        };
       }
-      return { type: "topology/previewReceived", preview: data, ...nameField, ...tokenField };
+      return {
+        type: "topology/previewReceived",
+        preview: data,
+        ...nameField,
+        ...tokenField,
+      };
 
     case "network/startSucceeded":
       return { type: "network/startSucceeded" };
@@ -177,24 +237,43 @@ export function constructMsg(
 
     case "runs/restartSucceeded":
       if (!isRecord(data) || !("newRunId" in d)) {
-        return { type: "runs/restartFailed", error: "Malformed restart response" };
+        return {
+          type: "runs/restartFailed",
+          error: "Malformed restart response",
+        };
       }
       return { type: "runs/restartSucceeded", newRunId: String(d.newRunId) };
 
     case "logs/received":
-      return { type: "logs/received", text: typeof data === "string" ? data : String(data), ...runField, ...tokenField };
+      return {
+        type: "logs/received",
+        text: typeof data === "string" ? data : String(data),
+        ...runField,
+        ...tokenField,
+      };
 
     case "metrics/received":
       if (!isRecord(data) || !isRecord(d.stats ?? {})) {
-        return { type: "metrics/failed", error: "Malformed metrics response", ...tokenField };
+        return {
+          type: "metrics/failed",
+          error: "Malformed metrics response",
+          ...tokenField,
+        };
       }
-      return { type: "metrics/received", stats: (d.stats ?? {}) as never, ...tokenField };
+      return {
+        type: "metrics/received",
+        stats: (d.stats ?? {}) as never,
+        ...tokenField,
+      };
 
     case "runs/detailResults":
       if (!isRecord(data) || !Array.isArray(d.results)) {
         return { type: "runs/closeDetail" };
       }
-      return { type: "runs/detailResults", results: d.results as ScenarioResultView[] };
+      return {
+        type: "runs/detailResults",
+        results: d.results as ScenarioResultView[],
+      };
 
     default:
       throw new Error(`Unknown success msg type: ${onSuccess}`);
@@ -255,12 +334,19 @@ export function constructErrorMsg(
       return { type: "runs/stopFailed", error };
     case "runs/restartFailed":
       return { type: "runs/restartFailed", error };
+    case "runs/recentFailed":
+      return { type: "runs/recentFailed", error, ...tokenField };
     case "scenarios/failed":
       return { type: "scenarios/failed", error };
     case "topology/listFailed":
       return { type: "topology/listFailed", error };
     case "topology/previewFailed":
-      return { type: "topology/previewFailed", error, ...nameField, ...tokenField };
+      return {
+        type: "topology/previewFailed",
+        error,
+        ...nameField,
+        ...tokenField,
+      };
     case "network/startFailed":
       return { type: "network/startFailed", error };
     case "network/stopFailed":

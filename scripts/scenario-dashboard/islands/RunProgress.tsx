@@ -30,14 +30,22 @@ function staleLevel(secondsSinceUpdate: number): "active" | "slow" | "stale" {
 
 /** RunProgress island for live progress, elapsed time, and activity indicator. */
 export default function RunProgress(
-  { runId, startedAt, status, totalScenarios = 0, completedScenarios = 0, agentMode = false }:
-    RunProgressProps,
+  {
+    runId,
+    startedAt,
+    status,
+    totalScenarios = 0,
+    completedScenarios = 0,
+    agentMode = false,
+  }: RunProgressProps,
 ) {
   const { state, dispatch } = useRuntime();
   const progress = state.value.runs.progressByRunId[runId];
   const startedAtMs = startedAt < 10_000_000_000 ? startedAt * 1000 : startedAt;
-  const isActive = status === "running" || status === "starting" ||
+  const serverActive = status === "running" || status === "starting" ||
     status === "stopping";
+  const isActive = progress?.running ?? serverActive;
+  const shouldRender = serverActive || progress?.running === false;
 
   const [elapsed, setElapsed] = useState(() => Date.now() - startedAtMs);
   const [secondsSinceUpdate, setSecondsSinceUpdate] = useState(0);
@@ -50,7 +58,11 @@ export default function RunProgress(
     if (!isActive) return;
     const tick = setInterval(() => {
       const now = Date.now();
-      setElapsed(now - startedAtMs);
+      setElapsed(
+        progress?.running === false && typeof progress.elapsedMs === "number"
+          ? progress.elapsedMs
+          : now - startedAtMs,
+      );
       if (progress?.updatedAt) {
         setSecondsSinceUpdate(Math.floor((now - progress.updatedAt) / 1000));
       }
@@ -58,7 +70,7 @@ export default function RunProgress(
     return () => clearInterval(tick);
   }, [startedAtMs, isActive, progress?.updatedAt]);
 
-  if (!isActive) return null;
+  if (!shouldRender) return null;
 
   const level = staleLevel(secondsSinceUpdate);
   const total = Math.max(0, progress?.total ?? totalScenarios);
@@ -71,7 +83,12 @@ export default function RunProgress(
     ? "Starting"
     : status === "stopping"
     ? "Stopping"
+    : !isActive
+    ? "Completed"
     : "Running";
+  const displayElapsed = !isActive && typeof progress?.elapsedMs === "number"
+    ? progress.elapsedMs
+    : elapsed;
   const currentScenario = progress?.currentScenario
     ? `${
       progress.currentScenarioId ? `${progress.currentScenarioId}: ` : ""
@@ -91,7 +108,7 @@ export default function RunProgress(
           {agentMode && <span class="run-progress-agent-badge">Agent</span>}
           <span class="run-progress-status">{statusLabel}</span>
           <span class="run-progress-elapsed">
-            {formatElapsedShort(elapsed)}
+            {formatElapsedShort(displayElapsed)}
           </span>
         </div>
       </div>
@@ -120,7 +137,9 @@ export default function RunProgress(
           )
           : (
             <div class="run-progress-scenario run-progress-muted">
-              Waiting for the first scenario update
+              {isActive
+                ? "Waiting for the first scenario update"
+                : "Run finished"}
             </div>
           )}
 
