@@ -6,17 +6,18 @@ export default function NetworkStatus() {
   const { state, dispatch } = useRuntime();
   const { services } = state.value.network;
   const busy = state.value.ux.busy;
+  const runner = state.value.ux.runner;
 
   function startAll() {
-    dispatch({ type: "network/startRequested", pds2: false });
+    dispatch({ type: "network/startRequested", pds2: false, runner });
   }
 
   function startPds2() {
-    dispatch({ type: "network/startRequested", pds2: true });
+    dispatch({ type: "network/startRequested", pds2: true, runner });
   }
 
   function stopAll() {
-    dispatch({ type: "network/stopRequested" });
+    dispatch({ type: "network/stopRequested", runner });
   }
 
   return (

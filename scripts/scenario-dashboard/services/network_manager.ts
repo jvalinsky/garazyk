@@ -13,6 +13,7 @@
 
 import { fromFileUrl, join } from "$std/path/mod.ts";
 import { ServiceStatus, ServiceStatusType } from "./types.ts";
+import type { Run } from "./types.ts";
 import { runManager } from "./run_manager.ts";
 import { getTopologyServiceUrls } from "./topology_service.ts";
 import {
@@ -30,10 +31,28 @@ import {
   startLocalNetwork,
   stopLocalNetwork,
 } from "@garazyk/hamownia/atproto_network.ts";
+import {
+  loadRunResourceManifest,
+  serviceUrlsFromResourceManifest,
+} from "@garazyk/schemat";
 
-const SCRIPTS_DIR = join(
-  fromFileUrl(new URL("../../scenarios", import.meta.url)),
-);
+const HOST_SERVICE_ROLES = [
+  "plc",
+  "pds",
+  "pds2",
+  "relay",
+  "appview",
+  "chat",
+  "video",
+  "germ",
+  "mikrus",
+  "beskid",
+];
+
+function isDenoTestRun(): boolean {
+  return Deno.mainModule.endsWith("_test.ts") ||
+    Deno.mainModule.endsWith(".test.ts");
+}
 
 /** Manages Docker service lifecycle, health checks, container stats, and log streaming. */
 class NetworkManager {
@@ -44,8 +63,10 @@ class NetworkManager {
   private eventUnsubscribe: (() => void) | null = null;
 
   constructor() {
-    // Start background health checking, but not during build
-    if (!Deno.args.includes("build")) {
+    // Start background health checking for the web server, but not during
+    // Fresh builds or Deno tests where intervals and Docker event streams
+    // leak across test cases.
+    if (!Deno.args.includes("build") && !isDenoTestRun()) {
       this.initDockerApi();
       this.startHealthChecks();
     }
@@ -74,10 +95,13 @@ class NetworkManager {
     }
   }
 
-  async startAll(opts?: { pds2?: boolean }): Promise<void> {
+  async startAll(
+    opts?: { pds2?: boolean; useBinary?: boolean },
+  ): Promise<void> {
     try {
       await startLocalNetwork({
         withPds2: opts?.pds2,
+        useBinary: opts?.useBinary,
         keepRunning: true,
       });
 
@@ -88,9 +112,12 @@ class NetworkManager {
     }
   }
 
-  async stopAll(): Promise<void> {
+  async stopAll(opts?: { useBinary?: boolean }): Promise<void> {
     try {
-      await stopLocalNetwork({ keepRunning: false });
+      await stopLocalNetwork({
+        useBinary: opts?.useBinary,
+        keepRunning: false,
+      });
     } finally {
       await this.discoverRunningServices();
     }
@@ -191,20 +218,70 @@ class NetworkManager {
   /**
    * Proactively look for running docker containers matching our services.
    * Uses the Docker API when available, falls back to CLI.
+   * When no Docker containers are found, falls back to probing binary
+   * service URLs via HTTP.
    */
   private async discoverRunningServices(): Promise<void> {
+    let dockerFound = false;
+
     // Try Docker API first
     if (this.dockerClient) {
       try {
         await this.discoverRunningServicesAPI();
-        return;
+        dockerFound = this.services.size > 0 &&
+          [...this.services.values()].some((s) => s.status !== "stopped");
       } catch {
         // Fall through to CLI
       }
     }
 
-    // CLI fallback
-    await this.discoverRunningServicesCLI();
+    if (!dockerFound) {
+      // CLI fallback
+      await this.discoverRunningServicesCLI();
+      dockerFound = this.services.size > 0 &&
+        [...this.services.values()].some((s) => s.status !== "stopped");
+    }
+
+    // When no Docker containers are found, fall back to binary/host services.
+    // The healthCheck() method will probe these URLs via HTTP to determine
+    // actual running status.
+    if (!dockerFound) {
+      this.seedBinaryServiceDefaults();
+    }
+  }
+
+  /**
+   * Populate the services map with default binary service entries.
+   * Actual running status is determined by subsequent HTTP health probes.
+   * Uses the resource manifest when available, otherwise falls back to
+   * default service URLs from the topology.
+   */
+  private seedBinaryServiceDefaults(): void {
+    // In binary mode, only host services exist — clear stale Docker entries.
+    // Safe because the dockerFound gate guarantees no running Docker containers.
+    this.services.clear();
+
+    const activeRun = runManager.getActiveRun();
+    const status: ServiceStatusType = activeRun &&
+        (activeRun.status === "starting" || activeRun.status === "running" ||
+          activeRun.status === "stopping")
+      ? "starting"
+      : "stopped";
+    const urls = this.resolveServiceUrls();
+    const roles = new Set([...HOST_SERVICE_ROLES, ...Object.keys(urls)]);
+    if (!activeRun?.pds2) roles.delete("pds2");
+
+    for (const role of roles) {
+      const url = urls[role] ?? "";
+      if (!url) continue;
+      this.services.set(role, {
+        name: role,
+        label: role.toUpperCase(),
+        url,
+        port: 0,
+        status,
+      });
+    }
   }
 
   /**
@@ -339,15 +416,45 @@ class NetworkManager {
   }
 
   private resolveTopologyServiceUrl(name: string): string {
-    const activeRun = runManager.getActiveRun();
     const roleName = this.normalizeServiceRole(name);
+    const serviceUrls = this.resolveServiceUrls();
+    return serviceUrls[roleName] ?? "";
+  }
+
+  private resolveServiceUrls(): Record<string, string> {
+    const activeRun = runManager.getActiveRun();
     const topologyName = activeRun?.topology ??
       Deno.env.get("ATPROTO_TOPOLOGY") ?? undefined;
-    const serviceUrls = getTopologyServiceUrls(
+    const topologyUrls = getTopologyServiceUrls(
       topologyName,
-      roleName === "pds2" || activeRun?.pds2 === true,
+      activeRun?.pds2 === true,
     );
-    return serviceUrls[roleName] ?? "";
+    return {
+      ...topologyUrls,
+      ...this.resolveManifestServiceUrls(activeRun),
+    };
+  }
+
+  private resolveManifestServiceUrls(
+    activeRun: Run | undefined,
+  ): Record<string, string> {
+    const manifestPath = activeRun?.manifestPath ??
+      (activeRun?.runDir
+        ? join(activeRun.runDir, "resource-manifest.json")
+        : undefined);
+    if (!manifestPath) return {};
+
+    try {
+      return serviceUrlsFromResourceManifest(
+        loadRunResourceManifest(manifestPath),
+      );
+    } catch (e) {
+      console.warn(
+        `[network] failed to load resource manifest ${manifestPath}:`,
+        e,
+      );
+      return {};
+    }
   }
 
   private normalizeServiceRole(name: string): string {
@@ -355,32 +462,37 @@ class NetworkManager {
   }
 
   async healthCheck(): Promise<Record<string, ServiceStatus>> {
-    await this.discoverRunningServices();
+    if (this.services.size === 0) {
+      this.seedBinaryServiceDefaults();
+    }
 
     const results: Record<string, ServiceStatus> = {};
-    const activeRun = runManager.getActiveRun();
 
     // If we have an active run, we should have a manifest with health probes
     // TODO: Load manifest from activeRun.manifestPath if available
 
-    for (const [name, s] of this.services) {
+    const checks = [...this.services].map(async ([name, s]) => {
       if (s.status === "stopped") {
-        results[name] = s;
-        continue;
+        return [name, s] as const;
       }
 
       try {
         // Fallback to heuristic-based health checks if no manifest probes
         const healthUrl = this.getHealthUrl(name, s.url);
         if (!healthUrl) {
-          results[name] = s;
-          continue;
+          return [name, s] as const;
         }
 
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), 3000);
-        const resp = await fetch(healthUrl, { signal: controller.signal });
-        clearTimeout(id);
+        const headers: Record<string, string> = {};
+        if (name === "appview") {
+          headers.Authorization = "Bearer localdevadmin";
+        }
+        const resp = await fetch(healthUrl, {
+          signal: controller.signal,
+          headers,
+        }).finally(() => clearTimeout(id));
 
         const healthy = resp.ok;
         if (healthy && (s.status === "error" || s.status === "starting")) {
@@ -390,13 +502,17 @@ class NetworkManager {
         const current = this.services.get(name) || s;
         const updated = { ...current, healthy };
         this.services.set(name, updated);
-        results[name] = updated;
+        return [name, updated] as const;
       } catch (e) {
         const current = this.services.get(name) || s;
         const updated = { ...current, healthy: false };
         this.services.set(name, updated);
-        results[name] = updated;
+        return [name, updated] as const;
       }
+    });
+
+    for (const [name, service] of await Promise.all(checks)) {
+      results[name] = service;
     }
 
     return results;
@@ -424,6 +540,9 @@ class NetworkManager {
   }
 
   getStatus(): Record<string, ServiceStatus> {
+    if (this.services.size === 0) {
+      this.seedBinaryServiceDefaults();
+    }
     return Object.fromEntries(this.services);
   }
 

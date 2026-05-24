@@ -135,6 +135,8 @@ Deno.test("network/startSucceeded: clears busy and re-fetches health", () => {
       scenarioParams: {},
       collapsedCategories: new Set(),
       searchTerm: "",
+      runner: "host",
+      agentMode: false,
     },
     lastTickMs: 0,
   });
@@ -152,6 +154,8 @@ Deno.test("network/startFailed: clears busy", () => {
       scenarioParams: {},
       collapsedCategories: new Set(),
       searchTerm: "",
+      runner: "host",
+      agentMode: false,
     },
     lastTickMs: 0,
   });
@@ -361,6 +365,8 @@ Deno.test("runs/startSucceeded: navigates to run page", () => {
       scenarioParams: {},
       collapsedCategories: new Set(),
       searchTerm: "",
+      runner: "host",
+      agentMode: false,
     },
     lastTickMs: 0,
   });
@@ -796,13 +802,12 @@ Deno.test("run detail: initial state has null detailRunId and detailRun", () => 
 // Agent mode + runner e2e flow
 // ---------------------------------------------------------------------------
 
-Deno.test("runs/startRequested: includes agentMode: true in API body", () => {
-  const state = initState();
+Deno.test("runs/startRequested: reads agentMode: true from ux state", () => {
+  const state = initState({ ux: { ...initState().ux, agentMode: true } });
   const [, cmds] = step(state, {
     type: "runs/startRequested",
     scenarioIds: ["01"],
     pds2: false,
-    agentMode: true,
   });
   const cmd = fetchCmds(cmds)[0];
   assert(cmd);
@@ -810,7 +815,7 @@ Deno.test("runs/startRequested: includes agentMode: true in API body", () => {
   assertEquals((cmd.body as Record<string, unknown>).agentMode, true);
 });
 
-Deno.test("runs/startRequested: includes agentMode: false by default", () => {
+Deno.test("runs/startRequested: defaults agentMode to false from ux state", () => {
   const state = initState();
   const [, cmds] = step(state, {
     type: "runs/startRequested",
@@ -848,12 +853,14 @@ Deno.test("runs/startRequested: passes runner: docker when requested", () => {
 });
 
 Deno.test("runs/startRequested: full agent + runner + pds2 + topology body", () => {
-  const state = initState({ topology: { ...initState().topology, selected: "minimal" } });
+  const state = initState({
+    topology: { ...initState().topology, selected: "minimal" },
+    ux: { ...initState().ux, agentMode: true },
+  });
   const [, cmds] = step(state, {
     type: "runs/startRequested",
     scenarioIds: ["01", "05"],
     pds2: true,
-    agentMode: true,
     runner: "docker",
   });
   const cmd = fetchCmds(cmds)[0];
@@ -865,4 +872,148 @@ Deno.test("runs/startRequested: full agent + runner + pds2 + topology body", () 
   assertEquals(body.pds2, true);
   assertEquals(body.scenarioIds, ["01", "05"]);
   assertEquals(body.binaryMode, false);
+});
+
+// ---------------------------------------------------------------------------
+// binaryMode derivation from runner
+// ---------------------------------------------------------------------------
+
+Deno.test("runs/startRequested: binaryMode=true when runner is host", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+    runner: "host",
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).binaryMode, true);
+});
+
+Deno.test("runs/startRequested: binaryMode=false when runner is docker", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+    runner: "docker",
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).binaryMode, false);
+});
+
+Deno.test("runs/startRequested: binaryMode=true when runner defaults to host", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).binaryMode, true);
+});
+
+// ---------------------------------------------------------------------------
+// network/startRequested and network/stopRequested runner passthrough
+// ---------------------------------------------------------------------------
+
+Deno.test("network/startRequested: passes runner to POST body", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "network/startRequested",
+    pds2: false,
+    runner: "host",
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals(cmd.url, "/api/network/start");
+  assertEquals((cmd.body as Record<string, unknown>).runner, "host");
+});
+
+Deno.test("network/startRequested: omits runner from body when not provided", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "network/startRequested",
+    pds2: true,
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).runner, undefined);
+  assertEquals((cmd.body as Record<string, unknown>).pds2, true);
+});
+
+Deno.test("network/stopRequested: passes runner to POST body", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "network/stopRequested",
+    runner: "docker",
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals(cmd.url, "/api/network/stop");
+  assertEquals((cmd.body as Record<string, unknown>).runner, "docker");
+});
+
+Deno.test("network/stopRequested: omits runner from body when not provided", () => {
+  const state = initState();
+  const [, cmds] = step(state, {
+    type: "network/stopRequested",
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).runner, undefined);
+});
+
+// ---------------------------------------------------------------------------
+// ux/setRunner
+// ---------------------------------------------------------------------------
+
+Deno.test("ux/setRunner: updates runner field", () => {
+  const state = initState();
+  assertEquals(state.ux.runner, "host");
+  const [next] = step(state, { type: "ux/setRunner", runner: "docker" });
+  assertEquals(next.ux.runner, "docker");
+  const [next2] = step(next, { type: "ux/setRunner", runner: "host" });
+  assertEquals(next2.ux.runner, "host");
+});
+
+Deno.test("createInitialState: defaults runner to host", () => {
+  const state = initState();
+  assertEquals(state.ux.runner, "host");
+});
+
+// ---------------------------------------------------------------------------
+// ux/setAgentMode
+// ---------------------------------------------------------------------------
+
+Deno.test("ux/setAgentMode: updates agentMode field", () => {
+  const state = initState();
+  assertEquals(state.ux.agentMode, false);
+  const [next] = step(state, { type: "ux/setAgentMode", agentMode: true });
+  assertEquals(next.ux.agentMode, true);
+  const [next2] = step(next, { type: "ux/setAgentMode", agentMode: false });
+  assertEquals(next2.ux.agentMode, false);
+});
+
+Deno.test("createInitialState: defaults agentMode to false", () => {
+  const state = initState();
+  assertEquals(state.ux.agentMode, false);
+});
+
+Deno.test("runs/startRequested: handler reads agentMode from state.ux.agentMode, not Msg", () => {
+  // The runs/startRequested Msg no longer has an agentMode field.
+  // The handler reads it from state.ux.agentMode.
+  // Toolbar dispatches ux/setAgentMode separately to toggle it.
+  const state = initState({ ux: { ...initState().ux, agentMode: true } });
+  const [, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01"],
+    pds2: false,
+  });
+  const cmd = fetchCmds(cmds)[0];
+  assert(cmd);
+  assertEquals((cmd.body as Record<string, unknown>).agentMode, true);
 });
