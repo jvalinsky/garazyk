@@ -25,7 +25,7 @@ export {
 } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
-import { SERVICE_URLS } from "../../lib/deno/config.ts";
+import { DEFAULT_ADMIN_PASSWORD, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function firstSetCookieValue(headers: Headers, name: string): string | null {
   const getSetCookie =
@@ -57,8 +57,8 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const uiUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
-  const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ||
-    "admin-localdev";
+  const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
+    DEFAULT_ADMIN_PASSWORD;
 
   await timedCall(
     result,

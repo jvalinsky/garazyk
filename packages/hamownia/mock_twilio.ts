@@ -1,5 +1,6 @@
 /** Mock Twilio SMS verification server for E2E testing. @module mock_twilio */
 import { parseArgs } from "@std/cli/parse-args";
+import { DEFAULT_MOCK_TWILIO_PORT } from "@garazyk/schemat";
 
 /** State for a single verification code tracked by the mock server. */
 export interface MockVerificationState {
@@ -81,7 +82,7 @@ export function parseMockTwilioConfig(args: string[]): MockTwilioServerConfig {
   }) as Record<string, string | boolean | undefined>;
 
   return {
-    port: Number(parsed.port ?? Deno.env.get("PORT") ?? "8081"),
+    port: Number(parsed.port ?? Deno.env.get("PORT") ?? DEFAULT_MOCK_TWILIO_PORT),
     portFile: parsed["port-file"]
       ? String(parsed["port-file"])
       : Deno.env.get("PORT_FILE"),
@@ -365,7 +366,8 @@ export class MockTwilioServer {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.port = new URL(baseUrl).port ? parseInt(new URL(baseUrl).port) : 8081;
+    const port = new URL(baseUrl).port;
+    this.port = port ? parseInt(port, 10) : DEFAULT_MOCK_TWILIO_PORT;
   }
 
   /** Returns the base URL for the mock Twilio server. */
@@ -376,7 +378,8 @@ export class MockTwilioServer {
   /** Updates the base URL after a port-0 child process reports its bound port. */
   setBoundUrl(baseUrl: string): void {
     this.baseUrl = baseUrl;
-    this.port = new URL(baseUrl).port ? parseInt(new URL(baseUrl).port) : 8081;
+    const port = new URL(baseUrl).port;
+    this.port = port ? parseInt(port, 10) : DEFAULT_MOCK_TWILIO_PORT;
   }
 
   /** Waits until the server responds successfully to the health check. @param timeoutMs - Maximum time to wait in milliseconds. @throws If the server does not become healthy before the timeout expires. */

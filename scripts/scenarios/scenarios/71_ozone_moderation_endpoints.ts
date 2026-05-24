@@ -14,7 +14,7 @@
  * - Unavailable endpoints are gracefully skipped.
  */
 
-import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { DEFAULT_ADMIN_PASSWORD, getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { now, tryEndpoint, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -110,7 +110,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   // --- Obtain admin token ---
-  const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
+  const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") ?? DEFAULT_ADMIN_PASSWORD;
   const adminToken = await timedCall(
     result,
     "Admin login",

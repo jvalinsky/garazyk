@@ -6,6 +6,8 @@ import {
   loadTopologyManifest,
   logInfo,
   mockProviderUrlsFromResourceManifest,
+  resolveTopology,
+  type RunResourceManifest,
   serviceUrlsFromResourceManifest,
   type TopologyManifest,
 } from "@garazyk/schemat";
@@ -17,6 +19,17 @@ const SECRET_PATTERNS = [
   /("(?:accessJwt|refreshJwt|token|password|secret|masterSecret|adminPassword)"\s*:\s*")[^"]+"/gi,
   /((?:JWT|TOKEN|PASSWORD|SECRET|MASTER_SECRET|ADMIN_SECRET)=)\S+/g,
 ];
+
+const DIAGNOSTIC_SERVICE_ENV: Record<string, string> = {
+  plc: "PLC_URL",
+  pds: "PDS_URL",
+  pds2: "PDS2_URL",
+  relay: "RELAY_URL",
+  appview: "APPVIEW_URL",
+  chat: "CHAT_URL",
+  video: "VIDEO_URL",
+  ui: "GARAZYK_UI_URL",
+};
 
 /** Context for a single E2E run, holding paths for logs, reports, and diagnostics. */
 export interface E2ERunContext {
@@ -127,6 +140,39 @@ export function redactDiagnosticText(value: string): string {
   return redacted;
 }
 
+/** Resolve diagnostic probe URLs from topology, environment, manifests, and explicit overrides. */
+export function resolveDiagnosticServiceUrls(options: {
+  topologyName?: string;
+  env?: Pick<typeof Deno.env, "get">;
+  topologyManifest?: TopologyManifest;
+  resourceManifest?: RunResourceManifest;
+  serviceUrls?: Record<string, string>;
+} = {}): Record<string, string> {
+  const env = options.env ?? Deno.env;
+  const topologyName = options.topologyName ??
+    env.get("ATPROTO_TOPOLOGY") ??
+    "garazyk-default";
+  const topology = resolveTopology(undefined, topologyName, {
+    includePds2: true,
+    manifestPath: "",
+  });
+  const envUrls = Object.fromEntries(
+    Object.entries(DIAGNOSTIC_SERVICE_ENV)
+      .map(([role, key]) => [role, env.get(key)])
+      .filter((entry): entry is [string, string] =>
+        typeof entry[1] === "string" && entry[1].length > 0
+      ),
+  );
+
+  return {
+    ...topology.serviceUrls,
+    ...envUrls,
+    ...(options.topologyManifest?.serviceUrls || {}),
+    ...serviceUrlsFromResourceManifest(options.resourceManifest),
+    ...options.serviceUrls,
+  };
+}
+
 async function writeText(path: string, text: string) {
   await Deno.mkdir(join(path, ".."), { recursive: true });
   await Deno.writeTextFile(path, redactDiagnosticText(text));
@@ -230,22 +276,11 @@ export async function collectDiagnostics(
   await Deno.mkdir(outputDir, { recursive: true });
   const manifest = loadOptionalTopologyManifest();
   const resourceManifest = loadRunResourceManifest();
-  const defaultUrls: Record<string, string> = {
-    plc: Deno.env.get("PLC_URL") || "http://localhost:2582",
-    pds: Deno.env.get("PDS_URL") || "http://localhost:2583",
-    pds2: Deno.env.get("PDS2_URL") || "http://localhost:2587",
-    relay: Deno.env.get("RELAY_URL") || "http://localhost:2584",
-    appview: Deno.env.get("APPVIEW_URL") || "http://localhost:3200",
-    chat: Deno.env.get("CHAT_URL") || "http://localhost:2585",
-    video: Deno.env.get("VIDEO_URL") || "http://localhost:2586",
-    ui: Deno.env.get("GARAZYK_UI_URL") || "http://localhost:2590",
-  };
-  const urls = {
-    ...defaultUrls,
-    ...(manifest?.serviceUrls || {}),
-    ...serviceUrlsFromResourceManifest(resourceManifest),
-    ...options.serviceUrls,
-  };
+  const urls = resolveDiagnosticServiceUrls({
+    topologyManifest: manifest,
+    resourceManifest,
+    serviceUrls: options.serviceUrls,
+  });
   const mockUrls = mockProviderUrlsFromResourceManifest(resourceManifest);
   const appviewSecret = options.appviewAdminSecret ||
     Deno.env.get("APPVIEW_ADMIN_SECRET") ||

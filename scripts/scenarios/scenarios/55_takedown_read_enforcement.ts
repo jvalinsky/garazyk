@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getActor, PDS1 } from "../../lib/deno/config.ts";
+import { DEFAULT_ADMIN_PASSWORD, getActor, PDS1 } from "../../lib/deno/config.ts";
 import { now, ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -87,10 +87,11 @@ export async function run(): Promise<ScenarioResult> {
     (r) => `uri=${r.uri}`,
   );
 
+  const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") ?? DEFAULT_ADMIN_PASSWORD;
   const adminToken = await timedCall(
     result,
     "Admin login",
-    async () => pds.adminLogin("admin-localdev"),
+    async () => pds.adminLogin(adminPassword),
     () => "obtained admin bearer",
   );
 
