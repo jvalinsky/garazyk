@@ -9,6 +9,7 @@ interface RunProgressProps {
   status: string;
   totalScenarios?: number;
   completedScenarios?: number;
+  agentMode?: boolean;
 }
 
 /** Format ms as a short human-readable elapsed time. */
@@ -29,7 +30,7 @@ function staleLevel(secondsSinceUpdate: number): "active" | "slow" | "stale" {
 
 /** RunProgress island for live progress, elapsed time, and activity indicator. */
 export default function RunProgress(
-  { runId, startedAt, status, totalScenarios = 0, completedScenarios = 0 }:
+  { runId, startedAt, status, totalScenarios = 0, completedScenarios = 0, agentMode = false }:
     RunProgressProps,
 ) {
   const { state, dispatch } = useRuntime();
@@ -87,6 +88,7 @@ export default function RunProgress(
           </div>
         </div>
         <div class="run-progress-meta">
+          {agentMode && <span class="run-progress-agent-badge">Agent</span>}
           <span class="run-progress-status">{statusLabel}</span>
           <span class="run-progress-elapsed">
             {formatElapsedShort(elapsed)}
