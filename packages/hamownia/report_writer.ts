@@ -44,6 +44,8 @@ export interface WriteOverallSummaryOptions {
   fatalError: unknown;
   /** Whether PDS2 was included in the run. */
   withPds2: boolean;
+  /** When true, suppress console output (JSON file is still written). */
+  quiet?: boolean;
 }
 
 /** Totals returned by the overall summary writer. */
@@ -76,7 +78,7 @@ export async function writeOverallSummary(
     0,
   );
 
-  if (options.results.length > 0) {
+  if (options.results.length > 0 && !options.quiet) {
     console.log(bold("\nOverall Results"));
     for (const { scenario, result } of options.results) {
       const marker = result.ok ? green("PASS") : red("FAIL");
