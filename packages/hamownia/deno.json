@@ -3,8 +3,7 @@
   "version": "0.1.0-alpha.1",
   "description": "Assertion-based E2E testing framework for AT Protocol simulations.",
   "compilerOptions": {
-    "lib": ["deno.ns", "dom"],
-    "types": ["npm:@types/node@20.12.7"]
+    "lib": ["deno.ns", "dom"]
   },
   "exports": {
     ".": "./mod.ts",
