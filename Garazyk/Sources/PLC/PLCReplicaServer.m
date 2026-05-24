@@ -25,7 +25,15 @@
                       auditor:(PLCAuditor *)auditor
                          port:(NSUInteger)port
                  readOnlyMode:(BOOL)readOnly {
-    self = [super initWithStore:store auditor:auditor port:port];
+    return [self initWithStore:store auditor:auditor host:@"127.0.0.1" port:port readOnlyMode:readOnly];
+}
+
+- (instancetype)initWithStore:(id<PLCStore>)store
+                      auditor:(PLCAuditor *)auditor
+                         host:(NSString *)host
+                         port:(NSUInteger)port
+                 readOnlyMode:(BOOL)readOnly {
+    self = [super initWithStore:store auditor:auditor host:host port:port];
     if (self) {
         _readOnlyMode = readOnly;
         [self setupReplicaRoutes];

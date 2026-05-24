@@ -5,6 +5,7 @@
 #import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
 #import "Debug/GZLogger.h"
+#import "PLC/PLCConstants.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -47,7 +48,7 @@ static BOOL isBase32Char(unichar c) {
 + (NSString *)calculateDIDForData:(NSDictionary *)data {
     NSError *error = nil;
     NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
-    if (!cborData || cborData.length > 7500) {
+    if (!cborData || cborData.length > PLCMaxDAGCborOperationBytes) {
         return @"";
     }
     
@@ -57,7 +58,7 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < cborData.length; i++) {
         [hexStr appendFormat:@"%02x", bytes[i]];
     }
-    GZ_LOG_INFO(@"DID derivation CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
+    GZ_LOG_CORE_DEBUG(@"DID derivation CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
     
     NSData *hash = [CID rawSha256:cborData];
     
@@ -67,10 +68,10 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < hash.length; i++) {
         [hashHex appendFormat:@"%02x", hashBytes[i]];
     }
-    GZ_LOG_INFO(@"DID derivation SHA256: %@", hashHex);
+    GZ_LOG_CORE_DEBUG(@"DID derivation SHA256: %@", hashHex);
     
     NSString *base32 = [ATProtoBase32 encodeData:hash];
-    GZ_LOG_INFO(@"DID derivation base32 full: %@", base32);
+    GZ_LOG_CORE_DEBUG(@"DID derivation base32 full: %@", base32);
     // did:plc is first 24 chars of base32 hash
     if (base32.length > 24) {
         base32 = [base32 substringToIndex:24];
@@ -84,7 +85,7 @@ static BOOL isBase32Char(unichar c) {
     // The signed operation includes the `sig` field.
     NSError *error = nil;
     NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:signedOperation error:&error];
-    if (!cborData || cborData.length > 7500) {
+    if (!cborData || cborData.length > PLCMaxDAGCborOperationBytes) {
         return @"";
     }
     
@@ -93,7 +94,7 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < cborData.length; i++) {
         [hexStr appendFormat:@"%02x", bytes[i]];
     }
-    GZ_LOG_INFO(@"DID derivation (signed) CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
+    GZ_LOG_CORE_DEBUG(@"DID derivation (signed) CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
     
     NSData *hash = [CID rawSha256:cborData];
     
@@ -102,10 +103,10 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < hash.length; i++) {
         [hashHex appendFormat:@"%02x", hashBytes[i]];
     }
-    GZ_LOG_INFO(@"DID derivation (signed) SHA256: %@", hashHex);
+    GZ_LOG_CORE_DEBUG(@"DID derivation (signed) SHA256: %@", hashHex);
     
     NSString *base32 = [ATProtoBase32 encodeData:hash];
-    GZ_LOG_INFO(@"DID derivation (signed) base32 full: %@", base32);
+    GZ_LOG_CORE_DEBUG(@"DID derivation (signed) base32 full: %@", base32);
     if (base32.length > 24) {
         base32 = [base32 substringToIndex:24];
     }
@@ -151,7 +152,7 @@ static BOOL isBase32Char(unichar c) {
     if (!cborData) {
         return nil;
     }
-    if (cborData.length > 7500) {
+    if (cborData.length > PLCMaxDAGCborOperationBytes) {
         if (error) {
             *error = [NSError errorWithDomain:PLCErrorDomain code:PLCErrorExceedsSizeLimit userInfo:@{NSLocalizedDescriptionKey: @"Operation exceeds 7500 bytes DAG-CBOR limit"}];
         }
@@ -200,7 +201,11 @@ static BOOL isBase32Char(unichar c) {
     [dict enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         if (![key isEqualToString:@"sig"] &&
             ![key isEqualToString:@"did"] &&
-            ![key isEqualToString:@"cid"]) {
+            ![key isEqualToString:@"cid"] &&
+            ![key isEqualToString:@"createdAt"] &&
+            ![key isEqualToString:@"nullified"] &&
+            ![key isEqualToString:@"seq"] &&
+            ![key isEqualToString:@"sequence"]) {
             data[key] = obj;
         }
     }];
@@ -264,6 +269,11 @@ static BOOL isBase32Char(unichar c) {
     dict[@"sig"] = self.sig;
     if (self.prev) {
         dict[@"prev"] = self.prev;
+    } else {
+        NSString *type = dict[@"type"];
+        if ([type isEqualToString:@"plc_operation"] || [type isEqualToString:@"create"]) {
+            dict[@"prev"] = [NSNull null];
+        }
     }
     return [dict copy];
 }

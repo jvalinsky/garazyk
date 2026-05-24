@@ -11,6 +11,7 @@
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 #import "PLC/PLCMetrics.h"
+#import "PLC/PLCConstants.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
 #import <Security/Security.h>
@@ -20,7 +21,6 @@
 #import <openssl/obj_mac.h>
 #endif
 
-static NSTimeInterval const kPLCRecoveryWindowSeconds = 72 * 60 * 60;
 static NSUInteger const kPLCHourLimit = 10;
 static NSUInteger const kPLCDayLimit = 30;
 static NSUInteger const kPLCWeekLimit = 100;
@@ -383,7 +383,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 
     if (firstNullified.createdAt) {
         NSTimeInterval delta = [proposedDate timeIntervalSinceDate:firstNullified.createdAt];
-        if (delta > kPLCRecoveryWindowSeconds) {
+        if (delta > PLCRecoveryWindowSeconds) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                              code:9
