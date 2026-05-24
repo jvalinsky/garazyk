@@ -7,7 +7,7 @@ import { fetchRun } from "../db/queries.ts";
 import { importRunReports } from "./report_scanner.ts";
 
 const REPORTS_DIR = join(
-  fromFileUrl(new URL("../../../scenarios/reports", import.meta.url)),
+  fromFileUrl(new URL("../../scenarios/reports", import.meta.url)),
 );
 const LOCK_FILE = join(REPORTS_DIR, "active-run.json");
 
@@ -37,7 +37,9 @@ export function mapAgentEventLine(
     case "run_start": {
       const rid = typeof event.runId === "string" ? event.runId : runId;
       const total = typeof event.total === "number" ? event.total : 0;
-      const ts = typeof event.timestamp === "number" ? event.timestamp : Date.now();
+      const ts = typeof event.timestamp === "number"
+        ? event.timestamp
+        : Date.now();
       return {
         type: "run_started",
         runId: rid,
@@ -46,7 +48,9 @@ export function mapAgentEventLine(
       };
     }
     case "scenario_start": {
-      const sid = typeof event.scenarioId === "string" ? event.scenarioId : "??";
+      const sid = typeof event.scenarioId === "string"
+        ? event.scenarioId
+        : "??";
       const sname = typeof event.name === "string" ? event.name : "unknown";
       return {
         type: "scenario_started",
@@ -56,7 +60,9 @@ export function mapAgentEventLine(
       };
     }
     case "scenario_complete": {
-      const sid = typeof event.scenarioId === "string" ? event.scenarioId : "??";
+      const sid = typeof event.scenarioId === "string"
+        ? event.scenarioId
+        : "??";
       const sname = typeof event.name === "string" ? event.name : "unknown";
       const ok = typeof event.ok === "boolean" ? event.ok : false;
       const passed = typeof event.passed === "number" ? event.passed : 0;
@@ -76,7 +82,9 @@ export function mapAgentEventLine(
       };
     }
     case "service_failure": {
-      const msg = typeof event.message === "string" ? event.message : "unknown failure";
+      const msg = typeof event.message === "string"
+        ? event.message
+        : "unknown failure";
       return {
         type: "log_line",
         runId,
@@ -88,11 +96,19 @@ export function mapAgentEventLine(
       return null;
     case "run_finished": {
       const finishedOk = typeof event.ok === "boolean" ? event.ok : false;
-      const ts = typeof event.timestamp === "number" ? event.timestamp : Date.now();
+      const ts = typeof event.timestamp === "number"
+        ? event.timestamp
+        : Date.now();
       if (finishedOk) {
-        const passed = typeof event.totalPassed === "number" ? event.totalPassed : 0;
-        const failed = typeof event.totalFailed === "number" ? event.totalFailed : 0;
-        const skipped = typeof event.totalSkipped === "number" ? event.totalSkipped : 0;
+        const passed = typeof event.totalPassed === "number"
+          ? event.totalPassed
+          : 0;
+        const failed = typeof event.totalFailed === "number"
+          ? event.totalFailed
+          : 0;
+        const skipped = typeof event.totalSkipped === "number"
+          ? event.totalSkipped
+          : 0;
         return {
           type: "run_completed",
           runId,
@@ -229,6 +245,7 @@ class RunManagerImpl implements RunManager {
     const runDir = join(REPORTS_DIR, "runs", runId);
     const reportsDir = join(runDir, "reports");
     const logPath = join(runDir, `run.log`);
+    const manifestPath = join(runDir, "resource-manifest.json");
 
     await Deno.mkdir(reportsDir, { recursive: true });
 
@@ -250,6 +267,7 @@ class RunManagerImpl implements RunManager {
       runDir,
       reportsDir,
       logPath,
+      manifestPath,
       scenarioParams: config.scenarioParams,
     };
 
@@ -404,6 +422,51 @@ class RunManagerImpl implements RunManager {
     } catch {
       // No lock file or error reading it
     }
+
+    await this.reconcileStaleRuns();
+  }
+
+  private async reconcileStaleRuns(): Promise<void> {
+    const rows = db.prepare(`
+      SELECT id FROM runs
+      WHERE status IN ('starting', 'running', 'stopping')
+    `).all() as Array<{ id: string }>;
+
+    for (const row of rows) {
+      if (this.activeRun?.id === row.id) continue;
+
+      const run = fetchRun(db, row.id);
+      if (!run) continue;
+
+      if (run.childPid && this.isPidAlive(run.childPid)) {
+        if (!this.activeRun) {
+          console.log(
+            `[run-manager] Recovered active run ${run.id} (PID ${run.childPid}) from DB`,
+          );
+          this.activeRun = run;
+        }
+        continue;
+      }
+
+      try {
+        await importRunReports(db, run);
+      } catch (e) {
+        console.error(`[run-manager] Failed to import stale run ${run.id}:`, e);
+      }
+
+      const refreshed = fetchRun(db, run.id) ?? run;
+      const hasResults =
+        (refreshed.passed + refreshed.failed + refreshed.skipped) > 0;
+      refreshed.status = hasResults && refreshed.failed === 0
+        ? "completed"
+        : "error";
+      refreshed.stopReason = hasResults
+        ? "recovered_from_reports"
+        : "process_died";
+      refreshed.finishedAt = refreshed.finishedAt ?? Date.now();
+      refreshed.exitCode = hasResults && refreshed.failed === 0 ? 0 : 1;
+      this.updateRunInDb(refreshed);
+    }
   }
 
   private generateRunId(): string {
@@ -422,9 +485,9 @@ class RunManagerImpl implements RunManager {
       INSERT INTO runs (
         id, started_at, status, total_scenarios, pds2, binary_mode,
         topology, runner, web_client, client_flow, scenario_ids_json,
-        run_dir, reports_dir, log_path, scenario_params_json,
+        run_dir, reports_dir, log_path, manifest_path, scenario_params_json,
         allow_hybrid_network, otel, verbose, timeout, no_setup, agent_mode
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       run.id,
       run.startedAt,
@@ -440,6 +503,7 @@ class RunManagerImpl implements RunManager {
       run.runDir,
       run.reportsDir,
       run.logPath,
+      run.manifestPath || null,
       run.scenarioParams ? JSON.stringify(run.scenarioParams) : null,
       run.allowHybridNetwork ? 1 : 0,
       run.otel ? 1 : 0,
@@ -632,7 +696,9 @@ class RunManagerImpl implements RunManager {
     run: Run,
   ): void {
     const lineReader: ReadableStream<string> = stdoutBranch
-      .pipeThrough(new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>)
+      .pipeThrough(
+        new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>,
+      )
       .pipeThrough(new TextLineStream());
 
     (async () => {
@@ -700,7 +766,12 @@ class RunManagerImpl implements RunManager {
     if (run.otel) args.push("--otel");
     if (run.verbose) args.push("--verbose");
     if (run.timeout !== undefined) args.push("--timeout", String(run.timeout));
-    if (run.noSetup || isNetworkActive) args.push("--no-setup");
+    // --no-setup: skip network start when the network is already active.
+    // In binary mode, isNetworkActive is unreliable (stale Docker state),
+    // so we let startLocalNetwork handle idempotency internally.
+    if (run.noSetup || (!run.binaryMode && isNetworkActive)) {
+      args.push("--no-setup");
+    }
 
     args.push(...(run.scenarioIds || []));
 
@@ -774,7 +845,9 @@ class RunManagerImpl implements RunManager {
   /** Spawn hamownia agent run — NDJSON stdout, map to dashboard events. */
   private async spawnAgentRunner(run: Run, isNetworkActive: boolean) {
     const hamowniaPath = join(
-      fromFileUrl(new URL("../../../packages/hamownia/cli.ts", import.meta.url)),
+      fromFileUrl(
+        new URL("../../../packages/hamownia/cli.ts", import.meta.url),
+      ),
     );
 
     const args = [
@@ -804,7 +877,12 @@ class RunManagerImpl implements RunManager {
     if (run.otel) args.push("--otel");
     if (run.verbose) args.push("--verbose");
     if (run.timeout !== undefined) args.push("--timeout", String(run.timeout));
-    if (run.noSetup || isNetworkActive) args.push("--no-setup");
+    // --no-setup: skip network start when the network is already active.
+    // In binary mode, isNetworkActive is unreliable (stale Docker state),
+    // so we let startLocalNetwork handle idempotency internally.
+    if (run.noSetup || (!run.binaryMode && isNetworkActive)) {
+      args.push("--no-setup");
+    }
 
     args.push(...(run.scenarioIds || []));
 
@@ -857,7 +935,10 @@ class RunManagerImpl implements RunManager {
           await logFile.write(chunk);
         }
       } catch (e) {
-        console.error(`[run-manager] Error logging agent stderr for ${run.id}:`, e);
+        console.error(
+          `[run-manager] Error logging agent stderr for ${run.id}:`,
+          e,
+        );
       }
     })();
 
@@ -871,7 +952,9 @@ class RunManagerImpl implements RunManager {
     run: Run,
   ): void {
     const lineReader: ReadableStream<string> = stdoutStream
-      .pipeThrough(new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>)
+      .pipeThrough(
+        new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>,
+      )
       .pipeThrough(new TextLineStream());
 
     (async () => {
@@ -913,7 +996,10 @@ class RunManagerImpl implements RunManager {
           }
         }
       } catch (e) {
-        console.error(`[run-manager] Failed to import reports for ${run.id}:`, e);
+        console.error(
+          `[run-manager] Failed to import reports for ${run.id}:`,
+          e,
+        );
       }
       await this.clearLockFile();
 
@@ -953,7 +1039,9 @@ class RunManagerImpl implements RunManager {
     console.log(`[run-manager] Restarting run ${runId}...`);
 
     // 1. Get configuration from existing run (active or historical)
-    const run = this.activeRun?.id === runId ? this.activeRun : fetchRun(db, runId);
+    const run = this.activeRun?.id === runId
+      ? this.activeRun
+      : fetchRun(db, runId);
 
     if (!run) return { error: "Run not found" };
 

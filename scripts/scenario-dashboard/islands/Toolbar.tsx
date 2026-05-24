@@ -1,8 +1,9 @@
 /** Toolbar island — topology selector, run/stop/restart controls, settings modal. @module Toolbar */
-import { useEffect, useState } from "preact/hooks";
+import { useEffect } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
-const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
+const IS_BROWSER = typeof globalThis !== "undefined" &&
+  "document" in globalThis;
 
 /** Toolbar island for topology selection and run controls. */
 export default function Toolbar() {
@@ -15,8 +16,18 @@ export default function Toolbar() {
   const params = s.ux.scenarioParams;
   const scenarios = s.scenarios.all;
 
-  const [agentMode, setAgentMode] = useState(false);
-  const [runner, setRunner] = useState<"host" | "docker">("host");
+  useEffect(() => {
+    if (!IS_BROWSER) return;
+    const saved = localStorage.getItem("garazyk-dashboard-agentMode");
+    if (saved === "true" && !state.peek().ux.agentMode) {
+      dispatch({ type: "ux/setAgentMode", agentMode: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!IS_BROWSER) return;
+    localStorage.setItem("garazyk-dashboard-agentMode", String(s.ux.agentMode));
+  }, [s.ux.agentMode]);
 
   useEffect(() => {
     if (!IS_BROWSER) return;
@@ -30,6 +41,22 @@ export default function Toolbar() {
     if (!IS_BROWSER) return;
     localStorage.setItem("garazyk-dashboard-topology", s.topology.selected);
   }, [s.topology.selected]);
+
+  useEffect(() => {
+    if (!IS_BROWSER) return;
+    const saved = localStorage.getItem("garazyk-dashboard-runner");
+    if (
+      saved && (saved === "host" || saved === "docker") &&
+      saved !== state.peek().ux.runner
+    ) {
+      dispatch({ type: "ux/setRunner", runner: saved });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!IS_BROWSER) return;
+    localStorage.setItem("garazyk-dashboard-runner", s.ux.runner);
+  }, [s.ux.runner]);
 
   const isStarting = run?.status === "starting";
   const isRunning = run?.status === "running";
@@ -51,8 +78,7 @@ export default function Toolbar() {
       type: "runs/startRequested",
       scenarioIds: ids,
       pds2: ids.some((id) => byId.get(id)?.needsPds2),
-      agentMode,
-      runner,
+      runner: s.ux.runner,
     });
   }
 
@@ -80,7 +106,10 @@ export default function Toolbar() {
           value={s.topology.selected}
           disabled={isActive}
           onChange={(e) =>
-            dispatch({ type: "topology/selected", name: (e.target as HTMLSelectElement).value })}
+            dispatch({
+              type: "topology/selected",
+              name: (e.target as HTMLSelectElement).value,
+            })}
         >
           {topologies.map((t) => (
             <option key={t.name} value={t.name}>
@@ -95,9 +124,15 @@ export default function Toolbar() {
         <select
           id="runner-select"
           class="form-select"
-          value={runner}
+          value={s.ux.runner}
           disabled={isActive}
-          onChange={(e) => setRunner((e.target as HTMLSelectElement).value as "host" | "docker")}
+          onChange={(e) =>
+            dispatch({
+              type: "ux/setRunner",
+              runner: (e.target as HTMLSelectElement).value as
+                | "host"
+                | "docker",
+            })}
         >
           <option value="host">host</option>
           <option value="docker">docker</option>
@@ -118,16 +153,29 @@ export default function Toolbar() {
                   Settings
                 </button>
               )}
-              <label class="toolbar-checkbox" title="Use hamownia agent run with NDJSON event streaming">
+              <label
+                class="toolbar-checkbox"
+                title="Use hamownia agent run with NDJSON event streaming"
+              >
                 <input
+                  id="agentMode"
                   type="checkbox"
-                  checked={agentMode}
+                  checked={s.ux.agentMode}
                   disabled={busy}
-                  onChange={(e) => setAgentMode((e.target as HTMLInputElement).checked)}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "ux/setAgentMode",
+                      agentMode: (e.target as HTMLInputElement).checked,
+                    })}
                 />
                 <span>Agent</span>
               </label>
-              <button type="button" class="btn btn-primary" onClick={runAll} disabled={busy}>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onClick={runAll}
+                disabled={busy}
+              >
                 {busy ? "Starting..." : "Run All"}
               </button>
             </div>
@@ -135,7 +183,9 @@ export default function Toolbar() {
           : (
             <div style="display: flex; gap: var(--space-sm);">
               <div class="active-run-indicator">
-                <span class={`status-dot ${isStopping ? "stopping" : "running"}`} />
+                <span
+                  class={`status-dot ${isStopping ? "stopping" : "running"}`}
+                />
                 <span class="text-xs font-mono">{run.id}</span>
               </div>
               <button
@@ -173,7 +223,9 @@ export default function Toolbar() {
             </div>
             <div class="settings-modal-body">
               {scenarios.map((sc) => {
-                if (!sc.parameters || Object.keys(sc.parameters).length === 0) return null;
+                if (!sc.parameters || Object.keys(sc.parameters).length === 0) {
+                  return null;
+                }
                 return (
                   <div key={sc.id} class="scenario-settings-group">
                     <div class="scenario-settings-title">{sc.id} {sc.name}</div>
@@ -196,7 +248,9 @@ export default function Toolbar() {
                                     dispatch({
                                       type: "ux/setScenarioParam",
                                       key,
-                                      value: Number((e.target as HTMLInputElement).value),
+                                      value: Number(
+                                        (e.target as HTMLInputElement).value,
+                                      ),
                                     })}
                                 />
                               )
@@ -209,7 +263,8 @@ export default function Toolbar() {
                                     dispatch({
                                       type: "ux/setScenarioParam",
                                       key,
-                                      value: (e.target as HTMLInputElement).checked,
+                                      value:
+                                        (e.target as HTMLInputElement).checked,
                                     })}
                                 />
                               )
@@ -222,7 +277,8 @@ export default function Toolbar() {
                                     dispatch({
                                       type: "ux/setScenarioParam",
                                       key,
-                                      value: (e.target as HTMLInputElement).value,
+                                      value:
+                                        (e.target as HTMLInputElement).value,
                                     })}
                                 />
                               )}
@@ -235,7 +291,12 @@ export default function Toolbar() {
               })}
             </div>
             <div class="settings-modal-footer">
-              <button type="button" class="btn btn-primary" onClick={runAll} disabled={busy}>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onClick={runAll}
+                disabled={busy}
+              >
                 Start Run with These Settings
               </button>
             </div>

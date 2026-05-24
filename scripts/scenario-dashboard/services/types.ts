@@ -140,6 +140,10 @@ export interface Run {
   reportsDir?: string;
   /** Path to the run log */
   logPath?: string;
+  /** Path to the run resource manifest, when the network setup writes one */
+  manifestPath?: string;
+  /** Docker Compose project name, when Docker mode is used */
+  composeProject?: string;
   /** PID of the spawned run process */
   childPid?: number;
   /** Process exit code when available */

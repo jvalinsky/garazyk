@@ -3,11 +3,14 @@ import { networkManager } from "../../../services/network_manager.ts";
 
 /** API handler for stopping the network. */
 export const handler: Handlers = {
-  async POST(_req) {
+  async POST(req) {
+    const body = await req.json().catch(() => ({}));
+    const useBinary = body.runner === "host";
+
     try {
-      await networkManager.stopAll();
+      await networkManager.stopAll({ useBinary });
       const status = networkManager.getStatus();
-      return new Response(JSON.stringify({ services: status }), {
+      return new Response(JSON.stringify({ services: Object.values(status) }), {
         headers: { "Content-Type": "application/json" },
       });
     } catch (e) {

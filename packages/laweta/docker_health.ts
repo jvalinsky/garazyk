@@ -27,7 +27,10 @@ export async function waitForHttp(
         return true;
       }
     } catch (e) {
-      console.debug("[docker] HTTP probe failed for", label, url, e);
+      if (Deno.env.get("LAWETA_HEALTH_DEBUG") === "1") {
+        const message = e instanceof Error ? e.message : String(e);
+        console.debug("[health] HTTP probe failed for", label, url, message);
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }

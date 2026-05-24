@@ -80,6 +80,22 @@ function statusBadgeColor(status: Run["status"]): number {
   }
 }
 
+/**
+ * Format the metadata line for a run detail overlay.
+ *
+ * Extracted for unit-testability — takes a Run and returns the formatted
+ * metadata string shown below the run title.
+ */
+export function formatRunMetadataLine(run: Run): string {
+  const parts: string[] = [];
+  if (run.topology) parts.push(`topology: ${run.topology}`);
+  if (run.runner) parts.push(`runner: ${run.runner}`);
+  parts.push(`pds2: ${run.pds2 ? "yes" : "no"}`);
+  parts.push(`binary: ${run.binaryMode ? "yes" : "no"}`);
+  parts.push(`agent: ${run.agentMode ? "yes" : "no"}`);
+  return parts.join("  ");
+}
+
 function formatDurationMs(ms: number | null): string {
   if (ms == null) return "-";
   if (ms < 1000) return `${ms}ms`;
@@ -143,13 +159,7 @@ export function renderRunDetailOverlay(
 
   // ── Metadata line: topology, runner, pds2, binary ──────────────────
   if (row <= maxRow) {
-    const parts: string[] = [];
-    if (run.topology) parts.push(`topology: ${run.topology}`);
-    if (run.runner) parts.push(`runner: ${run.runner}`);
-    parts.push(`pds2: ${run.pds2 ? "yes" : "no"}`);
-    parts.push(`binary: ${run.binaryMode ? "yes" : "no"}`);
-    parts.push(`agent: ${run.agentMode ? "yes" : "no"}`);
-    const metaText = parts.join("  ");
+    const metaText = formatRunMetadataLine(run);
     buf.writeClipped(contentX, row, metaText, labelStyle, clip);
     row++;
   }

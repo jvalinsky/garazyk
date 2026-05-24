@@ -5,7 +5,7 @@ import { networkManager } from "../../../services/network_manager.ts";
 export const handler: Handlers = {
   GET(_req) {
     const status = networkManager.getStatus();
-    return new Response(JSON.stringify({ services: status }), {
+    return new Response(JSON.stringify({ services: Object.values(status) }), {
       headers: { "Content-Type": "application/json" },
     });
   },

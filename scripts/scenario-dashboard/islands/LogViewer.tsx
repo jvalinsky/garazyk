@@ -13,6 +13,8 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
   const { state, dispatch } = useRuntime();
   const s = state.value;
   const logs = s.logs.textByRunId[runId] ?? "";
+  const progress = s.runs.progressByRunId[runId];
+  const isLive = progress?.running ?? status === "running";
   const scrollRef = useRef<HTMLPreElement>(null);
   const [ansiUpInstance, setAnsiUpInstance] = useState<any>(null);
 
@@ -56,14 +58,15 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
         style="display: flex; align-items: center; justify-content: space-between;"
       >
         System Logs
-        {status === "running" && <span class="badge badge-warning">Live</span>}
+        {isLive && <span class="badge badge-warning">Live</span>}
       </h2>
       <pre
         ref={scrollRef}
         class="log-viewer"
         style="height: 500px; max-height: none; background: #000; color: #eee; border: 1px solid #333; overflow-x: auto; padding: 1rem;"
         dangerouslySetInnerHTML={{
-          __html: renderedLogs || (loading ? "Loading logs..." : "No logs available."),
+          __html: renderedLogs ||
+            (loading ? "Loading logs..." : "No logs available."),
         }}
       />
       <div style="font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin-top: var(--space-xs); text-align: right;">

@@ -7,7 +7,11 @@ import Sidebar from "../../islands/Sidebar.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
 import StepRow from "../../components/StepRow.tsx";
 import ScenarioRunner from "../../islands/ScenarioRunner.tsx";
-import type { DiscoveredScenario, ScenarioStatus, Step } from "../../services/types.ts";
+import type {
+  DiscoveredScenario,
+  ScenarioStatus,
+  Step,
+} from "../../services/types.ts";
 
 interface ScenarioPageData {
   scenario: DiscoveredScenario;
@@ -68,13 +72,17 @@ export const handler: Handlers<ScenarioPageData> = {
             passed: resultRow.passed,
             failed: resultRow.failed,
             skipped: resultRow.skipped,
-            steps: (JSON.parse(resultRow.stepsJson || "[]") as any[]).map((s) => ({
+            steps: (JSON.parse(resultRow.stepsJson || "[]") as any[]).map((
+              s,
+            ) => ({
               name: s.name,
               status: s.status,
               detail: s.detail,
               durationMs: s.duration_ms,
             })),
-            artifacts: resultRow.artifactsJson ? JSON.parse(resultRow.artifactsJson) : undefined,
+            artifacts: resultRow.artifactsJson
+              ? JSON.parse(resultRow.artifactsJson)
+              : undefined,
           };
         }
       } catch (e) {
@@ -86,6 +94,7 @@ export const handler: Handlers<ScenarioPageData> = {
           scenario = {
             id,
             name: dbScenarioName,
+            description: "",
             path: "",
             category: "unknown",
             needsPds2: false,
@@ -96,7 +105,7 @@ export const handler: Handlers<ScenarioPageData> = {
       }
 
       return ctx.render({
-        scenario,
+        scenario: scenario!,
         latestResult,
       });
     } catch (e) {
@@ -107,7 +116,9 @@ export const handler: Handlers<ScenarioPageData> = {
 };
 
 /** Scenario detail page component. */
-export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>) {
+export default function ScenarioDetailPage(
+  { data }: PageProps<ScenarioPageData>,
+) {
   const { scenario, latestResult } = data;
 
   return (
@@ -147,8 +158,8 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
                     {latestResult.status.toUpperCase()}
                   </span>
                   <span style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
-                    {latestResult.passed} passed · {latestResult.failed} failed ·{" "}
-                    {latestResult.skipped} skipped
+                    {latestResult.passed} passed · {latestResult.failed}{" "}
+                    failed · {latestResult.skipped} skipped
                   </span>
                 </div>
                 <ul class="step-list">
@@ -177,7 +188,10 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
           )}
 
         <div style="display: flex; gap: var(--space-md);">
-          <ScenarioRunner scenarioId={scenario.id} needsPds2={scenario.needsPds2} />
+          <ScenarioRunner
+            scenarioId={scenario.id}
+            needsPds2={scenario.needsPds2}
+          />
         </div>
 
         {scenario.needsPds2 && (

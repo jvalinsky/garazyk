@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-05-24T03:12:00.344Z",
+  "totalDurationMs": 31218,
+  "allTestsPassed": false,
+  "buildFailed": false,
+  "results": [
+    {
+      "name": "XcodeGen Generate",
+      "success": true,
+      "durationMs": 41,
+      "isBuildStep": true
+    },
+    {
+      "name": "Build AllTests",
+      "success": true,
+      "durationMs": 11360,
+      "isBuildStep": true
+    },
+    {
+      "name": "Check UI Design System",
+      "success": true,
+      "durationMs": 189
+    },
+    {
+      "name": "XCTest Suite (Unit & Integration)",
+      "success": true,
+      "durationMs": 175,
+      "details": {
+        "testTimes": [
+          0,
+          0,
+          0,
+          0.001,
+          0.001,
+          0.002,
+          0.003
+        ]
+      }
+    },
+    {
+      "name": "Deno Package Tests",
+      "success": true,
+      "durationMs": 19283
+    },
+    {
+      "name": "E2E Scenario Tests",
+      "success": false,
+      "durationMs": 170
+    }
+  ]
+}

@@ -39,21 +39,41 @@ function scenarioIdFromFilename(filename: string): string {
   return match ? match[1] : "00";
 }
 
+function isScenarioReport(value: unknown): value is ReportFile {
+  if (!value || typeof value !== "object") return false;
+  const report = value as Partial<ReportFile>;
+  return typeof report.scenario === "string" &&
+    typeof report.ok === "boolean" &&
+    typeof report.duration_s === "number" &&
+    typeof report.summary?.passed === "number" &&
+    typeof report.summary.failed === "number" &&
+    typeof report.summary.skipped === "number" &&
+    Array.isArray(report.steps);
+}
+
 async function readRunReportFiles(
   reportsDir: string,
 ): Promise<Array<{ filename: string; report: ReportFile }>> {
   const reports: Array<{ filename: string; report: ReportFile }> = [];
   for await (const entry of Deno.readDir(reportsDir)) {
     if (!entry.isFile || !entry.name.endsWith(".json")) continue;
-    if (entry.name === "overall-summary.json" || entry.name.endsWith("-progress.json")) continue;
+    if (
+      entry.name === "overall-summary.json" ||
+      entry.name.endsWith("-progress.json")
+    ) continue;
     const content = await Deno.readTextFile(join(reportsDir, entry.name));
-    reports.push({ filename: entry.name, report: JSON.parse(content) as ReportFile });
+    const report = JSON.parse(content);
+    if (!isScenarioReport(report)) continue;
+    reports.push({ filename: entry.name, report });
   }
   return reports;
 }
 
 /** Import report files from a run's reports directory into the database. Returns count of imported reports. */
-export async function importRunReports(db: Database, run: Run): Promise<number> {
+export async function importRunReports(
+  db: Database,
+  run: Run,
+): Promise<number> {
   if (!run.reportsDir) return 0;
   const reports = await readRunReportFiles(run.reportsDir);
   if (reports.length === 0) return 0;
@@ -68,7 +88,9 @@ export async function importRunReports(db: Database, run: Run): Promise<number> 
     db.prepare("DELETE FROM scenario_results WHERE run_id = ?").run(run.id);
 
     for (const { filename, report } of reports) {
-      const scenarioId = String(report.metadata?.scenario_id ?? scenarioIdFromFilename(filename));
+      const scenarioId = String(
+        report.metadata?.scenario_id ?? scenarioIdFromFilename(filename),
+      );
       totalPassed += report.summary.passed;
       totalFailed += report.summary.failed;
       totalSkipped += report.summary.skipped;
@@ -91,7 +113,9 @@ export async function importRunReports(db: Database, run: Run): Promise<number> 
         Math.round(report.duration_s * 1000),
         JSON.stringify(report.steps),
         JSON.stringify(report.artifacts ?? {}),
-        report.started_at < 10_000_000_000 ? report.started_at * 1000 : report.started_at,
+        report.started_at < 10_000_000_000
+          ? report.started_at * 1000
+          : report.started_at,
         reportFinishedAt,
       );
     }
@@ -115,7 +139,9 @@ export async function importRunReports(db: Database, run: Run): Promise<number> 
   }
 }
 
-function parseFilename(filename: string): { timestamp: string; scenarioName: string } | null {
+function parseFilename(
+  filename: string,
+): { timestamp: string; scenarioName: string } | null {
   if (filename.endsWith("-progress.json")) return null;
   // Format: 20260507-183659-01_account_lifecycle.json
   const match = filename.match(/^(\d{8}-\d{6})-(.+)\.json$/);
@@ -131,7 +157,9 @@ function timestampToUnix(ts: string): number {
   const hour = parseInt(ts.substring(9, 11));
   const min = parseInt(ts.substring(11, 13));
   const sec = parseInt(ts.substring(13, 15));
-  return Math.floor(new Date(Date.UTC(year, month, day, hour, min, sec)).getTime() / 1000);
+  return Math.floor(
+    new Date(Date.UTC(year, month, day, hour, min, sec)).getTime() / 1000,
+  );
 }
 
 /** Scan the reports directory for unprocessed reports and import them as historical runs. Returns count of imports. */
@@ -161,14 +189,18 @@ export async function scanReports(db: Database): Promise<number> {
       const startedAt = timestampToUnix(timestamp);
 
       // Check if this run already exists and has results
-      const existing = db.prepare("SELECT id, status FROM runs WHERE id = ?").get<
-        { id: string; status: string }
-      >(runId);
+      const existing = db.prepare("SELECT id, status FROM runs WHERE id = ?")
+        .get<
+          { id: string; status: string }
+        >(runId);
       const hasResults = db.prepare(
         "SELECT COUNT(*) as count FROM scenario_results WHERE run_id = ?",
       ).get<{ count: number }>(runId);
 
-      if (existing && existing.status === "completed" && hasResults && hasResults.count > 0) {
+      if (
+        existing && existing.status === "completed" && hasResults &&
+        hasResults.count > 0
+      ) {
         continue;
       }
 
@@ -204,7 +236,8 @@ export async function scanReports(db: Database): Promise<number> {
         for (const file of files) {
           const filePath = join(REPORTS_DIR, file.filename);
           const content = await Deno.readTextFile(filePath);
-          const report: ReportFile = JSON.parse(content);
+          const report = JSON.parse(content);
+          if (!isScenarioReport(report)) continue;
 
           // Extract numeric ID from the scenario name (format: 01_account_lifecycle)
           const idMatch = file.parsed!.scenarioName.match(/^(\d+)/);
