@@ -27,6 +27,7 @@ import type { ScenarioInfo } from "./scenario_metadata.ts";
 import { discoverScenarios, selectScenarios } from "./scenario_selector.ts";
 import { runScenarioLoop } from "./run_loop.ts";
 import type { ScenarioExecutionResult } from "./run_loop.ts";
+import type { ScenarioRunEventSink } from "./events.ts";
 import { createProcessLifecycle } from "./process_lifecycle.ts";
 import { writeOverallSummary } from "./report_writer.ts";
 import { initE2eTracing, isOtelEnabled, shutdownTracing } from "./otel.ts";
@@ -414,10 +415,17 @@ export interface RunCommandOptions {
 
 /**
  * Execute scenarios from a pre-parsed RunnerArgs.
+ *
+ * @param args - Parsed runner arguments.
+ * @param options - Paths and directories.
+ * @param sinks - Optional event sinks forwarded to {@link runScenarioLoop}.
+ *   When provided, console output from `writeOverallSummary` is suppressed
+ *   so the sinks own all terminal output.
  */
 export async function executeRunnerArgs(
   args: RunnerArgs,
   options: RunCommandOptions,
+  sinks?: ScenarioRunEventSink[],
 ): Promise<void> {
   const startTime = Date.now();
   if (args.otel && shouldReexecForOtel()) {
@@ -647,6 +655,7 @@ export async function executeRunnerArgs(
         runDir: context.runDir,
         diagnosticsDir: context.diagnosticsDir,
       },
+      sinks,
     );
     appendScenarioLoopResult(loopResult, results, reportPaths);
   } catch (err) {
@@ -677,6 +686,7 @@ export async function executeRunnerArgs(
     reportsDir,
     fatalError,
     withPds2,
+    quiet: sinks !== undefined && sinks.length > 0,
   });
 
   await tryRecordRunInDatabase(
