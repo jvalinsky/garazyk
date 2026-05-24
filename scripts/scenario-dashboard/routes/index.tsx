@@ -12,6 +12,7 @@ import ScenarioGrid from "../components/ScenarioGrid.tsx";
 import NetworkStatus from "../islands/NetworkStatus.tsx";
 import RunProgress from "../islands/RunProgress.tsx";
 import RunHistory from "../components/RunHistory.tsx";
+import { getTopologyServiceUrls } from "../services/topology_service.ts";
 import { formatDate } from "../utils.ts";
 import type {
   DiscoveredScenario,
@@ -60,6 +61,7 @@ export const handler: Handlers<PageData> = {
 /** Page component for the dashboard home page. */
 export default function DashboardPage({ data }: PageProps<PageData>) {
   const { scenarios, runs } = data;
+  const pdsUrl = getTopologyServiceUrls().pds;
 
   const scenarioGridData = scenarios.map((s) => ({
     id: s.id,
@@ -106,7 +108,7 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
         <ScenarioGrid scenarios={scenarioGridData} />
         <RunHistory runs={runs} />
       </main>
-      <StatusBar pdsUrl="localhost:2583" />
+      <StatusBar pdsUrl={pdsUrl} />
     </Layout>
   );
 }

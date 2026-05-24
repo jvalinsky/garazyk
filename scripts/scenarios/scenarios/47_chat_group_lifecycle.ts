@@ -37,7 +37,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://localhost:2585";
+  const chatUrl = Deno.env.get("CHAT_URL") ?? SERVICE_URLS.chat;
   const chatContext = createChatServiceContext(
     pds,
     chatUrl,

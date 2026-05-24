@@ -39,11 +39,15 @@ export async function run(): Promise<ScenarioResult> {
 
   // ── Connect to or start mock Twilio server ──────────────────────────────
   const configuredTwilioUrl = Deno.env.get("TWILIO_API_BASE_URL");
-  const twilioUrls = [
-    configuredTwilioUrl,
-    "http://local-mock-twilio:8081",
-    "http://127.0.0.1:8081",
-  ].filter((url): url is string => Boolean(url));
+  if (!configuredTwilioUrl) {
+    result.stepFailed(
+      "Initialize mock Twilio server",
+      "TWILIO_API_BASE_URL is required; start scenarios through the manifest-aware runner",
+    );
+    result.finish();
+    return result;
+  }
+  const twilioUrls = [configuredTwilioUrl];
   let twilio: MockTwilioServer | null = null;
   let owned = false;
   for (const url of twilioUrls) {
@@ -101,7 +105,7 @@ export async function run(): Promise<ScenarioResult> {
   //   TWILIO_ACCOUNT_SID=AC00000000000000000000000000000000
   //   TWILIO_AUTH_TOKEN=SK00000000000000000000000000000000
   //   TWILIO_VERIFY_SERVICE_SID=VA00000000000000000000000000000000
-  //   TWILIO_API_BASE_URL=http://127.0.0.1:8081
+  //   TWILIO_API_BASE_URL=<manifest mock Twilio URL>
   const phoneNumber = "+15551234567";
 
   await timedCall(
@@ -198,7 +202,10 @@ export async function run(): Promise<ScenarioResult> {
           return body;
         } catch (exc: any) {
           // If it throws status 400 or returns status !== approved, it's correct
-          if (exc.status === 400 || (exc.body && (exc.body as any).status !== "approved")) {
+          if (
+            exc.status === 400 ||
+            (exc.body && (exc.body as any).status !== "approved")
+          ) {
             return exc.body || { status: "rejected" };
           }
           throw exc;

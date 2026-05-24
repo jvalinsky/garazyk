@@ -376,7 +376,9 @@ export function writeTopologyManifest(
 export function loadTopologyManifest(
   path?: string,
 ): TopologyManifest | undefined {
-  const explicitPath = path || readEnv("ATPROTO_TOPOLOGY_MANIFEST");
+  const explicitPath = path === undefined
+    ? readEnv("ATPROTO_TOPOLOGY_MANIFEST")
+    : path;
   const manifestPath = explicitPath;
   if (!manifestPath) return undefined;
   try {

@@ -340,13 +340,16 @@ function generateHex(bytes = 32): string {
 
 const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") ??
   generateHex();
+export const DEFAULT_ADMIN_PASSWORD = "admin-localdev";
+/** Default port for the mock Twilio phone-verification server. */
+export const DEFAULT_MOCK_TWILIO_PORT = 8081;
 const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ??
-  "admin-localdev";
+  DEFAULT_ADMIN_PASSWORD;
 const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ??
   "localdevadmin";
 const UI_ADMIN_PASSWORD = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
   Deno.env.get("UI_ADMIN_PASSWORD") ??
-  "admin-localdev";
+  DEFAULT_ADMIN_PASSWORD;
 
 function localPdsEnv() {
   return {
@@ -362,7 +365,7 @@ function localPdsEnv() {
     TWILIO_ACCOUNT_SID: "AC00000000000000000000000000000000",
     TWILIO_AUTH_TOKEN: "SK00000000000000000000000000000000",
     TWILIO_VERIFY_SERVICE_SID: "VA00000000000000000000000000000000",
-    TWILIO_API_BASE_URL: "http://local-mock-twilio:8081",
+    TWILIO_API_BASE_URL: `http://local-mock-twilio:${DEFAULT_MOCK_TWILIO_PORT}`,
   };
 }
 
@@ -422,17 +425,17 @@ const GARAZYK_DEFAULT = defineTopology({
           ],
           command: [
             "/workspace/packages/hamownia/mock_twilio_server.ts",
-            "--port=8081",
+            `--port=${DEFAULT_MOCK_TWILIO_PORT}`,
           ],
           env: { DENO_DIR: "/deno-dir" },
-          ports: [port(8081)],
+          ports: [port(DEFAULT_MOCK_TWILIO_PORT)],
           volumes: [
             volume.bind(REPO_ROOT, "/workspace", "ro"),
             volume.named("deno_cache", "/deno-dir"),
           ],
           health: topologyHealth.command([
             "CMD-SHELL",
-            "wget -qO- http://127.0.0.1:8081/__control/health || exit 1",
+            `wget -qO- http://127.0.0.1:${DEFAULT_MOCK_TWILIO_PORT}/__control/health || exit 1`,
           ]),
         },
       },
