@@ -1,0 +1,53 @@
+name: Nudoku Play and Quit
+description: Launch nudoku, navigate the grid with hjkl, and quit
+command: /opt/homebrew/bin/nudoku
+cols: 80
+rows: 24
+settleMs: 2000
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for puzzle to render
+  - type: press_key
+    value: j
+    label: Move cursor down
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move cursor right
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move cursor right again
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Move cursor up
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move cursor left
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: "5"
+    label: Enter number 5 in the cell
+  - type: wait
+    timeoutMs: 500
+    label: Let it register
+  - type: press_key
+    value: "Q"
+    label: Quit nudoku (uppercase Q)
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

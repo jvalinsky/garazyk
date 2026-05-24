@@ -1,0 +1,41 @@
+name: Greed Play and Quit
+description: Launch greed, make a few moves, and quit
+command: /opt/homebrew/bin/greed
+cols: 80
+rows: 24
+settleMs: 2000
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for game to render
+  - type: press_key
+    value: h
+    label: Move left
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Move down
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Move up
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: q
+    label: Quit greed
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
