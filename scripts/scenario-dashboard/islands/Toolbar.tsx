@@ -1,4 +1,4 @@
-/** Toolbar island — topology selector, run/stop/restart controls, settings modal. @module Toolbar */
+/** Toolbar island — topology selector, run/stop/restart controls, run setup toggle. @module Toolbar */
 import { useEffect } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
@@ -12,23 +12,9 @@ export default function Toolbar() {
   const topologies = s.topology.available;
   const run = s.runs.active;
   const busy = s.ux.busy;
-  const showSettings = s.ux.settingsOpen;
-  const params = s.ux.scenarioParams;
+  const showRunSetup = s.ux.settingsOpen;
   const scenarios = s.scenarios.all;
   const services = s.network.services;
-
-  useEffect(() => {
-    if (!IS_BROWSER) return;
-    const saved = localStorage.getItem("garazyk-dashboard-agentMode");
-    if (saved === "true" && !state.peek().ux.agentMode) {
-      dispatch({ type: "ux/setAgentMode", agentMode: true });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!IS_BROWSER) return;
-    localStorage.setItem("garazyk-dashboard-agentMode", String(s.ux.agentMode));
-  }, [s.ux.agentMode]);
 
   useEffect(() => {
     if (!IS_BROWSER) return;
@@ -93,14 +79,25 @@ export default function Toolbar() {
   }
 
   function stopRun() {
+    if (!run) return;
+    const ok = globalThis.confirm?.(
+      `Stop run ${run.id}? Remaining scenarios will not execute.`,
+    );
+    if (ok === false) return;
     dispatch({ type: "runs/stopRequested" });
   }
 
   function restartRun() {
+    if (!run) return;
+    const ok = globalThis.confirm?.(
+      `Restart run ${run.id} on ${s.topology.selected} (${s.ux.runner})?`,
+    );
+    if (ok === false) return;
     dispatch({ type: "runs/restartRequested" });
   }
 
   return (
+    <div class="toolbar-shell">
     <header class="toolbar">
       <div class="toolbar-section">
         <span class="toolbar-title">Garazyk Scenarios</span>
@@ -178,34 +175,38 @@ export default function Toolbar() {
       <div class="toolbar-section">
         {!isActive
           ? (
-            <div style="display: flex; gap: var(--space-sm);">
+            <div class="toolbar-actions">
               {hasParameters && (
                 <button
                   type="button"
                   class="btn btn-secondary"
+                  aria-expanded={showRunSetup}
+                  aria-controls="run-setup"
                   onClick={() => dispatch({ type: "ux/toggleSettings" })}
                   disabled={busy}
                 >
-                  Settings
+                  {showRunSetup ? "Hide prepare run" : "Prepare run"}
                 </button>
               )}
-              <label
-                class="toolbar-checkbox"
-                title="Use hamownia agent run with NDJSON event streaming"
-              >
-                <input
-                  id="agentMode"
-                  type="checkbox"
-                  checked={s.ux.agentMode}
-                  disabled={busy}
-                  onChange={(e) =>
-                    dispatch({
-                      type: "ux/setAgentMode",
-                      agentMode: (e.target as HTMLInputElement).checked,
-                    })}
-                />
-                <span>Agent</span>
-              </label>
+                  <label
+                    class="toolbar-checkbox"
+                    title={s.ux.agentLaunch
+                      ? "Use the hamownia agent runner (NDJSON streaming). Uncheck to run via scripts/run_scenarios.ts."
+                      : "Agent mode is only available when the dashboard is started by an agent (GARAZYK_DASHBOARD_AGENT_LAUNCH=1 or ?agentLaunch=1)."}
+                  >
+                    <input
+                      id="agentMode"
+                      type="checkbox"
+                      checked={s.ux.agentMode}
+                      disabled={!s.ux.agentLaunch || busy || isActive}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "ux/setAgentMode",
+                          agentMode: (e.target as HTMLInputElement).checked,
+                        })}
+                    />
+                    <span>Agent</span>
+                  </label>
               <button
                 type="button"
                 class="btn btn-primary"
@@ -220,7 +221,7 @@ export default function Toolbar() {
             </div>
           )
           : (
-            <div style="display: flex; gap: var(--space-sm);">
+            <div class="toolbar-actions">
               <div class="active-run-indicator">
                 <span
                   class={`status-dot ${isStopping ? "stopping" : "running"}`}
@@ -248,102 +249,31 @@ export default function Toolbar() {
             </div>
           )}
       </div>
-
-      {showSettings && (
-        <div class="settings-modal-backdrop">
-          <div class="settings-modal">
-            <div class="settings-modal-header">
-              <h3>Scenario Settings</h3>
-              <button
-                type="button"
-                class="btn-close"
-                onClick={() => dispatch({ type: "ux/toggleSettings" })}
-              >
-                ×
-              </button>
-            </div>
-            <div class="settings-modal-body">
-              {scenarios.map((sc) => {
-                if (!sc.parameters || Object.keys(sc.parameters).length === 0) {
-                  return null;
-                }
-                return (
-                  <div key={sc.id} class="scenario-settings-group">
-                    <div class="scenario-settings-title">{sc.id} {sc.name}</div>
-                    {Object.entries(sc.parameters).map(([key, meta]) => {
-                      const value = params[key] ?? meta.default;
-                      return (
-                        <div key={key} class="setting-row">
-                          <div class="setting-info">
-                            <div class="setting-label">{key}</div>
-                            <div class="setting-desc">{meta.description}</div>
-                          </div>
-                          <div class="setting-input-wrapper">
-                            {meta.type === "number"
-                              ? (
-                                <input
-                                  type="number"
-                                  class="form-input"
-                                  value={value as number}
-                                  onChange={(e) =>
-                                    dispatch({
-                                      type: "ux/setScenarioParam",
-                                      key,
-                                      value: Number(
-                                        (e.target as HTMLInputElement).value,
-                                      ),
-                                    })}
-                                />
-                              )
-                              : meta.type === "boolean"
-                              ? (
-                                <input
-                                  type="checkbox"
-                                  checked={value as boolean}
-                                  onChange={(e) =>
-                                    dispatch({
-                                      type: "ux/setScenarioParam",
-                                      key,
-                                      value:
-                                        (e.target as HTMLInputElement).checked,
-                                    })}
-                                />
-                              )
-                              : (
-                                <input
-                                  type="text"
-                                  class="form-input"
-                                  value={value as string}
-                                  onChange={(e) =>
-                                    dispatch({
-                                      type: "ux/setScenarioParam",
-                                      key,
-                                      value:
-                                        (e.target as HTMLInputElement).value,
-                                    })}
-                                />
-                              )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-            <div class="settings-modal-footer">
-              <button
-                type="button"
-                class="btn btn-primary"
-                onClick={runAll}
-                disabled={busy}
-              >
-                Start Run with These Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
+
+    <div class="mobile-scope-bar" aria-label="Current command scope">
+      <span class="mobile-scope-chip mobile-scope-chip--brand">Garazyk</span>
+      <span class="mobile-scope-chip">
+        <span class="mobile-scope-label">topology</span>
+        {s.topology.selected}
+      </span>
+      <span class="mobile-scope-chip">
+        <span class="mobile-scope-label">runner</span>
+        {s.ux.runner}
+      </span>
+      <span class="mobile-scope-chip">
+        <span class="mobile-scope-label">scope</span>
+        {runScopeLabel}
+      </span>
+      <span class="mobile-scope-chip">
+        <span class="mobile-scope-label">services</span>
+        {serviceScope}
+      </span>
+      <span class="mobile-scope-chip">
+        <span class="mobile-scope-label">PDS2</span>
+        {needsPds2 ? "included" : "off"}
+      </span>
+    </div>
+    </div>
   );
 }

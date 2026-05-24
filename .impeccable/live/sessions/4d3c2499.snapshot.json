@@ -1,0 +1,29 @@
+{
+  "id": "4d3c2499",
+  "phase": "completed",
+  "pageUrl": "/",
+  "sourceFile": "scripts/scenario-dashboard/islands/RunProgress.tsx",
+  "expectedVariants": 3,
+  "arrivedVariants": 3,
+  "visibleVariant": 1,
+  "paramValues": {
+    "fill-duration": "0.6s",
+    "pulsing-ring": true
+  },
+  "pendingEventSeq": null,
+  "pendingEvent": null,
+  "deliveryLease": null,
+  "checkpointRevision": 12,
+  "activeOwner": "6691f524",
+  "sourceMarkers": {},
+  "fallbackMode": null,
+  "annotationArtifacts": [],
+  "diagnostics": [
+    {
+      "error": "carbonize_cleanup_required",
+      "file": "scripts/scenario-dashboard/islands/RunProgress.tsx",
+      "message": "Accepted variant still has carbonize markers that must be folded into source CSS."
+    }
+  ],
+  "updatedAt": "2026-05-24T06:52:35.537Z"
+}
