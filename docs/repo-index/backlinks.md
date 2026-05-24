@@ -391,7 +391,7 @@ Inbound links: **115**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **26**
+Inbound links: **28**
 
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
