@@ -1,9 +1,9 @@
 #!/usr/bin/env -S deno run -A
 
 import * as colors from "jsr:@std/fmt/colors";
-import { Spinner } from "jsr:@std/cli/unstable-spinner";
 import { join } from "jsr:@std/path";
 import { TextLineStream } from "jsr:@std/streams";
+import { parseArgs } from "jsr:@std/cli/parse-args";
 
 interface Task {
   name: string;
@@ -13,6 +13,54 @@ interface Task {
   isBuildStep?: boolean;
   parseXCTestOutput?: boolean;
 }
+
+const args = parseArgs(Deno.args, {
+  boolean: ["list", "verbose", "json", "shuffle", "help"],
+  string: ["filter", "exclude", "category", "exclude-category", "timeout", "seed", "gated", "XCTest"],
+  alias: {
+    "f": "filter",
+    "e": "exclude",
+    "c": "category",
+    "l": "list",
+    "v": "verbose",
+    "t": "timeout",
+    "h": "help",
+  },
+});
+
+if (args.help) {
+  console.log("Usage: run_all_tests_pretty.ts [options]");
+  console.log("");
+  console.log("Options:");
+  console.log("  -f, --filter PATTERN     Only run tests matching pattern");
+  console.log("  -e, --exclude PATTERN    Exclude tests matching pattern");
+  console.log("  -c, --category CAT       Only run tests in category");
+  console.log("  -l, --list               List tests without running");
+  console.log("  -v, --verbose            Verbose output");
+  console.log("  -t, --timeout SECS       Per-test timeout");
+  console.log("  --shuffle                Shuffle tests");
+  console.log("  --seed N                 Seed for shuffle");
+  console.log("  --gated MODE             Gated mode (run, include, skip)");
+  console.log("  --json                   JSON output");
+  Deno.exit(0);
+}
+
+// Build pass-through arguments for the test binary
+const passThroughArgs: string[] = [];
+const hasFilter = !!(args.filter || args.exclude || args.category || args["exclude-category"] || args["XCTest"]);
+
+if (args.filter) passThroughArgs.push("--filter", args.filter);
+if (args.exclude) passThroughArgs.push("--exclude", args.exclude);
+if (args.category) passThroughArgs.push("--category", args.category);
+if (args["exclude-category"]) passThroughArgs.push("--exclude-category", args["exclude-category"]);
+if (args["XCTest"]) passThroughArgs.push("-XCTest", args["XCTest"]);
+if (args.list) passThroughArgs.push("--list");
+if (args.verbose) passThroughArgs.push("--verbose");
+if (args.json) passThroughArgs.push("--json");
+if (args.shuffle) passThroughArgs.push("--shuffle");
+if (args.seed) passThroughArgs.push("--seed", args.seed.toString());
+if (args.timeout) passThroughArgs.push("--timeout", args.timeout.toString());
+if (args.gated) passThroughArgs.push("--gated", args.gated);
 
 const tasks: Task[] = [
   {
@@ -31,18 +79,27 @@ const tasks: Task[] = [
   },
   {
     name: "XCTest Suite (Unit & Integration)",
-    command: ["build/tests/AllTests"],
+    command: ["build/tests/AllTests", ...passThroughArgs],
     parseXCTestOutput: true,
   },
   {
     name: "Deno Package Tests",
-    command: ["deno", "task", "test"],
+    command: ["deno", "task", "test", ...(args.filter ? ["--filter", args.filter] : [])],
   },
   {
     name: "E2E Scenario Tests",
-    command: ["deno", "task", "hamownia", "run"],
+    command: ["deno", "task", "hamownia", "run", ...(args.filter ? ["--filter", args.filter] : [])],
   }
 ];
+
+// Filter tasks if a filter is provided
+let filteredTasks = tasks;
+if (hasFilter) {
+  // If we have a filter, still run build steps
+  // For other tasks, only run them if they are the XCTest suite OR if it's a general filter
+  // Actually, better to just run everything with the filter passed through
+  filteredTasks = tasks;
+}
 
 interface TestResult {
   name: string;
@@ -52,11 +109,23 @@ interface TestResult {
   details?: any;
 }
 
+// Helper to safely log without crashing on broken pipe
+function safeLog(message: string) {
+  try {
+    console.log(message);
+  } catch (e) {
+    if (e instanceof Deno.errors.BrokenPipe) {
+      Deno.exit(0);
+    }
+    throw e;
+  }
+}
+
 async function runTask(task: Task): Promise<{ success: boolean; details?: any }> {
   const prefix = task.isBuildStep ? "[BUILD]" : "[TEST]";
-  console.log(colors.cyan(`\n>> ${prefix} ${task.name}`));
-  console.log(colors.gray(`   Command: ${task.command.join(" ")}`));
-  console.log(colors.gray("-".repeat(80)));
+  safeLog(colors.cyan(`\n>> ${prefix} ${task.name}`));
+  safeLog(colors.gray(`   Command: ${task.command.join(" ")}`));
+  safeLog(colors.gray("-".repeat(80)));
 
   try {
     const env = { ...task.env, FORCE_COLOR: "1" };
@@ -69,19 +138,8 @@ async function runTask(task: Task): Promise<{ success: boolean; details?: any }>
     });
 
     const child = cmd.spawn();
-    let testTimes: number[] = [];
+    const testTimes: number[] = [];
     const logBuffer: string[] = [];
-    let lastBuildPct = 0;
-    
-    let isTTY = false;
-    try {
-      isTTY = Deno.stdout.isTerminal();
-    } catch {
-      try {
-        // @ts-ignore fallback for older Deno
-        isTTY = Deno.isatty(Deno.stdout.rid);
-      } catch {}
-    }
     
     let totalXCTests = 0;
     const classTestCounts: Record<string, number> = {};
@@ -114,6 +172,7 @@ async function runTask(task: Task): Promise<{ success: boolean; details?: any }>
 
     let currentClassTestsCompleted = 0;
     let currentSuite = "";
+    const failureDetails: string[] = [];
 
     const handleLine = (line: string, isStderr: boolean) => {
       const lineTrimmed = line.trim();
@@ -129,7 +188,7 @@ async function runTask(task: Task): Promise<{ success: boolean; details?: any }>
           if (suiteName !== "All Tests" && !suiteName.endsWith(".xctest")) {
             currentSuite = suiteName;
             currentClassTestsCompleted = 0;
-            console.log(colors.blue(colors.bold(`\n  [CLASS] ${currentSuite}`)));
+            safeLog(colors.blue(colors.bold(`\n  [CLASS] ${currentSuite}`)));
           }
         } 
         else if ((match = line.match(/Test Case '-\[(.*) (.*)\]' passed \((.*) seconds\)/))) {
@@ -138,7 +197,7 @@ async function runTask(task: Task): Promise<{ success: boolean; details?: any }>
           currentClassTestsCompleted++;
           const timeStr = (timeSec * 1000).toFixed(1) + "ms";
           const testName = match[2];
-          console.log(`    ${colors.green("+")} ${testName.padEnd(45)} ${colors.gray(`(${timeStr})`)}`);
+          safeLog(`    ${colors.green("+")} ${testName.padEnd(45)} ${colors.gray(`(${timeStr})`)}`);
         } 
         else if ((match = line.match(/Test Case '-\[(.*) (.*)\]' failed \((.*) seconds\)/))) {
           const timeSec = parseFloat(match[3]);
@@ -146,39 +205,36 @@ async function runTask(task: Task): Promise<{ success: boolean; details?: any }>
           currentClassTestsCompleted++;
           const timeStr = (timeSec * 1000).toFixed(1) + "ms";
           const testName = match[2];
-          console.log(`    ${colors.red("-")} ${testName.padEnd(45)} ${colors.red(`(${timeStr})`)}`);
+          safeLog(`    ${colors.red("-")} ${testName.padEnd(45)} ${colors.red(`(${timeStr})`)}`);
+          if (failureDetails.length > 0) {
+            for (const detail of failureDetails) {
+              safeLog(colors.red(`        | ${detail}`));
+            }
+            failureDetails.length = 0;
+          }
         } 
         else if ((match = line.match(/Executed (\d+) tests?, with (\d+) failures? .* in (.*) \((.*)\) seconds/))) {
           const numTests = match[1];
           const failures = match[2];
           const wallTime = match[4];
           if (failures === "0") {
-            console.log(`    ${colors.green(`+ All ${numTests} passed`)} in ${colors.gray(`${wallTime}s`)}`);
+            safeLog(`    ${colors.green(`+ All ${numTests} passed`)} in ${colors.gray(`${wallTime}s`)}`);
           } else {
-            console.log(`    ${colors.red(`- ${failures} failed`)} out of ${numTests} in ${colors.gray(`${wallTime}s`)}`);
+            safeLog(`    ${colors.red(`- ${failures} failures`)} out of ${numTests} in ${colors.gray(`${wallTime}s`)}`);
           }
         } 
-        else if (
-          line.match(/Test Case '-\[.*\]' started/) || 
-          line.match(/Test Suite '.*' (passed|failed) at/) ||
-          line.match(/=== Starting Test Suite:/) ||
-          line.match(/=== Test Suite Finished ===/) ||
-          line.match(/Test suites: /)
-        ) {
-          // ignore completely
-        } else {
-          // Noise is ignored for XCTest
+        else if (line.includes("error: -[")) {
+            // Capture assertion failure details
+            const errorMatch = line.match(/error: -\[.*?\] : (.*)$/);
+            if (errorMatch) {
+                failureDetails.push(errorMatch[1]);
+            }
         }
       } else {
         const lower = line.toLowerCase();
         let isNoise = false;
         
         if (task.isBuildStep) {
-          const pctMatch = lineTrimmed.match(/^\[\s*(\d+)%\]/);
-          if (pctMatch) {
-            lastBuildPct = parseInt(pctMatch[1], 10);
-          }
-          
           const isWarningOrError = lower.includes("warning:") || lower.includes("error:") || lower.includes("failed");
           isNoise = !isWarningOrError;
         } else {
@@ -190,12 +246,16 @@ async function runTask(task: Task): Promise<{ success: boolean; details?: any }>
             lower.includes("container") ||
             lower.includes("check-ui-design-system") ||
             lineTrimmed.startsWith("Download") ||
-            lower.includes("checking ");
+            lower.includes("checking ") ||
+            // Suppress expected test noise (e.g. firehose parse errors during tests)
+            lower.includes("firehose parse error") ||
+            lower.includes("firehoseframeparseerror") ||
+            lineTrimmed.includes("at ") && (lower.includes("firehose") || lower.includes("cborg"));
         }
 
         if (!isNoise) {
           const prefix = isStderr ? colors.red("    [stderr] ") : colors.gray("    | ");
-          console.log(`${prefix}${line}`);
+          safeLog(`${prefix}${line}`);
         }
       }
     };
@@ -225,28 +285,28 @@ async function runTask(task: Task): Promise<{ success: boolean; details?: any }>
 
     const status = await child.status;
 
-    console.log(colors.gray("-".repeat(80)));
+    safeLog(colors.gray("-".repeat(80)));
     
     const details = task.parseXCTestOutput ? { testTimes } : undefined;
 
     if (status.success) {
-      console.log(colors.green(`+ ${task.name} completed successfully.`));
+      safeLog(colors.green(`+ ${task.name} completed successfully.`));
       return { success: true, details };
     } else {
-      console.log(colors.red(`- ${task.name} failed with code ${status.code}.`));
-      console.log(colors.yellow(`\n--- Last 50 lines of output for debugging ---`));
+      safeLog(colors.red(`- ${task.name} failed with code ${status.code}.`));
+      safeLog(colors.yellow(`\n--- Last 50 lines of output for debugging ---`));
       const recentLogs = logBuffer.slice(-50);
       for (const l of recentLogs) {
-        console.log(colors.gray(l));
+        safeLog(colors.gray(l));
       }
-      console.log(colors.yellow(`---------------------------------------------`));
+      safeLog(colors.yellow(`---------------------------------------------`));
       return { success: false, details };
     }
   } catch (error) {
-    console.log(colors.gray("-".repeat(80)));
-    console.log(colors.red(`✖ ${task.name} failed to start or threw an exception.`));
+    safeLog(colors.gray("-".repeat(80)));
+    safeLog(colors.red(`[ERROR] ${task.name} failed to start or threw an exception.`));
     if (error instanceof Error) {
-      console.log(colors.red(`  Error: ${error.message}`));
+      safeLog(colors.red(`  Error: ${error.message}`));
     }
     return { success: false };
   }
@@ -266,18 +326,18 @@ function printTimingStats(times: number[]) {
   const p95 = times[Math.floor(count * 0.95)];
   const p99 = times[Math.floor(count * 0.99)];
 
-  console.log(colors.magenta(colors.bold("\n📊 XCTest Timing Statistics")));
-  console.log(colors.magenta("-".repeat(80)));
+  safeLog(colors.magenta(colors.bold("\n--- XCTest Timing Statistics ---")));
+  safeLog(colors.magenta("-".repeat(80)));
   
   const fmt = (n: number) => (n * 1000).toFixed(1).padStart(7) + "ms";
   
-  console.log(`  ${colors.white("Count :")} ${count.toString().padStart(5)} tests    ${colors.white("Mean :")} ${fmt(mean)}`);
-  console.log(`  ${colors.white("Median:")} ${fmt(p50)}          ${colors.white("P90  :")} ${fmt(p90)}`);
-  console.log(`  ${colors.white("P95   :")} ${fmt(p95)}          ${colors.white("P99  :")} ${fmt(p99)}`);
-  console.log(`  ${colors.white("Min   :")} ${fmt(min)}          ${colors.white("Max  :")} ${fmt(max)}`);
+  safeLog(`  ${colors.white("Count :")} ${count.toString().padStart(5)} tests    ${colors.white("Mean :")} ${fmt(mean)}`);
+  safeLog(`  ${colors.white("Median:")} ${fmt(p50)}          ${colors.white("P90  :")} ${fmt(p90)}`);
+  safeLog(`  ${colors.white("P95   :")} ${fmt(p95)}          ${colors.white("P99  :")} ${fmt(p99)}`);
+  safeLog(`  ${colors.white("Min   :")} ${fmt(min)}          ${colors.white("Max  :")} ${fmt(max)}`);
   
-  console.log(colors.magenta(colors.bold("\n📈 Test Execution Time Distribution")));
-  console.log(colors.magenta("-".repeat(80)));
+  safeLog(colors.magenta(colors.bold("\n--- Test Execution Time Distribution ---")));
+  safeLog(colors.magenta("-".repeat(80)));
 
   const predefinedBins = [
     { label: "< 10ms", max: 0.010, count: 0 },
@@ -312,25 +372,25 @@ function printTimingStats(times: number[]) {
     if (bin.max > 1.0) barColor = colors.red;
     else if (bin.max > 0.250) barColor = colors.yellow;
     
-    const bar = barColor("█".repeat(barLength));
+    const bar = barColor("#".repeat(barLength));
     const labelStr = colors.white(bin.label.padEnd(12));
     const countStr = bin.count.toString().padStart(4);
     
-    console.log(`  ${labelStr} | ${countStr} | ${bar}`);
+    safeLog(`  ${labelStr} | ${countStr} | ${bar}`);
   }
 }
 
 async function main() {
-  console.log(colors.blue(colors.bold("================================================================================")));
-  console.log(colors.blue(colors.bold("                     Garazyk Unified Test Suite Runner                          ")));
-  console.log(colors.blue(colors.bold("================================================================================\n")));
+  safeLog(colors.blue(colors.bold("================================================================================")));
+  safeLog(colors.blue(colors.bold("                     Garazyk Unified Test Suite Runner                          ")));
+  safeLog(colors.blue(colors.bold("================================================================================\n")));
 
   const results: TestResult[] = [];
   const startTime = Date.now();
   let allTestsPassed = true;
   let buildFailed = false;
 
-  for (const task of tasks) {
+  for (const task of filteredTasks) {
     const taskStartTime = Date.now();
     const result = await runTask(task);
     const durationMs = Date.now() - taskStartTime;
@@ -346,7 +406,7 @@ async function main() {
     if (!result.success) {
       if (task.isBuildStep) {
         buildFailed = true;
-        console.log(colors.yellow(`\n⚠ Stopping further execution because a required build step failed.`));
+        safeLog(colors.yellow(`\n! Stopping further execution because a required build step failed.`));
         break;
       } else {
         allTestsPassed = false;
@@ -356,9 +416,9 @@ async function main() {
 
   const totalDurationMs = Date.now() - startTime;
 
-  console.log(colors.blue(colors.bold("\n================================================================================")));
-  console.log(colors.blue(colors.bold("                                  Summary                                       ")));
-  console.log(colors.blue(colors.bold("================================================================================")));
+  safeLog(colors.blue(colors.bold("\n================================================================================")));
+  safeLog(colors.blue(colors.bold("                                  Summary                                       ")));
+  safeLog(colors.blue(colors.bold("================================================================================")));
 
   for (const result of results) {
     const durationStr = (result.durationMs / 1000).toFixed(2) + "s";
@@ -366,7 +426,7 @@ async function main() {
     const nameFormatted = colors.white(result.name.padEnd(55));
     const timeFormatted = colors.gray(durationStr.padStart(8));
     
-    console.log(`${statusLabel} | ${nameFormatted} | ${timeFormatted}`);
+    safeLog(`${statusLabel} | ${nameFormatted} | ${timeFormatted}`);
   }
 
   // Find XCTest task details to print timing stats
@@ -375,8 +435,8 @@ async function main() {
     printTimingStats(xctestResult.details.testTimes);
   }
 
-  console.log(colors.blue(colors.bold("\n================================================================================")));
-  console.log(colors.white(colors.bold(`Total Time: ${(totalDurationMs / 1000).toFixed(2)}s`)));
+  safeLog(colors.blue(colors.bold("\n================================================================================")));
+  safeLog(colors.white(colors.bold(`Total Time: ${(totalDurationMs / 1000).toFixed(2)}s`)));
   
   try {
     const reportPath = join(Deno.cwd(), "test_run_summary.json");
@@ -388,19 +448,19 @@ async function main() {
       results
     };
     await Deno.writeTextFile(reportPath, JSON.stringify(reportData, null, 2));
-    console.log(colors.gray(`\n📄 Detailed JSON report saved to: ${reportPath}`));
+    safeLog(colors.gray(`\nDetailed JSON report saved to: ${reportPath}`));
   } catch (err) {
     console.error(colors.red("\nFailed to save test results to file:"), err);
   }
 
   if (buildFailed) {
-    console.log(colors.red(colors.bold("\n💥 Test suite aborted due to build failure.")));
+    safeLog(colors.red(colors.bold("\n[!] Test suite aborted due to build failure.")));
     Deno.exit(1);
   } else if (allTestsPassed) {
-    console.log(colors.green(colors.bold("\n🎉 All tasks and tests completed successfully!")));
+    safeLog(colors.green(colors.bold("\n[+] All tasks and tests completed successfully!")));
     Deno.exit(0);
   } else {
-    console.log(colors.red(colors.bold("\n💥 Some tests failed. Please review the output above.")));
+    safeLog(colors.red(colors.bold("\n[-] Some tests failed. Please review the output above.")));
     Deno.exit(1);
   }
 }
