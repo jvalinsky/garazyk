@@ -109,8 +109,7 @@ export async function allocateHostPort(
     };
 
     try {
-      const listener = Deno.listen({ hostname, port });
-      listener.close();
+      probeHostPort(hostname, port);
       await file.write(
         new TextEncoder().encode(JSON.stringify(record, null, 2) + "\n"),
       );
@@ -212,4 +211,9 @@ function processIsAlive(pid: number): boolean {
 function randomPort(range: PortRange): number {
   const span = range.end - range.start + 1;
   return range.start + Math.floor(Math.random() * span);
+}
+
+function probeHostPort(hostname: string, port: number): void {
+  const listener = Deno.listen({ hostname, port });
+  listener.close();
 }
