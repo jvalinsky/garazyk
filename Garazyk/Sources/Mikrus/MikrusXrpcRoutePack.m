@@ -4,14 +4,16 @@
 #import "Mikrus/MikrusXrpcRoutePack.h"
 #import "Mikrus/MikrusDatabase.h"
 #import "Mikrus/MikrusSourceSpec.h"
+#import "Core/ATProtoDIDDocumentFields.h"
 #import "Core/ATURI.h"
 #import "Core/DID.h"
 #import "Identity/HandleResolver.h"
+#import "Network/GZXrpcRouteSupport.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "Network/ATProtoSafeHTTPClient.h"
-#import "Network/RateLimiter.h"
+#import "Network/XrpcErrorHelper.h"
 
 @implementation MikrusXrpcRoutePack {
     MikrusDatabase *_database;
@@ -49,19 +51,7 @@
 }
 
 - (BOOL)checkRateLimitForRequest:(HttpRequest *)request response:(HttpResponse *)response {
-    RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
-    if (rateLimit.allowed) return YES;
-
-    response.statusCode = HttpStatusTooManyRequests;
-    [response setJsonBody:@{
-        @"error": @"RateLimitExceeded",
-        @"message": @"Too many requests"
-    }];
-    [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.limit] forKey:@"X-RateLimit-Limit"];
-    [response setHeader:[NSString stringWithFormat:@"%ld", (long)rateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
-    [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
-    [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.retryAfter] forKey:@"Retry-After"];
-    return NO;
+    return [GZXrpcRouteSupport checkIPRateLimitForRequest:request response:response];
 }
 
 - (void)handleGetBacklinks:(HttpRequest *)request response:(HttpResponse *)response {
@@ -291,12 +281,7 @@
 #pragma mark - Helpers
 
 - (NSString *)requiredParam:(NSString *)name request:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *value = [request queryParamForKey:name];
-    if (value.length == 0) {
-        [self writeInvalidRequest:[NSString stringWithFormat:@"%@ parameter is required", name] response:response];
-        return nil;
-    }
-    return value;
+    return [GZXrpcRouteSupport requiredQueryParam:name request:request response:response];
 }
 
 - (MikrusSourceSpec *)sourceFromRequest:(HttpRequest *)request response:(HttpResponse *)response {
@@ -324,18 +309,12 @@
                  defaultLimit:(NSInteger)defaultLimit
                        output:(NSInteger *)output
                      response:(HttpResponse *)response {
-    NSString *limitParam = [request queryParamForKey:@"limit"];
-    NSInteger limit = defaultLimit;
-    if (limitParam.length > 0) {
-        NSScanner *scanner = [NSScanner scannerWithString:limitParam];
-        scanner.charactersToBeSkipped = nil;
-        if (![scanner scanInteger:&limit] || !scanner.isAtEnd || limit < 1 || limit > 100) {
-            [self writeInvalidRequest:@"limit must be an integer between 1 and 100" response:response];
-            return NO;
-        }
-    }
-    if (output) *output = limit;
-    return YES;
+    return [GZXrpcRouteSupport parseLimitForRequest:request
+                                       defaultLimit:defaultLimit
+                                                min:1
+                                                max:100
+                                             output:output
+                                           response:response];
 }
 
 - (NSArray<NSString *> *)stringArrayParam:(NSString *)name request:(HttpRequest *)request {
@@ -399,47 +378,15 @@
 }
 
 - (nullable NSString *)handleFromDocument:(DIDDocument *)doc {
-    for (NSString *aka in doc.alsoKnownAs ?: @[]) {
-        if (![aka isKindOfClass:[NSString class]]) continue;
-        NSString *candidate = aka;
-        if ([candidate hasPrefix:@"at://"]) candidate = [candidate substringFromIndex:5];
-        if ([candidate hasSuffix:@"/"]) candidate = [candidate substringToIndex:candidate.length - 1];
-        if (candidate.length > 0) return [candidate lowercaseString];
-    }
-    return nil;
+    return [ATProtoDIDDocumentFields normalizedHandleFromDocument:doc];
 }
 
 - (nullable NSString *)pdsEndpointFromDocument:(DIDDocument *)doc {
-    for (NSDictionary *service in doc.service ?: @[]) {
-        if (![service isKindOfClass:[NSDictionary class]]) continue;
-        if (![service[@"type"] isEqualToString:@"AtprotoPersonalDataServer"]) continue;
-        NSString *endpoint = service[@"serviceEndpoint"];
-        if (endpoint.length > 0) return endpoint;
-    }
-    return nil;
+    return [ATProtoDIDDocumentFields pdsEndpointFromDocument:doc];
 }
 
 - (nullable NSString *)signingKeyFromDocument:(DIDDocument *)doc {
-    id verificationMethods = doc.jsonDictionary[@"verificationMethod"];
-    if ([verificationMethods isKindOfClass:[NSArray class]]) {
-        NSString *fallback = nil;
-        for (NSDictionary *method in (NSArray *)verificationMethods) {
-            if (![method isKindOfClass:[NSDictionary class]]) continue;
-            NSString *key = method[@"publicKeyMultibase"];
-            if (key.length == 0) continue;
-            NSString *methodId = method[@"id"];
-            if ([methodId hasSuffix:@"#atproto"]) return key;
-            if (!fallback) fallback = key;
-        }
-        if (fallback.length > 0) return fallback;
-    }
-
-    id legacyMethods = doc.jsonDictionary[@"verificationMethods"];
-    if ([legacyMethods isKindOfClass:[NSDictionary class]]) {
-        NSString *atproto = legacyMethods[@"atproto"];
-        if (atproto.length > 0) return atproto;
-    }
-    return nil;
+    return [ATProtoDIDDocumentFields atprotoSigningKeyMultibaseFromDocument:doc];
 }
 
 // NOTE: Blocks the calling GCD thread up to 5s. Local database is checked
@@ -498,8 +445,7 @@
 }
 
 - (void)writeInvalidRequest:(NSString *)message response:(HttpResponse *)response {
-    response.statusCode = HttpStatusBadRequest;
-    [response setJsonBody:@{@"error": @"InvalidRequest", @"message": message ?: @"Invalid request"}];
+    [XrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
 }
 
 - (void)writeDatabaseError:(NSError *)error response:(HttpResponse *)response {
