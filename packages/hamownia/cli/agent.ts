@@ -91,7 +91,8 @@ export interface AgentTriageResult {
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-function toSummary(scenario: ScenarioInfo): AgentScenarioSummary {
+/** Exported for testing. */
+export function toSummary(scenario: ScenarioInfo): AgentScenarioSummary {
   const manifest: ScenarioManifest = SCENARIO_MANIFESTS[scenario.id] ?? {};
   return {
     id: scenario.id,
@@ -264,6 +265,18 @@ const agentRunCommand = new Command()
     async (options: Record<string, unknown>, ...scenarioIds: string[]) => {
       const root = await repoRoot();
       const durationCache = new DurationCache(root);
+
+      // Validate web-client preset early (same as run.ts)
+      if (
+        options.webClient &&
+        !TopologyRegistry.getWebClient(String(options.webClient))
+      ) {
+        console.error(
+          `Unknown web client preset: ${options.webClient}\n` +
+            `Available: ${TopologyRegistry.listWebClients().join(", ")}`,
+        );
+        Deno.exit(2);
+      }
 
       // Build sinks: NdjsonSink always on stdout.
       const sinks: ScenarioRunEventSink[] = [new NdjsonSink()];
