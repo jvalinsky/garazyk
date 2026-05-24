@@ -28,8 +28,13 @@ export const handler: Handlers = {
     }
 
     const now = Date.now();
-    const elapsedMs = Math.max(0, now - run.startedAt);
-    const progressPath = run.runDir ? join(run.runDir, "progress.json") : undefined;
+    const running = run.status === "running" || run.status === "starting" ||
+      run.status === "stopping";
+    const elapsedEnd = running ? now : run.finishedAt ?? run.stoppedAt ?? now;
+    const elapsedMs = Math.max(0, elapsedEnd - run.startedAt);
+    const progressPath = run.runDir
+      ? join(run.runDir, "progress.json")
+      : undefined;
 
     if (progressPath) {
       try {
@@ -45,8 +50,7 @@ export const handler: Handlers = {
             runId,
             elapsedMs,
             now,
-            running: run.status === "running" || run.status === "starting" ||
-              run.status === "stopping",
+            running,
           }),
           {
             headers: { "Content-Type": "application/json" },
@@ -79,8 +83,7 @@ export const handler: Handlers = {
           elapsedMs,
           updatedAt: lastActivity,
           now,
-          running: run.status === "running" || run.status === "starting" ||
-            run.status === "stopping",
+          running,
         }),
         {
           headers: { "Content-Type": "application/json" },
