@@ -4,6 +4,7 @@ import { db } from "../../db/index.ts";
 import Layout from "../../components/Layout.tsx";
 import Toolbar from "../../islands/Toolbar.tsx";
 import Sidebar from "../../islands/Sidebar.tsx";
+import MobileNav from "../../islands/MobileNav.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
 import StepRow from "../../components/StepRow.tsx";
 import ScenarioRunner from "../../islands/ScenarioRunner.tsx";
@@ -201,6 +202,7 @@ export default function ScenarioDetailPage(
         )}
       </main>
       <StatusBar />
+      <MobileNav activeScenario={scenario.id} />
     </Layout>
   );
 }

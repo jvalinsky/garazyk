@@ -5,11 +5,69 @@
 import { Database } from "sqlite3";
 import {
   Run,
+  RunEvent,
   ScenarioResult,
   ScenarioResultView,
   ScenarioStatus,
   ScenarioStep,
 } from "../services/types.ts";
+
+/** Persisted run timeline event row. */
+export interface RunEventRow {
+  id: number;
+  runId: string;
+  eventType: string;
+  timestamp: number;
+  detail: RunEvent;
+}
+
+/** Insert a lifecycle event for timeline replay. */
+export function insertRunEvent(db: Database, event: RunEvent): void {
+  const timestamp = event.type === "log_line" && typeof event.at === "number"
+    ? event.at
+    : "startedAt" in event && typeof event.startedAt === "number"
+    ? event.startedAt
+    : "finishedAt" in event && typeof event.finishedAt === "number"
+    ? event.finishedAt
+    : Date.now();
+
+  db.prepare(`
+    INSERT INTO run_events (run_id, event, timestamp, detail_json)
+    VALUES (?, ?, ?, ?)
+  `).run(event.runId, event.type, timestamp, JSON.stringify(event));
+}
+
+/** Fetch timeline events for a run, oldest first. */
+export function fetchRunEvents(db: Database, runId: string): RunEventRow[] {
+  const rows = db.prepare(`
+    SELECT id, run_id as runId, event as eventType, timestamp, detail_json as detailJson
+    FROM run_events
+    WHERE run_id = ?
+    ORDER BY timestamp ASC, id ASC
+  `).all(runId) as Array<{
+    id: number;
+    runId: string;
+    eventType: string;
+    timestamp: number;
+    detailJson: string;
+  }>;
+
+  return rows.map((row) => {
+    let detail: RunEvent;
+    try {
+      detail = JSON.parse(row.detailJson) as RunEvent;
+    } catch {
+      detail = { type: "log_line", runId, line: row.detailJson } as RunEvent;
+    }
+    return {
+      id: row.id,
+      runId: row.runId,
+      eventType: row.eventType,
+      timestamp: row.timestamp,
+      detail,
+    };
+  });
+}
 
 /** Normalize epoch timestamps: second-based values are converted to ms. */
 export function normalizeEpochMs(

@@ -1,45 +1,39 @@
 #!/usr/bin/env node
-import { createInterface } from "node:readline";
 import { TerminalSessionManager, snapshotToYaml } from "./terminal_session.mjs";
 import { AsciicastRecorder, defaultRecordingDir } from "./recording.mjs";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
 const manager = new TerminalSessionManager();
-
-function jsonRpc(id, result) {
-  return JSON.stringify({ jsonrpc: "2.0", id, result });
-}
-
-function jsonRpcError(id, code, message) {
-  return JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } });
-}
 
 function toolResultFromSnapshot(snapshot) {
   return {
     content: [{ type: "text", text: snapshotToYaml(snapshot) }],
-    structuredContent: snapshot,
     isError: false,
+    _meta: { structuredContent: snapshot }
   };
 }
 
 function startToolResult(snapshot) {
   return {
     content: [{ type: "text", text: snapshotToYaml(snapshot) }],
-    structuredContent: {
-      sessionId: snapshot.sessionId,
-      pid: snapshot.pid,
-      snapshot,
-      ...snapshot,
-    },
     isError: false,
+    _meta: {
+      structuredContent: {
+        sessionId: snapshot.sessionId,
+        pid: snapshot.pid,
+        snapshot,
+        ...snapshot,
+      }
+    }
   };
 }
 
-function errorToolResult(message) {
-  return {
-    content: [{ type: "text", text: `Error: ${message}` }],
-    isError: true,
-  };
-}
+const server = new Server(
+  { name: "garazyk-pty", version: "0.1.0" },
+  { capabilities: { tools: {} } }
+);
 
 const tools = [
   {
@@ -156,7 +150,12 @@ const tools = [
   },
 ];
 
-async function handleToolCall(name, args = {}) {
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools };
+});
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args = {} } = request.params;
   try {
     switch (name) {
       case "pty_start": {
@@ -177,8 +176,8 @@ async function handleToolCall(name, args = {}) {
         const semanticRes = session.semanticSnapshot(detail, includePrompt);
         return {
           content: [{ type: "text", text: JSON.stringify(semanticRes, null, 2) }],
-          structuredContent: semanticRes,
           isError: false,
+          _meta: { structuredContent: semanticRes }
         };
       }
       case "pty_action": {
@@ -206,8 +205,8 @@ async function handleToolCall(name, args = {}) {
       case "pty_list":
         return {
           content: [{ type: "text", text: JSON.stringify(manager.list(), null, 2) }],
-          structuredContent: { sessions: manager.list() },
           isError: false,
+          _meta: { structuredContent: { sessions: manager.list() } }
         };
       case "pty_rec_start": {
         const session = manager.get(args.sessionId);
@@ -226,8 +225,8 @@ async function handleToolCall(name, args = {}) {
         session.attachRecording(recorder);
         return {
           content: [{ type: "text", text: `Recording started.\nCast: ${recorder.castPath}` }],
-          structuredContent: { sessionId: session.sessionId, castPath: recorder.castPath },
           isError: false,
+          _meta: { structuredContent: { sessionId: session.sessionId, castPath: recorder.castPath } }
         };
       }
       case "pty_rec_stop": {
@@ -237,73 +236,37 @@ async function handleToolCall(name, args = {}) {
         await recorder.close();
         return {
           content: [{ type: "text", text: `Recording complete.\nCast: ${recorder.castPath}\nHTML: ${recorder.htmlPath}` }],
-          structuredContent: {
-            sessionId: session.sessionId,
-            castPath: recorder.castPath,
-            htmlPath: recorder.htmlPath,
-          },
           isError: false,
+          _meta: {
+            structuredContent: {
+              sessionId: session.sessionId,
+              castPath: recorder.castPath,
+              htmlPath: recorder.htmlPath,
+            }
+          }
         };
       }
       default:
-        return errorToolResult(`Unknown tool: ${name}`);
+        throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {
-    return errorToolResult(error.message);
+    return {
+      content: [{ type: "text", text: `Error: ${error.message}` }],
+      isError: true,
+    };
   }
-}
-
-async function handleRequest(msg) {
-  if (msg.jsonrpc !== "2.0") {
-    return jsonRpcError(msg.id, -32600, "Invalid Request");
-  }
-  if (msg.id === undefined) {
-    if (msg.method === "exit") {
-      await manager.stopAll();
-      manager.dispose();
-      process.exit(0);
-    }
-    return null;
-  }
-  if (msg.method === "initialize") {
-    return jsonRpc(msg.id, {
-      protocolVersion: "2024-11-05",
-      capabilities: { tools: {} },
-      serverInfo: { name: "garazyk-pty", version: "0.1.0" },
-    });
-  }
-  if (msg.method === "initialized") return null;
-  if (msg.method === "shutdown") {
-    await manager.stopAll();
-    manager.dispose();
-    return jsonRpc(msg.id, null);
-  }
-  if (msg.method === "tools/list") {
-    return jsonRpc(msg.id, { tools });
-  }
-  if (msg.method === "tools/call") {
-    const params = msg.params ?? {};
-    if (!params.name) return jsonRpcError(msg.id, -32602, "Missing tool name");
-    return jsonRpc(msg.id, await handleToolCall(params.name, params.arguments ?? {}));
-  }
-  return jsonRpcError(msg.id, -32601, `Unknown method: ${msg.method}`);
-}
+});
 
 async function main() {
-  const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
-  for await (const line of rl) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    try {
-      const msg = JSON.parse(trimmed);
-      const response = await handleRequest(msg);
-      if (response) process.stdout.write(`${response}\n`);
-    } catch (error) {
-      process.stdout.write(`${jsonRpcError(null, -32700, error.message || "Parse error")}\n`);
-    }
-  }
-  await manager.stopAll();
-  manager.dispose();
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  
+  process.on("SIGINT", async () => {
+    await manager.stopAll();
+    manager.dispose();
+    await server.close();
+    process.exit(0);
+  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -313,4 +276,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { handleRequest, handleToolCall, tools };

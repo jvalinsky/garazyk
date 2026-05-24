@@ -1,0 +1,23 @@
+{
+  "id": "d1c74f81",
+  "phase": "discarded",
+  "pageUrl": "/run/2026-05-24T06-42-19-587",
+  "sourceFile": "scripts/scenario-dashboard/islands/RunProgress.tsx",
+  "expectedVariants": 3,
+  "arrivedVariants": 3,
+  "visibleVariant": 1,
+  "paramValues": {
+    "density": "snug",
+    "show-agent": true
+  },
+  "pendingEventSeq": null,
+  "pendingEvent": null,
+  "deliveryLease": null,
+  "checkpointRevision": 21,
+  "activeOwner": "48a506bf",
+  "sourceMarkers": {},
+  "fallbackMode": null,
+  "annotationArtifacts": [],
+  "diagnostics": [],
+  "updatedAt": "2026-05-24T06:45:59.597Z"
+}

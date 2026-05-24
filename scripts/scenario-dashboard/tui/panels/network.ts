@@ -13,6 +13,7 @@ import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { ServiceStatus } from "../../services/types.ts";
+import type { ElementMeta } from "../../tui_types.ts";
 
 /** Style for the cursor highlight row — elevated surface (blue bg), default fg. */
 const CURSOR_STYLE: CellStyle = { ...bg(COLORS.surfaceElevated), fg: -1 };
@@ -30,6 +31,7 @@ export function renderNetworkPanel(
   services: ServiceStatus[],
   panelState: PanelState,
   focused: boolean,
+  meta?: Map<string, ElementMeta>,
 ): RenderCommand[] {
   const area = panelContentArea(panel);
   const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
@@ -138,6 +140,19 @@ export function renderNetworkPanel(
         text: endpoint,
         style: isCursorRow ? CURSOR_TEXT_STYLE : dim(fg(COLORS.textSecondary)),
         clip,
+      });
+    }
+
+    if (meta) {
+      meta.set(`network.${svc.name}`, {
+        role: "service",
+        interactable: true,
+        focused: isCursorRow,
+        states: [svc.status],
+        bounds: { x: area.x, y: area.y + row, width: area.width, height: 1 },
+        ref: `network.${svc.name}`,
+        label: svc.label || svc.name,
+        actions: ["enter", "click"],
       });
     }
 
