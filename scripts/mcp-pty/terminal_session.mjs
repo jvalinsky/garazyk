@@ -29,6 +29,7 @@ const KEY_BYTES = new Map([
   ["enter", "\r"],
   ["return", "\r"],
   ["tab", "\t"],
+  ["space", " "],
   ["escape", "\x1b"],
   ["esc", "\x1b"],
   ["backspace", "\x7f"],
