@@ -18,12 +18,13 @@ function htmlEscape(text) {
 }
 
 export class AsciicastRecorder {
-  constructor({ outputDir, cols, rows, title, recordInput = false, command }) {
+  constructor({ outputDir, cols, rows, title, recordInput = false, semanticOverlay = false, command }) {
     this.outputDir = outputDir;
     this.cols = cols;
     this.rows = rows;
     this.title = title ?? "Garazyk PTY Capture";
     this.recordInputEnabled = recordInput === true;
+    this.semanticOverlay = semanticOverlay === true;
     this.command = command;
     this.startedAt = Date.now();
     this.closed = false;
@@ -41,6 +42,7 @@ export class AsciicastRecorder {
       env: { TERM: "xterm-256color", SHELL: "" },
       command,
     })}\n`);
+    this.stream.write(eventLine(0, "r", `${cols}x${rows}`));
   }
 
   elapsedSeconds() {
@@ -55,6 +57,11 @@ export class AsciicastRecorder {
   recordInput(data) {
     if (this.closed || !this.recordInputEnabled) return;
     this.stream.write(eventLine(this.elapsedSeconds(), "i", data));
+  }
+
+  recordSemanticSnapshot(snapshot) {
+    if (this.closed || !this.semanticOverlay) return;
+    this.stream.write(eventLine(this.elapsedSeconds(), "s", snapshot));
   }
 
   recordResize(cols, rows) {
@@ -74,6 +81,7 @@ export class AsciicastRecorder {
     fs.writeFileSync(this.htmlPath, buildStandaloneHtml({
       title: this.title,
       castContent,
+      semanticOverlay: this.semanticOverlay,
     }));
   }
 }
@@ -82,7 +90,7 @@ export function defaultRecordingDir(baseDir = process.cwd(), startedAt = Date.no
   return path.join(baseDir, "scripts", "scenarios", "reports", "pty-capture", `mcp-${startedAt}`);
 }
 
-export function buildStandaloneHtml({ title, castContent }) {
+export function buildStandaloneHtml({ title, castContent, semanticOverlay = false }) {
   const encodedCast = Buffer.from(castContent, "utf8").toString("base64");
   return `<!doctype html>
 <html lang="en">
@@ -98,9 +106,15 @@ export function buildStandaloneHtml({ title, castContent }) {
     h1 { font-size: 18px; margin: 0; font-weight: 600; }
     button { border: 1px solid #555; background: #1d1d1d; color: #eee; padding: 6px 10px; font: inherit; cursor: pointer; }
     button:hover { background: #2a2a2a; }
-    #terminal { white-space: pre; border: 1px solid #333; padding: 16px; overflow: auto; background: #000; min-height: 60vh; line-height: 1.35; }
+    .terminal-frame { position: relative; border: 1px solid #333; overflow: auto; background: #000; min-height: 60vh; }
+    #terminal { white-space: pre; padding: 16px; margin: 0; line-height: 1.35; }
+    #overlay { position: absolute; inset: 16px auto auto 16px; pointer-events: none; }
+    .semantic-box { position: absolute; border: 1px solid rgba(45, 212, 191, .88); background: rgba(45, 212, 191, .08); box-sizing: border-box; }
+    .semantic-box > span { position: absolute; top: -1.35em; left: -1px; max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 4px; background: rgba(0, 0, 0, .88); color: #7dd3fc; font-size: 11px; line-height: 1.2; border: 1px solid rgba(45, 212, 191, .55); }
+    .semantic-box.semantic-nested { border-color: rgba(250, 204, 21, .75); background: rgba(250, 204, 21, .06); }
     .cell { display: inline; }
     #meta { color: #aaa; font-size: 12px; margin-top: 10px; }
+    #measure { position: absolute; visibility: hidden; white-space: pre; left: -1000px; top: -1000px; }
   </style>
 </head>
 <body>
@@ -110,10 +124,15 @@ export function buildStandaloneHtml({ title, castContent }) {
       <div>
         <button id="play" type="button">Play</button>
         <button id="reset" type="button">Reset</button>
+        <button id="toggle-overlay" type="button" aria-pressed="${semanticOverlay ? "true" : "false"}">Overlay</button>
       </div>
     </header>
-    <pre id="terminal" aria-label="Terminal replay"></pre>
+    <div class="terminal-frame" id="terminal-frame">
+      <pre id="terminal" aria-label="Terminal replay"></pre>
+      <div id="overlay" aria-hidden="true"></div>
+    </div>
     <div id="meta"></div>
+    <span id="measure">M</span>
   </main>
   <script id="cast" type="application/octet-stream">${encodedCast}</script>
   <script>
@@ -129,9 +148,12 @@ export function buildStandaloneHtml({ title, castContent }) {
     const header = rows[0] || {};
     const events = rows.slice(1);
     const terminal = document.getElementById("terminal");
+    const overlay = document.getElementById("overlay");
+    const measure = document.getElementById("measure");
     const meta = document.getElementById("meta");
     const play = document.getElementById("play");
     const reset = document.getElementById("reset");
+    const toggleOverlay = document.getElementById("toggle-overlay");
     let timers = [];
     const width = Number(header.width) || 80;
     const height = Number(header.height) || 24;
@@ -140,8 +162,10 @@ export function buildStandaloneHtml({ title, castContent }) {
     let savedX = 0;
     let savedY = 0;
     let grid = [];
+    let overlayEnabled = ${semanticOverlay ? "true" : "false"};
     const defaultStyle = Object.freeze({ fg: null, bg: null, bold: false, dim: false, underline: false, inverse: false });
     let currentStyle = { ...defaultStyle };
+    let currentSemanticSnapshot = null;
 
     const ansi16 = [
       "#000000", "#cd0000", "#00cd00", "#cdcd00", "#0000ee", "#cd00cd", "#00cdcd", "#e5e5e5",
@@ -389,8 +413,43 @@ export function buildStandaloneHtml({ title, castContent }) {
       return html;
     }
 
+    function renderSemanticOverlay() {
+      overlay.innerHTML = "";
+      if (!overlayEnabled || !currentSemanticSnapshot) return;
+      const rect = measure.getBoundingClientRect();
+      const charWidth = rect.width || 8;
+      const lineHeight = rect.height || 16;
+      overlay.style.width = (width * charWidth) + "px";
+      overlay.style.height = (height * lineHeight) + "px";
+
+      const boxes = [
+        ...(currentSemanticSnapshot.tables || []),
+        ...(currentSemanticSnapshot.regions || []),
+        ...(currentSemanticSnapshot.facts || []).filter(f => f.sourceBounds).map(f => ({
+          role: "fact",
+          bounds: f.sourceBounds,
+          label: f.label + ": " + f.value
+        }))
+      ];
+
+      for (const box of boxes) {
+        if (!box.bounds) continue;
+        const el = document.createElement("div");
+        el.className = "semantic-box" + (box.role === "table" ? " semantic-nested" : "");
+        el.style.left = "0px";
+        el.style.top = (box.bounds.startY * lineHeight) + "px";
+        el.style.width = (width * charWidth) + "px";
+        el.style.height = ((box.bounds.endY - box.bounds.startY + 1) * lineHeight) + "px";
+        const label = document.createElement("span");
+        label.textContent = (box.label || box.role) + " [y:" + box.bounds.startY + "-" + box.bounds.endY + "]";
+        el.appendChild(label);
+        overlay.appendChild(el);
+      }
+    }
+
     function render() {
       terminal.innerHTML = grid.map(renderLine).join("\\n");
+      renderSemanticOverlay();
       meta.textContent = "asciicast v2, " + width + "x" + height + ", " + events.length + " events";
     }
 
@@ -408,6 +467,12 @@ export function buildStandaloneHtml({ title, castContent }) {
       render();
     });
 
+    toggleOverlay.addEventListener("click", () => {
+      overlayEnabled = !overlayEnabled;
+      toggleOverlay.setAttribute("aria-pressed", overlayEnabled ? "true" : "false");
+      renderSemanticOverlay();
+    });
+
     play.addEventListener("click", () => {
       clearTimers();
       grid = blankGrid();
@@ -417,11 +482,17 @@ export function buildStandaloneHtml({ title, castContent }) {
       render();
       for (const event of events) {
         const [time, kind, data] = event;
-        if (kind !== "o") continue;
-        timers.push(setTimeout(() => {
-          applyTerminalData(data);
-          render();
-        }, Math.max(0, time * 1000)));
+        if (kind === "o") {
+          timers.push(setTimeout(() => {
+            applyTerminalData(data);
+            render();
+          }, Math.max(0, time * 1000)));
+        } else if (kind === "s") {
+          timers.push(setTimeout(() => {
+            currentSemanticSnapshot = data;
+            renderSemanticOverlay();
+          }, Math.max(0, time * 1000)));
+        }
       }
     });
 
