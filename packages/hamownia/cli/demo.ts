@@ -1,12 +1,19 @@
 import { Command } from "@cliffy/command";
 import { join } from "@std/path";
-import { initRunDir, repoRoot } from "@garazyk/schemat/runtime";
+import {
+  initRunDir,
+  loadRunResourceManifest,
+  mockProviderUrlsFromResourceManifest,
+  repoRoot,
+  serviceUrlsFromResourceManifest,
+} from "@garazyk/schemat/runtime";
 import {
   initLogger,
   logError,
   logHeader,
   logInfo,
   logOk,
+  resolveTopology,
 } from "@garazyk/schemat";
 import {
   addRelayUpstream,
@@ -20,6 +27,15 @@ function generateHex(bytes = 32): string {
   const buf = new Uint8Array(bytes);
   crypto.getRandomValues(buf);
   return Array.from(buf).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function portFromUrl(url: string): string {
+  return new URL(url).port;
+}
+
+function toWebSocketUrl(url: string): string {
+  return url.replace(/^http:\/\//, "ws://").replace(/^https:\/\//, "wss://")
+    .replace(/\/$/, "");
 }
 
 interface DemoOptions {
@@ -66,6 +82,22 @@ export const demoCommand = new Command()
     initLogger({ verbose: flags.verbose, quiet: flags.quiet });
     const ctx = initRunDir();
     const root = await repoRoot();
+    const topology = resolveTopology(
+      Deno.env.get("ATPROTO_WEB_CLIENT") ?? undefined,
+      Deno.env.get("ATPROTO_TOPOLOGY") ?? undefined,
+    );
+    const topologyServiceUrls = topology.serviceUrls;
+    const pdsUrl = topologyServiceUrls.pds;
+    const plcUrl = topologyServiceUrls.plc;
+    const relayUrl = topologyServiceUrls.relay;
+    const appviewUrl = topologyServiceUrls.appview;
+    const chatUrl = topologyServiceUrls.chat;
+    const videoUrl = topologyServiceUrls.video;
+    const uiUrl = topologyServiceUrls.ui;
+    const pdsPort = portFromUrl(pdsUrl);
+    const uiPort = portFromUrl(uiUrl);
+    const relaySubscribeUrl =
+      `${toWebSocketUrl(relayUrl)}/xrpc/com.atproto.sync.subscribeRepos`;
 
     const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") ??
       generateHex();
@@ -84,13 +116,13 @@ export const demoCommand = new Command()
       const config = {
         server: {
           host: "127.0.0.1",
-          port: 2583,
+          port: pdsPort,
           data_dir: join(ctx.runDir, "data", "pds"),
-          issuer: "http://127.0.0.1:2583",
+          issuer: pdsUrl,
           available_user_domains: ["test"],
         },
         appview: {
-          url: "http://127.0.0.1:3200",
+          url: appviewUrl,
           did: "did:web:localhost",
         },
         database: { service_pool_max_size: 10, user_pool_max_size: 50 },
@@ -106,9 +138,9 @@ export const demoCommand = new Command()
           captcha_required: false,
           oauth_only_registration: false,
         },
-        relays: ["http://127.0.0.1:2584"],
+        relays: [relayUrl],
         plc: {
-          url: "http://127.0.0.1:2582",
+          url: plcUrl,
           retry_count: 3,
           retry_delay_ms: 500,
         },
@@ -168,8 +200,8 @@ export const demoCommand = new Command()
       services,
       env: {
         pds: {
-          PDS_PLC_URL: "http://127.0.0.1:2582",
-          PDS_ISSUER: "http://127.0.0.1:2583",
+          PDS_PLC_URL: plcUrl,
+          PDS_ISSUER: pdsUrl,
           PDS_MASTER_SECRET,
           PDS_ADMIN_PASSWORD,
           PDS_ALLOW_HTTP: "1",
@@ -179,19 +211,18 @@ export const demoCommand = new Command()
         },
         relay: { RELAY_ADMIN_PASSWORD: APPVIEW_ADMIN_SECRET },
         appview: {
-          APPVIEW_RELAY_URLS:
-            "ws://127.0.0.1:2584/xrpc/com.atproto.sync.subscribeRepos",
+          APPVIEW_RELAY_URLS: relaySubscribeUrl,
           APPVIEW_ADMIN_SECRET,
           APPVIEW_MASTER_SECRET: PDS_MASTER_SECRET,
-          APPVIEW_PLC_URL: "http://127.0.0.1:2582",
+          APPVIEW_PLC_URL: plcUrl,
         },
         chat: {
-          PDS_URL: "http://127.0.0.1:2583",
+          PDS_URL: pdsUrl,
           CHAT_ADMIN_SECRET,
         },
         video: {
           JELCZ_ADMIN_SECRET: VIDEO_ADMIN_SECRET,
-          JELCZ_PDS_URL: "http://127.0.0.1:2583",
+          JELCZ_PDS_URL: pdsUrl,
         },
       },
       args: {
@@ -200,7 +231,7 @@ export const demoCommand = new Command()
           "--config",
           pdsConfigPath,
           "--port",
-          "2583",
+          pdsPort,
           "--data-dir",
           join(ctx.runDir, "data", "pds"),
           "--foreground",
@@ -210,23 +241,23 @@ export const demoCommand = new Command()
 
     const buildBin = Deno.env.get("BUILD_DIR") || join(root, "build/bin");
     const uiProc = new Deno.Command(join(buildBin, "garazyk-ui"), {
-      args: ["serve", "--port", "2590"],
+      args: ["serve", "--port", uiPort],
       env: {
-        GARAZYK_UI_PDS_URL: "http://127.0.0.1:2583",
-        GARAZYK_UI_PLC_URL: "http://127.0.0.1:2582",
-        GARAZYK_UI_RELAY_URL: "http://127.0.0.1:2584",
-        GARAZYK_UI_APPVIEW_URL: "http://127.0.0.1:3200",
-        GARAZYK_UI_CHAT_URL: "http://127.0.0.1:2585",
-        GARAZYK_UI_VIDEO_URL: "http://127.0.0.1:2586",
-        GARAZYK_UI_PORT: "2590",
+        GARAZYK_UI_PDS_URL: pdsUrl,
+        GARAZYK_UI_PLC_URL: plcUrl,
+        GARAZYK_UI_RELAY_URL: relayUrl,
+        GARAZYK_UI_APPVIEW_URL: appviewUrl,
+        GARAZYK_UI_CHAT_URL: chatUrl,
+        GARAZYK_UI_VIDEO_URL: videoUrl,
+        GARAZYK_UI_PORT: uiPort,
         GARAZYK_UI_ADMIN_PASSWORD: UI_ADMIN_PASSWORD,
       },
     });
     const uiChild = uiProc.spawn();
 
     await addRelayUpstream(
-      "http://127.0.0.1:2584",
-      "http://127.0.0.1:2583",
+      relayUrl,
+      pdsUrl,
       APPVIEW_ADMIN_SECRET,
     );
 
@@ -235,8 +266,8 @@ export const demoCommand = new Command()
       const seedProc = new Deno.Command("deno", {
         args: ["run", "-A", join(root, "scripts", "seed_full_suite.ts")],
         env: {
-          PDS_URL: "http://127.0.0.1:2583",
-          CHAT_URL: "http://127.0.0.1:2585",
+          PDS_URL: pdsUrl,
+          CHAT_URL: chatUrl,
         },
       });
       const { code } = await seedProc.output();
@@ -248,14 +279,35 @@ export const demoCommand = new Command()
     }
 
     logHeader("\nFull ATProto Suite Demo is Ready!");
-    logInfo("  PDS:      http://localhost:2583");
-    logInfo("  PLC:      http://localhost:2582");
-    logInfo("  Relay:    http://localhost:2584");
-    logInfo("  AppView:  http://localhost:3200");
-    logInfo("  Chat:     http://localhost:2585");
-    logInfo("  Video:    http://localhost:2586");
-    logInfo("  Admin UI: http://localhost:2590");
-    logInfo("  Smoke:    http://localhost:8081");
+    const runManifest = loadRunResourceManifest(ctx.resourceManifestFile);
+    const runtimeServiceUrls = serviceUrlsFromResourceManifest(runManifest);
+    const mockServiceUrls = mockProviderUrlsFromResourceManifest(runManifest);
+    const serviceUrls: Record<string, string> = {
+      pds: runtimeServiceUrls.pds ?? pdsUrl,
+      plc: runtimeServiceUrls.plc ?? plcUrl,
+      relay: runtimeServiceUrls.relay ?? relayUrl,
+      appview: runtimeServiceUrls.appview ?? appviewUrl,
+      chat: runtimeServiceUrls.chat ?? chatUrl,
+      video: runtimeServiceUrls.video ?? videoUrl,
+      ui: runtimeServiceUrls.ui ?? uiUrl,
+    };
+    if (mockServiceUrls.twilio) {
+      serviceUrls["mock-twilio"] = mockServiceUrls.twilio;
+    }
+    const serviceLabels: Record<string, string> = {
+      pds: "PDS",
+      plc: "PLC",
+      relay: "Relay",
+      appview: "AppView",
+      chat: "Chat",
+      video: "Video",
+      ui: "Admin UI",
+      "mock-twilio": "Smoke",
+    };
+    for (const [name, url] of Object.entries(serviceUrls)) {
+      const label = serviceLabels[name] || name;
+      logInfo(`  ${label.padEnd(9)} ${url}`);
+    }
     console.log("");
 
     if (flags.collectDiagnostics) {

@@ -18,7 +18,11 @@ import {
   createChatServiceContext,
 } from "../../lib/deno/seed.ts";
 import { now, ScenarioResult } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export {
+  ScenarioResult,
+  StepResult,
+  StepStatus,
+} from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
@@ -30,10 +34,14 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-const GERM_URL = Deno.env.get("GERM_URL") || "http://127.0.0.1:8082";
+const GERM_URL = Deno.env.get("GERM_URL") ?? SERVICE_URLS.germ;
 
-
-async function germPost(client: XrpcClient, method: string, body: any, token: string) {
+async function germPost(
+  client: XrpcClient,
+  method: string,
+  body: any,
+  token: string,
+) {
   try {
     return await client.raw.httpPost(`/xrpc/${method}`, body, token);
   } catch {
@@ -41,7 +49,12 @@ async function germPost(client: XrpcClient, method: string, body: any, token: st
   }
 }
 
-async function germGet(client: XrpcClient, method: string, params: Record<string, any>, token: string) {
+async function germGet(
+  client: XrpcClient,
+  method: string,
+  params: Record<string, any>,
+  token: string,
+) {
   try {
     return await client.raw.httpGet(`/xrpc/${method}`, params, token);
   } catch {
@@ -55,7 +68,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const client = new XrpcClient(PDS1);
   const germClient = new XrpcClient(GERM_URL);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://localhost:2585";
+  const chatUrl = Deno.env.get("CHAT_URL") ?? SERVICE_URLS.chat;
   const chatContext = createChatServiceContext(
     client,
     chatUrl,
@@ -76,13 +89,22 @@ export async function run(): Promise<ScenarioResult> {
     germHealthy = true;
   } catch { /* ignore */ }
 
-  if (!germHealthy) result.stepSkipped("Germ service health check", "Not running on 8082");
+  if (!germHealthy) {
+    result.stepSkipped(
+      "Germ service health check",
+      "Germ service URL unavailable or unhealthy",
+    );
+  }
 
   const luna = getActor("luna");
   const marcus = getActor("marcus");
 
   for (const char of [luna, marcus]) {
-    const session = await client.accounts.createAccount(char.handle, char.email, char.password)
+    const session = await client.accounts.createAccount(
+      char.handle,
+      char.email,
+      char.password,
+    )
       .catch(() => client.accounts.createSession(char.handle, char.password));
     if (session) {
       char.did = session.did;
@@ -92,20 +114,39 @@ export async function run(): Promise<ScenarioResult> {
 
   // 2. Vanilla chat
   const convo = await timedCall(result, "Vanilla: Get convo", async () => {
-    return await chatGetConvoForMembers(chatContext, luna.accessJwt, [luna.did, marcus.did]);
+    return await chatGetConvoForMembers(chatContext, luna.accessJwt, [
+      luna.did,
+      marcus.did,
+    ]);
   });
   const convoId = (convo as any)?.convo?.id;
 
   const plaintext = "Hey Marcus! Plaintext message.";
   if (convoId) {
     await timedCall(result, "Vanilla: Send plaintext", async () => {
-      return await chatSendMessage(chatContext, luna.accessJwt, convoId, plaintext);
+      return await chatSendMessage(
+        chatContext,
+        luna.accessJwt,
+        convoId,
+        plaintext,
+      );
     });
 
-    const messages = await timedCall(result, "Vanilla: Server returns plaintext", async () => {
-      return await chatGetMessages(chatContext, marcus.accessJwt, convoId, 20);
-    });
-    const found = (messages as any)?.messages?.some((m: any) => m.text === plaintext);
+    const messages = await timedCall(
+      result,
+      "Vanilla: Server returns plaintext",
+      async () => {
+        return await chatGetMessages(
+          chatContext,
+          marcus.accessJwt,
+          convoId,
+          20,
+        );
+      },
+    );
+    const found = (messages as any)?.messages?.some((m: any) =>
+      m.text === plaintext
+    );
     assert.isTrue(found ?? false, "Plaintext not found");
   }
 
@@ -115,7 +156,9 @@ export async function run(): Promise<ScenarioResult> {
         $type: "com.germnetwork.declaration",
         version: "1.0.0",
         currentKey: {
-          $bytes: btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(33)))),
+          $bytes: btoa(
+            String.fromCharCode(...crypto.getRandomValues(new Uint8Array(33))),
+          ),
         },
         messageMe: {
           showButtonTo: "everyone",
@@ -132,17 +175,31 @@ export async function run(): Promise<ScenarioResult> {
       );
     });
 
-    const claim = await timedCall(result, "Germ: Luna claims addresses", async () => {
-      return await germPost(germClient, "com.germnetwork.mailbox.claimAddresses", {
-        agentRef: "luna-1",
-        count: 3,
-      }, luna.accessJwt);
-    });
+    const claim = await timedCall(
+      result,
+      "Germ: Luna claims addresses",
+      async () => {
+        return await germPost(
+          germClient,
+          "com.germnetwork.mailbox.claimAddresses",
+          {
+            agentRef: "luna-1",
+            count: 3,
+          },
+          luna.accessJwt,
+        );
+      },
+    );
 
-    const mClaim = await germPost(germClient, "com.germnetwork.mailbox.claimAddresses", {
-      agentRef: "marcus-1",
-      count: 3,
-    }, marcus.accessJwt);
+    const mClaim = await germPost(
+      germClient,
+      "com.germnetwork.mailbox.claimAddresses",
+      {
+        agentRef: "marcus-1",
+        count: 3,
+      },
+      marcus.accessJwt,
+    );
 
     if (mClaim?.addresses?.length > 0) {
       const ciphertext = new Uint8Array(256);
@@ -156,17 +213,23 @@ export async function run(): Promise<ScenarioResult> {
         }, luna.accessJwt);
       });
 
-      const poll = await timedCall(result, "Germ: Marcus polls mailbox", async () => {
-        return await germGet(
-          germClient,
-          "com.germnetwork.mailbox.poll",
-          { agentRef: "marcus-1" },
-          marcus.accessJwt,
-        );
-      });
+      const poll = await timedCall(
+        result,
+        "Germ: Marcus polls mailbox",
+        async () => {
+          return await germGet(
+            germClient,
+            "com.germnetwork.mailbox.poll",
+            { agentRef: "marcus-1" },
+            marcus.accessJwt,
+          );
+        },
+      );
 
       console.log("Poll result:", JSON.stringify(poll));
-      const foundCt = poll?.messages?.some((m: any) => m.ciphertext?.$bytes === ctB64);
+      const foundCt = poll?.messages?.some((m: any) =>
+        m.ciphertext?.$bytes === ctB64
+      );
       assert.isTrue(foundCt, "Ciphertext not found or mismatch");
       result.stepPassed("Verify: Germ ciphertext is opaque");
     }

@@ -13,7 +13,11 @@
 
 import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { now, ScenarioResult } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export {
+  ScenarioResult,
+  StepResult,
+  StepStatus,
+} from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
@@ -24,10 +28,7 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ||
-  SERVICE_URLS.mikrus ||
-  "http://127.0.0.1:3210";
-
+const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ?? SERVICE_URLS.mikrus;
 
 async function waitForCount(
   mikrus: XrpcClient,
@@ -47,7 +48,9 @@ async function waitForCount(
     if (lastTotal >= minTotal) return response;
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
-  throw new Error(`Timed out waiting for ${source} count on ${subject}; last total=${lastTotal}`);
+  throw new Error(
+    `Timed out waiting for ${source} count on ${subject}; last total=${lastTotal}`,
+  );
 }
 
 export async function run(): Promise<ScenarioResult> {
@@ -72,13 +75,20 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const character of [luna, marcus]) {
-    const session = await timedCall(result, `Create account: ${character.name}`, async () => {
-      return await pds.accounts.createAccount(
-        character.handle,
-        character.email,
-        character.password,
-      ).catch(() => pds.accounts.createSession(character.handle, character.password));
-    }, (session) => `did=${session.did}`);
+    const session = await timedCall(
+      result,
+      `Create account: ${character.name}`,
+      async () => {
+        return await pds.accounts.createAccount(
+          character.handle,
+          character.email,
+          character.password,
+        ).catch(() =>
+          pds.accounts.createSession(character.handle, character.password)
+        );
+      },
+      (session) => `did=${session.did}`,
+    );
     if (session) {
       character.did = session.did;
       character.accessJwt = session.accessJwt;

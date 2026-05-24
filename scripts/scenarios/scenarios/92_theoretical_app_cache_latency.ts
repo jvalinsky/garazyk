@@ -17,12 +17,8 @@ export {
 } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
-const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ||
-  SERVICE_URLS.mikrus ||
-  "http://127.0.0.1:3210";
-const BESKID_URL = Deno.env.get("BESKID_URL") ||
-  SERVICE_URLS.beskid ||
-  "http://127.0.0.1:8085";
+const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ?? SERVICE_URLS.mikrus;
+const BESKID_URL = Deno.env.get("BESKID_URL") ?? SERVICE_URLS.beskid;
 
 type Actor = ReturnType<typeof getActor>;
 
@@ -54,7 +50,6 @@ interface CardSummary {
   social?: SocialCounts;
   hydratedRecordCount?: number;
 }
-
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

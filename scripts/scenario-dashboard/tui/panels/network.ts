@@ -8,13 +8,7 @@
  */
 
 import type { CellStyle, RenderCommand } from "@garazyk/tui";
-import {
-  bg,
-  bold,
-  COLORS,
-  dim,
-  fg,
-} from "@garazyk/tui";
+import { bg, bold, COLORS, dim, fg } from "@garazyk/tui";
 import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
@@ -24,7 +18,11 @@ import type { ServiceStatus } from "../../services/types.ts";
 const CURSOR_STYLE: CellStyle = { ...bg(COLORS.surfaceElevated), fg: -1 };
 
 /** Style for the cursor highlight row text — bold default foreground on blue. */
-const CURSOR_TEXT_STYLE: CellStyle = { ...bg(COLORS.surfaceElevated), fg: -1, bold: true };
+const CURSOR_TEXT_STYLE: CellStyle = {
+  ...bg(COLORS.surfaceElevated),
+  fg: -1,
+  bold: true,
+};
 
 /** Render the network services panel. */
 export function renderNetworkPanel(
@@ -90,7 +88,7 @@ export function renderNetworkPanel(
       : statusBadgeStyle(svc.status, svc.healthy);
 
     // Endpoint
-    const endpoint = svc.url || (svc.port ? `localhost:${svc.port}` : "");
+    const endpoint = svc.url || "";
 
     // Fill cursor row with blue background
     if (isCursorRow) {
@@ -118,9 +116,7 @@ export function renderNetworkPanel(
       x: col,
       y: area.y + row,
       text: name,
-      style: isCursorRow
-        ? CURSOR_TEXT_STYLE
-        : bold(fg(COLORS.textPrimary)),
+      style: isCursorRow ? CURSOR_TEXT_STYLE : bold(fg(COLORS.textPrimary)),
       clip,
     });
     col += 12;
@@ -140,9 +136,7 @@ export function renderNetworkPanel(
         x: col,
         y: area.y + row,
         text: endpoint,
-        style: isCursorRow
-          ? CURSOR_TEXT_STYLE
-          : dim(fg(COLORS.textSecondary)),
+        style: isCursorRow ? CURSOR_TEXT_STYLE : dim(fg(COLORS.textSecondary)),
         clip,
       });
     }

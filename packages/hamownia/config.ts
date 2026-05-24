@@ -1,5 +1,6 @@
 /** Test character definitions, registry, and service URL configuration. @module config */
 import {
+  DEFAULT_ADMIN_PASSWORD,
   loadRunResourceManifest,
   resolveTopology,
   serviceUrlsFromResourceManifest,
@@ -127,11 +128,11 @@ export function createScenarioConfig(
       "localdevadmin",
     pdsAdminPassword: options.pdsAdminPassword ??
       Deno.env.get("PDS_ADMIN_PASSWORD") ??
-      "admin-localdev",
+      DEFAULT_ADMIN_PASSWORD,
     uiAdminPassword: options.uiAdminPassword ??
       Deno.env.get("UI_ADMIN_PASSWORD") ??
       Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
-      "admin-localdev",
+      DEFAULT_ADMIN_PASSWORD,
     serviceUrls: {
       ...resolvedTopology.serviceUrls,
       ...resourceUrls,

@@ -13,29 +13,38 @@ import { ScreenBuffer } from "@garazyk/tui";
 import {
   enterTerminalMode,
   exitTerminalMode,
-  writeToTerminal,
-  isTerminal,
   getTerminalSize,
+  isTerminal,
   readKeys,
+  writeToTerminal,
 } from "@garazyk/tui/runtime";
-import { isKey, isCtrl, isQuit, Keys } from "@garazyk/tui";
+import { isCtrl, isKey, isQuit, Keys } from "@garazyk/tui";
 import type { Key } from "@garazyk/tui";
-import { dashboardLayoutTree, solveLayout, PANEL_IDS, type PanelId, type ResolvedNode } from "@garazyk/tui";
+import {
+  dashboardLayoutTree,
+  PANEL_IDS,
+  type PanelId,
+  type ResolvedNode,
+  solveLayout,
+} from "@garazyk/tui";
 import { findPanel, panelContentArea } from "@garazyk/tui";
 import { FocusRing } from "@garazyk/tui";
 import {
-  createPanelStates,
-  moveCursorUp,
-  moveCursorDown,
   clampPanelState,
-  type PanelStates,
+  createPanelStates,
+  moveCursorDown,
+  moveCursorUp,
   type PanelState,
+  type PanelStates,
 } from "./tui/panel_state.ts";
 import { createTuiRuntime, type TuiRuntimeHandle } from "./tui/runtime.ts";
 import { renderView } from "./tui/view.ts";
 import type { DashboardState } from "./dashboard_state.ts";
 import type { Run } from "./services/types.ts";
-import { getScenariosItemCount, getScenariosItemAt } from "./tui/panels/scenarios.ts";
+import {
+  getScenariosItemAt,
+  getScenariosItemCount,
+} from "./tui/panels/scenarios.ts";
 
 // ---------------------------------------------------------------------------
 // Options
@@ -85,7 +94,12 @@ async function renderOnce(_options: DashboardTuiOptions): Promise<void> {
   if (size) {
     const tree = dashboardLayoutTree(size.cols, size.rows);
     if (tree) {
-      const layout = solveLayout(tree, { x: 0, y: 0, width: size.cols, height: size.rows });
+      const layout = solveLayout(tree, {
+        x: 0,
+        y: 0,
+        width: size.cols,
+        height: size.rows,
+      });
       const buf = new ScreenBuffer(size.cols, size.rows);
       const focus = new FocusRing();
       const panelStates = createPanelStates();
@@ -120,7 +134,12 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
   let layout: ResolvedNode | null = null;
   const initialTree = dashboardLayoutTree(size.cols, size.rows);
   if (initialTree) {
-    layout = solveLayout(initialTree, { x: 0, y: 0, width: size.cols, height: size.rows });
+    layout = solveLayout(initialTree, {
+      x: 0,
+      y: 0,
+      width: size.cols,
+      height: size.rows,
+    });
   }
   let needsRender = true;
   let quit = false;
@@ -142,7 +161,12 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
     buf.resize(newSize.cols, newSize.rows);
     const newTree = dashboardLayoutTree(newSize.cols, newSize.rows);
     layout = newTree
-      ? solveLayout(newTree, { x: 0, y: 0, width: newSize.cols, height: newSize.rows })
+      ? solveLayout(newTree, {
+        x: 0,
+        y: 0,
+        width: newSize.cols,
+        height: newSize.rows,
+      })
       : null;
     if (layout) {
       needsRender = true;
@@ -161,7 +185,9 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
 
   // Register signal handlers
   Deno.addSignalListener("SIGWINCH", onResize);
-  try { Deno.addSignalListener("SIGTSTP", onSuspend); } catch { /* not supported on all platforms */ }
+  try {
+    Deno.addSignalListener("SIGTSTP", onSuspend);
+  } catch { /* not supported on all platforms */ }
 
   // Subscribe to state changes — re-clamp panel states and render immediately.
   // This replaces the old 50ms render timer. onChange fires synchronously
@@ -188,7 +214,9 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
 
       // Handle filter mode
       if (filterMode) {
-        handleFilterKey(key, runtime, focus, () => { filterMode = false; });
+        handleFilterKey(key, runtime, focus, () => {
+          filterMode = false;
+        });
         needsRender = true;
         continue;
       }
@@ -223,16 +251,29 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
         focus,
         panelStates,
         layout,
-        () => { quit = true; },
-        () => { helpOverlay = true; },
-        () => { filterMode = true; },
+        () => {
+          quit = true;
+        },
+        () => {
+          helpOverlay = true;
+        },
+        () => {
+          filterMode = true;
+        },
       );
 
       if (handled) needsRender = true;
 
       // Render if needed (pass helpOverlay so the overlay renders on top)
       if (needsRender && layout) {
-        renderAndWrite(buf, runtime.state, layout, focus, panelStates, helpOverlay);
+        renderAndWrite(
+          buf,
+          runtime.state,
+          layout,
+          focus,
+          panelStates,
+          helpOverlay,
+        );
         needsRender = false;
       }
     }
@@ -240,7 +281,9 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
     // Cleanup
     unsubscribe();
     Deno.removeSignalListener("SIGWINCH", onResize);
-    try { Deno.removeSignalListener("SIGTSTP", onSuspend); } catch { /* ignore */ }
+    try {
+      Deno.removeSignalListener("SIGTSTP", onSuspend);
+    } catch { /* ignore */ }
     runtime.destroy();
     await exitTerminalMode();
   }
@@ -261,11 +304,26 @@ function handleKey(
   onFilter: () => void,
 ): boolean {
   // Global keys — these always work regardless of focused panel
-  if (isQuit(key)) { onQuit(); return true; }
-  if (isKey(key, Keys.ESCAPE)) { onQuit(); return true; }
-  if (isKey(key, Keys.TAB) && !key.shift) { focus.next(); return true; }
-  if (isKey(key, Keys.TAB) && key.shift) { focus.prev(); return true; }
-  if (isKey(key, "?")) { onHelp(); return true; }
+  if (isQuit(key)) {
+    onQuit();
+    return true;
+  }
+  if (isKey(key, Keys.ESCAPE)) {
+    onQuit();
+    return true;
+  }
+  if (isKey(key, Keys.TAB) && !key.shift) {
+    focus.next();
+    return true;
+  }
+  if (isKey(key, Keys.TAB) && key.shift) {
+    focus.prev();
+    return true;
+  }
+  if (isKey(key, "?")) {
+    onHelp();
+    return true;
+  }
 
   // Panel jump keys (1-4)
   if (!key.ctrl && !key.alt && !key.shift) {
@@ -299,7 +357,12 @@ function handleKey(
       handled = handleRunKey(key, runtime);
       break;
     case "history":
-      handled = handleHistoryKey(key, runtime, runtime.state.runs.recentRuns, panelStates.history);
+      handled = handleHistoryKey(
+        key,
+        runtime,
+        runtime.state.runs.recentRuns,
+        panelStates.history,
+      );
       break;
   }
   if (handled) return true;
@@ -363,11 +426,19 @@ function syncPanelItemCount(
         state.ux.collapsedCategories,
         state.ux.searchTerm,
       );
-      panelStates[panelId] = clampPanelState(panelStates[panelId], count, visibleRows);
+      panelStates[panelId] = clampPanelState(
+        panelStates[panelId],
+        count,
+        visibleRows,
+      );
       break;
     }
     case "history": {
-      panelStates[panelId] = clampPanelState(panelStates[panelId], runtime.state.runs.recentRuns.length, visibleRows);
+      panelStates[panelId] = clampPanelState(
+        panelStates[panelId],
+        runtime.state.runs.recentRuns.length,
+        visibleRows,
+      );
       break;
     }
     case "run":
@@ -491,7 +562,12 @@ function handleRunKey(key: Key, runtime: TuiRuntimeHandle): boolean {
   return false;
 }
 
-function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle, recentRuns: Run[], panelState: PanelState): boolean {
+function handleHistoryKey(
+  key: Key,
+  runtime: TuiRuntimeHandle,
+  recentRuns: Run[],
+  panelState: PanelState,
+): boolean {
   if (isKey(key, "r") && !key.ctrl) {
     runtime.dispatch({ type: "runs/restartRequested" });
     return true;
@@ -508,7 +584,11 @@ function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle, recentRuns: Run[]
     // Open run detail overlay for the selected run
     const selected = recentRuns[panelState.cursor];
     if (selected) {
-      runtime.dispatch({ type: "runs/viewDetail", runId: selected.id, run: selected });
+      runtime.dispatch({
+        type: "runs/viewDetail",
+        runId: selected.id,
+        run: selected,
+      });
     }
     return true;
   }
@@ -531,12 +611,18 @@ function handleFilterKey(
     return;
   }
   if (isKey(key, Keys.BACKSPACE)) {
-    runtime.dispatch({ type: "ux/setSearchTerm", term: runtime.state.ux.searchTerm.slice(0, -1) });
+    runtime.dispatch({
+      type: "ux/setSearchTerm",
+      term: runtime.state.ux.searchTerm.slice(0, -1),
+    });
     return;
   }
   // Printable character
   if (key.key.length === 1 && !key.ctrl && !key.alt) {
-    runtime.dispatch({ type: "ux/setSearchTerm", term: runtime.state.ux.searchTerm + key.key });
+    runtime.dispatch({
+      type: "ux/setSearchTerm",
+      term: runtime.state.ux.searchTerm + key.key,
+    });
   }
 }
 
@@ -552,7 +638,15 @@ function renderAndWrite(
   panelStates: PanelStates,
   helpOverlay = false,
 ): void {
-  renderView(buf, state, layout, focus, panelStates, state.runs.recentRuns, helpOverlay);
+  renderView(
+    buf,
+    state,
+    layout,
+    focus,
+    panelStates,
+    state.runs.recentRuns,
+    helpOverlay,
+  );
   const output = buf.diff();
   if (output) {
     writeToTerminal(output);
@@ -576,7 +670,11 @@ function renderTextSnapshot(state: DashboardState): string {
     lines.push("  No services discovered");
   } else {
     for (const s of services) {
-      const status = s.status === "running" && s.healthy !== false ? "[ok]" : s.status === "running" ? "[??]" : "[--]";
+      const status = s.status === "running" && s.healthy !== false
+        ? "[ok]"
+        : s.status === "running"
+        ? "[??]"
+        : "[--]";
       lines.push(`  ${status} ${s.label || s.name} ${s.url || ""}`);
     }
   }
@@ -587,7 +685,9 @@ function renderTextSnapshot(state: DashboardState): string {
 
   lines.push("");
   lines.push("Coverage");
-  lines.push(`  Scenarios ${state.scenarios.all.length}   Topologies ${state.topology.available.length}`);
+  lines.push(
+    `  Scenarios ${state.scenarios.all.length}   Topologies ${state.topology.available.length}`,
+  );
 
   return lines.join("\n");
 }
@@ -611,15 +711,21 @@ export interface DashboardTuiSnapshot {
 export async function collectTuiSnapshot(
   _options: DashboardTuiOptions = {},
 ): Promise<DashboardTuiSnapshot> {
-  const [networkModule, runModule, dbModule, queryModule, scenarioModule, topologyModule] =
-    await Promise.all([
-      import("./services/network_manager.ts"),
-      import("./services/run_manager.ts"),
-      import("./db/index.ts"),
-      import("./db/queries.ts"),
-      import("./services/scenario_discovery.ts"),
-      import("./services/topology_service.ts"),
-    ]);
+  const [
+    networkModule,
+    runModule,
+    dbModule,
+    queryModule,
+    scenarioModule,
+    topologyModule,
+  ] = await Promise.all([
+    import("./services/network_manager.ts"),
+    import("./services/run_manager.ts"),
+    import("./db/index.ts"),
+    import("./db/queries.ts"),
+    import("./services/scenario_discovery.ts"),
+    import("./services/topology_service.ts"),
+  ]);
 
   const [serviceMap, scenarios, topologies] = await Promise.all([
     networkModule.networkManager.healthCheck().catch(() =>
@@ -681,19 +787,37 @@ export function renderTuiFrame(snapshot: DashboardTuiSnapshot): string {
   return `${lines.join("\n")}\n`;
 }
 
-function renderService(service: import("./services/types.ts").ServiceStatus): string {
-  const status = service.status === "running" && service.healthy !== false ? "[ok]" : service.status === "running" ? "[??]" : service.status === "starting" ? "[..]" : service.status === "error" ? "[!!]" : "[--]";
+function renderService(
+  service: import("./services/types.ts").ServiceStatus,
+): string {
+  const status = service.status === "running" && service.healthy !== false
+    ? "[ok]"
+    : service.status === "running"
+    ? "[??]"
+    : service.status === "starting"
+    ? "[..]"
+    : service.status === "error"
+    ? "[!!]"
+    : "[--]";
   const name = service.label || service.name;
-  const endpoint = service.url || (service.port ? `localhost:${service.port}` : "");
+  const endpoint = service.url || "";
   return `${status} ${name.padEnd(14)} ${endpoint}`;
 }
 
 function renderRun(run: import("./services/types.ts").Run): string {
   const completed = run.passed + run.failed + run.skipped;
   const total = run.totalScenarios;
-  const status = run.status === "completed" ? "[done]" : run.status === "running" ? "[run ]" : run.status === "error" ? "[fail]" : "[wait]";
+  const status = run.status === "completed"
+    ? "[done]"
+    : run.status === "running"
+    ? "[run ]"
+    : run.status === "error"
+    ? "[fail]"
+    : "[wait]";
   const progress = total > 0 ? `${completed}/${total}` : "0/0";
-  const failures = run.failed > 0 ? `${run.failed} failed` : `${run.passed} passed`;
+  const failures = run.failed > 0
+    ? `${run.failed} failed`
+    : `${run.passed} passed`;
   return `${status} ${run.id.padEnd(23)} ${progress.padEnd(7)} ${failures}`;
 }
 

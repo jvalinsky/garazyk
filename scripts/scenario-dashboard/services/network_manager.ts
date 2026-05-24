@@ -14,6 +14,7 @@
 import { fromFileUrl, join } from "$std/path/mod.ts";
 import { ServiceStatus, ServiceStatusType } from "./types.ts";
 import { runManager } from "./run_manager.ts";
+import { getTopologyServiceUrls } from "./topology_service.ts";
 import {
   composeServiceName,
   type ContainerSummary,
@@ -221,7 +222,7 @@ class NetworkManager {
         this.services.set(serviceName, {
           name: serviceName,
           label: serviceName.toUpperCase(),
-          url: "",
+          url: this.resolveTopologyServiceUrl(serviceName),
           port: 0,
           status: "stopped",
         });
@@ -301,7 +302,7 @@ class NetworkManager {
             this.services.set(mappedName, {
               name: mappedName,
               label: mappedName.toUpperCase(),
-              url: "",
+              url: this.resolveTopologyServiceUrl(serviceName),
               port: 0,
               status: "stopped",
             });
@@ -332,6 +333,13 @@ class NetworkManager {
     for (const name of this.services.keys()) {
       this.updateStatus(name, "stopped");
     }
+  }
+
+  private resolveTopologyServiceUrl(name: string): string {
+    const activeRun = runManager.getActiveRun();
+    const topologyName = activeRun?.topology ?? Deno.env.get("ATPROTO_TOPOLOGY") ?? undefined;
+    const serviceUrls = getTopologyServiceUrls(topologyName, name === "pds2" || activeRun?.pds2 === true);
+    return serviceUrls[name] ?? "";
   }
 
   async healthCheck(): Promise<Record<string, ServiceStatus>> {
@@ -384,19 +392,8 @@ class NetworkManager {
 
   private getHealthUrl(name: string, baseUrl: string): string | null {
     if (!baseUrl) {
-      // Try to infer default local ports if url is missing
-      const ports: Record<string, number> = {
-        pds: 2583,
-        plc: 2582,
-        relay: 2584,
-        appview: 3200,
-        chat: 2585,
-        pds2: 2587,
-        video: 2586,
-        ui: 2590,
-      };
-      if (ports[name]) baseUrl = `http://localhost:${ports[name]}`;
-      else return null;
+      baseUrl = this.resolveTopologyServiceUrl(name);
+      if (!baseUrl) return null;
     }
 
     switch (name) {
@@ -561,7 +558,7 @@ class NetworkManager {
           this.services.set(serviceName, {
             name: serviceName,
             label: serviceName.toUpperCase(),
-            url: "",
+            url: this.resolveTopologyServiceUrl(serviceName),
             port: 0,
             status: "starting",
           });

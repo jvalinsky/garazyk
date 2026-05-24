@@ -19,7 +19,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { getActor, PDS1 } from "../../lib/deno/config.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 
 /**
@@ -185,7 +185,7 @@ export async function run(): Promise<ScenarioResult> {
       "Luna registers for push",
       async () => {
         return await client.notifications.registerPush(
-          "did:web:localhost:3200",
+          `did:web:${new URL(SERVICE_URLS.appview).host}`,
           "test-device-token-abc123",
           "ios",
           "xyz.garazyk.test",
@@ -274,7 +274,7 @@ export async function run(): Promise<ScenarioResult> {
       "Luna unregisters push",
       async () => {
         return await client.notifications.unregisterPush(
-          "did:web:localhost:3200",
+          `did:web:${new URL(SERVICE_URLS.appview).host}`,
           "test-device-token-abc123",
           "ios",
           "xyz.garazyk.test",

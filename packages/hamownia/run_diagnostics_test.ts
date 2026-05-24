@@ -1,8 +1,13 @@
 import { assertEquals, assertMatch, assertStringIncludes } from "@std/assert";
 import {
+  createRunResourceManifest,
+  type TopologyManifest,
+} from "@garazyk/schemat";
+import {
   collectDiagnostics,
   createRunContext,
   redactDiagnosticText,
+  resolveDiagnosticServiceUrls,
 } from "./run_diagnostics.ts";
 
 Deno.test("redactDiagnosticText preserves JSON strings while redacting secrets", () => {
@@ -51,6 +56,34 @@ Deno.test("redactDiagnosticText: preserves non-secret fields unchanged", () => {
   const parsed = JSON.parse(redacted);
   assertEquals(parsed.username, "alice");
   assertEquals(parsed.did, "did:plc:abc");
+});
+
+Deno.test("resolveDiagnosticServiceUrls: applies expected precedence without literal defaults", () => {
+  const resourceManifest = createRunResourceManifest({
+    runId: "url-precedence",
+    runDir: "/tmp/url-precedence",
+    composeProject: "url-precedence",
+  });
+  resourceManifest.services.pds = {
+    role: "pds",
+    hostUrl: "http://resource.example.test",
+  };
+
+  const urls = resolveDiagnosticServiceUrls({
+    env: {
+      get(key: string) {
+        return key === "PDS_URL" ? "http://env.example.test" : undefined;
+      },
+    },
+    topologyManifest: {
+      serviceUrls: { pds: "http://topology-manifest.example.test" },
+    } as unknown as TopologyManifest,
+    resourceManifest,
+    serviceUrls: { pds: "http://option.example.test" },
+  });
+
+  assertEquals(urls.pds, "http://option.example.test");
+  assertEquals(urls.pds2, "http://localhost:2587");
 });
 
 // ---------------------------------------------------------------------------

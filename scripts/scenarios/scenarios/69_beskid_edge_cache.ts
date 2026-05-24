@@ -17,9 +17,7 @@ import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "jsr:@std/assert@0.224.0";
 import { timedCall } from "../../lib/deno/runner.ts";
 
-const BESKID_URL = Deno.env.get("BESKID_URL") ||
-  SERVICE_URLS.beskid ||
-  "http://localhost:8085";
+const BESKID_URL = Deno.env.get("BESKID_URL") ?? SERVICE_URLS.beskid;
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Beskid Edge Cache");

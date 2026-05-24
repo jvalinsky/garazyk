@@ -4,6 +4,7 @@ import {
   Cap,
   compileTopology,
   createRunResourceManifest,
+  DEFAULT_ADMIN_PASSWORD,
   defineTopology,
   health,
   port,
@@ -248,7 +249,7 @@ Deno.test("compileTopology: garazyk-default includes cache services and garazyk-
       result.manifest.env?.scenario.GARAZYK_UI_ADMIN_PASSWORD,
       Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
         Deno.env.get("UI_ADMIN_PASSWORD") ??
-        "admin-localdev",
+        DEFAULT_ADMIN_PASSWORD,
     );
     assertEquals(mikrus.entrypoint, ["/usr/local/bin/mikrus"]);
     assertEquals(mikrus.ports.includes("3210:3210"), true);

@@ -28,9 +28,7 @@ import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
-const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ||
-  SERVICE_URLS.mikrus ||
-  "http://localhost:3210";
+const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ?? SERVICE_URLS.mikrus;
 
 
 async function waitForBacklinkCount(
