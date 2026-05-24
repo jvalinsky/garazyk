@@ -98,6 +98,18 @@ export {
   selectScenarios,
 } from "./scenario_selector.ts";
 export type { ScenarioExecutionResult } from "./run_loop.ts";
+export { HumanReadableSink, MultiSink, NdjsonSink } from "./events.ts";
+export type {
+  HumanReadableSinkOptions,
+  RunFinishedEvent,
+  RunProgressEvent,
+  RunStartedEvent,
+  ScenarioCompletedEvent,
+  ScenarioRunEvent,
+  ScenarioRunEventSink,
+  ScenarioStartedEvent,
+  ServiceFailureEvent,
+} from "./events.ts";
 export type { RunnerArgs } from "./run_scenarios_types.ts";
 export type { ScenarioRequirement } from "@garazyk/schemat";
 export { appendScenarioLoopResult, buildOtelReexecEnv } from "./run_command.ts";
@@ -115,6 +127,7 @@ export type {
   MockVerificationState,
 } from "./mock_twilio.ts";
 export { runSmoke } from "./smoke_command.ts";
+export type { AgentScenarioSummary, AgentTriageResult } from "./cli/agent.ts";
 
 // ---------------------------------------------------------------------------
 // Lexicon resolution (re-exported from @garazyk/gruszka/lexicon-resolution)

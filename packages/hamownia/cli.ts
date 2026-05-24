@@ -1,6 +1,7 @@
 import { Command } from "@cliffy/command";
 import { CompletionsCommand } from "@cliffy/command/completions";
 import { HelpCommand } from "@cliffy/command/help";
+import { agentCommand } from "./cli/agent.ts";
 import { demoCommand } from "./cli/demo.ts";
 import { fuzzCommand } from "./cli/fuzz.ts";
 import { runCommand } from "./cli/run.ts";
@@ -18,6 +19,7 @@ export const hamowniaCommand = new Command()
   )
   .globalOption("-v, --verbose", "Enable verbose logging.")
   .globalOption("-q, --quiet", "Suppress non-error output.")
+  .command("agent", agentCommand)
   .command("service", serviceCommand)
   .command("demo", demoCommand)
   .command("fuzz", fuzzCommand)

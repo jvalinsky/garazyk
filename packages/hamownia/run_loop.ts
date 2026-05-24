@@ -5,19 +5,20 @@
  * @module run_loop
  */
 
-import { bold, red, yellow } from "@std/fmt/colors";
+import { yellow } from "@std/fmt/colors";
 import { isOtelEnabled, withSpan } from "./otel.ts";
 import { ContainerEventWatcher, type WatcherEvent } from "@garazyk/laweta";
 import { ContainerStatsSampler } from "@garazyk/laweta";
 import { createDockerClient } from "@garazyk/laweta";
 import { formatBytes } from "./format.ts";
-import { DurationCache, ProgressBar } from "./progress.ts";
+import { DurationCache } from "./progress.ts";
 import { runScenario } from "./scenario_runner.ts";
 import { waitForHttp } from "@garazyk/laweta";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import { ScenarioResult } from "./runner.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology, TopologyManifestV2 } from "@garazyk/schemat";
+import { HumanReadableSink, type ScenarioRunEventSink } from "./events.ts";
 
 /** Result returned by the scenario execution loop. */
 export interface ScenarioExecutionResult {
@@ -66,6 +67,10 @@ async function checkEssentialServicesHealth(
 /**
  * Run a sequence of scenarios with progress tracking, crash detection,
  * and OTel stats sampling.
+ *
+ * Events are emitted to the provided sinks.  When no sinks are given,
+ * a default {@link HumanReadableSink} is used, preserving the existing
+ * terminal output behavior.
  */
 export async function runScenarioLoop(
   selected: ScenarioInfo[],
@@ -75,18 +80,29 @@ export async function runScenarioLoop(
   composeProject: string,
   reportsDir: string,
   runContext: { runId: string; runDir: string; diagnosticsDir: string },
+  sinks?: ScenarioRunEventSink[],
 ): Promise<ScenarioExecutionResult> {
   const results: Array<{ scenario: ScenarioInfo; result: ScenarioResult }> = [];
   const reportPaths: string[] = [];
 
-  console.log(bold(`\nRunning ${selected.length} scenario(s)...\n`));
   const durationCache = new DurationCache(repoRoot);
-  const expectedDurations = selected.map((s) => durationCache.get(s.id));
-  const progress = new ProgressBar(selected.length, expectedDurations);
-  const encoder = new TextEncoder();
-  const writeProgressLine = (line: string): void => {
-    if (line) Deno.stdout.writeSync(encoder.encode(line));
+  const effectiveSinks: ScenarioRunEventSink[] = sinks && sinks.length > 0
+    ? sinks
+    : [new HumanReadableSink({ durationCache })];
+
+  const emit = (event: Parameters<ScenarioRunEventSink["emit"]>[0]) => {
+    for (const s of effectiveSinks) s.emit(event);
   };
+
+  const runStartTime = Date.now();
+  emit({
+    type: "run_start",
+    runId: runContext.runId,
+    scenarioIds: selected.map((s) => s.id),
+    total: selected.length,
+    timestamp: runStartTime,
+  });
+
   const progressPath = `${runContext.runDir}/progress.json`;
   const writeProgress = async (
     completed: number,
@@ -159,7 +175,14 @@ export async function runScenarioLoop(
     let abortedForCrash = false;
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
-      writeProgressLine(progress.start(`${scenario.id} - ${scenario.name}`));
+      emit({
+        type: "scenario_start",
+        scenarioId: scenario.id,
+        name: scenario.name,
+        index: i,
+        total: selected.length,
+        timestamp: Date.now(),
+      });
       await writeProgress(i, scenario, true);
 
       const health = await checkEssentialServicesHealth(topology);
@@ -179,8 +202,12 @@ export async function runScenarioLoop(
               : `Container "${crashSnapshot.serviceName}" exited unexpectedly (exit code ${crashSnapshot.exitCode})`
             : "Unknown service failure");
 
-        console.error(red(`\n  Service failure detected: ${crashInfo}`));
-        console.error(yellow(`  Skipping remaining scenarios.`));
+        emit({
+          type: "service_failure",
+          message: crashInfo,
+          source: crashSnapshot !== null ? "container_crash" : "health_check",
+          timestamp: Date.now(),
+        });
 
         const crashResult = new ScenarioResult(scenario.name);
         crashResult.start();
@@ -193,9 +220,33 @@ export async function runScenarioLoop(
             `${scenario.id}_${scenario.name}`,
           );
           reportPaths.push(reportPath);
-          console.log(`  Report: ${reportPath}`);
         }
-        writeProgressLine(progress.update(results.length, ""));
+
+        const crashNow = Date.now();
+        emit({
+          type: "scenario_complete",
+          scenarioId: scenario.id,
+          name: scenario.name,
+          ok: false,
+          passed: crashResult.passed,
+          failed: crashResult.failed,
+          skipped: crashResult.skipped,
+          durationS: (crashResult.startedAt && crashResult.finishedAt)
+            ? (crashResult.finishedAt - crashResult.startedAt) / 1000
+            : 0,
+          summaryText: crashResult.summary(),
+          reportPath: reportPaths[reportPaths.length - 1] || undefined,
+          timestamp: crashNow,
+        });
+        emit({
+          type: "run_progress",
+          completed: results.length,
+          total: selected.length,
+          currentScenarioId: null,
+          currentScenarioName: null,
+          running: false,
+          timestamp: crashNow,
+        });
         await writeProgress(results.length, null, false);
         abortedForCrash = true;
         break;
@@ -239,13 +290,6 @@ export async function runScenarioLoop(
         runner: args.runner,
       };
 
-      // Clear the progress line before printing the scenario summary.
-      // The progress bar's next update will overwrite this line anyway,
-      // but we clear explicitly so the summary starts on a clean line.
-      Deno.stdout.writeSync(
-        new TextEncoder().encode("\r" + " ".repeat(120) + "\r"),
-      );
-      result.printSummary();
       results.push({ scenario, result });
 
       if (result.startedAt && result.finishedAt) {
@@ -258,23 +302,64 @@ export async function runScenarioLoop(
           `${scenario.id}_${scenario.name}`,
         );
         reportPaths.push(reportPath);
-        console.log(`  Report: ${reportPath}`);
       }
 
-      writeProgressLine(progress.update(i + 1, ""));
+      const scenarioCompleteTime = Date.now();
+      const durationS = result.startedAt && result.finishedAt
+        ? (result.finishedAt - result.startedAt) / 1000
+        : 0;
+      emit({
+        type: "scenario_complete",
+        scenarioId: scenario.id,
+        name: scenario.name,
+        ok: result.ok,
+        passed: result.passed,
+        failed: result.failed,
+        skipped: result.skipped,
+        durationS,
+        summaryText: result.summary(),
+        reportPath: reportPaths[reportPaths.length - 1] || undefined,
+        timestamp: scenarioCompleteTime,
+      });
+
+      emit({
+        type: "run_progress",
+        completed: i + 1,
+        total: selected.length,
+        currentScenarioId: null,
+        currentScenarioName: null,
+        running: i + 1 < selected.length,
+        timestamp: scenarioCompleteTime,
+      });
       await writeProgress(
         i + 1,
         null,
         i + 1 < selected.length,
       );
     }
-    if (abortedForCrash) {
-      console.log("");
-    } else {
-      writeProgressLine(progress.finish());
+    if (!abortedForCrash) {
       await writeProgress(results.length, null, false);
     }
+
+    const totalPassed = results.reduce((sum, r) => sum + r.result.passed, 0);
+    const totalFailed = results.reduce((sum, r) => sum + r.result.failed, 0);
+    const totalSkipped = results.reduce((sum, r) => sum + r.result.skipped, 0);
+    emit({
+      type: "run_finished",
+      runId: runContext.runId,
+      ok: !abortedForCrash && totalFailed === 0,
+      totalPassed,
+      totalFailed,
+      totalSkipped,
+      reportsDir,
+      crashedContainer: crashedContainer !== null,
+      timestamp: Date.now(),
+    });
   } finally {
+    // Close sinks after emitting the final event.
+    for (const s of effectiveSinks) {
+      await s.close?.();
+    }
     await crashWatcher?.close();
     await statsSampler?.stop();
     dockerClient?.close();
