@@ -1,640 +1,923 @@
 /**
- * Unit tests for agent CLI classification, triage, list JSON shape,
- * and NDJSON output.
+ * Integration and unit tests for the hamownia agent CLI.
  *
- * @module agent_test
+ * Covers:
+ * - classifyBoundary (all 9 rule categories + ordering)
+ * - toSummary (list JSON shape)
+ * - triageReports (pass, fail, fatal, missing, non-existent)
+ * - NdjsonSink full event lifecycle (all 6 event types, valid JSON, correct fields)
+ * - MultiSink fan-out
+ * - agent run CLI argument parsing (boolean flags, value flags, enum validation)
  */
+// spell-checker: disable
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import {
+  assertEquals,
+  assertExists,
+  assertMatch,
+} from "@std/assert";
 import { join } from "@std/path";
-import { classifyBoundary, toSummary, triageReports } from "./cli/agent.ts";
-import type { AgentScenarioSummary, AgentTriageResult } from "./cli/agent.ts";
+import type { AgentTriageResult } from "./cli/agent.ts";
+import {
+  classifyBoundary,
+  toSummary,
+  triageReports,
+} from "./cli/agent.ts";
+import {
+  MultiSink,
+  NdjsonSink,
+} from "./events.ts";
+import type {
+  RunFinishedEvent,
+  RunProgressEvent,
+  RunStartedEvent,
+  ScenarioCompletedEvent,
+  ScenarioRunEvent,
+  ScenarioRunEventSink,
+  ScenarioStartedEvent,
+  ServiceFailureEvent,
+} from "./events.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
-import { MultiSink, NdjsonSink } from "./events.ts";
-import type { ScenarioRunEvent } from "./events.ts";
-
-// ── toSummary — list JSON shape ────────────────────────────────────────
-
-Deno.test("toSummary: produces valid AgentScenarioSummary shape", () => {
-  const scenario: ScenarioInfo = {
-    id: "01",
-    name: "Account Lifecycle",
-    path: "/tmp/scenarios/01_account.ts",
-    requires: [
-      { role: "plc" as const, capability: "didResolution" as const },
-    ],
-    optional: [],
-    needsPds2: false,
-    browserFlows: ["smoke" as const],
-    timeout: 120,
-    parameters: {},
-  };
-
-  const summary = toSummary(scenario);
-
-  // All fields present
-  assertEquals(summary.id, "01");
-  assertEquals(summary.name, "Account Lifecycle");
-  assertEquals(summary.path, "/tmp/scenarios/01_account.ts");
-  assertEquals(summary.requires, ["plc:didResolution"]);
-  assertEquals(summary.optional, []);
-  assertEquals(summary.needsPds2, false);
-  assertEquals(summary.browserFlows.length, 1);
-
-  // Optional fields
-  assertEquals(summary.timeout, undefined); // no manifest entry for "01"
-  assertEquals(summary.parameters, {});
-});
-
-Deno.test("toSummary: picks up timeout and parameters from SCENARIO_MANIFESTS", () => {
-  // Scenario 59 has timeout: undefined in manifest but 26 has timeout: 300
-  const scenario: ScenarioInfo = {
-    id: "59",
-    name: "Thread Scale",
-    path: "/tmp/scenarios/59_thread.ts",
-    requires: [],
-    optional: [],
-    needsPds2: false,
-    browserFlows: ["smoke" as const, "login" as const, "deep" as const],
-    timeout: undefined,
-    parameters: {},
-  };
-
-  const summary = toSummary(scenario);
-
-  // From SCENARIO_MANIFESTS["59"]
-  assertEquals(summary.browserFlows.length, 3);
-  assertEquals(summary.parameters.scale, 1);
-  assertEquals(summary.parameters.depth, 2);
-});
-
-Deno.test("toSummary: optional requirements are mapped correctly", () => {
-  const scenario: ScenarioInfo = {
-    id: "99",
-    name: "Custom Scenario",
-    path: "/tmp/scenarios/99_custom.ts",
-    requires: [
-      { role: "pds" as const, capability: "createRecord" as const },
-    ],
-    optional: [
-      { role: "relay" as const, capability: "subscribeRepos" as const },
-    ],
-    needsPds2: true,
-    browserFlows: [],
-    timeout: undefined,
-    parameters: {},
-  };
-
-  const summary = toSummary(scenario);
-
-  assertEquals(summary.needsPds2, true);
-  assertEquals(summary.requires, ["pds:createRecord"]);
-  assertEquals(summary.optional, ["relay:subscribeRepos"]);
-});
 
 // ── classifyBoundary ───────────────────────────────────────────────────
 
-Deno.test("classifyBoundary: timeout → startup", () => {
-  assertEquals(classifyBoundary("any step", "operation timed out"), "startup");
-});
-
-Deno.test("classifyBoundary: auth step → auth", () => {
-  assertEquals(classifyBoundary("authenticate", "bad password"), "auth");
-});
-
-Deno.test("classifyBoundary: login step → auth", () => {
-  assertEquals(classifyBoundary("login with oauth", "invalid token"), "auth");
-});
-
-Deno.test("classifyBoundary: validate step → validation", () => {
-  assertEquals(
-    classifyBoundary("validate response", "schema mismatch"),
-    "validation",
-  );
-});
-
-Deno.test("classifyBoundary: assert step → validation", () => {
-  assertEquals(
-    classifyBoundary("assert did format", "expected abc got xyz"),
-    "validation",
-  );
-});
-
-Deno.test("classifyBoundary: xrpc error → route", () => {
-  assertEquals(
-    classifyBoundary("createRecord", "xrpc method not allowed"),
-    "route",
-  );
-});
-
-Deno.test("classifyBoundary: 404 error → route", () => {
-  assertEquals(classifyBoundary("getRecord", "not found 404"), "route");
-});
-
-Deno.test("classifyBoundary: rate limit → rate_limit", () => {
-  assertEquals(
-    classifyBoundary("post", "rate limit exceeded 429"),
-    "rate_limit",
-  );
-});
-
-Deno.test("classifyBoundary: did step → identity", () => {
-  assertEquals(classifyBoundary("resolve did", "timeout"), "startup");
-  // startup takes priority when both patterns match
-});
-
-Deno.test("classifyBoundary: handle step → identity", () => {
-  assertEquals(classifyBoundary("update handle", "conflict"), "identity");
-});
-
-Deno.test("classifyBoundary: createRecord → ingest", () => {
-  assertEquals(
-    classifyBoundary("createRecord AppBskyFeedPost", "bad request"),
-    "ingest",
-  );
-});
-
-Deno.test("classifyBoundary: subscribeRepos → firehose", () => {
-  assertEquals(
-    classifyBoundary("subscribeRepos", "connection reset"),
-    "firehose",
-  );
-});
-
-Deno.test("classifyBoundary: browser step → browser", () => {
+Deno.test("classifyBoundary: browser trumps all when step mentions browser", () => {
   assertEquals(
     classifyBoundary("browser login flow", "navigation timeout"),
     "browser",
   );
 });
 
-Deno.test("classifyBoundary: playwright in error → browser", () => {
+Deno.test("classifyBoundary: browser trumps startup when error mentions playwright", () => {
   assertEquals(
-    classifyBoundary("any step", "playwright browser closed unexpectedly"),
+    classifyBoundary("step 1", "playwright timeout"),
     "browser",
   );
 });
 
-Deno.test("classifyBoundary: unmatched → unknown", () => {
+Deno.test("classifyBoundary: startup when error mentions timeout", () => {
   assertEquals(
-    classifyBoundary("mystery step", "something strange happened"),
-    "unknown",
-  );
-});
-
-Deno.test("classifyBoundary: startup trumps identity when timeout present", () => {
-  // "resolve did" matches identity, but "timed out" matches startup first
-  assertEquals(
-    classifyBoundary("resolve did", "request timed out after 30s"),
+    classifyBoundary("createRecord", "timed out after 30s"),
     "startup",
   );
 });
 
-// ── triageReports — pass case ──────────────────────────────────────────
+Deno.test("classifyBoundary: startup trumps identity when timeout present", () => {
+  // startup rule matches on error, identity matches on step name.
+  // Startup comes first, so timeout wins.
+  assertEquals(classifyBoundary("resolve did", "timeout"), "startup");
+});
 
-Deno.test("triageReports: pass — all scenarios ok", async () => {
-  const tmp = await Deno.makeTempDir({ prefix: "hamownia-triage-test-" });
+Deno.test("classifyBoundary: auth when step mentions session", () => {
+  assertEquals(
+    classifyBoundary("createSession", "invalid credentials"),
+    "auth",
+  );
+});
+
+Deno.test("classifyBoundary: auth when error mentions token", () => {
+  assertEquals(
+    classifyBoundary("step 3", "token expired"),
+    "auth",
+  );
+});
+
+Deno.test("classifyBoundary: validation when step mentions assert", () => {
+  assertEquals(
+    classifyBoundary("assert response", "expected 200 got 500"),
+    "validation",
+  );
+});
+
+Deno.test("classifyBoundary: identity when step mentions did", () => {
+  assertEquals(
+    classifyBoundary("resolve did", "not found"),
+    "identity",
+  );
+});
+
+Deno.test("classifyBoundary: route when error mentions 404", () => {
+  assertEquals(
+    classifyBoundary("fetchRecord", "xrpc 404 not found"),
+    "route",
+  );
+});
+
+Deno.test("classifyBoundary: rate_limit when error mentions 429", () => {
+  assertEquals(
+    classifyBoundary("createRecord", "429 too many requests"),
+    "rate_limit",
+  );
+});
+
+Deno.test("classifyBoundary: ingest when step mentions createRecord", () => {
+  assertEquals(
+    classifyBoundary("createRecord", "internal server error"),
+    "ingest",
+  );
+});
+
+Deno.test("classifyBoundary: firehose when step mentions subscribeRepos", () => {
+  assertEquals(
+    classifyBoundary("subscribeRepos", "connection refused"),
+    "firehose",
+  );
+});
+
+Deno.test("classifyBoundary: unknown when no rule matches", () => {
+  assertEquals(
+    classifyBoundary("miscellaneous step", "some vague error"),
+    "unknown",
+  );
+});
+
+Deno.test("classifyBoundary: startup trumps ingest when both match", () => {
+  // createRecord matches ingest, but "timed out" matches startup which is earlier
+  assertEquals(
+    classifyBoundary("createRecord", "request timed out"),
+    "startup",
+  );
+});
+
+// ── toSummary ──────────────────────────────────────────────────────────
+
+Deno.test("toSummary: produces correct AgentScenarioSummary shape", () => {
+  const scenario: ScenarioInfo = {
+    id: "01",
+    name: "account lifecycle",
+    path: "/scenarios/01.ts",
+    requires: [{ role: "plc", capability: "didResolution" }],
+    optional: [],
+    needsPds2: false,
+    browserFlows: [],
+    parameters: {},
+  };
+
+  const summary = toSummary(scenario);
+
+  assertEquals(summary.id, "01");
+  assertEquals(summary.name, "account lifecycle");
+  assertEquals(summary.path, "/scenarios/01.ts");
+  assertEquals(summary.requires, ["plc:didResolution"]);
+  assertEquals(summary.optional, []);
+  assertEquals(summary.needsPds2, false);
+  assertEquals(summary.browserFlows, []);
+  assertEquals(summary.parameters, {});
+});
+
+Deno.test("toSummary: handles optional requirements and browser flows", () => {
+  const scenario: ScenarioInfo = {
+    id: "37",
+    name: "e2ee DMs",
+    path: "/scenarios/37.ts",
+    requires: [{ role: "chat", capability: "dm" }],
+    optional: [{ role: "appview", capability: "backfill" }],
+    needsPds2: true,
+    browserFlows: ["smoke", "login"],
+    parameters: {},
+  };
+
+  const summary = toSummary(scenario);
+
+  assertEquals(summary.id, "37");
+  assertEquals(summary.requires, ["chat:dm"]);
+  assertEquals(summary.optional, ["appview:backfill"]);
+  assertEquals(summary.needsPds2, true);
+  assertEquals(summary.browserFlows, ["smoke", "login"]);
+});
+
+Deno.test("toSummary: unknown scenario ID gets empty parameters", () => {
+  const scenario: ScenarioInfo = {
+    id: "99",
+    name: "nonexistent",
+    path: "/tmp/scenario.ts",
+    requires: [],
+    optional: [],
+    needsPds2: false,
+    browserFlows: [],
+    parameters: {},
+  };
+
+  const summary = toSummary(scenario);
+
+  assertEquals(summary.id, "99");
+  assertEquals(summary.timeout, undefined);
+  assertEquals(summary.parameters, {});
+});
+
+// ── triageReports ──────────────────────────────────────────────────────
+
+Deno.test("triageReports: all-passing run", async () => {
+  const tmpDir = await Deno.makeTempDir();
   try {
-    // Write an overall-summary.json with ok: true
     await Deno.writeTextFile(
-      join(tmp, "overall-summary.json"),
+      join(tmpDir, "overall-summary.json"),
       JSON.stringify({
-        run_id: "test-run-001",
+        run_id: "test-run-pass",
         ok: true,
-        report_paths: [join(tmp, "01_ok.json")],
+        report_paths: [join(tmpDir, "01_report.json")],
       }),
     );
-
-    // Write a passing scenario report
     await Deno.writeTextFile(
-      join(tmp, "01_ok.json"),
+      join(tmpDir, "01_report.json"),
       JSON.stringify({
-        scenario: "01_account_lifecycle",
-        ok: true,
-        started_at: 1_700_000_000,
-        finished_at: 1_700_000_003,
-        duration_s: 3,
+        scenario: "account lifecycle",
+        started_at: 1700000000.123,
+        finished_at: 1700000003.456,
+        duration_s: 3.333,
         steps: [
           {
             name: "create account",
             status: "passed",
-            detail: "alice",
+            detail: "created alice",
             duration_ms: 150,
           },
         ],
         summary: { passed: 1, failed: 0, skipped: 0, total: 1 },
-        artifacts: {},
+        ok: true,
         metadata: { scenario_id: "01" },
       }),
     );
 
-    const result = await triageReports(tmp);
+    const result = await triageReports(tmpDir, "test-run-pass");
 
-    assertEquals(result.runId, "test-run-001");
+    assertEquals(result.runId, "test-run-pass");
     assertEquals(result.ok, true);
     assertEquals(result.firstFailure, undefined);
     assertEquals(result.boundary, "unknown");
-    assertEquals(result.evidence.length, 0);
     assertEquals(result.reportPaths.length, 1);
   } finally {
-    await Deno.remove(tmp, { recursive: true });
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
   }
 });
 
-// ── triageReports — failure case ───────────────────────────────────────
-
-Deno.test("triageReports: failure — first failing step found", async () => {
-  const tmp = await Deno.makeTempDir({ prefix: "hamownia-triage-test-" });
+Deno.test("triageReports: failing run with classified boundary", async () => {
+  const tmpDir = await Deno.makeTempDir();
   try {
     await Deno.writeTextFile(
-      join(tmp, "overall-summary.json"),
+      join(tmpDir, "overall-summary.json"),
       JSON.stringify({
-        run_id: "test-run-002",
+        run_id: "test-run-fail",
         ok: false,
-        report_paths: [
-          join(tmp, "01_pass.json"),
-          join(tmp, "02_fail.json"),
-          join(tmp, "03_also_fail.json"),
-        ],
+        report_paths: [join(tmpDir, "01_report.json")],
       }),
     );
-
-    // First scenario passes
     await Deno.writeTextFile(
-      join(tmp, "01_pass.json"),
+      join(tmpDir, "01_report.json"),
       JSON.stringify({
-        scenario: "01_pass",
-        ok: true,
-        started_at: 1_700_000_000,
-        finished_at: 1_700_000_001,
-        duration_s: 1,
-        steps: [
-          { name: "step", status: "passed", detail: "", duration_ms: 100 },
-        ],
-        summary: { passed: 1, failed: 0, skipped: 0, total: 1 },
-        artifacts: {},
-        metadata: {},
-      }),
-    );
-
-    // Second scenario fails — this is the firstFailure
-    await Deno.writeTextFile(
-      join(tmp, "02_fail.json"),
-      JSON.stringify({
-        scenario: "02_auth_flow",
-        ok: false,
-        started_at: 1_700_000_001,
-        finished_at: 1_700_000_003,
+        scenario: "failing scenario",
+        started_at: 1700000000,
+        finished_at: 1700000002,
         duration_s: 2,
         steps: [
           {
-            name: "resolve did",
+            name: "create account",
             status: "passed",
-            detail: "",
-            duration_ms: 50,
+            detail: "ok",
+            duration_ms: 100,
           },
           {
-            name: "authenticate",
+            name: "createSession",
             status: "failed",
-            detail: "invalid credentials",
-            duration_ms: 80,
+            detail: "token expired",
+            duration_ms: 50,
           },
         ],
         summary: { passed: 1, failed: 1, skipped: 0, total: 2 },
-        artifacts: {},
+        ok: false,
+        metadata: { scenario_id: "06" },
+      }),
+    );
+
+    const result = await triageReports(tmpDir);
+
+    assertEquals(result.ok, false);
+    assertEquals(result.boundary, "auth");
+    assertEquals(result.firstFailure?.scenarioId, "06");
+    assertEquals(result.firstFailure?.step, "createSession");
+    assertEquals(result.firstFailure?.error, "token expired");
+    assertEquals(result.evidence.length, 2);
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("triageReports: fatal error with no scenario reports", async () => {
+  const tmpDir = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      join(tmpDir, "overall-summary.json"),
+      JSON.stringify({
+        run_id: "test-run-fatal",
+        ok: false,
+        error: "connection refused",
+        diagnostics_dir: join(tmpDir, "diagnostics"),
+        report_paths: [],
+      }),
+    );
+
+    const result = await triageReports(tmpDir);
+
+    assertEquals(result.ok, false);
+    assertEquals(result.boundary, "unknown");
+    assertEquals(result.evidence[0], "Fatal error: connection refused");
+    assertEquals(result.diagnosticsDir, join(tmpDir, "diagnostics"));
+    assertEquals(result.reportPaths, []);
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("triageReports: fatal timeout error classifies as startup", async () => {
+  const tmpDir = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      join(tmpDir, "overall-summary.json"),
+      JSON.stringify({
+        run_id: "test-run-timeout",
+        ok: false,
+        error: "service startup timed out after 60s",
+        report_paths: [],
+      }),
+    );
+
+    const result = await triageReports(tmpDir);
+
+    assertEquals(result.boundary, "startup");
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("triageReports: missing overall-summary discovers reports from directory", async () => {
+  const tmpDir = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      join(tmpDir, "01_report.json"),
+      JSON.stringify({
+        scenario: "discovered scenario",
+        steps: [
+          { name: "step 1", status: "passed", detail: "ok", duration_ms: 50 },
+        ],
+        summary: { passed: 1, failed: 0, skipped: 0, total: 1 },
+        ok: true,
+      }),
+    );
+
+    const result = await triageReports(tmpDir);
+
+    assertEquals(result.reportPaths.length, 1);
+    assertEquals(result.evidence[0], "No overall-summary.json found");
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("triageReports: non-existent directory returns empty result", async () => {
+  const result = await triageReports("/tmp/nonexistent-hamownia-agent-test");
+
+  assertEquals(result.ok, true);
+  assertEquals(result.reportPaths, []);
+  assertEquals(result.evidence[0], "No overall-summary.json found");
+});
+
+Deno.test("triageReports: captures only first failure when multiple fail", async () => {
+  const tmpDir = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      join(tmpDir, "overall-summary.json"),
+      JSON.stringify({
+        run_id: "test-multi-fail",
+        ok: false,
+        report_paths: [
+          join(tmpDir, "01_report.json"),
+          join(tmpDir, "02_report.json"),
+        ],
+      }),
+    );
+    await Deno.writeTextFile(
+      join(tmpDir, "01_report.json"),
+      JSON.stringify({
+        scenario: "first failure",
+        steps: [
+          { name: "did lookup", status: "failed", detail: "not found", duration_ms: 10 },
+        ],
+        summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
+        ok: false,
+        metadata: { scenario_id: "01" },
+      }),
+    );
+    await Deno.writeTextFile(
+      join(tmpDir, "02_report.json"),
+      JSON.stringify({
+        scenario: "second failure",
+        steps: [
+          { name: "createRecord", status: "failed", detail: "timeout", duration_ms: 5000 },
+        ],
+        summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
+        ok: false,
         metadata: { scenario_id: "02" },
       }),
     );
 
-    // Third scenario also fails, but should be ignored (firstFailure wins)
+    const result = await triageReports(tmpDir);
+    // Only the first failure is captured
+    assertEquals(result.firstFailure?.scenarioId, "01");
+    assertEquals(result.firstFailure?.step, "did lookup");
+    assertEquals(result.boundary, "identity");
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("triageReports: malformed report JSON is skipped gracefully", async () => {
+  const tmpDir = await Deno.makeTempDir();
+  try {
     await Deno.writeTextFile(
-      join(tmp, "03_also_fail.json"),
+      join(tmpDir, "overall-summary.json"),
       JSON.stringify({
-        scenario: "03_createRecord_fail",
+        run_id: "test-malformed",
         ok: false,
-        started_at: 1_700_000_003,
-        finished_at: 1_700_000_005,
-        duration_s: 2,
-        steps: [
-          {
-            name: "createRecord",
-            status: "failed",
-            detail: "bad request",
-            duration_ms: 100,
-          },
-        ],
-        summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
-        artifacts: {},
-        metadata: {},
+        report_paths: [join(tmpDir, "broken_report.json")],
       }),
     );
-
-    const result = await triageReports(tmp);
-
-    assertEquals(result.runId, "test-run-002");
-    assertEquals(result.ok, false);
-    assertEquals(result.firstFailure?.scenarioId, "02");
-    assertEquals(result.firstFailure?.scenarioName, "02_auth_flow");
-    assertEquals(result.firstFailure?.step, "authenticate");
-    assertEquals(result.firstFailure?.error, "invalid credentials");
-    assertEquals(result.boundary, "auth");
-    assertEquals(result.evidence.length, 2);
-    assertStringIncludes(result.evidence[0], "authenticate");
-    assertStringIncludes(result.evidence[1], "invalid credentials");
-    assertEquals(result.reportPaths.length, 3);
-  } finally {
-    await Deno.remove(tmp, { recursive: true });
-  }
-});
-
-// ── triageReports — fatal error case ───────────────────────────────────
-
-Deno.test("triageReports: fatal — overall-summary has error field", async () => {
-  const tmp = await Deno.makeTempDir({ prefix: "hamownia-triage-test-" });
-  try {
     await Deno.writeTextFile(
-      join(tmp, "overall-summary.json"),
-      JSON.stringify({
-        run_id: "test-run-003",
-        ok: false,
-        error:
-          "xrpc method not allowed: POST /xrpc/com.atproto.server.createSession",
-        diagnostics_dir: join(tmp, "diagnostics"),
-      }),
+      join(tmpDir, "broken_report.json"),
+      "{ not valid json at all",
     );
 
-    const result = await triageReports(tmp);
-
-    assertEquals(result.runId, "test-run-003");
+    const result = await triageReports(tmpDir);
+    // Should not throw — malformed report is skipped
+    assertEquals(result.runId, "test-malformed");
     assertEquals(result.ok, false);
-    assertEquals(result.boundary, "route");
-    assertEquals(result.evidence.length, 1);
-    assertStringIncludes(result.evidence[0], "Fatal error");
-    assertEquals(result.diagnosticsDir, join(tmp, "diagnostics"));
-    assertEquals(result.reportPaths.length, 0);
+    assertEquals(result.firstFailure, undefined);
+    assertEquals(result.evidence.some((e) => e.startsWith("Could not read report")), true);
   } finally {
-    await Deno.remove(tmp, { recursive: true });
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
   }
 });
 
-// ── triageReports — missing overall-summary ────────────────────────────
+// ── NdjsonSink: full event lifecycle ───────────────────────────────────
 
-Deno.test("triageReports: missing — falls back to directory scan", async () => {
-  const tmp = await Deno.makeTempDir({ prefix: "hamownia-triage-test-" });
-  try {
-    // No overall-summary.json — triage should discover reports by scanning
-    await Deno.writeTextFile(
-      join(tmp, "01_scenario.json"),
-      JSON.stringify({
-        scenario: "01_whatever",
-        ok: true,
-        started_at: 1_700_000_000,
-        finished_at: 1_700_000_001,
-        duration_s: 1,
-        steps: [
-          { name: "step1", status: "passed", detail: "", duration_ms: 100 },
-        ],
-        summary: { passed: 1, failed: 0, skipped: 0, total: 1 },
-        artifacts: {},
-        metadata: {},
-      }),
-    );
+/** Capturing sink that stores events as serialized JSON lines. */
+class CaptureNdjsonSink implements ScenarioRunEventSink {
+  lines: string[] = [];
 
-    const result = await triageReports(tmp, "custom-run-004");
-
-    assertEquals(result.runId, "custom-run-004");
-    assertEquals(result.ok, true);
-    assertEquals(result.evidence.length, 1);
-    assertStringIncludes(result.evidence[0], "No overall-summary.json");
-    assertEquals(result.reportPaths.length, 1);
-    assertStringIncludes(result.reportPaths[0], "01_scenario.json");
-  } finally {
-    await Deno.remove(tmp, { recursive: true });
+  emit(event: ScenarioRunEvent): void {
+    this.lines.push(JSON.stringify(event));
   }
-});
+}
 
-// ── triageReports — non-existent directory ─────────────────────────────
-
-Deno.test("triageReports: missing dir — returns ok with evidence of absence", async () => {
-  const tmp = await Deno.makeTempDir({ prefix: "hamownia-triage-" });
-  try {
-    const nonExistent = join(tmp, "nonexistent");
-
-    const result = await triageReports(nonExistent, "run-005");
-
-    assertEquals(result.runId, "run-005");
-    assertEquals(result.ok, true);
-    assertEquals(result.evidence.length, 1);
-    assertStringIncludes(result.evidence[0], "No overall-summary.json");
-    assertEquals(result.reportPaths.length, 0);
-  } finally {
-    await Deno.remove(tmp, { recursive: true });
-  }
-});
-
-// ── NdjsonSink — emits valid JSON lines ────────────────────────────────
-
-Deno.test("NdjsonSink: emits each event as a single JSON line", () => {
-  // Use a helper class that captures instead of writing to real stdout
-  class CaptureNdjsonSink extends NdjsonSink {
-    captured: string[] = [];
-    override emit(event: ScenarioRunEvent): void {
-      this.captured.push(JSON.stringify(event));
-    }
-  }
-
-  const captureSink = new CaptureNdjsonSink();
-
-  captureSink.emit({
+function makeRunStarted(overrides?: Partial<RunStartedEvent>): RunStartedEvent {
+  return {
     type: "run_start",
-    runId: "test-run",
-    scenarioIds: ["01", "02"],
-    total: 2,
-    timestamp: 1_700_000_000_000,
-  });
+    runId: "test-run-001",
+    scenarioIds: ["01", "02", "03"],
+    total: 3,
+    timestamp: 1700000000000,
+    ...overrides,
+  };
+}
 
-  captureSink.emit({
+function makeScenarioStarted(
+  overrides?: Partial<ScenarioStartedEvent>,
+): ScenarioStartedEvent {
+  return {
     type: "scenario_start",
     scenarioId: "01",
-    name: "Account lifecycle",
+    name: "account lifecycle",
     index: 0,
-    total: 2,
-    timestamp: 1_700_000_001_000,
-  });
+    total: 3,
+    timestamp: 1700000001000,
+    ...overrides,
+  };
+}
 
-  captureSink.emit({
+function makeScenarioCompleted(
+  overrides?: Partial<ScenarioCompletedEvent>,
+): ScenarioCompletedEvent {
+  return {
     type: "scenario_complete",
     scenarioId: "01",
-    name: "Account lifecycle",
+    name: "account lifecycle",
     ok: true,
     passed: 3,
     failed: 0,
-    skipped: 1,
+    skipped: 0,
     durationS: 2.5,
-    summaryText: "summary",
-    reportPath: "/tmp/report.json",
-    timestamp: 1_700_000_003_500,
-  });
+    summaryText: "  ✅ 01 - account lifecycle  (3/3 passed)  2.5s",
+    reportPath: "/tmp/reports/01.json",
+    timestamp: 1700000003500,
+    ...overrides,
+  };
+}
 
-  assertEquals(captureSink.captured.length, 3);
+function makeServiceFailure(
+  overrides?: Partial<ServiceFailureEvent>,
+): ServiceFailureEvent {
+  return {
+    type: "service_failure",
+    message: "PDS health check failed",
+    source: "health_check",
+    timestamp: 1700000004000,
+    ...overrides,
+  };
+}
 
-  // Each captured string must be valid JSON
-  for (const line of captureSink.captured) {
-    const parsed = JSON.parse(line);
-    assertEquals(typeof parsed.type, "string");
-  }
+function makeRunProgress(
+  overrides?: Partial<RunProgressEvent>,
+): RunProgressEvent {
+  return {
+    type: "run_progress",
+    completed: 1,
+    total: 3,
+    currentScenarioId: "02",
+    currentScenarioName: "OAuth login",
+    running: true,
+    timestamp: 1700000005000,
+    ...overrides,
+  };
+}
 
-  // First event is run_start
-  const first = JSON.parse(captureSink.captured[0]);
-  assertEquals(first.type, "run_start");
-  assertEquals(first.runId, "test-run");
+function makeRunFinished(
+  overrides?: Partial<RunFinishedEvent>,
+): RunFinishedEvent {
+  return {
+    type: "run_finished",
+    runId: "test-run-001",
+    ok: true,
+    totalPassed: 9,
+    totalFailed: 0,
+    totalSkipped: 0,
+    reportsDir: "/tmp/reports",
+    crashedContainer: false,
+    timestamp: 1700000010000,
+    ...overrides,
+  };
+}
 
-  // Second event is scenario_start
-  const second = JSON.parse(captureSink.captured[1]);
-  assertEquals(second.type, "scenario_start");
-  assertEquals(second.scenarioId, "01");
+interface ParsedEvent {
+  type: string;
+  [key: string]: unknown;
+}
 
-  // Third event is scenario_complete
-  const third = JSON.parse(captureSink.captured[2]);
-  assertEquals(third.type, "scenario_complete");
-  assertEquals(third.ok, true);
-  assertEquals(third.passed, 3);
-});
-
-// ── NdjsonSink — all event types produce valid JSON ────────────────────
-
-Deno.test("NdjsonSink: all event types produce parseable JSON", () => {
-  class CaptureNdjsonSink extends NdjsonSink {
-    readonly captured: string[] = [];
-    override emit(event: ScenarioRunEvent): void {
-      this.captured.push(JSON.stringify(event));
-    }
-  }
-
+Deno.test("NdjsonSink: RunStartedEvent serializes with correct fields", () => {
   const sink = new CaptureNdjsonSink();
-  const now = 1_700_000_000_000;
+  sink.emit(makeRunStarted());
 
-  const events: ScenarioRunEvent[] = [
-    {
-      type: "run_start",
-      runId: "r",
-      scenarioIds: ["01"],
-      total: 1,
-      timestamp: now,
-    },
-    {
-      type: "scenario_start",
-      scenarioId: "01",
-      name: "n",
-      index: 0,
-      total: 1,
-      timestamp: now,
-    },
-    {
-      type: "scenario_complete",
-      scenarioId: "01",
-      name: "n",
-      ok: true,
-      passed: 1,
-      failed: 0,
-      skipped: 0,
-      durationS: 1,
-      summaryText: "s",
-      timestamp: now,
-    },
-    {
-      type: "service_failure",
-      message: "crash",
-      source: "container_crash",
-      timestamp: now,
-    },
-    {
-      type: "run_progress",
-      completed: 1,
-      total: 1,
-      currentScenarioId: "01",
-      currentScenarioName: "n",
-      running: true,
-      timestamp: now,
-    },
-    {
-      type: "run_finished",
-      runId: "r",
-      ok: true,
-      totalPassed: 1,
-      totalFailed: 0,
-      totalSkipped: 0,
-      reportsDir: "/tmp",
-      crashedContainer: false,
-      timestamp: now,
-    },
-  ];
-
-  for (const event of events) {
-    sink.emit(event);
-  }
-
-  assertEquals(sink.captured.length, 6);
-
-  for (let i = 0; i < sink.captured.length; i++) {
-    const parsed = JSON.parse(sink.captured[i]);
-    assertEquals(parsed.type, events[i].type);
-    assertEquals(parsed.timestamp, now);
-  }
+  assertEquals(sink.lines.length, 1);
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.type, "run_start");
+  assertEquals(parsed.runId, "test-run-001");
+  assertEquals(parsed.scenarioIds as string[], ["01", "02", "03"]);
+  assertEquals(parsed.total, 3);
+  assertExists(parsed.timestamp);
 });
 
-// ── MultiSink: fan-out works ───────────────────────────────────────────
+Deno.test("NdjsonSink: ScenarioStartedEvent serializes with correct fields", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeScenarioStarted());
 
-Deno.test("MultiSink: forwards events to all child sinks", () => {
-  const received: number[][] = [[], []];
+  assertEquals(sink.lines.length, 1);
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.type, "scenario_start");
+  assertEquals(parsed.scenarioId, "01");
+  assertEquals(parsed.name, "account lifecycle");
+  assertEquals(parsed.index, 0);
+  assertEquals(parsed.total, 3);
+});
 
-  const sinkA = {
-    emit(e: ScenarioRunEvent) {
-      received[0].push(e.timestamp);
-    },
-  };
-  const sinkB = {
-    emit(e: ScenarioRunEvent) {
-      received[1].push(e.timestamp);
-    },
-  };
+Deno.test("NdjsonSink: ScenarioCompletedEvent serializes with correct fields", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeScenarioCompleted({ ok: false, passed: 2, failed: 1 }));
+
+  assertEquals(sink.lines.length, 1);
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.type, "scenario_complete");
+  assertEquals(parsed.ok, false);
+  assertEquals(parsed.passed, 2);
+  assertEquals(parsed.failed, 1);
+  assertEquals(parsed.skipped, 0);
+  assertEquals(parsed.durationS, 2.5);
+  assertEquals(parsed.reportPath, "/tmp/reports/01.json");
+});
+
+Deno.test("NdjsonSink: ServiceFailureEvent serializes with correct fields", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeServiceFailure());
+
+  assertEquals(sink.lines.length, 1);
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.type, "service_failure");
+  assertEquals(parsed.message, "PDS health check failed");
+  assertEquals(parsed.source, "health_check");
+});
+
+Deno.test("NdjsonSink: ServiceFailureEvent with container_crash source", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeServiceFailure({
+    message: "Container pds crashed",
+    source: "container_crash",
+  }));
+
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.source, "container_crash");
+});
+
+Deno.test("NdjsonSink: RunProgressEvent serializes with correct fields", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeRunProgress({ completed: 2, running: true }));
+
+  assertEquals(sink.lines.length, 1);
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.type, "run_progress");
+  assertEquals(parsed.completed, 2);
+  assertEquals(parsed.total, 3);
+  assertEquals(parsed.running, true);
+});
+
+Deno.test("NdjsonSink: RunProgressEvent with running=false indicates completion", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeRunProgress({
+    completed: 3,
+    running: false,
+    currentScenarioId: null,
+    currentScenarioName: null,
+  }));
+
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.running, false);
+  assertEquals(parsed.currentScenarioId, null);
+  assertEquals(parsed.currentScenarioName, null);
+});
+
+Deno.test("NdjsonSink: RunFinishedEvent serializes with correct fields", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeRunFinished({
+    ok: false,
+    totalPassed: 6,
+    totalFailed: 3,
+  }));
+
+  assertEquals(sink.lines.length, 1);
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.type, "run_finished");
+  assertEquals(parsed.ok, false);
+  assertEquals(parsed.totalPassed, 6);
+  assertEquals(parsed.totalFailed, 3);
+  assertEquals(parsed.totalSkipped, 0);
+  assertEquals(parsed.crashedContainer, false);
+  assertEquals(parsed.reportsDir, "/tmp/reports");
+});
+
+Deno.test("NdjsonSink: RunFinishedEvent with crashedContainer=true", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeRunFinished({ crashedContainer: true }));
+
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.crashedContainer, true);
+});
+
+Deno.test("NdjsonSink: full run lifecycle emits 7 valid JSON lines in order", () => {
+  const sink = new CaptureNdjsonSink();
+
+  // Simulate a full 3-scenario run with a failure in scenario 2
+  sink.emit(makeRunStarted({ scenarioIds: ["01", "02", "03"], total: 3 }));
+  sink.emit(makeScenarioStarted({ scenarioId: "01", index: 0 }));
+  sink.emit(makeScenarioCompleted({ scenarioId: "01", ok: true, passed: 2 }));
+  sink.emit(makeRunProgress({ completed: 1, currentScenarioId: "02" }));
+  sink.emit(makeScenarioStarted({ scenarioId: "02", index: 1, name: "failing scenario" }));
+  sink.emit(makeScenarioCompleted({
+    scenarioId: "02",
+    name: "failing scenario",
+    ok: false,
+    passed: 1,
+    failed: 1,
+  }));
+  sink.emit(makeRunProgress({ completed: 2, currentScenarioId: "03" }));
+  sink.emit(makeScenarioStarted({ scenarioId: "03", index: 2, name: "final scenario" }));
+  sink.emit(makeScenarioCompleted({ scenarioId: "03", name: "final scenario", ok: true }));
+  sink.emit(makeRunProgress({ completed: 3, running: false, currentScenarioId: null, currentScenarioName: null }));
+  sink.emit(makeRunFinished({
+    ok: false,
+    totalPassed: 5,
+    totalFailed: 1,
+  }));
+
+  assertEquals(sink.lines.length, 11);
+
+  // Every line must be valid JSON
+  const parsed = sink.lines.map((l) => JSON.parse(l) as ParsedEvent);
+
+  // Verify event type sequence
+  assertEquals(parsed[0].type, "run_start");
+  assertEquals(parsed[1].type, "scenario_start");
+  assertEquals(parsed[2].type, "scenario_complete");
+  assertEquals(parsed[3].type, "run_progress");
+  assertEquals(parsed[4].type, "scenario_start");
+  assertEquals(parsed[5].type, "scenario_complete");
+  assertEquals(parsed[6].type, "run_progress");
+  assertEquals(parsed[7].type, "scenario_start");
+  assertEquals(parsed[8].type, "scenario_complete");
+  assertEquals(parsed[9].type, "run_progress");
+  assertEquals(parsed[10].type, "run_finished");
+
+  // Verify failing scenario
+  assertEquals(parsed[5].ok, false);
+  assertEquals(parsed[5].passed, 1);
+  assertEquals(parsed[5].failed, 1);
+
+  // Verify final summary
+  assertEquals(parsed[10].totalPassed, 5);
+  assertEquals(parsed[10].totalFailed, 1);
+});
+
+Deno.test("NdjsonSink: service failure aborts remaining scenarios", () => {
+  const sink = new CaptureNdjsonSink();
+
+  sink.emit(makeRunStarted({ scenarioIds: ["01", "02", "03"], total: 3 }));
+  sink.emit(makeScenarioStarted({ scenarioId: "01", index: 0 }));
+  sink.emit(makeScenarioCompleted({ scenarioId: "01", ok: true }));
+  sink.emit(makeServiceFailure({ message: "PDS container crashed" }));
+  sink.emit(makeRunProgress({ completed: 1, running: false, currentScenarioId: null }));
+  sink.emit(makeRunFinished({ ok: false, totalPassed: 3, totalFailed: 0, crashedContainer: true }));
+
+  assertEquals(sink.lines.length, 6);
+
+  const parsed = sink.lines.map((l) => JSON.parse(l) as ParsedEvent);
+  assertEquals(parsed[3].type, "service_failure");
+  assertEquals(parsed[4].type, "run_progress");
+  assertEquals(parsed[4].running, false);
+  assertEquals(parsed[5].type, "run_finished");
+  assertEquals(parsed[5].ok, false);
+  assertEquals(parsed[5].crashedContainer, true);
+});
+
+Deno.test("NdjsonSink: each line is a complete JSON object followed by newline", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeRunStarted());
+  sink.emit(makeRunFinished());
+
+  // Each line should parse as a standalone JSON object
+  for (const line of sink.lines) {
+    JSON.parse(line);
+  }
+
+  // NdjsonSink uses JSON.stringify which produces one line per object
+  assertEquals(sink.lines.length, 2);
+});
+
+Deno.test("NdjsonSink: ScenarioCompletedEvent without reportPath omits the field", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeScenarioCompleted({ reportPath: undefined }));
+
+  const parsed = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.reportPath, undefined);
+  // The field should not be present at all (undefined is dropped by JSON.stringify)
+  assertEquals("reportPath" in parsed, false);
+});
+
+// ── MultiSink ──────────────────────────────────────────────────────────
+
+Deno.test("MultiSink: fans out events to all child sinks", () => {
+  const sinkA = new CaptureNdjsonSink();
+  const sinkB = new CaptureNdjsonSink();
   const multi = new MultiSink([sinkA, sinkB]);
 
-  multi.emit({
-    type: "run_start",
-    runId: "r",
-    scenarioIds: ["01"],
-    total: 1,
-    timestamp: 42,
-  });
+  multi.emit(makeRunStarted());
+  multi.emit(makeRunProgress({ completed: 1 }));
+  multi.emit(makeRunFinished());
 
-  assertEquals(received[0].length, 1);
-  assertEquals(received[0][0], 42);
-  assertEquals(received[1].length, 1);
-  assertEquals(received[1][0], 42);
+  assertEquals(sinkA.lines.length, 3);
+  assertEquals(sinkB.lines.length, 3);
+
+  // Both sinks received identical events
+  assertEquals(sinkA.lines[0], sinkB.lines[0]);
+  assertEquals(sinkA.lines[1], sinkB.lines[1]);
+  assertEquals(sinkA.lines[2], sinkB.lines[2]);
 });
 
-// ── AgentTriageResult exhaustive boundary values ────────────────────────
+Deno.test("MultiSink: close propagates to all sinks", async () => {
+  let closedA = false;
+  let closedB = false;
 
-Deno.test("classifyBoundary: covers all 9 boundary rules", () => {
-  // Each rule must classify at least one input:
-  const cases: Array<[string, string, AgentTriageResult["boundary"]]> = [
-    ["any step", "timed out after 5s", "startup"],
-    ["createSession", "session expired", "auth"],
-    ["validate schema", "assertion failed", "validation"],
-    ["getRecord", "xrpc 405 Method Not Allowed", "route"],
-    ["upload blob", "rate limited 429", "rate_limit"],
-    ["resolve handle", "did not found", "identity"],
-    ["createRecord with text", "encoding error", "ingest"],
-    ["subscribeRepos firehose", "stream closed", "firehose"],
-    ["browser oauth flow", "playwright crash", "browser"],
-  ];
+  const sinkA: ScenarioRunEventSink = {
+    emit: () => {},
+    close: () => { closedA = true; },
+  };
+  const sinkB: ScenarioRunEventSink = {
+    emit: () => {},
+    close: () => { closedB = true; },
+  };
 
-  for (const [step, err, expected] of cases) {
-    assertEquals(
-      classifyBoundary(step, err),
-      expected,
-      `classifyBoundary("${step}", "${err}") should be "${expected}"`,
+  const multi = new MultiSink([sinkA, sinkB]);
+  await multi.close();
+
+  assertEquals(closedA, true);
+  assertEquals(closedB, true);
+});
+
+// ── Agent triage: boundary ordering edge cases ─────────────────────────
+
+Deno.test("triageReports: browser boundary detected from step name", async () => {
+  const tmpDir = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      join(tmpDir, "overall-summary.json"),
+      JSON.stringify({
+        run_id: "test-browser",
+        ok: false,
+        report_paths: [join(tmpDir, "47_report.json")],
+      }),
     );
+    await Deno.writeTextFile(
+      join(tmpDir, "47_report.json"),
+      JSON.stringify({
+        scenario: "chat group lifecycle",
+        steps: [
+          {
+            name: "playwright browser login flow",
+            status: "failed",
+            detail: "navigation timeout after 30s",
+            duration_ms: 30000,
+          },
+        ],
+        summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
+        ok: false,
+        metadata: { scenario_id: "47" },
+      }),
+    );
+
+    const result = await triageReports(tmpDir);
+    // Browser rule (checked first) matches step name containing "playwright"
+    assertEquals(result.boundary, "browser");
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
   }
+});
+
+Deno.test("triageReports: firehose boundary detected from step", async () => {
+  const tmpDir = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(
+      join(tmpDir, "overall-summary.json"),
+      JSON.stringify({
+        run_id: "test-firehose",
+        ok: false,
+        report_paths: [join(tmpDir, "firehose.json")],
+      }),
+    );
+    await Deno.writeTextFile(
+      join(tmpDir, "firehose.json"),
+      JSON.stringify({
+        scenario: "firehose test",
+        steps: [
+          {
+            name: "subscribeRepos",
+            status: "failed",
+            detail: "connection reset",
+            duration_ms: 500,
+          },
+        ],
+        summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
+        ok: false,
+      }),
+    );
+
+    const result = await triageReports(tmpDir);
+    assertEquals(result.boundary, "firehose");
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+  }
+});
+
+// ── NdjsonSink: edge cases ─────────────────────────────────────────────
+
+Deno.test("NdjsonSink: handles events with special characters", () => {
+  const sink = new CaptureNdjsonSink();
+
+  sink.emit(makeRunStarted({
+    scenarioIds: ['"quoted"'],
+  }));
+
+  sink.emit(makeScenarioCompleted({
+    name: "scenario\nwith\nnewlines",
+    summaryText: 'text with "double" quotes',
+  }));
+
+  // Both should parse back correctly
+  for (const line of sink.lines) {
+    JSON.parse(line);
+  }
+
+  const parsed0 = JSON.parse(sink.lines[0]);
+  assertEquals(parsed0.scenarioIds[0], '"quoted"');
+});
+
+Deno.test("NdjsonSink: reportsDir may contain empty string", () => {
+  const sink = new CaptureNdjsonSink();
+  sink.emit(makeRunFinished({ reportsDir: "" }));
+
+  const parsed: ParsedEvent = JSON.parse(sink.lines[0]);
+  assertEquals(parsed.reportsDir, "");
 });

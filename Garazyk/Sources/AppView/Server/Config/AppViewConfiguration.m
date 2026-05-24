@@ -7,8 +7,18 @@
  */
 
 #import "AppView/Server/Config/AppViewConfiguration.h"
+#import "Shared/GZConfigurationParsing.h"
+
+@interface AppViewConfiguration ()
+@property (nonatomic, copy) NSString *modeString;
+@end
 
 @implementation AppViewConfiguration
+
+- (void)setModeString:(NSString *)modeString {
+    if ([modeString isEqualToString:@"proxy"]) self.mode = AppViewModeProxy;
+    else if ([modeString isEqualToString:@"standalone"]) self.mode = AppViewModeStandalone;
+}
 
 - (instancetype)init {
     self = [super init];
@@ -45,155 +55,46 @@
     return [[self alloc] init];
 }
 
++ (GZConfigurationParsing *)sharedParser {
+    static GZConfigurationParsing *parser = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        parser = [[GZConfigurationParsing alloc] initWithProperties:@[
+            [GZConfigurationProperty propertyWithTargetKey:@"modeString" jsonKeys:@[@"mode"] envVar:@"APPVIEW_MODE" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"relayURLs" jsonKeys:@[@"relay_urls"] envVar:@"APPVIEW_RELAY_URLS" type:GZConfigurationPropertyTypeStringArray],
+            [GZConfigurationProperty propertyWithTargetKey:@"dataDirectory" jsonKeys:@[@"data_directory", @"data_dir"] envVar:@"APPVIEW_DATA_DIR" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"httpPort" jsonKeys:@[@"http.port", @"port", @"http_port"] envVar:@"APPVIEW_HTTP_PORT" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"adminSecret" jsonKeys:@[@"admin_secret"] envVar:@"APPVIEW_ADMIN_SECRET" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"masterSecret" jsonKeys:@[@"master_secret"] envVar:@"APPVIEW_MASTER_SECRET" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"cursorCheckpointIntervalMs" jsonKeys:@[@"cursor.checkpoint_interval_ms", @"cursor_checkpoint_interval_ms"] envVar:@"APPVIEW_CURSOR_CHECKPOINT_MS" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"plcURL" jsonKeys:@[@"plc.url", @"plc_url"] envVar:@"APPVIEW_PLC_URL" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"backfillEnabled" jsonKeys:@[@"backfill.enabled", @"backfill_enabled"] envVar:@"APPVIEW_BACKFILL_ENABLED" type:GZConfigurationPropertyTypeBoolean],
+            [GZConfigurationProperty propertyWithTargetKey:@"backfillGlobalWorkers" jsonKeys:@[@"backfill.global_workers", @"backfill_global_workers"] envVar:@"APPVIEW_BACKFILL_GLOBAL_WORKERS" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"backfillPerHostWorkers" jsonKeys:@[@"backfill.per_host_workers", @"backfill_per_host_workers"] envVar:@"APPVIEW_BACKFILL_PER_HOST_WORKERS" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"partialEnabled" jsonKeys:@[@"partial.enabled", @"partial_enabled"] envVar:@"APPVIEW_PARTIAL_ENABLED" type:GZConfigurationPropertyTypeBoolean],
+            [GZConfigurationProperty propertyWithTargetKey:@"partialSeedDIDs" jsonKeys:@[@"partial.seed_dids", @"partial_seed_dids"] envVar:@"APPVIEW_PARTIAL_SEED_DIDS" type:GZConfigurationPropertyTypeStringArray],
+            [GZConfigurationProperty propertyWithTargetKey:@"partialAllowlist" jsonKeys:@[@"partial.allowlist", @"partial_allowlist"] envVar:@"APPVIEW_PARTIAL_ALLOWLIST" type:GZConfigurationPropertyTypeStringArray],
+            [GZConfigurationProperty propertyWithTargetKey:@"partialTTLHours" jsonKeys:@[@"partial.ttl_hours", @"partial_ttl_hours"] envVar:@"APPVIEW_PARTIAL_TTL_HOURS" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"partialProxyFallback" jsonKeys:@[@"partial.proxy_fallback", @"partial_proxy_fallback"] envVar:@"APPVIEW_PARTIAL_PROXY_FALLBACK" type:GZConfigurationPropertyTypeBoolean],
+            [GZConfigurationProperty propertyWithTargetKey:@"partialProxyFallbackURL" jsonKeys:@[@"partial.proxy_fallback_url", @"proxy_fallback_url"] envVar:@"APPVIEW_PARTIAL_PROXY_FALLBACK_URL" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"videoServiceURL" jsonKeys:@[@"video_service_url"] envVar:@"APPVIEW_VIDEO_SERVICE_URL" type:GZConfigurationPropertyTypeString]
+        ]];
+    });
+    return parser;
+}
+
 + (instancetype)configurationFromEnvironment {
     AppViewConfiguration *config = [[self alloc] init];
-
-    // Mode
-    NSString *modeStr = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_MODE"];
-    if ([modeStr isEqualToString:@"proxy"])      config.mode = AppViewModeProxy;
-    if ([modeStr isEqualToString:@"standalone"]) config.mode = AppViewModeStandalone;
-
-    // Relay URLs
-    NSString *relayEnv = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_RELAY_URLS"];
-    if (relayEnv.length > 0) {
-        config.relayURLs = [relayEnv componentsSeparatedByString:@","];
+    [[self sharedParser] applyEnvironmentVariables:[[NSProcessInfo processInfo] environment] toTarget:config];
+    if (config.partialProxyFallbackURL.length == 0) {
+        NSString *fallback = [[NSProcessInfo processInfo] environment][@"APPVIEW_PROXY_FALLBACK_URL"];
+        if (fallback.length > 0) config.partialProxyFallbackURL = fallback;
     }
-
-    // Data dir
-    NSString *dataDir = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_DATA_DIR"];
-    if (dataDir.length > 0) config.dataDirectory = dataDir;
-
-    // Port
-    NSString *portStr = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_HTTP_PORT"];
-    if (portStr.integerValue > 0) config.httpPort = (NSUInteger)portStr.integerValue;
-
-    // Admin secret
-    NSString *secret = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_ADMIN_SECRET"];
-    if (secret.length > 0) config.adminSecret = secret;
-
-    // Master secret
-    NSString *master = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_MASTER_SECRET"];
-    if (master.length > 0) config.masterSecret = master;
-
-    // Checkpoint interval
-    NSString *checkpointMs = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_CURSOR_CHECKPOINT_MS"];
-    if (checkpointMs.integerValue > 0) config.cursorCheckpointIntervalMs = (NSUInteger)checkpointMs.integerValue;
-
-    // PLC URL
-    NSString *plcUrl = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PLC_URL"];
-    if (plcUrl.length > 0) config.plcURL = plcUrl;
-
-    // Backfill
-    NSString *bfEnabled = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_BACKFILL_ENABLED"];
-    if (bfEnabled) config.backfillEnabled = [bfEnabled boolValue];
-
-    NSString *bfGlobal = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_BACKFILL_GLOBAL_WORKERS"];
-    if (bfGlobal.integerValue > 0) config.backfillGlobalWorkers = (NSUInteger)bfGlobal.integerValue;
-
-    NSString *bfHost = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_BACKFILL_PER_HOST_WORKERS"];
-    if (bfHost.integerValue > 0) config.backfillPerHostWorkers = (NSUInteger)bfHost.integerValue;
-
-    // Partial mode
-    NSString *partialEnabled = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_ENABLED"];
-    if (partialEnabled) config.partialEnabled = [partialEnabled boolValue];
-
-    NSString *seedDIDs = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_SEED_DIDS"];
-    if (seedDIDs.length > 0) config.partialSeedDIDs = [seedDIDs componentsSeparatedByString:@","];
-
-    NSString *allowlist = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_ALLOWLIST"];
-    if (allowlist.length > 0) config.partialAllowlist = [allowlist componentsSeparatedByString:@","];
-
-    NSString *ttl = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_TTL_HOURS"];
-    if (ttl.integerValue > 0) config.partialTTLHours = (NSUInteger)ttl.integerValue;
-
-    NSString *proxyFallback = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_PROXY_FALLBACK"];
-    if (proxyFallback) config.partialProxyFallback = [proxyFallback boolValue];
-
-    NSString *fallbackURL = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_PROXY_FALLBACK_URL"];
-    if (fallbackURL.length == 0) {
-        fallbackURL = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PROXY_FALLBACK_URL"];
-    }
-    if (fallbackURL.length > 0) config.partialProxyFallbackURL = fallbackURL;
-
-    // Video service URL
-    NSString *videoServiceURL = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_VIDEO_SERVICE_URL"];
-    if (videoServiceURL.length > 0) config.videoServiceURL = videoServiceURL;
-
     return config;
 }
 
 - (void)loadFromDictionary:(NSDictionary *)dict {
-    // mode
-    NSString *mode = dict[@"mode"];
-    if ([mode isEqualToString:@"proxy"])      _mode = AppViewModeProxy;
-    if ([mode isEqualToString:@"standalone"]) _mode = AppViewModeStandalone;
-
-    // relay_urls
-    id relays = dict[@"relay_urls"];
-    if ([relays isKindOfClass:[NSArray class]]) _relayURLs = relays;
-    if ([relays isKindOfClass:[NSString class]]) _relayURLs = @[relays];
-
-    // data_directory
-    NSString *dataDir = dict[@"data_directory"];
-    if (dataDir.length > 0) _dataDirectory = dataDir;
-
-    // http.port
-    id port = dict[@"http.port"] ?: dict[@"port"] ?: dict[@"http_port"];
-    if ([port respondsToSelector:@selector(integerValue)] && [port integerValue] > 0)
-        _httpPort = (NSUInteger)[port integerValue];
-
-    // admin_secret
-    NSString *secret = dict[@"admin_secret"];
-    if (secret.length > 0) _adminSecret = secret;
-
-    // master_secret
-    NSString *master = dict[@"master_secret"];
-    if (master.length > 0) _masterSecret = master;
-
-    // cursor.checkpoint_interval_ms
-    id ckpt = dict[@"cursor.checkpoint_interval_ms"] ?: dict[@"cursor_checkpoint_interval_ms"];
-    if ([ckpt respondsToSelector:@selector(integerValue)] && [ckpt integerValue] > 0)
-        _cursorCheckpointIntervalMs = (NSUInteger)[ckpt integerValue];
-
-    // plc.url
-    NSString *plcUrl = dict[@"plc.url"] ?: dict[@"plc_url"];
-    if (plcUrl.length > 0) _plcURL = plcUrl;
-
-    // backfill.*
-    id bfEnabled = dict[@"backfill.enabled"] ?: dict[@"backfill_enabled"];
-    if (bfEnabled) _backfillEnabled = [bfEnabled boolValue];
-
-    id bfGlobal = dict[@"backfill.global_workers"] ?: dict[@"backfill_global_workers"];
-    if ([bfGlobal respondsToSelector:@selector(integerValue)] && [bfGlobal integerValue] > 0)
-        _backfillGlobalWorkers = (NSUInteger)[bfGlobal integerValue];
-
-    id bfHost = dict[@"backfill.per_host_workers"] ?: dict[@"backfill_per_host_workers"];
-    if ([bfHost respondsToSelector:@selector(integerValue)] && [bfHost integerValue] > 0)
-        _backfillPerHostWorkers = (NSUInteger)[bfHost integerValue];
-
-    // partial.*
-    id partialEnabled = dict[@"partial.enabled"] ?: dict[@"partial_enabled"];
-    if (partialEnabled) _partialEnabled = [partialEnabled boolValue];
-
-    id seeds = dict[@"partial.seed_dids"] ?: dict[@"partial_seed_dids"];
-    if ([seeds isKindOfClass:[NSArray class]]) _partialSeedDIDs = seeds;
-
-    id allow = dict[@"partial.allowlist"] ?: dict[@"partial_allowlist"];
-    if ([allow isKindOfClass:[NSArray class]]) _partialAllowlist = allow;
-
-    id ttl = dict[@"partial.ttl_hours"] ?: dict[@"partial_ttl_hours"];
-    if ([ttl respondsToSelector:@selector(integerValue)] && [ttl integerValue] > 0)
-        _partialTTLHours = (NSUInteger)[ttl integerValue];
-
-    id proxyFallback = dict[@"partial.proxy_fallback"] ?: dict[@"partial_proxy_fallback"];
-    if (proxyFallback) _partialProxyFallback = [proxyFallback boolValue];
-
-    NSString *fallbackURL = dict[@"partial.proxy_fallback_url"] ?: dict[@"partial_proxy_fallback_url"];
-    if (fallbackURL.length > 0) _partialProxyFallbackURL = fallbackURL;
-
-    // Video service
-    NSString *videoURL = dict[@"video_service_url"];
-    if (videoURL.length > 0) _videoServiceURL = videoURL;
+    [[[self class] sharedParser] applyDictionary:dict toTarget:self];
 }
 
 - (BOOL)validate:(NSError **)error {

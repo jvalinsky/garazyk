@@ -1003,6 +1003,8 @@ int main(int argc, char *argv[]) {
       @"XrpcErrorHelperTests",
       @"RateLimitingTests",
       @"GZXrpcRouteSupportTests",
+      @"GZCommandLineOptionsTests",
+      @"GZConfigurationParsingTests",
       @"RepoDescribeRepoTests",
       @"SSRFValidatorTests",
       @"HttpParsingTests",

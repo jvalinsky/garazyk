@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
 #import "Mikrus/MikrusConfiguration.h"
+#import "Shared/GZConfigurationParsing.h"
 
 @implementation MikrusConfiguration
 
@@ -23,81 +24,32 @@
     return [[self alloc] init];
 }
 
++ (GZConfigurationParsing *)sharedParser {
+    static GZConfigurationParsing *parser = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        parser = [[GZConfigurationParsing alloc] initWithProperties:@[
+            [GZConfigurationProperty propertyWithTargetKey:@"relayURLs" jsonKeys:@[@"relay_urls", @"relays"] envVar:@"MIKRUS_RELAY_URLS" type:GZConfigurationPropertyTypeStringArray],
+            [GZConfigurationProperty propertyWithTargetKey:@"dataDirectory" jsonKeys:@[@"data_directory", @"data_dir"] envVar:@"MIKRUS_DATA_DIR" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"httpPort" jsonKeys:@[@"http.port", @"port"] envVar:@"MIKRUS_HTTP_PORT" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"cursorCheckpointIntervalMs" jsonKeys:@[@"cursor.checkpoint_interval_ms", @"checkpoint_interval_ms"] envVar:@"MIKRUS_CURSOR_CHECKPOINT_MS" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"ingestEnabled" jsonKeys:@[@"ingest.enabled", @"ingest_enabled"] envVar:@"MIKRUS_INGEST_ENABLED" type:GZConfigurationPropertyTypeBoolean],
+            [GZConfigurationProperty propertyWithTargetKey:@"rateLimitEnabled" jsonKeys:@[@"rate_limit.enabled", @"rate_limit_enabled"] envVar:@"MIKRUS_RATELIMIT_ENABLED" type:GZConfigurationPropertyTypeBoolean],
+            [GZConfigurationProperty propertyWithTargetKey:@"rateLimitIpLimit" jsonKeys:@[@"rate_limit.ip_limit", @"rate_limit_ip_limit"] envVar:@"MIKRUS_RATELIMIT_IP_LIMIT" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"rateLimitIpWindowSeconds" jsonKeys:@[@"rate_limit.ip_window", @"rate_limit_ip_window"] envVar:@"MIKRUS_RATELIMIT_IP_WINDOW" type:GZConfigurationPropertyTypeDouble]
+        ]];
+    });
+    return parser;
+}
+
 + (instancetype)configurationFromEnvironment {
     MikrusConfiguration *config = [[self alloc] init];
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-
-    NSString *relays = env[@"MIKRUS_RELAY_URLS"];
-    if (relays.length > 0) config.relayURLs = [self splitCSV:relays];
-
-    NSString *dataDir = env[@"MIKRUS_DATA_DIR"];
-    if (dataDir.length > 0) config.dataDirectory = dataDir;
-
-    NSString *port = env[@"MIKRUS_HTTP_PORT"];
-    if (port.integerValue > 0) config.httpPort = (NSUInteger)port.integerValue;
-
-    NSString *checkpoint = env[@"MIKRUS_CURSOR_CHECKPOINT_MS"];
-    if (checkpoint.integerValue > 0) config.cursorCheckpointIntervalMs = (NSUInteger)checkpoint.integerValue;
-
-    NSString *ingest = env[@"MIKRUS_INGEST_ENABLED"];
-    if (ingest.length > 0) config.ingestEnabled = [ingest boolValue];
-
-    NSString *rlEnabled = env[@"MIKRUS_RATELIMIT_ENABLED"];
-    if (rlEnabled.length > 0) config.rateLimitEnabled = [rlEnabled boolValue];
-
-    NSString *rlIpLimit = env[@"MIKRUS_RATELIMIT_IP_LIMIT"];
-    if (rlIpLimit.integerValue > 0) config.rateLimitIpLimit = rlIpLimit.integerValue;
-
-    NSString *rlIpWindow = env[@"MIKRUS_RATELIMIT_IP_WINDOW"];
-    if (rlIpWindow.doubleValue > 0) config.rateLimitIpWindowSeconds = rlIpWindow.doubleValue;
-
+    [[self sharedParser] applyEnvironmentVariables:[[NSProcessInfo processInfo] environment] toTarget:config];
     return config;
 }
 
 - (void)loadFromDictionary:(NSDictionary *)dictionary {
-    id relays = dictionary[@"relay_urls"] ?: dictionary[@"relays"];
-    if ([relays isKindOfClass:[NSArray class]]) {
-        self.relayURLs = relays;
-    } else if ([relays isKindOfClass:[NSString class]]) {
-        self.relayURLs = [MikrusConfiguration splitCSV:relays];
-    }
-
-    NSString *dataDir = dictionary[@"data_directory"] ?: dictionary[@"data_dir"];
-    if (dataDir.length > 0) self.dataDirectory = dataDir;
-
-    id port = dictionary[@"http.port"] ?: dictionary[@"port"];
-    if ([port isKindOfClass:[NSNumber class]]) {
-        NSInteger value = [port integerValue];
-        if (value >= 0 && value <= UINT16_MAX) self.httpPort = (NSUInteger)value;
-    } else if ([port isKindOfClass:[NSString class]] && [(NSString *)port length] > 0) {
-        NSInteger value = -1;
-        NSScanner *scanner = [NSScanner scannerWithString:(NSString *)port];
-        scanner.charactersToBeSkipped = nil;
-        if ([scanner scanInteger:&value] && scanner.isAtEnd && value >= 0 && value <= UINT16_MAX) {
-            self.httpPort = (NSUInteger)value;
-        }
-    }
-
-    id checkpoint = dictionary[@"cursor.checkpoint_interval_ms"] ?: dictionary[@"checkpoint_interval_ms"];
-    if ([checkpoint respondsToSelector:@selector(integerValue)] && [checkpoint integerValue] > 0) {
-        self.cursorCheckpointIntervalMs = (NSUInteger)[checkpoint integerValue];
-    }
-
-    id ingest = dictionary[@"ingest.enabled"] ?: dictionary[@"ingest_enabled"];
-    if (ingest) self.ingestEnabled = [ingest boolValue];
-
-    id rlEnabled = dictionary[@"rate_limit.enabled"] ?: dictionary[@"rate_limit_enabled"];
-    if (rlEnabled) self.rateLimitEnabled = [rlEnabled boolValue];
-
-    id rlIpLimit = dictionary[@"rate_limit.ip_limit"] ?: dictionary[@"rate_limit_ip_limit"];
-    if ([rlIpLimit respondsToSelector:@selector(integerValue)] && [rlIpLimit integerValue] > 0) {
-        self.rateLimitIpLimit = [rlIpLimit integerValue];
-    }
-
-    id rlIpWindow = dictionary[@"rate_limit.ip_window"] ?: dictionary[@"rate_limit_ip_window"];
-    if ([rlIpWindow respondsToSelector:@selector(doubleValue)] && [rlIpWindow doubleValue] > 0) {
-        self.rateLimitIpWindowSeconds = [rlIpWindow doubleValue];
-    }
+    [[[self class] sharedParser] applyDictionary:dictionary toTarget:self];
 }
 
 - (BOOL)validate:(NSError **)error {

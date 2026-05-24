@@ -18,39 +18,15 @@
 #import "AppView/Server/AppViewRuntime.h"
 #import "AppView/Server/Config/AppViewConfiguration.h"
 #import "Debug/GZLogger.h"
+#import "CLI/GZCommandLineOptions.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
-#import <execinfo.h>
-#if defined(GNUSTEP)
-#import <curl/curl.h>
-#endif
-
-static void uncaughtExceptionHandler(NSException *exception) {
-    fprintf(stderr, "=== UNCAUGHT NSException ===\n");
-    fprintf(stderr, "Name: %s\n", [[exception name] UTF8String] ?: "null");
-    fprintf(stderr, "Reason: %s\n", [[exception reason] UTF8String] ?: "null");
-    fprintf(stderr, "UserInfo: %s\n", [[[exception userInfo] description] UTF8String] ?: "null");
-    fprintf(stderr, "Stack:\n%s\n",
-            [[[exception callStackSymbols] componentsJoinedByString:@"\n"] UTF8String] ?: "null");
-    fprintf(stderr, "=============================\n");
-}
-
-static void sigabrtHandler(int sig) {
-    void *callstack[128];
-    int frames = backtrace(callstack, 128);
-    fprintf(stderr, "=== SIGABRT (signal %d) ===\n", sig);
-    backtrace_symbols_fd(callstack, frames, STDERR_FILENO);
-    fprintf(stderr, "============================\n");
-    signal(sig, SIG_DFL);
-    raise(sig);
-}
+#import "Runtime/GZServiceLifecycle.h"
+#import "Core/NSDateFormatter+ATProto.h"
+#import "Debug/GZLogger.h"
+#import "CLI/GZCommandLineOptions.h"
 
 static const char *executable_name = "syrena";
-static AppViewRuntime *gShutdownRuntime = nil;
-
-// Force NSDateFormatter category to be linked
-extern void NSDateFormatterLinkATProtoCategory(void);
 
 void print_usage(void) {
     printf("Usage: %s <command> [options]\n\n", executable_name);
@@ -109,130 +85,10 @@ static int fail_with_usage(NSString *message) {
     return 2;
 }
 
-static BOOL parse_appview_options(NSArray<NSString *> *args,
-                                  NSUInteger *port,
-                                  NSMutableArray<NSString *> *relayURLs,
-                                  NSMutableArray<NSString *> *seedDIDs,
-                                  NSString **dataDir,
-                                  NSString **configPath,
-                                  BOOL *partial,
-                                  BOOL *noBackfill,
-                                  BOOL *verbose,
-                                  NSString **errorMessage) {
-    for (NSUInteger i = 0; i < args.count; i++) {
-        NSString *arg = args[i];
-        if ([arg isEqualToString:@"--port"] || [arg isEqualToString:@"-p"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --port";
-                }
-                return NO;
-            }
-            if (port) {
-                *port = (NSUInteger)[args[++i] integerValue];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--relay"] || [arg isEqualToString:@"-r"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --relay";
-                }
-                return NO;
-            }
-            if (relayURLs) {
-                [relayURLs addObject:args[++i]];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--data-dir"] || [arg isEqualToString:@"-d"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --data-dir";
-                }
-                return NO;
-            }
-            if (dataDir) {
-                *dataDir = args[++i];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--config"] || [arg isEqualToString:@"-c"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --config";
-                }
-                return NO;
-            }
-            if (configPath) {
-                *configPath = args[++i];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--partial"]) {
-            if (partial) {
-                *partial = YES;
-            }
-        } else if ([arg isEqualToString:@"--seed-did"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --seed-did";
-                }
-                return NO;
-            }
-            if (seedDIDs) {
-                [seedDIDs addObject:args[++i]];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--no-backfill"]) {
-            if (noBackfill) {
-                *noBackfill = YES;
-            }
-        } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
-            if (verbose) {
-                *verbose = YES;
-            }
-            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
-        } else if ([arg hasPrefix:@"-"]) {
-            if (errorMessage) {
-                *errorMessage = [NSString stringWithFormat:@"Unknown option: %@", arg];
-            }
-            return NO;
-        } else {
-            if (errorMessage) {
-                *errorMessage = [NSString stringWithFormat:@"Unexpected argument: %@", arg];
-            }
-            return NO;
-        }
-    }
-    return YES;
-}
 
 int main(int argc, const char * argv[]) {
-    [[GZSignalManager sharedManager] installIgnoredSignals];
-    [GZCrashReporter installCrashHandlersWithExecutableName:"syrena"];
-
-    NSSetUncaughtExceptionHandler(&uncaughtExceptionHandler);
-
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = sigabrtHandler;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGABRT, &sa, NULL);
-
-#if defined(GNUSTEP)
-    curl_global_init(CURL_GLOBAL_ALL);
-#endif
+    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
     @autoreleasepool {
-        NSDateFormatterLinkATProtoCategory();
-#ifdef LINUX
-        // On Linux/GNUstep, verify critical categories are loaded
-        if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {
-            fprintf(stderr, "FATAL: Objective-C category NSDateFormatter(ATProto) not loaded. Check linker settings.\n");
-            return 1;
-        }
-#endif
         if (argc < 2) {
             return fail_with_usage(@"Missing command");
         }
@@ -260,29 +116,44 @@ int main(int argc, const char * argv[]) {
             return 0;
         }
 
-        NSUInteger port = 0;
-        NSMutableArray<NSString *> *relayURLs = [NSMutableArray array];
-        NSMutableArray<NSString *> *seedDIDs  = [NSMutableArray array];
-        NSString *dataDir    = nil;
-        NSString *configPath = nil;
-        BOOL partial         = NO;
-        BOOL noBackfill      = NO;
-        NSString *parseError = nil;
         if (![command isEqualToString:@"serve"] && ![command isEqualToString:@"status"]) {
             return fail_with_usage([NSString stringWithFormat:@"Unknown command: %@", command]);
         }
-        if (!parse_appview_options(args,
-                                   &port,
-                                   relayURLs,
-                                   seedDIDs,
-                                   &dataDir,
-                                   &configPath,
-                                   &partial,
-                                   &noBackfill,
-                                   nil,
-                                   &parseError)) {
-            return fail_with_usage(parseError);
+
+        GZCommandLineOptions *parser = [[GZCommandLineOptions alloc] init];
+        [parser registerOptions:@[
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"relay" shortName:@"r" type:GZCommandLineOptionTypeRepeatableString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"data-dir" shortName:@"d" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"config" shortName:@"c" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"partial" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"seed-did" shortName:nil type:GZCommandLineOptionTypeRepeatableString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"no-backfill" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ] forCommand:@"serve"];
+
+        [parser registerOptions:@[
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ] forCommand:@"status"];
+
+        NSError *parseError = nil;
+        NSDictionary *parsedArgs = [parser parseArguments:args forCommand:command error:&parseError];
+        if (!parsedArgs) {
+            return fail_with_usage(parseError.localizedDescription);
         }
+
+        if ([parsedArgs[@"verbose"] boolValue]) {
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
+        }
+
+        NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 0;
+        NSArray<NSString *> *relayURLs = parsedArgs[@"relay"];
+        NSArray<NSString *> *seedDIDs = parsedArgs[@"seed-did"];
+        NSString *dataDir = parsedArgs[@"data-dir"];
+        NSString *configPath = parsedArgs[@"config"];
+        BOOL partial = [parsedArgs[@"partial"] boolValue];
+        BOOL noBackfill = [parsedArgs[@"no-backfill"] boolValue];
 
         // ----------------------------------------------------------------
         // status command: query a running instance
@@ -339,49 +210,27 @@ int main(int argc, const char * argv[]) {
         // ----------------------------------------------------------------
         // Start
         // ----------------------------------------------------------------
-        NSError *startErr = nil;
-        if (![runtime startWithError:&startErr]) {
-            fprintf(stderr, "Failed to start AppView: %s\n",
-                    startErr.localizedDescription.UTF8String ?: "unknown error");
-            return 1;
-        }
-
-        printf("Syrena AppView server started\n");
-        printf("  Port:       %lu\n", (unsigned long)config.httpPort);
-        printf("  Data dir:   %s\n",  config.dataDirectory.UTF8String);
-        printf("  Relays:     %lu configured\n", (unsigned long)config.relayURLs.count);
-        printf("  Backfill:   %s\n",  config.backfillEnabled ? "enabled" : "disabled");
-        printf("  Partial:    %s\n",  config.partialEnabled  ? "enabled" : "disabled");
-        if (config.partialEnabled && config.partialSeedDIDs.count > 0) {
-            printf("  Seeds:      %lu DIDs\n", (unsigned long)config.partialSeedDIDs.count);
-        }
-        printf("\nAdmin endpoints (requires APPVIEW_ADMIN_SECRET):\n");
-        printf("  GET  /admin/backfill/status\n");
-        printf("  GET  /admin/backfill/queue\n");
-        printf("  POST /admin/backfill/repos\n");
-        printf("  POST /admin/backfill/repos/:did/retry\n");
-        printf("  POST /admin/backfill/repos/:did/cancel\n");
-        printf("  POST /admin/backfill/scope/rebuild\n");
-        printf("  GET  /admin/ingest/health\n");
-        printf("  GET  /admin/appview/metrics/stats\n");
-        printf("\nPress Ctrl+C to stop.\n");
-
-        // Keep runtime alive for signal handlers
-        gShutdownRuntime = runtime;
-
-        // Register safe signal handlers (dispatch_source, not raw signal())
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
-            [gShutdownRuntime stop];
-            exit(0);
+        return [GZServiceLifecycle runServiceWithRuntime:runtime serviceName:@"Syrena AppView" onStart:^{
+            printf("Syrena AppView server started\n");
+            printf("  Port:       %lu\n", (unsigned long)config.httpPort);
+            printf("  Data dir:   %s\n",  config.dataDirectory.UTF8String);
+            printf("  Relays:     %lu configured\n", (unsigned long)config.relayURLs.count);
+            printf("  Backfill:   %s\n",  config.backfillEnabled ? "enabled" : "disabled");
+            printf("  Partial:    %s\n",  config.partialEnabled  ? "enabled" : "disabled");
+            if (config.partialEnabled && config.partialSeedDIDs.count > 0) {
+                printf("  Seeds:      %lu DIDs\n", (unsigned long)config.partialSeedDIDs.count);
+            }
+            printf("\nAdmin endpoints (requires APPVIEW_ADMIN_SECRET):\n");
+            printf("  GET  /admin/backfill/status\n");
+            printf("  GET  /admin/backfill/queue\n");
+            printf("  POST /admin/backfill/repos\n");
+            printf("  POST /admin/backfill/repos/:did/retry\n");
+            printf("  POST /admin/backfill/repos/:did/cancel\n");
+            printf("  POST /admin/backfill/scope/rebuild\n");
+            printf("  GET  /admin/ingest/health\n");
+            printf("  GET  /admin/appview/metrics/stats\n");
+            printf("\nPress Ctrl+C to stop.\n");
         }];
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
-            [gShutdownRuntime stop];
-            exit(0);
-        }];
-
-        [[NSRunLoop currentRunLoop] run];
-
-        [runtime stop];
     }
     return 0;
 }
