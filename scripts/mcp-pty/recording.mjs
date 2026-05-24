@@ -99,21 +99,62 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${htmlEscape(title)}</title>
   <style>
-    :root { color-scheme: dark; }
-    body { margin: 0; background: #111; color: #eee; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    main { padding: 20px; max-width: 1200px; margin: 0 auto; }
-    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    :root { color-scheme: dark; --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+    main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
     h1 { font-size: 18px; margin: 0; font-weight: 600; }
-    button { border: 1px solid #555; background: #1d1d1d; color: #eee; padding: 6px 10px; font: inherit; cursor: pointer; }
-    button:hover { background: #2a2a2a; }
-    .terminal-frame { position: relative; border: 1px solid #333; overflow: auto; background: #000; min-height: 60vh; }
-    #terminal { white-space: pre; padding: 16px; margin: 0; line-height: 1.35; }
-    #overlay { position: absolute; inset: 16px auto auto 16px; pointer-events: none; }
-    .semantic-box { position: absolute; border: 1px solid rgba(45, 212, 191, .88); background: rgba(45, 212, 191, .08); box-sizing: border-box; }
-    .semantic-box > span { position: absolute; top: -1.35em; left: -1px; max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 4px; background: rgba(0, 0, 0, .88); color: #7dd3fc; font-size: 11px; line-height: 1.2; border: 1px solid rgba(45, 212, 191, .55); }
-    .semantic-box.semantic-nested { border-color: rgba(250, 204, 21, .75); background: rgba(250, 204, 21, .06); }
-    .cell { display: inline; }
-    #meta { color: #aaa; font-size: 12px; margin-top: 10px; }
+    .btn-group { display: flex; gap: 6px; }
+    button { border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; border-radius: 6px; }
+    button:hover { background: #1f2937; }
+    button[aria-pressed="true"] { background: #1a4a6e; border-color: #388bfd; }
+
+    .layout { display: grid; grid-template-columns: 1fr 280px; gap: 16px; }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+    .terminal-frame { position: relative; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #000; }
+    #terminal { white-space: pre; padding: 12px; margin: 0; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+    #overlay { position: absolute; top: 12px; left: 12px; pointer-events: none; }
+
+    /* ── Overlay element styles ── */
+    .ov { position: absolute; border-radius: 3px; pointer-events: none; transition: opacity .15s; }
+    .ov-popup { border: 1.5px solid #f0883e; background: rgba(240,136,62,.06); }
+    .ov-popup .ov-label { background: #f0883e; color: #000; }
+    .ov-pane { border: 1px dashed #484f58; background: transparent; }
+    .ov-pane .ov-label { background: #484f58; color: #e6edf3; }
+    .ov-list { border: 1px solid rgba(56,139,253,.5); background: rgba(56,139,253,.04); }
+    .ov-list .ov-label { background: #388bfd; color: #fff; }
+    .ov-item { border-left: 2px solid #388bfd; background: rgba(56,139,253,.06); border-radius: 0 3px 3px 0; }
+    .ov-item .ov-label { background: #1a4a6e; color: #79c0ff; }
+    .ov-item-selected { border-left: 2px solid #3fb950; background: rgba(63,185,80,.08); }
+    .ov-item-selected .ov-label { background: #238636; color: #fff; }
+    .ov-status { border: 1px solid #da3633; background: rgba(218,54,51,.06); }
+    .ov-status .ov-label { background: #da3633; color: #fff; }
+    .ov-table { border: 1px solid #a371f7; background: rgba(163,113,247,.04); }
+    .ov-table .ov-label { background: #8957e5; color: #fff; }
+    .ov-fact { border: 1px dotted #8b949e; background: transparent; }
+    .ov-fact .ov-label { background: #484f58; color: #e6edf3; }
+    .ov-cursor { border: 1.5px solid #3fb950; background: rgba(63,185,80,.18); border-radius: 2px; animation: cursor-blink 1.2s step-end infinite; }
+    @keyframes cursor-blink { 50% { opacity: .4; } }
+
+    .ov-label { position: absolute; top: -18px; left: -1px; max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; border-radius: 3px 3px 0 0; z-index: 1; }
+    .ov-key-badge { position: absolute; bottom: -16px; right: 2px; padding: 0 4px; font: 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(0,0,0,.85); border-radius: 3px; white-space: nowrap; }
+
+    /* ── Capabilities sidebar ── */
+    .sidebar { display: flex; flex-direction: column; gap: 12px; }
+    .cap-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .cap-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px 0; }
+    .cap-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .cap-key { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; padding: 0 5px; background: #1a4a6e; color: #79c0ff; border: 1px solid #388bfd; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .cap-action { color: var(--text); }
+    .cap-source { color: var(--muted); font-size: 10px; margin-left: auto; }
+    .app-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #1a4a6e; border: 1px solid #388bfd; border-radius: 6px; font-size: 13px; font-weight: 600; color: #79c0ff; }
+    .fw-badge { display: inline-flex; padding: 2px 8px; background: #1a1e23; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; color: var(--muted); }
+    .conf-bar { height: 4px; background: #1a1e23; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+    .conf-fill { height: 100%; background: #3fb950; border-radius: 2px; transition: width .3s; }
+
+    #meta { color: var(--muted); font-size: 12px; margin-top: 10px; }
     #measure { position: absolute; visibility: hidden; white-space: pre; left: -1000px; top: -1000px; }
   </style>
 </head>
@@ -121,17 +162,39 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
   <main>
     <header>
       <h1>${htmlEscape(title)}</h1>
-      <div>
-        <button id="play" type="button">Play</button>
-        <button id="reset" type="button">Reset</button>
-        <button id="toggle-overlay" type="button" aria-pressed="${semanticOverlay ? "true" : "false"}">Overlay</button>
+      <div class="btn-group">
+        <button id="play" type="button">▶ Play</button>
+        <button id="reset" type="button">⟲ Reset</button>
+        <button id="toggle-overlay" type="button" aria-pressed="${semanticOverlay ? "true" : "false"}">🔍 Overlay</button>
       </div>
     </header>
-    <div class="terminal-frame" id="terminal-frame">
-      <pre id="terminal" aria-label="Terminal replay"></pre>
-      <div id="overlay" aria-hidden="true"></div>
+    <div class="layout">
+      <div>
+        <div class="terminal-frame" id="terminal-frame">
+          <pre id="terminal" aria-label="Terminal replay"></pre>
+          <div id="overlay" aria-hidden="true"></div>
+        </div>
+        <div id="meta"></div>
+      </div>
+      <div class="sidebar" id="sidebar">
+        <div class="cap-card" id="app-card">
+          <h3>Application</h3>
+          <div id="app-info">—</div>
+        </div>
+        <div class="cap-card" id="nav-card">
+          <h3>Navigate</h3>
+          <div id="nav-info">—</div>
+        </div>
+        <div class="cap-card" id="actions-card">
+          <h3>Actions</h3>
+          <div id="actions-info">—</div>
+        </div>
+        <div class="cap-card" id="quit-card">
+          <h3>Quit / Dismiss</h3>
+          <div id="quit-info">—</div>
+        </div>
+      </div>
     </div>
-    <div id="meta"></div>
     <span id="measure">M</span>
   </main>
   <script id="cast" type="application/octet-stream">${encodedCast}</script>
@@ -173,14 +236,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     ];
 
     function cloneStyle(style) {
-      return {
-        fg: style.fg,
-        bg: style.bg,
-        bold: style.bold,
-        dim: style.dim,
-        underline: style.underline,
-        inverse: style.inverse,
-      };
+      return { fg: style.fg, bg: style.bg, bold: style.bold, dim: style.dim, underline: style.underline, inverse: style.inverse };
     }
 
     function sameStyle(a, b) {
@@ -188,33 +244,21 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         a.underline === b.underline && a.inverse === b.inverse;
     }
 
-    function blankCell() {
-      return { ch: " ", style: cloneStyle(defaultStyle) };
-    }
+    function blankCell() { return { ch: " ", style: cloneStyle(defaultStyle) }; }
 
     function color256(index) {
       if (index < 0 || index > 255) return null;
       if (index < 16) return ansi16[index];
-      if (index >= 232) {
-        const v = 8 + (index - 232) * 10;
-        return "rgb(" + v + "," + v + "," + v + ")";
-      }
+      if (index >= 232) { const v = 8 + (index - 232) * 10; return "rgb(" + v + "," + v + "," + v + ")"; }
       const n = index - 16;
-      const r = Math.floor(n / 36);
-      const g = Math.floor((n % 36) / 6);
-      const b = n % 6;
-      const channel = (value) => value === 0 ? 0 : 55 + value * 40;
+      const r = Math.floor(n / 36), g = Math.floor((n % 36) / 6), b = n % 6;
+      const channel = (v) => v === 0 ? 0 : 55 + v * 40;
       return "rgb(" + channel(r) + "," + channel(g) + "," + channel(b) + ")";
     }
 
-    function blankGrid() {
-      return Array.from({ length: height }, () => Array.from({ length: width }, () => blankCell()));
-    }
+    function blankGrid() { return Array.from({ length: height }, () => Array.from({ length: width }, () => blankCell())); }
 
-    function clampCursor() {
-      cursorX = Math.max(0, Math.min(width - 1, cursorX));
-      cursorY = Math.max(0, Math.min(height - 1, cursorY));
-    }
+    function clampCursor() { cursorX = Math.max(0, Math.min(width - 1, cursorX)); cursorY = Math.max(0, Math.min(height - 1, cursorY)); }
 
     function clearLine(y, mode = 2) {
       if (y < 0 || y >= height) return;
@@ -224,48 +268,20 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     }
 
     function clearScreen(mode = 2) {
-      if (mode === 2 || mode === 3) {
-        grid = blankGrid();
-        cursorX = 0;
-        cursorY = 0;
-        return;
-      }
-      if (mode === 0) {
-        clearLine(cursorY, 0);
-        for (let y = cursorY + 1; y < height; y += 1) {
-          for (let x = 0; x < width; x += 1) grid[y][x] = blankCell();
-        }
-      } else if (mode === 1) {
-        for (let y = 0; y < cursorY; y += 1) {
-          for (let x = 0; x < width; x += 1) grid[y][x] = blankCell();
-        }
-        clearLine(cursorY, 1);
-      }
+      if (mode === 2 || mode === 3) { grid = blankGrid(); cursorX = 0; cursorY = 0; return; }
+      if (mode === 0) { clearLine(cursorY, 0); for (let y = cursorY + 1; y < height; y += 1) for (let x = 0; x < width; x += 1) grid[y][x] = blankCell(); }
+      else if (mode === 1) { for (let y = 0; y < cursorY; y += 1) for (let x = 0; x < width; x += 1) grid[y][x] = blankCell(); clearLine(cursorY, 1); }
     }
 
     function newline() {
-      cursorX = 0;
-      cursorY += 1;
-      if (cursorY >= height) {
-        grid.shift();
-        grid.push(Array.from({ length: width }, () => blankCell()));
-        cursorY = height - 1;
-      }
+      cursorX = 0; cursorY += 1;
+      if (cursorY >= height) { grid.shift(); grid.push(Array.from({ length: width }, () => blankCell())); cursorY = height - 1; }
     }
 
     function putChar(ch) {
-      if (ch === "\\n") {
-        newline();
-        return;
-      }
-      if (ch === "\\r") {
-        cursorX = 0;
-        return;
-      }
-      if (ch === "\\b") {
-        cursorX = Math.max(0, cursorX - 1);
-        return;
-      }
+      if (ch === "\\n") { newline(); return; }
+      if (ch === "\\r") { cursorX = 0; return; }
+      if (ch === "\\b") { cursorX = Math.max(0, cursorX - 1); return; }
       if (ch < " ") return;
       grid[cursorY][cursorX] = { ch, style: cloneStyle(currentStyle) };
       cursorX += 1;
@@ -273,10 +289,8 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     }
 
     function csiParam(params, index, fallback) {
-      const raw = params[index];
-      if (raw === undefined || raw === "") return fallback;
-      const value = Number(raw);
-      return Number.isFinite(value) ? value : fallback;
+      const raw = params[index]; if (raw === undefined || raw === "") return fallback;
+      const value = Number(raw); return Number.isFinite(value) ? value : fallback;
     }
 
     function handleSgr(paramsText) {
@@ -299,18 +313,11 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         else if (code >= 90 && code <= 97) currentStyle.fg = ansi16[8 + code - 90];
         else if (code >= 100 && code <= 107) currentStyle.bg = ansi16[8 + code - 100];
         else if ((code === 38 || code === 48) && params[i + 1] === 5) {
-          const color = color256(params[i + 2]);
-          if (code === 38) currentStyle.fg = color;
-          else currentStyle.bg = color;
-          i += 2;
+          const color = color256(params[i + 2]); if (code === 38) currentStyle.fg = color; else currentStyle.bg = color; i += 2;
         } else if ((code === 38 || code === 48) && params[i + 1] === 2) {
-          const r = params[i + 2];
-          const g = params[i + 3];
-          const b = params[i + 4];
-          if ([r, g, b].every((value) => Number.isFinite(value) && value >= 0 && value <= 255)) {
-            const color = "rgb(" + r + "," + g + "," + b + ")";
-            if (code === 38) currentStyle.fg = color;
-            else currentStyle.bg = color;
+          const r = params[i + 2], g = params[i + 3], b = params[i + 4];
+          if ([r, g, b].every((v) => Number.isFinite(v) && v >= 0 && v <= 255)) {
+            const color = "rgb(" + r + "," + g + "," + b + ")"; if (code === 38) currentStyle.fg = color; else currentStyle.bg = color;
           }
           i += 4;
         }
@@ -321,28 +328,17 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       const params = paramsText.split(";").map((part) => part.replace(/^\\?/, ""));
       const n = csiParam(params, 0, 1);
       switch (finalByte) {
-        case "A": cursorY -= n; break;
-        case "B": cursorY += n; break;
-        case "C": cursorX += n; break;
-        case "D": cursorX -= n; break;
-        case "E": cursorY += n; cursorX = 0; break;
-        case "F": cursorY -= n; cursorX = 0; break;
+        case "A": cursorY -= n; break; case "B": cursorY += n; break;
+        case "C": cursorX += n; break; case "D": cursorX -= n; break;
+        case "E": cursorY += n; cursorX = 0; break; case "F": cursorY -= n; cursorX = 0; break;
         case "G": cursorX = n - 1; break;
-        case "H":
-        case "f":
-          cursorY = csiParam(params, 0, 1) - 1;
-          cursorX = csiParam(params, 1, 1) - 1;
-          break;
+        case "H": case "f": cursorY = csiParam(params, 0, 1) - 1; cursorX = csiParam(params, 1, 1) - 1; break;
         case "J": clearScreen(csiParam(params, 0, 0)); break;
         case "K": clearLine(cursorY, csiParam(params, 0, 0)); break;
         case "s": savedX = cursorX; savedY = cursorY; break;
         case "u": cursorX = savedX; cursorY = savedY; break;
-        case "m":
-          handleSgr(paramsText);
-          break;
-        case "h":
-        case "l":
-          break;
+        case "m": handleSgr(paramsText); break;
+        case "h": case "l": break;
       }
       clampCursor();
     }
@@ -353,38 +349,24 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         if (ch === "\\x1b") {
           const next = data[i + 1];
           if (next === "[") {
-            let j = i + 2;
-            while (j < data.length && !/[A-Za-z~]/.test(data[j])) j += 1;
-            if (j < data.length) {
-              handleCsi(data.slice(i + 2, j), data[j]);
-              i = j;
-              continue;
-            }
-          } else if (next === "7") {
-            savedX = cursorX; savedY = cursorY; i += 1; continue;
-          } else if (next === "8") {
-            cursorX = savedX; cursorY = savedY; clampCursor(); i += 1; continue;
-          } else if (next === "=" || next === ">" || next === "(" || next === ")") {
-            i += next === "(" || next === ")" ? 2 : 1;
-            continue;
-          }
+            let j = i + 2; while (j < data.length && !/[A-Za-z~]/.test(data[j])) j += 1;
+            if (j < data.length) { handleCsi(data.slice(i + 2, j), data[j]); i = j; continue; }
+          } else if (next === "7") { savedX = cursorX; savedY = cursorY; i += 1; continue; }
+          else if (next === "8") { cursorX = savedX; cursorY = savedY; clampCursor(); i += 1; continue; }
+          else if (next === "=" || next === ">" || next === "(" || next === ")") { i += next === "(" || next === ")" ? 2 : 1; continue; }
         }
         putChar(ch);
       }
     }
 
-    function escapeHtml(text) {
-      return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-    }
+    function escapeHtml(text) { return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"); }
 
     function styleToCss(style) {
       const fg = style.inverse ? style.bg : style.fg;
       const bg = style.inverse ? style.fg : style.bg;
       const parts = [];
-      if (fg) parts.push("color:" + fg);
-      if (bg) parts.push("background-color:" + bg);
-      if (style.bold) parts.push("font-weight:700");
-      if (style.dim) parts.push("opacity:.72");
+      if (fg) parts.push("color:" + fg); if (bg) parts.push("background-color:" + bg);
+      if (style.bold) parts.push("font-weight:700"); if (style.dim) parts.push("opacity:.72");
       if (style.underline) parts.push("text-decoration:underline");
       return parts.join(";");
     }
@@ -392,79 +374,178 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     function renderLine(line) {
       let end = line.length;
       while (end > 0 && line[end - 1].ch === " " && sameStyle(line[end - 1].style, defaultStyle)) end -= 1;
-      let html = "";
-      let runText = "";
-      let runStyle = null;
+      let html = "", runText = "", runStyle = null;
       const flush = () => {
         if (runText === "") return;
         const css = styleToCss(runStyle || defaultStyle);
-        html += css ? "<span class=\\"cell\\" style=\\"" + css + "\\">" + escapeHtml(runText) + "</span>" : escapeHtml(runText);
+        html += css ? "<span style=\\"" + css + "\\">" + escapeHtml(runText) + "</span>" : escapeHtml(runText);
         runText = "";
       };
       for (let i = 0; i < end; i += 1) {
-        const cell = line[i];
-        if (!runStyle || !sameStyle(runStyle, cell.style)) {
-          flush();
-          runStyle = cell.style;
-        }
+        const cell = line[i]; if (!runStyle || !sameStyle(runStyle, cell.style)) { flush(); runStyle = cell.style; }
         runText += cell.ch;
       }
-      flush();
-      return html;
+      flush(); return html;
+    }
+
+    // ── Semantic overlay renderer ──
+
+    function charMetrics() {
+      const rect = measure.getBoundingClientRect();
+      return { charW: rect.width || 8, lineH: rect.height || 16 };
+    }
+
+    function makeBox(type, x, y, w, h, label, extra) {
+      const el = document.createElement("div");
+      el.className = "ov ov-" + type;
+      el.style.left = x + "px"; el.style.top = y + "px";
+      el.style.width = w + "px"; el.style.height = h + "px";
+      if (label) {
+        const lbl = document.createElement("span");
+        lbl.className = "ov-label"; lbl.textContent = label;
+        el.appendChild(lbl);
+      }
+      if (extra) {
+        const badge = document.createElement("span");
+        badge.className = "ov-key-badge"; badge.textContent = extra;
+        el.appendChild(badge);
+      }
+      return el;
     }
 
     function renderSemanticOverlay() {
       overlay.innerHTML = "";
       if (!overlayEnabled || !currentSemanticSnapshot) return;
-      const rect = measure.getBoundingClientRect();
-      const charWidth = rect.width || 8;
-      const lineHeight = rect.height || 16;
-      overlay.style.width = (width * charWidth) + "px";
-      overlay.style.height = (height * lineHeight) + "px";
+      const { charW, lineH } = charMetrics();
+      overlay.style.width = (width * charW) + "px";
+      overlay.style.height = (height * lineH) + "px";
+      const snap = currentSemanticSnapshot;
 
-      const boxes = [
-        ...(currentSemanticSnapshot.tables || []),
-        ...(currentSemanticSnapshot.regions || []),
-        ...(currentSemanticSnapshot.facts || []).filter(f => f.sourceBounds).map(f => ({
-          role: "fact",
-          bounds: f.sourceBounds,
-          label: f.label + ": " + f.value
-        }))
-      ];
-
-      for (const box of boxes) {
-        if (!box.bounds) continue;
-        const el = document.createElement("div");
-        el.className = "semantic-box" + (box.role === "table" ? " semantic-nested" : "");
-        el.style.left = "0px";
-        el.style.top = (box.bounds.startY * lineHeight) + "px";
-        el.style.width = (width * charWidth) + "px";
-        el.style.height = ((box.bounds.endY - box.bounds.startY + 1) * lineHeight) + "px";
-        const label = document.createElement("span");
-        label.textContent = (box.label || box.role) + " [y:" + box.bounds.startY + "-" + box.bounds.endY + "]";
-        el.appendChild(label);
-        overlay.appendChild(el);
+      // 1. Popups (outermost containers)
+      for (const p of (snap.popups || [])) {
+        if (!p.bounds) continue;
+        const b = p.bounds;
+        overlay.appendChild(makeBox("popup",
+          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+          p.title || "popup"));
       }
+
+      // 2. Panes (layout containers)
+      const seenPanes = new Set();
+      for (const p of (snap.panes || [])) {
+        if (!p.bounds || seenPanes.has(p.id)) continue;
+        seenPanes.add(p.id);
+        const b = p.bounds;
+        overlay.appendChild(makeBox("pane",
+          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+          p.title || null));
+      }
+
+      // 3. Lists (container) + list items (individual rows)
+      for (const l of (snap.lists || [])) {
+        if (!l.bounds) continue;
+        if (l.role === "list") {
+          // List container
+          const b = l.bounds;
+          overlay.appendChild(makeBox("list",
+            0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+            l.label || "list"));
+        } else if (l.role === "list_item") {
+          const b = l.bounds;
+          const isSelected = l.selected === true;
+          const type = isSelected ? "item-selected" : "item";
+          const labelText = (l.label || "").substring(0, 40).trim();
+          overlay.appendChild(makeBox(type,
+            0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+            labelText || "item"));
+        }
+      }
+
+      // 4. Status bars
+      for (const sb of (snap.statusBars || [])) {
+        if (!sb.bounds) continue;
+        const b = sb.bounds;
+        const keyBadges = (sb.keyActions || []).map(ka => ka.key + "→" + ka.action).join("  ");
+        overlay.appendChild(makeBox("status",
+          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+          "status", keyBadges || null));
+      }
+
+      // 5. Tables
+      for (const t of (snap.tables || [])) {
+        if (!t.bounds) continue;
+        const b = t.bounds;
+        overlay.appendChild(makeBox("table",
+          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+          t.label || "table"));
+      }
+
+      // 6. Facts with source bounds
+      for (const f of (snap.facts || [])) {
+        if (!f.sourceBounds) continue;
+        const b = f.sourceBounds;
+        overlay.appendChild(makeBox("fact",
+          0, b.startY * lineH, width * charW, (b.endY - b.startY + 1) * lineH,
+          f.label + ": " + (f.value || "").substring(0, 20)));
+      }
+
+      // 7. Cursor
+      if (snap.cursor) {
+        overlay.appendChild(makeBox("cursor",
+          snap.cursor.x * charW, snap.cursor.y * lineH, charW, lineH,
+          null));
+      }
+    }
+
+    // ── Capabilities sidebar ──
+
+    function updateSidebar(snap) {
+      if (!snap) return;
+      const caps = snap.capabilities || {};
+
+      // App card
+      const appInfo = document.getElementById("app-info");
+      const app = snap.app || "unknown";
+      const fw = snap.framework || "unknown";
+      const conf = snap.confidence || 0;
+      appInfo.innerHTML =
+        '<span class="app-badge">' + escapeHtml(app) + '</span> ' +
+        '<span class="fw-badge">' + escapeHtml(fw) + '</span>' +
+        '<div class="conf-bar"><div class="conf-fill" style="width:' + (conf * 100) + '%"></div></div>' +
+        '<div style="color:var(--muted);font-size:11px;margin-top:4px">' + Math.round(conf * 100) + '% confidence</div>';
+
+      // Navigate card
+      const navInfo = document.getElementById("nav-info");
+      const navKeys = (caps.navigate || {}).keys || [];
+      navInfo.innerHTML = navKeys.map(k => '<div class="cap-row"><span class="cap-key">' + escapeHtml(k) + '</span><span class="cap-action">navigate</span></div>').join("") || '<div style="color:var(--muted)">—</div>';
+
+      // Actions card
+      const actionsInfo = document.getElementById("actions-info");
+      const actions = caps.actions || [];
+      const quitKeys = (caps.quit || {}).keys || [];
+      const helpKeys = (caps.help || {}).keys || [];
+      const dismissKeys = (caps.dismiss || {}).keys || [];
+      let actHtml = actions.map(a => '<div class="cap-row"><span class="cap-key">' + escapeHtml(a.key) + '</span><span class="cap-action">' + escapeHtml(a.action) + '</span><span class="cap-source">' + escapeHtml(a.source || "") + '</span></div>').join("");
+      actionsInfo.innerHTML = actHtml || '<div style="color:var(--muted)">—</div>';
+
+      // Quit / Dismiss card
+      const quitInfo = document.getElementById("quit-info");
+      let qHtml = quitKeys.map(k => '<div class="cap-row"><span class="cap-key">' + escapeHtml(k) + '</span><span class="cap-action">quit</span></div>').join("");
+      qHtml += helpKeys.map(k => '<div class="cap-row"><span class="cap-key">' + escapeHtml(k) + '</span><span class="cap-action">help</span></div>').join("");
+      qHtml += dismissKeys.map(k => '<div class="cap-row"><span class="cap-key">' + escapeHtml(k) + '</span><span class="cap-action">dismiss</span></div>').join("");
+      quitInfo.innerHTML = qHtml || '<div style="color:var(--muted)">—</div>';
     }
 
     function render() {
       terminal.innerHTML = grid.map(renderLine).join("\\n");
       renderSemanticOverlay();
-      meta.textContent = "asciicast v2, " + width + "x" + height + ", " + events.length + " events";
+      meta.textContent = "asciicast v2 · " + width + "×" + height + " · " + events.length + " events";
     }
 
-    function clearTimers() {
-      for (const timer of timers) clearTimeout(timer);
-      timers = [];
-    }
+    function clearTimers() { for (const timer of timers) clearTimeout(timer); timers = []; }
 
     reset.addEventListener("click", () => {
-      clearTimers();
-      grid = blankGrid();
-      cursorX = 0;
-      cursorY = 0;
-      currentStyle = { ...defaultStyle };
-      render();
+      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle }; render();
     });
 
     toggleOverlay.addEventListener("click", () => {
@@ -474,32 +555,19 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     });
 
     play.addEventListener("click", () => {
-      clearTimers();
-      grid = blankGrid();
-      cursorX = 0;
-      cursorY = 0;
-      currentStyle = { ...defaultStyle };
-      render();
+      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle }; render();
       for (const event of events) {
         const [time, kind, data] = event;
         if (kind === "o") {
-          timers.push(setTimeout(() => {
-            applyTerminalData(data);
-            render();
-          }, Math.max(0, time * 1000)));
+          timers.push(setTimeout(() => { applyTerminalData(data); render(); }, Math.max(0, time * 1000)));
         } else if (kind === "s") {
-          timers.push(setTimeout(() => {
-            currentSemanticSnapshot = data;
-            renderSemanticOverlay();
-          }, Math.max(0, time * 1000)));
+          timers.push(setTimeout(() => { currentSemanticSnapshot = data; renderSemanticOverlay(); updateSidebar(data); }, Math.max(0, time * 1000)));
         }
       }
     });
 
-    grid = blankGrid();
-    render();
+    grid = blankGrid(); render();
   </script>
 </body>
-</html>
-`;
+</html>`;
 }

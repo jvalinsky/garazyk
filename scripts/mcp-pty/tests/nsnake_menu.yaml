@@ -1,0 +1,44 @@
+name: nsnake Menu Navigation
+description: Launch nsnake, navigate the main menu, start arcade mode, then quit
+command: /opt/homebrew/bin/nsnake
+cols: 80
+rows: 24
+settleMs: 2000
+
+steps:
+  - type: press_key
+    value: enter
+    label: Start Arcade Mode (first menu item is selected)
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for game to start
+  - type: press_key
+    value: down
+    label: Steer snake down
+  - type: wait
+    timeoutMs: 500
+    label: Let snake move
+  - type: press_key
+    value: right
+    label: Steer snake right
+  - type: wait
+    timeoutMs: 500
+    label: Let snake move
+  - type: press_key
+    value: up
+    label: Steer snake up
+  - type: wait
+    timeoutMs: 500
+    label: Let snake move
+  - type: press_key
+    value: left
+    label: Steer snake left
+  - type: wait
+    timeoutMs: 500
+    label: Let snake move
+  - type: press_key
+    value: q
+    label: Quit nsnake
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
