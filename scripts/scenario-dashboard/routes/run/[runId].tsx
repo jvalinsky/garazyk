@@ -78,6 +78,7 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
               status={run.status}
               totalScenarios={run.totalScenarios}
               completedScenarios={run.passed + run.failed + run.skipped}
+              agentMode={run.agentMode}
             />
             <div style="display: flex; gap: var(--space-xl); margin-bottom: var(--space-lg); font-size: var(--font-size-sm); color: var(--color-text-secondary); flex-wrap: wrap;">
               <span>Started: {formatDate(run.startedAt)}</span>
@@ -98,6 +99,9 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
               {run.pds2 && <span class="badge badge-info">PDS2</span>}
               {run.binaryMode && (
                 <span class="badge badge-secondary">binary</span>
+              )}
+              {run.agentMode && (
+                <span class="badge badge-secondary">Agent</span>
               )}
             </div>
           </>

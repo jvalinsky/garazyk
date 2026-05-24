@@ -12,6 +12,93 @@ const REPORTS_DIR = join(
 const LOCK_FILE = join(REPORTS_DIR, "active-run.json");
 
 /**
+ * Map a single NDJSON line from the hamownia agent runner into a
+ * dashboard {@link RunEvent}, or return null if the line is empty,
+ * non-JSON, or a progress-only event (run_progress).
+ *
+ * Extracted for testability — the stream-based {@link RunManagerImpl#parseAgentNdjson}
+ * delegates to this function for each line.
+ */
+export function mapAgentEventLine(
+  line: string,
+  runId: string,
+): RunEvent | null {
+  if (line.length === 0) return null;
+
+  let event: { type: string; [key: string]: unknown };
+  try {
+    event = JSON.parse(line);
+  } catch {
+    // Non-JSON line — treat as log_line
+    return { type: "log_line", runId, line };
+  }
+
+  switch (event.type) {
+    case "run_start":
+      return {
+        type: "run_started",
+        runId: event.runId as string,
+        totalScenarios: event.total as number,
+        startedAt: event.timestamp as number,
+      };
+    case "scenario_start":
+      return {
+        type: "scenario_started",
+        runId,
+        scenarioId: event.scenarioId as string,
+        scenarioName: event.name as string,
+      };
+    case "scenario_complete":
+      return {
+        type: "scenario_finished",
+        runId,
+        scenarioId: event.scenarioId as string,
+        scenarioName: event.name as string,
+        status: (event.ok as boolean) ? "passed" : "failed",
+        passed: event.passed as number,
+        failed: event.failed as number,
+        skipped: event.skipped as number,
+        durationMs: Math.round((event.durationS as number) * 1000),
+      };
+    case "service_failure":
+      return {
+        type: "log_line",
+        runId,
+        line: `[service_failure] ${event.message}`,
+      };
+    case "run_progress":
+      // Inline progress tracking — don't emit a dashboard event
+      return null;
+    case "run_finished":
+      if (event.ok) {
+        return {
+          type: "run_completed",
+          runId,
+          exitCode: 0,
+          finishedAt: event.timestamp as number,
+          passed: event.totalPassed as number,
+          failed: event.totalFailed as number,
+          skipped: event.totalSkipped as number,
+        };
+      }
+      return {
+        type: "run_failed",
+        runId,
+        exitCode: 1,
+        finishedAt: event.timestamp as number,
+        reason: "agent_run_failed",
+      };
+    default:
+      // Unknown event type — log as line
+      return {
+        type: "log_line",
+        runId,
+        line: `[agent:${event.type}] ${line}`,
+      };
+  }
+}
+
+/**
  * Simple async mutex for serializing state transitions.
  * Prevents concurrent startRun/stopRun calls from racing.
  */
@@ -768,88 +855,8 @@ class RunManagerImpl implements RunManager {
       try {
         for await (const line of lineReader) {
           if (line.length === 0) continue;
-          let event: { type: string; [key: string]: unknown };
-          try {
-            event = JSON.parse(line);
-          } catch {
-            // Non-JSON line — treat as log_line
-            this.#emit({ type: "log_line", runId: run.id, line });
-            continue;
-          }
-
-          // Map NDJSON event types to dashboard RunEvent types
-          switch (event.type) {
-            case "run_start":
-              this.#emit({
-                type: "run_started",
-                runId: event.runId as string,
-                totalScenarios: event.total as number,
-                startedAt: event.timestamp as number,
-              });
-              break;
-            case "scenario_start":
-              this.#emit({
-                type: "scenario_started",
-                runId: run.id,
-                scenarioId: event.scenarioId as string,
-                scenarioName: event.name as string,
-              });
-              break;
-            case "scenario_complete":
-              this.#emit({
-                type: "scenario_finished",
-                runId: run.id,
-                scenarioId: event.scenarioId as string,
-                scenarioName: event.name as string,
-                status: (event.ok as boolean) ? "passed" : "failed",
-                passed: event.passed as number,
-                failed: event.failed as number,
-                skipped: event.skipped as number,
-                durationMs: Math.round((event.durationS as number) * 1000),
-              });
-              break;
-            case "service_failure":
-              this.#emit({
-                type: "log_line",
-                runId: run.id,
-                line: `[service_failure] ${event.message}`,
-              });
-              break;
-            case "run_progress": {
-              // Inline progress tracking — don't emit a dashboard event,
-              // just log for debugging
-              break;
-            }
-            case "run_finished": {
-              if (event.ok) {
-                this.#emit({
-                  type: "run_completed",
-                  runId: run.id,
-                  exitCode: 0,
-                  finishedAt: event.timestamp as number,
-                  passed: event.totalPassed as number,
-                  failed: event.totalFailed as number,
-                  skipped: event.totalSkipped as number,
-                });
-              } else {
-                this.#emit({
-                  type: "run_failed",
-                  runId: run.id,
-                  exitCode: 1,
-                  finishedAt: event.timestamp as number,
-                  reason: "agent_run_failed",
-                });
-              }
-              break;
-            }
-            default:
-              // Unknown event type — log as line
-              this.#emit({
-                type: "log_line",
-                runId: run.id,
-                line: `[agent:${event.type}] ${line}`,
-              });
-          }
+          const event = mapAgentEventLine(line, run.id);
+          if (event) this.#emit(event);
         }
       } catch {
         // Stream closed — expected when process exits
