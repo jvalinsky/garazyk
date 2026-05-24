@@ -207,7 +207,7 @@ deno task hamownia run
 ```
 
 ### Programmatic Agent-First Execution
-For AI agents executing tests programmatically, use the dedicated [agent-scenario-testing](file:///.agents/skills/agent-scenario-testing/SKILL.md) skill to run tests and stream NDJSON output:
+For AI agents executing tests programmatically, use the dedicated **agent-scenario-testing** skill to run tests and stream NDJSON output:
 ```bash
 deno task hamownia agent list
 deno task hamownia agent run <id>

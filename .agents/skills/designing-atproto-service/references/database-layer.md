@@ -24,10 +24,10 @@ For a new service that needs its own database:
 
 ## Migration Protocol
 
-All migrations conform to `PDSDatabaseMigration`:
+All migrations conform to `PDSMigration`:
 
 ```objc
-@protocol PDSDatabaseMigration <NSObject>
+@protocol PDSMigration <NSObject>
 
 @property (nonatomic, readonly) NSInteger version;
 @property (nonatomic, readonly) NSString *description;
@@ -37,7 +37,7 @@ All migrations conform to `PDSDatabaseMigration`:
 @end
 ```
 
-Migrations are executed in version order by `PDSMigrationExecutor`. The `schema_version` table tracks applied migrations.
+Migrations are executed in version order by `PDSMigrationManager`. The `schema_version` table tracks applied migrations.
 
 ### Migration Template
 
@@ -49,7 +49,7 @@ Migrations are executed in version order by `PDSMigrationExecutor`. The `schema_
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface PDSServiceMigrationNNN : NSObject
+@interface PDSMigrationNNN : NSObject
 @end
 
 NS_ASSUME_NONNULL_END
@@ -59,14 +59,14 @@ NS_ASSUME_NONNULL_END
 ```objc
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "PDSDatabaseMigration.h"
+#import "PDSMigration.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
 
-@interface PDSServiceMigrationNNN : NSObject <PDSDatabaseMigration>
+@interface PDSMigrationNNN : NSObject <PDSMigration>
 @end
 
-@implementation PDSServiceMigrationNNN
+@implementation PDSMigrationNNN
 
 - (NSInteger)version {
     return NNN;
@@ -100,9 +100,9 @@ NS_ASSUME_NONNULL_END
 
 ## Adding a Migration
 
-1. Create `PDSServiceMigrationNNN.{h,m}` in `Sources/Database/Migration/`
+1. Create `PDSMigrationNNN.{h,m}` in `Sources/Database/Migrations/`
 2. Use the next sequential version number (check existing migrations)
-3. Add to `PDSMigrationExecutor.m`'s migration list
+3. Add to `PDSMigrationManager.m`'s migration list
 4. Add source file to `ATProtoStorage` sources in CMake (it matches `Database/*.m`)
 
 ### Migration Numbering

@@ -20,7 +20,7 @@ Workflow and scaffolding for adding a new service binary to Garazyk (alongside k
 1. **Define the service** — name, purpose, which static libs it needs, whether it has a database
 2. **Run the scaffold script** — generates entry point, runtime class, route pack, and build integration
 3. **Wire up XRPC methods** — add handlers to the route pack
-4. **Add database migrations** (if needed) — conform to `PDSDatabaseMigration` protocol
+4. **Add database migrations** (if needed) — conform to `PDSMigration` protocol
 5. **Update build files** — CMake, project.yml, Docker
 6. **Write tests** — register in `test_main.m`
 
@@ -102,17 +102,17 @@ Two approaches depending on service type:
 
 ### 5. Add Database Layer (if needed)
 
-**Service DB:** Create migration classes conforming to `PDSDatabaseMigration`:
+**Service DB:** Create migration classes conforming to `PDSMigration`:
 
 ```objc
-@interface PDSServiceMigrationNNN : NSObject <PDSDatabaseMigration>
+@interface PDSMigrationNNN : NSObject <PDSMigration>
 - (NSInteger)version;           // sequential number
 - (NSString *)description;       // human-readable
 - (BOOL)applyToDatabase:(PDSDatabase *)database error:(NSError **)error;
 @end
 ```
 
-Register in `PDSMigrationExecutor`. See [references/database-layer.md](references/database-layer.md).
+Register in `PDSMigrationManager`. See [references/database-layer.md](references/database-layer.md).
 
 **Actor Store:** If the service manages per-user data, follow the `PDSActorStore` / `PDSDatabasePool` pattern.
 

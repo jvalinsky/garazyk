@@ -43,8 +43,8 @@ For complex interfaces (5+ properties, nested types, or non-obvious semantics), 
 ## Enforcement
 
 - Run `deno doc --lint <file>` to verify TSDoc syntax compliance.
-- Run `deno task doc-lint` to lint the public Deno harness entry point.
-- Run `deno task doc:ts-coverage` to report TypeScript documentation coverage for harness and dashboard exports.
+- Run `deno run -A packages/narzedzia/doc_coverage.ts` to lint and report HeaderDoc/Objective-C documentation coverage.
+- Run `deno run -A packages/narzedzia/tsdoc_coverage.ts` to report TypeScript documentation coverage for monorepo packages.
 - The project target is 90% documented exported TypeScript symbols. The CI baseline is intentionally lower and must be ratcheted upward as missing docs are fixed.
 - All PRs are subject to documentation review against these standards.
 - When TypeDoc validation is enabled, `validation.notDocumented` warnings must be resolved before merging.
