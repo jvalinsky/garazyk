@@ -11,7 +11,7 @@ This master skill consolidates endpoint stub detection and schema synchronizatio
 
 1. **Run the repo-native coverage checks** (Preferred):
    ```bash
-   ./scripts/stub_find.sh .
+   ./scripts/find_stubs.sh .
    node scripts/docs/generate_xrpc_coverage_report.cjs --source-only --fail-on-duplicates
    node scripts/docs/generate_xrpc_next_steps.cjs
    ```
@@ -23,7 +23,7 @@ This master skill consolidates endpoint stub detection and schema synchronizatio
 
 ### 1. Endpoint Stub Detection
 - **Goal**: Find `not_implemented`, `TODO`, and placeholder logic in handlers.
-- **Tools**: `scripts/stub_find.sh` and `atproto-coverage-audit/scripts/find_stubs.sh`.
+- **Tools**: `scripts/find_stubs.sh` (in the skill directory).
 
 ### 2. Schema Synchronization
 - **Goal**: Compare implemented XRPC methods against lexicon schemas.

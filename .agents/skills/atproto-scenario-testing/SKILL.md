@@ -27,7 +27,7 @@ Run narrative-driven simulation scripts against the local ATProto service networ
 3. **Review results and dashboard:**
    - Terminal: colored PASS/FAIL/SKIP table per scenario
    - JSON Reports: `scripts/scenarios/reports/`
-   - Scenario Dashboard: `scripts/scenario-dashboard/` (run with `deno task start`)
+   - Scenario Dashboard: `scripts/scenario-dashboard/` (run with `cd scripts/scenario-dashboard && deno task start`)
    - Diagnostics: `/tmp/garazyk-atproto-e2e/<run-id>/diagnostics/`
 
 4. **Tear down:**

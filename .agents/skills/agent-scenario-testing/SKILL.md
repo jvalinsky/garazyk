@@ -107,10 +107,10 @@ When a scenario fails, use the following systematic workflow to remediate it:
 1. **Locate the Run & Report**: Run `deno task hamownia agent triage --run-id <id>` to retrieve the failure boundary and exact step error.
 2. **Examine Scenario Source**: Open the scenario file located at the `path` returned in `agent list`. Map the failing step name to the `timedCall` block in the TS file.
 3. **Trace down to Subsystem**:
-   - **PDS Core / DB**: Refer to [garazyk-database](/.agents/skills/garazyk-database/SKILL.md) and [sqlite-sql-best-practices](/.agents/skills/sqlite-sql-best-practices/SKILL.md).
-   - **XRPC Handlers**: Inspect Lexicons and route mappings using [garazyk-xrpc-implementation](/.agents/skills/garazyk-xrpc-implementation/SKILL.md).
-   - **TUI & Admin UI**: Check layout bugs and state bridges using [garazyk-admin-ui](/.agents/skills/garazyk-admin-ui/SKILL.md).
-4. **Log Decisions in Deciduous**: Make sure to map out goals, considered options, and implementation choices in the graph per [using-deciduous](/.agents/skills/using-deciduous/SKILL.md).
+   - **PDS Core / DB**: Refer to the **garazyk-database** and **sqlite-sql-best-practices** skills.
+   - **XRPC Handlers**: Inspect Lexicons and route mappings using the **garazyk-xrpc-implementation** skill.
+   - **TUI & Admin UI**: Check layout bugs and state bridges using the **garazyk-admin-ui** skill.
+4. **Log Decisions in Deciduous**: Make sure to map out goals, considered options, and implementation choices in the graph per the **using-deciduous** skill.
 5. **Re-verify Standalone**: Run the corrected scenario in isolation to confirm the fix:
    ```bash
    deno task hamownia agent run <id> --keep-running
@@ -119,5 +119,5 @@ When a scenario fails, use the following systematic workflow to remediate it:
 ## Sources & Reference Documentation
 - **Hamownia Reference**: [Deno Scenario Framework](/docs/11-reference/deno-scenario-framework.md)
 - **Active Testing Plan**: [Agent Scenario Testing Plan](/docs/plans/2026-05-23-agent-scenario-testing-plan.md)
-- **General Testing Guidelines**: [Garazyk Testing Infrastructure](/.agents/skills/garazyk-testing/SKILL.md)
-- **Scenario Diagnostics**: [Scenario Diagnostics](/.agents/skills/garazyk-scenario-triage/SKILL.md)
+- **General Testing Guidelines**: **garazyk-testing** skill
+- **Scenario Diagnostics**: **garazyk-scenario-triage** skill

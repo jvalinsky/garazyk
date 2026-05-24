@@ -14,9 +14,9 @@ Use this skill for `Garazyk/Sources/AdminUIServer/`, Admin UI assets, HTMX-style
 - Backend calls: `Garazyk/Sources/AdminUIServer/UIBackendClient.{h,m}`
 - Config: `Garazyk/Sources/AdminUIServer/UIServiceConfig.{h,m}`
 - Assets: `Garazyk/Sources/AdminUIServer/Assets/`
-- Design docs: `Assets/DESIGN_SYSTEM.md`, `Assets/QUICK_REFERENCE.md`, `Assets/README.md`
-- CSS: `Assets/css/*.css`
-- JS: `Assets/js/`
+- Design docs: `Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md`, `Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md`, `Garazyk/Sources/AdminUIServer/Assets/README.md`
+- CSS: `Garazyk/Sources/AdminUIServer/Assets/css/*.css`
+- JS: `Garazyk/Sources/AdminUIServer/Assets/js/`
 - Static tests: `scripts/test/check_ui_design_system.sh`, `scripts/test/test_static_files.sh`, `scripts/test/test_page_load.sh`
 
 ## UI principles
@@ -31,8 +31,8 @@ Use this skill for `Garazyk/Sources/AdminUIServer/`, Admin UI assets, HTMX-style
 
 Before adding markup or styles:
 
-1. Read `Assets/QUICK_REFERENCE.md` for component names and classes.
-2. Check `Assets/DESIGN_SYSTEM.md` for tokens, spacing, colors, and accessibility rules.
+1. Read `Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md` for component names and classes.
+2. Check `Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md` for tokens, spacing, colors, and accessibility rules.
 3. Reuse existing components before adding CSS.
 4. If adding a new primitive, document it in the design docs and demo page.
 

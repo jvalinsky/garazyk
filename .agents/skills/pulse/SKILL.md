@@ -63,7 +63,7 @@ deciduous serve
 
 ## Check for Supporting Documents
 
-If the system has architecture diagrams, specs, or reference docs relevant to the scope:
+If the system has architecture diagrams, specs, or reference docs relevant to the scope (note: path below is illustrative):
 
 ```bash
 deciduous doc list <goal_id>
