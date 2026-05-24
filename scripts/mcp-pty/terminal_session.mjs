@@ -2,6 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import pty from "node-pty";
 import xtermHeadless from "@xterm/headless";
+import { buildSemanticSnapshot } from "./semantic.mjs";
 
 const { Terminal } = xtermHeadless;
 
@@ -173,7 +174,19 @@ export class TerminalSession {
     this.pty.onData((data) => {
       this.lastActivity = Date.now();
       this.writeQueue = this.writeQueue.then(() => applyXtermWrite(this.term, data));
-      if (this.recording) this.recording.recordOutput(data);
+      if (this.recording) {
+        this.recording.recordOutput(data);
+        if (this.recording.semanticOverlay && !this.recordingSemanticDebounce) {
+          this.recordingSemanticDebounce = setTimeout(() => {
+            this.recordingSemanticDebounce = null;
+            this.writeQueue.then(() => {
+              if (this.recording && this.recording.semanticOverlay) {
+                this.recording.recordSemanticSnapshot(this.semanticSnapshot("compact", false).snapshot);
+              }
+            });
+          }, 250);
+        }
+      }
     });
 
     this.pty.onExit(({ exitCode, signal }) => {
@@ -247,9 +260,20 @@ export class TerminalSession {
     };
   }
 
+  semanticSnapshot(detail = "compact", includePrompt = false) {
+    return buildSemanticSnapshot(this, detail, includePrompt);
+  }
+
+  screenSeedFrame() {
+    const snapshot = this.snapshot();
+    const lines = snapshot.lines.map((line) => line.padEnd(this.cols, " ").slice(0, this.cols));
+    return `\x1b[2J\x1b[H${lines.join("\r\n")}`;
+  }
+
   attachRecording(recorder) {
     if (this.recording) throw new Error("recording already active");
     this.recording = recorder;
+    recorder.recordOutput(this.screenSeedFrame());
   }
 
   detachRecording() {
