@@ -17,6 +17,7 @@ Use this skill for requests like:
 - "scenario dashboard shows failures"
 - "federation/OAuth/firehose scenario is flaky"
 - "collect diagnostics and summarize likely root cause"
+- "diagnose a hung or slow scenario using live interactive terminal tools"
 
 > [!TIP]
 > **Programmatic Agent-First Triage**: You can leverage the programmatic **agent-scenario-testing** skill. Simply run `deno task hamownia agent triage --run-id <run-id>` to get a fully parsed, machine-readable triage analysis mapped directly to subsystem boundaries.
@@ -141,7 +142,18 @@ rg -n "ERROR|WARN|FAIL|exception|panic|timeout|refused|401|403|404|409|429|did:|
 
 Keep a chain of evidence: report step → service response/log line → code path.
 
-### 5. Check topology and health
+### 5. Interactive TUI Diagnostics (MCP)
+
+When dealing with flaky scenarios, hung/deadlocked processes, or when you need real-time visualization of the cluster state, use the `garazyk-pty` MCP tools to launch and interact with TUIs like `top`, `btop`, `tmux`, or custom admin dashboards directly in the background.
+
+Live triage workflow:
+- Launch the diagnostic tool with `pty_start` (e.g., `command: "top"`).
+- (Optional) Start a recording using `pty_rec_start` with `semanticOverlay: true` to attach visual evidence to your triage report.
+- Fetch an LLM-friendly structural summary of the screen using `pty_semantic_snapshot`. The parser will extract regions, tables, metrics, and actionable controls directly from the TUI.
+- Interact with the TUI using `pty_action` (e.g., sending keystrokes or clicking detected checkboxes and buttons).
+- Conclude by stopping the recording (`pty_rec_stop`) and shutting down the terminal (`pty_stop`), referencing the generated HTML report in your final triage note.
+
+### 6. Check topology and health
 
 For local-network failures, verify the expected topology before debugging application logic:
 
@@ -171,7 +183,7 @@ Read the failing scenario after the report summary. Locate the failed `timedCall
 
 Then inspect only the implementation files needed for the boundary you identified.
 
-### 7. Form a failure theory
+### 8. Form a failure theory
 
 Return a concise triage note with:
 
