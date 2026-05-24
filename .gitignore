@@ -228,6 +228,8 @@ tooling/test-audit-validator/.artifacts/
 .deciduous/
 plc/
 plc_data/
+!Garazyk/Sources/PLC/
+!Garazyk/Sources/PLC/**
 .letta/
 
 # OAuth client Vite build output (built in Dockerfile)

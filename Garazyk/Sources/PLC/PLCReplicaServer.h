@@ -36,6 +36,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithStore:(id<PLCStore>)store
                       auditor:(PLCAuditor *)auditor
                          port:(NSUInteger)port
+                 readOnlyMode:(BOOL)readOnly;
+
+/**
+ * @abstract Initializes the replica server with an explicit bind host.
+ */
+- (instancetype)initWithStore:(id<PLCStore>)store
+                      auditor:(PLCAuditor *)auditor
+                         host:(NSString *)host
+                         port:(NSUInteger)port
                  readOnlyMode:(BOOL)readOnly NS_DESIGNATED_INITIALIZER;
 
 /**

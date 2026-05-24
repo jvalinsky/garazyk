@@ -3,6 +3,8 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "PLCSyncClient.h"
 #import "Network/HttpRetryPolicy.h"
+#import "Core/NSDateFormatter+ATProto.h"
+#import "PLC/PLCConstants.h"
 
 NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 
@@ -12,6 +14,69 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 
 @end
+
+static NSError *PLCSyncParseError(NSString *message) {
+    return [NSError errorWithDomain:PLCSyncClientErrorDomain
+                               code:PLCSyncClientErrorParseFailure
+                           userInfo:@{NSLocalizedDescriptionKey: message ?: @"Failed to parse PLC export"}];
+}
+
+static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError **error) {
+    NSString *jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    if (!jsonStr) {
+        if (error) *error = PLCSyncParseError(@"Export response is not UTF-8");
+        return nil;
+    }
+
+    NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+    NSArray<NSString *> *lines = [jsonStr componentsSeparatedByString:@"\n"];
+    NSInteger previousSeq = -1;
+    for (NSString *line in lines) {
+        if (line.length == 0) continue;
+
+        NSData *lineData = [line dataUsingEncoding:NSUTF8StringEncoding];
+        NSError *lineError = nil;
+        NSDictionary *entry = [NSJSONSerialization JSONObjectWithData:lineData options:0 error:&lineError];
+        if (lineError || ![entry isKindOfClass:[NSDictionary class]]) {
+            if (error) *error = PLCSyncParseError(@"Malformed JSONL export line");
+            return nil;
+        }
+
+        if (![entry[@"type"] isEqualToString:@"sequenced_op"] ||
+            ![entry[@"operation"] isKindOfClass:[NSDictionary class]] ||
+            ![entry[@"did"] isKindOfClass:[NSString class]] ||
+            ![entry[@"cid"] isKindOfClass:[NSString class]] ||
+            ![entry[@"createdAt"] isKindOfClass:[NSString class]] ||
+            ![entry[@"seq"] respondsToSelector:@selector(longLongValue)]) {
+            if (error) *error = PLCSyncParseError(@"Sequenced export line is missing required fields");
+            return nil;
+        }
+
+        NSInteger seq = [entry[@"seq"] integerValue];
+        if (seq <= previousSeq) {
+            if (error) *error = PLCSyncParseError(@"Sequenced export line regressed");
+            return nil;
+        }
+        previousSeq = seq;
+
+        NSError *opError = nil;
+        PLCOperation *op = [PLCOperation operationFromDictionary:entry[@"operation"] error:&opError];
+        if (!op) {
+            if (error) *error = opError ?: PLCSyncParseError(@"Invalid operation in export line");
+            return nil;
+        }
+        op.did = entry[@"did"];
+        op.cid = entry[@"cid"];
+        op.sequence = @(seq);
+        op.createdAt = [NSDateFormatter atproto_dateFromString:entry[@"createdAt"]];
+        if (!op.createdAt) {
+            if (error) *error = PLCSyncParseError(@"Invalid createdAt in export line");
+            return nil;
+        }
+        [operations addObject:op];
+    }
+    return operations;
+}
 
 @implementation PLCSyncClient {
     dispatch_queue_t _syncQueue;
@@ -50,12 +115,10 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
         NSError *error = nil;
         NSArray<PLCOperation *> *ops = [self fetchOperationsAfterCursorSync:cursor count:count error:&error];
         
-        NSInteger nextCursor = -1;
+        NSInteger nextCursor = cursor;
         if (ops.count > 0) {
             PLCOperation *lastOp = ops.lastObject;
-            if (lastOp.createdAt) {
-                nextCursor = (NSInteger)[lastOp.createdAt timeIntervalSince1970];
-            }
+            nextCursor = lastOp.sequence.integerValue;
         }
         
         if (completion) {
@@ -77,7 +140,7 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
             formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
             formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
             NSString *afterStr = [formatter stringFromDate:afterDate];
-            urlString = [NSString stringWithFormat:@"%@?count=%lu&after=%@", self.upstreamURL, (unsigned long)count, afterStr];
+            urlString = [NSString stringWithFormat:@"%@/export?count=%lu&after=%@", self.upstreamURL, (unsigned long)count, afterStr];
         } else {
             urlString = [NSString stringWithFormat:@"%@/export?count=%lu", self.upstreamURL, (unsigned long)count];
         }
@@ -179,18 +242,10 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 - (nullable NSArray<PLCOperation *> *)fetchOperationsAfterCursorSync:(NSInteger)cursor
                                                                 count:(NSUInteger)count
                                                                error:(NSError **)error {
-    NSString *urlString;
-    if (cursor > 0) {
-        NSDate *afterDate = [NSDate dateWithTimeIntervalSince1970:cursor];
-        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-        NSString *afterStr = [formatter stringFromDate:afterDate];
-        urlString = [NSString stringWithFormat:@"%@/export?count=%lu&after=%@", self.upstreamURL, (unsigned long)count, afterStr];
-    } else {
-        urlString = [NSString stringWithFormat:@"%@/export?count=%lu", self.upstreamURL, (unsigned long)count];
-    }
+    NSString *urlString = [NSString stringWithFormat:@"%@/export?count=%lu&after=%ld",
+                           self.upstreamURL,
+                           (unsigned long)MIN(count, PLCExportMaxCount),
+                           (long)MAX(cursor, 0)];
     
     NSURL *url = [NSURL URLWithString:urlString];
     if (!url) {
@@ -238,42 +293,8 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
         }
         
         NSError *parseError = nil;
-        NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
-        
-        NSString *jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        NSArray *lines = [jsonStr componentsSeparatedByString:@"\n"];
-        
-        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-        
-        for (NSString *line in lines) {
-            if (line.length == 0) continue;
-            
-            NSData *lineData = [line dataUsingEncoding:NSUTF8StringEncoding];
-            NSDictionary *entry = [NSJSONSerialization JSONObjectWithData:lineData options:0 error:&parseError];
-            if (parseError || ![entry isKindOfClass:[NSDictionary class]]) continue;
-            
-            NSDictionary *opDict = entry[@"operation"];
-            if (!opDict) continue;
-            
-            PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:&parseError];
-            if (!op) continue;
-            
-            op.did = entry[@"did"];
-            op.cid = entry[@"cid"];
-            op.nullified = [entry[@"nullified"] boolValue];
-            
-            NSString *createdAtStr = entry[@"createdAt"];
-            if (createdAtStr) {
-                op.createdAt = [formatter dateFromString:createdAtStr];
-            }
-            
-            [operations addObject:op];
-        }
-        
-        resultOps = operations;
+        resultOps = PLCSyncParseSequencedJSONL(data, &parseError);
+        resultError = parseError;
         dispatch_semaphore_signal(semaphore);
     }];
     
@@ -303,11 +324,7 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
     }
     
     PLCOperation *latestOp = ops.firstObject;
-    if (latestOp.createdAt) {
-        return (NSInteger)[latestOp.createdAt timeIntervalSince1970];
-    }
-    
-    return 0;
+    return latestOp.sequence.integerValue;
 }
 
 @end

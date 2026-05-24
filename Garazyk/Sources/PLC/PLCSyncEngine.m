@@ -4,11 +4,10 @@
 #import "PLC/PLCMetrics.h"
 #import "Debug/GZLogger.h"
 #import "libkern/OSAtomic.h"
+#import "PLC/PLCConstants.h"
 
 NSString * const PLCSyncEngineErrorDomain = @"com.atproto.pds.plc.syncengine";
 
-static const NSUInteger kDefaultBatchSize = 100;
-static const NSTimeInterval kDefaultPollInterval = 5.0;
 static const NSUInteger kDefaultMaxRetries = 3;
 static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 
@@ -49,8 +48,8 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         _auditor = auditor;
         _state = PLCSyncStateIdle;
         _numWorkers = 4;
-        _batchSize = kDefaultBatchSize;
-        _pollInterval = kDefaultPollInterval;
+        _batchSize = PLCReplicaDefaultBatchSize;
+        _pollInterval = PLCReplicaDefaultPollInterval;
         _maxRetries = kDefaultMaxRetries;
         _maxRetryDelay = kDefaultMaxRetryDelay;
         _totalOperationsIngested = 0;
@@ -201,11 +200,17 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         }
         
         NSUInteger validCount = [self validateAndIngestOperations:ops];
+        if (validCount != ops.count) {
+            [self handleSyncError:[NSError errorWithDomain:PLCSyncEngineErrorDomain
+                                                      code:1
+                                                  userInfo:@{NSLocalizedDescriptionKey: @"Failed to ingest complete PLC export batch"}]];
+            return;
+        }
         ingestedCount += validCount;
         
         PLCOperation *lastOp = ops.lastObject;
-        if (lastOp.createdAt) {
-            self.currentCursor = (NSInteger)[lastOp.createdAt timeIntervalSince1970];
+        if (lastOp.sequence) {
+            self.currentCursor = lastOp.sequence.integerValue;
             [self.store updateSyncCursor:self.currentCursor error:nil];
         }
         
@@ -275,11 +280,17 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     }
     
     NSUInteger validCount = [self validateAndIngestOperations:ops];
+    if (validCount != ops.count) {
+        [self handleSyncError:[NSError errorWithDomain:PLCSyncEngineErrorDomain
+                                                  code:1
+                                              userInfo:@{NSLocalizedDescriptionKey: @"Failed to ingest complete PLC export batch"}]];
+        return;
+    }
     self.totalOperationsIngested += validCount;
     
     PLCOperation *lastOp = ops.lastObject;
-    if (lastOp.createdAt) {
-        self.currentCursor = (NSInteger)[lastOp.createdAt timeIntervalSince1970];
+    if (lastOp.sequence) {
+        self.currentCursor = lastOp.sequence.integerValue;
         [self.store updateSyncCursor:self.currentCursor error:nil];
     }
     
@@ -306,10 +317,18 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     }
     
     NSUInteger validCount = [self validateAndIngestOperations:ops];
+    if (validCount != ops.count) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCSyncEngineErrorDomain
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to ingest complete PLC export batch"}];
+        }
+        return NO;
+    }
     
     PLCOperation *lastOp = ops.lastObject;
-    if (lastOp.createdAt) {
-        self.currentCursor = (NSInteger)[lastOp.createdAt timeIntervalSince1970];
+    if (lastOp.sequence) {
+        self.currentCursor = lastOp.sequence.integerValue;
         [self.store updateSyncCursor:self.currentCursor error:nil];
     }
     
@@ -329,12 +348,18 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     // non-genesis operations to fail because their predecessors
     // (in the same batch) had not been stored yet.
     for (PLCOperation *op in operations) {
+        if (!op.sequence || op.sequence.integerValue <= self.currentCursor) {
+            failedCount++;
+            GZ_LOG_CORE_ERROR(@"PLC replica: non-monotonic sequence for DID %@ seq %@", op.did, op.sequence);
+            continue;
+        }
         NSError *validationError = nil;
-        BOOL valid = [self.auditor verifyOperation:op error:&validationError];
+        NSArray<NSString *> *nullified = nil;
+        BOOL valid = [self.auditor verifyOperation:op proposedDate:op.createdAt ?: [NSDate date] nullifiedCIDs:&nullified error:&validationError];
         
         if (valid) {
             NSError *appendError = nil;
-            BOOL stored = [self.store appendOperation:op nullifyCIDs:nil error:&appendError];
+            BOOL stored = [self.store appendOperation:op nullifyCIDs:nullified ?: @[] error:&appendError];
             
             if (stored) {
                 validCount++;

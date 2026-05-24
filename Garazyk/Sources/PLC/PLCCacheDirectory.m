@@ -64,6 +64,12 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
     return [self.innerStore exportOperationsAfter:after count:count error:error];
 }
 
+- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+                                                              count:(NSUInteger)count
+                                                              error:(NSError **)error {
+    return [self.innerStore exportOperationsAfterSequence:sequence count:count error:error];
+}
+
 - (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
                                       includeNullified:(BOOL)includeNullified
                                                  error:(NSError **)error {

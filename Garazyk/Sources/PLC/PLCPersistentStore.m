@@ -6,6 +6,8 @@
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 #import "PLC/PLCMetrics.h"
+#import "PLC/PLCConstants.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 NSString * const PLCPersistentStoreErrorDomain = @"com.atproto.pds.plc.persistentstore";
 
@@ -21,6 +23,14 @@ static NSDateFormatter *PLCStoreDBDateFormatter(void) {
     return formatter;
 }
 
+static NSDate *PLCStoreDateFromText(NSString *createdString) {
+    NSDate *date = [NSDateFormatter atproto_dateFromString:createdString];
+    if (date) {
+        return date;
+    }
+    return [PLCStoreDBDateFormatter() dateFromString:createdString];
+}
+
 static NSString * const kCreateOperationsTableSQL =
     @"CREATE TABLE IF NOT EXISTS plc_operations ("
     @"  id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -30,6 +40,7 @@ static NSString * const kCreateOperationsTableSQL =
     @"  data BLOB NOT NULL,"
     @"  cid TEXT,"
     @"  nullified INTEGER DEFAULT 0,"
+    @"  seq INTEGER,"
     @"  created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
     @");";
 
@@ -39,19 +50,26 @@ static NSString * const kCreateDidIndexSQL =
 static NSString * const kCreatePrevIndexSQL = 
     @"CREATE INDEX IF NOT EXISTS idx_plc_operations_prev ON plc_operations(prev);";
 
+static NSString * const kCreateSeqIndexSQL =
+    @"CREATE UNIQUE INDEX IF NOT EXISTS idx_plc_operations_seq ON plc_operations(seq);";
+
+static NSString * const kCreateDidCidIndexSQL =
+    @"CREATE UNIQUE INDEX IF NOT EXISTS idx_plc_operations_did_cid ON plc_operations(did, cid);";
+
 static NSString * const kInsertOperationSQL =
-    @"INSERT INTO plc_operations (did, prev, sig, data, cid, nullified) VALUES (?, ?, ?, ?, ?, ?);";
+    @"INSERT INTO plc_operations (did, prev, sig, data, cid, nullified, seq, created_at) "
+    @"VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT COALESCE(MAX(seq), 0) + 1 FROM plc_operations)), ?);";
 
 static NSString * const kSelectHistorySQL =
-    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
-    @"WHERE did = ? AND nullified = 0 ORDER BY id ASC;";
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at, seq FROM plc_operations "
+    @"WHERE did = ? AND nullified = 0 ORDER BY seq ASC, id ASC;";
 
 static NSString * const kSelectHistoryIncludingNullifiedSQL =
-    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
-    @"WHERE did = ? ORDER BY id ASC;";
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at, seq FROM plc_operations "
+    @"WHERE did = ? ORDER BY seq ASC, id ASC;";
 
 static NSString * const kSelectHistorySinceSQL =
-    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at, seq FROM plc_operations "
     @"WHERE did = ? AND id > ? AND nullified = 0 ORDER BY id ASC;";
 
 static NSString * const kCountOperationsSQL = 
@@ -61,12 +79,16 @@ static NSString * const kDeleteOperationsSQL =
     @"DELETE FROM plc_operations WHERE did = ?;";
 
 static NSString * const kSelectLatestOperationSQL =
-    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
-    @"WHERE did = ? AND nullified = 0 ORDER BY id DESC LIMIT 1;";
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at, seq FROM plc_operations "
+    @"WHERE did = ? AND nullified = 0 ORDER BY seq DESC, id DESC LIMIT 1;";
 
 static NSString * const kSelectExportOperationsSQL =
-    @"SELECT id, did, prev, sig, data, cid, nullified, created_at FROM plc_operations "
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at, seq FROM plc_operations "
     @"WHERE created_at > ? ORDER BY created_at ASC, id ASC LIMIT ?;";
+
+static NSString * const kSelectExportOperationsBySeqSQL =
+    @"SELECT id, did, prev, sig, data, cid, nullified, created_at, seq FROM plc_operations "
+    @"WHERE seq > ? ORDER BY seq ASC LIMIT ?;";
 
 static NSString * const kSelectAllDIDsSQL =
     @"SELECT DISTINCT did FROM plc_operations ORDER BY did ASC;";
@@ -229,6 +251,28 @@ static NSString * const kSelectAllDIDsSQL =
         if (errMsg) sqlite3_free(errMsg);
         return NO;
     }
+
+    result = sqlite3_exec(self.db, kCreateSeqIndexSQL.UTF8String, NULL, NULL, &errMsg);
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg ?: "Failed to create seq index"]}];
+        }
+        if (errMsg) sqlite3_free(errMsg);
+        return NO;
+    }
+
+    result = sqlite3_exec(self.db, kCreateDidCidIndexSQL.UTF8String, NULL, NULL, &errMsg);
+    if (result != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:result
+                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg ?: "Failed to create DID/CID index"]}];
+        }
+        if (errMsg) sqlite3_free(errMsg);
+        return NO;
+    }
     
     return YES;
 }
@@ -280,6 +324,32 @@ static NSString * const kSelectAllDIDsSQL =
             if (errMsg) sqlite3_free(errMsg);
             return NO;
         }
+    }
+
+    if (![columns containsObject:@"seq"]) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN seq INTEGER;", NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                            code:result
+                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg ?: "Failed to add seq column"]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+
+    char *errMsg = NULL;
+    int backfillResult = sqlite3_exec(self.db, "UPDATE plc_operations SET seq = id WHERE seq IS NULL;", NULL, NULL, &errMsg);
+    if (backfillResult != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:backfillResult
+                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg ?: "Failed to backfill seq"]}];
+        }
+        if (errMsg) sqlite3_free(errMsg);
+        return NO;
     }
 
     return YES;
@@ -428,8 +498,18 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSError *blockError = nil;
     
     dispatch_sync(_transactionQueue, ^{
+        char *txErr = NULL;
+        if (sqlite3_exec(self.db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, &txErr) != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                            code:PLCPersistentStoreErrorInvalidOperation
+                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:txErr ?: "Failed to begin operation transaction"]}];
+            if (txErr) sqlite3_free(txErr);
+            return;
+        }
+
         sqlite3_stmt *stmt = [self prepareStatement:kInsertOperationSQL error:&blockError];
         if (!stmt) {
+            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
             return;
         }
         
@@ -450,6 +530,7 @@ static NSString * const kSelectAllDIDsSQL =
                                             code:PLCPersistentStoreErrorInvalidOperation
                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize operation data",
                                                  NSUnderlyingErrorKey: dataError}];
+            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
             return;
         }
         
@@ -466,6 +547,7 @@ static NSString * const kSelectAllDIDsSQL =
                                             code:PLCPersistentStoreErrorInvalidOperation
                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to calculate CID for operation",
                                                  NSUnderlyingErrorKey: cidError ?: [NSNull null]}];
+            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
             return;
         }
 
@@ -474,6 +556,13 @@ static NSString * const kSelectAllDIDsSQL =
         if (!op.createdAt) {
             op.createdAt = [NSDate date];
         }
+        if (op.sequence) {
+            sqlite3_bind_int64(stmt, 7, op.sequence.longLongValue);
+        } else {
+            sqlite3_bind_null(stmt, 7);
+        }
+        NSString *createdString = [NSDateFormatter atproto_stringFromDate:op.createdAt];
+        sqlite3_bind_text(stmt, 8, createdString.UTF8String, -1, SQLITE_TRANSIENT);
         
         int result = sqlite3_step(stmt);
         if (result != SQLITE_DONE) {
@@ -481,7 +570,19 @@ static NSString * const kSelectAllDIDsSQL =
                                             code:result
                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to insert operation: %s", sqlite3_errmsg(self.db)]}];
             sqlite3_reset(stmt);
+            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
             return;
+        }
+        if (!op.sequence) {
+            sqlite3_int64 rowid = sqlite3_last_insert_rowid(self.db);
+            sqlite3_stmt *seqStmt = NULL;
+            if (sqlite3_prepare_v2(self.db, "SELECT seq FROM plc_operations WHERE id = ?;", -1, &seqStmt, NULL) == SQLITE_OK) {
+                sqlite3_bind_int64(seqStmt, 1, rowid);
+                if (sqlite3_step(seqStmt) == SQLITE_ROW) {
+                    op.sequence = @(sqlite3_column_int64(seqStmt, 0));
+                }
+            }
+            if (seqStmt) sqlite3_finalize(seqStmt);
         }
         
         sqlite3_reset(stmt);
@@ -500,6 +601,8 @@ static NSString * const kSelectAllDIDsSQL =
                                                 code:updateResult
                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare nullify statement"}];
                 if (updateStmt) sqlite3_finalize(updateStmt);
+                sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+                success = NO;
                 return;
             }
             sqlite3_bind_text(updateStmt, 1, op.did.UTF8String, -1, SQLITE_TRANSIENT);
@@ -511,8 +614,27 @@ static NSString * const kSelectAllDIDsSQL =
                 blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                                 code:updateStep
                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to nullify operations"}];
+                success = NO;
+            } else if (sqlite3_changes(self.db) != (int)nullified.count) {
+                blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                                code:PLCPersistentStoreErrorInvalidOperation
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Nullification did not match all requested CIDs"}];
+                success = NO;
             }
             sqlite3_finalize(updateStmt);
+        }
+
+        if (success) {
+            if (sqlite3_exec(self.db, "COMMIT;", NULL, NULL, &txErr) != SQLITE_OK) {
+                blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                                code:PLCPersistentStoreErrorInvalidOperation
+                                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:txErr ?: "Failed to commit operation transaction"]}];
+                if (txErr) sqlite3_free(txErr);
+                sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+                success = NO;
+            }
+        } else {
+            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
         }
     });
     
@@ -534,6 +656,7 @@ static NSString * const kSelectAllDIDsSQL =
     const unsigned char *cidText = sqlite3_column_text(stmt, 5);
     int nullifiedValue = sqlite3_column_int(stmt, 6);
     const unsigned char *createdText = sqlite3_column_text(stmt, 7);
+    sqlite3_int64 seqValue = sqlite3_column_int64(stmt, 8);
     
     if (!didText || !sigText || !dataBlob) {
         return nil;
@@ -562,8 +685,11 @@ static NSString * const kSelectAllDIDsSQL =
     if (createdText) {
         NSString *createdString = [NSString stringWithUTF8String:(const char *)createdText];
         if (createdString.length > 0) {
-            op.createdAt = [PLCStoreDBDateFormatter() dateFromString:createdString];
+            op.createdAt = PLCStoreDateFromText(createdString);
         }
+    }
+    if (sqlite3_column_type(stmt, 8) != SQLITE_NULL) {
+        op.sequence = @(seqValue);
     }
     
     return op;
@@ -703,10 +829,51 @@ static NSString * const kSelectAllDIDsSQL =
 
         NSString *dateString = @"1970-01-01 00:00:00";
         if (after) {
-            dateString = [PLCStoreDBDateFormatter() stringFromDate:after];
+            dateString = [NSDateFormatter atproto_stringFromDate:after];
         }
 
         sqlite3_bind_text(stmt, 1, dateString.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 2, (int)count);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            PLCOperation *op = [self operationFromStatement:stmt];
+            if (op) {
+                [operations addObject:op];
+            }
+        }
+
+        sqlite3_reset(stmt);
+    });
+
+    if (blockError && error) {
+        *error = blockError;
+    }
+
+    return operations;
+}
+
+- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+                                                              count:(NSUInteger)count
+                                                              error:(NSError **)error {
+    if (!self.open) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                        code:PLCPersistentStoreErrorDatabaseClosed
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Database is closed"}];
+        }
+        return nil;
+    }
+
+    __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+    __block NSError *blockError = nil;
+
+    dispatch_sync(_transactionQueue, ^{
+        sqlite3_stmt *stmt = [self prepareStatement:kSelectExportOperationsBySeqSQL error:&blockError];
+        if (!stmt) {
+            return;
+        }
+
+        sqlite3_bind_int64(stmt, 1, sequence.longLongValue);
         sqlite3_bind_int(stmt, 2, (int)count);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
