@@ -1,0 +1,24 @@
+name: Ncdu Navigate and Quit
+description: Launch ncdu, navigate into a directory, go back up, and quit
+command: /opt/homebrew/bin/ncdu
+args: /Users/jack/Software/garazyk/scripts
+cwd: /Users/jack/Software/garazyk
+cols: 120
+rows: 30
+settleMs: 2000
+
+steps:
+  - type: select_item
+    target: mcp-pty
+    label: Select the mcp-pty directory
+  - type: press_key
+    value: enter
+    label: Enter the mcp-pty directory
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for directory scan
+  - type: press_key
+    value: h
+    label: Go back up to parent directory
+  - type: quit
+    label: Quit ncdu
