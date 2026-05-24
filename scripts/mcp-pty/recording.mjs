@@ -136,6 +136,17 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     .ov-fact { border: 1px dotted #8b949e; background: transparent; }
     .ov-fact .ov-label { background: #484f58; color: #e6edf3; }
     .ov-cursor { border: 1.5px solid #3fb950; background: rgba(63,185,80,.18); border-radius: 2px; animation: cursor-blink 1.2s step-end infinite; }
+    .ov-gameBoard { border: 1.5px solid #f0883e; background: rgba(240,136,62,.03); }
+    .ov-gameBoard .ov-label { background: #f0883e; color: #000; }
+    .ov-player { border: 2px solid #3fb950; background: rgba(63,185,80,.22); border-radius: 3px; animation: player-pulse 1.5s ease-in-out infinite; }
+    .ov-player .ov-label { background: #238636; color: #fff; }
+    @keyframes player-pulse { 0%,100% { box-shadow: 0 0 4px rgba(63,185,80,.4); } 50% { box-shadow: 0 0 12px rgba(63,185,80,.8); } }
+    .ov-gameEntity { border-left: 2px solid #d2a8ff; background: rgba(210,168,255,.06); border-radius: 0 3px 3px 0; }
+    .ov-gameEntity .ov-label { background: #8957e5; color: #fff; }
+    .ov-scoreBar { border: 1px solid #58a6ff; background: rgba(88,166,255,.06); }
+    .ov-scoreBar .ov-label { background: #1a4a6e; color: #79c0ff; }
+    .ov-titleBar { border-bottom: 1px solid #484f58; background: transparent; }
+    .ov-titleBar .ov-label { background: #484f58; color: #e6edf3; }
     @keyframes cursor-blink { 50% { opacity: .4; } }
 
     .ov-label { position: absolute; top: -18px; left: -1px; max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; border-radius: 3px 3px 0 0; z-index: 1; }
@@ -192,6 +203,10 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         <div class="cap-card" id="quit-card">
           <h3>Quit / Dismiss</h3>
           <div id="quit-info">—</div>
+        </div>
+        <div class="cap-card" id="game-card" style="display:none">
+          <h3>Game</h3>
+          <div id="game-info">—</div>
         </div>
       </div>
     </div>
@@ -495,6 +510,54 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
           snap.cursor.x * charW, snap.cursor.y * lineH, charW, lineH,
           null));
       }
+
+      // 8. Game elements
+      for (const ge of (snap.gameElements || [])) {
+        if (!ge.bounds) continue;
+
+        if (ge.role === "gameBoard") {
+          // Board: full-width box spanning the wall lines
+          overlay.appendChild(makeBox("gameBoard",
+            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
+            ge.label));
+        } else if (ge.role === "player") {
+          // Player: single-cell highlight with pulsing glow
+          overlay.appendChild(makeBox("player",
+            ge.position.x * charW, ge.position.y * lineH, charW, lineH,
+            ge.label));
+        } else if (ge.role === "gameEntity") {
+          // Entity: span from min to max positions
+          const xs = ge.positions.map(p => p.x);
+          const ys = ge.positions.map(p => p.y);
+          const minX = Math.min(...xs), maxX = Math.max(...xs);
+          const minY = Math.min(...ys), maxY = Math.max(...ys);
+          const label = ge.entityRole === "body" ? "Snake (" + ge.count + ")" :
+            ge.entityRole === "food" ? "Food" : "Bonus";
+          const box = makeBox("gameEntity",
+            minX * charW, minY * lineH,
+            (maxX - minX + 1) * charW, (maxY - minY + 1) * lineH,
+            label);
+          // Add individual entity markers
+          for (const p of ge.positions) {
+            const dot = document.createElement("div");
+            dot.style.cssText = "position:absolute;left:" + (p.x * charW + 1) + "px;top:" + (p.y * lineH + 1) + "px;width:" + (charW - 2) + "px;height:" + (lineH - 2) + "px;border-radius:2px;background:rgba(210,168,255,.25);pointer-events:none;";
+            box.appendChild(dot);
+          }
+          overlay.appendChild(box);
+        } else if (ge.role === "scoreBar") {
+          // Score bar: full-width with parsed pairs
+          const pairsText = (ge.pairs || []).map(p => p.label + ": " + p.value).join("  ");
+          overlay.appendChild(makeBox("scoreBar",
+            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
+            ge.label, pairsText || null));
+        } else if (ge.role === "titleBar") {
+          // Title bar: full-width with mode
+          const titleText = ge.mode ? ge.label + " · " + ge.mode : ge.label;
+          overlay.appendChild(makeBox("titleBar",
+            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
+            titleText));
+        }
+      }
     }
 
     // ── Capabilities sidebar ──
@@ -534,6 +597,33 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       qHtml += helpKeys.map(k => '<div class="cap-row"><span class="cap-key">' + escapeHtml(k) + '</span><span class="cap-action">help</span></div>').join("");
       qHtml += dismissKeys.map(k => '<div class="cap-row"><span class="cap-key">' + escapeHtml(k) + '</span><span class="cap-action">dismiss</span></div>').join("");
       quitInfo.innerHTML = qHtml || '<div style="color:var(--muted)">—</div>';
+
+      // Game card (only if game elements detected)
+      const gameCard = document.getElementById("game-card");
+      const gameEls = snap.gameElements || [];
+      if (gameEls.length > 0) {
+        gameCard.style.display = "";
+        const gameInfo = document.getElementById("game-info");
+        let gHtml = "";
+        for (const ge of gameEls) {
+          if (ge.role === "player") {
+            gHtml += '<div class="cap-row"><span style="color:#3fb950;font-weight:700">@</span><span class="cap-action">Player (' + ge.position.x + ',' + ge.position.y + ')</span></div>';
+          } else if (ge.role === "gameEntity" && ge.entityRole === "body") {
+            gHtml += '<div class="cap-row"><span class="cap-key" style="background:#8957e5;border-color:#8957e5;color:#fff">o</span><span class="cap-action">Body (' + ge.count + ')</span></div>';
+          } else if (ge.role === "gameEntity" && ge.entityRole === "food") {
+            gHtml += '<div class="cap-row"><span class="cap-key" style="background:#da3633;border-color:#da3633;color:#fff">$</span><span class="cap-action">Food</span></div>';
+          } else if (ge.role === "scoreBar" && ge.pairs?.length > 0) {
+            for (const p of ge.pairs) {
+              gHtml += '<div class="cap-row"><span class="cap-action">' + escapeHtml(p.label) + '</span><span class="cap-key">' + escapeHtml(p.value) + '</span></div>';
+            }
+          } else if (ge.role === "titleBar" && ge.mode) {
+            gHtml += '<div class="cap-row"><span class="cap-action">Mode</span><span class="cap-key">' + escapeHtml(ge.mode) + '</span></div>';
+          }
+        }
+        gameInfo.innerHTML = gHtml || '<div style="color:var(--muted)">—</div>';
+      } else {
+        gameCard.style.display = "none";
+      }
     }
 
     function render() {
