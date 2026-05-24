@@ -822,6 +822,25 @@ export function parseKeyHints(text) {
     }
   }
 
+  // Pattern 9: Bare key + space + action, separated by double spaces
+  // "s Start  p PDS2  x Stop  1-4 Panel  Tab Switch  q Quit"
+  // Common in custom TUI dashboards (e.g., Garazyk Scenario Dashboard)
+  if (hints.length === 0) {
+    const bareKeyPattern = /(?:^|\s{2,})([a-zA-Z0-9]{1,3}(?:-[a-zA-Z0-9]{1,3})?)\s+([A-Za-z][\w\s]*?)(?=\s{2,}|$)/g;
+    while ((match = bareKeyPattern.exec(text)) !== null) {
+      const key = match[1].trim();
+      const action = match[2].trim();
+      // Skip if key is a common word, not a real key
+      if (/^(the|and|for|not|but|are|was|has|all|can|may|its|our|you|out|get|set|let|new|now|old|see|way|who|did|got|use|her|him|she|how|too|any|own|sub|var|end|put|add|run|try|ask|men|few|lot|log|top|red|bad|big|low|cut|hot|hit|bit|ten|map|key|pay|say|buy|yet|age|day|far|fun|win|box|bar|net|tag|web|app|dir|mod|pkg|dev|ops|sql|api|css|dom|gui|ide|sdk|url|uri|xml|json|yaml|html|http|ssl|tls|tcp|udp|ssh|dns|vpn|cdn|otp|sso|mfa|jwt|sri|hsts|csp)$/i.test(key)) {
+        // Allow known short keys that happen to be words
+        if (!['s', 'p', 'x', 'q', 'a', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'r', 'v', 'w', 'y', 'z'].includes(key.toLowerCase())) continue;
+      }
+      if (key && action && action.length > 0) {
+        hints.push({ key, action, raw: match[0].trim() });
+      }
+    }
+  }
+
   return hints;
 }
 
@@ -1083,6 +1102,26 @@ export function buildCapabilityMap(snapshot) {
       { key: "/", action: "search", source: "app_helix" },
       { key: ":", action: "command_mode", source: "app_helix" },
       { key: "space", action: "leader", source: "app_helix" },
+    ];
+  }
+
+  // ── Dashboard overrides ──
+  // Garazyk Scenario Dashboard: custom key map from footer
+  if (snapshot.app === "dashboard") {
+    caps.navigate.keys = ["up", "down", "j", "k"];
+    caps.navigate.source = "app_dashboard";
+    caps.tabs.keys = ["1", "2", "3", "4", "tab"];
+    caps.tabs.available = true;
+    caps.tabs.source = "app_dashboard";
+    caps.quit.keys = ["q"];
+    caps.quit.source = "app_dashboard";
+    caps.help.keys = ["?"];
+    caps.help.source = "app_dashboard";
+    caps.actions = [
+      { key: "s", action: "Start", source: "app_dashboard" },
+      { key: "p", action: "PDS2", source: "app_dashboard" },
+      { key: "x", action: "Stop", source: "app_dashboard" },
+      { key: "enter", action: "Run", source: "app_dashboard" },
     ];
   } else if (caps.framework === "ncurses") {
     if (caps.navigate.keys.length === 0) {
@@ -1353,7 +1392,8 @@ export function guessApplication(command, lines, grid) {
       /\[[^\]]+\]\s*[A-Za-z]/.test(line) ||
       /<([A-Za-z0-9_-]+)>/.test(line) ||
       /└┘\s*[A-Za-z0-9↵⏎↑↓←→]+/.test(line) ||
-      /\^[a-zA-Z]\s+\w/.test(line));
+      /\^[a-zA-Z]\s+\w/.test(line) ||
+      /\b[a-z]\s+[A-Z][a-z]+\s{2,}[a-z]\s+[A-Z]/.test(line));
 
     // App-specific signatures
     if (allText.includes("ncdu") && allText.includes("disk usage")) {
@@ -1384,6 +1424,9 @@ export function guessApplication(command, lines, grid) {
       guess = "lf"; confidence = 0.75;
     } else if (allText.includes("gitui") || (allText.includes("status") && allText.includes("log") && allText.includes("stashing"))) {
       guess = "gitui"; confidence = 0.7;
+    } else if (allText.includes("scenario dashboard") && hasBoxDrawing) {
+      // Garazyk Scenario Dashboard: title + box drawing + service list
+      guess = "dashboard"; confidence = 0.85;
     } else if (allText.includes("yazi") || allText.includes("terminal response timeout")) {
       guess = "yazi"; confidence = 0.7;
     } else if (lines.some(l => /^>/.test(l.trim())) && lines.some(l => /[▌▐]/.test(l)) && /\d+\/\d+/.test(text)) {
@@ -1463,6 +1506,7 @@ export function guessApplication(command, lines, grid) {
       fzf: "bubbletea",
       posting: "textual",
       harlequin: "textual",
+      dashboard: "ratatui",
     };
 
     if (frameworkByApp[guess]) {
