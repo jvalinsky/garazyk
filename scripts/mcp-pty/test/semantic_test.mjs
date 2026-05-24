@@ -180,7 +180,7 @@ test("parseKeyHints rejects pure numeric keys from colon pattern", () => {
 
 test("detectGameElements preserves horizontal bounds for card overlays", () => {
   const lines = [
-    "                                                            ",
+    "",
     "  ┌─────┐        K♠                         A♥             ",
     "                                                            ",
     "      5♦                                                    ",
