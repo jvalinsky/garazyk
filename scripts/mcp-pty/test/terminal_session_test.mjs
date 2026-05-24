@@ -9,7 +9,7 @@ import {
   encodeKey,
   validateCommand,
 } from "../terminal_session.mjs";
-import { AsciicastRecorder } from "../recording.mjs";
+import { AsciicastRecorder, buildStandaloneHtml } from "../recording.mjs";
 
 const { Terminal } = xtermHeadless;
 
@@ -66,10 +66,26 @@ test("AsciicastRecorder writes v2 header and output/input/resize events", async 
 
   const lines = fs.readFileSync(recorder.castPath, "utf8").trimEnd().split("\n");
   assert.equal(JSON.parse(lines[0]).version, 2);
-  assert.equal(JSON.parse(lines[1])[1], "o");
-  assert.equal(JSON.parse(lines[2])[1], "i");
-  assert.deepEqual(JSON.parse(lines[3]).slice(1), ["r", "100x30"]);
+  assert.deepEqual(JSON.parse(lines[1]).slice(1), ["r", "80x24"]);
+  assert.equal(JSON.parse(lines[2])[1], "o");
+  assert.equal(JSON.parse(lines[3])[1], "i");
+  assert.deepEqual(JSON.parse(lines[4]).slice(1), ["r", "100x30"]);
   assert.ok(fs.existsSync(recorder.htmlPath));
+});
+
+test("buildStandaloneHtml can enable semantic overlay controls", () => {
+  const castContent = [
+    JSON.stringify({ version: 2, width: 10, height: 4, timestamp: 1 }),
+    JSON.stringify([0, "o", "┌──┐\r\n│hi│\r\n└──┘"]),
+  ].join("\n") + "\n";
+  const html = buildStandaloneHtml({
+    title: "overlay",
+    castContent,
+    semanticOverlay: true,
+  });
+  assert.match(html, /id="overlay"/);
+  assert.match(html, /semantic-box/);
+  assert.match(html, /let overlayEnabled = true/);
 });
 
 test("TerminalSessionManager starts cat, captures input, resizes, and stops", async () => {
