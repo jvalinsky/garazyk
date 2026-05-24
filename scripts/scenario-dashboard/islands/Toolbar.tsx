@@ -1,5 +1,5 @@
 /** Toolbar island — topology selector, run/stop/restart controls, settings modal. @module Toolbar */
-import { useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
 const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
@@ -14,6 +14,8 @@ export default function Toolbar() {
   const showSettings = s.ux.settingsOpen;
   const params = s.ux.scenarioParams;
   const scenarios = s.scenarios.all;
+
+  const [agentMode, setAgentMode] = useState(false);
 
   useEffect(() => {
     if (!IS_BROWSER) return;
@@ -48,6 +50,7 @@ export default function Toolbar() {
       type: "runs/startRequested",
       scenarioIds: ids,
       pds2: ids.some((id) => byId.get(id)?.needsPds2),
+      agentMode,
     });
   }
 
@@ -99,6 +102,15 @@ export default function Toolbar() {
                   Settings
                 </button>
               )}
+              <label class="toolbar-checkbox" title="Use hamownia agent run with NDJSON event streaming">
+                <input
+                  type="checkbox"
+                  checked={agentMode}
+                  disabled={busy}
+                  onChange={(e) => setAgentMode((e.target as HTMLInputElement).checked)}
+                />
+                <span>Agent</span>
+              </label>
               <button type="button" class="btn btn-primary" onClick={runAll} disabled={busy}>
                 {busy ? "Starting..." : "Run All"}
               </button>

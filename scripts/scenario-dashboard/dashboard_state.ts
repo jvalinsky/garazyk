@@ -273,7 +273,7 @@ export type RunsMsg =
   | { type: "runs/progressReceived"; progress: RunProgress; runId?: string; token?: number }
   | { type: "runs/progressFailed"; error: string; runId?: string; token?: number }
   | { type: "runs/progressTimeout"; runId?: string; token?: number }
-  | { type: "runs/startRequested"; scenarioIds: string[]; pds2: boolean }
+  | { type: "runs/startRequested"; scenarioIds: string[]; pds2: boolean; agentMode?: boolean }
   | { type: "runs/startSucceeded"; runId: string }
   | { type: "runs/startFailed"; error: string }
   | { type: "runs/stopRequested" }
@@ -954,6 +954,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
               scenarioIds: msg.scenarioIds,
               pds2: msg.pds2,
               binaryMode: false,
+              agentMode: msg.agentMode ?? false,
               scenarioParams: state.ux.scenarioParams,
             },
             onSuccess: "runs/startSucceeded",
