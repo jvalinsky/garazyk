@@ -144,7 +144,7 @@ class RunManagerImpl implements RunManager {
     };
 
     // 1. Save to DB
-    this.saveRunToDb(run);
+    this.saveRunToDb(run, config);
 
     // 2. Write lock file
     await this.writeLockFile(run);
@@ -306,14 +306,15 @@ class RunManagerImpl implements RunManager {
     );
   }
 
-  private saveRunToDb(run: Run) {
+  private saveRunToDb(run: Run, config?: RunConfig) {
+    const agentMode = run.agentMode ?? config?.agentMode ?? false;
     db.prepare(`
       INSERT INTO runs (
         id, started_at, status, total_scenarios, pds2, binary_mode,
         topology, runner, web_client, client_flow, scenario_ids_json,
         run_dir, reports_dir, log_path, scenario_params_json,
-        allow_hybrid_network, otel, verbose, timeout, no_setup
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        allow_hybrid_network, otel, verbose, timeout, no_setup, agent_mode
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       run.id,
       run.startedAt,
@@ -335,6 +336,7 @@ class RunManagerImpl implements RunManager {
       run.verbose ? 1 : 0,
       run.timeout ?? 120,
       run.noSetup ? 1 : 0,
+      agentMode ? 1 : 0,
     );
   }
 
@@ -555,6 +557,14 @@ class RunManagerImpl implements RunManager {
       console.warn(`[run-manager] Failed to check network status: ${e}`);
     }
 
+    if (run.agentMode) {
+      return this.spawnAgentRunner(run, isNetworkActive);
+    }
+    return this.spawnStandardRunner(run, isNetworkActive);
+  }
+
+  /** Spawn the standard scripts/run_scenarios.ts runner (current behavior). */
+  private async spawnStandardRunner(run: Run, isNetworkActive: boolean) {
     const args = [
       "run",
       "-A",
@@ -591,7 +601,6 @@ class RunManagerImpl implements RunManager {
       create: true,
     });
 
-    // Build environment variables from parameters
     const env: Record<string, string> = {};
     if (run.scenarioParams) {
       for (const [key, val] of Object.entries(run.scenarioParams)) {
@@ -624,18 +633,10 @@ class RunManagerImpl implements RunManager {
       this.startReportsWatcher(run.reportsDir);
     }
 
-    // Tee stdout: one branch for the log file, one for line-by-line events.
-    // tee() must happen before any pipeTo() that would consume the stream.
+    // Tee stdout and pipe to log file
     const [logBranch, eventBranch] = this.childProcess.stdout.tee();
-
-    // Stream log lines for real-time display
     this.streamLogLines(eventBranch, run);
 
-    // Pipe outputs to log file.
-    // Use Promise.all to coordinate both streams, and only close
-    // logFile after both are done. This prevents the stdout pipe
-    // from consuming logFile.writable before the stderr loop can
-    // write to it, or vice versa.
     const stdoutDone = logBranch.pipeTo(logFile.writable, {
       preventClose: true,
     });
@@ -650,8 +651,6 @@ class RunManagerImpl implements RunManager {
       }
     })();
 
-    // Wait for both streams to finish, then close the log file.
-    // This runs in the background — the caller doesn't await it.
     Promise.all([stdoutDone, stderrDone]).then(() => {
       try {
         logFile.close();
@@ -659,7 +658,208 @@ class RunManagerImpl implements RunManager {
     });
 
     // Monitor completion
-    this.childProcess.status.then(async (status) => {
+    this.monitorStandardCompletion(run);
+  }
+
+  /** Spawn hamownia agent run — NDJSON stdout, map to dashboard events. */
+  private async spawnAgentRunner(run: Run, isNetworkActive: boolean) {
+    const hamowniaPath = join(
+      fromFileUrl(new URL("../../../packages/hamownia/cli.ts", import.meta.url)),
+    );
+
+    const args = [
+      "run",
+      "-A",
+      hamowniaPath,
+      "agent",
+      "run",
+      "--run-id",
+      run.id,
+      "--topology",
+      run.topology!,
+      "--runner",
+      run.runner!,
+      "--reports-dir",
+      run.reportsDir!,
+    ];
+
+    if (run.pds2) args.push("--pds2");
+    if (run.binaryMode) args.push("--binary");
+    if (run.webClient && run.webClient !== "none") {
+      args.push("--web-client", run.webClient);
+      if (run.clientFlow) args.push("--client-flow", run.clientFlow);
+    }
+
+    if (run.allowHybridNetwork) args.push("--allow-hybrid-network");
+    if (run.otel) args.push("--otel");
+    if (run.verbose) args.push("--verbose");
+    if (run.timeout !== undefined) args.push("--timeout", String(run.timeout));
+    if (run.noSetup || isNetworkActive) args.push("--no-setup");
+
+    args.push(...(run.scenarioIds || []));
+
+    console.log(`[run-manager] Spawning agent: deno ${args.join(" ")}`);
+
+    const logFile = await Deno.open(run.logPath!, {
+      write: true,
+      create: true,
+    });
+
+    const env: Record<string, string> = {};
+    if (run.scenarioParams) {
+      for (const [key, val] of Object.entries(run.scenarioParams)) {
+        env[`SCENARIO_PARAM_${key.toUpperCase()}`] = String(val);
+      }
+    }
+
+    const command = new Deno.Command("deno", {
+      args,
+      stdout: "piped",
+      stderr: "piped",
+      env,
+    });
+
+    this.childProcess = command.spawn();
+    run.childPid = this.childProcess.pid;
+    run.status = "running";
+    this.updateRunInDb(run);
+    await this.writeLockFile(run);
+
+    // Emit run_status("running")
+    this.#emit({
+      type: "run_status",
+      runId: run.id,
+      status: "running",
+    });
+
+    // Start watching the reports directory for new report files
+    if (run.reportsDir) {
+      this.startReportsWatcher(run.reportsDir);
+    }
+
+    // Parse NDJSON from stdout and emit structured dashboard events
+    this.parseAgentNdjson(this.childProcess.stdout, run);
+
+    // Pipe stderr to log file (human-readable agent output goes to stderr)
+    (async () => {
+      try {
+        for await (const chunk of this.childProcess!.stderr) {
+          await logFile.write(chunk);
+        }
+      } catch (e) {
+        console.error(`[run-manager] Error logging agent stderr for ${run.id}:`, e);
+      }
+    })();
+
+    // Monitor completion
+    this.monitorStandardCompletion(run);
+  }
+
+  /** Parse NDJSON lines from stdout and emit dashboard RunEvent types. */
+  private parseAgentNdjson(
+    stdoutStream: ReadableStream<Uint8Array>,
+    run: Run,
+  ): void {
+    const lineReader: ReadableStream<string> = stdoutStream
+      .pipeThrough(new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>)
+      .pipeThrough(new TextLineStream());
+
+    (async () => {
+      try {
+        for await (const line of lineReader) {
+          if (line.length === 0) continue;
+          let event: { type: string; [key: string]: unknown };
+          try {
+            event = JSON.parse(line);
+          } catch {
+            // Non-JSON line — treat as log_line
+            this.#emit({ type: "log_line", runId: run.id, line });
+            continue;
+          }
+
+          // Map NDJSON event types to dashboard RunEvent types
+          switch (event.type) {
+            case "run_start":
+              this.#emit({
+                type: "run_started",
+                runId: event.runId as string,
+                totalScenarios: event.total as number,
+                startedAt: event.timestamp as number,
+              });
+              break;
+            case "scenario_start":
+              this.#emit({
+                type: "scenario_started",
+                runId: run.id,
+                scenarioId: event.scenarioId as string,
+                scenarioName: event.name as string,
+              });
+              break;
+            case "scenario_complete":
+              this.#emit({
+                type: "scenario_finished",
+                runId: run.id,
+                scenarioId: event.scenarioId as string,
+                scenarioName: event.name as string,
+                status: (event.ok as boolean) ? "passed" : "failed",
+                passed: event.passed as number,
+                failed: event.failed as number,
+                skipped: event.skipped as number,
+                durationMs: Math.round((event.durationS as number) * 1000),
+              });
+              break;
+            case "service_failure":
+              this.#emit({
+                type: "log_line",
+                runId: run.id,
+                line: `[service_failure] ${event.message}`,
+              });
+              break;
+            case "run_progress": {
+              // Inline progress tracking — don't emit a dashboard event,
+              // just log for debugging
+              break;
+            }
+            case "run_finished": {
+              if (event.ok) {
+                this.#emit({
+                  type: "run_completed",
+                  runId: run.id,
+                  exitCode: 0,
+                  finishedAt: event.timestamp as number,
+                  passed: event.totalPassed as number,
+                  failed: event.totalFailed as number,
+                  skipped: event.totalSkipped as number,
+                });
+              } else {
+                this.#emit({
+                  type: "run_failed",
+                  runId: run.id,
+                  exitCode: 1,
+                  finishedAt: event.timestamp as number,
+                  reason: "agent_run_failed",
+                });
+              }
+              break;
+            }
+            default:
+              // Unknown event type — log as line
+              this.#emit({
+                type: "log_line",
+                runId: run.id,
+                line: `[agent:${event.type}] ${line}`,
+              });
+          }
+        }
+      } catch {
+        // Stream closed — expected when process exits
+      }
+    })();
+  }
+
+  /** Monitor process completion — shared by standard and agent runners. */
+  private monitorStandardCompletion(run: Run) {
+    this.childProcess!.status.then(async (status) => {
       console.log(
         `[run-manager] Run ${run.id} finished with exit code ${status.code}`,
       );
@@ -735,6 +935,7 @@ class RunManagerImpl implements RunManager {
         : run.scenarioIds || [],
       pds2: !!run.pds2,
       binaryMode: !!run.binaryMode,
+      agentMode: !!run.agentMode,
       webClient: run.webClient,
       clientFlow: run.clientFlow,
       scenarioParams: run.scenarioParams

@@ -96,6 +96,7 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
             totalScenarios={activeRun.totalScenarios}
             completedScenarios={activeRun.passed + activeRun.failed +
               activeRun.skipped}
+            agentMode={activeRun.agentMode}
           />
         )}
         <SummaryCards

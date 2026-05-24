@@ -58,7 +58,8 @@ export function fetchRun(db: Database, runId: string): Run | undefined {
       otel,
       verbose,
       timeout,
-      no_setup as noSetup
+      no_setup as noSetup,
+      agent_mode as agentMode
     FROM runs
     WHERE id = ?
   `).get(runId) as Run | undefined;
@@ -101,7 +102,8 @@ export function fetchRuns(db: Database, limit = 10): Run[] {
       otel,
       verbose,
       timeout,
-      no_setup as noSetup
+      no_setup as noSetup,
+      agent_mode as agentMode
     FROM runs
     ORDER BY started_at DESC
     LIMIT ?

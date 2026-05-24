@@ -95,6 +95,20 @@ export function runMigrations(db: Database) {
       throw e;
     }
   }
+
+  // Migration 5: Add agent_mode column for hamownia agent run support
+  if (currentVersion < 5) {
+    console.log("[db] Applying migration v5: Add agent_mode column to runs table...");
+    try {
+      addColumns(db, "runs", [
+        "agent_mode INTEGER DEFAULT 0",
+      ]);
+      recordMigration(db, 5);
+    } catch (e) {
+      console.error("[db] Migration v5 failed:", e);
+      throw e;
+    }
+  }
 }
 
 function getCurrentVersion(db: Database): number {
