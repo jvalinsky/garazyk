@@ -44,9 +44,16 @@ Inbound links: **7**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 
+## `docs/10-tutorials/germ-mailbox-setup.md`
+
+Inbound links: **3**
+
+- [docs/10-tutorials/index.md](../10-tutorials/index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+
 ## `docs/10-tutorials/index.md`
 
-Inbound links: **8**
+Inbound links: **9**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/setup.md](../01-getting-started/setup.md)
@@ -123,6 +130,13 @@ Inbound links: **8**
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/20-explanation/architecture/media_core_framework.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/20-explanation/guides/DEPLOYMENT.md`
 
 Inbound links: **5**
@@ -139,18 +153,43 @@ Inbound links: **2**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
-## `docs/archive/planning/README.md`
+## `docs/archive/planning/deno-packages-next-steps.md`
 
-Inbound links: **40**
+Inbound links: **4**
 
+- [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
-## `docs/documentation_remediation_plan.md`
+## `docs/archive/planning/documentation_remediation_plan.md`
 
 Inbound links: **3**
 
 - [docs/index.md](../index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/README.md`
+
+Inbound links: **44**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/tsdoc-revision-plan.md`
+
+Inbound links: **4**
+
+- [docs/index.md](../index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/audits/2026-05-23-deciduous-and-memory-audit.md`
+
+Inbound links: **2**
+
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
@@ -164,7 +203,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **79**
+Inbound links: **91**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -173,14 +212,26 @@ Inbound links: **79**
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 - [docs/repo-index/root-entrypoints.md](root-entrypoints.md)
 
-## `docs/plans/deno-packages-next-steps.md`
+## `docs/plans/2026-05-22-adversarial-protocol-testing-design.md`
 
-Inbound links: **5**
+Inbound links: **2**
 
-- [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/2026-05-22-adversarial-protocol-testing-plan.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/2026-05-23-agent-scenario-testing-plan.md`
+
+Inbound links: **3**
+
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/e2e-006-chat-allow-incoming.md`
@@ -303,12 +354,21 @@ Inbound links: **16**
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/plans/mikrus-code-review-remediation.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/plans/next-steps.md`
 
-Inbound links: **4**
+Inbound links: **6**
 
-- [docs/plans/deno-packages-next-steps.md](../plans/deno-packages-next-steps.md)
-- [docs/plans/tsdoc-revision-plan.md](../plans/tsdoc-revision-plan.md)
+- [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md)
+- [docs/archive/planning/deno-packages-next-steps.md](../archive/planning/deno-packages-next-steps.md)
+- [docs/archive/planning/tsdoc-revision-plan.md](../archive/planning/tsdoc-revision-plan.md)
+- [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
@@ -319,18 +379,9 @@ Inbound links: **2**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
-## `docs/plans/tsdoc-revision-plan.md`
-
-Inbound links: **4**
-
-- [docs/index.md](../index.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/backlinks.md](backlinks.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **89**
+Inbound links: **115**
 
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -340,7 +391,7 @@ Inbound links: **89**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **27**
+Inbound links: **26**
 
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -350,7 +401,7 @@ Inbound links: **27**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **30**
+Inbound links: **54**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -424,6 +475,13 @@ Inbound links: **2**
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/reports/docs/link-graph-report.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/reports/pds-deep-code-review-2026-05-22.md`
 
 Inbound links: **2**
 
@@ -627,13 +685,6 @@ Inbound links: **2**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/source-adjacent.md](source-adjacent.md)
 
-## `Garazyk/Sources/Admin/ADMINUI_DELIVERY_SUMMARY.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/source-adjacent.md](source-adjacent.md)
-
 ## `Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md`
 
 Inbound links: **2**
@@ -641,14 +692,21 @@ Inbound links: **2**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/source-adjacent.md](source-adjacent.md)
 
-## `Garazyk/Sources/Admin/ADMINUI_INTEGRATION_COMPLETE.md`
+## `Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md`
 
 Inbound links: **2**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/source-adjacent.md](source-adjacent.md)
 
-## `Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md`
+## `Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/source-adjacent.md](source-adjacent.md)
+
+## `Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md`
 
 Inbound links: **2**
 
