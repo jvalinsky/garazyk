@@ -1,0 +1,15 @@
+{
+  "name": "@garazyk/mcp-pty",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PTY-backed MCP server for inspecting external terminal programs.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@xterm/headless": "5.5.0",
+    "node-pty": "1.0.0"
+  },
+  "devDependencies": {}
+}

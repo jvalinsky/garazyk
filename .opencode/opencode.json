@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "garazyk-tui": {
+      "type": "local",
+      "command": ["deno", "run", "-A", "scripts/mcp-tui/server.ts"],
+      "enabled": true
+    },
+    "garazyk-pty": {
+      "type": "local",
+      "command": ["node", "scripts/mcp-pty/server.mjs"],
+      "enabled": true
+    }
+  }
+}
