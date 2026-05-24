@@ -98,6 +98,16 @@ export {
   selectScenarios,
 } from "./scenario_selector.ts";
 export type { ScenarioExecutionResult } from "./run_loop.ts";
+export {
+  createInitialRunLoopState,
+  recordScenarioResult,
+  setAbortedForCrash,
+  setCrashedContainer,
+  totalFailed,
+  totalPassed,
+  totalSkipped,
+} from "./run_loop_state.ts";
+export type { CrashedContainer, RunLoopState } from "./run_loop_state.ts";
 export { HumanReadableSink, MultiSink, NdjsonSink } from "./events.ts";
 export type {
   HumanReadableSinkOptions,
