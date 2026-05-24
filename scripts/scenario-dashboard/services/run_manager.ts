@@ -34,60 +34,83 @@ export function mapAgentEventLine(
   }
 
   switch (event.type) {
-    case "run_start":
+    case "run_start": {
+      const rid = typeof event.runId === "string" ? event.runId : runId;
+      const total = typeof event.total === "number" ? event.total : 0;
+      const ts = typeof event.timestamp === "number" ? event.timestamp : Date.now();
       return {
         type: "run_started",
-        runId: event.runId as string,
-        totalScenarios: event.total as number,
-        startedAt: event.timestamp as number,
+        runId: rid,
+        totalScenarios: total,
+        startedAt: ts,
       };
-    case "scenario_start":
+    }
+    case "scenario_start": {
+      const sid = typeof event.scenarioId === "string" ? event.scenarioId : "??";
+      const sname = typeof event.name === "string" ? event.name : "unknown";
       return {
         type: "scenario_started",
         runId,
-        scenarioId: event.scenarioId as string,
-        scenarioName: event.name as string,
+        scenarioId: sid,
+        scenarioName: sname,
       };
-    case "scenario_complete":
+    }
+    case "scenario_complete": {
+      const sid = typeof event.scenarioId === "string" ? event.scenarioId : "??";
+      const sname = typeof event.name === "string" ? event.name : "unknown";
+      const ok = typeof event.ok === "boolean" ? event.ok : false;
+      const passed = typeof event.passed === "number" ? event.passed : 0;
+      const failed = typeof event.failed === "number" ? event.failed : 0;
+      const skipped = typeof event.skipped === "number" ? event.skipped : 0;
+      const durS = typeof event.durationS === "number" ? event.durationS : 0;
       return {
         type: "scenario_finished",
         runId,
-        scenarioId: event.scenarioId as string,
-        scenarioName: event.name as string,
-        status: (event.ok as boolean) ? "passed" : "failed",
-        passed: event.passed as number,
-        failed: event.failed as number,
-        skipped: event.skipped as number,
-        durationMs: Math.round((event.durationS as number) * 1000),
+        scenarioId: sid,
+        scenarioName: sname,
+        status: ok ? "passed" : "failed",
+        passed,
+        failed,
+        skipped,
+        durationMs: Math.round(durS * 1000),
       };
-    case "service_failure":
+    }
+    case "service_failure": {
+      const msg = typeof event.message === "string" ? event.message : "unknown failure";
       return {
         type: "log_line",
         runId,
-        line: `[service_failure] ${event.message}`,
+        line: `[service_failure] ${msg}`,
       };
+    }
     case "run_progress":
       // Inline progress tracking — don't emit a dashboard event
       return null;
-    case "run_finished":
-      if (event.ok) {
+    case "run_finished": {
+      const finishedOk = typeof event.ok === "boolean" ? event.ok : false;
+      const ts = typeof event.timestamp === "number" ? event.timestamp : Date.now();
+      if (finishedOk) {
+        const passed = typeof event.totalPassed === "number" ? event.totalPassed : 0;
+        const failed = typeof event.totalFailed === "number" ? event.totalFailed : 0;
+        const skipped = typeof event.totalSkipped === "number" ? event.totalSkipped : 0;
         return {
           type: "run_completed",
           runId,
           exitCode: 0,
-          finishedAt: event.timestamp as number,
-          passed: event.totalPassed as number,
-          failed: event.totalFailed as number,
-          skipped: event.totalSkipped as number,
+          finishedAt: ts,
+          passed,
+          failed,
+          skipped,
         };
       }
       return {
         type: "run_failed",
         runId,
         exitCode: 1,
-        finishedAt: event.timestamp as number,
+        finishedAt: ts,
         reason: "agent_run_failed",
       };
+    }
     default:
       // Unknown event type — log as line
       return {

@@ -36,6 +36,7 @@ export default function RunHistory({ runs }: RunHistoryProps) {
             <tr>
               <th>Time</th>
               <th>Run ID</th>
+              <th>Flags</th>
               <th>Results</th>
               <th>Duration</th>
             </tr>
@@ -51,6 +52,14 @@ export default function RunHistory({ runs }: RunHistoryProps) {
                   >
                     {r.id}
                   </a>
+                </td>
+                <td>
+                  <div style="display: flex; gap: var(--space-xs); flex-wrap: wrap;">
+                    {r.agentMode && <span class="badge badge-secondary">Agent</span>}
+                    {r.runner && r.runner !== "host" && <span class="badge badge-info">{r.runner}</span>}
+                    {r.pds2 && <span class="badge badge-info">PDS2</span>}
+                    {r.binaryMode && <span class="badge badge-secondary">binary</span>}
+                  </div>
                 </td>
                 <td>
                   <span style="color: var(--color-success);">{r.passed}✓</span>{" "}
