@@ -69,6 +69,36 @@ html, body {
   gap: var(--space-sm);
 }
 
+.toolbar-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.toolbar-checkbox:hover {
+  border-color: var(--color-info);
+}
+
+.toolbar-checkbox:has(input:checked) {
+  border-color: var(--color-info);
+  background: oklch(60% 0.15 210 / 0.06);
+  color: var(--color-info);
+}
+
+.toolbar-checkbox input[type="checkbox"] {
+  accent-color: var(--color-info);
+}
+
 .toolbar-spacer {
   flex: 1;
 }
@@ -910,6 +940,20 @@ html, body {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-info);
+}
+
+.run-progress-agent-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  background: oklch(52% 0.18 255 / 0.06);
+  border-radius: var(--radius-sm);
 }
 
 .run-progress-elapsed {
