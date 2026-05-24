@@ -148,6 +148,7 @@ export function renderRunDetailOverlay(
     if (run.runner) parts.push(`runner: ${run.runner}`);
     parts.push(`pds2: ${run.pds2 ? "yes" : "no"}`);
     parts.push(`binary: ${run.binaryMode ? "yes" : "no"}`);
+    parts.push(`agent: ${run.agentMode ? "yes" : "no"}`);
     const metaText = parts.join("  ");
     buf.writeClipped(contentX, row, metaText, labelStyle, clip);
     row++;
