@@ -9,6 +9,7 @@
 #import "Database/Connection/ATProtoConnectionManagerPooled.h"
 #import "Database/Pool/ATProtoConnectionPool.h"
 #import "Database/Utils/ATProtoDatabaseUtilities.h"
+#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 #import "Debug/GZLogger.h"
 
 #import <sqlite3.h>
@@ -22,13 +23,6 @@ static NSString *MikrusNow(void) {
 static int64_t MikrusIndexValue(int64_t seq) {
     if (seq > 0) return seq;
     return (int64_t)([[NSDate date] timeIntervalSince1970] * 1000.0);
-}
-
-static NSError *MikrusDBError(sqlite3 *db, int code, NSString *fallback) {
-    if (db) {
-        return ATProtoDBSQLError(MikrusDatabaseErrorDomain, db, code);
-    }
-    return ATProtoDBError(MikrusDatabaseErrorDomain, fallback ?: @"SQLite error", code);
 }
 
 static NSArray<NSString *> *MikrusCleanFilters(NSArray<NSString *> *values) {
@@ -80,6 +74,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 @interface MikrusDatabase ()
 @property (nonatomic, strong) ATProtoConnectionPool *pool;
 @property (nonatomic, strong) ATProtoConnectionManagerPooled *connectionManager;
+@property (nonatomic, strong) ATProtoDatabaseQueryRunner *queryRunner;
 @end
 
 @implementation MikrusDatabase
@@ -116,6 +111,8 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
         return nil;
     }
     _connectionManager = [[ATProtoConnectionManagerPooled alloc] initWithPool:_pool];
+    _queryRunner = [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:_connectionManager
+                                                                     errorDomain:MikrusDatabaseErrorDomain];
     return self;
 }
 
@@ -627,77 +624,19 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 - (nullable NSArray<NSDictionary *> *)executeQuery:(NSString *)sql
                                             params:(NSArray *)params
                                              error:(NSError **)error {
-    __block NSArray<NSDictionary *> *result = nil;
-    __block NSError *innerError = nil;
-    [self.connectionManager execute:^(sqlite3 *db) {
-        sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) {
-            innerError = MikrusDBError(db, rc, @"Failed to prepare query");
-            return;
-        }
-        ATProtoDBBindParams(stmt, params ?: @[]);
-
-        NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
-        while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-            NSMutableDictionary *row = [NSMutableDictionary dictionary];
-            int count = sqlite3_column_count(stmt);
-            for (int i = 0; i < count; i++) {
-                const char *name = sqlite3_column_name(stmt, i);
-                if (!name) continue;
-                row[[NSString stringWithUTF8String:name]] = ATProtoDBColumnValue(stmt, i) ?: [NSNull null];
-            }
-            [rows addObject:row];
-        }
-
-        if (rc != SQLITE_DONE) {
-            innerError = MikrusDBError(db, rc, @"Failed to execute query");
-            sqlite3_finalize(stmt);
-            return;
-        }
-
-        sqlite3_finalize(stmt);
-        result = [rows copy];
-    } error:&innerError];
-
-    if (!result && error) {
-        *error = innerError;
-    }
-    return result;
+    return [self.queryRunner executeQuery:sql params:params error:error];
 }
 
 - (BOOL)executeUpdate:(NSString *)sql
                params:(NSArray *)params
            connection:(sqlite3 *)db
                 error:(NSError **)error {
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        if (error) *error = MikrusDBError(db, rc, @"Failed to prepare update");
-        return NO;
-    }
-    ATProtoDBBindParams(stmt, params ?: @[]);
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE) {
-        if (error) *error = MikrusDBError(db, rc, @"Failed to execute update");
-        sqlite3_finalize(stmt);
-        return NO;
-    }
-    sqlite3_finalize(stmt);
-    return YES;
+    return [self.queryRunner executeUpdate:sql params:params connection:db error:error];
 }
 
 - (BOOL)performWriteTransaction:(BOOL (^)(sqlite3 *db, NSError **error))block
                           error:(NSError **)error {
-    __block BOOL innerOK = YES;
-    __block NSError *innerError = nil;
-    BOOL ok = [self.connectionManager transact:^(sqlite3 *db, BOOL *rollback) {
-        innerOK = block(db, &innerError);
-        *rollback = !innerOK;
-    } error:&innerError];
-
-    if (!ok && error) *error = innerError;
-    return ok;
+    return [self.queryRunner performWriteTransaction:block error:error];
 }
 
 @end
