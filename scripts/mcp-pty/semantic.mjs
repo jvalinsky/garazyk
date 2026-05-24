@@ -49,7 +49,22 @@ function extractDescriptiveKeyHints(text) {
       ? keyPart.split(/\s+\/\s+|\s+or\s+/i).map(k => k.trim()).filter(Boolean)
       : [keyPart];
 
-    for (const key of keys) {
+    // Filter out non-key words: real keys are short identifiers
+    // (q, esc, enter, ctrl+c, f1, etc.) not phrases like "letters"
+    const validKeys = keys.filter(key => {
+      if (key.length > 8) return false; // "letters" is 7, but "ctrl+shift" is 10
+      // Allow known key patterns
+      if (/^(f\d+|esc|enter|tab|space|ctrl|shift|alt|up|down|left|right|home|end|pgup|pgdn|del|ins|backspace|return)$/i.test(key)) return true;
+      // Allow single chars and short combos
+      if (/^[a-z0-9+\-]{1,3}$/i.test(key)) return true;
+      // Allow ctrl/shift combos
+      if (/^(ctrl|shift|alt)\+[a-z]$/i.test(key)) return true;
+      // Reject multi-letter words that aren't known keys
+      if (/^[a-z]{4,}$/i.test(key)) return false;
+      return true;
+    });
+
+    for (const key of validKeys) {
       hints.push({ key, action, raw: match[0].trim() });
     }
   }
@@ -511,7 +526,9 @@ export function detectLists(grid, lines) {
         if (cell.inverse || (cell.bold && cell.fg >= 0 && cell.fg !== cell.bg)) {
           // This line has a styled first character — likely selected
           const label = line.trim().substring(0, 60);
-          if (label.length > 0) {
+          // Reject ASCII art / animation lines: if label has <30% alphanumeric, skip
+          const alphaCount = (label.match(/[a-zA-Z0-9]/g) || []).length;
+          if (label.length > 0 && alphaCount / label.length >= 0.3) {
             items.push({
               id: `list_${y}`,
               role: "list_item",
@@ -702,6 +719,8 @@ export function parseKeyHints(text) {
     while ((match = colonPattern.exec(text)) !== null) {
       const key = match[1].trim();
       const action = match[2].trim();
+      // Skip pure numeric keys — they're cursor positions (1:1, 23:5) not keybindings
+      if (/^\d+$/.test(key)) continue;
       if (key && action) {
         hints.push({ key, action, raw: match[0] });
       }
@@ -736,11 +755,14 @@ export function parseKeyHints(text) {
   // Pattern 6: btop-style key symbols embedded in status bar
   // "╰┘↑ select ↓└┘info ↵└┘terminate└┘kill└┘signals"
   // Key symbols (↑↓←→↵⏎) appear before their action words
+  // Skip symbols preceded by ^ (they're caret-notation keys like ^⏎)
   if (hints.length === 0) {
     const keySymbols = ["↑","↓","←","→","↵","⏎","⇥","⇧"];
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
       if (keySymbols.includes(char)) {
+        // Skip if preceded by ^ (caret notation)
+        if (i > 0 && text[i - 1] === '^') continue;
         const after = text.substring(i + 1).replace(/^[└┘╰\s]+/, "").trim();
         const actionMatch = after.match(/^(\w+)/);
         if (actionMatch) {
@@ -762,13 +784,28 @@ export function parseKeyHints(text) {
   // Pattern 8: Textual ^key notation: "^c Quit ^j Send ^t Method ^s Save f1 Help"
   // Caret-prefix keys common in Python Textual TUI apps
   // Uppercase ^X means Ctrl+Shift+X, lowercase ^x means Ctrl+X
+  // Also handles ^⏎ (Ctrl+Enter), ^⇧ (Ctrl+Shift), etc.
+  // And "or" between keys: "^⏎ or ^j Run Query"
   if (hints.length === 0) {
-    const textualPattern = /\^([a-zA-Z0-9])\s+(\w[\w\s]*?)(?=\s*\^|\s{2,}\w|$)/g;
-    while ((match = textualPattern.exec(text)) !== null) {
+    // First, normalize "or" between ^keys: "^⏎ or ^j Run Query" → "^⏎ Run Query ^j Run Query"
+    // We need to find the action that follows the second key and duplicate it
+    let normalized = text.replace(/\^(\S+)\s+or\s+\^(\S+)\s+(\w[\w\s]*?)(?=\s*\^|\s{2,}\w|$)/g,
+      (m, k1, k2, action) => `^${k1} ${action} ^${k2} ${action} `);
+
+    // Match ^ followed by ASCII letter/digit OR Unicode key symbols
+    const textualPattern = /\^([a-zA-Z0-9⏎⇧⇥↑↓←→↵])\s+(\w[\w\s]*?)(?=\s*\^|\s{2,}\w|$)/g;
+    while ((match = textualPattern.exec(normalized)) !== null) {
       const rawKey = match[1];
-      const key = rawKey === rawKey.toUpperCase() && rawKey !== rawKey.toLowerCase()
-        ? "ctrl+shift+" + rawKey.toLowerCase()
-        : "ctrl+" + rawKey.toLowerCase();
+      // Map Unicode symbols to key names
+      const symbolMap = { '⏎': 'enter', '↵': 'enter', '⇧': 'shift', '⇥': 'tab', '↑': 'up', '↓': 'down', '←': 'left', '→': 'right' };
+      let key;
+      if (symbolMap[rawKey]) {
+        key = "ctrl+" + symbolMap[rawKey];
+      } else if (rawKey === rawKey.toUpperCase() && rawKey !== rawKey.toLowerCase()) {
+        key = "ctrl+shift+" + rawKey.toLowerCase();
+      } else {
+        key = "ctrl+" + rawKey.toLowerCase();
+      }
       const action = match[2].trim();
       if (key && action) {
         hints.push({ key, action, raw: match[0].trim() });
@@ -1025,6 +1062,28 @@ export function buildCapabilityMap(snapshot) {
         { key: "s", action: "search", source: "app_nethack" },
       ];
     }
+  }
+
+  // ── Helix overrides ──
+  // Helix is a modal editor like vim — uses :q to quit, h/j/k/l to navigate
+  if (snapshot.app === "helix") {
+    caps.navigate.keys = ["h", "j", "k", "l"];
+    caps.navigate.source = "app_helix";
+    caps.quit.keys = [":q"];
+    caps.quit.source = "app_helix";
+    caps.help.keys = [":help"];
+    caps.help.source = "app_helix";
+    caps.actions = [
+      { key: "i", action: "insert_mode", source: "app_helix" },
+      { key: "a", action: "append_mode", source: "app_helix" },
+      { key: "o", action: "open_below", source: "app_helix" },
+      { key: "d", action: "delete", source: "app_helix" },
+      { key: "w", action: "next_word", source: "app_helix" },
+      { key: "x", action: "select_line", source: "app_helix" },
+      { key: "/", action: "search", source: "app_helix" },
+      { key: ":", action: "command_mode", source: "app_helix" },
+      { key: "space", action: "leader", source: "app_helix" },
+    ];
   } else if (caps.framework === "ncurses") {
     if (caps.navigate.keys.length === 0) {
       caps.navigate.keys = ["j", "k"];
@@ -1307,9 +1366,10 @@ export function guessApplication(command, lines, grid) {
       guess = "harlequin"; confidence = 0.8;
     } else if (allText.includes("htop") && hasFKeyBar) {
       guess = "htop"; confidence = 0.9;
-    } else if ((/commit\s+[0-9a-f]{7,40}/i.test(text) && /author:/i.test(text)) ||
-               (allText.includes("tig") && hasBoxDrawing)) {
+    } else if (allText.includes("tig") && hasBoxDrawing) {
       guess = "tig"; confidence = 0.85;
+    } else if (/commit\s+[0-9a-f]{7,40}/i.test(text) && /author:/i.test(text) && !hasBoxDrawing) {
+      guess = "git log"; confidence = 0.8;
     } else if (hasTildeLines && hasHelixMode) {
       guess = "helix"; confidence = 0.85;
     } else if (hasTildeLines && hasVimMode) {
@@ -1337,6 +1397,9 @@ export function guessApplication(command, lines, grid) {
       guess = "nano"; confidence = 0.8;
     } else if (allText.includes("commit ") && /[0-9a-f]{7,40}/.test(allText) && allText.includes("author:")) {
       guess = "git log"; confidence = 0.8;
+    } else if (/\[\d+\].*:\w+\*/.test(text)) {
+      // tmux: "[0] 0:bash*"
+      guess = "tmux"; confidence = 0.7;
     }
 
     // Generic TUI detection
@@ -1444,6 +1507,19 @@ export function detectStatusLines(grid, lines) {
     facts.push({ label: "Mode", value: "Normal", sourceBounds: { startY: rows - 1, endY: rows - 1 }, confidence: 0.9 });
   } else if (lastLine && lastLine.trim() === ":" && lastLine.length > 0) {
     facts.push({ label: "Mode", value: "Command", sourceBounds: { startY: rows - 1, endY: rows - 1 }, confidence: 0.6 });
+  }
+
+  // Helix mode indicator: "NOR" (Normal), "INS" (Insert), "SEL" (Select)
+  // Appears on the status bar line, not the last line
+  for (let y = Math.max(0, rows - 3); y < rows; y++) {
+    const line = lines[y];
+    if (!line) continue;
+    const helixMatch = line.match(/\b(NOR|INS|SEL)\b/);
+    if (helixMatch) {
+      const modeMap = { NOR: "Normal", INS: "Insert", SEL: "Select" };
+      facts.push({ label: "Mode", value: modeMap[helixMatch[1]] || helixMatch[1], sourceBounds: { startY: y, endY: y }, confidence: 0.85 });
+      break;
+    }
   }
 
   if (firstLine && firstLine.includes("top -")) {
