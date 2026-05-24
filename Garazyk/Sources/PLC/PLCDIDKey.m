@@ -47,7 +47,7 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
 
     const uint8_t *pub = uncompressedKey.bytes;
     uint8_t compressed[33];
-    compressed[0] = 0x02 | (pub[63] & 0x01);
+    compressed[0] = 0x02 | (pub[64] & 0x01);
     memcpy(compressed + 1, pub + 1, 32);
     return [NSData dataWithBytes:compressed length:33];
 }

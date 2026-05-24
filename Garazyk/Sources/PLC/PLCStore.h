@@ -81,6 +81,20 @@ NS_ASSUME_NONNULL_BEGIN
                                                       count:(NSUInteger)count
                                                       error:(NSError **)error;
 
+/*!
+ @method exportOperationsAfterSequence:count:error:
+
+ @abstract Exports operations after the given sequence cursor.
+
+ @param sequence Lower-bound sequence cursor (exclusive).
+ @param count Maximum number of operations to return.
+ @param error On failure, set to a store error.
+ @result Sequence-ordered operations for export, or nil on failure.
+ */
+- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+                                                              count:(NSUInteger)count
+                                                              error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
