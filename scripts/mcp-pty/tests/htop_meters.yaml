@@ -1,0 +1,35 @@
+name: htop Meters and Navigation
+description: Launch htop, verify meter detection, navigate, then quit
+command: /opt/homebrew/bin/htop
+cols: 80
+rows: 24
+settleMs: 3000
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for htop to render
+  - type: press_key
+    value: down
+    label: Move selection down in process list
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: down
+    label: Move selection down again
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: up
+    label: Move selection back up
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: q
+    label: Quit htop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -64,6 +64,7 @@ Call `pty_semantic_snapshot` with `detail: "compact"`. The response contains:
 | `snapshot.statusBars` | Status bars with keybinding hints and background colors |
 | `snapshot.popups` | Popup overlays with titles, centered flag, and bounds |
 | `snapshot.gameElements` | Game-specific elements: gameBoard, player, gameEntity, cardGame, cardFace |
+| `snapshot.charts` | Data visualizations: brailleChart, blockBar, pipeMeter |
 | `snapshot.vdomViz` | Tree-formatted element hierarchy for quick scanning |
 
 Use `detail: "full"` only when you need the raw text lines for
@@ -1070,6 +1071,22 @@ Detects game-specific elements not covered by standard UI detectors:
 - **cardGame**: Card game summary (card count, face-down count, tableau columns,
   foundations, waste, stock)
 - **cardFace**: Individual card face (rank, suit, suitColor, position)
+
+### detectCharts(grid, lines)
+Detects data visualizations in TUI apps:
+- **brailleChart**: Braille dot charts (U+2800–U+28FF) — two subtypes:
+  - `sparkline`: 2D chart with few chars per line, multiple aligned rows
+    (e.g., btop network graph: ⢀⣸ / ⠈⢹)
+  - `barChart`: Inline Braille bars next to labels/values
+    (e.g., btop CPU cores: "C0 ⣀⣀⣀⣀⢠⢠ 40%")
+- **blockBar**: Horizontal bars with ■/█ block elements
+  (e.g., btop CPU summary: "CPU ■■■■■■■■■■ 24%")
+- **pipeMeter**: Pipe-character meters with brackets
+  (e.g., htop: "0[|||||||||| 26.2%]")
+
+Filtering: Braille inline bars in process tables are excluded by checking
+x-position alignment variance across lines. Card backs require 5+ char width
+to exclude UI buttons.
 
 ### buildCapabilityMap(snapshot)
 Builds a navigation capability map from the semantic snapshot. This is

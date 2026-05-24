@@ -1917,7 +1917,10 @@ export function visualizeTuiVdom(node, prefix = "", isLast = true, isRoot = true
 export function detectGameElements(grid, lines) {
   const elements = [];
   const rows = lines.length;
-  const cols = lines[0]?.length || 0;
+  const cols = Math.max(
+    grid[0]?.length || 0,
+    ...lines.map((line) => line.length),
+  );
 
   // ── 1. Detect game board (bordered area with wall chars) ──
   const wallChars = new Set("▒░█▄▀■□▪▫▬▓");
@@ -2402,6 +2405,14 @@ export function detectCharts(grid, lines) {
       const values = group.map(g => g.value).filter(Boolean);
       const totalChars = group.reduce((sum, g) => sum + g.count, 0);
 
+      // Filter out inline bars in tables (e.g., btop process list):
+      // If most lines have Braille at the same x position, it's a chart.
+      // If Braille positions vary widely across lines, it's inline bars.
+      const startXPositions = group.map(g => g.startX);
+      const avgStartX = startXPositions.reduce((a, b) => a + b, 0) / startXPositions.length;
+      const xVariance = startXPositions.reduce((sum, x) => sum + Math.abs(x - avgStartX), 0) / startXPositions.length;
+      const isAligned = xVariance < 3; // Braille starts within 3 chars of each other
+
       // Determine chart type:
       // - "sparkline": 2D chart with few chars per line but multiple rows
       //   (e.g., btop network: ⢀⣸ / ⠈⢹ across 2 rows)
@@ -2409,8 +2420,11 @@ export function detectCharts(grid, lines) {
       // - "inlineBar": single row with Braille next to a value
       //   (e.g., process list entries)
       const avgCharsPerLine = totalChars / group.length;
-      const is2D = group.length >= 2 && avgCharsPerLine <= 8;
+      const is2D = group.length >= 2 && avgCharsPerLine <= 8 && isAligned;
       const isInlineBar = group.length === 1 && avgCharsPerLine >= 3;
+
+      // Skip inline bars in tables (not aligned, many lines)
+      if (!isAligned && group.length > 4) continue;
 
       if (is2D) {
         charts.push({

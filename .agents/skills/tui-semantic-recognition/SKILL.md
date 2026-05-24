@@ -90,3 +90,33 @@ Games require specialized detection beyond standard UI patterns:
   - Foundations: top-row face-up cards (right side, x > 50%)
   - Tableau: columns with face-up cards below top row
 - **Suit colors**: ♥♦ = red (fg=1), ♣♠ = black (fg=7)
+
+## Chart Detection
+
+TUI monitoring apps render data visualizations using terminal characters:
+
+### Braille Charts (btop, trippy)
+- **Characters**: U+2800–U+28FF (⣀⢀⡀⢠⣤⣶⣷⠸⡿⠁)
+- **Sparkline**: 2D chart with few chars per line, multiple aligned rows
+  - Example: btop network graph (⢀⣸ / ⠈⢹ across 2 rows)
+  - Detection: ≥3 Braille chars per line, aligned x-positions (variance < 3)
+- **Bar chart**: Inline Braille bars next to labels/values
+  - Example: btop CPU cores ("C0 ⣀⣀⣀⣀⢠⢠ 40%")
+  - Detection: ≥3 Braille chars per line, varying x-positions
+- **Filtering**: Process list inline bars are excluded by checking x-alignment
+  variance across lines (unaligned = table, not chart)
+
+### Block Bars (btop, progress indicators)
+- **Characters**: ■ █ ▓ ▒ ░
+- **Pattern**: label + block chars + percentage/value
+  - Example: "CPU ■■■■■■■■■■ 24%"
+  - Example: "Used ⢠⣤ 7.01 GiB" (Braille bar with memory value)
+- **Detection**: Regex matching label + block/Braille chars + value
+
+### Pipe Meters (htop)
+- **Pattern**: `label[||||||    XX.X%]`
+- **Characters**: `|` (pipe) inside brackets
+- **Example**: "0[||||||||||               26.2%]"
+- **Example**: "Mem[|||||||||||||||||||||11.9G/16.0G]"
+- **Detection**: Regex `(\w+)\[([|]+)\s*([^\]]+)\]`
+- **Multiple meters**: htop pairs CPU cores on same line (e.g., "0[|||] 4[|||]")
