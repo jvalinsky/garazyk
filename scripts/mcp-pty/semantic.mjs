@@ -1070,7 +1070,7 @@ export function buildCapabilityMap(snapshot) {
   if (["nsnake", "nudoku", "nethack", "greed"].includes(snapshot.app)) {
     caps.navigate.keys = ["j", "k", "h", "l"];
     caps.navigate.source = "app_" + snapshot.app;
-    caps.quit.keys = ["q"];
+    caps.quit.keys = snapshot.app === "nudoku" ? ["Q"] : ["q"];
     caps.quit.source = "app_" + snapshot.app;
     caps.tabs.available = false;
     if (snapshot.app === "nethack") {
@@ -1081,6 +1081,22 @@ export function buildCapabilityMap(snapshot) {
         { key: "s", action: "search", source: "app_nethack" },
       ];
     }
+  }
+
+  // ── tty-solitaire overrides ──
+  if (snapshot.app === "tty-solitaire") {
+    caps.navigate.keys = ["j", "k", "h", "l"];
+    caps.navigate.source = "app_tty-solitaire";
+    caps.quit.keys = ["q"];
+    caps.quit.source = "app_tty-solitaire";
+    caps.tabs.available = false;
+    caps.actions = [
+      { key: "space", action: "select_card", source: "app_tty-solitaire" },
+      { key: "m", action: "select_more", source: "app_tty-solitaire" },
+      { key: "M", action: "select_all", source: "app_tty-solitaire" },
+      { key: "n", action: "select_fewer", source: "app_tty-solitaire" },
+      { key: "N", action: "new_game", source: "app_tty-solitaire" },
+    ];
   }
 
   // ── Helix overrides ──
@@ -1507,6 +1523,11 @@ export function guessApplication(command, lines, grid) {
       posting: "textual",
       harlequin: "textual",
       dashboard: "ratatui",
+      "tty-solitaire": "ncurses",
+      nsnake: "ncurses",
+      nudoku: "ncurses",
+      nethack: "ncurses",
+      greed: "ncurses",
     };
 
     if (frameworkByApp[guess]) {
@@ -2099,6 +2120,143 @@ export function detectGameElements(grid, lines) {
         mode: modeMatch?.[1]?.trim() || null,
       });
       break;
+    }
+  }
+
+  // ── 5. Detect card game elements ──
+  // Card games (Klondike solitaire) have:
+  //   - Card backs: small bordered boxes (┌─────┐) with green bg
+  //   - Card faces: rank+suit (K♥, 5♦, 10♣, A♠) or suit+rank (♥K, ♦5)
+  //   - Piles: stock, waste, foundations (4), tableau (7)
+  const suitChars = new Set(["♥", "♦", "♣", "♠"]);
+
+  // Collect all card faces and card backs
+  const cardFaces = [];
+  const cardBacks = [];
+
+  for (let y = 0; y < rows; y++) {
+    const line = lines[y] || "";
+
+    // Card faces: two formats
+    //   rank+suit: "K♥", "10♠", "A♣"
+    //   suit+rank: "♥K", "♠10", "♣A"  (tty-solitaire cascade format)
+    for (const match of line.matchAll(/([A2-9JQK10]{1,2})([♥♦♣♠])/g)) {
+      const rank = match[1];
+      const suit = match[2];
+      const suitColor = (suit === "♥" || suit === "♦") ? "red" : "black";
+      const before = line.substring(0, match.index);
+      const x = [...before].length;
+      cardFaces.push({ rank, suit, suitColor, x, y, label: rank + suit, format: "rank_suit" });
+    }
+    for (const match of line.matchAll(/([♥♦♣♠])([A2-9JQK10]{1,2})/g)) {
+      const suit = match[1];
+      const rank = match[2];
+      const suitColor = (suit === "♥" || suit === "♦") ? "red" : "black";
+      const before = line.substring(0, match.index);
+      const x = [...before].length;
+      // Avoid duplicate if already matched as rank+suit
+      const alreadyFound = cardFaces.some(cf =>
+        cf.y === y && Math.abs(cf.x - x) <= 1 && cf.rank === rank && cf.suit === suit
+      );
+      if (!alreadyFound) {
+        cardFaces.push({ rank, suit, suitColor, x, y, label: rank + suit, format: "suit_rank" });
+      }
+    }
+
+    // Card backs: small bordered boxes
+    for (const match of line.matchAll(/┌─+┐/g)) {
+      const before = line.substring(0, match.index);
+      const x = [...before].length;
+      const width = match[0].length;
+      cardBacks.push({ x, y, width, label: "face-down" });
+    }
+  }
+
+  if (cardFaces.length > 0 || cardBacks.length > 0) {
+    // Detect piles by grouping cards by position
+    // Stock: top-left card backs
+    // Waste: second card from top-left
+    // Foundations: top-row card backs on the right
+    // Tableau: cascading columns below
+
+    // Group card faces into columns by x position
+    // Klondike tableau: each column is offset by ~8 chars
+    const faceColumns = {};
+    for (const cf of cardFaces) {
+      const colKey = Math.round(cf.x / 8); // group by ~8-char columns
+      if (!faceColumns[colKey]) faceColumns[colKey] = [];
+      faceColumns[colKey].push(cf);
+    }
+
+    // Also group card backs into columns
+    const backColumns = {};
+    for (const cb of cardBacks) {
+      const colKey = Math.round(cb.x / 8);
+      if (!backColumns[colKey]) backColumns[colKey] = [];
+      backColumns[colKey].push(cb);
+    }
+
+    // Find tableau columns: columns with any face-up cards
+    // (even 1 face-up card counts if it's below the top row)
+    const topRowY = Math.min(...cardBacks.map(b => b.y), ...cardFaces.map(c => c.y));
+    const tableauColumns = [];
+    for (const [colKey, cards] of Object.entries(faceColumns)) {
+      // Tableau cards are below the top row
+      const belowTop = cards.filter(c => c.y > topRowY + 2);
+      if (belowTop.length >= 1) {
+        const ys = cards.map(c => c.y);
+        tableauColumns.push({
+          colKey: parseInt(colKey),
+          cards,
+          topY: Math.min(...ys),
+          bottomY: Math.max(...ys),
+        });
+      }
+    }
+
+    // Sort tableau columns left to right
+    tableauColumns.sort((a, b) => a.colKey - b.colKey);
+
+    // Top-row cards: stock (leftmost backs), waste (next), foundations (right side)
+    const topFaces = cardFaces.filter(cf => cf.y <= topRowY + 2);
+    const topBacks = cardBacks.filter(cb => cb.y <= topRowY + 2);
+
+    // Foundations: top-row on the right side (x > 50% of screen width)
+    const midX = cols / 2;
+    const foundations = topFaces.filter(cf => cf.x > midX);
+    const waste = topFaces.filter(cf => cf.x <= midX);
+
+    // Build game element
+    const allYs = [...cardFaces.map(c => c.y), ...cardBacks.map(b => b.y)];
+    const minY = Math.min(...allYs);
+    const maxY = Math.max(...allYs);
+
+    elements.push({
+      role: "cardGame",
+      id: "card_game",
+      bounds: { startY: minY, endY: maxY },
+      label: "Card Game",
+      cardCount: cardFaces.length,
+      faceDownCount: cardBacks.length,
+      tableauColumns: tableauColumns.length,
+      foundations,
+      waste,
+      stockCount: topBacks.filter(b => b.x < midX).length,
+    });
+
+    // Add individual card face elements
+    for (const cf of cardFaces) {
+      elements.push({
+        role: "cardFace",
+        id: `card_${cf.x}_${cf.y}`,
+        bounds: { startY: cf.y, endY: cf.y },
+        position: { x: cf.x, y: cf.y },
+        label: cf.label,
+        rank: cf.rank,
+        suit: cf.suit,
+        suitColor: cf.suitColor,
+        format: cf.format,
+      });
     }
   }
 

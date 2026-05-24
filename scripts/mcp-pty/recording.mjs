@@ -147,6 +147,11 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     .ov-scoreBar .ov-label { background: #1a4a6e; color: #79c0ff; }
     .ov-titleBar { border-bottom: 1px solid #484f58; background: transparent; }
     .ov-titleBar .ov-label { background: #484f58; color: #e6edf3; }
+    .ov-cardGame { border: 1.5px solid #a371f7; background: rgba(163,113,247,.04); }
+    .ov-cardGame .ov-label { background: #8957e5; color: #fff; }
+    .ov-cardFace { border: 1px solid #58a6ff; background: rgba(88,166,255,.08); border-radius: 3px; }
+    .ov-cardFace .ov-label { background: #1a4a6e; color: #79c0ff; font-size: 10px; }
+    .ov-cardFace-red .ov-label { background: #6e1a1a; color: #ff7b72; }
     @keyframes cursor-blink { 50% { opacity: .4; } }
 
     .ov-label { position: absolute; top: -18px; left: -1px; max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; border-radius: 3px 3px 0 0; z-index: 1; }
@@ -556,6 +561,20 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
           overlay.appendChild(makeBox("titleBar",
             0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
             titleText));
+        } else if (ge.role === "cardGame") {
+          // Card game: summary box spanning the card area
+          const cardText = ge.cardCount + " cards, " + ge.faceDownCount + " face-down, " + ge.tableauColumns + " tableau cols";
+          overlay.appendChild(makeBox("cardGame",
+            0, ge.bounds.startY * lineH, width * charW, (ge.bounds.endY - ge.bounds.startY + 1) * lineH,
+            ge.label, cardText));
+        } else if (ge.role === "cardFace") {
+          // Individual card face: small badge at the card position
+          const cls = ge.suitColor === "red" ? "cardFace cardFace-red" : "cardFace";
+          const box = makeBox(cls,
+            ge.position.x * charW, ge.position.y * lineH,
+            3 * charW, lineH,
+            ge.label);
+          overlay.appendChild(box);
         }
       }
     }
@@ -618,6 +637,12 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
             }
           } else if (ge.role === "titleBar" && ge.mode) {
             gHtml += '<div class="cap-row"><span class="cap-action">Mode</span><span class="cap-key">' + escapeHtml(ge.mode) + '</span></div>';
+          } else if (ge.role === "cardGame") {
+            gHtml += '<div class="cap-row"><span style="color:#a371f7;font-weight:700">♠</span><span class="cap-action">Cards: ' + ge.cardCount + ' (' + ge.faceDownCount + ' down)</span></div>';
+            gHtml += '<div class="cap-row"><span class="cap-action">Tableau</span><span class="cap-key">' + ge.tableauColumns + ' cols</span></div>';
+          } else if (ge.role === "cardFace") {
+            const suitIcon = ge.suitColor === "red" ? '<span style="color:#ff7b72">' + escapeHtml(ge.suit) + '</span>' : '<span style="color:#e6edf3">' + escapeHtml(ge.suit) + '</span>';
+            gHtml += '<div class="cap-row">' + suitIcon + '<span class="cap-action">' + escapeHtml(ge.rank) + '</span></div>';
           }
         }
         gameInfo.innerHTML = gHtml || '<div style="color:var(--muted)">—</div>';

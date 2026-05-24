@@ -1,0 +1,65 @@
+name: tty-solitaire Card Game
+description: Launch tty-solitaire, start game, navigate cards, select and move, then quit
+command: /opt/homebrew/bin/ttysolitaire
+cols: 60
+rows: 30
+settleMs: 3000
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for welcome screen
+  - type: press_key
+    value: space
+    label: Start the game (press space on welcome screen)
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for game to render
+  - type: press_key
+    value: j
+    label: Move cursor down to next card
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Move cursor back up
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move cursor left
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move cursor right
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: space
+    label: Select a card
+  - type: wait
+    timeoutMs: 500
+    label: Let selection register
+  - type: press_key
+    value: l
+    label: Move selected card right
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: space
+    label: Place the card
+  - type: wait
+    timeoutMs: 500
+    label: Let placement register
+  - type: press_key
+    value: q
+    label: Quit tty-solitaire
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
