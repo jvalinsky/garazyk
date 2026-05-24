@@ -152,6 +152,12 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     .ov-cardFace { border: 1px solid #58a6ff; background: rgba(88,166,255,.08); border-radius: 3px; }
     .ov-cardFace .ov-label { background: #1a4a6e; color: #79c0ff; font-size: 10px; }
     .ov-cardFace-red .ov-label { background: #6e1a1a; color: #ff7b72; }
+    .ov-brailleChart { border: 1px solid #3fb950; background: rgba(63,185,80,.06); }
+    .ov-brailleChart .ov-label { background: #238636; color: #fff; }
+    .ov-blockBar { border: 1px solid #d29922; background: rgba(210,153,34,.06); }
+    .ov-blockBar .ov-label { background: #9e6a03; color: #fff; }
+    .ov-pipeMeter { border: 1px solid #58a6ff; background: rgba(88,166,255,.06); }
+    .ov-pipeMeter .ov-label { background: #1a4a6e; color: #79c0ff; }
     @keyframes cursor-blink { 50% { opacity: .4; } }
 
     .ov-label { position: absolute; top: -18px; left: -1px; max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 6px; font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; border-radius: 3px 3px 0 0; z-index: 1; }
@@ -212,6 +218,10 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         <div class="cap-card" id="game-card" style="display:none">
           <h3>Game</h3>
           <div id="game-info">—</div>
+        </div>
+        <div class="card">
+          <h3>Charts</h3>
+          <div id="chart-info">—</div>
         </div>
       </div>
     </div>
@@ -575,6 +585,30 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
           overlay.appendChild(box);
         }
       }
+
+      // 9. Charts
+      for (const ch of (snap.charts || [])) {
+        if (!ch.bounds) continue;
+
+        if (ch.role === "brailleChart") {
+          const info = ch.chartType === "sparkline"
+            ? "Sparkline " + ch.lineCount + " rows"
+            : "Bar chart " + ch.values?.length + " values";
+          overlay.appendChild(makeBox("brailleChart",
+            ch.startX * charW, ch.bounds.startY * lineH,
+            (ch.endX - ch.startX + 1) * charW, (ch.bounds.endY - ch.bounds.startY + 1) * lineH,
+            ch.label, info));
+        } else if (ch.role === "blockBar") {
+          overlay.appendChild(makeBox("blockBar",
+            0, ch.bounds.startY * lineH, width * charW, lineH,
+            ch.label, ch.barLabel + ": " + ch.value));
+        } else if (ch.role === "pipeMeter") {
+          const meterText = (ch.meters || []).map(m => m.label + " " + m.value).join("  ");
+          overlay.appendChild(makeBox("pipeMeter",
+            0, ch.bounds.startY * lineH, width * charW, lineH,
+            ch.label, meterText || null));
+        }
+      }
     }
 
     // ── Capabilities sidebar ──
@@ -646,6 +680,36 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         gameInfo.innerHTML = gHtml || '<div style="color:var(--muted)">—</div>';
       } else {
         gameCard.style.display = "none";
+      }
+
+      // Charts card
+      const chartCard = document.getElementById("chart-info")?.parentElement;
+      const chartInfo = document.getElementById("chart-info");
+      if (chartInfo && snap.charts?.length > 0) {
+        if (chartCard) chartCard.style.display = "";
+        let cHtml = "";
+        for (const ch of snap.charts) {
+          if (ch.role === "brailleChart") {
+            const icon = ch.chartType === "sparkline" ? "📈" : "📊";
+            cHtml += '<div class="cap-row"><span style="color:#3fb950">' + icon + '</span><span class="cap-action">' + escapeHtml(ch.label) + '</span>';
+            cHtml += '<span class="cap-key">' + ch.lineCount + ' rows</span></div>';
+            if (ch.values?.length) {
+              cHtml += '<div class="cap-row" style="padding-left:18px"><span class="cap-action" style="color:var(--muted)">' + escapeHtml(ch.values.slice(0, 4).join(" ")) + '</span></div>';
+            }
+          } else if (ch.role === "blockBar") {
+            cHtml += '<div class="cap-row"><span style="color:#d29922">▮</span><span class="cap-action">' + escapeHtml(ch.barLabel) + '</span>';
+            cHtml += '<span class="cap-key">' + escapeHtml(ch.value) + '</span></div>';
+          } else if (ch.role === "pipeMeter") {
+            for (const m of (ch.meters || [])) {
+              const pct = m.percent != null ? m.percent + "%" : m.value;
+              cHtml += '<div class="cap-row"><span style="color:#58a6ff">▪</span><span class="cap-action">' + escapeHtml(m.label) + '</span>';
+              cHtml += '<span class="cap-key">' + escapeHtml(pct) + '</span></div>';
+            }
+          }
+        }
+        chartInfo.innerHTML = cHtml || '<div style="color:var(--muted)">—</div>';
+      } else {
+        if (chartCard) chartCard.style.display = "none";
       }
     }
 
