@@ -19,7 +19,7 @@ Key conventions:
 - Skills are in .agents/skills/ (loaded via use_skill tool)
 - Custom tools are in .opencode/tools/
 
-Available custom tools: build-test, find-test-class, seed-data, service-control`)
+Available custom tools: build-test, find-test-class, seed-data, service-control, hamownia-agent`)
     },
   }
 }

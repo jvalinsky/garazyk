@@ -5,6 +5,7 @@ import { Type } from "typebox";
 import { spawn } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { buildListArgs, buildRunArgs, buildTriageArgs } from "./agent_args.ts";
 
 const TEST_MAIN_PATH = "Garazyk/Tests/test_main.m";
 const MAX_OUTPUT_BYTES = 50 * 1024;
@@ -262,16 +263,10 @@ export default function garazykTools(pi: ExtensionAPI) {
       ),
     }),
     async execute(_id, params, signal, _onUpdate, ctx) {
-      const args: string[] = [
-        "run", "-A", "packages/hamownia/cli.ts",
-        "agent", "list",
-      ];
-      if (params.scenarioIds) {
-        args.push(...params.scenarioIds.trim().split(/\s+/));
-      }
-      if (params.topology) {
-        args.push("--topology", params.topology);
-      }
+      const args = buildListArgs({
+        scenarioIds: params.scenarioIds,
+        topology: params.topology,
+      });
       const result = await runCommand("deno", args, ctx.cwd, signal, 120_000);
       if (result.code !== 0) {
         return {
@@ -361,22 +356,18 @@ export default function garazykTools(pi: ExtensionAPI) {
       ),
     }),
     async execute(_id, params, signal, _onUpdate, ctx) {
-      const args: string[] = [
-        "run", "-A", "packages/hamownia/cli.ts",
-        "agent", "run",
-      ];
-      if (params.scenarioIds) {
-        args.push(...params.scenarioIds.trim().split(/\s+/));
-      }
-      if (params.setup) args.push("--setup");
-      if (params.noSetup) args.push("--no-setup");
-      if (params.binary) args.push("--binary");
-      if (params.pds2) args.push("--pds2");
-      if (params.keepRunning) args.push("--keep-running");
-      if (params.topology) args.push("--topology", params.topology);
-      if (params.runner) args.push("--runner", params.runner);
-      if (params.runId) args.push("--run-id", params.runId);
-      args.push("--timeout", String(params.timeout ?? 120));
+      const args = buildRunArgs({
+        scenarioIds: params.scenarioIds,
+        setup: params.setup,
+        noSetup: params.noSetup,
+        binary: params.binary,
+        pds2: params.pds2,
+        keepRunning: params.keepRunning,
+        topology: params.topology,
+        runner: params.runner,
+        timeout: params.timeout,
+        runId: params.runId,
+      });
 
       const timeoutMs = ((params.timeout ?? 120) + 60) * 1000;
       const result = await runCommand("deno", args, ctx.cwd, signal, timeoutMs);
@@ -421,12 +412,10 @@ export default function garazykTools(pi: ExtensionAPI) {
       ),
     }),
     async execute(_id, params, signal, _onUpdate, ctx) {
-      const args: string[] = [
-        "run", "-A", "packages/hamownia/cli.ts",
-        "agent", "triage",
-      ];
-      if (params.runId) args.push("--run-id", params.runId);
-      if (params.reportsDir) args.push("--reports-dir", params.reportsDir);
+      const args = buildTriageArgs({
+        runId: params.runId,
+        reportsDir: params.reportsDir,
+      });
 
       const result = await runCommand("deno", args, ctx.cwd, signal, 120_000);
       if (result.code !== 0) {
