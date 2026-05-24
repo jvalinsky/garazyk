@@ -9,18 +9,13 @@
 #import <Foundation/Foundation.h>
 #import "Mikrus/MikrusRuntime.h"
 #import "Mikrus/MikrusConfiguration.h"
-#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import "Runtime/GZServiceLifecycle.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
-#if defined(GNUSTEP)
-#import <curl/curl.h>
-#endif
+#import "CLI/GZCommandLineOptions.h"
 
 static const char *executable_name = "mikrus";
-static MikrusRuntime *gRuntime = nil;
-
-extern void NSDateFormatterLinkATProtoCategory(void);
 
 static void print_usage(void) {
     printf("Usage: %s <command> [options]\n\n", executable_name);
@@ -57,66 +52,10 @@ static int fail_with_usage(NSString *message) {
     return 2;
 }
 
-static BOOL parse_options(NSArray<NSString *> *args,
-                          NSUInteger *port,
-                          NSMutableArray<NSString *> *relayURLs,
-                          NSString **dataDir,
-                          NSString **configPath,
-                          BOOL *noIngest,
-                          NSString **errorMessage) {
-    for (NSUInteger i = 0; i < args.count; i++) {
-        NSString *arg = args[i];
-        if ([arg isEqualToString:@"--port"] || [arg isEqualToString:@"-p"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) *errorMessage = @"Missing value for --port";
-                return NO;
-            }
-            if (port) *port = (NSUInteger)[args[++i] integerValue];
-            else i++;
-        } else if ([arg isEqualToString:@"--relay"] || [arg isEqualToString:@"-r"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) *errorMessage = @"Missing value for --relay";
-                return NO;
-            }
-            if (relayURLs) [relayURLs addObject:args[++i]];
-            else i++;
-        } else if ([arg isEqualToString:@"--data-dir"] || [arg isEqualToString:@"-d"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) *errorMessage = @"Missing value for --data-dir";
-                return NO;
-            }
-            if (dataDir) *dataDir = args[++i];
-            else i++;
-        } else if ([arg isEqualToString:@"--config"] || [arg isEqualToString:@"-c"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) *errorMessage = @"Missing value for --config";
-                return NO;
-            }
-            if (configPath) *configPath = args[++i];
-            else i++;
-        } else if ([arg isEqualToString:@"--no-ingest"]) {
-            if (noIngest) *noIngest = YES;
-        } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
-            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
-        } else if ([arg hasPrefix:@"-"]) {
-            if (errorMessage) *errorMessage = [NSString stringWithFormat:@"Unknown option: %@", arg];
-            return NO;
-        } else {
-            if (errorMessage) *errorMessage = [NSString stringWithFormat:@"Unexpected argument: %@", arg];
-            return NO;
-        }
-    }
-    return YES;
-}
 
 int main(int argc, const char *argv[]) {
-    [[GZSignalManager sharedManager] installIgnoredSignals];
-    [GZCrashReporter installCrashHandlersWithExecutableName:"mikrus"];
-#if defined(GNUSTEP)
-    curl_global_init(CURL_GLOBAL_ALL);
-#endif
+    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
     @autoreleasepool {
-        NSDateFormatterLinkATProtoCategory();
         if (argc < 2) return fail_with_usage(@"Missing command");
 
         NSString *command = [NSString stringWithUTF8String:argv[1]];
@@ -137,15 +76,31 @@ int main(int argc, const char *argv[]) {
             return fail_with_usage([NSString stringWithFormat:@"Unknown command: %@", command]);
         }
 
-        NSUInteger port = 0;
-        NSMutableArray<NSString *> *relayURLs = [NSMutableArray array];
-        NSString *dataDir = nil;
-        NSString *configPath = nil;
-        BOOL noIngest = NO;
-        NSString *parseError = nil;
-        if (!parse_options(args, &port, relayURLs, &dataDir, &configPath, &noIngest, &parseError)) {
-            return fail_with_usage(parseError);
+        GZCommandLineOptions *parser = [[GZCommandLineOptions alloc] init];
+        [parser registerOptions:@[
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"relay" shortName:@"r" type:GZCommandLineOptionTypeRepeatableString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"data-dir" shortName:@"d" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"config" shortName:@"c" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"no-ingest" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ] forCommand:@"serve"];
+
+        NSError *parseError = nil;
+        NSDictionary *parsedArgs = [parser parseArguments:args forCommand:@"serve" error:&parseError];
+        if (!parsedArgs) {
+            return fail_with_usage(parseError.localizedDescription);
         }
+
+        if ([parsedArgs[@"verbose"] boolValue]) {
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
+        }
+
+        NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 0;
+        NSArray<NSString *> *relayURLs = parsedArgs[@"relay"];
+        NSString *dataDir = parsedArgs[@"data-dir"];
+        NSString *configPath = parsedArgs[@"config"];
+        BOOL noIngest = [parsedArgs[@"no-ingest"] boolValue];
 
         MikrusRuntime *runtime = [MikrusRuntime sharedRuntime];
         if (configPath.length > 0) {
@@ -164,40 +119,22 @@ int main(int argc, const char *argv[]) {
         if (dataDir.length > 0) config.dataDirectory = dataDir;
         if (noIngest) config.ingestEnabled = NO;
 
-        NSError *startError = nil;
-        if (![runtime startWithError:&startError]) {
-            fprintf(stderr, "Failed to start Mikrus: %s\n", startError.localizedDescription.UTF8String ?: "unknown");
-            return 1;
-        }
-
-        printf("Mikrus link index started\n");
-        printf("  Port:     %lu\n", (unsigned long)config.httpPort);
-        printf("  Data dir: %s\n", config.dataDirectory.UTF8String);
-        printf("  Ingest:   %s\n", config.ingestEnabled ? "enabled" : "disabled");
-        printf("  Relays:   %lu configured\n", (unsigned long)config.relayURLs.count);
-        printf("\nEndpoints:\n");
-        printf("  GET /xrpc/blue.microcosm.links.getBacklinks\n");
-        printf("  GET /xrpc/blue.microcosm.links.getBacklinkDids\n");
-        printf("  GET /xrpc/blue.microcosm.links.getBacklinksCount\n");
-        printf("  GET /xrpc/blue.microcosm.links.getManyToMany\n");
-        printf("  GET /xrpc/blue.microcosm.links.getManyToManyCounts\n");
-        printf("  GET /xrpc/blue.microcosm.identity.resolveMiniDoc\n");
-        printf("  GET /xrpc/blue.microcosm.repo.getRecordByUri\n");
-        printf("\nPress Ctrl+C to stop.\n");
-
-        gRuntime = runtime;
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
-            (void)sig;
-            [gRuntime stop];
-            exit(0);
+        return [GZServiceLifecycle runServiceWithRuntime:runtime serviceName:@"Mikrus" onStart:^{
+            printf("Mikrus link index started\n");
+            printf("  Port:     %lu\n", (unsigned long)config.httpPort);
+            printf("  Data dir: %s\n", config.dataDirectory.UTF8String);
+            printf("  Ingest:   %s\n", config.ingestEnabled ? "enabled" : "disabled");
+            printf("  Relays:   %lu configured\n", (unsigned long)config.relayURLs.count);
+            printf("\nEndpoints:\n");
+            printf("  GET /xrpc/blue.microcosm.links.getBacklinks\n");
+            printf("  GET /xrpc/blue.microcosm.links.getBacklinkDids\n");
+            printf("  GET /xrpc/blue.microcosm.links.getBacklinksCount\n");
+            printf("  GET /xrpc/blue.microcosm.links.getManyToMany\n");
+            printf("  GET /xrpc/blue.microcosm.links.getManyToManyCounts\n");
+            printf("  GET /xrpc/blue.microcosm.identity.resolveMiniDoc\n");
+            printf("  GET /xrpc/blue.microcosm.repo.getRecordByUri\n");
+            printf("\nPress Ctrl+C to stop.\n");
         }];
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
-            (void)sig;
-            [gRuntime stop];
-            exit(0);
-        }];
-
-        dispatch_main();
     }
     return 0;
 }

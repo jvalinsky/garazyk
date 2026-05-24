@@ -21,18 +21,20 @@
 
 #import <Foundation/Foundation.h>
 
+#import "Runtime/GZServiceLifecycle.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewConfiguration;
 @class AppViewDatabase;
 @class AppViewVideoUriBuilder;
+@class GZDatabaseConnectionManager;
+@protocol AppViewRouteRegistration;
 
-/*!
- @class AppViewRuntime
- 
- @abstract Manages the complete AppView server lifecycle.
+/**
+ * @abstract Manages the full lifecycle of a standalone AppView server instance.
  */
-@interface AppViewRuntime : NSObject
+@interface AppViewRuntime : NSObject <GZServiceRuntimeProtocol>
 
 /*! The active configuration. Populated after loadConfiguration*. */
 @property (nonatomic, strong, readonly) AppViewConfiguration *configuration;

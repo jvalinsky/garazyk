@@ -80,8 +80,11 @@ Each candidate is scored from 1 to 5:
 
 ## Review Corrections
 
-- The final report file named by the initial summary was missing from the
-  workspace. This review creates `refactor_opportunity_audit_report.md`.
+- The final report file named by the initial summary was missing from the repo
+  workspace but was later found under
+  `~/.gemini/antigravity-cli/brain/d517cead-09f6-4f12-a0f4-9015e5a89c3c/`.
+  This review creates a source-validated workspace copy at
+  `refactor_opportunity_audit_report.md`.
 - The SQLite query/update helpers are exact in shape between Mikrus and Beskid,
   but not character-for-character because each service uses its own error
   constructor/domain.

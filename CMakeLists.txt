@@ -296,6 +296,10 @@ endfunction()
 file(GLOB_RECURSE ATPROTO_CORE_SOURCES
   "Garazyk/Sources/Core/*.m"
   "Garazyk/Sources/Core/*.c"
+  "Garazyk/Sources/Shared/*.m"
+  "Garazyk/Sources/Shared/*.c"
+  "Garazyk/Sources/Runtime/*.m"
+  "Garazyk/Sources/Runtime/*.c"
   "Garazyk/Sources/Compat/*.m"
   "Garazyk/Sources/Compat/*.c"
   "Garazyk/Sources/Debug/*.m"
