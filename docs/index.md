@@ -34,9 +34,11 @@ The canonical entry point for all project documentation. Organized per the
 ## Plans
 
 - [Documentation Roadmap](documentation_roadmap.md) — current coverage state
-- [Documentation Remediation Plan](documentation_remediation_plan.md) — this plan
-- [Deno Packages Next Steps](plans/deno-packages-next-steps.md) — package status, JSR blockers
-- [TSDoc Revision Plan](plans/tsdoc-revision-plan.md) — TypeScript doc coverage plan
+- [Next Steps](plans/next-steps.md) — current implementation plan
+- [Agent Scenario Testing Plan](plans/2026-05-23-agent-scenario-testing-plan.md) — machine-readable scenario interface follow-up
+- [Documentation Remediation Plan](archive/planning/documentation_remediation_plan.md) — historical remediation plan
+- [Deno Packages Next Steps](archive/planning/deno-packages-next-steps.md) — archived package status plan
+- [TSDoc Revision Plan](archive/planning/tsdoc-revision-plan.md) — archived TypeScript doc coverage plan
 
 ## TUI
 

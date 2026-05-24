@@ -1,8 +1,8 @@
-> **⚠️ SUPERSEDED by [`next-steps.md`](./next-steps.md)** — 2026-05-22.
+> **⚠️ SUPERSEDED by [`next-steps.md`](../../plans/next-steps.md)** — 2026-05-22.
 > This plan was written 2026-05-16. TypeDoc entries and `validation.notDocumented` have since
 > been added, and the target files shifted from `scripts/lib/deno/` barrels to `packages/`
 > source files. This document is retained for the detailed before/after examples and
-> interface-by-interface breakdowns. See `next-steps.md` for the current implementation plan.
+> interface-by-interface breakdowns. See `../../plans/next-steps.md` for the current implementation plan.
 
 # TSDoc Revision & TypeScript Doc Generation Plan [SUPERSEDED]
 

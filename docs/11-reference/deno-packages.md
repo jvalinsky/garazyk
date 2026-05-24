@@ -24,4 +24,4 @@ For the full lexicon resolution pipeline architecture (5-layer sans-IO design), 
 [Lexicon Resolution Pipeline](lexicon-resolution.md).
 
 For detailed package status including JSR publish blockers and test coverage gaps, see
-[Deno Packages Next Steps](../plans/deno-packages-next-steps.md).
+[Next Steps](../plans/next-steps.md).
