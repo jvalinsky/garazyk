@@ -1,7 +1,7 @@
-> **⚠️ SUPERSEDED by [`next-steps.md`](./next-steps.md)** — 2026-05-22.
+> **⚠️ SUPERSEDED by [`next-steps.md`](../../plans/next-steps.md)** — 2026-05-22.
 > This plan was written 2026-05-20. Significant work (currentTheme lazy init, formatBytes
 > dedup, TypeDoc entries) has since completed. This document is retained for historical
-> context only. See `next-steps.md` for the current implementation plan.
+> context only. See `../../plans/next-steps.md` for the current implementation plan.
 
 # Deno Packages: Next Steps Plan [SUPERSEDED]
 

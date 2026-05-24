@@ -5,7 +5,7 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **103**
+Total documents in this view: **111**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -14,6 +14,7 @@ Total documents in this view: **103**
 | [AGENTS.md](../../AGENTS.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
 | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `canonical` | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `docs` | `active` |
 | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `canonical` | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `docs` | `active` |
+| [docs/10-tutorials/germ-mailbox-setup.md](../10-tutorials/germ-mailbox-setup.md) | `canonical` | [docs/10-tutorials/germ-mailbox-setup.md](../10-tutorials/germ-mailbox-setup.md) | `docs` | `active` |
 | [docs/10-tutorials/index.md](../10-tutorials/index.md) | `canonical` | [docs/10-tutorials/index.md](../10-tutorials/index.md) | `docs` | `active` |
 | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `canonical` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `docs` | `active` |
 | [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md) | `canonical` | [docs/11-reference/deno-packages.md](../11-reference/deno-packages.md) | `docs` | `active` |
@@ -23,13 +24,19 @@ Total documents in this view: **103**
 | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `canonical` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `docs` | `active` |
 | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `canonical` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `docs` | `active` |
 | [docs/20-explanation/architecture/atproto_pds_architecture.md](../20-explanation/architecture/atproto_pds_architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/20-explanation/architecture/media_core_framework.md](../20-explanation/architecture/media_core_framework.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/DEPLOYMENT.md](../20-explanation/guides/DEPLOYMENT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/archive/core_subsystem_subplans.md](../archive/core_subsystem_subplans.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/deno-packages-next-steps.md](../archive/planning/deno-packages-next-steps.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/documentation_remediation_plan.md](../archive/planning/documentation_remediation_plan.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/README.md](../archive/planning/README.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
-| [docs/documentation_remediation_plan.md](../documentation_remediation_plan.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/archive/planning/tsdoc-revision-plan.md](../archive/planning/tsdoc-revision-plan.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/audits/2026-05-23-deciduous-and-memory-audit.md](../audits/2026-05-23-deciduous-and-memory-audit.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/documentation_roadmap.md](../documentation_roadmap.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/index.md](../index.md) | `canonical` | [docs/index.md](../index.md) | `docs` | `active` |
-| [docs/plans/deno-packages-next-steps.md](../plans/deno-packages-next-steps.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/2026-05-22-adversarial-protocol-testing-design.md](../plans/2026-05-22-adversarial-protocol-testing-design.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/2026-05-22-adversarial-protocol-testing-plan.md](../plans/2026-05-22-adversarial-protocol-testing-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/2026-05-23-agent-scenario-testing-plan.md](../plans/2026-05-23-agent-scenario-testing-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/e2e-006-chat-allow-incoming.md](../plans/e2e-006-chat-allow-incoming.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/e2e-026-appview-ingest-load.md](../plans/e2e-026-appview-ingest-load.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/e2e-030-temporal-distortion.md](../plans/e2e-030-temporal-distortion.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
@@ -45,9 +52,9 @@ Total documents in this view: **103**
 | [docs/plans/e2e-060-mikrus-service.md](../plans/e2e-060-mikrus-service.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/e2e-061-graph-read-verification.md](../plans/e2e-061-graph-read-verification.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/mikrus-code-review-remediation.md](../plans/mikrus-code-review-remediation.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/next-steps.md](../plans/next-steps.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/remaining-scenario-failures.md](../plans/remaining-scenario-failures.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/tsdoc-revision-plan.md](../plans/tsdoc-revision-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/repo-index/all-documents.md](all-documents.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/backlinks.md](backlinks.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
@@ -60,6 +67,7 @@ Total documents in this view: **103**
 | [docs/repo-index/tooling.md](tooling.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/pds-deep-code-review-2026-05-22.md](../reports/pds-deep-code-review-2026-05-22.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/architecture.md](../tui/architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/components.md](../tui/components.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/core-primitives.md](../tui/core-primitives.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
@@ -86,10 +94,10 @@ Total documents in this view: **103**
 | [Garazyk/docs/guides/objective_c_tips.md](../../Garazyk/docs/guides/objective_c_tips.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Frameworks/README.md](../../Garazyk/Frameworks/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md](../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
-| [Garazyk/Sources/Admin/ADMINUI_DELIVERY_SUMMARY.md](../../Garazyk/Sources/Admin/ADMINUI_DELIVERY_SUMMARY.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md](../../Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
-| [Garazyk/Sources/Admin/ADMINUI_INTEGRATION_COMPLETE.md](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION_COMPLETE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md](../../Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
+| [Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md](../../Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/Diagnostics/README.md](../../Garazyk/Sources/Admin/Diagnostics/README.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md](../../Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md](../../Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
