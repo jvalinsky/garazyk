@@ -5,6 +5,8 @@
  * @module docker_config
  */
 
+import { DEFAULT_MOCK_TWILIO_PORT } from "./topology_presets.ts";
+
 // ---------------------------------------------------------------------------
 // Service configuration
 // ---------------------------------------------------------------------------
@@ -140,7 +142,7 @@ export function neededPorts(
     SERVICE_PORTS.germ,
     SERVICE_PORTS.ui,
     8080,
-    8081,
+    DEFAULT_MOCK_TWILIO_PORT,
   ];
   if (opts.withPds2) ports.push(SERVICE_PORTS.pds2);
   if (opts.otel) ports.push(4317, 4318, 3301);

@@ -1,9 +1,9 @@
 export {
-  postStatus,
+  blockUser,
   followUser,
   likePost,
-  blockUser,
   muteUser,
+  postStatus,
   unmuteUser,
 } from "@garazyk/hamownia";
 export type {
@@ -13,11 +13,16 @@ export type {
 } from "@garazyk/hamownia";
 
 export {
-  repoRoot,
-  serviceUrl,
-} from "@garazyk/schemat/runtime";
+  DEFAULT_ADMIN_PASSWORD,
+  DEFAULT_MOCK_TWILIO_PORT,
+} from "@garazyk/schemat";
 
-import { createScenarioConfig, createCharacterRegistry } from "@garazyk/hamownia";
+export { repoRoot, serviceUrl } from "@garazyk/schemat/runtime";
+
+import {
+  createCharacterRegistry,
+  createScenarioConfig,
+} from "@garazyk/hamownia";
 import type { WebClientConfig } from "@garazyk/hamownia";
 
 const config = createScenarioConfig();
@@ -53,7 +58,8 @@ export const PDS_ADMIN_PASSWORD = config.pdsAdminPassword;
 export const UI_ADMIN_PASSWORD = config.uiAdminPassword;
 export const VIDEO_SERVICE_DID = config.videoServiceDid;
 
-export const WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined = config.webClientTopology;
+export const WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined =
+  config.webClientTopology;
 
 let registry = createCharacterRegistry();
 

@@ -22,6 +22,7 @@ import {
   writeRunResourceManifest,
 } from "@garazyk/schemat/runtime";
 import {
+  DEFAULT_MOCK_TWILIO_PORT,
   logHeader,
   logInfo,
   logOk,
@@ -176,7 +177,7 @@ export async function startBinaryServices(
     TWILIO_AUTH_TOKEN: "SK00000000000000000000000000000000",
     TWILIO_VERIFY_SERVICE_SID: "VA00000000000000000000000000000000",
     TWILIO_API_BASE_URL: resources.manifest.mockProviders?.twilio?.hostUrl ??
-      "http://127.0.0.1:8081",
+      hostUrlForPort(DEFAULT_MOCK_TWILIO_PORT),
   };
 
   for (const name of services) {
@@ -551,7 +552,7 @@ async function prepareBinaryResources(
     };
   }
 
-  const twilioPort = fixed ? 8081 : leases.twilio.port;
+  const twilioPort = fixed ? DEFAULT_MOCK_TWILIO_PORT : leases.twilio.port;
   manifest.mockProviders = {
     twilio: {
       role: "twilio",

@@ -33,7 +33,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const appview = new XrpcClient(SERVICE_URLS.appview || "http://localhost:3200");
+  const appview = new XrpcClient(SERVICE_URLS.appview);
   const luna = getActor("luna");
   const marcus = getActor("marcus");
 
