@@ -234,6 +234,217 @@ export default function garazykTools(pi: ExtensionAPI) {
     },
   });
 
+  // ── hamownia agent tools ──────────────────────────────────────────
+
+  pi.registerTool({
+    name: "garazyk_agent_list",
+    label: "Garazyk Agent List Scenarios",
+    description:
+      "List discoverable ATProto e2e scenarios as JSON via hamownia agent list. " +
+      "All output is guaranteed valid JSON. Supports topology filtering and scenario ID filtering.",
+    promptSnippet:
+      "List available ATProto e2e scenarios and their requirements, capabilities, and parameters.",
+    promptGuidelines: [
+      "Use garazyk_agent_list to discover scenarios before running or triaging them.",
+    ],
+    parameters: Type.Object({
+      scenarioIds: Type.Optional(
+        Type.String({
+          description:
+            'Space-separated scenario IDs to filter, e.g. "01 06 42". Omit to list all.',
+        }),
+      ),
+      topology: Type.Optional(
+        Type.String({
+          description:
+            "Topology preset name for filtering (e.g. garazyk-default, garazyk-multi-pds).",
+        }),
+      ),
+    }),
+    async execute(_id, params, signal, _onUpdate, ctx) {
+      const args: string[] = [
+        "run", "-A", "packages/hamownia/cli.ts",
+        "agent", "list",
+      ];
+      if (params.scenarioIds) {
+        args.push(...params.scenarioIds.trim().split(/\s+/));
+      }
+      if (params.topology) {
+        args.push("--topology", params.topology);
+      }
+      const result = await runCommand("deno", args, ctx.cwd, signal, 120_000);
+      if (result.code !== 0) {
+        return {
+          content: [{ type: "text", text: `agent list failed:\n${result.stderr}` }],
+          details: { exitCode: result.code },
+        };
+      }
+      return {
+        content: [{ type: "text", text: result.stdout.trim() }],
+        details: { exitCode: result.code },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "garazyk_agent_run",
+    label: "Garazyk Agent Run Scenarios",
+    description:
+      "Execute ATProto e2e scenarios via hamownia agent run. " +
+      "Emits NDJSON events on stdout (one JSON object per line). " +
+      "Supports Docker setup, binary mode, PDS2, topology, and browser flows.",
+    promptSnippet:
+      "Run ATProto e2e scenarios with NDJSON event output for programmatic consumption.",
+    promptGuidelines: [
+      "Use garazyk_agent_run to execute scenarios programmatically. Pass --setup to start services, --keep-running to leave them up for debugging.",
+    ],
+    parameters: Type.Object({
+      scenarioIds: Type.Optional(
+        Type.String({
+          description:
+            'Space-separated scenario IDs to run, e.g. "01 06". Omit to run all compatible scenarios.',
+        }),
+      ),
+      setup: Type.Optional(
+        Type.Boolean({
+          default: false,
+          description: "Start the local network before running.",
+        }),
+      ),
+      noSetup: Type.Optional(
+        Type.Boolean({
+          default: false,
+          description: "Run against an already-running network.",
+        }),
+      ),
+      binary: Type.Optional(
+        Type.Boolean({
+          default: false,
+          description: "Start services from build/bin instead of Docker.",
+        }),
+      ),
+      pds2: Type.Optional(
+        Type.Boolean({
+          default: false,
+          description: "Include the second PDS instance.",
+        }),
+      ),
+      keepRunning: Type.Optional(
+        Type.Boolean({
+          default: false,
+          description:
+            "Leave services running after execution (useful for interactive debugging).",
+        }),
+      ),
+      topology: Type.Optional(
+        Type.String({
+          description:
+            "Topology preset name (e.g. garazyk-default, garazyk-multi-pds).",
+        }),
+      ),
+      runner: Type.Optional(
+        StringEnum(["host", "docker"] as const, {
+          default: "host",
+          description: "Scenario runner mode.",
+        }),
+      ),
+      timeout: Type.Optional(
+        Type.Number({
+          default: 120,
+          description: "Per-scenario timeout in seconds.",
+        }),
+      ),
+      runId: Type.Optional(
+        Type.String({
+          description: "Reuse or name the e2e run directory.",
+        }),
+      ),
+    }),
+    async execute(_id, params, signal, _onUpdate, ctx) {
+      const args: string[] = [
+        "run", "-A", "packages/hamownia/cli.ts",
+        "agent", "run",
+      ];
+      if (params.scenarioIds) {
+        args.push(...params.scenarioIds.trim().split(/\s+/));
+      }
+      if (params.setup) args.push("--setup");
+      if (params.noSetup) args.push("--no-setup");
+      if (params.binary) args.push("--binary");
+      if (params.pds2) args.push("--pds2");
+      if (params.keepRunning) args.push("--keep-running");
+      if (params.topology) args.push("--topology", params.topology);
+      if (params.runner) args.push("--runner", params.runner);
+      if (params.runId) args.push("--run-id", params.runId);
+      args.push("--timeout", String(params.timeout ?? 120));
+
+      const timeoutMs = ((params.timeout ?? 120) + 60) * 1000;
+      const result = await runCommand("deno", args, ctx.cwd, signal, timeoutMs);
+      if (result.code !== 0) {
+        return {
+          content: [{
+            type: "text",
+            text: `agent run failed (exit ${result.code}):\n${result.stderr}`,
+          }],
+          details: { exitCode: result.code },
+        };
+      }
+      return {
+        content: [{ type: "text", text: truncateTail(result.stdout.trim()) }],
+        details: { exitCode: result.code },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "garazyk_agent_triage",
+    label: "Garazyk Agent Triage Scenarios",
+    description:
+      "Parse existing scenario run reports and classify failures via hamownia agent triage. " +
+      "No services are started. Returns a JSON object with runId, firstFailure, boundary, evidence, and reportPaths.",
+    promptSnippet:
+      "Triage failed ATProto e2e scenario runs without starting services.",
+    promptGuidelines: [
+      "Use garazyk_agent_triage after a run to classify failures and get diagnostic guidance.",
+    ],
+    parameters: Type.Object({
+      runId: Type.Optional(
+        Type.String({
+          description: "Run identifier to triage.",
+        }),
+      ),
+      reportsDir: Type.Optional(
+        Type.String({
+          description:
+            "Path to directory containing report JSON files. Auto-detected from --run-id if omitted.",
+        }),
+      ),
+    }),
+    async execute(_id, params, signal, _onUpdate, ctx) {
+      const args: string[] = [
+        "run", "-A", "packages/hamownia/cli.ts",
+        "agent", "triage",
+      ];
+      if (params.runId) args.push("--run-id", params.runId);
+      if (params.reportsDir) args.push("--reports-dir", params.reportsDir);
+
+      const result = await runCommand("deno", args, ctx.cwd, signal, 120_000);
+      if (result.code !== 0) {
+        return {
+          content: [{
+            type: "text",
+            text: `agent triage failed (exit ${result.code}):\n${result.stderr}`,
+          }],
+          details: { exitCode: result.code },
+        };
+      }
+      return {
+        content: [{ type: "text", text: result.stdout.trim() }],
+        details: { exitCode: result.code },
+      };
+    },
+  });
+
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName === "edit" || event.toolName === "write") {
       const ok = await hasRecentDeciduousNode(ctx.cwd, ctx.signal);
