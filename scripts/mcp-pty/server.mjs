@@ -71,6 +71,19 @@ const tools = [
     },
   },
   {
+    name: "pty_semantic_snapshot",
+    description: "Return a deterministically parsed semantic snapshot of the terminal screen, optimized for LLM interpretation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sessionId: { type: "string" },
+        detail: { type: "string", enum: ["compact", "full"], default: "compact" },
+        includePrompt: { type: "boolean", default: false },
+      },
+      required: ["sessionId"],
+    },
+  },
+  {
     name: "pty_action",
     description: "Send a key, literal text, or raw escape string to a PTY session and return the updated snapshot.",
     inputSchema: {
@@ -125,6 +138,7 @@ const tools = [
         title: { type: "string" },
         outputDir: { type: "string" },
         recordInput: { type: "boolean", default: false },
+        semanticOverlay: { type: "boolean", default: false },
       },
       required: ["sessionId"],
     },
@@ -154,6 +168,18 @@ async function handleToolCall(name, args = {}) {
         const session = manager.get(args.sessionId);
         await session.settle(20);
         return toolResultFromSnapshot(session.snapshot());
+      }
+      case "pty_semantic_snapshot": {
+        const session = manager.get(args.sessionId);
+        await session.settle(20);
+        const detail = args.detail || "compact";
+        const includePrompt = args.includePrompt || false;
+        const semanticRes = session.semanticSnapshot(detail, includePrompt);
+        return {
+          content: [{ type: "text", text: JSON.stringify(semanticRes, null, 2) }],
+          structuredContent: semanticRes,
+          isError: false,
+        };
       }
       case "pty_action": {
         const session = manager.get(args.sessionId);
@@ -194,6 +220,7 @@ async function handleToolCall(name, args = {}) {
           rows: session.rows,
           title: typeof args.title === "string" ? args.title : session.title,
           recordInput: args.recordInput === true,
+          semanticOverlay: args.semanticOverlay === true,
           command: [session.command, ...session.args].join(" "),
         });
         session.attachRecording(recorder);
