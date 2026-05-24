@@ -19,7 +19,7 @@ Use this skill for requests like:
 - "collect diagnostics and summarize likely root cause"
 
 > [!TIP]
-> **Programmatic Agent-First Triage**: You can leverage the programmatic [agent-scenario-testing](file:///.agents/skills/agent-scenario-testing/SKILL.md) skill. Simply run `deno task hamownia agent triage --run-id <run-id>` to get a fully parsed, machine-readable triage analysis mapped directly to subsystem boundaries.
+> **Programmatic Agent-First Triage**: You can leverage the programmatic **agent-scenario-testing** skill. Simply run `deno task hamownia agent triage --run-id <run-id>` to get a fully parsed, machine-readable triage analysis mapped directly to subsystem boundaries.
 
 
 ## Core files and locations

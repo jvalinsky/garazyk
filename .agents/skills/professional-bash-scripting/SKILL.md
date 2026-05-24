@@ -5,6 +5,9 @@ description: Guide for writing maintainable, secure, and efficient bash scripts 
 
 # Professional Bash Scripting
 
+> [!NOTE]
+> This skill supersedes and consolidates the legacy generic `shell-scripting` skill, providing comprehensive references, strict execution patterns, and robust verification guidelines.
+
 Use this skill when writing or reviewing production bash scripts, CI/CD automation, multi-step operations, or scripts that handle user input, files, credentials, network calls, cleanup, or shared maintenance.
 
 Do not use this skill for one-liners, aliases, throwaway local commands, or tasks where Python/Ruby would be a better fit because the logic has grown beyond shell's strengths.
