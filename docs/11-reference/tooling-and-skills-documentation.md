@@ -31,6 +31,7 @@ title: Tooling & Skills Documentation
 | `deno task hamownia` | Run scenario suite |
 | `deno task narzedzia` | Run boundary check |
 | `deno task dashboard:tui` | Launch scenario dashboard TUI |
+| `deno task hamownia agent` | Programmatic agent-first scenarios interface (list, run, triage) |
 
 ## Deno Packages
 
@@ -46,12 +47,16 @@ title: Tooling & Skills Documentation
 ## AI Agent Skills
 
 Skills are located in `.agents/skills/`. See `AGENTS.md` for the full subagent delegation table and
-`AGENTS_QUICKREF.md` for quick reference. Key documentation-related skills:
+`AGENTS_QUICKREF.md` for quick reference. Key testing and programmatic-related skills:
 
 | Skill | Purpose |
 |---|---|
+| `agent-scenario-testing` | [Programmatic Testing Guide](/.agents/skills/agent-scenario-testing/SKILL.md) — programmatic execution & triage |
+| `garazyk-scenario-triage` | [Scenario Triage](/.agents/skills/garazyk-scenario-triage/SKILL.md) — manual/automatic triage protocols |
+| `garazyk-testing` | [General Testing Patterns](/.agents/skills/garazyk-testing/SKILL.md) — PDS XCTest/Deno test suite |
 | `technical-writer` | API docs, READMEs, ADRs |
 | `rewriting-code-comments` | ObjC HeaderDoc conventions |
 | `deslop` | Remove AI writing patterns |
 | `slop-detector` | Detect low-effort generated code |
 | `expand_md_topic` | Expand markdown outlines |
+
