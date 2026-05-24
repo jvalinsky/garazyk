@@ -16,6 +16,7 @@ interface ScenarioGridProps {
 /** Render a grid of ScenarioCard components. */
 export default function ScenarioGrid({ scenarios }: ScenarioGridProps) {
   return (
+
     <div class="scenario-grid">
       {scenarios.map((s) => (
         <ScenarioCard
@@ -29,5 +30,6 @@ export default function ScenarioGrid({ scenarios }: ScenarioGridProps) {
         />
       ))}
     </div>
+
   );
 }

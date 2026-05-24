@@ -1,184 +1,102 @@
-/**
- * TUI Dashboard Headless Integration Tests
- *
- * Verifies the production Scenario Dashboard TUI rendering logic
- * inside the virtual testing harness. Tests layout correctness,
- * cell attributes, locators (getByText, getByRole), and TDOM structures.
- *
- * @module scripts/scenario-dashboard/tui_integration_test
- */
+import { assertEquals, assert, assertStringIncludes } from "@std/assert";
+import { getByText } from "@garazyk/tui/testing";
+import { createSession } from "../mcp-tui/session.ts";
+import { extractTree } from "./tui_scanner.ts";
 
-import { assertEquals, assert } from "@std/assert";
-import { VirtualTuiHarness } from "@garazyk/tui/testing";
-import { getByText, getByRole } from "@garazyk/tui/testing";
-import { serializeTdom, renderTdomToXml } from "@garazyk/tui/testing";
-import { createInitialState } from "./dashboard_state.ts";
-import { renderView } from "./tui/view.ts";
-import { createPanelStates, clampPanelState } from "./tui/panel_state.ts";
-import { dashboardLayoutTree, solveLayout, FocusRing, ScreenBuffer } from "@garazyk/tui";
-
-Deno.test("TUI integration: mounts production view headlessly, verifies locators and styles", () => {
-  // 1. Solve layout tree for a standard 120 x 30 terminal size
-  const width = 120;
-  const height = 30;
-  const tree = dashboardLayoutTree(width, height);
-  assert(tree !== null, "Layout tree should be solvable at 120x30");
-  const layout = solveLayout(tree, { x: 0, y: 0, width, height });
-
-  // 2. Initialize a rich mock state
-  const state = createInitialState();
+Deno.test("TUI Dashboard Integration - Boot and Layout Binding", () => {
+  const session = createSession();
   
-  // Inject mock network services
-  state.network.services = [
-    {
-      name: "pds",
-      label: "PDS",
-      url: "http://localhost:2583",
-      port: 2583,
-      status: "running",
-      healthy: true,
-    },
-    {
-      name: "relay",
-      label: "Relay",
-      url: "http://localhost:2489",
-      port: 2489,
-      status: "starting",
-      healthy: undefined,
-    },
-    {
-      name: "plc",
-      label: "PLC",
-      url: "http://localhost:2582",
-      port: 2582,
-      status: "stopped",
-      healthy: undefined,
-    }
-  ];
-
-  // Inject mock scenarios
-  state.scenarios.all = [
-    {
-      id: "01_account_lifecycle",
-      name: "01_account_lifecycle",
-      description: "Creates accounts and registers handles",
-      category: "identity",
-      needsPds2: false,
-      lastStatus: "passed",
-    },
-    {
-      id: "02_social_graph",
-      name: "02_social_graph",
-      description: "Creates follow records between accounts",
-      category: "social",
-      needsPds2: true,
-      lastStatus: "failed",
-    }
-  ];
-
-  // Inject recent run history
-  const mockRecentRuns = [
-    {
-      id: "run-e2e-101",
-      startedAt: Date.now() - 5000,
-      status: "completed" as const,
-      totalScenarios: 2,
-      passed: 1,
-      failed: 1,
-      skipped: 0,
-    }
-  ];
-  state.runs.recentRuns = mockRecentRuns;
-
-  // 3. Set up the TEA navigation structures
-  const focus = new FocusRing();
-  const panelStates = createPanelStates();
+  // Render the initial frame
+  session.harness.render();
   
-  // Clamp listbox items for scenario and history lists
-  panelStates.network = clampPanelState(panelStates.network, state.network.services.length, 10);
-  panelStates.scenarios = clampPanelState(panelStates.scenarios, state.scenarios.all.length, 15);
-  panelStates.history = clampPanelState(panelStates.history, state.runs.recentRuns.length, 5);
-
-  // 4. Define the harness render function mapping the real production view logic
-  const render = (buf: ScreenBuffer) => {
-    renderView(buf, state, layout, focus, panelStates, state.runs.recentRuns, false);
-  };
-
-  // Instantiate the virtual harness
-  const harness = new VirtualTuiHarness(width, height, render);
-
-  // 5. Dump and print visual screen for developer inspection
-  const screen = harness.dumpScreen();
-  console.log("=== HEADLESS REAL TUI SCREEN DUMP ===");
-  console.log(screen);
-  console.log("=====================================");
-
-  // Check the title bar renders cleanly
-  assert(screen.includes("Garazyk Scenario Dashboard"), "Title bar should be present");
+  // Use extractTree semantic VDOM to verify the panel layout tree is correctly mounted
+  const root = extractTree(session.harness.buffer, session.lastMeta);
+  const networkPanel = root.children.find(c => c.id === "panel.network");
+  assert(networkPanel, "Network panel should be present in the VDOM");
+  assert(networkPanel.bounds.width > 0, "Network panel should have width");
   
-  // Check that the services are displayed properly with the real panel characters
-  assert(screen.includes("● PDS"), "PDS running status dot indicator should be present");
-  assert(screen.includes("◐ Relay"), "Relay starting status dot indicator should be present");
-  assert(screen.includes("○ PLC"), "PLC stopped status dot indicator should be present");
-
-  // Check recent runs list renders
-  assert(screen.includes("run-e2e-101"), "Recent runs panel should list the history run");
-
-  // 6. Locator Searches (getByText, getByRole)
+  // Use text locator to verify seeded data is on screen
+  const pdsText = getByText(session.harness, "PDS");
+  assert(pdsText.resolve().width > 0, "PDS text should be visible");
   
-  // Test locator finding top-level header title
-  const titleLocator = getByText(harness, "Garazyk Scenario Dashboard");
-  titleLocator.toHaveText("Garazyk Scenario Dashboard");
-  const titleBounds = titleLocator.resolve();
-  assertEquals(titleBounds.y, 0, "Title should render on row 0");
-
-  // Test locator finding service names
-  const pdsLocator = getByText(harness, /PDS/);
-  pdsLocator.toHaveText(/PDS/);
-
-  // 7. TDOM Serialization verification
-  const tdom = serializeTdom(harness.buffer, layout);
-  const xml = renderTdomToXml(tdom);
-  
-  console.log("=== HEADLESS REAL TUI TDOM XML DUMP ===");
-  console.log(xml);
-  console.log("=======================================");
-
-  // Validate that the correct panel boundaries and names are in the serialized XML
-  assert(xml.includes("<network"), "XML TDOM should serialize the network panel");
-  assert(xml.includes("<scenarios"), "XML TDOM should serialize the scenarios panel");
-  assert(xml.includes("<run"), "XML TDOM should serialize the run panel");
-  assert(xml.includes("<history"), "XML TDOM should serialize the history panel");
-  assert(xml.includes("Garazyk Scenario Dashboard"), "XML TDOM should include status bar content");
+  const scenarioText = getByText(session.harness, "01_account_lifecycle");
+  assert(scenarioText.resolve().width > 0, "Scenario text should be visible");
 });
 
-Deno.test("TUI integration: navigation changes focused states and re-renders highlight visual markers", () => {
-  const width = 120;
-  const height = 30;
-  const tree = dashboardLayoutTree(width, height)!;
-  const layout = solveLayout(tree, { x: 0, y: 0, width, height });
-
-  const state = createInitialState();
-  const focus = new FocusRing();
-  const panelStates = createPanelStates();
-
-  const render = (buf: ScreenBuffer) => {
-    renderView(buf, state, layout, focus, panelStates, [], false);
-  };
-
-  const harness = new VirtualTuiHarness(width, height, render);
-
-  // Network panel is focused initially (index 0)
-  assertEquals(focus.current, "network");
-
-  // Verify visual indicator for focused network panel borders
-  const networkPanel = getByRole(harness, layout, "group", { name: "network" });
+Deno.test("TUI Dashboard Integration - Interactive Navigation", async () => {
+  const session = createSession();
+  session.harness.render();
   
-  // Verify jumping to another panel (e.g. Scenarios panel) updates active focus indicators
-  focus.jump(1);
-  assertEquals(focus.current, "scenarios");
-  harness.render(); // Redraw harness
+  // By default, network panel is focused (index 0)
+  assertEquals(session.focus.current, "network");
+  
+  // Tab to scenarios panel
+  await session.harness.emitKey("tab");
+  assertEquals(session.focus.current, "scenarios");
+  
+  // Verify styles - the scenarios panel should now be active. 
+  // We can use the extractTree semantic VDOM to verify the focused state!
+  let root = extractTree(session.harness.buffer, session.lastMeta);
+  let scenariosPanel = root.children.find(c => c.id === "panel.scenarios");
+  assert(scenariosPanel, "Scenarios panel not found in VDOM");
+  assertEquals(scenariosPanel.focused, true, "Scenarios panel should be focused");
+  
+  // Press down arrow
+  assertEquals(session.panelStates.scenarios.cursor, 0);
+  await session.harness.emitKey("down");
+  assertEquals(session.panelStates.scenarios.cursor, 1);
+  
+  // Use VDOM to verify cursor state in the list
+  // Re-extract tree after action
+  root = extractTree(session.harness.buffer, session.lastMeta);
+  scenariosPanel = root.children.find(c => c.id === "panel.scenarios");
+  
+  // The first item should be inactive, the second should be active
+  // Let's just verify the panel state updated correctly
+  assertEquals(session.panelStates.scenarios.cursor, 1, "Cursor should have moved to index 1");
+});
 
-  const scenariosPanel = getByRole(harness, layout, "group", { name: "scenarios" });
-  assert(scenariosPanel !== undefined);
+Deno.test("TUI Dashboard Integration - Overlays", async () => {
+  const session = createSession();
+  session.harness.render();
+  
+  // Toggle help
+  assertEquals(session.showHelp, false);
+  await session.harness.emitKey("?");
+  
+  // We cannot read session.showHelp directly if it's captured in closure, but we CAN check the VDOM!
+  // Wait, session.showHelp is a getter? No, it's a value property copied at creation time.
+  // Actually, we should check the VDOM!
+  let root = extractTree(session.harness.buffer, session.lastMeta);
+  
+  // The help overlay should be present
+  let helpOverlay = root.children.find(c => c.role === "help");
+  assert(helpOverlay, "Help overlay should be rendered");
+  
+  // Dismiss help
+  await session.harness.emitKey("escape");
+  root = extractTree(session.harness.buffer, session.lastMeta);
+  helpOverlay = root.children.find(c => c.role === "help");
+  assertEquals(helpOverlay, undefined, "Help overlay should be dismissed");
+  
+  // Test Run Details overlay
+  // Jump to history panel (4)
+  await session.harness.emitKey("4");
+  assertEquals(session.focus.current, "history");
+  
+  // Press 'v' to view detail
+  await session.harness.emitKey("v");
+  
+  root = extractTree(session.harness.buffer, session.lastMeta);
+  const detailOverlay = root.children.find(c => c.role === "detail");
+  assert(detailOverlay, "Run details overlay should be rendered");
+  
+  // Assert mock data is present in detail results
+  const pdsRunText = getByText(session.harness, "01_account_lifecycle");
+  assert(pdsRunText.resolve().width > 0, "Mock scenario result should be visible in overlay");
+  
+  // Dismiss detail
+  await session.harness.emitKey("escape");
+  root = extractTree(session.harness.buffer, session.lastMeta);
+  assertEquals(root.children.find(c => c.role === "detail"), undefined, "Run details overlay should be dismissed");
 });

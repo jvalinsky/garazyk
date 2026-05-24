@@ -30,6 +30,7 @@ import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { ScenarioMeta } from "../../dashboard_state.ts";
 import { categorize } from "../../utils.ts";
+import type { ElementMeta } from "../../tui_types.ts";
 
 /** Category display names and sort order. */
 const CATEGORIES: Record<string, string> = {
@@ -109,6 +110,7 @@ export function renderScenariosPanel(
   searchTerm: string,
   panelState: PanelState,
   focused: boolean,
+  meta?: Map<string, ElementMeta>,
 ): RenderCommand[] {
   const area = panelContentArea(panel);
   const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
@@ -204,6 +206,19 @@ export function renderScenariosPanel(
         style,
         clip,
       });
+
+      if (meta) {
+        meta.set(`category.${item.key}`, {
+          role: "heading",
+          interactable: true,
+          focused: isCursorRow,
+          states: item.isCollapsed ? ["collapsed"] : ["expanded"],
+          bounds: { x: area.x, y: area.y + row, width: area.width, height: 1 },
+          ref: `category.${item.key}`,
+          label: item.label,
+          actions: ["space", "click", "enter"],
+        });
+      }
     } else {
       // Scenario row
       const dotStyle = isCursorRow ? CURSOR_TEXT_STYLE : item.statusStyle;
@@ -237,6 +252,19 @@ export function renderScenariosPanel(
         style: nameStyle,
         clip,
       });
+
+      if (meta) {
+        meta.set(`scenario.${item.key}`, {
+          role: "scenario",
+          interactable: true,
+          focused: isCursorRow,
+          states: [item.statusDot === "●" ? "passed" : item.statusDot === "✖" ? "failed" : item.statusDot === "○" ? "skipped" : "pending"],
+          bounds: { x: area.x, y: area.y + row, width: area.width, height: 1 },
+          ref: `scenario.${item.key}`,
+          label: item.label,
+          actions: ["enter", "click"],
+        });
+      }
     }
 
     row++;

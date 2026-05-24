@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-24T05:23:44Z",
+  "title": "Design System: ATProto Scenario Dashboard",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Strawberry Command",
+        "canonical": "oklch(52% 0.18 15)",
+        "purpose": "Primary action, focus, and current selection. Not decoration."
+      },
+      "info": {
+        "role": "secondary",
+        "displayName": "Transport Blue",
+        "canonical": "oklch(60% 0.15 210)",
+        "purpose": "Live, informational, active run, and service metadata states."
+      },
+      "success": {
+        "role": "state",
+        "displayName": "Healthy Green",
+        "canonical": "oklch(60% 0.18 145)",
+        "purpose": "Passing scenarios and healthy services."
+      },
+      "warning": {
+        "role": "state",
+        "displayName": "Latency Amber",
+        "canonical": "oklch(75% 0.18 70)",
+        "purpose": "Skipped, starting, stopping, slow, and compatibility warning states."
+      },
+      "destructive": {
+        "role": "state",
+        "displayName": "Fault Red",
+        "canonical": "oklch(58% 0.22 25)",
+        "purpose": "Failed scenarios, unhealthy services, destructive controls, and hard errors."
+      },
+      "bg-primary": {
+        "role": "neutral",
+        "displayName": "Warm Console Surface",
+        "canonical": "oklch(96% 0.004 15)",
+        "purpose": "Main app background in light mode."
+      },
+      "bg-secondary": {
+        "role": "neutral",
+        "displayName": "Panel Surface",
+        "canonical": "oklch(99% 0.003 15)",
+        "purpose": "Toolbar, sidebar, cards, tables, buttons, and fields at rest."
+      },
+      "log-bg": {
+        "role": "neutral",
+        "displayName": "Log Well",
+        "canonical": "oklch(12% 0.005 200)",
+        "purpose": "Diagnostic log viewer background. Replaces hardcoded black."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Rare high-level empty states only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page-level titles when a screen needs a distinct title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel titles, active run titles, and major detail headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Normal readable interface text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Toolbar labels, table headers, state labels, and compact controls."
+      },
+      "mono": {
+        "displayName": "Exact Data",
+        "purpose": "Run IDs, service URLs, ports, logs, durations, roles, and protocol values."
+      }
+    },
+    "shadows": [
+      {
+        "name": "interaction-low",
+        "value": "0 1px 3px oklch(0% 0 0 / 0.08)",
+        "purpose": "Sparse hover affordance. Prefer row highlighting for dense lists."
+      },
+      {
+        "name": "overlay-medium",
+        "value": "0 2px 8px oklch(0% 0 0 / 0.12)",
+        "purpose": "Small temporary floating surfaces."
+      },
+      {
+        "name": "overlay-high",
+        "value": "0 4px 16px oklch(0% 0 0 / 0.15)",
+        "purpose": "Drawers and settings surfaces."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "100ms ease-out",
+        "purpose": "Hover and selected state feedback."
+      },
+      {
+        "name": "state-normal",
+        "value": "150ms ease-out",
+        "purpose": "Control state changes and focus transitions."
+      },
+      {
+        "name": "progress-fill",
+        "value": "500ms ease-out",
+        "purpose": "Run progress width changes. Must respect reduced-motion preferences."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "768px",
+        "purpose": "Collapse sidebar and stack run progress header/body."
+      }
+    ],
+    "knownDebt": [
+      {
+        "name": "Literal log colors",
+        "evidence": "islands/LogViewer.tsx uses inline #000, #eee, and #333.",
+        "target": "Move log colors to tokens and use Log Well and Log Text."
+      },
+      {
+        "name": "Undefined primary color",
+        "evidence": "static/app.css references var(--color-primary) in .scenario-settings-title.",
+        "target": "Use --color-accent or add a real token."
+      },
+      {
+        "name": "Card-heavy overview",
+        "evidence": "SummaryCards and ScenarioGrid dominate the dashboard overview.",
+        "target": "Use tables, split panes, grouped lists, and failure-first triage views where comparison matters."
+      },
+      {
+        "name": "Modal-first scenario settings",
+        "evidence": "Toolbar opens settings-modal for scenario parameters.",
+        "target": "Move configuration toward inline, staged, or inspector-style controls that keep run context visible."
+      },
+      {
+        "name": "Scope ambiguity",
+        "evidence": "Run All, Start All, Start with PDS2, Stop All, Restart, topology, and runner controls share one toolbar.",
+        "target": "Group controls by network scope versus run scope and preview what each action affects."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action for starting a scoped run or confirming a run setup.",
+      "html": "<button class=\"ds-btn-primary\">Run selected</button>",
+      "css": ".ds-btn-primary { height: 28px; padding: 0 12px; border-radius: 6px; border: 1px solid oklch(52% 0.18 15); background: oklch(52% 0.18 15); color: oklch(99% 0.003 15); font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; } .ds-btn-primary:focus-visible { outline: 2px solid oklch(52% 0.18 15); outline-offset: 2px; }"
+    },
+    {
+      "name": "State Badge",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Semantic state label. Always includes readable text, not color alone.",
+      "html": "<span class=\"ds-badge-success\">passed</span>",
+      "css": ".ds-badge-success { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; border: 1px solid oklch(60% 0.18 145); background: oklch(60% 0.18 145 / 0.08); color: oklch(60% 0.18 145); font: 600 11px/1.2 'SF Mono', Menlo, Monaco, monospace; }"
+    },
+    {
+      "name": "Run Progress Panel",
+      "kind": "custom",
+      "refersTo": "run-progress",
+      "description": "Signature live component showing run state, elapsed time, scenario counts, current scenario, freshness, and mode badges.",
+      "html": "<div class=\"ds-run-progress\"><div class=\"ds-run-progress-header\"><div><div class=\"ds-run-progress-kicker\">Run progress</div><div class=\"ds-run-progress-title\">8 scenarios left</div></div><div class=\"ds-run-progress-meta\"><span class=\"ds-run-progress-status\">Running</span><span class=\"ds-run-progress-elapsed\">2m 14s</span></div></div><div class=\"ds-run-progress-bar-track\" role=\"progressbar\"><div class=\"ds-run-progress-bar-fill\" style=\"width: 70%;\"></div></div><div class=\"ds-run-progress-body\"><div class=\"ds-run-progress-scenario\">84/92 complete - 05: create_chat_convos</div><div class=\"ds-run-progress-activity ds-run-progress-activity--active\"><span class=\"ds-run-progress-dot\"></span>Last activity: 3s ago</div></div></div>",
+      "css": ".ds-run-progress { background: oklch(99% 0.003 15); border: 1px solid oklch(85% 0.003 200); border-radius: 8px; padding: 12px 16px; box-shadow: 0 1px 3px oklch(0% 0 0 / 0.08); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; color: oklch(13% 0.005 200); } .ds-run-progress-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid oklch(91% 0.002 200); padding-bottom: 8px; margin-bottom: 12px; } .ds-run-progress-kicker { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: oklch(60% 0.003 200); } .ds-run-progress-title { font-size: 15px; font-weight: 700; line-height: 1.2; } .ds-run-progress-meta { display: flex; align-items: center; gap: 12px; } .ds-run-progress-status { font-size: 12px; font-weight: 600; color: oklch(52% 0.18 15); } .ds-run-progress-elapsed { font-size: 15px; font-weight: 700; } .ds-run-progress-bar-track { width: 100%; height: 4px; background: oklch(93% 0.005 15); border-radius: 4px; overflow: hidden; margin-bottom: 12px; position: relative; } .ds-run-progress-bar-fill { height: 100%; background: oklch(52% 0.18 15); border-radius: 4px; transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1); position: relative; } .ds-run-progress-bar-fill::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 8px; background: rgba(255, 255, 255, 0.4); filter: blur(2px); opacity: 1; } .ds-run-progress-body { display: flex; align-items: center; justify-content: space-between; gap: 12px; } .ds-run-progress-scenario { font-size: 12px; font-weight: 500; } .ds-run-progress-activity { display: flex; align-items: center; gap: 4px; font-size: 11px; } .ds-run-progress-dot { width: 8px; height: 8px; border-radius: 50%; background: oklch(60% 0.18 145); box-shadow: 0 0 6px oklch(60% 0.18 145); }"
+    },
+    {
+      "name": "Log Viewer",
+      "kind": "custom",
+      "description": "Copyable diagnostic output surface using tokenized dark neutrals and monospace type.",
+      "html": "<pre class=\"ds-log-viewer\">[pds] service healthy</pre>",
+      "css": ".ds-log-viewer { max-height: 400px; overflow: auto; padding: 12px; border: 1px solid oklch(32% 0.005 200); border-radius: 6px; background: oklch(12% 0.005 200); color: oklch(80% 0.01 200); font: 400 11px/1.5 'SF Mono', Menlo, Monaco, monospace; white-space: pre-wrap; }"
+    }
+  ]
+}

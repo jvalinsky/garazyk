@@ -17,6 +17,7 @@ import {
   truncate,
 } from "@garazyk/tui";
 import type { Run, ScenarioResultView } from "../../services/types.ts";
+import type { ElementMeta } from "../../tui_types.ts";
 
 // ---------------------------------------------------------------------------
 // Status indicators
@@ -125,6 +126,7 @@ export function renderRunDetailOverlay(
   results: ScenarioResultView[],
   cursor: number,
   scrollOffset: number,
+  meta?: Map<string, ElementMeta>,
 ): void {
   const overlayStyle = bg(COLORS.surfaceBase);
   const titleStyle = bold(fg(COLORS.accent));
@@ -259,6 +261,20 @@ export function renderRunDetailOverlay(
     } else {
       buf.writeClipped(contentX, renderRow, dr.text, dr.style, clip);
     }
+    
+    if (meta) {
+      meta.set(`detail.${dr.resultIndex}.${dr.type}`, {
+        role: "detail",
+        interactable: false,
+        focused: false,
+        states: dr.indicatorChar ? [dr.indicatorChar === "\u25CF" ? "passed" : dr.indicatorChar === "\u2716" ? "failed" : "skipped"] : [],
+        bounds: { x: contentX, y: renderRow, width: contentWidth, height: 1 },
+        ref: `detail.${dr.resultIndex}.${dr.type}`,
+        content: dr.text,
+        actions: [],
+      });
+    }
+
     renderRow++;
   }
 

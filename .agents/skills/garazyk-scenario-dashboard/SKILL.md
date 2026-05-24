@@ -36,13 +36,18 @@ tui.ts                      — Interactive terminal UI rendering panel
 Run dashboard tasks inside `scripts/scenario-dashboard/` or via root shortcuts:
 
 ```bash
-# Start Web UI in development watch-mode
+# Human / local development
 cd scripts/scenario-dashboard && deno task dev
+# Or from repo root: deno task dashboard:dev
+
+# Cursor / automation (Agent checkbox enabled on load)
+cd scripts/scenario-dashboard && deno task dev:agent
+# Or from repo root: deno task dashboard:dev:agent
+# If the server is already running: open http://localhost:3001/?agentLaunch=1
 
 # Start interactive Terminal UI (TUI) mode
 cd scripts/scenario-dashboard && deno task tui
-# Or from root
-deno task dashboard:tui
+# Or from repo root: deno task dashboard:tui
 
 # Build production assets for deployment
 cd scripts/scenario-dashboard && deno task build
@@ -97,6 +102,15 @@ import { CommandInterpreter } from "./cmd_interpreter.ts";
 const interpreter = new CommandInterpreter(state);
 const result = await interpreter.execute("run 01 06 --keep-running");
 ```
+
+## Session replay
+
+- **TUI recording:** `deno task tui:record` or `--record=path.cast` (asciicast v2 under `reports/tui-sessions/`)
+- **Run timeline:** `run_events` table + `GET /api/runs/:id/events`
+- **TUI playback:** place `tui/dashboard.cast` under `run_dir`; run detail shows asciinema player
+- **Export:** `deno task export-run -- <runId>` → `run_dir/export/index.html`
+
+See `docs/plans/tui-html-replay.md`.
 
 ## Related Skills
 

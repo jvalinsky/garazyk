@@ -1,0 +1,22 @@
+{
+  "id": "8cd80d1c",
+  "phase": "discarded",
+  "pageUrl": "/",
+  "sourceFile": "scripts/scenario-dashboard/components/ScenarioGrid.tsx",
+  "expectedVariants": 3,
+  "arrivedVariants": 3,
+  "visibleVariant": 1,
+  "paramValues": {
+    "lift-height": 2
+  },
+  "pendingEventSeq": null,
+  "pendingEvent": null,
+  "deliveryLease": null,
+  "checkpointRevision": 26,
+  "activeOwner": "a2f845dd",
+  "sourceMarkers": {},
+  "fallbackMode": null,
+  "annotationArtifacts": [],
+  "diagnostics": [],
+  "updatedAt": "2026-05-24T06:50:55.629Z"
+}

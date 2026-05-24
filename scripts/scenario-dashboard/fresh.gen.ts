@@ -2,15 +2,20 @@
 // This file SHOULD be checked into source version control.
 // This file is automatically updated during development when running `dev.ts`.
 
+import * as $_app from "./routes/_app.tsx";
+import * as $api_config from "./routes/api/config.ts";
 import * as $api_network_health from "./routes/api/network/health.ts";
 import * as $api_network_index from "./routes/api/network/index.ts";
 import * as $api_network_start from "./routes/api/network/start.ts";
 import * as $api_network_stop from "./routes/api/network/stop.ts";
 import * as $api_runs_runId_ from "./routes/api/runs/[runId].ts";
+import * as $api_runs_runId_events from "./routes/api/runs/[runId]/events.ts";
+import * as $api_runs_runId_export from "./routes/api/runs/[runId]/export.ts";
 import * as $api_runs_runId_logs from "./routes/api/runs/[runId]/logs.ts";
 import * as $api_runs_runId_progress from "./routes/api/runs/[runId]/progress.ts";
 import * as $api_runs_runId_restart from "./routes/api/runs/[runId]/restart.ts";
 import * as $api_runs_runId_stop from "./routes/api/runs/[runId]/stop.ts";
+import * as $api_runs_runId_tui_cast from "./routes/api/runs/[runId]/tui-cast.ts";
 import * as $api_runs_active from "./routes/api/runs/active.ts";
 import * as $api_runs_active_metrics from "./routes/api/runs/active/metrics.ts";
 import * as $api_runs_recent from "./routes/api/runs/recent.ts";
@@ -21,28 +26,40 @@ import * as $api_topologies_index from "./routes/api/topologies/index.ts";
 import * as $index from "./routes/index.tsx";
 import * as $run_runId_ from "./routes/run/[runId].tsx";
 import * as $scenario_id_ from "./routes/scenario/[id].tsx";
+import * as $ExportReplayButton from "./islands/ExportReplayButton.tsx";
 import * as $LogViewer from "./islands/LogViewer.tsx";
+import * as $MobileNav from "./islands/MobileNav.tsx";
 import * as $NetworkStatus from "./islands/NetworkStatus.tsx";
 import * as $RunProgress from "./islands/RunProgress.tsx";
+import * as $RunReplayPanel from "./islands/RunReplayPanel.tsx";
+import * as $RunSetupPanel from "./islands/RunSetupPanel.tsx";
+import * as $RunTimeline from "./islands/RunTimeline.tsx";
 import * as $ScenarioCard from "./islands/ScenarioCard.tsx";
 import * as $ScenarioRunner from "./islands/ScenarioRunner.tsx";
 import * as $ScenarioRunnerHelpers from "./islands/ScenarioRunnerHelpers.ts";
+import * as $SessionPlayer from "./islands/SessionPlayer.tsx";
 import * as $Sidebar from "./islands/Sidebar.tsx";
+import * as $SidebarPanels from "./islands/SidebarPanels.tsx";
 import * as $Toolbar from "./islands/Toolbar.tsx";
 import * as $TopologyInspector from "./islands/TopologyInspector.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
 const manifest = {
   routes: {
+    "./routes/_app.tsx": $_app,
+    "./routes/api/config.ts": $api_config,
     "./routes/api/network/health.ts": $api_network_health,
     "./routes/api/network/index.ts": $api_network_index,
     "./routes/api/network/start.ts": $api_network_start,
     "./routes/api/network/stop.ts": $api_network_stop,
     "./routes/api/runs/[runId].ts": $api_runs_runId_,
+    "./routes/api/runs/[runId]/events.ts": $api_runs_runId_events,
+    "./routes/api/runs/[runId]/export.ts": $api_runs_runId_export,
     "./routes/api/runs/[runId]/logs.ts": $api_runs_runId_logs,
     "./routes/api/runs/[runId]/progress.ts": $api_runs_runId_progress,
     "./routes/api/runs/[runId]/restart.ts": $api_runs_runId_restart,
     "./routes/api/runs/[runId]/stop.ts": $api_runs_runId_stop,
+    "./routes/api/runs/[runId]/tui-cast.ts": $api_runs_runId_tui_cast,
     "./routes/api/runs/active.ts": $api_runs_active,
     "./routes/api/runs/active/metrics.ts": $api_runs_active_metrics,
     "./routes/api/runs/recent.ts": $api_runs_recent,
@@ -55,13 +72,20 @@ const manifest = {
     "./routes/scenario/[id].tsx": $scenario_id_,
   },
   islands: {
+    "./islands/ExportReplayButton.tsx": $ExportReplayButton,
     "./islands/LogViewer.tsx": $LogViewer,
+    "./islands/MobileNav.tsx": $MobileNav,
     "./islands/NetworkStatus.tsx": $NetworkStatus,
     "./islands/RunProgress.tsx": $RunProgress,
+    "./islands/RunReplayPanel.tsx": $RunReplayPanel,
+    "./islands/RunSetupPanel.tsx": $RunSetupPanel,
+    "./islands/RunTimeline.tsx": $RunTimeline,
     "./islands/ScenarioCard.tsx": $ScenarioCard,
     "./islands/ScenarioRunner.tsx": $ScenarioRunner,
     "./islands/ScenarioRunnerHelpers.ts": $ScenarioRunnerHelpers,
+    "./islands/SessionPlayer.tsx": $SessionPlayer,
     "./islands/Sidebar.tsx": $Sidebar,
+    "./islands/SidebarPanels.tsx": $SidebarPanels,
     "./islands/Toolbar.tsx": $Toolbar,
     "./islands/TopologyInspector.tsx": $TopologyInspector,
   },

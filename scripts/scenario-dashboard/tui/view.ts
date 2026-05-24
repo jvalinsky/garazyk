@@ -29,6 +29,7 @@ import { renderRunPanel } from "./panels/run.ts";
 import { renderHistoryPanel } from "./panels/history.ts";
 import { renderRunDetailOverlay } from "./panels/run_detail.ts";
 import { rasterize } from "@garazyk/tui";
+import type { ElementMeta } from "../tui_types.ts";
 
 /** Panel IDs in the order they appear in the layout tree. */
 const PANEL_IDS: PanelId[] = ["network", "scenarios", "run", "history"];
@@ -42,10 +43,11 @@ export function renderView(
   panelStates: PanelStates,
   recentRuns: Run[] = [],
   helpOverlay = false,
-): void {
+): { meta: Map<string, ElementMeta> } {
   buf.clear();
 
   const commands: RenderCommand[] = [];
+  const meta = new Map<string, ElementMeta>();
 
   // Base background — fill the entire screen with the deepest surface.
   // This ensures empty areas between panels have a consistent dark
@@ -82,6 +84,17 @@ export function renderView(
       title,
       focused: isFocused,
     });
+    
+    meta.set(`panel.${panelId}`, {
+      role: "panel",
+      interactable: true,
+      focused: isFocused,
+      states: [],
+      bounds: { x: panel.x, y: panel.y, width: panel.width, height: panel.height },
+      ref: `panel.${panelId}`,
+      label: title,
+      actions: ["click"],
+    });
   }
 
   // Panel content
@@ -98,6 +111,7 @@ export function renderView(
           state.network.services,
           ps,
           isFocused,
+          meta,
         );
         break;
       case "scenarios":
@@ -108,6 +122,7 @@ export function renderView(
           state.ux.searchTerm,
           ps,
           isFocused,
+          meta,
         );
         break;
       case "run": {
@@ -140,7 +155,7 @@ export function renderView(
 
   // Help overlay — rendered on top of the normal view
   if (helpOverlay) {
-    renderHelpOverlay(buf);
+    renderHelpOverlay(buf, meta);
   }
 
   // Run detail overlay — rendered on top of everything
@@ -151,8 +166,11 @@ export function renderView(
       state.runs.detailResults,
       state.runs.detailCursor,
       state.runs.detailScrollOffset,
+      meta,
     );
   }
+  
+  return { meta };
 }
 
 /** Panel display titles. */
@@ -321,7 +339,7 @@ const HELP_SECTIONS: Array<{ title: string; bindings: Array<{ key: string; actio
 ];
 
 /** Render a full-screen help overlay on top of the current buffer content. */
-function renderHelpOverlay(buf: ScreenBuffer): void {
+function renderHelpOverlay(buf: ScreenBuffer, meta?: Map<string, ElementMeta>): void {
   const overlayStyle = bg(COLORS.surfaceBase);
   const titleStyle = bold(fg(COLORS.accent));
   const keyStyle = bold(fg(COLORS.accent));
@@ -386,6 +404,20 @@ function renderHelpOverlay(buf: ScreenBuffer): void {
         width: boxWidth - 2,
         height: boxHeight - 2,
       });
+      
+      if (meta) {
+        meta.set(`help.${section.title}.${binding.key}`, {
+          role: "help",
+          interactable: false,
+          focused: false,
+          states: [],
+          bounds: { x: contentX, y: row, width: boxWidth - 2, height: 1 },
+          ref: `help.${section.title}.${binding.key}`,
+          content: `${binding.key} ${binding.action}`,
+          actions: [],
+        });
+      }
+
       row++;
     }
 

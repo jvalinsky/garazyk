@@ -128,7 +128,7 @@ export default function RunProgress(
       </div>
 
       <div class="run-progress-body">
-        {progress?.exists && total > 0
+        {total > 0
           ? (
             <div class="run-progress-scenario">
               {completed}/{total} complete

@@ -12,6 +12,8 @@ import ScenarioGrid from "../components/ScenarioGrid.tsx";
 import NetworkStatus from "../islands/NetworkStatus.tsx";
 import RunProgress from "../islands/RunProgress.tsx";
 import RunHistory from "../components/RunHistory.tsx";
+import RunSetupPanel from "../islands/RunSetupPanel.tsx";
+import MobileNav from "../islands/MobileNav.tsx";
 import { getTopologyServiceUrls } from "../services/topology_service.ts";
 import { formatDate } from "../utils.ts";
 import type {
@@ -87,6 +89,7 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
       <Toolbar />
       <Sidebar />
       <main class="main-content">
+        <RunSetupPanel />
         <NetworkStatus />
         {activeRun && (
           <RunProgress
@@ -110,6 +113,7 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
         <RunHistory runs={runs} />
       </main>
       <StatusBar pdsUrl={pdsUrl} />
+      <MobileNav />
     </Layout>
   );
 }

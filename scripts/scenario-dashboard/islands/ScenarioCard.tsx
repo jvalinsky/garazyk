@@ -59,6 +59,7 @@ export default function ScenarioCard(
     : "secondary";
 
   return (
+
     <a href={href} class={`scenario-card ${!isCompatible ? "incompatible" : ""}`}>
       <div class="card-id">{id}</div>
       <div class="card-name">{name}</div>
@@ -80,5 +81,6 @@ export default function ScenarioCard(
         </div>
       )}
     </a>
+
   );
 }

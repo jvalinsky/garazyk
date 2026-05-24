@@ -3,8 +3,10 @@ import { db } from "../../db/index.ts";
 import { fetchRun, fetchScenarioResults } from "../../db/queries.ts";
 import Layout from "../../components/Layout.tsx";
 import Toolbar from "../../islands/Toolbar.tsx";
+import MobileNav from "../../islands/MobileNav.tsx";
 import RunProgress from "../../islands/RunProgress.tsx";
-import LogViewer from "../../islands/LogViewer.tsx";
+import RunReplayPanel from "../../islands/RunReplayPanel.tsx";
+import { resolveRunArtifact, RUN_ARTIFACTS } from "../../lib/artifacts.ts";
 import StatusBar from "../../components/StatusBar.tsx";
 import ScenarioCard from "../../islands/ScenarioCard.tsx";
 import SummaryCards from "../../components/SummaryCards.tsx";
@@ -16,29 +18,32 @@ interface RunPageData {
   runId: string;
   run?: Run;
   scenarioResults: ScenarioResultView[];
+  hasTuiCast: boolean;
 }
 
 /** Page handler for run detail data. */
 export const handler: Handlers<RunPageData> = {
-  GET(_req, ctx) {
+  async GET(_req, ctx) {
     const { runId } = ctx.params;
 
     try {
       const run = fetchRun(db, runId);
 
       const scenarioResults = run ? fetchScenarioResults(db, runId) : [];
+      const hasTuiCast = !!(run?.runDir &&
+        await resolveRunArtifact(run.runDir, RUN_ARTIFACTS.tuiCast));
 
-      return ctx.render({ runId, run, scenarioResults });
+      return ctx.render({ runId, run, scenarioResults, hasTuiCast });
     } catch (e) {
       console.error("Error fetching run details:", e);
-      return ctx.render({ runId, scenarioResults: [] });
+      return ctx.render({ runId, scenarioResults: [], hasTuiCast: false });
     }
   },
 };
 
 /** Page component for run details. */
 export default function RunDetailPage({ data }: PageProps<RunPageData>) {
-  const { runId, run, scenarioResults = [] } = data;
+  const { runId, run, scenarioResults = [], hasTuiCast } = data;
   const orderedScenarioResults = [...scenarioResults].sort((a, b) => {
     const aRank = a.status === "failed" || a.failed > 0 ? 0 : 1;
     const bRank = b.status === "failed" || b.failed > 0 ? 0 : 1;
@@ -128,7 +133,13 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
                 </div>
               )}
 
-              <LogViewer runId={runId} status={run.status} />
+              <RunReplayPanel
+                runId={runId}
+                startedAt={run.startedAt}
+                status={run.status}
+                logPath={run.logPath}
+                hasTuiCast={hasTuiCast}
+              />
             </>
           )
           : (
@@ -143,6 +154,7 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
           )}
       </main>
       <StatusBar />
+      <MobileNav />
     </Layout>
   );
 }

@@ -16,15 +16,23 @@ export default function NetworkStatus() {
   }
 
   function startPds2() {
+    const ok = globalThis.confirm?.(
+      `Start ${serviceCount} services with PDS2 on the ${runner} runner? This changes the network under test.`,
+    );
+    if (ok === false) return;
     dispatch({ type: "network/startRequested", pds2: true, runner });
   }
 
   function stopAll() {
+    const ok = globalThis.confirm?.(
+      `Stop all ${serviceCount} services on the ${runner} runner?`,
+    );
+    if (ok === false) return;
     dispatch({ type: "network/stopRequested", runner });
   }
 
   return (
-    <div class="card" style="margin-bottom: var(--space-xl);">
+    <div id="network-status" class="card" style="margin-bottom: var(--space-xl);">
       <div class="card-header">
         <div>
           <h2 class="card-title">Network Status</h2>
@@ -85,7 +93,7 @@ export default function NetworkStatus() {
                   />
                   {s.label}
                 </td>
-                <td style="font-family: var(--font-system); font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+                <td class="network-table-url">
                   {s.url}
                 </td>
                 <td>

@@ -1,0 +1,9 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - heading "btop-recording" [level=1] [ref=e4]
+    - generic [ref=e5]:
+      - button "Play" [ref=e6] [cursor=pointer]
+      - button "Reset" [ref=e7] [cursor=pointer]
+      - button "Overlay" [pressed] [ref=e8] [cursor=pointer]
+  - generic "Terminal replay" [ref=e10]
+  - generic [ref=e11]: asciicast v2, 120x40, 224 events

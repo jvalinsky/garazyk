@@ -45,6 +45,9 @@ import {
   getScenariosItemAt,
   getScenariosItemCount,
 } from "./tui/panels/scenarios.ts";
+import { CastRecorder } from "@garazyk/tui/testing";
+import { VirtualTuiHarness } from "@garazyk/tui/testing";
+import { join } from "$std/path/mod.ts";
 
 // ---------------------------------------------------------------------------
 // Options
@@ -53,6 +56,8 @@ import {
 export interface DashboardTuiOptions {
   /** If true, performs a one-shot non-interactive render. */
   renderOnce?: boolean;
+  /** Write asciicast v2 to this path (or set GARAZYK_TUI_RECORD). */
+  recordPath?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -120,11 +125,30 @@ async function renderOnce(_options: DashboardTuiOptions): Promise<void> {
 // Interactive mode
 // ---------------------------------------------------------------------------
 
-async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
+async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
   const size = getTerminalSize();
   if (!size) {
     console.error("Cannot determine terminal size.");
     return;
+  }
+
+  const recordPath = options.recordPath ??
+    Deno.env.get("GARAZYK_TUI_RECORD") ?? undefined;
+  let castRecorder: CastRecorder | undefined;
+  if (recordPath) {
+    const resolved = recordPath === "1"
+      ? join("scripts/scenarios/reports/tui-sessions", `${Date.now()}.cast`)
+      : recordPath;
+    await Deno.mkdir(resolved.replace(/\/[^/]+$/, ""), { recursive: true }).catch(
+      () => {},
+    );
+    const stub = new VirtualTuiHarness(size.cols, size.rows, () => {});
+    castRecorder = new CastRecorder(stub, {
+      path: resolved,
+      title: "Garazyk Scenario Dashboard TUI",
+      minFrameInterval: 0.05,
+    });
+    console.error(`[tui] Recording session to ${resolved}`);
   }
 
   const runtime = createTuiRuntime();
@@ -158,6 +182,7 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
   const onResize = () => {
     const newSize = getTerminalSize();
     if (!newSize) return;
+    castRecorder?.recordResize(newSize.cols, newSize.rows);
     buf.resize(newSize.cols, newSize.rows);
     const newTree = dashboardLayoutTree(newSize.cols, newSize.rows);
     layout = newTree
@@ -171,7 +196,7 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
     if (layout) {
       needsRender = true;
       // Full redraw after resize
-      renderAndWrite(buf, runtime.state, layout, focus, panelStates);
+      renderAndWrite(buf, runtime.state, layout, focus, panelStates, false, castRecorder);
     }
   };
 
@@ -198,18 +223,19 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
       for (const panelId of PANEL_IDS) {
         syncPanelItemCount(panelId, panelStates, runtime, layout);
       }
-      renderAndWrite(buf, runtime.state, layout, focus, panelStates);
+      renderAndWrite(buf, runtime.state, layout, focus, panelStates, false, castRecorder);
     }
   });
 
   try {
     // Initial render
     if (layout) {
-      renderAndWrite(buf, runtime.state, layout, focus, panelStates);
+      renderAndWrite(buf, runtime.state, layout, focus, panelStates, false, castRecorder);
     }
 
     // Main event loop
     for await (const key of readKeys()) {
+      castRecorder?.recordKey(key);
       if (quit) break;
 
       // Handle filter mode
@@ -273,12 +299,14 @@ async function runInteractiveTui(_options: DashboardTuiOptions): Promise<void> {
           focus,
           panelStates,
           helpOverlay,
+          castRecorder,
         );
         needsRender = false;
       }
     }
   } finally {
     // Cleanup
+    await castRecorder?.close();
     unsubscribe();
     Deno.removeSignalListener("SIGWINCH", onResize);
     try {
@@ -637,6 +665,7 @@ function renderAndWrite(
   focus: FocusRing,
   panelStates: PanelStates,
   helpOverlay = false,
+  castRecorder?: CastRecorder,
 ): void {
   renderView(
     buf,
@@ -651,6 +680,7 @@ function renderAndWrite(
   if (output) {
     writeToTerminal(output);
   }
+  castRecorder?.recordOutput(buf.fullRedraw());
 }
 
 // ---------------------------------------------------------------------------
@@ -826,5 +856,9 @@ function renderRun(run: import("./services/types.ts").Run): string {
 // ---------------------------------------------------------------------------
 
 if (import.meta.main) {
-  runDashboardTui();
+  const recordArg = Deno.args.find((a) => a.startsWith("--record"));
+  const recordPath = recordArg
+    ? (recordArg.includes("=") ? recordArg.split("=")[1] : "1")
+    : undefined;
+  runDashboardTui({ recordPath });
 }

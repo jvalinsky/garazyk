@@ -14,6 +14,11 @@
 
   /* Brand accent - Strawberry red (garazyk branding) with OKLCH */
   --color-accent: oklch(52% 0.18 15);
+  --color-on-accent: oklch(99% 0.003 15);
+
+  /* Log well */
+  --color-log-bg: oklch(12% 0.005 200);
+  --color-log-text: oklch(80% 0.01 200);
 
   /* Action colors */
   --color-destructive: oklch(58% 0.22 25);
@@ -84,6 +89,7 @@
   --sidebar-width: 220px;
   --toolbar-height: 52px;
   --statusbar-height: 28px;
+  --mobile-nav-height: 52px;
 }
 
 /* Dark mode overrides - increased lightness to show strawberry warmth */

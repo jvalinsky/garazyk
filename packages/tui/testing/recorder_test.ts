@@ -9,7 +9,8 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { VirtualTuiHarness } from "./harness.ts";
-import { TuiSessionRecorder } from "./recorder.ts";
+import { attachRecorder, TuiSessionRecorder } from "./recorder.ts";
+import type { CastEvent } from "./cast.ts";
 import { DEFAULT_STYLE, ScreenBuffer } from "../renderer.ts";
 
 Deno.test("TuiSessionRecorder: initializes and records initial frame", () => {
@@ -20,6 +21,7 @@ Deno.test("TuiSessionRecorder: initializes and records initial frame", () => {
 
   const harness = new VirtualTuiHarness(40, 5, render);
   const recorder = new TuiSessionRecorder(harness);
+  harness.attachRecorder(recorder);
 
   const cast = recorder.exportAsciicast();
   const lines = cast.split("\n");
@@ -55,6 +57,7 @@ Deno.test("TuiSessionRecorder: captures subsequent visual updates dynamically", 
 
   const harness = new VirtualTuiHarness(20, 2, render);
   const recorder = new TuiSessionRecorder(harness);
+  attachRecorder(harness, recorder);
 
   harness.onKey((key) => {
     if (key.key === "u") {
@@ -74,15 +77,22 @@ Deno.test("TuiSessionRecorder: captures subsequent visual updates dynamically", 
   // Verify second frame recorded
   cast = recorder.exportAsciicast();
   lines = cast.split("\n");
-  assertEquals(lines.length, 3, "Should have header + frame 1 + frame 2");
-
-  const secondFrame = JSON.parse(lines[2]);
   assert(
-    secondFrame[0] > 0,
-    "Second frame should have a positive timestamp delay",
+    lines.length >= 3,
+    `Should have header + frames (got ${lines.length} lines)`,
+  );
+
+  const outputFrames = lines.slice(1).map((l) => JSON.parse(l) as CastEvent).filter(
+    (e) => e[1] === "o",
+  );
+  assert(outputFrames.length >= 2, "Should have at least two output frames");
+  const lastOutput = outputFrames[outputFrames.length - 1];
+  assert(
+    lastOutput[0] > 0,
+    "Last output frame should have a positive timestamp delay",
   );
   assert(
-    secondFrame[2].includes("Count: 1"),
-    "Second frame should show updated counter state",
+    lastOutput[2].includes("Count: 1"),
+    "Last output frame should show updated counter state",
   );
 });

@@ -3,6 +3,7 @@ import { signal } from "@preact/signals";
 import type { Cmd, DashboardState, Msg } from "./dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "./dashboard_state.ts";
 import { constructMsg, constructErrorMsg } from "./cmd_interpreter.ts";
+import { readAgentLaunchFromUrl } from "./utils/client_launch.ts";
 
 const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
 
@@ -60,9 +61,24 @@ export function useRuntime(): { state: TypedSignal; dispatch: (msg: Msg) => void
   return { state: runtime.state, dispatch: runtime.dispatch };
 }
 
+/** Merge URL agent-launch hint into initial UX state (browser only). */
+function withUrlAgentLaunch(state: DashboardState): DashboardState {
+  if (!IS_BROWSER || !readAgentLaunchFromUrl()) return state;
+  return {
+    ...state,
+    ux: {
+      ...state.ux,
+      agentLaunch: true,
+      agentMode: true,
+    },
+  };
+}
+
 /** Create the runtime: initializes state, boot cmds, and the tick interval. */
 function createRuntime(initialState?: DashboardState): RuntimeHandle {
-  const state = new TypedSignal(initialState ?? createInitialState());
+  const state = new TypedSignal(
+    withUrlAgentLaunch(initialState ?? createInitialState()),
+  );
   const timerIds: number[] = [];
   const intervalIds: number[] = [];
 

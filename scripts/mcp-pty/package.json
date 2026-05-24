@@ -8,8 +8,8 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@xterm/headless": "5.5.0",
     "node-pty": "1.0.0"
-  },
-  "devDependencies": {}
+  }
 }

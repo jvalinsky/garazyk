@@ -52,6 +52,7 @@
     "npm:@opentelemetry/api@1": "1.9.1",
     "npm:@opentelemetry/api@^1.7.0": "1.9.1",
     "npm:@opentelemetry/sdk-trace-base@*": "2.7.1_@opentelemetry+api@1.9.1",
+    "npm:asciinema-player@3.8.0": "3.8.0",
     "npm:cborg@*": "5.1.1",
     "npm:cborg@5.1.1": "5.1.1",
     "npm:playwright@*": "1.52.0",
@@ -226,6 +227,9 @@
     "@alloc/quick-lru@5.2.0": {
       "integrity": "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="
     },
+    "@babel/runtime@7.29.2": {
+      "integrity": "sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g=="
+    },
     "@ipld/dag-cbor@9.2.7": {
       "integrity": "sha512-ZmfXmElRWATr+hoUTSAOr6HUcjVhOcNHDqgczc76qte2DHHFEK0ZhNzUcdTDQhF/VSIvf2ioaRTRLWwLc83sNw==",
       "dependencies": [
@@ -313,6 +317,13 @@
     "arg@5.0.2": {
       "integrity": "sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg=="
     },
+    "asciinema-player@3.8.0": {
+      "integrity": "sha512-yFoAcjFK9WJ0D+aagkT0YXOWRbyXoOe/TQHq07oQP6prItXQkWn46fdvUb6zqJu2AywmY8VjBEwZ6ciL8IbezQ==",
+      "dependencies": [
+        "@babel/runtime",
+        "solid-js"
+      ]
+    },
     "binary-extensions@2.3.0": {
       "integrity": "sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw=="
     },
@@ -350,6 +361,9 @@
     "cssesc@3.0.0": {
       "integrity": "sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==",
       "bin": true
+    },
+    "csstype@3.2.3": {
+      "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="
     },
     "didyoumean@1.2.2": {
       "integrity": "sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw=="
@@ -604,6 +618,23 @@
       "integrity": "sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==",
       "dependencies": [
         "queue-microtask"
+      ]
+    },
+    "seroval-plugins@1.5.4_seroval@1.5.4": {
+      "integrity": "sha512-S0xQPhUTefAhNvNWFg0c1J8qJArHt5KdtJ/cFAofo06KD1MVSeFWyl4iiu+ApDIuw0WhjpOfCdgConOfAnLgkw==",
+      "dependencies": [
+        "seroval"
+      ]
+    },
+    "seroval@1.5.4": {
+      "integrity": "sha512-46uFvgrXTVxZcUorgSSRZ4y+ieqLLQRMlG4bnCZKW3qI6BZm7Rg4ntMW4p1mILEEBZWrFlcpp0AyIIlM6jD9iw=="
+    },
+    "solid-js@1.9.13_seroval@1.5.4": {
+      "integrity": "sha512-6hJeJMOcEX8ktqjpDoJZEmld3ijvcvWBDtiXBm7f4332SiFN66QeAQI1REQshvyUoISsSeJ4PHDauKYbwao9JQ==",
+      "dependencies": [
+        "csstype",
+        "seroval",
+        "seroval-plugins"
       ]
     },
     "source-map-js@1.2.1": {
@@ -1177,6 +1208,7 @@
       "jsr:@cliffy/prompt@^1.1.0",
       "jsr:@cliffy/table@^1.1.0",
       "jsr:@std/assert@0.224.0",
+      "jsr:@std/async@0.224.1",
       "jsr:@std/cli@1.0.6",
       "jsr:@std/fmt@0.224.0",
       "jsr:@std/fs@0.224.0",
@@ -1198,6 +1230,7 @@
       "scripts/scenario-dashboard": {
         "dependencies": [
           "jsr:@std/assert@0.224.0",
+          "npm:asciinema-player@3.8.0",
           "npm:tailwindcss@3.4.7"
         ]
       }

@@ -189,6 +189,12 @@ export function constructMsg(
         ...tokenField,
       };
 
+    case "config/received":
+      return {
+        type: "config/received",
+        agentLaunch: isRecord(data) && data.agentLaunch === true,
+      };
+
     case "scenarios/received":
       if (!isRecord(data) || !Array.isArray(d.scenarios)) {
         return {
@@ -353,6 +359,8 @@ export function constructErrorMsg(
       return { type: "network/stopFailed", error };
     case "logs/failed":
       return { type: "logs/failed", error, ...runField, ...tokenField };
+    case "config/failed":
+      return { type: "config/failed" };
     case "metrics/failed":
       return { type: "metrics/failed", error, ...tokenField };
     case "runs/closeDetail":

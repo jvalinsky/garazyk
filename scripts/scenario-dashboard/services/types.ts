@@ -261,6 +261,10 @@ export interface LogLineEvent {
   runId: string;
   /** Single line of log output (no trailing newline) */
   line: string;
+  /** Wall-clock ms when the line was captured */
+  at?: number;
+  /** Zero-based index of this line within the run log stream */
+  lineIndex?: number;
 }
 
 /** Discriminated union of all events emitted by RunManager. */

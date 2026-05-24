@@ -6,7 +6,11 @@
  * @module tui/testing
  */
 
-export { type HarnessOptions, VirtualTuiHarness } from "./harness.ts";
+export {
+  type CastRecorderSink,
+  type HarnessOptions,
+  VirtualTuiHarness,
+} from "./harness.ts";
 
 export { getByRole, getByText, Locator } from "./locators.ts";
 
@@ -24,4 +28,29 @@ export {
   startMcpServer,
 } from "./mcp_server.ts";
 
-export { type AsciicastFrame, TuiSessionRecorder } from "./recorder.ts";
+export {
+  type AsciicastFrame,
+  attachRecorder,
+  CastRecorder,
+  type CastRecorderOptions,
+  TuiSessionRecorder,
+} from "./recorder.ts";
+
+export {
+  type AsciicastHeader,
+  type CastEvent,
+  type CastEventCode,
+  encodeKeyInput,
+  extractMarkers,
+  parseAsciicast,
+  serializeAsciicast,
+  type AsciicastFile,
+} from "./cast.ts";
+
+export {
+  parseReplayScript,
+  type ReplayStep,
+  serializeReplayScript,
+} from "./replay_types.ts";
+
+export { type ReplayScriptOptions, replayScript } from "./replay.ts";
