@@ -3,7 +3,11 @@ import { fromFileUrl, join } from "$std/path/mod.ts";
 import { TextLineStream } from "@std/streams";
 import { db } from "../db/index.ts";
 import { Run, RunConfig, RunEvent } from "./types.ts";
-import { fetchRun } from "../db/queries.ts";
+import { fetchRun, insertRunEvent } from "../db/queries.ts";
+import {
+  appendRunEventNdjson,
+  closeRunEventsFile,
+} from "../lib/run_events_file.ts";
 import { importRunReports } from "./report_scanner.ts";
 
 const REPORTS_DIR = join(
@@ -187,6 +191,8 @@ class RunManagerImpl implements RunManager {
   #watchedReportsDir: string | undefined = undefined;
   /** Set of report filenames already emitted as scenario_finished events. */
   #emittedReports = new Set<string>();
+  /** Monotonic log line index for the active run. */
+  #logLineIndex = 0;
 
   getActiveRun(): Run | undefined {
     return this.activeRun;
@@ -194,13 +200,36 @@ class RunManagerImpl implements RunManager {
 
   /** Emit an event to all registered listeners. */
   #emit(event: RunEvent): void {
+    const enriched = this.#enrichEvent(event);
+    const timestamp = enriched.type === "log_line" && enriched.at
+      ? enriched.at
+      : Date.now();
+
+    try {
+      insertRunEvent(db, enriched);
+    } catch (e) {
+      console.error("[run-manager] Failed to persist run event:", e);
+    }
+
+    const runDir = this.activeRun?.runDir;
+    if (runDir) {
+      void appendRunEventNdjson(runDir, enriched, timestamp);
+    }
+
     for (const listener of this.#listeners) {
       try {
-        listener(event);
+        listener(enriched);
       } catch (e) {
         console.error("[run-manager] Event listener error:", e);
       }
     }
+  }
+
+  #enrichEvent(event: RunEvent): RunEvent {
+    if (event.type !== "log_line") return event;
+    const at = Date.now();
+    const lineIndex = this.#logLineIndex++;
+    return { ...event, at, lineIndex };
   }
 
   /** Subscribe to run lifecycle events. Returns an unsubscribe function. */
@@ -278,6 +307,7 @@ class RunManagerImpl implements RunManager {
     await this.writeLockFile(run);
 
     this.activeRun = run;
+    this.#logLineIndex = 0;
 
     // Emit run_started and run_status("starting")
     this.#emit({
@@ -302,6 +332,7 @@ class RunManagerImpl implements RunManager {
       run.finishedAt = Date.now();
       this.updateRunInDb(run);
       await this.clearLockFile();
+      if (run.runDir) void closeRunEventsFile(run.runDir);
       this.activeRun = undefined;
       this.#emit({
         type: "run_failed",
@@ -1026,6 +1057,10 @@ class RunManagerImpl implements RunManager {
 
       // Stop the file watcher
       this.stopReportsWatcher();
+
+      if (run.runDir) {
+        void closeRunEventsFile(run.runDir);
+      }
 
       if (this.activeRun?.id === run.id) {
         this.activeRun = undefined;

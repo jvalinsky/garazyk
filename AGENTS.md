@@ -49,6 +49,7 @@ task matches their description.
 | Skill                         | When to Use                                                              |
 | ----------------------------- | ------------------------------------------------------------------------ |
 | `gnustep-compat`              | Platform detection, GNUstep bugs/workarounds, compat shims, Docker build |
+| `tui-capture-replay`          | Record TUI interactions as asciicast + export HTML playback via VirtualTuiHarness |
 | `garazyk-testing`             | Test infrastructure, mock patterns, environment gating, registration     |
 | `garazyk-database`            | SQLite connection pooling, WAL config, migrations, actor store           |
 | `atproto-coverage-audit`      | XRPC endpoint stub detection, schema sync against lexicons               |

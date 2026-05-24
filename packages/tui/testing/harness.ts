@@ -13,6 +13,12 @@ import { ScreenBuffer } from "../renderer.ts";
 import type { Cell, CellStyle } from "../renderer.ts";
 import type { Key } from "../input.ts";
 
+/** Sink for optional session recording (implemented by {@link CastRecorder}). */
+export interface CastRecorderSink {
+  recordKey(key: Key): void;
+  recordResize(cols: number, rows: number): void;
+}
+
 /** Configuration options for VirtualTuiHarness. */
 export interface HarnessOptions {
   /** Suppress styling and print as plain text in dumps. */
@@ -28,6 +34,7 @@ export class VirtualTuiHarness {
   private keyCallback?: (key: Key) => void;
   private resizeListeners: (() => void)[] = [];
   private renderListeners: ((ansi: string) => void)[] = [];
+  private castRecorder?: CastRecorderSink;
 
   constructor(
     width: number,
@@ -55,6 +62,11 @@ export class VirtualTuiHarness {
     this.renderListeners.push(listener);
   }
 
+  /** Attach a cast recorder for output, input, and resize events. */
+  attachRecorder(recorder: CastRecorderSink): void {
+    this.castRecorder = recorder;
+  }
+
   /** Register keyboard input callback hooks. */
   onKey(callback: (key: Key) => void): void {
     this.keyCallback = callback;
@@ -67,6 +79,7 @@ export class VirtualTuiHarness {
 
   /** Simulate a terminal size change. */
   emitResize(cols: number, rows: number): void {
+    this.castRecorder?.recordResize(cols, rows);
     this.buffer.resize(cols, rows);
     for (const listener of this.resizeListeners) {
       listener();
@@ -90,6 +103,7 @@ export class VirtualTuiHarness {
       alt: modifiers.alt ?? false,
       shift: modifiers.shift ?? false,
     };
+    this.castRecorder?.recordKey(keyEvent);
     this.keyCallback(keyEvent);
     this.render();
   }

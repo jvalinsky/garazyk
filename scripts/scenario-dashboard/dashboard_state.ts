@@ -173,6 +173,8 @@ export interface TopologyPreview {
 export interface LogsSlice {
   /** Raw log text keyed by run id */
   textByRunId: Record<string, string>;
+  /** Last fetch error message keyed by run id */
+  lastErrorByRunId: Record<string, string>;
   /** Whether a log fetch is in-flight */
   fetchInFlight: boolean;
   /** Run id for the current log fetch */
@@ -199,12 +201,17 @@ export interface MetricsSlice {
   lastUpdateMs: number;
 }
 
+/** Mobile drawer panel identifiers. */
+export type MobileNavPanel = "scenarios" | "network" | "topology";
+
 /** Slice tracking UI state: modals, search, categories, busy flag. */
 export interface UxSlice {
   /** Whether a network operation (start/stop) is in progress */
   busy: boolean;
-  /** Whether the settings modal is open */
+  /** Whether the run setup panel is open */
   settingsOpen: boolean;
+  /** Open mobile navigation drawer panel, if any */
+  mobileNavPanel: MobileNavPanel | null;
   /** Scenario parameter overrides */
   scenarioParams: Record<string, unknown>;
   /** Collapsed sidebar categories */
@@ -213,7 +220,9 @@ export interface UxSlice {
   searchTerm: string;
   /** Selected runner mode */
   runner: "host" | "docker";
-  /** Whether agent mode (NDJSON event streaming) is enabled */
+  /** Whether this browser session was opened for agent-driven control */
+  agentLaunch: boolean;
+  /** Whether agent mode (NDJSON event streaming) is enabled for the next run */
   agentMode: boolean;
 }
 
@@ -253,6 +262,7 @@ export type Msg =
   | TopologyMsg
   | LogsMsg
   | MetricsMsg
+  | ConfigMsg
   | UxMsg
   | { type: "tick"; nowMs: number };
 
@@ -363,6 +373,11 @@ export type MetricsMsg =
   | { type: "metrics/failed"; error: string; token?: number }
   | { type: "metrics/timeout"; token?: number };
 
+/** Launch configuration from the server. */
+export type ConfigMsg =
+  | { type: "config/received"; agentLaunch: boolean }
+  | { type: "config/failed" };
+
 /** UI interaction messages. */
 export type UxMsg =
   | { type: "ux/toggleSettings" }
@@ -370,7 +385,9 @@ export type UxMsg =
   | { type: "ux/toggleCategory"; category: string }
   | { type: "ux/setSearchTerm"; term: string }
   | { type: "ux/setRunner"; runner: "host" | "docker" }
-  | { type: "ux/setAgentMode"; agentMode: boolean };
+  | { type: "ux/setAgentMode"; agentMode: boolean }
+  | { type: "ux/toggleMobileNav"; panel: MobileNavPanel }
+  | { type: "ux/closeMobileNav" };
 
 /** Type guard: does this Msg belong to a given slice prefix? */
 function isNetworkMsg(msg: Msg): msg is NetworkMsg {
@@ -393,6 +410,17 @@ function isMetricsMsg(msg: Msg): msg is MetricsMsg {
 }
 function isUxMsg(msg: Msg): msg is UxMsg {
   return msg.type.startsWith("ux/");
+}
+function isConfigMsg(msg: Msg): msg is ConfigMsg {
+  return msg.type.startsWith("config/");
+}
+
+/** Apply agent launch flags: auto-enable agent mode only for agent sessions. */
+function applyAgentLaunch(ux: UxSlice, agentLaunch: boolean): UxSlice {
+  if (!agentLaunch) {
+    return { ...ux, agentLaunch: false, agentMode: false };
+  }
+  return { ...ux, agentLaunch: true, agentMode: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -632,12 +660,14 @@ function updateLogs(
       const isActive = state.runs.active?.id === runId &&
         isLiveRun(state.runs.active);
       const delay = isActive ? BASE_LOG_POLL_MS : BASE_LOG_POLL_MS * 5;
+      const { [runId]: _cleared, ...restErrors } = state.logs.lastErrorByRunId;
       const logs: LogsSlice = {
         ...state.logs,
         textByRunId: trimRecord(
           { ...state.logs.textByRunId, [runId]: msg.text },
           MAX_RUN_CACHE_SIZE,
         ),
+        lastErrorByRunId: restErrors,
         fetchInFlight: false,
         inFlightRunId: null,
         delayMs: delay,
@@ -670,6 +700,10 @@ function updateLogs(
         isLiveRun(state.runs.active);
       const logs: LogsSlice = {
         ...state.logs,
+        lastErrorByRunId: {
+          ...state.logs.lastErrorByRunId,
+          [runId]: msg.error,
+        },
         fetchInFlight: false,
         inFlightRunId: null,
         delayMs: backoff,
@@ -813,7 +847,20 @@ function updateUx(
       return [{ ux: { ...state.ux, runner: msg.runner } }, []];
     }
     case "ux/setAgentMode": {
+      if (msg.agentMode && !state.ux.agentLaunch) {
+        return [state, []];
+      }
       return [{ ux: { ...state.ux, agentMode: msg.agentMode } }, []];
+    }
+    case "ux/toggleMobileNav": {
+      const mobileNavPanel = state.ux.mobileNavPanel === msg.panel
+        ? null
+        : msg.panel;
+      return [{ ux: { ...state.ux, mobileNavPanel } }, []];
+    }
+    case "ux/closeMobileNav": {
+      if (!state.ux.mobileNavPanel) return [{}, []];
+      return [{ ux: { ...state.ux, mobileNavPanel: null } }, []];
     }
   }
 }
@@ -894,6 +941,17 @@ export function update(
   if (isUxMsg(msg)) {
     const [partial, cmds] = updateUx(state, msg);
     return [{ ...state, ...partial }, cmds];
+  }
+
+  if (isConfigMsg(msg)) {
+    if (msg.type === "config/failed") {
+      return [state, []];
+    }
+    const agentLaunch = state.ux.agentLaunch || msg.agentLaunch;
+    const ux = agentLaunch
+      ? applyAgentLaunch(state.ux, true)
+      : { ...state.ux, agentLaunch: false };
+    return [{ ...state, ux }, []];
   }
 
   // ── Network messages (some cross-slice) ──────────────────────────────
@@ -1775,6 +1833,7 @@ export function createInitialState(
     },
     logs: {
       textByRunId: {},
+      lastErrorByRunId: {},
       fetchInFlight: false,
       inFlightRunId: null,
       token: 0,
@@ -1791,10 +1850,12 @@ export function createInitialState(
     ux: {
       busy: false,
       settingsOpen: false,
+      mobileNavPanel: null,
       scenarioParams: {},
       collapsedCategories: new Set(["edge"]),
       searchTerm: "",
       runner: "host",
+      agentLaunch: false,
       agentMode: false,
     },
     lastTickMs: 0,
@@ -1832,6 +1893,12 @@ export function bootCmds(): Cmd[] {
       url: "/api/topologies",
       onSuccess: "topology/listReceived",
       onError: "topology/listFailed",
+    },
+    {
+      type: "fetch",
+      url: "/api/config",
+      onSuccess: "config/received",
+      onError: "config/failed",
     },
     {
       type: "fetch",

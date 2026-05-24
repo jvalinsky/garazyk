@@ -1,0 +1,23 @@
+{
+  "id": "3bb9ebda",
+  "phase": "discarded",
+  "pageUrl": "/",
+  "sourceFile": "scripts/scenario-dashboard/islands/Toolbar.tsx",
+  "expectedVariants": 3,
+  "arrivedVariants": 3,
+  "visibleVariant": 1,
+  "paramValues": {
+    "hue-mode": "oklch(52% 0.18 15)",
+    "button-lift": 1.03
+  },
+  "pendingEventSeq": null,
+  "pendingEvent": null,
+  "deliveryLease": null,
+  "checkpointRevision": 16,
+  "activeOwner": "0a992958",
+  "sourceMarkers": {},
+  "fallbackMode": null,
+  "annotationArtifacts": [],
+  "diagnostics": [],
+  "updatedAt": "2026-05-24T06:49:55.237Z"
+}

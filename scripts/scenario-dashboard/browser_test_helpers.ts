@@ -62,15 +62,27 @@ export async function runBrowserTest(
   const serverProc = await startServer(dashboardDir, port);
 
   let browser: Browser | undefined;
+  const traceDir = Deno.env.get("GARAZYK_DASHBOARD_TRACE_DIR") ??
+    "scripts/scenario-dashboard/test-results/traces";
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
+    await context.tracing.start({ screenshots: true, snapshots: true });
     const page = await context.newPage();
 
     await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
     console.log("[OK] Page loaded");
 
-    await testFn({ page, baseUrl });
+    try {
+      await testFn({ page, baseUrl });
+      await context.tracing.stop();
+    } catch (e) {
+      await Deno.mkdir(traceDir, { recursive: true });
+      const tracePath = `${traceDir}/trace-${Date.now()}.zip`;
+      await context.tracing.stop({ path: tracePath });
+      console.error(`[trace] Saved Playwright trace to ${tracePath}`);
+      throw e;
+    }
   } finally {
     if (browser) await browser.close();
     serverProc.kill();
