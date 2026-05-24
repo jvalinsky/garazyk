@@ -1,6 +1,6 @@
 ---
 name: pulse
-description: Map the current model as decisions - no history, just now
+description: Map the current system model as goals, options, and decisions.
 compatibility: opencode
 ---
 
@@ -52,12 +52,19 @@ If a question is still open, leave it as option nodes without a decision.
 ## Step 5: Review
 
 ```bash
+# Check the pulse again to see what's mapped
 deciduous pulse
+
+# Check for coverage gaps
 deciduous pulse --summary
+
+# View visually
 deciduous serve
 ```
 
 ## Check for Supporting Documents
+
+If the system has architecture diagrams, specs, or reference docs relevant to the scope (note: path below is illustrative):
 
 ```bash
 deciduous doc list <goal_id>
