@@ -39,7 +39,8 @@ Source files in `$MEMORY_DIR`:
 | File | Extracted as |
 |------|-------------|
 | `system/human/preferences.md` | `### Section (status)` headers → goals/decisions; `- **Phase X**: ...` bullets → decisions |
-| `reference/*.md` | `## Header` patterns → goals/decisions; `### Category X:` patterns → decisions; priority table rows → goals |
+| `reference/**/*.md` | `## Header` patterns → goals/decisions; `### Category X:` patterns → decisions; priority table rows → goals |
+| `reference/tui-navigation/competence.md` | Numbered insights (`N. **Title** — desc`) → observations; navigation patterns table → outcomes; framework strategy table → decisions |
 
 All synced nodes are tagged with the `letta-sync` theme for traceability.
 
@@ -51,8 +52,10 @@ Deduplication: nodes with matching titles are updated (status changes) rather th
 |-------------|---------|
 | `reference/deciduous-graph-state.md` | Active goals with linked decisions, recent decisions/outcomes, completed goals |
 | `reference/deciduous-pulse.md` | Output of `deciduous pulse --summary` |
+| `reference/tui-navigation/competence.md` | Appended TUI navigation observations from deciduous (filtered by keywords, excludes MCP server internals) |
 
-These files are auto-generated — do not edit them manually. They get overwritten on each pull.
+The graph-state and pulse files are auto-generated — do not edit them manually. They get overwritten on each pull.
+The competence tracker is appended to (new observations only), not overwritten.
 
 ## Manual Sync Patterns
 
