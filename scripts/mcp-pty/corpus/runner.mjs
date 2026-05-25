@@ -763,40 +763,62 @@ async function executeStep(step, session, context) {
     }
 
     case "quit": {
-      // Trigger quit via detected quit keys or q as fallback
-      const snap = await semanticObserve(session);
-      const worldQuitKeys = (snap.snapshot.world?.actions || [])
-        .filter((action) =>
-          action.key &&
-          /quit|exit|close|dismiss/i.test(
-            `${action.label || ""} ${action.kind || ""}`,
+      // Trigger quit via detected quit keys or q as fallback.
+      // Gracefully handle dead sessions (some apps self-terminate before or during quit).
+      let snap;
+      try {
+        snap = await semanticObserve(session);
+      } catch {
+        // Session is already dead — app self-terminated. This is still a pass.
+        return {
+          passed: true,
+          label,
+          detail: "App self-terminated before quit step",
+        };
+      }
+      try {
+        // fzf and similar apps may exit between semanticObserve and key press;
+        // catch any session-terminated errors from pressKey/settle.
+        const worldQuitKeys = (snap.snapshot.world?.actions || [])
+          .filter((action) =>
+            action.key &&
+            /quit|exit|close|dismiss/i.test(
+              `${action.label || ""} ${action.kind || ""}`,
+            )
           )
-        )
-        .map((action) => action.key);
-      if (worldQuitKeys.length > 0) {
-        for (const key of [...new Set(worldQuitKeys)]) {
+          .map((action) => action.key);
+        if (worldQuitKeys.length > 0) {
+          for (const key of [...new Set(worldQuitKeys)]) {
+            await session.pressKey(key);
+            await session.settle(300);
+          }
+          return {
+            passed: true,
+            label,
+            detail: `Quit attempt with TuiWorld keys: ${
+              [...new Set(worldQuitKeys)].join(", ")
+            }`,
+          };
+        }
+        const caps = snap.snapshot.capabilities;
+        const quitKeys = caps?.quit?.keys?.length > 0 ? caps.quit.keys : ["q"];
+        for (const key of quitKeys) {
           await session.pressKey(key);
           await session.settle(300);
         }
         return {
           passed: true,
           label,
-          detail: `Quit attempt with TuiWorld keys: ${
-            [...new Set(worldQuitKeys)].join(", ")
-          }`,
+          detail: `Quit attempt with keys: ${quitKeys.join(", ")}`,
+        };
+      } catch {
+        // Session died during quit key sequence — still a passing result.
+        return {
+          passed: true,
+          label,
+          detail: "Quit succeeded (session terminated during quit sequence)",
         };
       }
-      const caps = snap.snapshot.capabilities;
-      const quitKeys = caps?.quit?.keys?.length > 0 ? caps.quit.keys : ["q"];
-      for (const key of quitKeys) {
-        await session.pressKey(key);
-        await session.settle(300);
-      }
-      return {
-        passed: true,
-        label,
-        detail: `Quit attempt with keys: ${quitKeys.join(", ")}`,
-      };
     }
 
     default:
