@@ -9,22 +9,30 @@ settleMs: 300
 steps:
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Wait for cat to start
   - type: observe
+    maxMs: 500
     label: Take initial snapshot
   - type: type
     value: hello-sidecar
+    maxMs: 500
     label: Type text into cat
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Wait for echo
   - type: assert_content_changed
+    maxMs: 500
     label: Verify content changed after typing
   - type: press_key
     value: ctrl+d
+    maxMs: 500
     label: Send EOF to cat
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Wait for exit
   - type: assert_exited
+    maxMs: 500
     label: Verify cat exited

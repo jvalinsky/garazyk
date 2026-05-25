@@ -10,29 +10,39 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 3000
+    maxMs: 9000
     label: Wait for bandwhich to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: bandwhich
+    maxMs: 500
     label: Verify app is bandwhich
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: assert_cursor_moved
+    maxMs: 500
     label: Verify cursor moved
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit bandwhich
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

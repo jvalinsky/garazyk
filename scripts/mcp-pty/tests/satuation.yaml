@@ -10,33 +10,44 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for satuation to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: satuation
+    maxMs: 500
     label: Verify app is satuation
   - type: assert_semantic
     target: framework
     expected: ratatui
+    maxMs: 500
     label: Verify framework is ratatui
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: assert_cursor_moved
+    maxMs: 500
     label: Verify cursor moved after navigation
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit satuation
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

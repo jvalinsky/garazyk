@@ -10,23 +10,31 @@ settleMs: 500
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for mcfly to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: mcfly
+    maxMs: 500
     label: Verify app is mcfly
   - type: type
     value: test
+    maxMs: 500
     label: Type search filter
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Wait for filter
   - type: assert_content_changed
+    maxMs: 500
     label: Verify content filtered
   - type: quit
+    maxMs: 2000
     label: Quit mcfly
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Wait for exit

@@ -10,15 +10,20 @@ settleMs: 500
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for kakoune to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: kakoune
+    maxMs: 500
     label: Verify app is kakoune
   - type: quit
+    maxMs: 3000
     label: Quit kakoune
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

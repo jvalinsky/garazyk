@@ -9,12 +9,16 @@ settleMs: 2000
 steps:
   - type: navigate_panel
     target: Status
+    maxMs: 500
     label: Jump to Status tab
   - type: navigate_panel
     target: Log
+    maxMs: 500
     label: Jump to Log tab
   - type: navigate_panel
     target: Stashing
+    maxMs: 500
     label: Jump to Stashing tab
   - type: quit
+    maxMs: 2000
     label: Quit gitui

@@ -10,28 +10,37 @@ settleMs: 500
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for nano to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: nano
+    maxMs: 500
     label: Verify app is nano
   - type: type
     value: Hello from TUI test
+    maxMs: 500
     label: Type some text
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: ctrl+x
+    maxMs: 500
     label: Exit nano (Ctrl+X)
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Wait for save prompt
   - type: press_key
     value: n
+    maxMs: 500
     label: Don't save
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Wait for exit

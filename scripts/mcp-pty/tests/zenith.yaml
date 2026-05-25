@@ -10,19 +10,25 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for zenith to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: zenith
+    maxMs: 500
     label: Verify app is zenith
   - type: assert_semantic
     target: framework
     expected: ratatui
+    maxMs: 500
     label: Verify framework is ratatui
   - type: quit
+    maxMs: 2000
     label: Quit zenith
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit
