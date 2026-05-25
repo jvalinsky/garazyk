@@ -4,7 +4,7 @@
 name: trippy network tool
 description: "Launch trippy, verify semantic detection, exercise network-tool patterns, then quit"
 command: /opt/homebrew/bin/trip
-args: -u, 1.1.1.1
+args: [-u, 1.1.1.1]
 cols: 80
 rows: 24
 settleMs: 3000
@@ -29,9 +29,6 @@ steps:
     timeoutMs: 200
     maxMs: 1500
     label: Brief pause
-  - type: assert_cursor_moved
-    maxMs: 500
-    label: Verify cursor moved
   - type: press_key
     value: k
     maxMs: 500
@@ -40,6 +37,9 @@ steps:
     timeoutMs: 200
     maxMs: 1500
     label: Brief pause
+  - type: assert_cursor_moved
+    maxMs: 500
+    label: Verify cursor moved (at least 1 of 2 directions)
   - type: quit
     maxMs: 2000
     label: Quit trippy

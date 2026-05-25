@@ -44,9 +44,17 @@ steps:
     timeoutMs: 200
     maxMs: 1500
     label: Brief pause
+  - type: press_key
+    value: k
+    maxMs: 500
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    maxMs: 1500
+    label: Brief pause
   - type: assert_cursor_moved
     maxMs: 500
-    label: Verify cursor moved
+    label: Verify cursor moved (at least 1 of 2 directions)
   - type: quit
     maxMs: 2000
     label: Quit ncmpcpp

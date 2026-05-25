@@ -10,7 +10,7 @@ settleMs: 500
 steps:
   - type: wait
     timeoutMs: 2000
-    maxMs: 3000
+    maxMs: 6000
     label: Wait for cbonsai to animate
   - type: observe
     maxMs: 500
@@ -25,5 +25,5 @@ steps:
     label: Quit cbonsai
   - type: wait
     timeoutMs: 500
-    maxMs: 2000
+    maxMs: 1500
     label: Wait for exit

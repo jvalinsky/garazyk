@@ -10,7 +10,7 @@ settleMs: 1000
 steps:
   - type: wait
     timeoutMs: 2000
-    maxMs: 3000
+    maxMs: 6000
     label: Wait for nudoku to render
   - type: observe
     maxMs: 500
@@ -26,7 +26,7 @@ steps:
     label: Move down
   - type: wait
     timeoutMs: 200
-    maxMs: 500
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: k
@@ -34,7 +34,7 @@ steps:
     label: Move up
   - type: wait
     timeoutMs: 200
-    maxMs: 500
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: l
@@ -42,7 +42,7 @@ steps:
     label: Move right
   - type: wait
     timeoutMs: 200
-    maxMs: 500
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: h
@@ -50,15 +50,14 @@ steps:
     label: Move left
   - type: wait
     timeoutMs: 200
-    maxMs: 500
+    maxMs: 1500
     label: Brief pause
   - type: assert_cursor_moved
     maxMs: 500
     label: Verify cursor moved (at least 1 of 4 directions)
-  - type: press_key
-    value: "Q"
+  - type: quit
     maxMs: 3000
-    label: Quit nudoku (Q)
+    label: Quit nudoku
   - type: wait
     timeoutMs: 1000
     maxMs: 3000

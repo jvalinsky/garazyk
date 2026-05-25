@@ -22,7 +22,7 @@ steps:
     label: Verify app is gum
   - type: assert_capability
     target: quit.keys
-    contains: q, escape
+    contains: [q, escape]
     maxMs: 500
     label: Verify quit key is available
   - type: quit

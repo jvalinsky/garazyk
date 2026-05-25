@@ -4,7 +4,7 @@
 name: kak-lsp text editor
 description: "Launch kak-lsp, verify semantic detection, exercise text-editor patterns, then quit"
 command: /opt/homebrew/bin/kak-lsp
-args: --kakoune
+args: [--kakoune]
 cols: 80
 rows: 24
 settleMs: 2000

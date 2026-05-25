@@ -22,7 +22,7 @@ steps:
     label: Verify app is termui-gauge
   - type: assert_capability
     target: quit.keys
-    contains: q
+    contains: [q]
     maxMs: 500
     label: Verify quit key is available
   - type: quit
