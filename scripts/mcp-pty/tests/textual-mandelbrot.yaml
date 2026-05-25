@@ -10,15 +10,20 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 2000
+    maxMs: 6000
     label: Wait for textual-mandelbrot to animate
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: textual-mandelbrot
+    maxMs: 500
     label: Verify app is textual-mandelbrot
   - type: quit
+    maxMs: 2000
     label: Quit textual-mandelbrot
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Wait for exit

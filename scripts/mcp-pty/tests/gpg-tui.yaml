@@ -10,21 +10,28 @@ settleMs: 1000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for gpg-tui to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: gpg-tui
+    maxMs: 500
     label: Verify app is gpg-tui
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit gpg-tui
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Wait for exit

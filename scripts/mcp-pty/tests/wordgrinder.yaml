@@ -10,15 +10,20 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for wordgrinder to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: wordgrinder
+    maxMs: 500
     label: Verify app is wordgrinder
   - type: quit
+    maxMs: 2000
     label: Quit wordgrinder
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

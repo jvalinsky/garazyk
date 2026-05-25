@@ -10,15 +10,20 @@ settleMs: 1000
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 4500
     label: Wait for tmux to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: tmux
+    maxMs: 500
     label: Verify app is tmux
   - type: quit
+    maxMs: 3000
     label: Quit tmux
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

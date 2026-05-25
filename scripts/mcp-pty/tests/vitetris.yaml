@@ -10,41 +10,55 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 2000
+    maxMs: 6000
     label: Wait for vitetris to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: vitetris
+    maxMs: 500
     label: Verify app is vitetris
   - type: press_key
     value: j
+    maxMs: 500
     label: Move down
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: assert_cursor_moved
+    maxMs: 500
     label: Verify cursor moved
   - type: press_key
     value: k
+    maxMs: 500
     label: Move up
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: l
+    maxMs: 500
     label: Move right
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: h
+    maxMs: 500
     label: Move left
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit vitetris
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit
