@@ -1043,16 +1043,20 @@ export function buildCapabilityMap(snapshot) {
     }
   } else if (caps.framework === "textual") {
     if (caps.navigate.keys.length === 0) {
-      caps.navigate.keys = ["up", "down"];
+      caps.navigate.keys = ["up", "down", "j", "k"];
       caps.navigate.source = "framework_textual";
     }
     if (caps.quit.keys.length === 0) {
-      caps.quit.keys = ["ctrl+c"];
+      caps.quit.keys = ["ctrl+c", "q"];
       caps.quit.source = "framework_textual";
     }
     if (caps.tabs.keys.length === 0 && caps.tabs.available) {
       caps.tabs.keys = ["tab"];
       caps.tabs.source = "framework_textual";
+    }
+    if (caps.help.keys.length === 0) {
+      caps.help.keys = ["?"];
+      caps.help.source = "framework_textual";
     }
   } else if (caps.framework === "vim") {
     if (caps.navigate.keys.length === 0) {
@@ -1187,19 +1191,6 @@ export function buildCapabilityMap(snapshot) {
       caps.help.keys = ["?"];
       caps.help.source = "framework_ncurses";
     }
-  } else if (caps.framework === "textual") {
-    if (caps.navigate.keys.length === 0) {
-      caps.navigate.keys = ["up", "down", "j", "k"];
-      caps.navigate.source = "framework_textual";
-    }
-    if (caps.quit.keys.length === 0) {
-      caps.quit.keys = ["ctrl+c", "q"];
-      caps.quit.source = "framework_textual";
-    }
-    if (caps.help.keys.length === 0) {
-      caps.help.keys = ["?"];
-      caps.help.source = "framework_textual";
-    }
   }
 
   // ── Header line hints ──
@@ -1219,6 +1210,86 @@ export function buildCapabilityMap(snapshot) {
     if (text.includes("?") && text.includes("help") && !caps.help.keys.includes("?")) {
       caps.help.keys.push("?");
       if (!caps.help.source) caps.help.source = "header_hint";
+    }
+  }
+
+  // ── Ink (React/Node.js TUI) defaults ──
+  if (caps.framework === "ink") {
+    if (caps.navigate.keys.length === 0) {
+      caps.navigate.keys = ["up", "down", "j", "k"];
+      caps.navigate.source = "framework_ink";
+    }
+    if (caps.quit.keys.length === 0) {
+      caps.quit.keys = ["q", "escape", "ctrl+c"];
+      caps.quit.source = "framework_ink";
+    }
+    if (caps.help.keys.length === 0) {
+      caps.help.keys = ["?"];
+      caps.help.source = "framework_ink";
+    }
+  }
+
+  // ── FTXUI (C++ TUI) defaults ──
+  if (caps.framework === "ftxui") {
+    if (caps.navigate.keys.length === 0) {
+      caps.navigate.keys = ["j", "k", "up", "down"];
+      caps.navigate.source = "framework_ftxui";
+    }
+    if (caps.quit.keys.length === 0) {
+      caps.quit.keys = ["q", "escape"];
+      caps.quit.source = "framework_ftxui";
+    }
+    if (caps.help.keys.length === 0) {
+      caps.help.keys = ["?"];
+      caps.help.source = "framework_ftxui";
+    }
+  }
+
+  // ── Notcurses (C multimedia TUI) defaults ──
+  if (caps.framework === "notcurses") {
+    if (caps.navigate.keys.length === 0) {
+      caps.navigate.keys = ["j", "k", "up", "down"];
+      caps.navigate.source = "framework_notcurses";
+    }
+    if (caps.quit.keys.length === 0) {
+      caps.quit.keys = ["q"];
+      caps.quit.source = "framework_notcurses";
+    }
+    if (caps.help.keys.length === 0) {
+      caps.help.keys = ["?"];
+      caps.help.source = "framework_notcurses";
+    }
+  }
+
+  // ── Rich (Python TUI) defaults ──
+  if (caps.framework === "rich") {
+    if (caps.navigate.keys.length === 0) {
+      caps.navigate.keys = ["j", "k", "up", "down"];
+      caps.navigate.source = "framework_rich";
+    }
+    if (caps.quit.keys.length === 0) {
+      caps.quit.keys = ["q", "ctrl+c"];
+      caps.quit.source = "framework_rich";
+    }
+    if (caps.help.keys.length === 0) {
+      caps.help.keys = ["?"];
+      caps.help.source = "framework_rich";
+    }
+  }
+
+  // ── Blessed (JS TUI) defaults ──
+  if (caps.framework === "blessed") {
+    if (caps.navigate.keys.length === 0) {
+      caps.navigate.keys = ["j", "k", "up", "down"];
+      caps.navigate.source = "framework_blessed";
+    }
+    if (caps.quit.keys.length === 0) {
+      caps.quit.keys = ["q", "escape", "ctrl+c"];
+      caps.quit.source = "framework_blessed";
+    }
+    if (caps.help.keys.length === 0) {
+      caps.help.keys = ["?"];
+      caps.help.source = "framework_blessed";
     }
   }
 
@@ -1409,6 +1480,18 @@ export function guessApplication(command, lines, grid) {
     nethack: "nethack", greed: "greed",
     lf: "lf", moar: "moar", glow: "glow", broot: "broot",
     cbonsai: "cbonsai", fzf: "fzf",
+    btm: "bottom", bottom: "bottom",
+    dua: "dua-cli", diskonaut: "diskonaut",
+    bandwhich: "bandwhich", bacon: "bacon",
+    xplr: "xplr", joshuto: "joshuto",
+    zenith: "zenith", tickrs: "tickrs",
+    zellij: "zellij", gpg: "gpg-tui",
+    mc: "mc", ranger: "ranger",
+    cmus: "cmus", ncmpcpp: "ncmpcpp",
+    // Ink (Node.js TUI apps)
+    pastel: "pastel", "speed-test": "speed-test",
+    // Bubbletea
+    gum: "gum", mods: "mods",
   };
 
   if (KNOWN_APPS[base]) {
@@ -1534,6 +1617,43 @@ export function guessApplication(command, lines, grid) {
       (lines.filter(line => /^~(?:\s|$)/.test(line)).length >= 3 && /\b(?:NORMAL|INSERT|VISUAL|SELECT|REPLACE|COMMAND)\b/i.test(lastLine));
     const hasBubbleteaSignature = /press\s+esc\s*(?:\/\s*q)?\s*to\s*(?:exit|quit)/i.test(text) ||
       /press\s+q\s*to\s*(?:exit|quit)/i.test(text);
+
+    // ── New framework detection signals ──
+
+    // FTXUI (C++): heavy use of double-line box drawing characters
+    const doubleLineChars = new Set(["═", "║", "╔", "╗", "╚", "╝", "╠", "╣", "╦", "╩", "╬", "╒", "╕", "╘", "╛", "╞", "╡", "╤", "╧", "╪"]);
+    const doubleLineCount = grid.reduce((sum, row) =>
+      sum + row.filter(c => doubleLineChars.has(c.char)).length, 0);
+    const hasFTXUISignature = doubleLineCount >= 10;
+
+    // Rich (Python): rounded borders + Python process + panel/tree/markdown patterns
+    const hasRichRoundedBorders = roundedBorders && (
+      /\b(?:table|panel|tree|progress|syntax|markdown|layout)\b/i.test(lowerText) ||
+      /╭─+[^─]+─+╮/.test(text));
+    const isPythonProcess = /python|python3/i.test(command || "");
+
+    // Ink (JS/TS): Node.js process + TUI-like output without heavy box drawing
+    const isNodeProcess = /node/i.test(command || "");
+    // Ink detection: must have Ink/React-specific patterns, not just any Node process with ANSI
+    const hasInkSpecifics = /\b(useInput|useApp|useFocus|useStdin|render)\b/i.test(text) ||
+      /\b(Box|Text|Newline|Static|Transform)\b/.test(text);
+    const hasInkSignature = (isNodeProcess || /\b(react|ink|jsx)\b/i.test(text)) &&
+      (hasInkSpecifics || (hasBoxDrawing && boxCount < 10 && /\x1b\[/.test(text)));
+
+    // Blessed (JS): Node.js process + [key] bracket notation + dashboard patterns
+    const hasBracketKeys = /\[[a-zA-Z0-9]{1,3}\]\s[A-Za-z]/.test(lastLine) ||
+      /\[[a-zA-Z0-9]{1,3}\]\s[A-Za-z]/.test(text);
+    const hasDashboardPattern = /\b(?:gauge|sparkline|donut|bar|line|widget|donut)\b/i.test(text);
+    const hasBlessedSignature = isNodeProcess && (hasDashboardPattern || hasBracketKeys) &&
+      !hasFKeyBar && boxCount < 15;
+
+    // Notcurses (C): sixel sequences, true-color ANSI, multimedia patterns
+    const hasSixel = text.includes("\x1bPq") || text.includes("\x1bP0");
+    const hasTrueColor = /\x1b\[38;2;/g.test(text) || /\x1b\[48;2;/g.test(text);
+    const hasNotcursesSignature = hasSixel ||
+      (hasTrueColor && /\b(notcurses|ncdirect|ncvisual|ncplane)\b/i.test(text)) ||
+      /\bnotcurses\b/i.test(command || "");
+
     const frameworkByApp = {
       htop: "ncurses",
       tig: "ncurses",
@@ -1542,7 +1662,14 @@ export function guessApplication(command, lines, grid) {
       nudoku: "ncurses",
       nethack: "ncurses",
       greed: "ncurses",
+      cmus: "ncurses",
+      mc: "ncurses",
+      nano: "ncurses",
+      top: "ncurses",
+      tmux: "ncurses",
+      less: "ncurses",
       vim: "vim",
+      ranger: "ncurses",
       helix: "ratatui",
       gitui: "ratatui",
       lazygit: "ratatui",
@@ -1551,18 +1678,33 @@ export function guessApplication(command, lines, grid) {
       broot: "ratatui",
       csvlens: "ratatui",
       cbonsai: "ratatui",
+      bottom: "ratatui",
+      "dua-cli": "ratatui",
+      diskonaut: "ratatui",
+      bandwhich: "ratatui",
+      bacon: "ratatui",
+      xplr: "ratatui",
+      joshuto: "ratatui",
+      zenith: "ratatui",
+      tickrs: "ratatui",
+      zellij: "ratatui",
+      "gpg-tui": "ratatui",
       lf: "bubbletea",
       moar: "bubbletea",
       glow: "bubbletea",
       fzf: "bubbletea",
+      gum: "bubbletea",
+      mods: "bubbletea",
       posting: "textual",
       harlequin: "textual",
-      dashboard: "ratatui",
+      dashboard: "opentui",
       "tty-solitaire": "ncurses",
-      nsnake: "ncurses",
-      nudoku: "ncurses",
-      nethack: "ncurses",
-      greed: "ncurses",
+      pastel: "ink",
+      "speed-test": "ink",
+      ncmpcpp: "notcurses",
+      "rich-cli": "rich",
+      "blessed-contrib": "blessed",
+      vtop: "blessed",
     };
 
     if (frameworkByApp[guess]) {
@@ -1571,8 +1713,22 @@ export function guessApplication(command, lines, grid) {
       framework = "vim";
     } else if (hasFKeyBar || /\bncurses\b|\bcurses\b/i.test(text)) {
       framework = "ncurses";
+    } else if (hasNotcursesSignature) {
+      framework = "notcurses";
     } else if (hasBubbleteaSignature || (hasBoxDrawing && /press\s+.*(exit|quit)/i.test(text))) {
       framework = "bubbletea";
+    } else if (hasFTXUISignature) {
+      framework = "ftxui";
+    } else if (hasRichRoundedBorders && isPythonProcess) {
+      framework = "rich";
+    } else if (hasRichRoundedBorders && !isNodeProcess && !isPythonProcess) {
+      // Rounded borders without clear process hint — could be Rich or ratatui
+      // Ratatui tends to have more box drawing overall
+      framework = boxCount > 20 ? "ratatui" : "rich";
+    } else if (hasBlessedSignature) {
+      framework = "blessed";
+    } else if (hasInkSignature) {
+      framework = "ink";
     } else if ((boxCount > 20 && (hasKeyHintBar || roundedBorders)) ||
                (hasBoxDrawing && hasKeyHintBar) ||
                (hasBoxDrawing && boxCount > 10) ||
@@ -1583,6 +1739,16 @@ export function guessApplication(command, lines, grid) {
     // Textual apps use ^c, ^j, ^s notation in status bar
     if (framework === "unknown" && (/\^[a-z]/i.test(lastLine) || /ctrl\+[a-z]/i.test(lastLine))) {
       framework = "textual";
+    }
+
+    // Blessed fallback: JS process + bracket keys but no other framework matched
+    if (framework === "unknown" && isNodeProcess && hasBracketKeys) {
+      framework = "blessed";
+    }
+
+    // Ink fallback: JS process + any TUI rendering but no other framework
+    if (framework === "unknown" && isNodeProcess && hasBoxDrawing && boxCount < 10) {
+      framework = "ink";
     }
   }
 

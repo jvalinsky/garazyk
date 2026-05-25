@@ -178,7 +178,48 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
 
     #meta { color: var(--muted); font-size: 12px; margin-top: 10px; }
     #measure { position: absolute; visibility: hidden; white-space: pre; left: -1000px; top: -1000px; display: inline-block; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-variant-ligatures: none; tab-size: 1; }
-  </style>
+
+    /* ── Per-app themes ── */
+    :root.theme-card-game { --accent: #a371f7; --accent-bg: rgba(163,113,247,.1); --sidebar-accent: #8957e5; --highlight: #d2a8ff; }
+    :root.theme-monitor { --accent: #3fb950; --accent-bg: rgba(63,185,80,.1); --sidebar-accent: #238636; --highlight: #58a6ff; }
+    :root.theme-editor { --accent: #58a6ff; --accent-bg: rgba(88,166,255,.1); --sidebar-accent: #1a4a6e; --highlight: #79c0ff; }
+    :root.theme-roguelike { --accent: #f0883e; --accent-bg: rgba(240,136,62,.1); --sidebar-accent: #9e6a03; --highlight: #ffa657; }
+
+    /* ── Overlay micro-animations ── */
+    .ov { transition: opacity .3s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1), box-shadow .2s ease; }
+    .ov-enter { animation: ov-fadeIn .25s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes ov-fadeIn { from { opacity: 0; transform: scale(.92) translateY(2px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .ov-highlight { box-shadow: 0 0 14px rgba(255,255,255,.18), 0 0 30px var(--accent-bg) !important; z-index: 100 !important; }
+    .ov-pulse { animation: ov-pulse .8s ease-in-out 2; }
+    @keyframes ov-pulse { 0%,100% { box-shadow: 0 0 4px var(--accent-bg); } 50% { box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent-bg); } }
+
+    /* ── Timeline / scrubber ── */
+    .timeline { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    .timeline-track { flex: 1; position: relative; height: 8px; background: #1a1e23; border-radius: 4px; cursor: pointer; overflow: visible; }
+    .timeline-track:hover .timeline-fill { filter: brightness(1.2); }
+    .timeline-fill { height: 100%; background: var(--accent, #388bfd); border-radius: 4px; transition: width .08s linear; position: relative; }
+    .timeline-thumb { position: absolute; top: -5px; right: -8px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent, #388bfd); border: 2px solid #fff; cursor: grab; box-shadow: 0 1px 6px rgba(0,0,0,.5); transition: transform .15s, box-shadow .15s; }
+    .timeline-thumb:hover { transform: scale(1.15); box-shadow: 0 2px 10px rgba(0,0,0,.6); }
+    .timeline-thumb:active { cursor: grabbing; transform: scale(1.25); }
+    .timeline-marker { position: absolute; top: 0; width: 3px; height: 100%; background: rgba(255,255,255,.15); border-radius: 1px; pointer-events: none; }
+    .timeline-marker.semantic { background: var(--accent, #388bfd); width: 5px; height: 150%; top: -25%; border-radius: 2px; }
+    .timeline-marker.input { background: rgba(218,54,51,.4); width: 2px; height: 120%; top: -10%; }
+    .timeline-time { font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace; min-width: 7ch; text-align: right; user-select: none; }
+    .timeline-ticks { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    /* ── Sidebar hover cross-reference ── */
+    .cap-row { transition: background .15s; border-radius: 4px; padding: 2px 4px; margin: 0 -4px 2px; cursor: default; }
+    .cap-row:hover { background: rgba(255,255,255,.05); }
+    .cap-row.highlight { background: var(--accent-bg); box-shadow: inset 2px 0 0 var(--accent); }
+    .cap-card { transition: border-color .3s ease; }
+    .cap-card.active-card { border-color: var(--accent); }
+
+    /* ── Hover info popup ── */
+    #hover-info { display: none; position: fixed; bottom: 20px; right: 20px; max-width: 360px; background: var(--surface); border: 1px solid var(--accent, var(--border)); border-radius: 8px; padding: 12px 16px; font-size: 13px; z-index: 200; box-shadow: 0 4px 20px rgba(0,0,0,.5); pointer-events: none; }
+    #hover-info.visible { display: block; animation: ov-fadeIn .15s ease-out both; }
+    #hover-info h4 { margin: 0 0 4px; font-size: 13px; color: var(--accent, var(--text)); }
+    #hover-info p { margin: 0; color: var(--muted); font-size: 12px; }
+    </style>
 </head>
 <body>
   <main>
@@ -196,8 +237,16 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
           <pre id="terminal" aria-label="Terminal replay"></pre>
           <div id="overlay" aria-hidden="true"></div>
         </div>
+        <div class="timeline" id="timeline">
+          <div class="timeline-track" id="timeline-track">
+            <div class="timeline-fill" id="timeline-fill"><div class="timeline-thumb" id="timeline-thumb"></div></div>
+            <div class="timeline-ticks" id="timeline-ticks"></div>
+          </div>
+          <span class="timeline-time" id="timeline-time">0:00</span>
+        </div>
         <div id="meta"></div>
       </div>
+      <div id="hover-info"></div>
       <div class="sidebar" id="sidebar">
         <div class="cap-card" id="app-card">
           <h3>Application</h3>
@@ -219,7 +268,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
           <h3>Game</h3>
           <div id="game-info">—</div>
         </div>
-        <div class="card">
+        <div class="cap-card" id="chart-card" style="display:none">
           <h3>Charts</h3>
           <div id="chart-info">—</div>
         </div>
@@ -259,6 +308,17 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     const defaultStyle = Object.freeze({ fg: null, bg: null, bold: false, dim: false, underline: false, inverse: false });
     let currentStyle = { ...defaultStyle };
     let currentSemanticSnapshot = null;
+    let currentEventIndex = -1;
+    let eventCount = events.length;
+    let isSeeking = false;
+    let seekTarget = -1;
+    let totalDuration = events.length > 0 ? events[events.length - 1][0] : 0;
+    const semanticEventIndices = [];
+    const inputEventIndices = [];
+    for (let ei = 0; ei < events.length; ei += 1) {
+      if (events[ei][1] === "s") semanticEventIndices.push(ei);
+      if (events[ei][1] === "i") inputEventIndices.push(ei);
+    }
 
     const ansi16 = [
       "#000000", "#cd0000", "#00cd00", "#cdcd00", "#0000ee", "#cd00cd", "#00cdcd", "#e5e5e5",
@@ -462,9 +522,12 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
 
     function makeBox(type, x, y, w, h, label, extra) {
       const el = document.createElement("div");
-      el.className = "semantic-box ov ov-" + type;
+      el.className = "semantic-box ov ov-" + type + " ov-enter";
       el.style.left = x + "px"; el.style.top = y + "px";
       el.style.width = w + "px"; el.style.height = h + "px";
+      el.dataset.ovRole = type.replace(/ .*/, "");
+      if (label) el.dataset.ovLabel = label;
+      if (extra) el.dataset.ovExtra = extra;
       if (label) {
         const lbl = document.createElement("span");
         lbl.className = "ov-label"; lbl.textContent = label;
@@ -715,12 +778,132 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
             ch.label, meterText || null));
         }
       }
+
+      // Remove ov-enter class after animation completes
+      for (const el of overlay.querySelectorAll(".ov-enter")) {
+        el.addEventListener("animationend", function removeEnter() {
+          el.classList.remove("ov-enter");
+          el.removeEventListener("animationend", removeEnter);
+        }, { once: true });
+      }
+
+      // Hover cross-reference: hover over overlay → highlight sidebar row
+      const hoverInfo = document.getElementById("hover-info");
+      let hoverTimer = null;
+      for (const el of overlay.children) {
+        el.addEventListener("mouseenter", function () {
+          const role = el.dataset.ovRole || "";
+          const label = el.dataset.ovLabel || "";
+          if (!label) return;
+
+          // Highlight matching sidebar rows
+          document.querySelectorAll(".cap-row.highlight").forEach(r => r.classList.remove("highlight"));
+          const sideRows = document.querySelectorAll(".cap-row");
+          for (const row of sideRows) {
+            if (row.textContent.includes(label.substring(0, 20))) {
+              row.classList.add("highlight");
+            }
+          }
+
+          // Show hover info popup
+          const extra = el.dataset.ovExtra;
+          hoverInfo.innerHTML = '<h4>' + escapeHtml(label) + '</h4>' +
+            (role ? '<p>Role: ' + escapeHtml(role) + '</p>' : "") +
+            (extra ? '<p>' + escapeHtml(extra) + '</p>' : "");
+          hoverInfo.classList.add("visible");
+
+          // Pulse the element
+          el.classList.add("ov-pulse");
+        });
+        el.addEventListener("mouseleave", function () {
+          document.querySelectorAll(".cap-row.highlight").forEach(r => r.classList.remove("highlight"));
+          el.classList.remove("ov-pulse");
+          clearTimeout(hoverTimer);
+          hoverTimer = setTimeout(function () { hoverInfo.classList.remove("visible"); }, 200);
+        });
+      }
+    }
+
+    // ── Timeline / scrubber ──
+
+    function buildTimelineTicks() {
+      const ticks = document.getElementById("timeline-ticks");
+      if (!ticks) return;
+      ticks.innerHTML = "";
+      for (const ei of semanticEventIndices) {
+        const t = events[ei][0];
+        const pct = totalDuration > 0 ? (t / totalDuration * 100) : 0;
+        const m = document.createElement("div");
+        m.className = "timeline-marker semantic";
+        m.style.left = pct + "%";
+        m.title = "Semantic snapshot at " + formatTime(t);
+        ticks.appendChild(m);
+      }
+      for (const ei of inputEventIndices) {
+        const t = events[ei][0];
+        const pct = totalDuration > 0 ? (t / totalDuration * 100) : 0;
+        const m = document.createElement("div");
+        m.className = "timeline-marker input";
+        m.style.left = pct + "%";
+        ticks.appendChild(m);
+      }
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return m + ":" + String(s).padStart(2, "0");
+    }
+
+    function updateTimeline() {
+      const fill = document.getElementById("timeline-fill");
+      const thumb = document.getElementById("timeline-thumb");
+      const timeEl = document.getElementById("timeline-time");
+      if (!fill || !timeEl) return;
+
+      let progress = 0;
+      let currentTime = 0;
+      if (totalDuration > 0 && eventCount > 0) {
+        if (currentEventIndex >= 0) {
+          currentTime = events[currentEventIndex][0];
+        }
+        progress = Math.min(1, currentTime / totalDuration);
+      }
+      fill.style.width = (progress * 100) + "%";
+      if (thumb) thumb.style.left = (progress * 100) + "%";
+      timeEl.textContent = formatTime(currentTime);
+    }
+
+    // ── Theme switcher ──
+
+    function applyTheme(snap) {
+      if (!snap || !snap.app) return;
+      const app = String(snap.app).toLowerCase();
+      const html = document.documentElement;
+      let theme = "";
+      if (/\b(solitaire|card|poker|blackjack|mahjong|klondike|spider)\b/.test(app)) {
+        theme = "theme-card-game";
+      } else if (/\b(top|htop|btop|glances|monitor|stats|cpu)\b/.test(app)) {
+        theme = "theme-monitor";
+      } else if (/\b(vim|nano|emacs|less|more|edit)\b/.test(app)) {
+        theme = "theme-editor";
+      } else if (/\b(nethack|rogue|angband|dungeon|moria|adventure)\b/.test(app)) {
+        theme = "theme-roguelike";
+      }
+      html.className = theme;
+
+      // Update app badge colors via css props
+      document.querySelectorAll(".app-badge").forEach(function (b) {
+        b.style.borderColor = "var(--accent)";
+        b.style.color = "var(--highlight)";
+      });
     }
 
     // ── Capabilities sidebar ──
 
     function updateSidebar(snap) {
       if (!snap) return;
+      applyTheme(snap);
       const caps = snap.capabilities || {};
 
       // App card
@@ -819,37 +1002,134 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       }
     }
 
+    let overlayDirty = false;
+
+    function markOverlayDirty() { overlayDirty = true; }
+
     function render() {
       terminal.innerHTML = grid.map(renderLine).join("\\n");
-      renderSemanticOverlay();
-      meta.textContent = "asciicast v2 · " + width + "×" + height + " · " + events.length + " events";
+      if (overlayDirty) { overlayDirty = false; renderSemanticOverlay(); }
+      updateTimeline();
+      meta.textContent = "asciicast v2 · " + width + "\u00D7" + height + " · " + events.length + " events";
     }
 
     function clearTimers() { for (const timer of timers) clearTimeout(timer); timers = []; }
 
     reset.addEventListener("click", () => {
-      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle }; render();
+      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+      currentEventIndex = -1; currentSemanticSnapshot = null; overlayDirty = true; render();
     });
 
     toggleOverlay.addEventListener("click", () => {
       overlayEnabled = !overlayEnabled;
       toggleOverlay.setAttribute("aria-pressed", overlayEnabled ? "true" : "false");
-      renderSemanticOverlay();
+      markOverlayDirty();
+      render();
     });
 
     play.addEventListener("click", () => {
-      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle }; render();
-      for (const event of events) {
-        const [time, kind, data] = event;
+      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+      currentEventIndex = -1; render();
+      for (let ei = 0; ei < events.length; ei += 1) {
+        const [time, kind, data] = events[ei];
         if (kind === "o") {
-          timers.push(setTimeout(() => { applyTerminalData(data); render(); }, Math.max(0, time * 1000)));
+          const idx = ei;
+          timers.push(setTimeout(() => { currentEventIndex = idx; applyTerminalData(data); render(); }, Math.max(0, time * 1000)));
         } else if (kind === "s") {
-          timers.push(setTimeout(() => { currentSemanticSnapshot = data; renderSemanticOverlay(); updateSidebar(data); }, Math.max(0, time * 1000)));
+          const idx = ei;
+          timers.push(setTimeout(() => { currentEventIndex = idx; currentSemanticSnapshot = data; applyTheme(data); markOverlayDirty(); updateSidebar(data); render(); }, Math.max(0, time * 1000)));
         }
       }
     });
 
-    grid = blankGrid(); render();
+    // ── Timeline seek handlers ──
+    const track = document.getElementById("timeline-track");
+    if (track) {
+      // Click-to-seek
+      track.addEventListener("click", function (e) {
+        if (isSeeking) return;
+        const rect = track.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const targetTime = pct * totalDuration;
+        // Find the event index closest to targetTime
+        let closest = 0;
+        for (let ei = 0; ei < events.length; ei += 1) {
+          if (events[ei][0] <= targetTime) closest = ei;
+        }
+        if (closest > 0 && closest < events.length) {
+          clearTimers();
+          grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+          for (let ei = 0; ei <= closest; ei += 1) {
+            const [time, kind, data] = events[ei];
+            if (kind === "o") applyTerminalData(data);
+            else if (kind === "s") { currentSemanticSnapshot = data; applyTheme(data); markOverlayDirty(); }
+          }
+          currentEventIndex = closest;
+          render();
+          updateSidebar(currentSemanticSnapshot);
+        }
+      });
+
+      // Drag-to-seek
+      let dragging = false;
+      track.addEventListener("mousedown", function (e) {
+        dragging = true; isSeeking = true;
+        track.classList.add("dragging");
+        e.preventDefault();
+      });
+      document.addEventListener("mousemove", function (e) {
+        if (!dragging) return;
+        const rect = track.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        // Preview timeline position without replaying events
+        const fill = document.getElementById("timeline-fill");
+        const timeEl = document.getElementById("timeline-time");
+        if (fill) fill.style.width = (pct * 100) + "%";
+        if (timeEl) timeEl.textContent = formatTime(pct * totalDuration);
+      });
+      document.addEventListener("mouseup", function (e) {
+        if (!dragging) return;
+        dragging = false; isSeeking = false;
+        track.classList.remove("dragging");
+        const rect = track.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const targetTime = pct * totalDuration;
+        let closest = 0;
+        for (let ei = 0; ei < events.length; ei += 1) {
+          if (events[ei][0] <= targetTime) closest = ei;
+        }
+        if (closest > 0 && closest < events.length) {
+          clearTimers();
+          grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+          for (let ei = 0; ei <= closest; ei += 1) {
+            const [time, kind, data] = events[ei];
+            if (kind === "o") applyTerminalData(data);
+            else if (kind === "s") { currentSemanticSnapshot = data; applyTheme(data); markOverlayDirty(); }
+          }
+          currentEventIndex = closest;
+          render();
+          updateSidebar(currentSemanticSnapshot);
+        }
+      });
+    }
+
+    grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+    for (let ei = 0; ei < events.length; ei += 1) {
+      const [time, kind, data] = events[ei];
+      if (kind === "o" && time <= 0) {
+        applyTerminalData(data);
+      } else if (kind === "s" && time <= 0 && data) {
+        currentSemanticSnapshot = data;
+      }
+    }
+    if (currentSemanticSnapshot) {
+      applyTheme(currentSemanticSnapshot);
+      updateSidebar(currentSemanticSnapshot);
+    }
+    currentEventIndex = 0;
+    markOverlayDirty();
+    buildTimelineTicks();
+    render();
   </script>
 </body>
 </html>`;
