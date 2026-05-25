@@ -1,19 +1,24 @@
-import { ScreenBuffer, FocusRing } from "@garazyk/tui";
-import { dashboardLayoutTree, solveLayout, findPanel, panelContentArea } from "@garazyk/tui";
+import { FocusRing, ScreenBuffer } from "@garazyk/tui";
+import { dashboardLayoutTree, solveLayout } from "@garazyk/tui";
 import type { ResolvedNode } from "@garazyk/tui";
 import { VirtualTuiHarness } from "@garazyk/tui/testing";
-import type { CastRecorder } from "@garazyk/tui/testing";
-import { createPanelStates, clampPanelState } from "../scenario-dashboard/tui/panel_state.ts";
+import { createPanelStates } from "../scenario-dashboard/tui/panel_state.ts";
 import type { PanelStates } from "../scenario-dashboard/tui/panel_state.ts";
 import { renderView } from "../scenario-dashboard/tui/view.ts";
-import { seedDefaultState, handleHeadlessKey, syncAllPanelCounts } from "../scenario-dashboard/tui_headless_capture.ts";
+import {
+  handleHeadlessKey,
+  seedDefaultState,
+  syncAllPanelCounts,
+} from "../scenario-dashboard/tui_headless_capture.ts";
 import type { DashboardState } from "../scenario-dashboard/dashboard_state.ts";
 import { getScenariosItemAt } from "../scenario-dashboard/tui/panels/scenarios.ts";
 import { buildSnapshot } from "./snapshot.ts";
+import { buildDashboardWorld } from "./world.ts";
 import { RefManager } from "./refs.ts";
 import { startRecording, stopRecording } from "./recording.ts";
 import type { RecordingHandle } from "./recording.ts";
 import type { ElementMeta } from "../scenario-dashboard/tui_types.ts";
+import type { TuiWorld } from "@garazyk/tui/testing";
 
 const WIDTH = 120;
 const HEIGHT = 30;
@@ -36,7 +41,12 @@ export function createSession(): TuiSession {
   const tree = dashboardLayoutTree(WIDTH, HEIGHT);
   if (!tree) throw new Error("Cannot solve layout at " + WIDTH + "x" + HEIGHT);
 
-  const layout = solveLayout(tree, { x: 0, y: 0, width: WIDTH, height: HEIGHT });
+  const layout = solveLayout(tree, {
+    x: 0,
+    y: 0,
+    width: WIDTH,
+    height: HEIGHT,
+  });
   const state = seedDefaultState();
   const focus = new FocusRing();
   const panelStates = createPanelStates();
@@ -47,11 +57,21 @@ export function createSession(): TuiSession {
   let lastMeta = new Map<string, ElementMeta>();
 
   const render = (b: ScreenBuffer) => {
-    const { meta } = renderView(b, state, layout, focus, panelStates, state.runs.recentRuns, showHelp);
+    const { meta } = renderView(
+      b,
+      state,
+      layout,
+      focus,
+      panelStates,
+      state.runs.recentRuns,
+      showHelp,
+    );
     lastMeta = meta;
   };
 
-  const harness = new VirtualTuiHarness(WIDTH, HEIGHT, render, { noColor: true });
+  const harness = new VirtualTuiHarness(WIDTH, HEIGHT, render, {
+    noColor: true,
+  });
 
   harness.onKey((key) => {
     const completeRun = () => {
@@ -75,14 +95,36 @@ export function createSession(): TuiSession {
       const panelId = focus.current;
       return panelStates[panelId].itemCount;
     }, {
-      onHelpToggle: () => { showHelp = !showHelp; },
+      onHelpToggle: () => {
+        showHelp = !showHelp;
+      },
       onCompleteRun: completeRun,
       onViewDetail: (runId, run) => {
         state.runs.detailRunId = runId;
         state.runs.detailRun = run;
         state.runs.detailResults = [
-          { scenarioId: "01_account_lifecycle", scenarioName: "01_account_lifecycle", status: "passed", passed: 5, failed: 0, skipped: 0, durationMs: 500, steps: [], artifacts: null },
-          { scenarioId: "02_social_graph", scenarioName: "02_social_graph", status: run.failed > 0 ? "failed" : "passed", passed: 4, failed: run.failed > 0 ? 1 : 0, skipped: 0, durationMs: 400, steps: [], artifacts: null }
+          {
+            scenarioId: "01_account_lifecycle",
+            scenarioName: "01_account_lifecycle",
+            status: "passed",
+            passed: 5,
+            failed: 0,
+            skipped: 0,
+            durationMs: 500,
+            steps: [],
+            artifacts: null,
+          },
+          {
+            scenarioId: "02_social_graph",
+            scenarioName: "02_social_graph",
+            status: run.failed > 0 ? "failed" : "passed",
+            passed: 4,
+            failed: run.failed > 0 ? 1 : 0,
+            skipped: 0,
+            durationMs: 400,
+            steps: [],
+            artifacts: null,
+          },
         ];
         state.runs.detailCursor = 0;
         state.runs.detailScrollOffset = 0;
@@ -142,7 +184,9 @@ export function createSession(): TuiSession {
     layout,
     refs: new RefManager(),
     recording: null,
-    get lastMeta() { return lastMeta; }
+    get lastMeta() {
+      return lastMeta;
+    },
   };
 }
 
@@ -155,6 +199,10 @@ export function sessionSnapshot(
     session.lastMeta,
     options,
   );
+}
+
+export function sessionWorld(session: TuiSession): TuiWorld {
+  return buildDashboardWorld(session.harness, session.lastMeta);
 }
 
 export async function sessionPressKey(
@@ -175,16 +223,21 @@ export async function sessionType(
   return sessionSnapshot(session);
 }
 
-export async function sessionStartRecording(
+export function sessionStartRecording(
   session: TuiSession,
   title: string | undefined,
   outputDir: string | undefined,
   baseDir: string,
-): Promise<void> {
+): void {
   if (session.recording) {
     throw new Error("Already recording — ignoring duplicate start");
   }
-  session.recording = startRecording(session.harness, title, outputDir, baseDir);
+  session.recording = startRecording(
+    session.harness,
+    title,
+    outputDir,
+    baseDir,
+  );
 }
 
 export async function sessionStopRecording(
@@ -196,4 +249,13 @@ export async function sessionStopRecording(
   const result = await stopRecording(session.recording, session.harness);
   session.recording = null;
   return result;
+}
+
+export async function sessionDispose(session: TuiSession): Promise<void> {
+  if (session.recording) {
+    await stopRecording(session.recording, session.harness);
+    session.recording = null;
+    return;
+  }
+  session.harness.detachRecorder();
 }

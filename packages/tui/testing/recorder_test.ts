@@ -11,7 +11,8 @@ import { assert, assertEquals } from "@std/assert";
 import { VirtualTuiHarness } from "./harness.ts";
 import { attachRecorder, TuiSessionRecorder } from "./recorder.ts";
 import type { CastEvent } from "./cast.ts";
-import { DEFAULT_STYLE, ScreenBuffer } from "../renderer.ts";
+import { DEFAULT_STYLE } from "../renderer.ts";
+import type { ScreenBuffer } from "../renderer.ts";
 
 Deno.test("TuiSessionRecorder: initializes and records initial frame", () => {
   const render = (buf: ScreenBuffer) => {
@@ -82,9 +83,10 @@ Deno.test("TuiSessionRecorder: captures subsequent visual updates dynamically", 
     `Should have header + frames (got ${lines.length} lines)`,
   );
 
-  const outputFrames = lines.slice(1).map((l) => JSON.parse(l) as CastEvent).filter(
-    (e) => e[1] === "o",
-  );
+  const outputFrames = lines.slice(1).map((l) => JSON.parse(l) as CastEvent)
+    .filter(
+      (e) => e[1] === "o",
+    );
   assert(outputFrames.length >= 2, "Should have at least two output frames");
   const lastOutput = outputFrames[outputFrames.length - 1];
   assert(
@@ -94,5 +96,64 @@ Deno.test("TuiSessionRecorder: captures subsequent visual updates dynamically", 
   assert(
     lastOutput[2].includes("Count: 1"),
     "Last output frame should show updated counter state",
+  );
+});
+
+Deno.test("TuiSessionRecorder: basename path writes a file and captures initial output", async () => {
+  const previousCwd = Deno.cwd();
+  const tmpDir = await Deno.makeTempDir();
+
+  try {
+    Deno.chdir(tmpDir);
+
+    const harness = new VirtualTuiHarness(20, 2, (buf) => {
+      buf.fillRect(0, 0, buf.width, buf.height, " ", DEFAULT_STYLE);
+      buf.write(0, 0, "File Frame", DEFAULT_STYLE);
+    });
+    const recorder = new TuiSessionRecorder(harness, {
+      path: "session.cast",
+    });
+    attachRecorder(harness, recorder);
+
+    await recorder.close();
+
+    const castInfo = await Deno.stat("session.cast");
+    assert(!castInfo.isDirectory, "basename cast path should be a file");
+
+    const castLines = (await Deno.readTextFile("session.cast")).trimEnd().split(
+      "\n",
+    );
+    assertEquals(JSON.parse(castLines[0]).version, 2);
+    assert(
+      castLines.slice(1).some((line) => line.includes("File Frame")),
+      "initial output should be written after the file is opened",
+    );
+
+    const replayInfo = await Deno.stat("session.cast.replay.jsonl");
+    assert(!replayInfo.isDirectory, "basename replay path should be a file");
+  } finally {
+    Deno.chdir(previousCwd);
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("TuiSessionRecorder: close detaches stale render listeners", async () => {
+  let counter = 0;
+  const harness = new VirtualTuiHarness(20, 2, (buf) => {
+    buf.fillRect(0, 0, buf.width, buf.height, " ", DEFAULT_STYLE);
+    buf.write(0, 0, `Frame ${counter}`, DEFAULT_STYLE);
+  });
+  const recorder = attachRecorder(harness, new TuiSessionRecorder(harness));
+
+  const beforeClose = recorder.exportAsciicast();
+  await recorder.close();
+
+  counter += 1;
+  harness.render();
+
+  assertEquals(
+    recorder.exportAsciicast(),
+    beforeClose,
+    "closed recorder should not receive later frames",
   );
 });

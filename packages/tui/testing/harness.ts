@@ -10,7 +10,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { ScreenBuffer } from "../renderer.ts";
-import type { Cell, CellStyle } from "../renderer.ts";
+import type { CellStyle } from "../renderer.ts";
 import type { Key } from "../input.ts";
 
 /** Sink for optional session recording (implemented by {@link CastRecorder}). */
@@ -52,19 +52,32 @@ export class VirtualTuiHarness {
     this.buffer.clear();
     this.renderCallback(this.buffer);
     const frameAnsi = this.buffer.fullRedraw();
-    for (const listener of this.renderListeners) {
+    for (const listener of [...this.renderListeners]) {
       listener(frameAnsi);
     }
   }
 
   /** Register hooks to intercept every visual rendering frame. */
-  onRender(listener: (ansi: string) => void): void {
+  onRender(listener: (ansi: string) => void): () => void {
     this.renderListeners.push(listener);
+    return () => {
+      const index = this.renderListeners.indexOf(listener);
+      if (index >= 0) {
+        this.renderListeners.splice(index, 1);
+      }
+    };
   }
 
   /** Attach a cast recorder for output, input, and resize events. */
   attachRecorder(recorder: CastRecorderSink): void {
     this.castRecorder = recorder;
+  }
+
+  /** Detach a cast recorder, or clear the active recorder when unspecified. */
+  detachRecorder(recorder?: CastRecorderSink): void {
+    if (!recorder || this.castRecorder === recorder) {
+      this.castRecorder = undefined;
+    }
   }
 
   /** Register keyboard input callback hooks. */
@@ -88,10 +101,10 @@ export class VirtualTuiHarness {
   }
 
   /** Inject simulated key inputs into the mounted component listeners. */
-  async emitKey(
+  emitKey(
     keyName: string,
     modifiers: Partial<Omit<Key, "key">> = {},
-  ): Promise<void> {
+  ): void {
     if (!this.keyCallback) {
       throw new Error(
         "No key callback handler has been registered on the VirtualTuiHarness.",
