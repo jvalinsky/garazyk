@@ -129,6 +129,6 @@ test("TerminalSessionManager starts cat, captures input, resizes, and stops", as
     assert.equal(manager.list().length, 0);
   } finally {
     await manager.stopAll();
-    manager.dispose();
+    await manager.dispose();
   }
 });

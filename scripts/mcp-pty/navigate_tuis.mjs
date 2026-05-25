@@ -87,7 +87,7 @@ async function navigateLazygit() {
   });
 
   // Run in the garazyk repo so lazygit has content
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     cols: 120, rows: 30,
     cwd: "/Users/jack/Software/garazyk",
@@ -190,7 +190,7 @@ async function navigateGitui() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: CMD },
   });
 
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     cols: 120, rows: 30,
     cwd: "/Users/jack/Software/garazyk",
@@ -265,7 +265,7 @@ async function navigateYazi() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: CMD },
   });
 
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     cols: 120, rows: 30,
     cwd: "/Users/jack/Software/garazyk",
@@ -362,7 +362,7 @@ async function navigateCsvlens() {
   }
   execSync(`cat > ${csvPath} << 'CSVEOF'\n${csv}CSVEOF`);
 
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     args: [csvPath],
     cols: 120, rows: 30,
@@ -439,7 +439,7 @@ async function navigateNcdu() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: CMD },
   });
 
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     args: ["/Users/jack/Software/garazyk"],
     cols: 80, rows: 24,
@@ -515,7 +515,7 @@ async function navigatePosting() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: CMD },
   });
 
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     cols: 120, rows: 30,
     env: { TERM: "xterm-256color" },
@@ -578,7 +578,7 @@ async function navigateTtySolitaire() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: CMD },
   });
 
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     cols: 80, rows: 30,
   });
@@ -647,7 +647,7 @@ async function navigateHarlequin() {
   const { execSync } = await import("child_process");
   execSync(`sqlite3 ${dbPath} "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT, email TEXT); INSERT OR IGNORE INTO users VALUES(1,'Alice','alice@example.com'),(2,'Bob','bob@example.com'),(3,'Carol','carol@example.com');"`);
 
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     args: [dbPath],
     cols: 120, rows: 30,
@@ -710,7 +710,7 @@ async function navigateTrippy() {
   });
 
   // Trace to a well-known host (use -u for unprivileged mode)
-  const session = manager.create({
+  const session = await manager.create({
     command: CMD,
     args: ["-u", "1.1.1.1"],
     cols: 120, rows: 30,
