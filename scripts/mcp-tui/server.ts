@@ -301,9 +301,27 @@ server.setRequestHandler(
   },
 );
 
+let shuttingDown = false;
+
+async function gracefulShutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  await sessionDispose(session);
+  await server.close();
+  Deno.exit(0);
+}
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  Deno.addSignalListener("SIGINT", () => void gracefulShutdown());
+  Deno.addSignalListener("SIGTERM", () => void gracefulShutdown());
+
+  globalThis.addEventListener("unhandledrejection", (event) => {
+    console.error("unhandledRejection:", (event as PromiseRejectionEvent).reason);
+    void gracefulShutdown();
+  });
 }
 
 if (import.meta.main) {
