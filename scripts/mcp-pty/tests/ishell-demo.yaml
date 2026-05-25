@@ -22,7 +22,7 @@ steps:
     label: Verify app is ishell-demo
   - type: assert_capability
     target: quit.keys
-    contains: Ctrl+C
+    contains: [Ctrl+C]
     maxMs: 500
     label: Verify quit key is available
   - type: quit

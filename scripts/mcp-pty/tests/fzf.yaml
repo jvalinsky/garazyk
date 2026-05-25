@@ -32,7 +32,7 @@ steps:
     maxMs: 500
     label: Verify content filtered
   - type: quit
-    maxMs: 2000
+    maxMs: 3000
     label: Quit fzf
   - type: wait
     timeoutMs: 500

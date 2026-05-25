@@ -22,7 +22,7 @@ steps:
     label: Verify app is cyclopts
   - type: assert_capability
     target: quit.keys
-    contains: ctrl+c
+    contains: [ctrl+c]
     maxMs: 500
     label: Verify quit key is available
   - type: quit
