@@ -1,0 +1,28 @@
+# Auto-generated scenario for xh (ratatui/api-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: syntax-highlight, table, form-input
+name: xh api client
+description: "Launch xh, verify semantic detection, exercise api-client patterns, then quit"
+command: /opt/homebrew/bin/xh
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for xh to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: xh
+    label: Verify app is xh
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: quit
+    label: Quit xh
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,38 @@
+# Auto-generated scenario for mitmproxy (ncurses/network-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, detail-view, tab-navigation, filter-search
+name: mitmproxy network tool
+description: "Launch mitmproxy, verify semantic detection, exercise network-tool patterns, then quit"
+command: /opt/homebrew/bin/mitmproxy
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for mitmproxy to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: mitmproxy
+    label: Verify app is mitmproxy
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit mitmproxy
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

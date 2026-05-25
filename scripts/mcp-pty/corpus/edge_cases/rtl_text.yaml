@@ -1,0 +1,39 @@
+# Auto-generated edge case scenario: RTL text
+# Tests: Right-to-left layout, bidirectional text, cursor placement with العربية / עברית
+name: less RTL text rendering
+description: "Verify semantic detection handles RTL bidirectional text (Arabic, Hebrew) in less"
+command: less
+args: fixtures/rtl_text.md
+cols: 80
+rows: 24
+settleMs: 1000
+
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for less to render RTL content
+  - type: observe
+    label: Take semantic snapshot with RTL text
+  - type: assert_semantic
+    target: app
+    expected: less
+    label: Verify app detection with RTL content
+  - type: press_key
+    value: j
+    label: Scroll down through RTL text
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content scrolled with RTL text
+  - type: press_key
+    value: k
+    label: Scroll up through RTL text
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit less
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

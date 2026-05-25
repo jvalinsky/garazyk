@@ -1,0 +1,28 @@
+# Auto-generated scenario for ftxui-chart (ftxui/chart)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, gauge, graph, braille
+name: ftxui-chart chart
+description: "Launch ftxui-chart, verify semantic detection, exercise chart patterns, then quit"
+command: /opt/homebrew/bin/ftxui-chart
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for ftxui-chart to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ftxui-chart
+    label: Verify app is ftxui-chart
+  - type: assert_capability
+    target: quit.keys
+    contains: Esc
+    label: Verify quit key is available
+  - type: quit
+    label: Quit ftxui-chart
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

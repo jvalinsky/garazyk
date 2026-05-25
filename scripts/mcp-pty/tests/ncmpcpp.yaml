@@ -1,0 +1,44 @@
+# Auto-generated scenario for ncmpcpp (notcurses/music)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, tree, tab-navigation, status-bar, filter-search
+name: ncmpcpp music
+description: "Launch ncmpcpp, verify semantic detection, exercise music patterns, then quit"
+command: /opt/homebrew/bin/ncmpcpp
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for ncmpcpp to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ncmpcpp
+    label: Verify app is ncmpcpp
+  - type: press_key
+    value: "1"
+    label: Switch to library tab
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: "2"
+    label: Switch to playlist tab
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: quit
+    label: Quit ncmpcpp
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

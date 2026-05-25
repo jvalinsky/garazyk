@@ -1,0 +1,24 @@
+# Auto-generated scenario for lipgloss (bubbletea/renderer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: styling, gradient, border, shadow
+name: lipgloss renderer
+description: "Launch lipgloss, verify semantic detection, exercise renderer patterns, then quit"
+command: /opt/homebrew/bin/lipgloss
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for lipgloss to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: lipgloss-app
+    label: Verify app is lipgloss-app
+  - type: quit
+    label: Quit lipgloss
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

@@ -1,0 +1,24 @@
+# Auto-generated scenario for rich-cli (rich/renderer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, panel, tree, markdown
+name: rich-cli renderer
+description: "Launch rich-cli, verify semantic detection, exercise renderer patterns, then quit"
+command: rich
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for rich-cli to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: rich-cli
+    label: Verify app is rich-cli
+  - type: quit
+    label: Quit rich-cli
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

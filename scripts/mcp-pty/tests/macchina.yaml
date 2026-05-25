@@ -1,0 +1,28 @@
+# Auto-generated scenario for macchina (ratatui/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: info-panel, chart, color-bar, styling
+name: macchina system monitor
+description: "Launch macchina, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /opt/homebrew/bin/macchina
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for macchina to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: macchina
+    label: Verify app is macchina
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: quit
+    label: Quit macchina
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,24 @@
+# Auto-generated scenario for kakoune (kakoune/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: modal-editing, syntax-highlighting, multi-buffer, status-bar
+name: kakoune text editor
+description: "Launch kakoune, verify semantic detection, exercise text-editor patterns, then quit"
+command: /opt/homebrew/bin/kak
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for kakoune to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: kakoune
+    label: Verify app is kakoune
+  - type: quit
+    label: Quit kakoune
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

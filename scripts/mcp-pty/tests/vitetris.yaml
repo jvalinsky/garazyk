@@ -1,0 +1,50 @@
+# Auto-generated scenario for vitetris (ncurses/game)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: board, score, entities, game-loop
+name: vitetris game
+description: "Launch vitetris, verify semantic detection, exercise game patterns, then quit"
+command: /opt/homebrew/bin/vitetris
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for vitetris to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: vitetris
+    label: Verify app is vitetris
+  - type: press_key
+    value: j
+    label: Move down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Move up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move left
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit vitetris
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

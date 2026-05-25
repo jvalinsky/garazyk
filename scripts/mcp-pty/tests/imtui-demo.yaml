@@ -1,0 +1,24 @@
+# Auto-generated scenario for imtui-demo (imtui/demo)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tab-navigation, form-input, chart, table, tree-view, window
+name: imtui-demo demo
+description: "Launch imtui-demo, verify semantic detection, exercise demo patterns, then quit"
+command: /opt/homebrew/bin/imtui-demo
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for imtui-demo to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: imtui-demo
+    label: Verify app is imtui-demo
+  - type: quit
+    label: Quit imtui-demo
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit
