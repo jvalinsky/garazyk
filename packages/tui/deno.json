@@ -17,7 +17,8 @@
       "LICENSE",
       "deno.json",
       "*.ts",
-      "testing/**/*.ts"
+      "testing/**/*.ts",
+      "testing/**/*.json"
     ],
     "exclude": [
       "**/*.test.ts",

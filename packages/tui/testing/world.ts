@@ -104,6 +104,7 @@ export interface WorldQuery {
   role?: string;
   name?: string | RegExp;
   text?: string | RegExp;
+  exact?: boolean;
   domain?: string;
   source?: string;
   kind?: string;
@@ -112,6 +113,7 @@ export interface WorldQuery {
   selected?: boolean;
   focused?: boolean;
   visible?: boolean;
+  minConfidence?: number;
   includeSource?: boolean;
   includeTarget?: boolean;
   intent?: string;
@@ -206,6 +208,31 @@ function rectCenter(rect: TuiRect): { x: number; y: number } {
     x: rect.x + (rect.w - 1) / 2,
     y: rect.y + (rect.h - 1) / 2,
   };
+}
+
+function rectRight(rect: TuiRect): number {
+  return rect.x + rect.w;
+}
+
+function rectBottom(rect: TuiRect): number {
+  return rect.y + rect.h;
+}
+
+function intervalsOverlap(
+  aStart: number,
+  aEnd: number,
+  bStart: number,
+  bEnd: number,
+): boolean {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+function horizontalBandsOverlap(a: TuiRect, b: TuiRect): boolean {
+  return intervalsOverlap(a.x, rectRight(a), b.x, rectRight(b));
+}
+
+function verticalBandsOverlap(a: TuiRect, b: TuiRect): boolean {
+  return intervalsOverlap(a.y, rectBottom(a), b.y, rectBottom(b));
 }
 
 function inferDomain(role: string): string {
@@ -398,14 +425,51 @@ export function buildSpatialRelations(world: TuiWorld): TuiEdge[] {
     }
   }
 
+  for (let i = 0; i < nodes.length; i += 1) {
+    const a = nodes[i]!;
+    for (let j = i + 1; j < nodes.length; j += 1) {
+      const b = nodes[j]!;
+      const sameRow = verticalBandsOverlap(a.bounds, b.bounds);
+      const sameColumn = horizontalBandsOverlap(a.bounds, b.bounds);
+
+      if (sameRow) {
+        addEdge("sameRow", a, b, 0.72);
+        addEdge("sameRow", b, a, 0.72);
+      }
+      if (sameColumn) {
+        addEdge("sameColumn", a, b, 0.72);
+        addEdge("sameColumn", b, a, 0.72);
+      }
+      if (sameRow && rectRight(a.bounds) <= b.bounds.x) {
+        addEdge("leftOf", a, b, 0.75);
+        addEdge("rightOf", b, a, 0.75);
+      } else if (sameRow && rectRight(b.bounds) <= a.bounds.x) {
+        addEdge("leftOf", b, a, 0.75);
+        addEdge("rightOf", a, b, 0.75);
+      }
+      if (sameColumn && rectBottom(a.bounds) <= b.bounds.y) {
+        addEdge("above", a, b, 0.75);
+        addEdge("below", b, a, 0.75);
+      } else if (sameColumn && rectBottom(b.bounds) <= a.bounds.y) {
+        addEdge("above", b, a, 0.75);
+        addEdge("below", a, b, 0.75);
+      }
+    }
+  }
+
   return world.edges;
 }
 
-function matchName(label: unknown, name: unknown): boolean {
+function matchName(label: unknown, name: unknown, exact = false): boolean {
   if (name === undefined || name === null) return true;
   const value = String(label ?? "");
   if (name instanceof RegExp) return name.test(value);
+  if (exact) return value.toLowerCase() === String(name).toLowerCase();
   return value.toLowerCase().includes(String(name).toLowerCase());
+}
+
+function isHidden(node: TuiNode): boolean {
+  return node.state.hidden === true || node.state.visible === false;
 }
 
 function getNodeByRef(world: TuiWorld, ref: string): TuiNode | undefined {
@@ -479,10 +543,22 @@ export function findNodes(
     if (options.role && node.role !== options.role) return false;
     if (options.domain && node.domain !== options.domain) return false;
     if (options.source && node.source !== options.source) return false;
-    if (options.name !== undefined && !matchName(node.label, options.name)) {
+    if (
+      options.minConfidence !== undefined &&
+      node.confidence < options.minConfidence
+    ) {
       return false;
     }
-    if (options.text !== undefined && !matchName(node.label, options.text)) {
+    if (
+      options.name !== undefined &&
+      !matchName(node.label, options.name, options.exact === true)
+    ) {
+      return false;
+    }
+    if (
+      options.text !== undefined &&
+      !matchName(node.label, options.text, options.exact === true)
+    ) {
       return false;
     }
     if (
@@ -491,7 +567,9 @@ export function findNodes(
     if (
       options.focused !== undefined && node.state.focused !== options.focused
     ) return false;
-    if (options.visible && node.role === "screen") return false;
+    if (options.visible && (node.role === "screen" || isHidden(node))) {
+      return false;
+    }
     return true;
   });
 }
@@ -590,7 +668,17 @@ export function nearest(
           : dy;
       return { candidate, score: primary * 10 + secondary };
     })
-    .sort((a, b) => a.score - b.score)[0]?.candidate ?? null;
+    .sort((a, b) => {
+      const scoreDelta = a.score - b.score;
+      if (scoreDelta !== 0) return scoreDelta;
+      const confidenceDelta = b.candidate.confidence - a.candidate.confidence;
+      if (confidenceDelta !== 0) return confidenceDelta;
+      const yDelta = a.candidate.bounds.y - b.candidate.bounds.y;
+      if (yDelta !== 0) return yDelta;
+      const xDelta = a.candidate.bounds.x - b.candidate.bounds.x;
+      if (xDelta !== 0) return xDelta;
+      return a.candidate.ref.localeCompare(b.candidate.ref);
+    })[0]?.candidate ?? null;
 }
 
 export function actionsFor(
