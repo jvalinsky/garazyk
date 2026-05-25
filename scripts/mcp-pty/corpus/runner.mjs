@@ -17,10 +17,11 @@ import {
   TerminalSessionManager,
 } from "../terminal_session.mjs";
 import { AsciicastRecorder, defaultRecordingDir } from "../recording.mjs";
+import { createSidecarPtyFactory } from "../sidecar.mjs";
 import { worldQuery } from "../world.mjs";
-import { resolveBinary } from "./path_utils.mjs";
+import { resolveBinary, resolveSidecarBinary } from "./path_utils.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SIDECAR_BINARY = resolveSidecarBinary(import.meta.url);
 
 // ── Simple YAML Parser ───────────────────────────────────────────────────
 // Minimal YAML parser for scenario files. Handles the subset we use:
@@ -838,10 +839,13 @@ async function runScenario(scenarioPath, options = {}) {
     resolveArgsRelative: scenario.resolveArgsRelative === true,
   });
 
+  const useSidecar = options.sidecar === true;
+
   console.log(`\n┌─ Running: ${scenario.name || path.basename(scenarioPath)}`);
   console.log(`│  Description: ${scenario.description || "—"}`);
   console.log(`│  Command: ${resolvedCommand} ${scenarioArgs.join(" ")}`);
   console.log(`│  Steps: ${(scenario.steps || []).length}`);
+  if (useSidecar) console.log(`│  PTY: garazyk-ptyd (sidecar)`);
   console.log("└" + "─".repeat(60));
 
   const manager = new TerminalSessionManager({
@@ -849,6 +853,7 @@ async function runScenario(scenarioPath, options = {}) {
       ...process.env,
       GARAZYK_PTY_MCP_ALLOW: resolvedCommand,
     },
+    ptyFactory: useSidecar ? createSidecarPtyFactory(SIDECAR_BINARY) : null,
   });
 
   let recorder = null;
@@ -858,8 +863,8 @@ async function runScenario(scenarioPath, options = {}) {
   const startTime = Date.now();
 
   try {
-    // Create session
-    session = manager.create({
+    // Create session (async when using sidecar ptyFactory)
+    session = await manager.create({
       command: resolvedCommand,
       args: scenarioArgs,
       cols: scenario.cols || 80,
@@ -894,13 +899,27 @@ async function runScenario(scenarioPath, options = {}) {
         `  [${i + 1}/${scenario.steps.length}] ${step.label || step.type}...`,
       );
 
+      const stepStart = Date.now();
       try {
         const result = await executeStep(step, session, context);
         result.stepIndex = i;
+        result.stepElapsedMs = Date.now() - stepStart;
+
+        // Check optional timing bounds
+        const minMs = step.minMs;
+        const maxMs = step.maxMs;
+        if ((minMs != null && result.stepElapsedMs < minMs) ||
+            (maxMs != null && result.stepElapsedMs > maxMs)) {
+          result.timingViolation = true;
+        }
+
         results.push(result);
 
         if (!result.passed) {
-          console.log(`    ✗ FAILED: ${result.error || result.detail}`);
+          const timingNote = result.timingViolation
+            ? ` ⚡ timing: ${result.stepElapsedMs}ms (bounds: ${minMs ?? "-"}-${maxMs ?? "-"}ms)`
+            : "";
+          console.log(`    ✗ FAILED: ${result.error || result.detail}${timingNote}`);
           if (options.stopOnFailure !== false) {
             console.log(
               `    Stopping on failure. Use --continue-on-failure to keep going.`,
@@ -908,7 +927,10 @@ async function runScenario(scenarioPath, options = {}) {
             break;
           }
         } else {
-          console.log(`    ✓ ${result.detail || "ok"}`);
+          const timingNote = result.timingViolation
+            ? ` ⚡ ${result.stepElapsedMs}ms (bounds: ${minMs ?? "-"}-${maxMs ?? "-"}ms)`
+            : "";
+          console.log(`    ✓ ${result.detail || "ok"}${timingNote}`);
         }
       } catch (err) {
         results.push({
@@ -916,6 +938,7 @@ async function runScenario(scenarioPath, options = {}) {
           label: step.label || step.type,
           passed: false,
           error: err.message,
+          stepElapsedMs: Date.now() - stepStart,
         });
         console.log(`    ✗ ERROR: ${err.message}`);
         if (options.stopOnFailure !== false) break;
@@ -1007,7 +1030,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const scenarioPath = process.argv[2];
   if (!scenarioPath) {
     console.log(
-      "Usage: node corpus/runner.mjs <scenario.yaml> [--report report.json] [--record] [--continue-on-failure]",
+      "Usage: node corpus/runner.mjs <scenario.yaml> [--report report.json] [--record] [--sidecar] [--continue-on-failure]",
     );
     process.exit(1);
   }
@@ -1017,6 +1040,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       ? process.argv[process.argv.indexOf("--report") + 1]
       : null,
     record: process.argv.includes("--record"),
+    sidecar: process.argv.includes("--sidecar"),
     stopOnFailure: !process.argv.includes("--continue-on-failure"),
   };
 
