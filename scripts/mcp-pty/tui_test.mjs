@@ -17,6 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { TerminalSessionManager } from "./terminal_session.mjs";
 import { AsciicastRecorder, defaultRecordingDir } from "./recording.mjs";
+import { findNodes, primaryAction } from "./world.mjs";
 
 // ---------------------------------------------------------------------------
 // 1. Test IR — App-agnostic test description
@@ -142,7 +143,14 @@ export function parseTestIR(yamlText) {
  */
 export function buildPlan(ir, snapshot) {
   const caps = snapshot.capabilities;
-  const plan = { testName: ir.name, steps: [], planMeta: {} };
+  const plan = {
+    testName: ir.name,
+    steps: [],
+    planMeta: {
+      worldFrameId: snapshot.world?.frameId,
+      usedWorld: !!snapshot.world,
+    },
+  };
 
   for (const irStep of ir.steps) {
     const planSteps = planStep(irStep, caps, snapshot);
@@ -190,14 +198,16 @@ function planStep(irStep, caps, snapshot) {
 
     case "start_service": {
       // Use the "s" key (Start) or "p" (PDS2) from capabilities
+      const worldAction = findWorldAction(snapshot, ["start", "pds2"]);
       const action = caps.actions?.find(a =>
         a.action?.toLowerCase() === "start" ||
         a.action?.toLowerCase() === "pds2"
       );
-      const key = action?.key || "s";
+      const key = worldAction?.key || action?.key || "s";
       steps.push({
         action: "press_key",
         key,
+        actionRef: worldAction?.id,
         irStepType: irStep.type,
         irTarget: irStep.target,
         label: `Start service ${irStep.target} (key: ${key})`,
@@ -215,11 +225,13 @@ function planStep(irStep, caps, snapshot) {
     }
 
     case "stop_service": {
+      const worldAction = findWorldAction(snapshot, ["stop"]);
       const action = caps.actions?.find(a => a.action?.toLowerCase() === "stop");
-      const key = action?.key || "x";
+      const key = worldAction?.key || action?.key || "x";
       steps.push({
         action: "press_key",
         key,
+        actionRef: worldAction?.id,
         irStepType: irStep.type,
         irTarget: irStep.target,
         label: `Stop service ${irStep.target} (key: ${key})`,
@@ -256,10 +268,16 @@ function planStep(irStep, caps, snapshot) {
     }
 
     case "dismiss_overlay": {
-      const dismissKey = caps.dismiss?.keys?.[0] || "escape";
+      const popup = firstWorldNode(snapshot, { role: "popup" });
+      const worldAction = popup
+        ? primaryAction(snapshot.world, popup.ref, { intent: "dismiss" })
+        : findWorldAction(snapshot, ["dismiss", "close", "cancel"]);
+      const dismissKey = worldAction?.key || caps.dismiss?.keys?.[0] || "escape";
       steps.push({
         action: "press_key",
         key: dismissKey,
+        actionRef: worldAction?.id,
+        targetRef: popup?.ref,
         irStepType: irStep.type,
         label: `Dismiss overlay (key: ${dismissKey})`,
       });
@@ -267,10 +285,12 @@ function planStep(irStep, caps, snapshot) {
     }
 
     case "quit": {
-      const quitKey = caps.quit?.keys?.[0] || "q";
+      const worldAction = findWorldAction(snapshot, ["quit", "exit"]);
+      const quitKey = worldAction?.key || caps.quit?.keys?.[0] || "q";
       steps.push({
         action: "press_key",
         key: quitKey,
+        actionRef: worldAction?.id,
         irStepType: irStep.type,
         label: `Quit (key: ${quitKey})`,
       });
@@ -339,16 +359,26 @@ function planStep(irStep, caps, snapshot) {
 function findPanelKey(target, caps, snapshot) {
   const targetLower = target.toLowerCase();
 
-  // 1. Check tab bar
-  if (snapshot.tabs?.length > 0) {
-    for (const tab of snapshot.tabs) {
+  // 1. Check normalized world tabs and their node-scoped actions.
+  if (snapshot.world) {
+    const tab = findNodes(snapshot.world, { role: "tab", name: target })[0];
+    if (tab) {
+      const action = primaryAction(snapshot.world, tab.ref);
+      if (action?.key) return action.key;
+      if (tab.state?.index !== undefined) return String(tab.state.index);
+    }
+  }
+
+  // 2. Check detector tab bars.
+  for (const tabBar of snapshot.tabs || []) {
+    for (const tab of tabBar.tabs || []) {
       if (tab.label?.toLowerCase().includes(targetLower)) {
-        return String(tab.index + 1);
+        return String(tab.index ?? 1);
       }
     }
   }
 
-  // 2. Check capability map tab keys
+  // 3. Check capability map tab keys
   if (caps.tabs?.available && caps.tabs.keys?.length > 0) {
     // Try to match by position: "1" = first panel, "2" = second, etc.
     // Common naming: 1=Network, 2=Scenarios, 3=Active Run, 4=History
@@ -362,20 +392,48 @@ function findPanelKey(target, caps, snapshot) {
     if (key && caps.tabs.keys.includes(key)) return key;
   }
 
-  // 3. Check pane titles
-  if (snapshot.panes?.length > 0) {
-    const paneIndex = snapshot.panes.findIndex(p =>
-      p.title?.toLowerCase().includes(targetLower)
-    );
-    if (paneIndex >= 0 && paneIndex < 4) {
-      return String(paneIndex + 1);
-    }
+  // 4. Check normalized pane nodes or legacy pane titles.
+  if (snapshot.world) {
+    const pane = findNodes(snapshot.world, { role: "pane", name: target })[0];
+    if (pane?.state?.index !== undefined) return String(pane.state.index);
   }
 
-  // 4. Fallback: try tab key
+  const paneIndex = (snapshot.panes || []).findIndex(p =>
+    p.title?.toLowerCase().includes(targetLower)
+  );
+  if (paneIndex >= 0 && paneIndex < 4) {
+    return String(paneIndex + 1);
+  }
+
+  // 5. Fallback: try tab key
   if (caps.tabs?.keys?.includes("tab")) return "tab";
 
   return "tab"; // ultimate fallback
+}
+
+function firstWorldNode(snapshot, options) {
+  if (!snapshot.world) return null;
+  return findNodes(snapshot.world, options)[0] || null;
+}
+
+function findWorldAction(snapshot, labels) {
+  if (!snapshot.world) return null;
+  const wanted = labels.map(label => label.toLowerCase());
+  return snapshot.world.actions.find(action => {
+    const text = `${action.label || ""} ${action.kind || ""}`.toLowerCase();
+    return wanted.some(label => text.includes(label));
+  }) || null;
+}
+
+function listItemsFromSnapshot(snapshot) {
+  if (snapshot.world) {
+    return findNodes(snapshot.world, { role: "list_item" }).map(node => ({
+      label: node.label,
+      selected: node.state?.selected === true,
+      ref: node.ref,
+    }));
+  }
+  return (snapshot.lists || []).filter(l => l.role === "list_item");
 }
 
 // ---------------------------------------------------------------------------
@@ -491,7 +549,7 @@ export async function runTuiTest(ir, options = {}) {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           // Check current snapshot for the target
           snapshot = session.semanticSnapshot("compact", false).snapshot;
-          const listItems = (snapshot.lists || []).filter(l => l.role === "list_item");
+          const listItems = listItemsFromSnapshot(snapshot);
 
           // Check if target is in any list item label
           const targetItem = listItems.find(l =>
@@ -592,7 +650,7 @@ function checkAssertion(assertion, snapshot, session, diff) {
   switch (assertion.type) {
     case "item_selected": {
       const target = assertion.target.toLowerCase();
-      const listItems = (snapshot.lists || []).filter(l => l.role === "list_item");
+      const listItems = listItemsFromSnapshot(snapshot);
       const selected = listItems.find(l => l.selected);
       // Check if the target item is in the list (may not have selected flag
       // if the TUI uses cursor-based selection rather than inverse highlighting)
@@ -616,7 +674,7 @@ function checkAssertion(assertion, snapshot, session, diff) {
     case "service_status": {
       const target = assertion.target?.toUpperCase() || "";
       const expected = assertion.expected; // "running" or "stopped"
-      const listItems = (snapshot.lists || []).filter(l => l.role === "list_item");
+      const listItems = listItemsFromSnapshot(snapshot);
       const serviceItem = listItems.find(l =>
         l.label?.toUpperCase().includes(target)
       );
@@ -687,7 +745,7 @@ function checkAssertion(assertion, snapshot, session, diff) {
       const expected = assertion.expected || assertion.value || "";
       if (!expected) return { passed: true, message: "No assertion to check" };
       // Check in list items
-      const items = (snapshot.lists || []).filter(l => l.role === "list_item");
+      const items = listItemsFromSnapshot(snapshot);
       const found = items.some(l => l.label?.includes(expected));
       if (found) {
         return { passed: true, message: `Found "${expected}" in list items` };
