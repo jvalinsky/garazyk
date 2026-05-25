@@ -1,0 +1,33 @@
+# Auto-generated edge case scenario: Combining marks
+# Tests: Precomposed vs decomposed characters (é ñ ắ), accent equivalence
+name: less combining marks text
+description: "Verify semantic detection handles combining diacritical marks (é, ñ, ắ, ợp) in less"
+command: less
+args: fixtures/combining_marks.md
+cols: 80
+rows: 24
+settleMs: 1000
+
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for less to render combining marks content
+  - type: observe
+    label: Take semantic snapshot with combining marks
+  - type: assert_semantic
+    target: app
+    expected: less
+    label: Verify app detection with combining marks
+  - type: press_key
+    value: j
+    label: Scroll down through accented text
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content scrolled with combining marks
+  - type: quit
+    label: Quit less
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

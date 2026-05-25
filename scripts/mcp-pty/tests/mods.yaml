@@ -1,0 +1,28 @@
+# Auto-generated scenario for mods (bubbletea/ai-chat)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chat, scroll, input, markdown
+name: mods ai chat
+description: "Launch mods, verify semantic detection, exercise ai-chat patterns, then quit"
+command: /opt/homebrew/bin/mods
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for mods to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: mods
+    label: Verify app is mods
+  - type: assert_semantic
+    target: framework
+    expected: bubbletea
+    label: Verify framework is bubbletea
+  - type: quit
+    label: Quit mods
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

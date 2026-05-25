@@ -1,0 +1,24 @@
+# Auto-generated scenario for transition (bubbletea/demo)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: animation, transition, styling
+name: transition demo
+description: "Launch transition, verify semantic detection, exercise demo patterns, then quit"
+command: /opt/homebrew/bin/transition
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for transition to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: transition
+    label: Verify app is transition
+  - type: quit
+    label: Quit transition
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

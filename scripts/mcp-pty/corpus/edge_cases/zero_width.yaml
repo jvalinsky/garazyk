@@ -1,0 +1,25 @@
+# Auto-generated edge case scenario: Zero-width characters
+# Tests: U+200B zero-width space, U+200C ZWNJ, U+200D ZWJ, U+FEFF BOM
+name: less zero-width characters
+description: "Verify semantic detection handles zero-width characters (U+200B, U+200C, U+FEFF) in less"
+command: less
+args: fixtures/zero_width.md
+cols: 80
+rows: 24
+settleMs: 1000
+
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for less to render zero-width content
+  - type: observe
+    label: Take semantic snapshot with zero-width chars
+  - type: assert_semantic
+    target: app
+    expected: less
+    label: Verify app detection with zero-width chars
+  - type: quit
+    label: Quit less
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

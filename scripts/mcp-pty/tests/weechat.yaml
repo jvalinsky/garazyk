@@ -1,0 +1,28 @@
+# Auto-generated scenario for weechat (ncurses/chat)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: buffer-list, tab-navigation, split-panel, chat, search
+name: weechat chat
+description: "Launch weechat, verify semantic detection, exercise chat patterns, then quit"
+command: /opt/homebrew/bin/weechat
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for weechat to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: weechat
+    label: Verify app is weechat
+  - type: assert_semantic
+    target: framework
+    expected: ncurses
+    label: Verify framework is ncurses
+  - type: quit
+    label: Quit weechat
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

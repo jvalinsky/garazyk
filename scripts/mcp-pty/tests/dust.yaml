@@ -1,0 +1,38 @@
+# Auto-generated scenario for dust (ratatui/disk-analyzer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tree, chart, list-selection
+name: dust disk analyzer
+description: "Launch dust, verify semantic detection, exercise disk-analyzer patterns, then quit"
+command: /opt/homebrew/bin/dust
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for dust to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: dust
+    label: Verify app is dust
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit dust
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,32 @@
+# Auto-generated scenario for wiki-tui (ratatui/search)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: search, list-selection, pager, markdown
+name: wiki-tui search
+description: "Launch wiki-tui, verify semantic detection, exercise search patterns, then quit"
+command: /opt/homebrew/bin/wiki-tui
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for wiki-tui to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: wiki-tui
+    label: Verify app is wiki-tui
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit wiki-tui
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

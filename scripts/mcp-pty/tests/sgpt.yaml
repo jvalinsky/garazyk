@@ -1,0 +1,28 @@
+# Auto-generated scenario for shell-gpt (rich/ai-chat)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chat, markdown, scroll, input
+name: shell-gpt ai chat
+description: "Launch shell-gpt, verify semantic detection, exercise ai-chat patterns, then quit"
+command: /opt/homebrew/bin/sgpt
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for shell-gpt to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: sgpt
+    label: Verify app is sgpt
+  - type: assert_semantic
+    target: framework
+    expected: rich
+    label: Verify framework is rich
+  - type: quit
+    label: Quit shell-gpt
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

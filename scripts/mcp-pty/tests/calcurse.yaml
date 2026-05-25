@@ -1,0 +1,28 @@
+# Auto-generated scenario for calcurse (ncurses/calendar)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: calendar-view, list-selection, form-input, todo-list
+name: calcurse calendar
+description: "Launch calcurse, verify semantic detection, exercise calendar patterns, then quit"
+command: /opt/homebrew/bin/calcurse
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for calcurse to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: calcurse
+    label: Verify app is calcurse
+  - type: assert_capability
+    target: quit.keys
+    contains: q
+    label: Verify quit key is available
+  - type: quit
+    label: Quit calcurse
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

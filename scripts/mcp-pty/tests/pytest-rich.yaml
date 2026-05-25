@@ -1,0 +1,36 @@
+# Auto-generated scenario for pytest-rich (rich/testing)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, progress, status-bar
+name: pytest-rich testing
+description: "Launch pytest-rich, verify semantic detection, exercise testing patterns, then quit"
+command: pytest
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for pytest-rich to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pytest-rich
+    label: Verify app is pytest-rich
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit pytest-rich
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

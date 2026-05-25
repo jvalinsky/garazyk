@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TUI Corpus Manifest",
+  "type": "object",
+  "required": ["version", "apps"],
+  "properties": {
+    "version": { "type": "integer" },
+    "description": { "type": "string" },
+    "tiers": {
+      "type": "object",
+      "properties": {
+        "curated": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "candidateDefault": { "type": "boolean" },
+        "edgeDirectory": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "framework", "category", "uiPatterns", "quitKeys"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "framework": { "type": "string" },
+          "frameworkLang": { "type": "string" },
+          "category": { "type": "string" },
+          "tier": { "enum": ["curated", "candidate", "edge"] },
+          "binary": { "type": ["string", "null"] },
+          "launchArgs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "scenario": { "type": ["string", "null"] },
+          "uiPatterns": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "quitKeys": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

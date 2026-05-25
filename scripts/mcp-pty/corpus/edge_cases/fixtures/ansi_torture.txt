@@ -1,0 +1,29 @@
+This is ANSI torture test content
+
+Normal text with \x1b[1mbold\x1b[0m and \x1b[4munderline\x1b[0m
+
+\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m
+
+\x1b[1;31;47mBold Red on White\x1b[0m
+
+\x1b[38;5;196m256-color red\x1b[0m \x1b[48;5;27mBlue background\x1b[0m
+
+\x1b[38;2;255;128;0mTrue color orange\x1b[0m
+
+\x1b]8;;https://example.com\x1b\\OSC 8 hyperlink\x1b]8;;\x1b\\
+
+\x1b[H\x1b[2JClear screen and reposition
+
+\x1b[10;5HCursor positioned at row 10 col 5
+
+Cursor movement: \x1b[1Aup \x1b[1Bdown \x1b[1Cright \x1b[1Dleft
+
+\x1b[?25lCursor hidden\x1b[?25hCursor shown
+
+\x1b[2KLine cleared
+
+\x1b[sSaved position\x1b[uRestored position
+
+Nested: \x1b[1m\x1b[31m\x1b[4mBold Red Underline\x1b[0m normal
+
+Done.

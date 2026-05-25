@@ -1,0 +1,32 @@
+# Auto-generated scenario for survey-multiselect (survey/picker)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: multi-select, checkbox, list-selection, toggle
+name: survey-multiselect picker
+description: "Launch survey-multiselect, verify semantic detection, exercise picker patterns, then quit"
+command: /opt/homebrew/bin/survey-multiselect
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for survey-multiselect to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: survey-multiselect
+    label: Verify app is survey-multiselect
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit survey-multiselect
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

@@ -1,0 +1,28 @@
+# Auto-generated scenario for pomo (bubbletea/productivity)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: timer, progress-bar, list-selection, notification
+name: pomo productivity
+description: "Launch pomo, verify semantic detection, exercise productivity patterns, then quit"
+command: /opt/homebrew/bin/pomo
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for pomo to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pomo
+    label: Verify app is pomo
+  - type: assert_capability
+    target: quit.keys
+    contains: q
+    label: Verify quit key is available
+  - type: quit
+    label: Quit pomo
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,32 @@
+# Auto-generated scenario for clipboard-cli (ink/clipboard)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, search, form-input
+name: clipboard-cli clipboard
+description: "Launch clipboard-cli, verify semantic detection, exercise clipboard patterns, then quit"
+command: /opt/homebrew/bin/clipboard-cli
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for clipboard-cli to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: clipboard-cli
+    label: Verify app is clipboard-cli
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit clipboard-cli
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

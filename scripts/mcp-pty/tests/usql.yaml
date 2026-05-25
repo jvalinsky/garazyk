@@ -1,0 +1,38 @@
+# Auto-generated scenario for usql (bubbletea/database)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, editor, autocomplete, syntax-highlighting
+name: usql database
+description: "Launch usql, verify semantic detection, exercise database patterns, then quit"
+command: /opt/homebrew/bin/usql
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for usql to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: usql
+    label: Verify app is usql
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit usql
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

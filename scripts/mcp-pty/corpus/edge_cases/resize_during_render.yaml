@@ -1,0 +1,39 @@
+# Auto-generated edge case scenario: Resize during render
+# Tests: PTY resize after app startup, diff buffer invalidation
+name: btop resize during render
+description: "Verify semantic detection handles PTY resize mid-render (80x24 → 120x40) in btop"
+command: btop
+cols: 80
+rows: 24
+settleMs: 3000
+
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for btop to render at 80x24
+  - type: observe
+    label: Take semantic snapshot at initial size
+  - type: assert_semantic
+    target: app
+    expected: btop
+    label: Verify app detection at 80x24
+  - type: resize
+    cols: 120
+    rows: 40
+    label: Resize PTY to 120x40
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for render after resize
+  - type: observe
+    label: Take semantic snapshot at new size
+  - type: assert_content_changed
+    label: Verify content changed after resize
+  - type: assert_semantic
+    target: app
+    expected: btop
+    label: Verify app still detected after resize
+  - type: quit
+    label: Quit btop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

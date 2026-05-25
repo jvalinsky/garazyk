@@ -1,0 +1,25 @@
+# Auto-generated scenario for kak-lsp (kakoune/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: lsp, completion, diagnostics, hover
+name: kak-lsp text editor
+description: "Launch kak-lsp, verify semantic detection, exercise text-editor patterns, then quit"
+command: /opt/homebrew/bin/kak-lsp
+args: --kakoune
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for kak-lsp to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: kak-lsp
+    label: Verify app is kak-lsp
+  - type: quit
+    label: Quit kak-lsp
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

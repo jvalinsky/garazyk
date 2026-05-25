@@ -1,0 +1,36 @@
+# Auto-generated scenario for textual-astview (textual/dev-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tree, syntax-highlighting, scroll
+name: textual-astview dev tool
+description: "Launch textual-astview, verify semantic detection, exercise dev-tool patterns, then quit"
+command: textual-astview
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for textual-astview to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: textual-astview
+    label: Verify app is textual-astview
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit textual-astview
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
