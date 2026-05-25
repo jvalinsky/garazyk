@@ -64,7 +64,7 @@ async function captureCatOutput(ptyFactory) {
     try { await mgr.stop(session.sessionId); } catch {}
     return snap;
   } finally {
-    mgr.dispose();
+    await mgr.dispose();
   }
 }
 
@@ -138,8 +138,8 @@ test("running state: both backends report running after spawn", sharedBinCheck, 
     await nodeMgr.stop(ns.sessionId);
     await sidecarMgr.stop(ss.sessionId);
   } finally {
-    nodeMgr.dispose();
-    sidecarMgr.dispose();
+    await nodeMgr.dispose();
+    await sidecarMgr.dispose();
   }
 });
 
@@ -173,7 +173,7 @@ test("after kill: both backends report not running after stop", sharedBinCheck, 
     assert.equal(ns.snapshot().running, false, "node-pty should report not running after stop");
     assert.equal(ss.snapshot().running, false, "sidecar should report not running after stop");
   } finally {
-    nodeMgr.dispose();
-    sidecarMgr.dispose();
+    await nodeMgr.dispose();
+    await sidecarMgr.dispose();
   }
 });
