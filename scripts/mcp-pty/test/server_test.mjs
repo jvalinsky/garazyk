@@ -29,6 +29,7 @@ test("stdio MCP flow starts cat, sends input, resizes, records, and stops", asyn
   try {
     const list = await client.listTools();
     assert.ok(list.tools.some((tool) => tool.name === "pty_start"));
+    assert.ok(list.tools.some((tool) => tool.name === "pty_world_query"));
 
     const start = await client.callTool({
       name: "pty_start",
@@ -48,6 +49,13 @@ test("stdio MCP flow starts cat, sends input, resizes, records, and stops", asyn
       arguments: { sessionId, action: "type", value: "hello\r" },
     });
     assert.ok(action._meta.structuredContent.lines.some((line) => line.includes("hello")));
+
+    const worldQuery = await client.callTool({
+      name: "pty_world_query",
+      arguments: { sessionId, op: "find", role: "cursor" },
+    });
+    assert.equal(worldQuery.isError, false);
+    assert.equal(worldQuery._meta.structuredContent.nodes.length, 1);
 
     const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "garazyk-pty-mcp-"));
     const recStart = await client.callTool({
