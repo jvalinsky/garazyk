@@ -10,29 +10,39 @@ settleMs: 1000
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 3000
     label: Wait for csvlens to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: csvlens
+    maxMs: 500
     label: Verify app is csvlens
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: assert_cursor_moved
+    maxMs: 500
     label: Verify cursor moved
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit csvlens
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

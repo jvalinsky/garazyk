@@ -10,33 +10,44 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for bottom to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: bottom
+    maxMs: 500
     label: Verify app is bottom
   - type: assert_semantic
     target: framework
     expected: ratatui
+    maxMs: 500
     label: Verify framework is ratatui
   - type: press_key
     value: tab
+    maxMs: 500
     label: Switch to next tab
   - type: wait
     timeoutMs: 500
+    maxMs: 1000
     label: Brief pause
   - type: assert_content_changed
+    maxMs: 500
     label: Verify content changed after tab switch
   - type: press_key
     value: tab
+    maxMs: 500
     label: Switch to third tab
   - type: wait
     timeoutMs: 500
+    maxMs: 1000
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit bottom
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

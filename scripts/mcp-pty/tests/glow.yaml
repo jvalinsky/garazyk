@@ -10,27 +10,36 @@ settleMs: 1000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for glow to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: glow
+    maxMs: 500
     label: Verify app is glow
   - type: press_key
     value: j
+    maxMs: 500
     label: Scroll down
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: press_key
     value: k
+    maxMs: 500
     label: Scroll up
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit glow
   - type: wait
     timeoutMs: 500
+    maxMs: 2000
     label: Wait for exit

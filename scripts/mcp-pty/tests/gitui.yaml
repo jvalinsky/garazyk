@@ -10,43 +10,57 @@ settleMs: 1500
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 3000
     label: Wait for gitui to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: gitui
+    maxMs: 500
     label: Verify app is gitui
   - type: assert_semantic
     target: framework
     expected: ratatui
+    maxMs: 500
     label: Verify framework is ratatui
   - type: press_key
     value: "1"
+    maxMs: 500
     label: Switch to first panel
   - type: wait
     timeoutMs: 300
+    maxMs: 1000
     label: Brief pause
   - type: press_key
     value: "2"
+    maxMs: 500
     label: Switch to second panel
   - type: wait
     timeoutMs: 300
+    maxMs: 1000
     label: Brief pause
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down in list
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up in list
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit gitui
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit
