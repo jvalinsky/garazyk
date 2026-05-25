@@ -176,13 +176,18 @@ export class TerminalSession {
       allowProposedApi: true,
     });
 
-    this.pty = pty.spawn(this.command, this.args, {
-      name: options.termName,
-      cols: this.cols,
-      rows: this.rows,
-      cwd: this.cwd,
-      env: options.env,
-    });
+    // Accept a pre-spawned PTY instance (e.g. SidecarPty) or spawn via node-pty
+    if (options.pty) {
+      this.pty = options.pty;
+    } else {
+      this.pty = pty.spawn(this.command, this.args, {
+        name: options.termName,
+        cols: this.cols,
+        rows: this.rows,
+        cwd: this.cwd,
+        env: options.env,
+      });
+    }
     this.pid = this.pty.pid;
 
     this.pty.onData((data) => {
@@ -294,7 +299,7 @@ export class TerminalSession {
   async write(data, recordInput = true) {
     if (!this.running) throw new Error("session is not running");
     this.lastActivity = Date.now();
-    this.pty.write(data);
+    await this.pty.write(data);
     if (recordInput && this.recording) this.recording.recordInput(data);
     await this.settle();
   }
@@ -317,7 +322,10 @@ export class TerminalSession {
     this.cols = positiveInt(cols, this.cols, 1, 400);
     this.rows = positiveInt(rows, this.rows, 1, 200);
     this.term.resize(this.cols, this.rows);
-    if (this.running) this.pty.resize(this.cols, this.rows);
+    if (this.running) {
+      // Wrap in Promise.resolve to handle both sync (node-pty) and async (sidecar)
+      void Promise.resolve(this.pty.resize(this.cols, this.rows)).catch(() => {});
+    }
     if (this.recording) this.recording.recordResize(this.cols, this.rows);
     this.lastActivity = Date.now();
   }
@@ -428,8 +436,11 @@ export class TerminalSession {
   }
 
   stop({ signal = "SIGTERM", killAfterMs = 500, force = true } = {}) {
+    // Always send kill so the PTY backend can clean up session tracking
+    // (critical for the sidecar which needs a "stop" op to drop internal state).
+    // Errors (already-dead process, etc.) are intentionally swallowed.
+    void Promise.resolve(this.pty.kill(signal)).catch(() => {});
     if (!this.running) return Promise.resolve();
-    this.pty.kill(signal);
     return new Promise((resolve) => {
       const started = Date.now();
       let escalated = false;
@@ -453,19 +464,20 @@ export class TerminalSession {
 }
 
 export class TerminalSessionManager {
-  constructor({ env = process.env, idleMs = DEFAULT_IDLE_MS } = {}) {
+  constructor({ env = process.env, idleMs = DEFAULT_IDLE_MS, ptyFactory = null } = {}) {
     this.env = env;
     this.sessions = new Map();
     this.nextId = 1;
     this.maxSessions = positiveInt(env.GARAZYK_PTY_MCP_MAX_SESSIONS, DEFAULT_MAX_SESSIONS, 1, 64);
     this.idleMs = idleMs;
+    this.ptyFactory = ptyFactory; // async (opts) => PTY instance
     this.reaper = setInterval(() => {
       void this.stopIdleSessions();
     }, Math.min(this.idleMs, 60_000));
     this.reaper.unref?.();
   }
 
-  create(params = {}) {
+  async create(params = {}) {
     if (this.sessions.size >= this.maxSessions) {
       throw new Error(`maximum live sessions reached (${this.maxSessions})`);
     }
@@ -482,6 +494,23 @@ export class TerminalSessionManager {
       TERM: String(params.env?.TERM ?? DEFAULT_TERM),
     };
     const sessionId = `s${this.nextId++}`;
+
+    // If a ptyFactory is configured (e.g. sidecar), spawn PTY through it
+    let ptyInstance = null;
+    if (this.ptyFactory) {
+      ptyInstance = await this.ptyFactory({
+        sessionId,
+        command,
+        args,
+        cols,
+        rows,
+        cwd,
+        title: typeof params.title === "string" ? params.title : undefined,
+        env: childEnv,
+        termName: childEnv.TERM,
+      });
+    }
+
     const session = new TerminalSession({
       sessionId,
       command,
@@ -492,6 +521,7 @@ export class TerminalSessionManager {
       title: typeof params.title === "string" ? params.title : undefined,
       env: childEnv,
       termName: childEnv.TERM,
+      pty: ptyInstance,
     });
     this.sessions.set(sessionId, session);
     return session;
