@@ -4,7 +4,7 @@
 name: gum form tool
 description: "Launch gum, verify semantic detection, exercise form-tool patterns, then quit"
 command: /opt/homebrew/bin/gum
-args: choose, --help
+args: [choose, --help]
 cols: 80
 rows: 24
 settleMs: 2000
@@ -23,7 +23,7 @@ steps:
     label: Verify app is gum-form
   - type: assert_capability
     target: quit.keys
-    contains: q, Esc
+    contains: [q, Esc]
     maxMs: 500
     label: Verify quit key is available
   - type: quit
