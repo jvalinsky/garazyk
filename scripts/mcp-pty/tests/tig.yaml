@@ -10,31 +10,41 @@ settleMs: 1500
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 4500
     label: Wait for tig to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: tig
+    maxMs: 500
     label: Verify app is tig
   - type: assert_semantic
     target: framework
     expected: ncurses
+    maxMs: 500
     label: Verify framework is ncurses
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down in list
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up in list
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit tig
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit
