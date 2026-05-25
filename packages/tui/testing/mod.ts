@@ -22,12 +22,6 @@ export {
 } from "./tdom.ts";
 
 export {
-  createDashboardHarness,
-  type DashboardState,
-  startMcpServer,
-} from "./mcp_server.ts";
-
-export {
   type AsciicastFrame,
   attachRecorder,
   CastRecorder,
@@ -36,6 +30,7 @@ export {
 } from "./recorder.ts";
 
 export {
+  type AsciicastFile,
   type AsciicastHeader,
   type CastEvent,
   type CastEventCode,
@@ -43,7 +38,6 @@ export {
   extractMarkers,
   parseAsciicast,
   serializeAsciicast,
-  type AsciicastFile,
 } from "./cast.ts";
 
 export {
@@ -52,4 +46,31 @@ export {
   serializeReplayScript,
 } from "./replay_types.ts";
 
-export { type ReplayScriptOptions, replayScript } from "./replay.ts";
+export { replayScript, type ReplayScriptOptions } from "./replay.ts";
+
+export {
+  actionsFor,
+  buildSpatialRelations,
+  buildTuiWorldFromElements,
+  explain,
+  findNodes,
+  getByRef as getWorldByRef,
+  getByRole as getWorldByRole,
+  nearest,
+  primaryAction,
+  rectContains,
+  rectOverlaps,
+  related,
+  toWorldRect,
+  type TuiAction,
+  type TuiDiagnostic,
+  type TuiEdge,
+  type TuiEvidence,
+  type TuiNode,
+  type TuiRect,
+  type TuiWorld,
+  validate,
+  type WorldElementInput,
+  type WorldQuery,
+  worldQuery,
+} from "./world.ts";
