@@ -2,13 +2,63 @@
 
 `garazyk-pty` is a local MCP server for trusted local terminal programs that need a real pseudo-terminal, such as `top`, `htop`, `btop`, and terminal games.
 
-This is intentionally separate from `scripts/mcp-tui/`. The existing `garazyk-tui` MCP is dashboard-specific and uses `VirtualTuiHarness` for semantic snapshots. This package uses `node-pty` to run real terminal processes and `@xterm/headless` to maintain a terminal buffer for snapshots.
+This is intentionally separate from `scripts/mcp-tui/`. The existing `garazyk-tui` MCP is dashboard-specific and uses `VirtualTuiHarness` for semantic snapshots. This package uses `node-pty` (or an optional Rust sidecar) to run real terminal processes and `@xterm/headless` to maintain a terminal buffer for snapshots.
+
+## PTY Backend
+
+By default `node-pty` spawns child processes directly. The Rust sidecar (`garazyk-ptyd`) is an alternative backend that uses `portable-pty` and communicates via a private JSONL protocol over stdin/stdout. The sidecar process is spawned once and reused for all sessions.
+
+### Building the Rust Sidecar
+
+```sh
+cargo build --manifest-path scripts/mcp-pty-rs/Cargo.toml
+```
+
+The binary is placed at `scripts/mcp-pty-rs/target/debug/garazyk-ptyd`.
+
+### Running with the Sidecar
+
+Add `--sidecar` to the server command:
+
+```sh
+node scripts/mcp-pty/server.mjs --sidecar
+```
+
+Or in MCP client configuration:
+
+```json
+{
+  "mcp": {
+    "garazyk-pty": {
+      "type": "local",
+      "command": ["node", "scripts/mcp-pty/server.mjs", "--sidecar"],
+      "enabled": true
+    }
+  }
+}
+```
+
+Set `GARAZYK_PTY_SIDECAR_BINARY` to point to the built binary. Without this env var, the sidecar attempts to find `garazyk-ptyd` in `PATH`.
+
+### Sidecar Protocol
+
+The sidecar speaks a private JSONL protocol (not MCP). The MCP server spawns `garazyk-ptyd` privately and translates MCP tool calls to sidecar commands. Output bytes arrive base64-encoded and are decoded to UTF-8 before being fed into `@xterm/headless` for snapshots. Allowlisting stays entirely in the MCP process.
+
+Sidecar tools also accept `--sidecar`. Usage:
+
+```sh
+node scripts/mcp-pty/corpus/runner.mjs tests/top.yaml --sidecar --record
+```
 
 ## Install
 
 ```sh
 cd scripts/mcp-pty
 npm install
+
+# Build the optional Rust sidecar
+cargo build --manifest-path scripts/mcp-pty-rs/Cargo.toml
+
 npm test
 ```
 
@@ -314,3 +364,18 @@ Record with semantic overlay enabled:
 The overlay is a browser-side heuristic parser for arbitrary PTY output. It scans the replay grid for box-drawing containers and draws their bounding boxes. Dashboard-specific semantic metadata still belongs to `garazyk-tui`.
 
 If Codex cannot spawn local processes from MCP in a particular sandbox mode, keep the server allowlist intact and adjust the Codex launch or approval boundary instead.
+
+## Testing the Sidecar
+
+Sidecar-specific tests require the binary to be built:
+
+```sh
+cargo build --manifest-path scripts/mcp-pty-rs/Cargo.toml
+node --test --test-timeout=30000 test/sidecar_test.mjs test/sidecar_corpus_test.mjs
+```
+
+Cargo tests cover the Rust sidecar itself:
+
+```sh
+cargo test --manifest-path scripts/mcp-pty-rs/Cargo.toml
+```
