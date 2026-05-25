@@ -10,15 +10,20 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 4500
     label: Wait for screen to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: screen
+    maxMs: 500
     label: Verify app is screen
   - type: quit
+    maxMs: 2000
     label: Quit screen
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

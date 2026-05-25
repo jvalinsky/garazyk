@@ -10,15 +10,20 @@ settleMs: 3000
 steps:
   - type: wait
     timeoutMs: 2000
+    maxMs: 6000
     label: Wait for notcurses-demo to animate
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: notcurses-demo
+    maxMs: 500
     label: Verify app is notcurses-demo
   - type: quit
+    maxMs: 2000
     label: Quit notcurses-demo
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Wait for exit

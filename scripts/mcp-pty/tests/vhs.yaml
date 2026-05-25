@@ -10,27 +10,36 @@ settleMs: 1000
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 4500
     label: Wait for vhs to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: vhs
+    maxMs: 500
     label: Verify app is vhs
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit vhs
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

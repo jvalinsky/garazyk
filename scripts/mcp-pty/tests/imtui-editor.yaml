@@ -10,15 +10,20 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for imtui-editor to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: imtui-editor
+    maxMs: 500
     label: Verify app is imtui-editor
   - type: quit
+    maxMs: 2000
     label: Quit imtui-editor
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

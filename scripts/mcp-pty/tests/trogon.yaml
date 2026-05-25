@@ -10,19 +10,25 @@ settleMs: 1500
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 4500
     label: Wait for trogon to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: trogon
+    maxMs: 500
     label: Verify app is trogon
   - type: assert_capability
     target: quit.keys
     contains: ctrl+c
+    maxMs: 500
     label: Verify quit key is available
   - type: quit
+    maxMs: 2000
     label: Quit trogon
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

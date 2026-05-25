@@ -10,15 +10,20 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for ftxui-editor to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: ftxui-editor
+    maxMs: 500
     label: Verify app is ftxui-editor
   - type: quit
+    maxMs: 2000
     label: Quit ftxui-editor
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

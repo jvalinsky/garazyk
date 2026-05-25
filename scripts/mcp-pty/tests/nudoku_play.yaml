@@ -8,46 +8,61 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for puzzle to render
   - type: press_key
     value: j
+    maxMs: 500
     label: Move cursor down
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: l
+    maxMs: 500
     label: Move cursor right
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: l
+    maxMs: 500
     label: Move cursor right again
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: k
+    maxMs: 500
     label: Move cursor up
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: h
+    maxMs: 500
     label: Move cursor left
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: "5"
+    maxMs: 500
     label: Enter number 5 in the cell
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Let it register
   - type: press_key
     value: "Q"
+    maxMs: 500
     label: Quit nudoku (uppercase Q)
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

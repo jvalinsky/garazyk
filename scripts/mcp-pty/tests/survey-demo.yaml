@@ -10,19 +10,25 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1500
+    maxMs: 4500
     label: Wait for survey-demo to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: survey-demo
+    maxMs: 500
     label: Verify app is survey-demo
   - type: assert_capability
     target: quit.keys
     contains: Esc
+    maxMs: 500
     label: Verify quit key is available
   - type: quit
+    maxMs: 2000
     label: Quit survey-demo
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

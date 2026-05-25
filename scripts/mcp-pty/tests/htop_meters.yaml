@@ -8,28 +8,37 @@ settleMs: 3000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for htop to render
   - type: press_key
     value: down
+    maxMs: 500
     label: Move selection down in process list
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: down
+    maxMs: 500
     label: Move selection down again
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: up
+    maxMs: 500
     label: Move selection back up
   - type: wait
     timeoutMs: 300
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: q
+    maxMs: 500
     label: Quit htop
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

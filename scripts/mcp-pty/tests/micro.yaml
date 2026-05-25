@@ -10,15 +10,20 @@ settleMs: 500
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for micro to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: micro
+    maxMs: 500
     label: Verify app is micro
   - type: quit
+    maxMs: 2000
     label: Quit micro
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

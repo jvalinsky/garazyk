@@ -10,15 +10,20 @@ settleMs: 500
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for ne to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: ne
+    maxMs: 500
     label: Verify app is ne
   - type: quit
+    maxMs: 2000
     label: Quit ne
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

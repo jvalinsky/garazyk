@@ -8,37 +8,49 @@ settleMs: 2000
 steps:
   - type: press_key
     value: enter
+    maxMs: 500
     label: Start Arcade Mode (first menu item is selected)
   - type: wait
     timeoutMs: 3000
+    maxMs: 9000
     label: Wait for game to start
   - type: press_key
     value: down
+    maxMs: 500
     label: Steer snake down
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Let snake move
   - type: press_key
     value: right
+    maxMs: 500
     label: Steer snake right
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Let snake move
   - type: press_key
     value: up
+    maxMs: 500
     label: Steer snake up
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Let snake move
   - type: press_key
     value: left
+    maxMs: 500
     label: Steer snake left
   - type: wait
     timeoutMs: 500
+    maxMs: 1500
     label: Let snake move
   - type: press_key
     value: q
+    maxMs: 500
     label: Quit nsnake
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit

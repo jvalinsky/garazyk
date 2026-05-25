@@ -10,15 +10,20 @@ settleMs: 2000
 steps:
   - type: select_item
     target: mcp-pty
+    maxMs: 500
     label: Select the mcp-pty directory
   - type: press_key
     value: enter
+    maxMs: 500
     label: Enter the mcp-pty directory
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for directory scan
   - type: press_key
     value: h
+    maxMs: 500
     label: Go back up to parent directory
   - type: quit
+    maxMs: 2000
     label: Quit ncdu
