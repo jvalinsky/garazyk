@@ -212,6 +212,8 @@ pico.save
 *.sw[a-p]
 scripts/mcp-pty/corpus/installed.json
 scripts/mcp-pty/corpus/e2e_report*.json
+scripts/mcp-pty/corpus/batch_report.json
+scripts/mcp-pty/corpus/sidecar_batch_report.json
 
 # Generated audit/result JSON artifacts
 Garazyk/audit_results*.json
