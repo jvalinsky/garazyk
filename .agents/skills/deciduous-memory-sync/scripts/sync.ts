@@ -185,11 +185,12 @@ interface ExtractedKnowledge {
   goals: Array<{ title: string; description: string; status: string; childDecisions: string[] }>;
   decisions: Array<{ title: string; description: string; status: string; parentGoal?: string }>;
   outcomes: Array<{ title: string; description: string; status: string }>;
+  observations: Array<{ title: string; description: string; status: string }>;
   referenceDocs: Array<{ path: string; description: string }>;
 }
 
 function extractFromPreferences(md: string): ExtractedKnowledge {
-  const result: ExtractedKnowledge = { goals: [], decisions: [], outcomes: [], referenceDocs: [] };
+  const result: ExtractedKnowledge = { goals: [], decisions: [], outcomes: [], observations: [], referenceDocs: [] };
 
   // Parse section by section: "### Title (status)" followed by bullet points
   const sections = md.split(/(?=### )/);
@@ -242,7 +243,7 @@ function extractFromPreferences(md: string): ExtractedKnowledge {
 }
 
 function extractFromReferenceDoc(path: string, md: string): ExtractedKnowledge {
-  const result: ExtractedKnowledge = { goals: [], decisions: [], outcomes: [], referenceDocs: [] };
+  const result: ExtractedKnowledge = { goals: [], decisions: [], outcomes: [], observations: [], referenceDocs: [] };
 
   // Extract from markdown headers
   const headerRegex = /^## (.+)$/gm;
@@ -283,6 +284,57 @@ function extractFromReferenceDoc(path: string, md: string): ExtractedKnowledge {
     });
   }
 
+  // Extract from competence tracker: numbered key insights
+  // Pattern: "N. **Title** — description"
+  // These are observations (learned patterns), not decisions
+  const insightRegex = /^\d+\.\s+\*\*(.+?)\*\*\s*[—–-]\s*(.+)$/gm;
+  while ((match = insightRegex.exec(md)) !== null) {
+    const title = match[1].trim();
+    const description = match[2].trim();
+    result.observations.push({
+      title: `TUI: ${title}`,
+      description,
+      status: "completed",
+    });
+  }
+
+  // Extract from competence tracker: navigation patterns table
+  // Pattern: "| Pattern | Attempts | Successes | Rate | Apps | Notes |"
+  const navPatternRegex = /\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+%)\s*\|([^|]+?)\|([^|]+?)\|/g;
+  while ((match = navPatternRegex.exec(md)) !== null) {
+    const pattern = match[1].trim();
+    const attempts = match[2].trim();
+    const successes = match[3].trim();
+    const rate = match[4].trim();
+    const apps = match[5].trim();
+    const notes = match[6].trim();
+    // Skip header row and separator
+    if (pattern === "Pattern" || pattern.startsWith("---")) continue;
+    result.outcomes.push({
+      title: `Nav: ${pattern} (${rate})`,
+      description: `${successes}/${attempts} successes across ${apps}. ${notes}`,
+      status: parseFloat(rate) > 50 ? "completed" : "pending",
+    });
+  }
+
+  // Extract from competence tracker: framework strategy table
+  // Pattern: "| **framework** | navigate | tab | quit | help | dismiss | settle | apps |"
+  const fwRegex = /\|\s*\*\*(\w+)\*\*\s*\|(.+?)\|(.+?)\|(.+?)\|(.+?)\|(.+?)\|(.+?)\|(.+?)\|/g;
+  while ((match = fwRegex.exec(md)) !== null) {
+    const fw = match[1].trim();
+    if (fw === "Framework" || fw.startsWith("---")) continue;
+    const navigate = match[2].trim();
+    const tab = match[3].trim();
+    const quit = match[4].trim();
+    const help = match[5].trim();
+    const apps = match[8].trim();
+    result.decisions.push({
+      title: `FW: ${fw} strategy`,
+      description: `Navigate: ${navigate}, Tab: ${tab}, Quit: ${quit}, Help: ${help}. Apps: ${apps}`,
+      status: "completed",
+    });
+  }
+
   result.referenceDocs.push({ path, description: `Reference doc synced from Letta memory` });
   return result;
 }
@@ -300,11 +352,17 @@ async function push(dryRun = false): Promise<void> {
   const prefsKnowledge = extractFromPreferences(prefs);
 
   // 2. Extract from reference docs
-  const refKnowledge: ExtractedKnowledge = { goals: [], decisions: [], outcomes: [], referenceDocs: [] };
+  const refKnowledge: ExtractedKnowledge = { goals: [], decisions: [], outcomes: [], observations: [], referenceDocs: [] };
   for (const refFile of findReferenceFiles()) {
     const content = readMemoryFile(refFile);
     const extracted = extractFromReferenceDoc(refFile, content);
-    mergeKnowledge(refKnowledge, extracted);
+    // mergeKnowledge returns a new object, so assign back
+    const merged = mergeKnowledge(refKnowledge, extracted);
+    refKnowledge.goals = merged.goals;
+    refKnowledge.decisions = merged.decisions;
+    refKnowledge.outcomes = merged.outcomes;
+    refKnowledge.observations = merged.observations;
+    refKnowledge.referenceDocs = merged.referenceDocs;
   }
 
   // 3. Combine
@@ -399,6 +457,24 @@ async function push(dryRun = false): Promise<void> {
         console.log(`  + Created outcome: [${id}] ${outcome.title}`);
       } else {
         console.log(`  + Would create outcome: ${outcome.title}`);
+      }
+      created++;
+    }
+  }
+
+  for (const observation of allKnowledge.observations) {
+    const existing = await findNodeByTitleCached(observation.title);
+    if (existing) {
+      skipped++;
+    } else {
+      if (!dryRun) {
+        const id = await addNode("observation", observation.title, {
+          description: observation.description,
+          confidence: 85,
+        });
+        console.log(`  + Created observation: [${id}] ${observation.title}`);
+      } else {
+        console.log(`  + Would create observation: ${observation.title}`);
       }
       created++;
     }
@@ -526,6 +602,60 @@ async function pull(dryRun = false): Promise<void> {
     console.log("  ✓ Updated reference/deciduous-pulse.md");
   }
 
+  // 4. Sync deciduous observations back to competence tracker
+  const observations = graph.nodes.filter(
+    (n) => n.node_type === "observation" && n.status !== "completed",
+  );
+  if (observations.length > 0 && !dryRun) {
+    const competencePath = "reference/tui-navigation/competence.md";
+    const existing = readMemoryFile(competencePath);
+    if (existing) {
+      // Find the last insight number
+      const lastNumMatch = [...existing.matchAll(/^(\d+)\.\s+\*\*/gm)].pop();
+      const lastNum = lastNumMatch ? parseInt(lastNumMatch[1]) : 0;
+
+      // Only add observations that aren't already in the competence tracker
+      const existingInsights = new Set(
+        [...existing.matchAll(/^\d+\.\s+\*\*(.+?)\*\*/gm)].map((m) => m[1].trim()),
+      );
+
+      const newInsights: string[] = [];
+      for (const obs of observations) {
+        // Skip if already tracked
+        const obsTitle = obs.title.replace(/^TUI:\s*/, "");
+        if (existingInsights.has(obsTitle)) continue;
+        // Only include TUI navigation-related observations
+        const tuiKeywords = ["navigation", "semantic", "ncurses", "ratatui", "textual",
+          "bubbletea", "vim", "game", "chart", "card", "braille", "framework",
+          "terminal ui", "tui framework", "key hint", "status bar", "snapshot"];
+        const excludeKeywords = ["mcp:", "server.ts", "json-rpc", "recorder",
+          "headless", "refmanager", "pipelined", "shutdown", "lifecycle"];
+        const isTuiRelated = tuiKeywords.some((kw) =>
+          obs.title.toLowerCase().includes(kw) ||
+          (obs.description && obs.description.toLowerCase().includes(kw))
+        );
+        const isExcluded = excludeKeywords.some((kw) =>
+          obs.title.toLowerCase().includes(kw) ||
+          (obs.description && obs.description.toLowerCase().includes(kw))
+        );
+        if (!isTuiRelated || isExcluded) continue;
+
+        const num = lastNum + newInsights.length + 1;
+        const desc = obs.description ? ` — ${obs.description}` : "";
+        newInsights.push(`${num}. **${obsTitle}**${desc}`);
+      }
+
+      if (newInsights.length > 0) {
+        // Append after the last existing insight
+        const lastInsightLine = existing.lastIndexOf("\n", existing.lastIndexOf("**", existing.length - 1));
+        const insertPoint = existing.trimEnd();
+        const updated = insertPoint + "\n" + newInsights.join("\n") + "\n";
+        writeMemoryFile(competencePath, updated);
+        console.log(`  ✓ Appended ${newInsights.length} observations to competence tracker`);
+      }
+    }
+  }
+
   console.log("\nPull complete.");
 }
 
@@ -539,13 +669,28 @@ async function status(): Promise<void> {
   const prefs = readMemoryFile("system/human/preferences.md");
   const prefsKnowledge = extractFromPreferences(prefs);
 
+  // Also extract from reference docs
+  const refKnowledge: ExtractedKnowledge = { goals: [], decisions: [], outcomes: [], observations: [], referenceDocs: [] };
+  for (const refFile of findReferenceFiles()) {
+    const content = readMemoryFile(refFile);
+    const extracted = extractFromReferenceDoc(refFile, content);
+    const merged = mergeKnowledge(refKnowledge, extracted);
+    refKnowledge.goals = merged.goals;
+    refKnowledge.decisions = merged.decisions;
+    refKnowledge.outcomes = merged.outcomes;
+    refKnowledge.observations = merged.observations;
+    refKnowledge.referenceDocs = merged.referenceDocs;
+  }
+
+  const allKnowledge = mergeKnowledge(prefsKnowledge, refKnowledge);
+
   const graph = await getCachedGraph();
-  const syncedNodes = graph.nodes; // In a full impl, filter by SYNC_THEME tag
+  const syncedNodes = graph.nodes;
 
   let newInMemory = 0;
   let alreadySynced = 0;
 
-  for (const goal of prefsKnowledge.goals) {
+  for (const goal of allKnowledge.goals) {
     const existing = syncedNodes.find((n) => n.title === goal.title);
     if (existing) {
       alreadySynced++;
@@ -555,7 +700,7 @@ async function status(): Promise<void> {
     }
   }
 
-  for (const decision of prefsKnowledge.decisions) {
+  for (const decision of allKnowledge.decisions) {
     const existing = syncedNodes.find((n) => n.title === decision.title);
     if (existing) {
       alreadySynced++;
@@ -565,7 +710,29 @@ async function status(): Promise<void> {
     }
   }
 
-  console.log(`\nMemory knowledge: ${prefsKnowledge.goals.length + prefsKnowledge.decisions.length} items`);
+  for (const outcome of allKnowledge.outcomes) {
+    const existing = syncedNodes.find((n) => n.title === outcome.title);
+    if (existing) {
+      alreadySynced++;
+    } else {
+      console.log(`  [new] outcome: ${outcome.title}`);
+      newInMemory++;
+    }
+  }
+
+  for (const observation of allKnowledge.observations) {
+    const existing = syncedNodes.find((n) => n.title === observation.title);
+    if (existing) {
+      alreadySynced++;
+    } else {
+      console.log(`  [new] observation: ${observation.title}`);
+      newInMemory++;
+    }
+  }
+
+  const total = allKnowledge.goals.length + allKnowledge.decisions.length +
+    allKnowledge.outcomes.length + allKnowledge.observations.length;
+  console.log(`\nMemory knowledge: ${total} items`);
   console.log(`Already in deciduous: ${alreadySynced}`);
   console.log(`New (would be created): ${newInMemory}`);
 }
@@ -577,15 +744,20 @@ async function status(): Promise<void> {
 function findReferenceFiles(): string[] {
   const refDir = join(MEMORY_DIR, "reference");
   const files: string[] = [];
-  try {
-    for (const entry of Deno.readDirSync(refDir)) {
-      if (entry.isFile && entry.name.endsWith(".md")) {
-        files.push(`reference/${entry.name}`);
+  function walk(dir: string, prefix: string) {
+    try {
+      for (const entry of Deno.readDirSync(dir)) {
+        if (entry.isFile && entry.name.endsWith(".md")) {
+          files.push(`${prefix}${entry.name}`);
+        } else if (entry.isDirectory) {
+          walk(join(dir, entry.name), `${prefix}${entry.name}/`);
+        }
       }
+    } catch {
+      // directory may not exist
     }
-  } catch {
-    // reference dir may not exist
   }
+  walk(refDir, "reference/");
   return files;
 }
 
@@ -594,6 +766,7 @@ function mergeKnowledge(a: ExtractedKnowledge, b: ExtractedKnowledge): Extracted
     goals: [...a.goals, ...b.goals],
     decisions: [...a.decisions, ...b.decisions],
     outcomes: [...a.outcomes, ...b.outcomes],
+    observations: [...a.observations, ...b.observations],
     referenceDocs: [...a.referenceDocs, ...b.referenceDocs],
   };
 }

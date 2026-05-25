@@ -1,4 +1,21 @@
 import path from "node:path";
+import { buildTuiWorld } from "./world.mjs";
+
+export {
+  buildSpatialRelations,
+  buildTuiWorld,
+  explain,
+  find,
+  getByRef,
+  getByRole,
+  nearest,
+  normalizeElement,
+  rectContains,
+  rectOverlaps,
+  related,
+  toRect,
+  validate,
+} from "./world.mjs";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -181,7 +198,7 @@ export function detectTabs(grid, lines) {
         id: `tab_bar_${y}`,
         role: "tab_bar",
         tabs: foundTabs,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: Math.max(0, line.search(/\S/)), endX: Math.max(0, line.trimEnd().length - 1) },
         confidence: 0.9,
         evidence: [line.substring(0, 80)],
       });
@@ -207,14 +224,14 @@ export function detectTabs(grid, lines) {
                 break;
               }
             }
-            return { index: i + 1, label, active: isActive };
+            return { index: i + 1, label, active: isActive, col: startIdx };
           });
 
           tabs.push({
             id: `tab_bar_${y}`,
             role: "tab_bar",
             tabs: tabItems,
-            bounds: { startY: y, endY: y },
+            bounds: { startY: y, endY: y, startX: Math.max(0, line.search(/\S/)), endX: Math.max(0, line.trimEnd().length - 1) },
             confidence: 0.7,
             evidence: [line.substring(0, 80)],
           });
@@ -300,7 +317,12 @@ export function detectTabs(grid, lines) {
         id: `tab_bar_panels`,
         role: "tab_bar",
         tabs: mergedTabs,
-        bounds: { startY: minRow, endY: maxRow },
+        bounds: {
+          startY: minRow,
+          endY: maxRow,
+          startX: Math.min(...numberedPanels.map(p => p.col)),
+          endX: Math.max(...numberedPanels.map(p => p.col + p.label.length)),
+        },
         confidence: 0.85,
         evidence: numberedPanels.map(p => `[#${p.index}] ${p.label}`),
       });
@@ -314,7 +336,12 @@ export function detectTabs(grid, lines) {
           active: p.active,
           col: p.col,
         })),
-        bounds: { startY: minRow, endY: maxRow },
+        bounds: {
+          startY: minRow,
+          endY: maxRow,
+          startX: Math.min(...numberedPanels.map(p => p.col)),
+          endX: Math.max(...numberedPanels.map(p => p.col + p.label.length)),
+        },
         confidence: 0.85,
         evidence: numberedPanels.map(p => `[#${p.index}] ${p.label}`),
       });
@@ -455,6 +482,7 @@ export function detectLists(grid, lines) {
       const indent = treeMatch[1].length;
       const marker = treeMatch[2];
       const label = treeMatch[3].trim().substring(0, 60);
+      const startX = line.indexOf(marker);
       items.push({
         id: `list_${y}`,
         role: "list_item",
@@ -462,7 +490,7 @@ export function detectLists(grid, lines) {
         marker,
         indent,
         selected: false,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX, endX: Math.max(startX, line.trimEnd().length - 1) },
         confidence: 0.9,
         evidence: [line.substring(0, 60)],
       });
@@ -492,7 +520,7 @@ export function detectLists(grid, lines) {
             marker: "nerd_icon",
             indent: firstNonSpaceIdx,
             selected: false,
-            bounds: { startY: y, endY: y },
+            bounds: { startY: y, endY: y, startX: firstNonSpaceIdx, endX: Math.max(firstNonSpaceIdx, line.trimEnd().length - 1) },
             confidence: 0.8,
             evidence: [line.substring(0, 60)],
           });
@@ -511,7 +539,7 @@ export function detectLists(grid, lines) {
         marker: ">",
         indent: cursorMatch[1].length,
         selected: true,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: line.indexOf(">"), endX: Math.max(line.indexOf(">"), line.trimEnd().length - 1) },
         confidence: 0.85,
         evidence: [line.substring(0, 60)],
       });
@@ -536,7 +564,7 @@ export function detectLists(grid, lines) {
               marker: cell.inverse ? "inverse" : "bold",
               indent: x,
               selected: true,
-              bounds: { startY: y, endY: y },
+              bounds: { startY: y, endY: y, startX: x, endX: Math.max(x, line.trimEnd().length - 1) },
               confidence: 0.7,
               evidence: [line.substring(0, 60)],
             });
@@ -573,6 +601,8 @@ export function detectLists(grid, lines) {
           bounds: {
             startY: group[0].bounds.startY,
             endY: group[group.length - 1].bounds.endY,
+            startX: Math.min(...group.map(item => item.bounds.startX ?? 0)),
+            endX: Math.max(...group.map(item => item.bounds.endX ?? 0)),
           },
           confidence: 0.8,
           evidence: group.map(g => g.label).slice(0, 3),
@@ -663,7 +693,7 @@ export function detectStatusBar(grid, lines) {
         keybindings: keyHints.length > 0 ? keyHints : undefined,
         keyActions: keyActions.length > 0 ? keyActions : undefined,
         bgColor: dominantBg >= 0 ? dominantBg : undefined,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: Math.max(0, line.search(/\S/)), endX: Math.max(0, line.trimEnd().length - 1) },
         confidence: hasDistinctBg ? 0.9 : keyHints.length >= 2 ? 0.85 : isDescriptiveStatusBar ? 0.75 : isFileInfoStatusBar ? 0.65 : 0.6,
         evidence: [line.substring(0, 80)],
       });
@@ -1339,7 +1369,7 @@ export function detectPopups(grid, lines) {
         role: "popup",
         title: title || undefined,
         centered,
-        bounds: { startY: y, endY: bottomY },
+        bounds: { startY: y, endY: bottomY, startX: firstCorner, endX: lastCorner },
         confidence: centered ? 0.9 : 0.7,
         evidence: [lines[y]?.substring(0, 60) || "popup border"],
       });
@@ -1613,7 +1643,12 @@ export function detectTables(grid, lines) {
         id: `table_${i}`,
         role: "table",
         columns: line.trim().split(/\s{2,}/),
-        bounds: { startY: i, endY: Math.min(i + 20, lines.length - 1) },
+        bounds: {
+          startY: i,
+          endY: Math.min(i + 20, lines.length - 1),
+          startX: Math.max(0, line.search(/\S/)),
+          endX: Math.max(0, line.trimEnd().length - 1),
+        },
         confidence: 0.8,
         evidence: [line.substring(0, 80)],
       });
@@ -1654,9 +1689,12 @@ export function detectControls(grid, lines) {
     const checkboxRegex = /\[[ xX]\]|\([ *]\)/g;
     let match;
     while ((match = checkboxRegex.exec(line)) !== null) {
+      const labelStart = match.index + match[0].length;
+      const labelStop = line.indexOf("  ", labelStart);
+      const endX = labelStop === -1 ? Math.max(labelStart, line.trimEnd().length - 1) : Math.max(labelStart, labelStop - 1);
       controls.push({
         role: "checkbox",
-        bounds: { startY: i, endY: i },
+        bounds: { startY: i, endY: i, startX: match.index, endX },
         confidence: 0.8,
         label: line.substring(match.index + match[0].length).split("  ")[0].trim() || match[0],
         evidence: [line.substring(0, 60)],
@@ -1668,7 +1706,7 @@ export function detectControls(grid, lines) {
     while ((match = buttonRegex.exec(line)) !== null) {
       controls.push({
         role: "button",
-        bounds: { startY: i, endY: i },
+        bounds: { startY: i, endY: i, startX: match.index, endX: match.index + match[0].length - 1 },
         confidence: 0.8,
         label: match[0],
         evidence: [line.substring(0, 60)],
@@ -1693,7 +1731,7 @@ export function detectControls(grid, lines) {
             .map(c => c.char).join("").trim();
           controls.push({
             role: "input",
-            bounds: { startY: y, endY: y },
+            bounds: { startY: y, endY: y, startX: inputStart, endX: inputStart + runLength - 1 },
             confidence: 0.7,
             label: label || "Input field",
             evidence: ["Styled cells"],
@@ -1708,7 +1746,7 @@ export function detectControls(grid, lines) {
         .map(c => c.char).join("").trim();
       controls.push({
         role: "input",
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: inputStart, endX: inputStart + runLength - 1 },
         confidence: 0.7,
         label: label || "Input field",
         evidence: ["Styled cells"],
@@ -1964,7 +2002,7 @@ export function detectGameElements(grid, lines) {
       elements.push({
         role: "gameBoard",
         id: "game_board",
-        bounds: { startY: boardTop, endY: boardBottom },
+        bounds: { startY: boardTop, endY: boardBottom, startX: boardLeft, endX: boardRight },
         interiorBounds: { startY: interiorTop, endY: interiorBottom, startX: boardLeft + 1, endX: boardRight - 1 },
         label: "Game Board",
         wallChar: lines[boardTop]?.[boardLeft] || "▒",
@@ -2101,7 +2139,7 @@ export function detectGameElements(grid, lines) {
       elements.push({
         role: "scoreBar",
         id: `score_bar_${y}`,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: Math.max(0, line.search(/\S/)), endX: Math.max(0, line.trimEnd().length - 1) },
         label: "Score Bar",
         pairs,
       });
@@ -2120,7 +2158,7 @@ export function detectGameElements(grid, lines) {
       elements.push({
         role: "titleBar",
         id: `title_bar_${y}`,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: Math.max(0, line.search(/\S/)), endX: Math.max(0, line.trimEnd().length - 1) },
         label: titleMatch[1].trim(),
         mode: modeMatch?.[1]?.trim() || null,
       });
@@ -2327,7 +2365,7 @@ export function detectCharts(grid, lines) {
       charts.push({
         role: "pipeMeter",
         id: `pipe_meter_${y}`,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: match.index ?? 0, endX: (match.index ?? 0) + match[0].length - 1 },
         label: "Pipe Meter",
         meters: allMeters,
       });
@@ -2474,7 +2512,7 @@ export function detectCharts(grid, lines) {
       charts.push({
         role: "blockBar",
         id: `block_bar_${y}`,
-        bounds: { startY: y, endY: y },
+        bounds: { startY: y, endY: y, startX: match.index ?? 0, endX: (match.index ?? 0) + match[0].length - 1 },
         label: "Block Bar",
         barLabel: match[1].trim(),
         fillChars: match[2],
@@ -2525,9 +2563,13 @@ export function buildSemanticSnapshot(session, detail = "compact", includePrompt
 
   const snapshot = {
     sessionId: session.sessionId,
+    frameId: `${session.sessionId}:semantic`,
     app: appGuess.app,
     confidence: appGuess.confidence,
     framework: appGuess.framework,
+    cols,
+    rows,
+    viewport: { width: cols, height: rows },
     cursor: { x: buffer.cursorX, y: buffer.cursorY },
     altScreen,
     facts,
@@ -2548,6 +2590,12 @@ export function buildSemanticSnapshot(session, detail = "compact", includePrompt
 
   // Build navigation capability map from detected elements
   snapshot.capabilities = buildCapabilityMap(snapshot);
+
+  snapshot.world = buildTuiWorld(snapshot, { viewport: snapshot.viewport });
+  snapshot.elements = snapshot.world.nodes;
+  snapshot.relations = snapshot.world.edges;
+  snapshot.actions = snapshot.world.actions;
+  snapshot.diagnostics = snapshot.world.diagnostics;
 
   if (detail === "full") {
     snapshot.lines = lines;
