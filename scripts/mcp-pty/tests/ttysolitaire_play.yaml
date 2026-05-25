@@ -1,64 +1,55 @@
-name: tty-solitaire Card Game
-description: Launch tty-solitaire, start game, navigate cards, select and move, then quit
+# Auto-generated scenario for tty-solitaire (ncurses/game)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: card-grid, 2d-selection, game-board, score-bar
+name: tty-solitaire game
+description: "Launch tty-solitaire, verify semantic detection, exercise game patterns, then quit"
 command: /opt/homebrew/bin/ttysolitaire
 cols: 60
 rows: 30
 settleMs: 3000
-
 steps:
   - type: wait
-    timeoutMs: 1000
-    label: Wait for welcome screen
+    timeoutMs: 2000
+    label: Wait for tty-solitaire to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tty-solitaire
+    label: Verify app is tty-solitaire
   - type: press_key
     value: space
-    label: Start the game (press space on welcome screen)
+    label: Start the game
   - type: wait
-    timeoutMs: 2000
-    label: Wait for game to render
+    timeoutMs: 1500
+    label: Wait for game board
   - type: press_key
     value: j
-    label: Move cursor down to next card
+    label: Move down
   - type: wait
-    timeoutMs: 300
+    timeoutMs: 200
     label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
   - type: press_key
     value: k
-    label: Move cursor back up
+    label: Move up
   - type: wait
-    timeoutMs: 300
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 200
     label: Brief pause
   - type: press_key
     value: h
-    label: Move cursor left
+    label: Move left
   - type: wait
-    timeoutMs: 300
+    timeoutMs: 200
     label: Brief pause
-  - type: press_key
-    value: l
-    label: Move cursor right
-  - type: wait
-    timeoutMs: 300
-    label: Brief pause
-  - type: press_key
-    value: space
-    label: Select a card
-  - type: wait
-    timeoutMs: 500
-    label: Let selection register
-  - type: press_key
-    value: l
-    label: Move selected card right
-  - type: wait
-    timeoutMs: 300
-    label: Brief pause
-  - type: press_key
-    value: space
-    label: Place the card
-  - type: wait
-    timeoutMs: 500
-    label: Let placement register
-  - type: press_key
-    value: q
+  - type: quit
     label: Quit tty-solitaire
   - type: wait
     timeoutMs: 1000

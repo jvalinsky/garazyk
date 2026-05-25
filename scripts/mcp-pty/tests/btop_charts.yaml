@@ -1,34 +1,41 @@
-name: btop Charts and Navigation
-description: Launch btop, verify chart detection, navigate tabs, then quit
-command: /etc/profiles/per-user/jack/bin/btop
-cols: 80
-rows: 24
+# Auto-generated scenario for btop (ratatui/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: braille-chart, tab-navigation, table, block-bar
+name: btop system monitor
+description: "Launch btop, verify semantic detection, exercise system-monitor patterns, then quit"
+command: btop
+cols: 120
+rows: 30
 settleMs: 3000
-
 steps:
   - type: wait
     timeoutMs: 1000
     label: Wait for btop to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: btop
+    label: Verify app is btop
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
   - type: press_key
     value: tab
     label: Switch to next tab
   - type: wait
     timeoutMs: 500
     label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after tab switch
   - type: press_key
     value: tab
-    label: Switch to next tab
+    label: Switch to third tab
   - type: wait
     timeoutMs: 500
     label: Brief pause
-  - type: press_key
-    value: tab
-    label: Switch back to first tab
-  - type: wait
-    timeoutMs: 500
-    label: Brief pause
-  - type: press_key
-    value: q
+  - type: quit
     label: Quit btop
   - type: wait
     timeoutMs: 1000

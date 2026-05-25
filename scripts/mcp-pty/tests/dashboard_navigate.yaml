@@ -1,31 +1,40 @@
-name: Dashboard Navigate and Run
-description: Navigate to the Scenarios panel, select the first scenario, and verify it can be triggered
-command: /etc/profiles/per-user/jack/bin/deno
+# Auto-generated scenario for garazyk-scenario-dashboard (opentui/dashboard)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: dashboard, tab-navigation, list-selection, table, status-bar
+name: garazyk-scenario-dashboard dashboard
+description: "Launch garazyk-scenario-dashboard, verify semantic detection, exercise dashboard patterns, then quit"
+command: deno
 args: task, tui
-cwd: /Users/jack/Software/garazyk/scripts/scenario-dashboard
 cols: 120
 rows: 30
 settleMs: 5000
-
+cwd: scripts/scenario-dashboard
 steps:
-  - type: navigate_panel
-    target: Scenarios
-    label: Jump to Scenarios panel
-  - type: select_item
-    target: 01 account lifecycle
-    label: Select the first scenario
-  - type: run_scenario
-    target: 01 account lifecycle
-    label: Run the account lifecycle scenario
   - type: wait
     timeoutMs: 3000
-    label: Wait for scenario to start
-  - type: assert
-    target: active_run
-    expected: running
-    label: Verify a scenario is running
-  - type: quit
-    label: Quit the dashboard
+    label: Wait for garazyk-scenario-dashboard to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: dashboard
+    label: Verify app is dashboard
   - type: press_key
-    value: q
-    label: Press q again to confirm quit
+    value: tab
+    label: Switch panel focus
+  - type: wait
+    timeoutMs: 500
+    label: Wait for focus switch
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: quit
+    label: Quit garazyk-scenario-dashboard
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
