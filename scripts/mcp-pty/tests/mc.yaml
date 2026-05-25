@@ -31,8 +31,9 @@ steps:
   - type: wait
     timeoutMs: 200
     label: Brief pause
-  - type: quit
-    label: Quit midnight-commander
+  - type: press_key
+    value: "F10"
+    label: Quit midnight-commander (F10)
   - type: wait
     timeoutMs: 1000
     label: Wait for exit

@@ -183,6 +183,26 @@ function rectCenter(rect) {
   };
 }
 
+function rectRight(rect) {
+  return rect.x + rect.w;
+}
+
+function rectBottom(rect) {
+  return rect.y + rect.h;
+}
+
+function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+function horizontalBandsOverlap(a, b) {
+  return intervalsOverlap(a.x, rectRight(a), b.x, rectRight(b));
+}
+
+function verticalBandsOverlap(a, b) {
+  return intervalsOverlap(a.y, rectBottom(a), b.y, rectBottom(b));
+}
+
 function intersectionArea(a, b) {
   if (!rectOverlaps(a, b)) return 0;
   const x1 = Math.max(a.x, b.x);
@@ -402,6 +422,40 @@ export function buildSpatialRelations(world) {
       if (rectContains(a.bounds, b.bounds) || rectContains(b.bounds, a.bounds)) continue;
       const area = intersectionArea(a.bounds, b.bounds);
       if (area > 0) addEdge(world, "overlaps", a, b, 0.65);
+    }
+  }
+
+  for (let i = 0; i < nodes.length; i += 1) {
+    const a = nodes[i];
+    if (a.role === "cursor") continue;
+    for (let j = i + 1; j < nodes.length; j += 1) {
+      const b = nodes[j];
+      if (b.role === "cursor") continue;
+      const sameRow = verticalBandsOverlap(a.bounds, b.bounds);
+      const sameColumn = horizontalBandsOverlap(a.bounds, b.bounds);
+
+      if (sameRow) {
+        addEdge(world, "sameRow", a, b, 0.72, b.evidence);
+        addEdge(world, "sameRow", b, a, 0.72, a.evidence);
+      }
+      if (sameColumn) {
+        addEdge(world, "sameColumn", a, b, 0.72, b.evidence);
+        addEdge(world, "sameColumn", b, a, 0.72, a.evidence);
+      }
+      if (sameRow && rectRight(a.bounds) <= b.bounds.x) {
+        addEdge(world, "leftOf", a, b, 0.75, b.evidence);
+        addEdge(world, "rightOf", b, a, 0.75, a.evidence);
+      } else if (sameRow && rectRight(b.bounds) <= a.bounds.x) {
+        addEdge(world, "leftOf", b, a, 0.75, a.evidence);
+        addEdge(world, "rightOf", a, b, 0.75, b.evidence);
+      }
+      if (sameColumn && rectBottom(a.bounds) <= b.bounds.y) {
+        addEdge(world, "above", a, b, 0.75, b.evidence);
+        addEdge(world, "below", b, a, 0.75, a.evidence);
+      } else if (sameColumn && rectBottom(b.bounds) <= a.bounds.y) {
+        addEdge(world, "above", b, a, 0.75, a.evidence);
+        addEdge(world, "below", a, b, 0.75, b.evidence);
+      }
     }
   }
 
@@ -790,11 +844,16 @@ export function buildTuiWorld(snapshot, context = {}) {
   return world;
 }
 
-function matchName(label, name) {
+function matchName(label, name, exact = false) {
   if (name === undefined || name === null) return true;
   const value = String(label || "");
   if (name instanceof RegExp) return name.test(value);
+  if (exact) return value.toLowerCase() === String(name).toLowerCase();
   return value.toLowerCase().includes(String(name).toLowerCase());
+}
+
+function isHidden(node) {
+  return node.state?.hidden === true || node.state?.visible === false;
 }
 
 export function find(world, predicate) {
@@ -806,11 +865,12 @@ export function findNodes(world, options = {}) {
     if (options.role && node.role !== options.role) return false;
     if (options.domain && node.domain !== options.domain) return false;
     if (options.source && node.source !== options.source) return false;
-    if (options.name !== undefined && !matchName(node.label, options.name)) return false;
-    if (options.text !== undefined && !matchName(node.label, options.text)) return false;
+    if (options.minConfidence !== undefined && node.confidence < options.minConfidence) return false;
+    if (options.name !== undefined && !matchName(node.label, options.name, options.exact === true)) return false;
+    if (options.text !== undefined && !matchName(node.label, options.text, options.exact === true)) return false;
     if (options.selected !== undefined && node.state?.selected !== options.selected) return false;
     if (options.focused !== undefined && node.state?.focused !== options.focused) return false;
-    if (options.visible !== undefined && options.visible && node.role === "screen") return false;
+    if (options.visible !== undefined && options.visible && (node.role === "screen" || isHidden(node))) return false;
     return true;
   });
 }
@@ -823,11 +883,7 @@ export function getByRef(world, ref) {
 
 export function getByRole(world, role, options = {}) {
   const strict = options.strict !== false;
-  const matches = world.nodes.filter((node) =>
-    node.role === role &&
-    (!options.domain || node.domain === options.domain) &&
-    matchName(node.label, options.name)
-  );
+  const matches = findNodes(world, { ...options, role });
   if (matches.length === 0) {
     throw worldQueryError("not_found", `No TuiWorld node found for role "${role}"`, {
       role,
@@ -994,7 +1050,17 @@ export function nearest(world, ref, options = {}) {
     const primary = options.direction === "below" || options.direction === "above" ? dy : dx;
     const secondary = options.direction === "below" || options.direction === "above" ? dx : dy;
     return { candidate, score: primary * 10 + secondary };
-  }).sort((a, b) => a.score - b.score);
+  }).sort((a, b) => {
+    const scoreDelta = a.score - b.score;
+    if (scoreDelta !== 0) return scoreDelta;
+    const confidenceDelta = (b.candidate.confidence ?? 0) - (a.candidate.confidence ?? 0);
+    if (confidenceDelta !== 0) return confidenceDelta;
+    const yDelta = a.candidate.bounds.y - b.candidate.bounds.y;
+    if (yDelta !== 0) return yDelta;
+    const xDelta = a.candidate.bounds.x - b.candidate.bounds.x;
+    if (xDelta !== 0) return xDelta;
+    return a.candidate.ref.localeCompare(b.candidate.ref);
+  });
 
   return scored[0]?.candidate || null;
 }
@@ -1031,11 +1097,7 @@ export function worldQuery(world, query = {}) {
   if (!op) throw new Error("world query op is required");
 
   if (op === "getByRole") {
-    const result = getByRole(world, query.role, {
-      name: query.name,
-      domain: query.domain,
-      strict: query.strict,
-    });
+    const result = getByRole(world, query.role, query);
     return {
       op,
       nodes: Array.isArray(result)
@@ -1080,7 +1142,7 @@ export function worldQuery(world, query = {}) {
       evidence: details.evidence,
       incoming: details.incoming.map((edge) => edgeSummary(edge, world, detail)),
       outgoing: details.outgoing.map((edge) => edgeSummary(edge, world, detail)),
-      actions: actionsFor(world, details.node.ref).map((action) => actionSummary(action, detail)),
+      actions: details.actions.map((action) => actionSummary(action, detail)),
       diagnostics: details.diagnostics,
     };
   }
@@ -1113,6 +1175,7 @@ export function explain(world, ref) {
     evidence: node.evidence,
     incoming: world.edges.filter((edge) => edge.to === node.id),
     outgoing: world.edges.filter((edge) => edge.from === node.id),
+    actions: actionsFor(world, ref),
     diagnostics: world.diagnostics.filter((diagnostic) => diagnostic.refs?.includes(node.ref)),
   };
 }
