@@ -114,11 +114,11 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
     .terminal-frame { position: relative; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #000; }
-    #terminal { white-space: pre; padding: 12px; margin: 0; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-variant-ligatures: none; tab-size: 1; }
-    #overlay { position: absolute; top: 12px; left: 12px; pointer-events: none; }
+    #terminal { position: relative; white-space: pre; padding: 12px; margin: 0; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-variant-ligatures: none; tab-size: 1; }
+    #overlay { position: absolute; top: 12px; left: 12px; pointer-events: none; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.4; }
 
     /* ── Overlay element styles ── */
-    .ov { position: absolute; border-radius: 3px; pointer-events: none; transition: opacity .15s; }
+    .ov { position: absolute; left: calc(var(--x) * 1ch); top: calc(var(--y) * 1lh); width: calc(var(--w) * 1ch); height: calc(var(--h) * 1lh); border-radius: 3px; pointer-events: none; transition: opacity .15s; }
     .ov-popup { border: 1.5px solid #f0883e; background: rgba(240,136,62,.06); }
     .ov-popup .ov-label { background: #f0883e; color: #000; }
     .ov-pane { border: 1px dashed #484f58; background: transparent; }
@@ -177,7 +177,6 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     .conf-fill { height: 100%; background: #3fb950; border-radius: 2px; transition: width .3s; }
 
     #meta { color: var(--muted); font-size: 12px; margin-top: 10px; }
-    #measure { position: absolute; visibility: hidden; white-space: pre; left: -1000px; top: -1000px; display: inline-block; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-variant-ligatures: none; tab-size: 1; }
 
     /* ── Per-app themes ── */
     :root.theme-card-game { --accent: #a371f7; --accent-bg: rgba(163,113,247,.1); --sidebar-accent: #8957e5; --highlight: #d2a8ff; }
@@ -274,7 +273,6 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         </div>
       </div>
     </div>
-    <span id="measure">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span>
   </main>
   <script id="cast" type="application/octet-stream">${encodedCast}</script>
   <script>
@@ -291,7 +289,6 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     const events = rows.slice(1);
     const terminal = document.getElementById("terminal");
     const overlay = document.getElementById("overlay");
-    const measure = document.getElementById("measure");
     const meta = document.getElementById("meta");
     const play = document.getElementById("play");
     const reset = document.getElementById("reset");
@@ -479,52 +476,13 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     }
 
     // ── Semantic overlay renderer ──
-
-    function charMetrics() {
-      if (measure.textContent.length < 64) {
-        measure.textContent = "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM";
-      }
-      const rect = measure.getBoundingClientRect();
-      const computed = window.getComputedStyle(measure);
-      const lineHeight = Number.parseFloat(computed.lineHeight);
-      return {
-        charW: (rect.width / measure.textContent.length) || 8,
-        lineH: Number.isFinite(lineHeight) ? lineHeight : (rect.height || 16),
-      };
-    }
-
-    function boundsToPixels(bounds, charW, lineH) {
-      if (Number.isFinite(bounds?.x) && Number.isFinite(bounds?.y) &&
-          Number.isFinite(bounds?.w) && Number.isFinite(bounds?.h)) {
-        return {
-          x: bounds.x * charW,
-          y: bounds.y * lineH,
-          w: Math.max(charW, bounds.w * charW),
-          h: Math.max(lineH, bounds.h * lineH),
-        };
-      }
-      const startX = Number.isFinite(bounds?.startX) ? bounds.startX : 0;
-      const endX = Number.isFinite(bounds?.endX) ? bounds.endX : width - 1;
-      const startY = Number.isFinite(bounds?.startY) ? bounds.startY : 0;
-      const endY = Number.isFinite(bounds?.endY) ? bounds.endY : startY;
-      return {
-        x: startX * charW,
-        y: startY * lineH,
-        w: Math.max(charW, (endX - startX + 1) * charW),
-        h: Math.max(lineH, (endY - startY + 1) * lineH),
-      };
-    }
-
-    function makeBoundsBox(type, bounds, charW, lineH, label, extra) {
-      const b = boundsToPixels(bounds, charW, lineH);
-      return makeBox(type, b.x, b.y, b.w, b.h, label, extra);
-    }
+    // Uses CSS ch/lh units — no JS measurement needed.
 
     function makeBox(type, x, y, w, h, label, extra) {
       const el = document.createElement("div");
       el.className = "semantic-box ov ov-" + type + " ov-enter";
-      el.style.left = x + "px"; el.style.top = y + "px";
-      el.style.width = w + "px"; el.style.height = h + "px";
+      el.style.setProperty("--x", x); el.style.setProperty("--y", y);
+      el.style.setProperty("--w", w); el.style.setProperty("--h", h);
       el.dataset.ovRole = type.replace(/ .*/, "");
       if (label) el.dataset.ovLabel = label;
       if (extra) el.dataset.ovExtra = extra;
@@ -591,7 +549,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       return node.boundsAccuracy === "row" ? "row bounds" : null;
     }
 
-    function renderWorldOverlay(snap, charW, lineH) {
+    function renderWorldOverlay(snap) {
       const nodes = (snap.elements || []).filter(n => n?.bounds && n.role !== "screen");
       if (nodes.length === 0) return false;
 
@@ -625,11 +583,10 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       for (const node of nodes) {
         const type = overlayTypeForNode(node);
         if (!type) continue;
-        overlay.appendChild(makeBoundsBox(
+        const b = node.bounds;
+        overlay.appendChild(makeBox(
           type,
-          node.bounds,
-          charW,
-          lineH,
+          b.x, b.y, b.w, b.h,
           overlayLabelForNode(node),
           overlayExtraForNode(node),
         ));
@@ -640,16 +597,13 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     function renderSemanticOverlay() {
       overlay.innerHTML = "";
       if (!overlayEnabled || !currentSemanticSnapshot) return;
-      const { charW, lineH } = charMetrics();
-      overlay.style.width = (width * charW) + "px";
-      overlay.style.height = (height * lineH) + "px";
       const snap = currentSemanticSnapshot;
-      if (renderWorldOverlay(snap, charW, lineH)) return;
+      if (renderWorldOverlay(snap)) return;
 
       // 1. Popups (outermost containers)
       for (const p of (snap.popups || [])) {
         if (!p.bounds) continue;
-        overlay.appendChild(makeBoundsBox("popup", p.bounds, charW, lineH, p.title || "popup"));
+        overlay.appendChild(makeBox("popup", p.bounds.x, p.bounds.y, p.bounds.w, p.bounds.h, p.title || "popup"));
       }
 
       // 2. Panes (layout containers)
@@ -657,20 +611,19 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       for (const p of (snap.panes || [])) {
         if (!p.bounds || seenPanes.has(p.id)) continue;
         seenPanes.add(p.id);
-        overlay.appendChild(makeBoundsBox("pane", p.bounds, charW, lineH, p.title || null));
+        overlay.appendChild(makeBox("pane", p.bounds.x, p.bounds.y, p.bounds.w, p.bounds.h, p.title || null));
       }
 
       // 3. Lists (container) + list items (individual rows)
       for (const l of (snap.lists || [])) {
         if (!l.bounds) continue;
         if (l.role === "list") {
-          // List container
-          overlay.appendChild(makeBoundsBox("list", l.bounds, charW, lineH, l.label || "list"));
+          overlay.appendChild(makeBox("list", l.bounds.x, l.bounds.y, l.bounds.w, l.bounds.h, l.label || "list"));
         } else if (l.role === "list_item") {
           const isSelected = l.selected === true;
           const type = isSelected ? "item-selected" : "item";
           const labelText = (l.label || "").substring(0, 40).trim();
-          overlay.appendChild(makeBoundsBox(type, l.bounds, charW, lineH, labelText || "item"));
+          overlay.appendChild(makeBox(type, l.bounds.x, l.bounds.y, l.bounds.w, l.bounds.h, labelText || "item"));
         }
       }
 
@@ -678,27 +631,25 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       for (const sb of (snap.statusBars || [])) {
         if (!sb.bounds) continue;
         const keyBadges = (sb.keyActions || []).map(ka => ka.key + "→" + ka.action).join("  ");
-        overlay.appendChild(makeBoundsBox("status", sb.bounds, charW, lineH, "status", keyBadges || null));
+        overlay.appendChild(makeBox("status", sb.bounds.x, sb.bounds.y, sb.bounds.w, sb.bounds.h, "status", keyBadges || null));
       }
 
       // 5. Tables
       for (const t of (snap.tables || [])) {
         if (!t.bounds) continue;
-        overlay.appendChild(makeBoundsBox("table", t.bounds, charW, lineH, t.label || "table"));
+        overlay.appendChild(makeBox("table", t.bounds.x, t.bounds.y, t.bounds.w, t.bounds.h, t.label || "table"));
       }
 
       // 6. Facts with source bounds
       for (const f of (snap.facts || [])) {
         if (!f.sourceBounds) continue;
-        overlay.appendChild(makeBoundsBox("fact", f.sourceBounds, charW, lineH,
+        overlay.appendChild(makeBox("fact", f.sourceBounds.x, f.sourceBounds.y, f.sourceBounds.w, f.sourceBounds.h,
           f.label + ": " + (f.value || "").substring(0, 20)));
       }
 
-      // 7. Cursor
+      // 7. Cursor — single cell overlay
       if (snap.cursor) {
-        overlay.appendChild(makeBox("cursor",
-          snap.cursor.x * charW, snap.cursor.y * lineH, charW, lineH,
-          null));
+        overlay.appendChild(makeBox("cursor", snap.cursor.x, snap.cursor.y, 1, 1, null));
       }
 
       // 8. Game elements
@@ -706,52 +657,36 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         if (!ge.bounds) continue;
 
         if (ge.role === "gameBoard") {
-          // Board: full-width box spanning the wall lines
-          overlay.appendChild(makeBoundsBox("gameBoard", ge.bounds, charW, lineH, ge.label));
+          overlay.appendChild(makeBox("gameBoard", ge.bounds.x, ge.bounds.y, ge.bounds.w, ge.bounds.h, ge.label));
         } else if (ge.role === "player") {
-          // Player: single-cell highlight with pulsing glow
-          overlay.appendChild(makeBox("player",
-            ge.position.x * charW, ge.position.y * lineH, charW, lineH,
-            ge.label));
+          overlay.appendChild(makeBox("player", ge.position.x, ge.position.y, 1, 1, ge.label));
         } else if (ge.role === "gameEntity") {
-          // Entity: span from min to max positions
           const xs = ge.positions.map(p => p.x);
           const ys = ge.positions.map(p => p.y);
           const minX = Math.min(...xs), maxX = Math.max(...xs);
           const minY = Math.min(...ys), maxY = Math.max(...ys);
           const label = ge.entityRole === "body" ? "Snake (" + ge.count + ")" :
             ge.entityRole === "food" ? "Food" : "Bonus";
-          const box = makeBox("gameEntity",
-            minX * charW, minY * lineH,
-            (maxX - minX + 1) * charW, (maxY - minY + 1) * lineH,
-            label);
-          // Add individual entity markers
+          const box = makeBox("gameEntity", minX, minY, maxX - minX + 1, maxY - minY + 1, label);
+          // Add individual entity markers (cell-positioned dots, relative to box)
           for (const p of ge.positions) {
             const dot = document.createElement("div");
-            dot.style.cssText = "position:absolute;left:" + (p.x * charW + 1) + "px;top:" + (p.y * lineH + 1) + "px;width:" + (charW - 2) + "px;height:" + (lineH - 2) + "px;border-radius:2px;background:rgba(210,168,255,.25);pointer-events:none;";
+            dot.style.cssText = "position:absolute;left:calc(" + (p.x - minX) + " * 1ch + 1px);top:calc(" + (p.y - minY) + " * 1lh + 1px);width:calc(1ch - 2px);height:calc(1lh - 2px);border-radius:2px;background:rgba(210,168,255,.25);pointer-events:none;";
             box.appendChild(dot);
           }
           overlay.appendChild(box);
         } else if (ge.role === "scoreBar") {
-          // Score bar: full-width with parsed pairs
           const pairsText = (ge.pairs || []).map(p => p.label + ": " + p.value).join("  ");
-          overlay.appendChild(makeBoundsBox("scoreBar", ge.bounds, charW, lineH, ge.label, pairsText || null));
+          overlay.appendChild(makeBox("scoreBar", ge.bounds.x, ge.bounds.y, ge.bounds.w, ge.bounds.h, ge.label, pairsText || null));
         } else if (ge.role === "titleBar") {
-          // Title bar: full-width with mode
           const titleText = ge.mode ? ge.label + " · " + ge.mode : ge.label;
-          overlay.appendChild(makeBoundsBox("titleBar", ge.bounds, charW, lineH, titleText));
+          overlay.appendChild(makeBox("titleBar", ge.bounds.x, ge.bounds.y, ge.bounds.w, ge.bounds.h, titleText));
         } else if (ge.role === "cardGame") {
-          // Card game: summary box spanning the card area
           const cardText = ge.cardCount + " cards, " + ge.faceDownCount + " face-down, " + ge.tableauColumns + " tableau cols";
-          overlay.appendChild(makeBoundsBox("cardGame", ge.bounds, charW, lineH, ge.label, cardText));
+          overlay.appendChild(makeBox("cardGame", ge.bounds.x, ge.bounds.y, ge.bounds.w, ge.bounds.h, ge.label, cardText));
         } else if (ge.role === "cardFace") {
-          // Individual card face: small badge at the card position
           const cls = ge.suitColor === "red" ? "cardFace cardFace-red" : "cardFace";
-          const box = makeBox(cls,
-            ge.position.x * charW, ge.position.y * lineH,
-            3 * charW, lineH,
-            ge.label);
-          overlay.appendChild(box);
+          overlay.appendChild(makeBox(cls, ge.position.x, ge.position.y, 3, 1, ge.label));
         }
       }
 
@@ -764,17 +699,15 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
             ? "Sparkline " + ch.lineCount + " rows"
             : "Bar chart " + ch.values?.length + " values";
           overlay.appendChild(makeBox("brailleChart",
-            ch.startX * charW, ch.bounds.startY * lineH,
-            (ch.endX - ch.startX + 1) * charW, (ch.bounds.endY - ch.bounds.startY + 1) * lineH,
+            ch.startX, ch.bounds.startY,
+            ch.endX - ch.startX + 1, ch.bounds.endY - ch.bounds.startY + 1,
             ch.label, info));
         } else if (ch.role === "blockBar") {
-          overlay.appendChild(makeBox("blockBar",
-            0, ch.bounds.startY * lineH, width * charW, lineH,
+          overlay.appendChild(makeBox("blockBar", 0, ch.bounds.startY, width, 1,
             ch.label, ch.barLabel + ": " + ch.value));
         } else if (ch.role === "pipeMeter") {
           const meterText = (ch.meters || []).map(m => m.label + " " + m.value).join("  ");
-          overlay.appendChild(makeBox("pipeMeter",
-            0, ch.bounds.startY * lineH, width * charW, lineH,
+          overlay.appendChild(makeBox("pipeMeter", 0, ch.bounds.startY, width, 1,
             ch.label, meterText || null));
         }
       }
