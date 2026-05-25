@@ -52,7 +52,7 @@ async function navigateNudoku() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: NUDOKU },
   });
 
-  const session = manager.create({ command: NUDOKU, cols: 80, rows: 24 });
+  const session = await manager.create({ command: NUDOKU, cols: 80, rows: 24 });
   await new Promise(r => setTimeout(r, 1000));
 
   // Step 1: OBSERVE
@@ -166,7 +166,7 @@ async function navigateNethack() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: NETHACK },
   });
 
-  const session = manager.create({ command: NETHACK, cols: 80, rows: 24 });
+  const session = await manager.create({ command: NETHACK, cols: 80, rows: 24 });
   await new Promise(r => setTimeout(r, 2000));
 
   // Step 1: OBSERVE
@@ -357,7 +357,7 @@ async function navigateGreed() {
     env: { ...process.env, GARAZYK_PTY_MCP_ALLOW: GREED },
   });
 
-  const session = manager.create({ command: GREED, cols: 80, rows: 24 });
+  const session = await manager.create({ command: GREED, cols: 80, rows: 24 });
   await new Promise(r => setTimeout(r, 1000));
 
   // Step 1: OBSERVE

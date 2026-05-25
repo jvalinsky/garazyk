@@ -2,7 +2,7 @@
 import { TerminalSessionManager, snapshotToYaml } from "./terminal_session.mjs";
 import { AsciicastRecorder, defaultRecordingDir } from "./recording.mjs";
 import { worldQuery } from "./world.mjs";
-import { createSidecarPtyFactory } from "./sidecar.mjs";
+import { createSidecarPtyFactory, SidecarManager } from "./sidecar.mjs";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -330,15 +330,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+let shuttingDown = false;
+
+async function gracefulShutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  await manager.stopAll();
+  await manager.dispose();
+  await SidecarManager.dispose();
+  await server.close();
+  process.exit(0);
+}
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
-  process.on("SIGINT", async () => {
-    await manager.stopAll();
-    manager.dispose();
-    await server.close();
-    process.exit(0);
+
+  process.on("SIGINT", () => void gracefulShutdown());
+  process.on("SIGTERM", () => void gracefulShutdown());
+
+  // stdin-close: transport may close if the parent process exits
+  process.stdin.on("close", () => void gracefulShutdown());
+
+  process.on("uncaughtException", (error) => {
+    console.error("uncaughtException:", error);
+    void gracefulShutdown();
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    console.error("unhandledRejection:", reason);
+    void gracefulShutdown();
   });
 }
 

@@ -353,6 +353,9 @@ export class SidecarPty {
 
   /**
    * Kill the PTY session.
+   * Resolves only after the sidecar confirms exit (via exit event) or
+   * after a bounded timeout. This ensures TerminalSession.stop() can
+   * observe running→false before proceeding.
    * @param {string} [_signal] — ignored; sidecar always kills via ChildKiller
    * @returns {Promise<void>}
    */
@@ -361,13 +364,33 @@ export class SidecarPty {
     return this.manager._send({
       op: "stop",
       sessionId: this.sessionId,
+    }).then(() => {
+      // Wait for the async exit event to arrive, or time out.
+      return new Promise((resolve) => {
+        const originalOnExit = this._onExit;
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          this._onExit = originalOnExit;
+          resolve();
+        };
+        const timer = setTimeout(done, 3000);
+        this._onExit = (info) => {
+          done();
+          if (originalOnExit) originalOnExit(info);
+        };
+        if (this._exitBuffer) {
+          const buffered = this._exitBuffer;
+          this._exitBuffer = null;
+          done();
+          if (originalOnExit) originalOnExit(buffered);
+        }
+      });
     }).catch(() => {
       // Best effort — child may have already exited
     });
-    // NOTE: do NOT delete from manager.sessions here. The Rust sidecar
-    // sends an "exit" event asynchronously after kill() succeeds, and
-    // _handleEvent("exit", …) is responsible for cleaning up the map
-    // and firing _onExit so TerminalSession.stop() can observe running→false.
   }
 }
 
