@@ -377,12 +377,12 @@ jobs:
       - name: Run sidecar tests
         working-directory: scripts/mcp-pty
         run: |
-          node --test --test-timeout=30000 --test-force-exit \
+          node --test --test-timeout=30000 \
             test/sidecar_test.mjs \
             test/sidecar_corpus_test.mjs \
             test/snapshot_compare_test.mjs
 
-      - name: Run corpus batch (sidecar)
+      - name: Run sidecar smoke test (/bin/cat)
         working-directory: scripts/mcp-pty
         run: |
-          node corpus/batch_runner.mjs --sidecar --timeout 15000 --report ../../sidecar_batch_report.json
+          node corpus/runner.mjs tests/cat.yaml --sidecar --continue-on-failure

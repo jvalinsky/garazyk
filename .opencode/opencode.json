@@ -12,10 +12,7 @@
     "garazyk-pty": {
       "type": "local",
       "command": ["node", "scripts/mcp-pty/server.mjs"],
-      "enabled": true,
-      "env": {
-        "GARAZYK_PTY_MCP_ALLOW": "/opt/homebrew/bin/ttysolitaire"
-      }
+      "enabled": true
     }
   }
 }
