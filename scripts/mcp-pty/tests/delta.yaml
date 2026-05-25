@@ -22,9 +22,9 @@ steps:
     label: Verify app is delta
   - type: assert_semantic
     target: framework
-    expected: ratatui
+    expected: less
     maxMs: 500
-    label: Verify framework is ratatui
+    label: Verify framework is less
   - type: quit
     maxMs: 2000
     label: Quit delta

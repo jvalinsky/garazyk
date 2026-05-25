@@ -1720,6 +1720,11 @@
       "npm:playwright@1.52.0",
       "npm:zod@^3.22.0"
     ],
+    "packageJson": {
+      "dependencies": [
+        "npm:node-pty-prebuilt-multiarch@~0.10.1-pre.5"
+      ]
+    },
     "members": {
       "packages/tui": {
         "dependencies": [

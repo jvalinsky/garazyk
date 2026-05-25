@@ -87,7 +87,9 @@ export class AsciicastRecorder {
 }
 
 export function defaultRecordingDir(baseDir = process.cwd(), startedAt = Date.now()) {
-  return path.join(baseDir, "scripts", "scenarios", "reports", "pty-capture", `mcp-${startedAt}`);
+  // Use second granularity to avoid per-scenario dir collisions in batch runs
+  const epochS = Math.floor(startedAt / 1000);
+  return path.join(baseDir, "scripts", "scenarios", "reports", "pty-capture", `mcp-${epochS}`);
 }
 
 export function buildStandaloneHtml({ title, castContent, semanticOverlay = false }) {

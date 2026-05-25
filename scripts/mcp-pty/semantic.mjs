@@ -1493,6 +1493,15 @@ export function guessApplication(command, lines, grid) {
     pastel: "pastel", "speed-test": "speed-test",
     // Bubbletea
     gum: "gum", mods: "mods",
+    dust: "dust",
+    delta: "delta",
+    mcfly: "mcfly",
+    atuin: "atuin",
+    micro: "micro",
+    newsboat: "newsboat",
+    calcurse: "calcurse",
+    ctop: "ctop",
+    cointop: "cointop",
   };
 
   if (KNOWN_APPS[base]) {
@@ -1707,6 +1716,15 @@ export function guessApplication(command, lines, grid) {
       "rich-cli": "rich",
       "blessed-contrib": "blessed",
       vtop: "blessed",
+      dust: "ratatui",
+      delta: "less",
+      mcfly: "ratatui",
+      atuin: "ratatui",
+      micro: "bubbletea",
+      newsboat: "ncurses",
+      calcurse: "ncurses",
+      ctop: "bubbletea",
+      cointop: "bubbletea",
     };
 
     if (frameworkByApp[guess]) {
