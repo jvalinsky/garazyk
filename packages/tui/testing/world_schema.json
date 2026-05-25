@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://garazyk.local/schemas/tui-world.schema.json",
+  "title": "TuiWorld",
+  "type": "object",
+  "required": [
+    "frameId",
+    "viewport",
+    "sources",
+    "nodes",
+    "edges",
+    "actions",
+    "diagnostics"
+  ],
+  "properties": {
+    "frameId": { "type": "string" },
+    "viewport": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sourceLayer" }
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "sourceLayer": {
+      "type": "object",
+      "required": ["id", "kind", "count"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "count": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "rect": {
+      "type": "object",
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number" },
+        "h": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["source", "index", "kind"],
+      "properties": {
+        "source": { "type": "string" },
+        "index": {
+          "type": ["number", "string"]
+        },
+        "kind": { "type": "string" },
+        "text": { "type": "string" },
+        "bounds": {}
+      },
+      "additionalProperties": true
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "ref",
+        "source",
+        "sourceIndex",
+        "domain",
+        "role",
+        "bounds",
+        "boundsAccuracy",
+        "state",
+        "confidence",
+        "evidence"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "ref": { "type": "string" },
+        "source": { "type": "string" },
+        "sourceIndex": {
+          "type": ["number", "string"]
+        },
+        "domain": { "type": "string" },
+        "role": { "type": "string" },
+        "label": { "type": "string" },
+        "bounds": { "$ref": "#/$defs/rect" },
+        "boundsAccuracy": {
+          "enum": ["exact", "row", "estimated"]
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "kind", "from", "to", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "action": {
+      "type": "object",
+      "required": ["id", "kind", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "source": { "type": "string" },
+        "sourceRef": { "type": "string" },
+        "targetRef": { "type": "string" },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["id", "severity", "code", "message"],
+      "properties": {
+        "id": { "type": "string" },
+        "severity": {
+          "enum": ["info", "warning", "error"]
+        },
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
