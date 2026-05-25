@@ -105,6 +105,9 @@ async function main() {
       await new Promise(r => setTimeout(r, step.value || 1000));
     } else if (step.action === "snapshot") {
       const snap = session.semanticSnapshot("full", false);
+      if (recorder && recorder.semanticOverlay) {
+        recorder.recordSemanticSnapshot(snap.snapshot);
+      }
       const filePath = path.join(outDir, `snapshot-${Date.now()}.json`);
       fs.writeFileSync(filePath, JSON.stringify(snap, null, 2));
     } else if (step.action === "quit") {

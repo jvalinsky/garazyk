@@ -394,19 +394,26 @@ export class TerminalSession {
       if (frameCount % 4 === 0) {
         prevLines = lines.slice();
         this.recording.recordOutput(`\x1b[H${lines.join("\r\n")}`);
-        return;
-      }
-      // Otherwise: emit changed lines only
-      const changed = [];
-      for (let y = 0; y < lines.length; y += 1) {
-        if (lines[y] !== (prevLines ? prevLines[y] : null)) {
-          changed.push(y);
+      } else {
+        // Otherwise: emit changed lines only
+        const changed = [];
+        for (let y = 0; y < lines.length; y += 1) {
+          if (lines[y] !== (prevLines ? prevLines[y] : null)) {
+            changed.push(y);
+          }
+        }
+        prevLines = lines;
+        if (changed.length > 0) {
+          const frame = changed.map((y) => `\x1b[${y + 1}H${lines[y]}`).join("");
+          this.recording.recordOutput(frame);
         }
       }
-      prevLines = lines;
-      if (changed.length > 0) {
-        const frame = changed.map((y) => `\x1b[${y + 1}H${lines[y]}`).join("");
-        this.recording.recordOutput(frame);
+      // Record semantic snapshot at ~4Hz (every 5th frame at 20fps)
+      if (this.recording.semanticOverlay && frameCount % 5 === 0) {
+        try {
+          const snap = this.semanticSnapshot("compact", false).snapshot;
+          this.recording.recordSemanticSnapshot(snap);
+        } catch { /* snapshot may fail during rapid terminal changes */ }
       }
     }, intervalMs);
   }
