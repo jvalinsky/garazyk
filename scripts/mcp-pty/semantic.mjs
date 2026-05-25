@@ -6,15 +6,20 @@ export {
   buildTuiWorld,
   explain,
   find,
+  findNodes,
   getByRef,
   getByRole,
+  actionsFor,
+  locator,
   nearest,
   normalizeElement,
+  primaryAction,
   rectContains,
   rectOverlaps,
   related,
   toRect,
   validate,
+  worldQuery,
 } from "./world.mjs";
 
 // ── Constants ────────────────────────────────────────────────────────────

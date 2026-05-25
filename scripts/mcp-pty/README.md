@@ -45,6 +45,8 @@ Add this entry alongside the existing `garazyk-tui` MCP server:
 
 - `pty_start`: start a whitelisted command in a PTY and return `{ sessionId, pid, snapshot }`.
 - `pty_snapshot`: return the current screen as YAML plus structured `{ lines, cursor, cols, rows }`.
+- `pty_semantic_snapshot`: return detector output plus a normalized `TuiWorld` object graph.
+- `pty_world_query`: query the current `TuiWorld` with strict locators, spatial lookup, relations, actions, explanations, or validation.
 - `pty_action`: send `press_key`, `type`, or `write` input and return an updated snapshot.
 - `pty_resize`: resize the PTY and headless terminal model.
 - `pty_stop`: stop a session with `SIGTERM`, with optional `SIGKILL` escalation.
@@ -61,6 +63,130 @@ Snapshot text is optimized for agents:
 ```
 
 MCP results also include `structuredContent` with the same screen data as JSON.
+
+## TuiWorld Reasoning Graph
+
+`pty_semantic_snapshot` preserves the detector-specific arrays (`tables`, `controls`, `lists`, `popups`, `gameElements`, `charts`, and so on), then adds a normalized graph:
+
+- `snapshot.world`: canonical graph object.
+- `snapshot.elements`: alias for `snapshot.world.nodes`.
+- `snapshot.relations`: alias for `snapshot.world.edges`.
+- `snapshot.actions`: alias for `snapshot.world.actions`.
+- `snapshot.diagnostics`: alias for `snapshot.world.diagnostics`.
+
+The public graph shape is:
+
+```ts
+interface TuiWorld {
+  frameId: string;
+  viewport: { width: number; height: number };
+  sources: SourceLayer[];
+  nodes: TuiNode[];
+  edges: TuiEdge[];
+  actions: TuiAction[];
+  diagnostics: TuiDiagnostic[];
+}
+```
+
+`TuiNode` is the stable object representation for any detected terminal object:
+
+```ts
+interface TuiNode {
+  id: string;
+  ref: string;
+  source: string;
+  domain: "generic" | "card_game" | "table" | "form" | "chart" | "editor";
+  role: string;
+  label?: string;
+  bounds: { x: number; y: number; w: number; h: number };
+  boundsAccuracy: "exact" | "row" | "estimated";
+  state: Record<string, unknown>;
+  confidence: number;
+  evidence: EvidenceRef[];
+}
+```
+
+`ref` is the external locator key. Use `id` only for edges inside one graph. Bounds are terminal-cell coordinates with half-open width and height. `boundsAccuracy` matters: row-only or heuristic nodes are useful but should not be treated as precise layout truth.
+
+Materialized relation edges are intentionally high-signal:
+
+- `contains`
+- `overlaps`
+- `focusedBy`
+- `selectedBy`
+- `activates`
+- `labels`
+- `controls`
+- `derivedFromCell`
+- `derivedFromHeuristic`
+
+Directional relations such as `above`, `below`, `leftOf`, `rightOf`, `sameRow`, and `sameColumn` are computed on demand by query helpers instead of being stored for every node pair.
+
+`TuiAction` describes what an agent can safely do:
+
+```ts
+interface TuiAction {
+  id: string;
+  kind: "key" | "activate" | "focus" | "dismiss" | "select";
+  key?: string;
+  label?: string;
+  source: string;
+  sourceRef?: string;
+  targetRef?: string;
+  confidence: number;
+}
+```
+
+`TuiDiagnostic` records graph problems rather than hiding them:
+
+```ts
+interface TuiDiagnostic {
+  id: string;
+  severity: "error" | "warning" | "info";
+  code: string;
+  message: string;
+  refs: string[];
+}
+```
+
+### `pty_world_query`
+
+`pty_world_query` takes a fresh semantic snapshot and runs one query against `snapshot.world`.
+
+Supported operations:
+
+- `getByRole`: strict role/name/domain lookup.
+- `getByRef`: resolve a node ref.
+- `find`: filtered node search.
+- `related`: relation lookup around a node.
+- `nearest`: nearest node in a direction.
+- `explain`: evidence, edges, actions, and diagnostics for one node.
+- `actionsFor`: actions targeting or sourced from one node.
+- `primaryAction`: best action for one node.
+- `validate`: graph invariant diagnostics.
+
+Examples:
+
+```json
+{
+  "sessionId": "s1",
+  "op": "getByRole",
+  "role": "button",
+  "name": "OK"
+}
+```
+
+```json
+{
+  "sessionId": "s1",
+  "op": "nearest",
+  "ref": "card_game:cardface:k_2,1",
+  "direction": "below",
+  "role": "cardFace"
+}
+```
+
+Strict lookup is the default. If two nodes match, `pty_world_query` returns an ambiguity error with candidate refs instead of guessing.
 
 ## Key Input
 
