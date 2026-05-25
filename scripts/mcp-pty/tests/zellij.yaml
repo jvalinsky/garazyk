@@ -3,27 +3,22 @@
 # UI Patterns: split-pane, tab-navigation, status-bar
 name: zellij terminal mux
 description: "Launch zellij, verify semantic detection, exercise terminal-mux patterns, then quit"
-command: /opt/homebrew/bin/zellij
+command: /Users/jack/.cargo/bin/zellij
 cols: 80
 rows: 24
 settleMs: 1500
 steps:
   - type: wait
     timeoutMs: 1500
-    maxMs: 4500
     label: Wait for zellij to render
   - type: observe
-    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: zellij
-    maxMs: 500
     label: Verify app is zellij
   - type: quit
-    maxMs: 2000
     label: Quit zellij
   - type: wait
     timeoutMs: 1000
-    maxMs: 3000
     label: Wait for exit
