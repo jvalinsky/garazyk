@@ -321,3 +321,68 @@ jobs:
       - name: Verify PLC binary
         run: |
           ./build/bin/atprotopds-cli --help
+
+  pty-sidecar-tests:
+    name: PTY Sidecar Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/mcp-pty/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: pty-sidecar-cargo-${{ runner.os }}-${{ hashFiles('scripts/mcp-pty-rs/Cargo.lock') }}
+          restore-keys: |
+            pty-sidecar-cargo-${{ runner.os }}-
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: scripts/mcp-pty/node_modules
+          key: pty-sidecar-npm-${{ runner.os }}-${{ hashFiles('scripts/mcp-pty/package-lock.json') }}
+          restore-keys: |
+            pty-sidecar-npm-${{ runner.os }}-
+
+      - name: Build sidecar binary
+        run: cargo build --manifest-path scripts/mcp-pty-rs/Cargo.toml
+
+      - name: Run Rust sidecar tests
+        run: cargo test --manifest-path scripts/mcp-pty-rs/Cargo.toml
+
+      - name: Install npm dependencies
+        working-directory: scripts/mcp-pty
+        run: npm ci
+
+      - name: Run sidecar tests
+        working-directory: scripts/mcp-pty
+        run: |
+          node --test --test-timeout=30000 --test-force-exit \
+            test/sidecar_test.mjs \
+            test/sidecar_corpus_test.mjs \
+            test/snapshot_compare_test.mjs
+
+      - name: Run corpus batch (sidecar)
+        working-directory: scripts/mcp-pty
+        run: |
+          node corpus/batch_runner.mjs --sidecar --timeout 15000 --report ../../sidecar_batch_report.json
