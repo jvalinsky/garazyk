@@ -108,7 +108,7 @@ test("TerminalSessionManager starts cat, captures input, resizes, and stops", as
     idleMs: 60_000,
   });
   try {
-    const session = manager.create({
+    const session = await manager.create({
       command: "/bin/cat",
       cols: 20,
       rows: 5,

@@ -2,11 +2,17 @@
 import { TerminalSessionManager, snapshotToYaml } from "./terminal_session.mjs";
 import { AsciicastRecorder, defaultRecordingDir } from "./recording.mjs";
 import { worldQuery } from "./world.mjs";
+import { createSidecarPtyFactory } from "./sidecar.mjs";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
-const manager = new TerminalSessionManager();
+const useSidecar = process.argv.includes("--sidecar");
+
+const manager = new TerminalSessionManager({
+  env: process.env,
+  ptyFactory: useSidecar ? createSidecarPtyFactory() : null,
+});
 
 function toolResultFromSnapshot(snapshot) {
   return {
@@ -203,7 +209,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case "pty_start": {
-        const session = manager.create(args);
+        const session = await manager.create(args);
         await session.settle(100);
         return startToolResult(session.snapshot());
       }

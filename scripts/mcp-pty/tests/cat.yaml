@@ -1,0 +1,30 @@
+# CI-friendly scenario for /bin/cat — always available on all platforms.
+# Used by the batch corpus runner and CI sidecar tests.
+name: cat basic echo
+description: "Verify sidecar-backed PTY with /bin/cat echo"
+command: /bin/cat
+cols: 50
+rows: 6
+settleMs: 300
+steps:
+  - type: wait
+    timeoutMs: 300
+    label: Wait for cat to start
+  - type: observe
+    label: Take initial snapshot
+  - type: type
+    value: hello-sidecar
+    label: Type text into cat
+  - type: wait
+    timeoutMs: 200
+    label: Wait for echo
+  - type: assert_content_changed
+    label: Verify content changed after typing
+  - type: press_key
+    value: ctrl+d
+    label: Send EOF to cat
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit
+  - type: assert_exited
+    label: Verify cat exited

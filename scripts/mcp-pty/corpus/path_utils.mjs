@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 /**
  * Resolve a binary name to a full executable path.
@@ -60,4 +61,28 @@ export function resolveBinary(binary) {
  */
 export function binaryExists(binary) {
   return resolveBinary(binary) !== null;
+}
+
+/**
+ * Resolve the garazyk-ptyd sidecar binary path.
+ *
+ * Checks sibling Rust build targets (debug then release), then falls back
+ * to the GARAZYK_PTY_SIDECAR_BINARY env var or "garazyk-ptyd" from PATH.
+ *
+ * Callers should import and cache the result at module load:
+ *   const SIDECAR_BINARY = resolveSidecarBinary(import.meta.url);
+ *
+ * @param {string} callerUrl - `import.meta.url` of the calling module
+ * @returns {string} Resolved path to garazyk-ptyd (may be bare name if unresolved)
+ */
+export function resolveSidecarBinary(callerUrl) {
+  const callerDir = path.dirname(fileURLToPath(callerUrl));
+  const candidates = [
+    path.resolve(callerDir, "..", "..", "mcp-pty-rs", "target", "debug", "garazyk-ptyd"),
+    path.resolve(callerDir, "..", "..", "mcp-pty-rs", "target", "release", "garazyk-ptyd"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return process.env.GARAZYK_PTY_SIDECAR_BINARY || "garazyk-ptyd";
 }

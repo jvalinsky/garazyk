@@ -43,8 +43,9 @@ steps:
   - type: wait
     timeoutMs: 200
     label: Brief pause
-  - type: quit
-    label: Quit nudoku
+  - type: press_key
+    value: "Q"
+    label: Quit nudoku (Q)
   - type: wait
     timeoutMs: 1000
     label: Wait for exit
