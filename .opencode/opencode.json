@@ -1,5 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "./plugin/garazyk-pty.ts"
+  ],
   "mcp": {
     "garazyk-tui": {
       "type": "local",
@@ -9,7 +12,10 @@
     "garazyk-pty": {
       "type": "local",
       "command": ["node", "scripts/mcp-pty/server.mjs"],
-      "enabled": true
+      "enabled": true,
+      "env": {
+        "GARAZYK_PTY_MCP_ALLOW": "/opt/homebrew/bin/ttysolitaire"
+      }
     }
   }
 }
