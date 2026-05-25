@@ -1,0 +1,39 @@
+# Auto-generated edge case scenario: Long lines (1000+ chars)
+# Tests: Line wrapping, horizontal scroll with extreme line lengths
+name: less long lines 1000chars
+description: "Verify semantic detection handles 1000+ character lines in less pager"
+command: less
+args: fixtures/long_lines.md
+cols: 80
+rows: 24
+settleMs: 1000
+
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for less to render long-line content
+  - type: observe
+    label: Take semantic snapshot with long lines
+  - type: assert_semantic
+    target: app
+    expected: less
+    label: Verify app detection with long lines
+  - type: press_key
+    value: l
+    label: Scroll right to see wrapped content
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after horizontal scroll
+  - type: press_key
+    value: h
+    label: Scroll left
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit less
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

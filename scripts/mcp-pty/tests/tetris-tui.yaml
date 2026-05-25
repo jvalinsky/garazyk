@@ -1,0 +1,50 @@
+# Auto-generated scenario for tetris-tui (cursive/game)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: game-board, grid, score-bar, controls
+name: tetris-tui game
+description: "Launch tetris-tui, verify semantic detection, exercise game patterns, then quit"
+command: /opt/homebrew/bin/tetris-tui
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for tetris-tui to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tetris-tui
+    label: Verify app is tetris-tui
+  - type: press_key
+    value: j
+    label: Move down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Move up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move left
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit tetris-tui
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,21 @@
+# Auto-generated edge case scenario: ANSI torture test
+# Tests: Nested SGR sequences, OSC 8 hyperlinks, DCS sequences, cursor positioning
+name: cat ANSI torture test
+description: "Verify semantic detection survives ANSI torture sequences (nested SGR, OSC, DCS) via cat"
+command: cat
+args: fixtures/ansi_torture.txt
+cols: 80
+rows: 24
+settleMs: 500
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for cat to render ANSI torture content
+  - type: observe
+    label: Take semantic snapshot with ANSI sequences
+  - type: assert_exited
+    label: Verify cat exited after output
+  - type: wait
+    timeoutMs: 500
+    label: Wait for cleanup

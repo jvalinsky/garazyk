@@ -1,0 +1,42 @@
+# Auto-generated scenario for top (ncurses/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, process-list, real-time-data
+name: top system monitor
+description: "Launch top, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /usr/bin/top
+cols: 120
+rows: 30
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for top to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: top
+    label: Verify app is top
+  - type: assert_semantic
+    target: framework
+    expected: ncurses
+    label: Verify framework is ncurses
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit top
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

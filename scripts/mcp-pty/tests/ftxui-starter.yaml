@@ -1,0 +1,24 @@
+# Auto-generated scenario for ftxui-starter (ftxui/demo)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tab-navigation, menu, input, table, animation
+name: ftxui-starter demo
+description: "Launch ftxui-starter, verify semantic detection, exercise demo patterns, then quit"
+command: /opt/homebrew/bin/ftxui-starter
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for ftxui-starter to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ftxui-starter
+    label: Verify app is ftxui-starter
+  - type: quit
+    label: Quit ftxui-starter
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

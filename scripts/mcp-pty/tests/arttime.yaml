@@ -1,0 +1,24 @@
+# Auto-generated scenario for arttime (bubbletea/art)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: animation, color, list-selection
+name: arttime art
+description: "Launch arttime, verify semantic detection, exercise art patterns, then quit"
+command: /opt/homebrew/bin/arttime
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for arttime to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: arttime
+    label: Verify app is arttime
+  - type: quit
+    label: Quit arttime
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

@@ -1,0 +1,42 @@
+# Auto-generated scenario for memray (textual/profiler)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, table, flame-graph, tab-navigation
+name: memray profiler
+description: "Launch memray, verify semantic detection, exercise profiler patterns, then quit"
+command: memray
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for memray to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: memray
+    label: Verify app is memray
+  - type: assert_semantic
+    target: framework
+    expected: textual
+    label: Verify framework is textual
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after tab switch
+  - type: press_key
+    value: tab
+    label: Switch to third tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: quit
+    label: Quit memray
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,38 @@
+# Auto-generated edge case scenario: Wide terminal (200+ cols)
+# Tests: Horizontal scroll, layout overflow at extreme widths
+name: htop wide terminal 200cols
+description: "Verify semantic detection handles 200+ column terminal width in htop"
+command: htop
+cols: 200
+rows: 40
+settleMs: 2000
+
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for htop to render at 200 columns
+  - type: observe
+    label: Take semantic snapshot at wide terminal
+  - type: assert_semantic
+    target: app
+    expected: htop
+    label: Verify app detection at 200 columns
+  - type: assert_semantic
+    target: framework
+    expected: ncurses
+    label: Verify framework detection at wide width
+  - type: press_key
+    value: j
+    label: Navigate process list at wide width
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause for render
+  - type: observe
+    label: Snapshot after navigation at wide width
+  - type: assert_content_changed
+    label: Verify content changed at wide width
+  - type: quit
+    label: Quit htop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

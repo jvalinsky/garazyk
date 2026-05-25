@@ -1,0 +1,38 @@
+# Auto-generated scenario for yazi (ratatui/file-manager)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: dual-pane, tab-navigation, file-preview, list-selection
+name: yazi file manager
+description: "Launch yazi, verify semantic detection, exercise file-manager patterns, then quit"
+command: /opt/homebrew/bin/yazi
+cols: 100
+rows: 28
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for yazi to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: yazi
+    label: Verify app is yazi
+  - type: press_key
+    value: j
+    label: Navigate down in file list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved down
+  - type: press_key
+    value: k
+    label: Navigate up in file list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit yazi
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

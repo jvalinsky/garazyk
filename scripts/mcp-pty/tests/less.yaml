@@ -1,0 +1,38 @@
+# Auto-generated scenario for less (ncurses/pager)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: scroll, search, status-bar
+name: less pager
+description: "Launch less, verify semantic detection, exercise pager patterns, then quit"
+command: /usr/bin/less
+cols: 80
+rows: 24
+settleMs: 300
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for less to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: less
+    label: Verify app is less
+  - type: press_key
+    value: j
+    label: Scroll down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content scrolled
+  - type: press_key
+    value: k
+    label: Scroll up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit less
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

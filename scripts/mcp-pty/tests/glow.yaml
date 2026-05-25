@@ -1,0 +1,36 @@
+# Auto-generated scenario for glow (bubbletea/markdown-viewer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: scroll, render, search
+name: glow markdown viewer
+description: "Launch glow, verify semantic detection, exercise markdown-viewer patterns, then quit"
+command: /opt/homebrew/bin/glow
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for glow to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: glow
+    label: Verify app is glow
+  - type: press_key
+    value: j
+    label: Scroll down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Scroll up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit glow
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

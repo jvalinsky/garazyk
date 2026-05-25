@@ -1,0 +1,38 @@
+# Auto-generated scenario for cointop (bubbletea/finance)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, chart, search, real-time-data, list-selection
+name: cointop finance
+description: "Launch cointop, verify semantic detection, exercise finance patterns, then quit"
+command: /opt/homebrew/bin/cointop
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for cointop to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: cointop
+    label: Verify app is cointop
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit cointop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

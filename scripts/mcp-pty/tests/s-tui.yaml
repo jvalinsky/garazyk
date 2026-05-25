@@ -1,0 +1,42 @@
+# Auto-generated scenario for s-tui (rich/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, gauge, real-time-data, list-selection
+name: s-tui system monitor
+description: "Launch s-tui, verify semantic detection, exercise system-monitor patterns, then quit"
+command: s-tui
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for s-tui to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: s-tui
+    label: Verify app is s-tui
+  - type: assert_semantic
+    target: framework
+    expected: rich
+    label: Verify framework is rich
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit s-tui
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,28 @@
+# Auto-generated scenario for qoa (ink/form-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, confirm-dialog, select, multi-select
+name: qoa form tool
+description: "Launch qoa, verify semantic detection, exercise form-tool patterns, then quit"
+command: /opt/homebrew/bin/qoa
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for qoa to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: qoa
+    label: Verify app is qoa
+  - type: assert_capability
+    target: quit.keys
+    contains: Enter
+    label: Verify quit key is available
+  - type: quit
+    label: Quit qoa
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,36 @@
+# Auto-generated scenario for charm (bubbletea/crypto)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, list-selection, status-bar
+name: charm crypto
+description: "Launch charm, verify semantic detection, exercise crypto patterns, then quit"
+command: /opt/homebrew/bin/charm
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for charm to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: charm
+    label: Verify app is charm
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit charm
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

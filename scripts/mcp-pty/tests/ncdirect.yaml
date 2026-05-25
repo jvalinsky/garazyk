@@ -1,0 +1,24 @@
+# Auto-generated scenario for ncdirect (notcurses/renderer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: sixels, multimedia, sprites
+name: ncdirect renderer
+description: "Launch ncdirect, verify semantic detection, exercise renderer patterns, then quit"
+command: /opt/homebrew/bin/ncdirect
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for ncdirect to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ncdirect
+    label: Verify app is ncdirect
+  - type: quit
+    label: Quit ncdirect
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

@@ -1,0 +1,24 @@
+# Auto-generated scenario for cmatrix (ncurses/art)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: animation, styling, scroll
+name: cmatrix art
+description: "Launch cmatrix, verify semantic detection, exercise art patterns, then quit"
+command: /opt/homebrew/bin/cmatrix
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for cmatrix to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: cmatrix
+    label: Verify app is cmatrix
+  - type: quit
+    label: Quit cmatrix
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

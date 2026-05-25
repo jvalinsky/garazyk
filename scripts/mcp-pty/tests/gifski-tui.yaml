@@ -1,0 +1,24 @@
+# Auto-generated scenario for gifski (ratatui/image-gen)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: progress-bar, file-picker, form-input
+name: gifski image gen
+description: "Launch gifski, verify semantic detection, exercise image-gen patterns, then quit"
+command: /opt/homebrew/bin/gifski
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for gifski to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: gifski-tui
+    label: Verify app is gifski-tui
+  - type: quit
+    label: Quit gifski
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

@@ -1,0 +1,50 @@
+# Auto-generated scenario for rust-battleship (ratatui/game)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: game-board, grid, 2d-selection, score-bar
+name: rust-battleship game
+description: "Launch rust-battleship, verify semantic detection, exercise game patterns, then quit"
+command: /opt/homebrew/bin/battleship
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for rust-battleship to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: rust-battleship
+    label: Verify app is rust-battleship
+  - type: press_key
+    value: j
+    label: Move down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Move up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move left
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit rust-battleship
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

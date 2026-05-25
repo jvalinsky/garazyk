@@ -1,0 +1,28 @@
+# Auto-generated scenario for glances (rich/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, gauge, table, real-time-data, alert
+name: glances system monitor
+description: "Launch glances, verify semantic detection, exercise system-monitor patterns, then quit"
+command: glances
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for glances to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: glances
+    label: Verify app is glances
+  - type: assert_semantic
+    target: framework
+    expected: rich
+    label: Verify framework is rich
+  - type: quit
+    label: Quit glances
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

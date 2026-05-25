@@ -1,0 +1,44 @@
+# Auto-generated scenario for ncspot (ncspot/music)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, search, status-bar, queue
+name: ncspot music
+description: "Launch ncspot, verify semantic detection, exercise music patterns, then quit"
+command: /opt/homebrew/bin/ncspot
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for ncspot to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ncspot
+    label: Verify app is ncspot
+  - type: press_key
+    value: "1"
+    label: Switch to library tab
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: "2"
+    label: Switch to playlist tab
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: quit
+    label: Quit ncspot
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

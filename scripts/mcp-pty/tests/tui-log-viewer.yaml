@@ -1,0 +1,38 @@
+# Auto-generated scenario for tui-log-viewer (opentui/log-viewer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, filter-search, scroll, real-time-data, highlight
+name: tui-log-viewer log viewer
+description: "Launch tui-log-viewer, verify semantic detection, exercise log-viewer patterns, then quit"
+command: /opt/homebrew/bin/tui-log-viewer
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for tui-log-viewer to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tui-log-viewer
+    label: Verify app is tui-log-viewer
+  - type: press_key
+    value: j
+    label: Scroll down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content scrolled
+  - type: press_key
+    value: k
+    label: Scroll up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit tui-log-viewer
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

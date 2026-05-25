@@ -1,0 +1,30 @@
+# Auto-generated scenario for tui-settings (opentui/settings)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tab-navigation, toggle, select, form-input
+name: tui-settings settings
+description: "Launch tui-settings, verify semantic detection, exercise settings patterns, then quit"
+command: /opt/homebrew/bin/tui-settings
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for tui-settings to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tui-settings
+    label: Verify app is tui-settings
+  - type: press_key
+    value: tab
+    label: Switch tab
+  - type: wait
+    timeoutMs: 500
+    label: Wait for tab switch
+  - type: quit
+    label: Quit tui-settings
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

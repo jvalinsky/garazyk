@@ -1,0 +1,36 @@
+# Auto-generated scenario for saws (rich/dev-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, autocomplete, syntax-highlight, table
+name: saws dev tool
+description: "Launch saws, verify semantic detection, exercise dev-tool patterns, then quit"
+command: saws
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for saws to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: saws
+    label: Verify app is saws
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit saws
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

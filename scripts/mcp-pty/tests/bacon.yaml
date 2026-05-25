@@ -1,0 +1,36 @@
+# Auto-generated scenario for bacon (ratatui/dev-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, status-bar, scroll, real-time-data
+name: bacon dev tool
+description: "Launch bacon, verify semantic detection, exercise dev-tool patterns, then quit"
+command: /opt/homebrew/bin/bacon
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for bacon to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: bacon
+    label: Verify app is bacon
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit bacon
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
