@@ -17,18 +17,24 @@ export function startRecording(
   baseDir: string,
 ): RecordingHandle {
   const startedAt = Date.now();
-  const dir = outputDir ?? `scripts/scenarios/reports/tui-capture/mcp-${startedAt}`;
+  const dir = outputDir ??
+    `scripts/scenarios/reports/tui-capture/mcp-${startedAt}`;
   const absDir = join(baseDir, dir);
 
   Deno.mkdirSync(absDir, { recursive: true });
 
   const recorder = new CastRecorder(harness, {
     title: title ?? "Garazyk MCP TUI Capture",
-    minFrameInterval: 30,
+    minFrameInterval: 0.03,
   });
   harness.attachRecorder(recorder);
 
-  return { title: title ?? "Garazyk MCP TUI Capture", outputDir: absDir, recorder, startedAt };
+  return {
+    title: title ?? "Garazyk MCP TUI Capture",
+    outputDir: absDir,
+    recorder,
+    startedAt,
+  };
 }
 
 export async function stopRecording(
@@ -38,6 +44,7 @@ export async function stopRecording(
   const { recorder, outputDir } = handle;
 
   await recorder.close();
+  harness.detachRecorder(recorder);
   const castContent = recorder.exportAsciicast();
 
   const castPath = join(outputDir, "dashboard.cast");

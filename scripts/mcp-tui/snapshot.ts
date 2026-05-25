@@ -15,72 +15,88 @@ export function buildSnapshot(
 ): string {
   const root = extractTree(session.harness.buffer, metaMap);
   const lines: string[] = [];
-  
+
   if (root.children.length === 0) {
-    return "- state \"empty screen\"";
+    return '- state "empty screen"';
   }
 
-  // Find target panel if scope is provided
-  let targetNode: TuiElement | null = null;
+  let targetNode: TuiElement | null = root;
   if (options.panel) {
-    for (const child of root.children) {
-      if (child.id === options.panel) {
-        targetNode = child;
-        break;
-      }
+    const panelRef = normalizePanelRef(options.panel);
+    targetNode = findElementById(root, panelRef);
+    if (!targetNode) {
+      throw new Error(`Panel scope not found: ${options.panel}`);
     }
   }
 
-  const nodeToFormat = targetNode || root;
-
   // We skip emitting the root element itself, just its children
-  if (nodeToFormat === root) {
+  if (targetNode === root) {
     for (const child of root.children) {
       formatTreeToYaml(child, lines, options.boxes, 0);
     }
   } else {
-    formatTreeToYaml(nodeToFormat, lines, options.boxes, 0);
+    formatTreeToYaml(targetNode, lines, options.boxes, 0);
   }
 
   return lines.join("\n");
 }
 
-function formatTreeToYaml(el: TuiElement, lines: string[], includeBoxes = false, indent = 0): string {
+function normalizePanelRef(panel: string): string {
+  return panel.startsWith("panel.") ? panel : `panel.${panel}`;
+}
+
+function findElementById(node: TuiElement, id: string): TuiElement | null {
+  if (node.id === id) return node;
+  for (const child of node.children) {
+    const found = findElementById(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+function formatTreeToYaml(
+  el: TuiElement,
+  lines: string[],
+  includeBoxes = false,
+  indent = 0,
+): string {
   const prefix = "  ".repeat(indent) + "- ";
-  
+
   const attrs: string[] = [];
-  
+
   if (el.id && !el.id.startsWith("layer2_")) {
     attrs.push(`ref=${el.id}`);
   }
-  
+
   if (el.interactable) {
     attrs.push("interactable");
   }
-  
+
   if (el.focused) {
     attrs.push("focused");
   }
-  
+
   for (const state of el.states) {
     attrs.push(state);
   }
-  
+
   if (includeBoxes) {
-    attrs.push(`box=${el.bounds.x},${el.bounds.y},${el.bounds.width},${el.bounds.height}`);
+    attrs.push(
+      `box=${el.bounds.x},${el.bounds.y},${el.bounds.width},${el.bounds.height}`,
+    );
   }
-  
-  let attrStr = attrs.length > 0 ? ` [${attrs.join("] [")}]` : "";
+
+  const attrStr = attrs.length > 0 ? ` [${attrs.join("] [")}]` : "";
   let nameStr = el.label ? ` "${el.label}"` : "";
   if (!el.label && el.content) {
     nameStr = ` "${el.content}"`;
   }
-  
+
   lines.push(`${prefix}${el.type}${nameStr}${attrStr}`);
-  
+
   for (const child of el.children) {
     formatTreeToYaml(child, lines, includeBoxes, indent + 1);
   }
-  
+
   return lines.join("\n");
 }

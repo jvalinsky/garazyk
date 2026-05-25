@@ -10,14 +10,14 @@ fundamental limitations:
 
 - **No feedback loop**: the agent couldn't see the state after each action.
 - **Fragile timing**: step timestamps were guesses that could drift.
-- **No semantic understanding**: the agent worked with pixel positions and
-  key names, not with structured concepts like "scenario 02" or "cursor on
-  service PDS".
+- **No semantic understanding**: the agent worked with pixel positions and key
+  names, not with structured concepts like "scenario 02" or "cursor on service
+  PDS".
 - **One-shot**: if the script diverged from reality, there was no recovery.
 
-The TUI Agent Protocol replaces blind replay with an **interactive loop**:
-the agent inspects structured state, decides what action to take, sends a
-keystroke, sees the result, and records everything transparently.
+The TUI Agent Protocol replaces blind replay with an **interactive loop**: the
+agent inspects structured state, decides what action to take, sends a keystroke,
+sees the result, and records everything transparently.
 
 ## Theory: Three Layers of Semantic Extraction
 
@@ -30,8 +30,8 @@ solver — each panel has an id, bounding box, and children. The
 `VirtualTuiHarness` holds a `ScreenBuffer` (a cell grid) that captures every
 character and its style.
 
-`serializeTdom(buf, layout)` walks the layout tree and reads cell content
-from the buffer, producing a `TdomElement` tree:
+`serializeTdom(buf, layout)` walks the layout tree and reads cell content from
+the buffer, producing a `TdomElement` tree:
 
 ```ts
 { id: "network", x: 0, y: 1, width: 30, height: 10,
@@ -39,14 +39,14 @@ from the buffer, producing a `TdomElement` tree:
   children: [] }
 ```
 
-**Limitation**: TDOM knows position and text, but not meaning. It sees `●`
-not `status=running`. It sees `02_social_graph` but not
+**Limitation**: TDOM knows position and text, but not meaning. It sees `●` not
+`status=running`. It sees `02_social_graph` but not
 `scenario with id=02, status=failed, category=core`.
 
 ### Layer 2: Application State (Semantic Model)
 
-The real dashboard maintains a `DashboardState` object that holds every piece
-of semantic information:
+The real dashboard maintains a `DashboardState` object that holds every piece of
+semantic information:
 
 ```ts
 interface DashboardState {
@@ -58,11 +58,11 @@ interface DashboardState {
 }
 ```
 
-Each panel's render function reads from this model. The cursor position,
-scroll offset, and focus are tracked in `PanelStates` and `FocusRing`.
+Each panel's render function reads from this model. The cursor position, scroll
+offset, and focus are tracked in `PanelStates` and `FocusRing`.
 
-**Key insight**: the semantic state already exists in the application model.
-The agent should read it directly — not parse it from the rendered buffer.
+**Key insight**: the semantic state already exists in the application model. The
+agent should read it directly — not parse it from the rendered buffer.
 
 ### Layer 3: Combined Snapshot (Agent Protocol)
 
@@ -97,7 +97,7 @@ The agent sees **semantic roles** (`panel`, `service`, `scenario`, `run`),
            │ JSON-RPC 2.0 (stdin/stdout)
            ▼
 ┌─────────────────────────────────────┐
-│      garazyk-tui-mcp (server.ts)    │
+│ garazyk-tui-mcp (scripts/mcp-tui)   │
 │                                     │
 │  ┌──────────┐  ┌──────────────────┐ │
 │  │ session  │  │ harness          │ │
@@ -114,8 +114,8 @@ The agent sees **semantic roles** (`panel`, `service`, `scenario`, `run`),
 └─────────────────────────────────────┘
 ```
 
-The server is a **Deno process** that communicates via **stdin/stdout
-JSON-RPC 2.0**. It:
+The server is a **Deno process** that communicates via **stdin/stdout JSON-RPC
+2.0**. It:
 
 1. Creates a `VirtualTuiHarness` with the real dashboard render function.
 2. Wires the same `handleHeadlessKey` state machine from the dashboard.
@@ -124,13 +124,13 @@ JSON-RPC 2.0**. It:
 
 ### Server Files
 
-| File | Purpose |
-|------|---------|
-| `server.ts` | JSON-RPC stdin/stdout loop, tool dispatch |
-| `session.ts` | Session lifecycle: harness creation, key dispatch |
-| `snapshot.ts` | `buildSnapshot()` reads state → YAML string |
-| `refs.ts` | Stable `ref=eN` assignment per semantic key |
-| `recording.ts` | `startRecording()`, `stopRecording()` → cast + HTML |
+| File                           | Purpose                                             |
+| ------------------------------ | --------------------------------------------------- |
+| `scripts/mcp-tui/server.ts`    | JSON-RPC stdin/stdout loop, tool dispatch           |
+| `scripts/mcp-tui/session.ts`   | Session lifecycle: harness creation, key dispatch   |
+| `scripts/mcp-tui/snapshot.ts`  | `buildSnapshot()` reads state → YAML string         |
+| `scripts/mcp-tui/refs.ts`      | Stable `ref=eN` assignment per semantic key         |
+| `scripts/mcp-tui/recording.ts` | `startRecording()`, `stopRecording()` → cast + HTML |
 
 ## YAML Snapshot Format
 
@@ -138,27 +138,27 @@ Follows Playwright's `ariaSnapshot()` conventions:
 
 ### Rules
 
-| Rule | Example |
-|------|---------|
-| Semantic tag as first token | `- panel "Network"`, `- scenario "..."` |
-| Label in quotes | Human-readable display text |
-| `[key=val]` attributes | Structured properties: `status=running`, `count=4` |
-| `[flag]` boolean attributes | `[focused]`, `[cursor]`, `[healthy]`, `[collapsed]` |
-| `[ref=eN]` | Stable handle for interaction (like Playwright's `[ref=...]`) |
-| `[box=x,y,w,h]` | Optional positional grounding |
-| Indentation for hierarchy | Children indented under parents |
+| Rule                        | Example                                                       |
+| --------------------------- | ------------------------------------------------------------- |
+| Semantic tag as first token | `- panel "Network"`, `- scenario "..."`                       |
+| Label in quotes             | Human-readable display text                                   |
+| `[key=val]` attributes      | Structured properties: `status=running`, `count=4`            |
+| `[flag]` boolean attributes | `[focused]`, `[cursor]`, `[healthy]`, `[collapsed]`           |
+| `[ref=eN]`                  | Stable handle for interaction (like Playwright's `[ref=...]`) |
+| `[box=x,y,w,h]`             | Optional positional grounding                                 |
+| Indentation for hierarchy   | Children indented under parents                               |
 
 ### Tags
 
-| Tag | Represents | Attributes |
-|-----|------------|------------|
-| `panel` | A dashboard panel | `id`, `ref`, `focused`, `box` |
-| `service` | A network service | `status`, `healthy`, `cursor`, `ref` |
-| `heading` | A category header in scenarios | `count`, `collapsed`, `cursor` |
-| `scenario` | A runnable scenario | `status`, `cursor`, `ref` |
-| `run` | A past or current run | `status`, `passed`, `failed`, `total`, `cursor`, `ref` |
-| `state` | A status indicator (e.g. `idle`) | none |
-| `search` | Current search filter | none |
+| Tag        | Represents                       | Attributes                                             |
+| ---------- | -------------------------------- | ------------------------------------------------------ |
+| `panel`    | A dashboard panel                | `id`, `ref`, `focused`, `box`                          |
+| `service`  | A network service                | `status`, `healthy`, `cursor`, `ref`                   |
+| `heading`  | A category header in scenarios   | `count`, `collapsed`, `cursor`                         |
+| `scenario` | A runnable scenario              | `status`, `cursor`, `ref`                              |
+| `run`      | A past or current run            | `status`, `passed`, `failed`, `total`, `cursor`, `ref` |
+| `state`    | A status indicator (e.g. `idle`) | none                                                   |
+| `search`   | Current search filter            | none                                                   |
 
 ### Example
 
@@ -185,10 +185,10 @@ Returns the current TUI state as structured YAML.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `boxes` | boolean | Include `[box=x,y,w,h]` bounding boxes (optional) |
-| `panel` | "network"\|"scenarios"\|"run"\|"history" | Scope to a single panel (optional) |
+| Name    | Type                                     | Description                                       |
+| ------- | ---------------------------------------- | ------------------------------------------------- |
+| `boxes` | boolean                                  | Include `[box=x,y,w,h]` bounding boxes (optional) |
+| `panel` | "network"\|"scenarios"\|"run"\|"history" | Scope to a single panel (optional)                |
 
 **Returns:** `content[].text` containing YAML string.
 
@@ -198,16 +198,45 @@ Send a keystroke or type text. Returns updated YAML snapshot.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `action` | "press_key" \| "type" | `press_key` for control keys, `type` for characters |
-| `value` | string | Key name (e.g. `"down"`, `"tab"`, `"enter"`, `"?"`, `"c"`) or text to type |
+| Name     | Type                  | Description                                                                |
+| -------- | --------------------- | -------------------------------------------------------------------------- |
+| `action` | "press_key" \| "type" | `press_key` for control keys, `type` for characters                        |
+| `value`  | string                | Key name (e.g. `"down"`, `"tab"`, `"enter"`, `"?"`, `"c"`) or text to type |
 
 **Available keys:** `down`, `up`, `tab`, `shift+tab`, `enter`, `escape`,
-`backspace`, `?`, `1`-`4` (panel jump), `c` (complete active run),
-arrow keys for cursor navigation.
+`backspace`, `?`, `1`-`4` (panel jump), `c` (complete active run), arrow keys
+for cursor navigation.
 
 **Returns:** Updated YAML snapshot.
+
+### `tui_world_snapshot`
+
+Returns the current dashboard state as a normalized `TuiWorld` graph. This is
+the preferred reasoning surface for agents that need strict role/name lookup,
+relations, actions, evidence, and diagnostics. The YAML snapshot remains
+available for human-readable compatibility.
+
+**Returns:** `content[].text` containing JSON and `_meta.structuredContent`
+containing the same `TuiWorld` object.
+
+### `tui_world_query`
+
+Runs one deterministic query against the current dashboard `TuiWorld`.
+
+**Parameters:**
+
+| Name        | Type   | Description                                      |
+| ----------- | ------ | ------------------------------------------------ |
+| `op`        | string | `getByRole`, `find`, `related`, `nearest`, etc. |
+| `role`      | string | Role filter for lookup operations                |
+| `name`      | string | Case-insensitive label filter                    |
+| `ref`       | string | Stable node reference for ref-based operations   |
+| `kind`      | string | Relation or action kind filter                   |
+| `direction` | string | Relation or spatial direction                    |
+| `strict`    | bool   | Defaults to strict lookup                        |
+
+**Returns:** JSON query result in `content[].text` and
+`_meta.structuredContent`.
 
 ### `tui_rec_start`
 
@@ -215,10 +244,10 @@ Start recording the session as an asciicast.
 
 **Parameters:**
 
-| Name | Type | Description |
-|------|------|-------------|
-| `title` | string | Recording title for HTML page (optional) |
-| `outputDir` | string | Output directory (optional) |
+| Name        | Type   | Description                              |
+| ----------- | ------ | ---------------------------------------- |
+| `title`     | string | Recording title for HTML page (optional) |
+| `outputDir` | string | Output directory (optional)              |
 
 ### `tui_rec_stop`
 
@@ -269,23 +298,23 @@ Stop recording and export as HTML.
 
 ### Why MCP, not a Custom Tool or Plugin
 
-| Approach | Scope | Reusability | State Model |
-|----------|-------|-------------|-------------|
-| Custom tool (.opencode/tools/) | opencode only | Low | Stateless (one-shot) |
-| Full plugin (.opencode/plugins/) | opencode only | Low | Stateful |
-| MCP server | Any MCP client | High — works with Claude Code, opencode, etc. | Stateful process |
+| Approach                         | Scope          | Reusability                                   | State Model          |
+| -------------------------------- | -------------- | --------------------------------------------- | -------------------- |
+| Custom tool (.opencode/tools/)   | opencode only  | Low                                           | Stateless (one-shot) |
+| Full plugin (.opencode/plugins/) | opencode only  | Low                                           | Stateful             |
+| MCP server                       | Any MCP client | High — works with Claude Code, opencode, etc. | Stateful process     |
 
-MCP servers are spawned as subprocesses, communicate via stdin/stdout
-JSON-RPC, and can maintain long-lived state. This is the natural fit for the
-interactive loop pattern.
+MCP servers are spawned as subprocesses, communicate via stdin/stdout JSON-RPC,
+and can maintain long-lived state. This is the natural fit for the interactive
+loop pattern.
 
 ### Why State Model, not Screen-Scraping
 
 Reading `DashboardState` directly gives us:
 
 - **Perfect accuracy**: no text-parsing bugs or truncation issues.
-- **Rich semantics**: `status=running`, `passed=11`, `collapsed=true` — not
-  just `●` or `▶` characters.
+- **Rich semantics**: `status=running`, `passed=11`, `collapsed=true` — not just
+  `●` or `▶` characters.
 - **Cursor mapping**: we know the cursor is on `02_social_graph` because we
   track the cursor index against the flat item list — not because we parse
   `> 02_social_graph` from the buffer.
@@ -297,15 +326,15 @@ Reading `DashboardState` directly gives us:
 Following Playwright's `ariaSnapshot()` format:
 
 - **Token-efficient**: YAML uses 30-50% fewer tokens than equivalent JSON.
-- **Hierarchy via indentation**: tree structure is implicit, no closing
-  brackets or braces.
+- **Hierarchy via indentation**: tree structure is implicit, no closing brackets
+  or braces.
 - **Reader-friendly**: a human can scan YAML at a glance.
 
 ### Why `ref=eN`, not Positional Selectors
 
 `ref=eN` survives list reordering, insertion, and deletion — within a stable
-data set, the same semantic element gets the same ref across snapshots. The
-ref is derived from the element's semantic key (e.g. `network.pds`,
+data set, the same semantic element gets the same ref across snapshots. The ref
+is derived from the element's semantic key (e.g. `network.pds`,
 `scenario.02_social_graph`), not its position.
 
 ## opencode Integration
@@ -329,25 +358,26 @@ After restarting opencode, the tools `tui_snapshot`, `tui_action`,
 
 ## Comparison to Playwright
 
-| Concept | Playwright (Web) | TUI Agent Protocol |
-|---------|-----------------|--------------------|
-| State source | Browser accessibility tree | DashboardState + PanelStates |
-| Snapshot format | YAML `ariaSnapshot()` | YAML semantic tree |
-| Element refs | `[ref=eN]` | `[ref=eN]` (same pattern) |
-| Interaction | `element.click()`, `keyboard.press()` | `tui_action(press_key, "...")` |
-| Recording | `page.video.saveAs()` | `tui_rec_start/stop` → asciicast + HTML |
-| Locator | `page.locator('aria-ref=e5')` | `tui_action` on ref (agent decides) |
-| Assertion | `expect(element).toHaveText()` | Agent reads snapshot YAML |
+| Concept         | Playwright (Web)                      | TUI Agent Protocol                      |
+| --------------- | ------------------------------------- | --------------------------------------- |
+| State source    | Browser accessibility tree            | DashboardState + PanelStates            |
+| Snapshot format | YAML `ariaSnapshot()`                 | YAML semantic tree                      |
+| Element refs    | `[ref=eN]`                            | `[ref=eN]` (same pattern)               |
+| Interaction     | `element.click()`, `keyboard.press()` | `tui_action(press_key, "...")`          |
+| Recording       | `page.video.saveAs()`                 | `tui_rec_start/stop` → asciicast + HTML |
+| Locator         | `page.locator('aria-ref=e5')`         | `tui_action` on ref (agent decides)     |
+| Assertion       | `expect(element).toHaveText()`        | Agent reads snapshot YAML               |
 
 ## References
 
 Related documentation in this directory:
 
-- [Semantic Extraction Theory](semantic-extraction.md) — Two-layer TUI vdom model,
-  TuiElement interface, framework comparison across 6 libraries
-- [Extraction Pipeline](extraction-pipeline.md) — Unicode classification → region
-  detection → semantic labeling → interaction detection
-- [Unicode UI Element Reference](unicode-ui-elements.md) — Complete catalog of Unicode
-  characters used in TUIs with their structural semantics
+- [Semantic Extraction Theory](semantic-extraction.md) — Two-layer TUI vdom
+  model, TuiElement interface, framework comparison across 6 libraries
+- [Extraction Pipeline](extraction-pipeline.md) — Unicode classification →
+  region detection → semantic labeling → interaction detection
+- [Unicode UI Element Reference](unicode-ui-elements.md) — Complete catalog of
+  Unicode characters used in TUIs with their structural semantics
 
-Deciduous nodes 880-897 track the research, observations, and decisions behind this model.
+Deciduous nodes 880-897 track the research, observations, and decisions behind
+this model.

@@ -5,9 +5,10 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { DEFAULT_STYLE, ScreenBuffer } from "../renderer.ts";
+import { DEFAULT_STYLE } from "../renderer.ts";
+import type { ScreenBuffer } from "../renderer.ts";
 import { VirtualTuiHarness } from "./harness.ts";
-import { CastRecorder, attachRecorder } from "./recorder.ts";
+import { attachRecorder, CastRecorder } from "./recorder.ts";
 import { replayScript } from "./replay.ts";
 import type { ReplayStep } from "./replay_types.ts";
 

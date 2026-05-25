@@ -11,7 +11,8 @@ import { assert, assertEquals } from "@std/assert";
 import { VirtualTuiHarness } from "./harness.ts";
 import { getByRole, getByText } from "./locators.ts";
 import { renderTdomToXml, serializeTdom } from "./tdom.ts";
-import { DEFAULT_STYLE, ScreenBuffer } from "../renderer.ts";
+import { DEFAULT_STYLE } from "../renderer.ts";
+import type { ScreenBuffer } from "../renderer.ts";
 import type { ResolvedNode } from "../layout_tree.ts";
 import { Keys } from "../input.ts";
 
@@ -112,7 +113,7 @@ Deno.test("VirtualTuiHarness: supports onResize signal dispatching and refitting
 // 4. Locators, getByText, getByRole, and Assertions
 // ---------------------------------------------------------------------------
 
-Deno.test("Locators & TDOM: getByText scanning and getByRole structural lookup", async () => {
+Deno.test("Locators & TDOM: getByText scanning and getByRole structural lookup", () => {
   // Define a static layout mock tree resembling scenario selection
   const mockLayout: ResolvedNode = {
     id: "root-container",
