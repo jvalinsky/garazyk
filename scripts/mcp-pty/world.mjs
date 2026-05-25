@@ -630,6 +630,17 @@ export function validate(world) {
     }
   }
 
+  const visibleCount = world.nodes.filter(
+    (n) => n.role !== "screen" && n.role !== "cursor",
+  ).length;
+  if (visibleCount > 3 && world.edges.length === 0) {
+    push(
+      "warning",
+      "low_relation_count",
+      `${visibleCount} visible nodes but 0 edges — spatial relation extraction may have failed`,
+    );
+  }
+
   return diagnostics;
 }
 
