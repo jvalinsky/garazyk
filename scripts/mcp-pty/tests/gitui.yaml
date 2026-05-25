@@ -1,0 +1,52 @@
+# Auto-generated scenario for gitui (ratatui/git-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: split-pane, list-selection, popup-modal, confirm-dialog, tab-navigation
+name: gitui git client
+description: "Launch gitui, verify semantic detection, exercise git-client patterns, then quit"
+command: /opt/homebrew/bin/gitui
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for gitui to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: gitui
+    label: Verify app is gitui
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: press_key
+    value: "1"
+    label: Switch to first panel
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: "2"
+    label: Switch to second panel
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Navigate down in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit gitui
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

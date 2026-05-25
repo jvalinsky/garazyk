@@ -1,0 +1,32 @@
+# Auto-generated scenario for promptui-select (promptui/picker)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, search, filter-search, highlight
+name: promptui-select picker
+description: "Launch promptui-select, verify semantic detection, exercise picker patterns, then quit"
+command: /opt/homebrew/bin/promptui-select
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for promptui-select to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: promptui-select
+    label: Verify app is promptui-select
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit promptui-select
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

@@ -1,0 +1,24 @@
+# Auto-generated scenario for notcurses-demo (notcurses/demo)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: multimedia, sixel, rgb, animation, true-color
+name: notcurses-demo demo
+description: "Launch notcurses-demo, verify semantic detection, exercise demo patterns, then quit"
+command: /opt/homebrew/bin/notcurses-demo
+cols: 80
+rows: 24
+settleMs: 3000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for notcurses-demo to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: notcurses-demo
+    label: Verify app is notcurses-demo
+  - type: quit
+    label: Quit notcurses-demo
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

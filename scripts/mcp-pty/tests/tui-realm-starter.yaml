@@ -1,0 +1,24 @@
+# Auto-generated scenario for tui-realm-starter (cursive/demo)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tab-navigation, list-selection, status-bar, form-input
+name: tui-realm-starter demo
+description: "Launch tui-realm-starter, verify semantic detection, exercise demo patterns, then quit"
+command: /opt/homebrew/bin/tui-realm-starter
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for tui-realm-starter to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tui-realm-starter
+    label: Verify app is tui-realm-starter
+  - type: quit
+    label: Quit tui-realm-starter
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

@@ -1,0 +1,38 @@
+# Auto-generated scenario for toolong (textual/log-viewer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, filter-search, scroll
+name: toolong log viewer
+description: "Launch toolong, verify semantic detection, exercise log-viewer patterns, then quit"
+command: toolong
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for toolong to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: toolong
+    label: Verify app is toolong
+  - type: press_key
+    value: j
+    label: Scroll down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content scrolled
+  - type: press_key
+    value: k
+    label: Scroll up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit toolong
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

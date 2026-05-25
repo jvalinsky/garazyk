@@ -1,0 +1,28 @@
+# Auto-generated scenario for textual-stopwatch (textual/productivity)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: timer, button, digital-display, lap-list
+name: textual-stopwatch productivity
+description: "Launch textual-stopwatch, verify semantic detection, exercise productivity patterns, then quit"
+command: textual-stopwatch
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for textual-stopwatch to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: textual-stopwatch
+    label: Verify app is textual-stopwatch
+  - type: assert_capability
+    target: quit.keys
+    contains: q
+    label: Verify quit key is available
+  - type: quit
+    label: Quit textual-stopwatch
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

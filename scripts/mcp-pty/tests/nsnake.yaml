@@ -1,0 +1,56 @@
+# Auto-generated scenario for nsnake (ncurses/game)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: game-board, score-bar, 2d-movement
+name: nsnake game
+description: "Launch nsnake, verify semantic detection, exercise game patterns, then quit"
+command: /opt/homebrew/bin/nsnake
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for nsnake to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: nsnake
+    label: Verify app is nsnake
+  - type: press_key
+    value: j
+    label: Move down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Move up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move left
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: p
+    label: Pause game
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: quit
+    label: Quit nsnake
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

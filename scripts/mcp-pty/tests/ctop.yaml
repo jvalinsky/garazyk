@@ -1,0 +1,42 @@
+# Auto-generated scenario for ctop (bubbletea/docker)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, chart, real-time-data, list-selection
+name: ctop docker
+description: "Launch ctop, verify semantic detection, exercise docker patterns, then quit"
+command: /opt/homebrew/bin/ctop
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for ctop to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ctop
+    label: Verify app is ctop
+  - type: assert_semantic
+    target: framework
+    expected: bubbletea
+    label: Verify framework is bubbletea
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit ctop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

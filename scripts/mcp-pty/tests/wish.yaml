@@ -1,0 +1,28 @@
+# Auto-generated scenario for wish (bubbletea/form-library)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, button, checkbox, dropdown
+name: wish form library
+description: "Launch wish, verify semantic detection, exercise form-library patterns, then quit"
+command: /opt/homebrew/bin/wish
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for wish to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: wish
+    label: Verify app is wish
+  - type: assert_capability
+    target: quit.keys
+    contains: Ctrl+C
+    label: Verify quit key is available
+  - type: quit
+    label: Quit wish
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

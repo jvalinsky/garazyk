@@ -1,0 +1,32 @@
+# Auto-generated scenario for tui-journal (ratatui/notes)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, form-input, search, markdown
+name: tui-journal notes
+description: "Launch tui-journal, verify semantic detection, exercise notes patterns, then quit"
+command: /opt/homebrew/bin/tui-journal
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for tui-journal to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tui-journal
+    label: Verify app is tui-journal
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit tui-journal
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

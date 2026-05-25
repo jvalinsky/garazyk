@@ -1,0 +1,24 @@
+# Auto-generated scenario for termenv (bubbletea/color-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: color-palette, swatch, export, styling
+name: termenv color tool
+description: "Launch termenv, verify semantic detection, exercise color-tool patterns, then quit"
+command: /opt/homebrew/bin/termenv
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for termenv to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: termenv
+    label: Verify app is termenv
+  - type: quit
+    label: Quit termenv
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

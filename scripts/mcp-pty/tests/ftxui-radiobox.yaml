@@ -1,0 +1,28 @@
+# Auto-generated scenario for ftxui-radiobox (ftxui/form-library)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: radio, toggle, checkbox, button
+name: ftxui-radiobox form library
+description: "Launch ftxui-radiobox, verify semantic detection, exercise form-library patterns, then quit"
+command: /opt/homebrew/bin/ftxui-radiobox
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for ftxui-radiobox to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ftxui-radiobox
+    label: Verify app is ftxui-radiobox
+  - type: assert_capability
+    target: quit.keys
+    contains: Esc
+    label: Verify quit key is available
+  - type: quit
+    label: Quit ftxui-radiobox
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

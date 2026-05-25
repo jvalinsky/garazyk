@@ -1,0 +1,36 @@
+# Auto-generated scenario for pageres-cli (ink/screenshot)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, progress, list-selection
+name: pageres-cli screenshot
+description: "Launch pageres-cli, verify semantic detection, exercise screenshot patterns, then quit"
+command: /opt/homebrew/bin/pageres-cli
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for pageres-cli to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pageres-cli
+    label: Verify app is pageres-cli
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit pageres-cli
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

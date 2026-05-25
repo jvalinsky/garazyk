@@ -1,0 +1,24 @@
+# Auto-generated scenario for screen (ncurses/terminal-mux)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: multiplex, split-panel, status-bar, scrollback
+name: screen terminal mux
+description: "Launch screen, verify semantic detection, exercise terminal-mux patterns, then quit"
+command: /usr/bin/screen
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for screen to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: screen
+    label: Verify app is screen
+  - type: quit
+    label: Quit screen
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,38 @@
+# Auto-generated scenario for midnight-commander (ncurses/file-manager)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: dual-pane, menu, form, dialog, f-key-bar
+name: midnight-commander file manager
+description: "Launch midnight-commander, verify semantic detection, exercise file-manager patterns, then quit"
+command: /opt/homebrew/bin/mc
+cols: 100
+rows: 28
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for midnight-commander to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: mc
+    label: Verify app is mc
+  - type: press_key
+    value: j
+    label: Navigate down in file list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved down
+  - type: press_key
+    value: k
+    label: Navigate up in file list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit midnight-commander
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,32 @@
+# Auto-generated scenario for tz (bubbletea/timezone)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, search, list-selection
+name: tz timezone
+description: "Launch tz, verify semantic detection, exercise timezone patterns, then quit"
+command: /Users/jack/go/bin/tz
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for tz to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tz
+    label: Verify app is tz
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit tz
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

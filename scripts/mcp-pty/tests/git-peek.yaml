@@ -1,0 +1,52 @@
+# Auto-generated scenario for git-peek (bubbletea/git-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, diff-view, scroll, tab-navigation
+name: git-peek git client
+description: "Launch git-peek, verify semantic detection, exercise git-client patterns, then quit"
+command: /opt/homebrew/bin/git-peek
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for git-peek to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: git-peek
+    label: Verify app is git-peek
+  - type: assert_semantic
+    target: framework
+    expected: bubbletea
+    label: Verify framework is bubbletea
+  - type: press_key
+    value: "1"
+    label: Switch to first panel
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: "2"
+    label: Switch to second panel
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Navigate down in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit git-peek
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

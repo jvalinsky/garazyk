@@ -1,0 +1,38 @@
+# Auto-generated scenario for mycli (textual/database)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, autocomplete, syntax-highlighting, editor
+name: mycli database
+description: "Launch mycli, verify semantic detection, exercise database patterns, then quit"
+command: /opt/homebrew/bin/mycli
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for mycli to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: mycli
+    label: Verify app is mycli
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit mycli
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

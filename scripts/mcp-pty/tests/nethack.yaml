@@ -1,0 +1,50 @@
+# Auto-generated scenario for nethack (ncurses/game)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: game-board, inventory, dungeon, status-bar
+name: nethack game
+description: "Launch nethack, verify semantic detection, exercise game patterns, then quit"
+command: /opt/homebrew/bin/nethack
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for nethack to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: nethack
+    label: Verify app is nethack
+  - type: press_key
+    value: j
+    label: Move down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Move up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move left
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit nethack
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

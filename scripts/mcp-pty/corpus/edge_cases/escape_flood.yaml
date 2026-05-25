@@ -1,0 +1,21 @@
+# Auto-generated edge case scenario: Escape flooding
+# Tests: PTY buffer overflow with rapid escape sequence streams, CPU spike resistance
+name: escape flood test
+description: "Verify semantic detection survives rapid escape sequence flooding"
+command: cat
+args: fixtures/escape_flood.txt
+cols: 80
+rows: 24
+settleMs: 500
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for flood content to render
+  - type: observe
+    label: Take semantic snapshot during escape flood
+  - type: assert_exited
+    label: Verify cat exited after flood
+  - type: wait
+    timeoutMs: 500
+    label: Wait for cleanup
