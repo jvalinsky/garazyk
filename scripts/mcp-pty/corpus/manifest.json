@@ -1,7 +1,7 @@
 {
   "$schema": "manifest_schema.json",
   "version": 1,
-  "description": "TUI Corpus — catalog of terminal applications for semantic recognition testing",
+  "description": "TUI Corpus \u2014 catalog of terminal applications for semantic recognition testing",
   "tiers": {
     "curated": [
       "bat",
@@ -314,7 +314,9 @@
       "installMethod": "cargo",
       "installPackage": "dua-cli",
       "binary": "/run/current-system/sw/bin/dua",
-      "launchArgs": ["i"],
+      "launchArgs": [
+        "i"
+      ],
       "needsRepo": false,
       "needsNetwork": false,
       "needsFile": null,
@@ -936,7 +938,10 @@
       "installMethod": "brew",
       "installPackage": "fzf",
       "binary": "/opt/homebrew/bin/fzf",
-      "launchArgs": ["--walker=file", "--walker-root=."],
+      "launchArgs": [
+        "--walker=file",
+        "--walker-root=."
+      ],
       "needsRepo": false,
       "needsNetwork": false,
       "needsFile": null,
@@ -3587,7 +3592,14 @@
       "installMethod": "brew",
       "installPackage": "newsboat",
       "binary": "/opt/homebrew/bin/newsboat",
-      "launchArgs": ["-C", "/Users/jack/.newsboat/config", "-u", "/Users/jack/.newsboat/urls", "-c", "/Users/jack/.newsboat/cache.db"],
+      "launchArgs": [
+        "-C",
+        "/Users/jack/.newsboat/config",
+        "-u",
+        "/Users/jack/.newsboat/urls",
+        "-c",
+        "/Users/jack/.newsboat/cache.db"
+      ],
       "needsRepo": false,
       "needsNetwork": true,
       "needsFile": null,
@@ -3784,7 +3796,9 @@
       "installMethod": "brew",
       "installPackage": "bat",
       "binary": "/run/current-system/sw/bin/bat",
-      "launchArgs": ["README.md"],
+      "launchArgs": [
+        "README.md"
+      ],
       "needsFile": true,
       "needsRepo": false,
       "needsNetwork": false,
@@ -6056,13 +6070,12 @@
       "installPackage": "atuin",
       "binary": "/opt/homebrew/bin/atuin",
       "launchArgs": [
-        "history",
-        "list"
+        "search"
       ],
       "needsNetwork": true,
       "needsRepo": false,
       "needsFile": null,
-      "needsDatabase": null,
+      "needsDatabase": true,
       "platforms": [
         "darwin",
         "linux"
