@@ -51,7 +51,7 @@ async function main() {
     env: { ...process.env, ...(env || {}) },
   });
 
-  const session = manager.create({
+  const session = await manager.create({
     command,
     args: args || [],
     cols: cols || 80,

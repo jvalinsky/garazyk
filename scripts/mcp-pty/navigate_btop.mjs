@@ -190,7 +190,7 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════════════
   console.log("┌─ Step 1: OBSERVE ─ Starting btop, waiting for render ─┐");
 
-  const session = manager.create({
+  const session = await manager.create({
     command: BTOP,
     cols: 120,
     rows: 40,

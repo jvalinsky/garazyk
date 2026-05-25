@@ -435,12 +435,17 @@ export class TerminalSession {
     return recorder;
   }
 
-  stop({ signal = "SIGTERM", killAfterMs = 500, force = true } = {}) {
+  async stop({ signal = "SIGTERM", killAfterMs = 500, force = true } = {}) {
     // Always send kill so the PTY backend can clean up session tracking
     // (critical for the sidecar which needs a "stop" op to drop internal state).
-    // Errors (already-dead process, etc.) are intentionally swallowed.
-    void Promise.resolve(this.pty.kill(signal)).catch(() => {});
-    if (!this.running) return Promise.resolve();
+    // Await so the sidecar's async kill completes before we consider the session
+    // stopped — otherwise the sidecar may still be cleaning up internally.
+    try {
+      await Promise.resolve(this.pty.kill(signal));
+    } catch {
+      // Kill may throw on already-dead process; swallow and continue.
+    }
+    if (!this.running) return;
     return new Promise((resolve) => {
       const started = Date.now();
       let escalated = false;
@@ -452,7 +457,7 @@ export class TerminalSession {
         }
         if (force && !escalated && Date.now() - started >= killAfterMs) {
           escalated = true;
-          this.pty.kill("SIGKILL");
+          void Promise.resolve(this.pty.kill("SIGKILL")).catch(() => {});
         }
         if (escalated && Date.now() - started >= killAfterMs + 500) {
           clearInterval(timer);
@@ -571,8 +576,11 @@ export class TerminalSessionManager {
     }
   }
 
-  dispose() {
+  async dispose() {
+    if (this._disposed) return;
+    this._disposed = true;
     clearInterval(this.reaper);
+    await this.stopAll();
   }
 }
 

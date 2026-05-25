@@ -54,7 +54,7 @@ test.before(async () => {
 test.after(async () => {
   if (sessionManager) {
     await sessionManager.stopAll();
-    sessionManager.dispose();
+    await sessionManager.dispose();
   }
   if (sidecarManager) {
     await sidecarManager.shutdown();
@@ -177,7 +177,7 @@ test("TerminalSession + TerminalSessionManager with sidecar starts, captures out
     assert.equal(mgr.list().length, 0);
   } finally {
     await mgr.stopAll();
-    mgr.dispose();
+    await mgr.dispose();
   }
 });
 
@@ -229,7 +229,7 @@ test("TerminalSession with sidecar supports recording", { skip: !binaryExists },
     await mgr.stop(session.sessionId);
   } finally {
     await mgr.stopAll();
-    mgr.dispose();
+    await mgr.dispose();
     try { fs.rmSync(outputDir, { recursive: true, force: true }); } catch {}
   }
 });

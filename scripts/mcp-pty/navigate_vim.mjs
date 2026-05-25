@@ -129,7 +129,7 @@ Line 9: i enters INSERT mode
 Line 10: : enters COMMAND mode
 VIMEOF`);
 
-  const session = manager.create({
+  const session = await manager.create({
     command: VIM,
     args: [tmpFile],
     cols: 80,

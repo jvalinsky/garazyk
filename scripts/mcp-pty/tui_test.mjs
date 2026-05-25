@@ -481,7 +481,7 @@ export async function runTuiTest(ir, options = {}) {
   const manager = new TerminalSessionManager({ env: allowEnv });
 
   // Launch the TUI
-  const session = manager.create({
+  const session = await manager.create({
     command: ir.command,
     args: ir.args || [],
     cols: ir.cols || 120,
