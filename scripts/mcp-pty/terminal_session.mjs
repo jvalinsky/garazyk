@@ -38,6 +38,7 @@ const KEY_BYTES = new Map([
   ["ctrl-d", "\x04"],
   ["ctrl-z", "\x1a"],
   ["ctrl-l", "\x0c"],
+  ["ctrl-x", "\x18"],
   ["f1", "\x1bOP"],
   ["f2", "\x1bOQ"],
   ["f3", "\x1bOR"],

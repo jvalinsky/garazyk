@@ -3,7 +3,8 @@
 # UI Patterns: tree, chart, list-selection
 name: dua-cli disk analyzer
 description: "Launch dua-cli, verify semantic detection, exercise disk-analyzer patterns, then quit"
-command: /opt/homebrew/bin/dua
+command: /run/current-system/sw/bin/dua
+args: [i]
 cols: 80
 rows: 24
 settleMs: 2000
