@@ -60,7 +60,8 @@ function positiveInt(value, fallback, min = 1, max = 1000) {
 }
 
 export function encodeKey(name) {
-  const key = String(name ?? "").toLowerCase();
+  // Normalize ctrl+c → ctrl-c, shift+a → shift-a, etc.
+  const key = String(name ?? "").toLowerCase().replace(/\+/g, "-");
   const bytes = KEY_BYTES.get(key);
   if (bytes !== undefined) {
     return bytes;
