@@ -434,6 +434,15 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     }
 
     function boundsToPixels(bounds, charW, lineH) {
+      if (Number.isFinite(bounds?.x) && Number.isFinite(bounds?.y) &&
+          Number.isFinite(bounds?.w) && Number.isFinite(bounds?.h)) {
+        return {
+          x: bounds.x * charW,
+          y: bounds.y * lineH,
+          w: Math.max(charW, bounds.w * charW),
+          h: Math.max(lineH, bounds.h * lineH),
+        };
+      }
       const startX = Number.isFinite(bounds?.startX) ? bounds.startX : 0;
       const endX = Number.isFinite(bounds?.endX) ? bounds.endX : width - 1;
       const startY = Number.isFinite(bounds?.startY) ? bounds.startY : 0;
@@ -469,6 +478,102 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       return el;
     }
 
+    function overlayTypeForNode(node) {
+      if (!node || node.role === "screen") return null;
+      if (node.role === "popup") return "popup";
+      if (node.role === "pane" || node.role === "region") return "pane";
+      if (node.role === "tab_bar") return "pane";
+      if (node.role === "list") return "list";
+      if (node.role === "list_item") return node.state?.selected ? "item-selected" : "item";
+      if (node.role === "status_bar") return "status";
+      if (node.role === "table") return "table";
+      if (node.role === "fact") return "fact";
+      if (node.role === "cursor") return "cursor";
+      if (node.role === "gameBoard") return "gameBoard";
+      if (node.role === "player") return "player";
+      if (node.role === "gameEntity") return "gameEntity";
+      if (node.role === "scoreBar") return "scoreBar";
+      if (node.role === "titleBar") return "titleBar";
+      if (node.role === "cardGame") return "cardGame";
+      if (node.role === "cardFace") return node.state?.suitColor === "red" ? "cardFace cardFace-red" : "cardFace";
+      if (node.role === "brailleChart") return "brailleChart";
+      if (node.role === "blockBar") return "blockBar";
+      if (node.role === "pipeMeter") return "pipeMeter";
+      if (node.domain === "form") return node.role === "button" ? "item-selected" : "item";
+      if (node.domain === "chart") return "brailleChart";
+      return "fact";
+    }
+
+    function overlayLabelForNode(node) {
+      if (!node || node.role === "cursor") return null;
+      if (node.role === "status_bar") return "status";
+      if (node.role === "cardGame") return node.label || "Card Game";
+      return (node.label || node.role || "").substring(0, 40).trim();
+    }
+
+    function overlayExtraForNode(node) {
+      const state = node?.state || {};
+      if (node.role === "status_bar") {
+        return (state.keyActions || []).map(ka => ka.key + "→" + ka.action).join("  ") || null;
+      }
+      if (node.role === "cardGame") {
+        if (state.cardCount == null) return null;
+        return state.cardCount + " cards, " + (state.faceDownCount || 0) + " face-down, " + (state.tableauColumns || 0) + " tableau cols";
+      }
+      if (node.role === "gameEntity" && state.count != null) return String(state.count);
+      if (node.role === "scoreBar") return (state.pairs || []).map(p => p.label + ": " + p.value).join("  ") || null;
+      if (node.role === "brailleChart") return state.chartType || null;
+      if (node.role === "blockBar") return state.value || null;
+      if (node.role === "pipeMeter") return (state.meters || []).map(m => m.label + " " + m.value).join("  ") || null;
+      return node.boundsAccuracy === "row" ? "row bounds" : null;
+    }
+
+    function renderWorldOverlay(snap, charW, lineH) {
+      const nodes = (snap.elements || []).filter(n => n?.bounds && n.role !== "screen");
+      if (nodes.length === 0) return false;
+
+      const order = {
+        popup: 10,
+        pane: 20,
+        list: 30,
+        status: 35,
+        table: 40,
+        cardGame: 45,
+        gameBoard: 45,
+        brailleChart: 50,
+        blockBar: 50,
+        pipeMeter: 50,
+        fact: 60,
+        item: 70,
+        "item-selected": 71,
+        gameEntity: 72,
+        cardFace: 73,
+        "cardFace cardFace-red": 73,
+        player: 80,
+        cursor: 90,
+      };
+
+      nodes.sort((a, b) => {
+        const typeA = overlayTypeForNode(a) || "fact";
+        const typeB = overlayTypeForNode(b) || "fact";
+        return (order[typeA] || 60) - (order[typeB] || 60);
+      });
+
+      for (const node of nodes) {
+        const type = overlayTypeForNode(node);
+        if (!type) continue;
+        overlay.appendChild(makeBoundsBox(
+          type,
+          node.bounds,
+          charW,
+          lineH,
+          overlayLabelForNode(node),
+          overlayExtraForNode(node),
+        ));
+      }
+      return true;
+    }
+
     function renderSemanticOverlay() {
       overlay.innerHTML = "";
       if (!overlayEnabled || !currentSemanticSnapshot) return;
@@ -476,6 +581,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       overlay.style.width = (width * charW) + "px";
       overlay.style.height = (height * lineH) + "px";
       const snap = currentSemanticSnapshot;
+      if (renderWorldOverlay(snap, charW, lineH)) return;
 
       // 1. Popups (outermost containers)
       for (const p of (snap.popups || [])) {
