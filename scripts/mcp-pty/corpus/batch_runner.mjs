@@ -33,8 +33,11 @@ const FALLBACK_CURATED_IDS = new Set([
   "bottom",
   "broot",
   "btop",
+  "calcurse",
   "cbonsai",
   "csvlens",
+  "delta",
+  "diskonaut",
   "dua-cli",
   "fzf",
   "gitui",
@@ -53,6 +56,7 @@ const FALLBACK_CURATED_IDS = new Set([
   "tty-solitaire",
   "vim",
   "yazi",
+  "zellij",
 ]);
 
 function loadManifest() {
@@ -278,6 +282,10 @@ async function runBatch(options = {}) {
     }
   } else {
     for (const app of apps) {
+      // Small delay between scenarios to reduce resource contention and avoid flakes
+      if (results.length > 0) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
       const result = await runOne(app, manifest, {
         timeoutMs,
         sidecar: options.sidecar,
