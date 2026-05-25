@@ -1,0 +1,75 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - heading "tty-solitaire Card Game" [level=1] [ref=e4]
+    - generic [ref=e5]:
+      - button "▶ Play" [active] [ref=e6] [cursor=pointer]
+      - button "⟲ Reset" [ref=e7] [cursor=pointer]
+      - button "🔍 Overlay" [pressed] [ref=e8] [cursor=pointer]
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic "Terminal replay" [ref=e12]: Welcome to tty-solitaire. Move with the arrow keys or <hjkl>. Use the space bar to select and place card s. After selecting a card you can use <m> to selec t more and <n> to select fewer. Press <Shift+M> to sele ct all. Press the space bar to play or q to quit.
+        - generic:
+          - generic:
+            - generic: "TerminalMode: alt_screen"
+      - generic [ref=e13]: asciicast v2 · 60×30 · 43 events
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - heading "Application" [level=3] [ref=e16]
+        - generic [ref=e17]:
+          - generic [ref=e30]: tty-solitaire
+          - generic [ref=e31]: ncurses
+          - generic [ref=e34]: 90% confidence
+      - generic [ref=e18]:
+        - heading "Navigate" [level=3] [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: j
+            - generic [ref=e37]: navigate
+          - generic [ref=e38]:
+            - generic [ref=e39]: k
+            - generic [ref=e40]: navigate
+          - generic [ref=e41]:
+            - generic [ref=e42]: h
+            - generic [ref=e43]: navigate
+          - generic [ref=e44]:
+            - generic [ref=e45]: l
+            - generic [ref=e46]: navigate
+      - generic [ref=e21]:
+        - heading "Actions" [level=3] [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e47]:
+            - generic [ref=e48]: space
+            - generic [ref=e49]: select_card
+            - generic [ref=e50]: app_tty-solitaire
+          - generic [ref=e51]:
+            - generic [ref=e52]: m
+            - generic [ref=e53]: select_more
+            - generic [ref=e54]: app_tty-solitaire
+          - generic [ref=e55]:
+            - generic [ref=e56]: M
+            - generic [ref=e57]: select_all
+            - generic [ref=e58]: app_tty-solitaire
+          - generic [ref=e59]:
+            - generic [ref=e60]: "n"
+            - generic [ref=e61]: select_fewer
+            - generic [ref=e62]: app_tty-solitaire
+          - generic [ref=e63]:
+            - generic [ref=e64]: "N"
+            - generic [ref=e65]: new_game
+            - generic [ref=e66]: app_tty-solitaire
+      - generic [ref=e24]:
+        - heading "Quit / Dismiss" [level=3] [ref=e25]
+        - generic [ref=e26]:
+          - generic [ref=e67]:
+            - generic [ref=e68]: q
+            - generic [ref=e69]: quit
+          - generic [ref=e70]:
+            - generic [ref=e71]: "?"
+            - generic [ref=e72]: help
+          - generic [ref=e73]:
+            - generic [ref=e74]: f1
+            - generic [ref=e75]: help
+          - generic [ref=e76]:
+            - generic [ref=e77]: escape
+            - generic [ref=e78]: dismiss
