@@ -42,7 +42,7 @@ steps:
     maxMs: 1500
     label: Brief pause
   - type: press_key
-    value: j
+    value: down
     maxMs: 500
     label: Navigate down in list
   - type: wait
@@ -50,7 +50,7 @@ steps:
     maxMs: 1500
     label: Brief pause
   - type: press_key
-    value: k
+    value: up
     maxMs: 500
     label: Navigate up in list
   - type: wait

@@ -138,10 +138,13 @@ function gitClientSteps(app) {
   }
 
   if (app.uiPatterns.includes("list-selection")) {
+    // gitui uses arrow keys for navigation, not j/k
+    const down = app.navKeys?.down || (app.id === "gitui" ? "down" : "j");
+    const up = app.navKeys?.up || (app.id === "gitui" ? "up" : "k");
     steps.push(
-      { type: "press_key", value: "j", label: "Navigate down in list" },
+      { type: "press_key", value: down, label: "Navigate down in list" },
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
-      { type: "press_key", value: "k", label: "Navigate up in list" },
+      { type: "press_key", value: up, label: "Navigate up in list" },
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
       { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     );
