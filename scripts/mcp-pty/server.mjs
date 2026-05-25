@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { TerminalSessionManager, snapshotToYaml } from "./terminal_session.mjs";
 import { AsciicastRecorder, defaultRecordingDir } from "./recording.mjs";
+import { worldQuery } from "./world.mjs";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -75,6 +76,49 @@ const tools = [
         includePrompt: { type: "boolean", default: false },
       },
       required: ["sessionId"],
+    },
+  },
+  {
+    name: "pty_world_query",
+    description: "Run a strict, deterministic query against the current normalized TuiWorld graph.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sessionId: { type: "string" },
+        op: {
+          type: "string",
+          enum: [
+            "getByRole",
+            "getByRef",
+            "find",
+            "related",
+            "nearest",
+            "explain",
+            "actionsFor",
+            "primaryAction",
+            "validate",
+          ],
+        },
+        detail: { type: "string", enum: ["compact", "full"], default: "compact" },
+        ref: { type: "string" },
+        role: { type: "string" },
+        name: { type: "string" },
+        domain: { type: "string" },
+        source: { type: "string" },
+        kind: { type: "string" },
+        direction: {
+          type: "string",
+          enum: ["in", "out", "both", "above", "below", "leftOf", "rightOf"],
+        },
+        strict: { type: "boolean", default: true },
+        selected: { type: "boolean" },
+        focused: { type: "boolean" },
+        visible: { type: "boolean" },
+        includeSource: { type: "boolean" },
+        includeTarget: { type: "boolean" },
+        intent: { type: "string" },
+      },
+      required: ["sessionId", "op"],
     },
   },
   {
@@ -180,6 +224,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           _meta: { structuredContent: semanticRes }
         };
       }
+      case "pty_world_query": {
+        const session = manager.get(args.sessionId);
+        await session.settle(20);
+        const semanticRes = session.semanticSnapshot("compact", false);
+        const result = worldQuery(semanticRes.snapshot.world, args);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          isError: false,
+          _meta: { structuredContent: result }
+        };
+      }
       case "pty_action": {
         const session = manager.get(args.sessionId);
         if (args.action === "press_key") await session.pressKey(args.value);
@@ -250,9 +305,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {
+    const structuredError = {
+      message: error.message,
+      code: error.code || "error",
+      candidates: error.candidates,
+      locator: error.locator,
+      role: error.role,
+      name: error.name,
+    };
     return {
       content: [{ type: "text", text: `Error: ${error.message}` }],
       isError: true,
+      _meta: { structuredContent: { error: structuredError } },
     };
   }
 });
@@ -275,4 +339,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   });
 }
-
