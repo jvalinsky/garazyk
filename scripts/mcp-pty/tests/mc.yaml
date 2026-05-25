@@ -21,7 +21,7 @@ steps:
     maxMs: 500
     label: Verify app is mc
   - type: press_key
-    value: j
+    value: down
     maxMs: 500
     label: Navigate down in file list
   - type: wait
@@ -29,16 +29,16 @@ steps:
     maxMs: 1500
     label: Brief pause
   - type: press_key
-    value: k
+    value: up
     maxMs: 500
     label: Navigate up in file list
   - type: wait
     timeoutMs: 200
     maxMs: 1500
     label: Brief pause
-  - type: assert_cursor_moved
+  - type: assert_content_changed
     maxMs: 500
-    label: Verify cursor moved (at least 1 of 2 directions)
+    label: Verify content changed after navigation
   - type: quit
     maxMs: 3000
     label: Quit midnight-commander
