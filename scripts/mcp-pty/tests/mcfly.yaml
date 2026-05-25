@@ -4,6 +4,9 @@
 name: mcfly shell history
 description: "Launch mcfly, verify semantic detection, exercise shell-history patterns, then quit"
 command: /opt/homebrew/bin/mcfly
+env:
+  MCFLY_SESSION_ID: ci-test
+  MCFLY_HISTORY: /tmp/mcfly_history.txt
 cols: 80
 rows: 24
 settleMs: 500
