@@ -21,6 +21,7 @@ const DEFAULT_ALLOWLIST = [
   "/opt/homebrew/bin/htop",
   "/usr/bin/htop",
   "/etc/profiles/per-user/jack/bin/btop",
+  "/opt/homebrew/bin/ttysolitaire",
 ];
 
 const SHELL_NAMES = new Set(["sh", "bash", "zsh"]);
@@ -41,6 +42,18 @@ const KEY_BYTES = new Map([
   ["ctrl-d", "\x04"],
   ["ctrl-z", "\x1a"],
   ["ctrl-l", "\x0c"],
+  ["f1", "\x1bOP"],
+  ["f2", "\x1bOQ"],
+  ["f3", "\x1bOR"],
+  ["f4", "\x1bOS"],
+  ["f5", "\x1b[15~"],
+  ["f6", "\x1b[17~"],
+  ["f7", "\x1b[18~"],
+  ["f8", "\x1b[19~"],
+  ["f9", "\x1b[20~"],
+  ["f10", "\x1b[21~"],
+  ["f11", "\x1b[23~"],
+  ["f12", "\x1b[24~"],
 ]);
 
 function positiveInt(value, fallback, min = 1, max = 1000) {
@@ -342,6 +355,58 @@ export class TerminalSession {
     const snapshot = this.snapshot();
     const lines = snapshot.lines.map((line) => line.padEnd(this.cols, " ").slice(0, this.cols));
     return `\x1b[2J\x1b[H${lines.join("\r\n")}`;
+  }
+
+  screenFrame(prevLines) {
+    const snapshot = this.snapshot();
+    const lines = snapshot.lines.map((line) => line.padEnd(this.cols, " ").slice(0, this.cols));
+    if (prevLines && lines.length === prevLines.length) {
+      const changed = [];
+      for (let y = 0; y < lines.length; y += 1) {
+        if (lines[y] !== prevLines[y]) {
+          changed.push(`\x1b[${y + 1}H${lines[y]}`);
+        }
+      }
+      if (changed.length === 0) return null;
+      return changed.join("") + `\x1b[${lines.length};1H`;
+    }
+    return `\x1b[H${lines.join("\r\n")}`;
+  }
+
+  startScreenCapture(intervalMs = 50) {
+    if (this._captureTimer) return;
+    let prevLines = null;
+    let frameCount = 0;
+    this._captureTimer = setInterval(() => {
+      if (!this.recording || !this.pty) return;
+      const lines = this.snapshot().lines.map((l) => l.padEnd(this.cols, " ").slice(0, this.cols));
+      frameCount += 1;
+      // Every 4th interval (200ms at 20fps): always emit a full-screen frame
+      if (frameCount % 4 === 0) {
+        prevLines = lines.slice();
+        this.recording.recordOutput(`\x1b[H${lines.join("\r\n")}`);
+        return;
+      }
+      // Otherwise: emit changed lines only
+      const changed = [];
+      for (let y = 0; y < lines.length; y += 1) {
+        if (lines[y] !== (prevLines ? prevLines[y] : null)) {
+          changed.push(y);
+        }
+      }
+      prevLines = lines;
+      if (changed.length > 0) {
+        const frame = changed.map((y) => `\x1b[${y + 1}H${lines[y]}`).join("");
+        this.recording.recordOutput(frame);
+      }
+    }, intervalMs);
+  }
+
+  stopScreenCapture() {
+    if (this._captureTimer) {
+      clearInterval(this._captureTimer);
+      this._captureTimer = null;
+    }
   }
 
   attachRecording(recorder) {
