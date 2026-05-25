@@ -22,7 +22,7 @@ steps:
     label: Verify app is huh
   - type: assert_capability
     target: quit.keys
-    contains: q, ctrl+c
+    contains: [q, ctrl+c]
     maxMs: 500
     label: Verify quit key is available
   - type: quit

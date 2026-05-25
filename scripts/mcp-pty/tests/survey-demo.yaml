@@ -22,7 +22,7 @@ steps:
     label: Verify app is survey-demo
   - type: assert_capability
     target: quit.keys
-    contains: Esc
+    contains: [Esc]
     maxMs: 500
     label: Verify quit key is available
   - type: quit
