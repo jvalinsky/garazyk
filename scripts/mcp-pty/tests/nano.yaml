@@ -29,7 +29,7 @@ steps:
     maxMs: 1500
     label: Brief pause
   - type: press_key
-    value: ctrl+x
+    value: ctrl-x
     maxMs: 500
     label: Exit nano (Ctrl+X)
   - type: wait
