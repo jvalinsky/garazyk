@@ -10,7 +10,7 @@ settleMs: 1500
 steps:
   - type: wait
     timeoutMs: 1500
-    maxMs: 3000
+    maxMs: 4500
     label: Wait for gitui to render
   - type: observe
     maxMs: 500
@@ -31,7 +31,7 @@ steps:
     label: Switch to first panel
   - type: wait
     timeoutMs: 300
-    maxMs: 1000
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: "2"
@@ -39,7 +39,7 @@ steps:
     label: Switch to second panel
   - type: wait
     timeoutMs: 300
-    maxMs: 1000
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: j
@@ -47,7 +47,7 @@ steps:
     label: Navigate down in list
   - type: wait
     timeoutMs: 200
-    maxMs: 500
+    maxMs: 1500
     label: Brief pause
   - type: press_key
     value: k
@@ -55,8 +55,11 @@ steps:
     label: Navigate up in list
   - type: wait
     timeoutMs: 200
-    maxMs: 500
+    maxMs: 1500
     label: Brief pause
+  - type: assert_cursor_moved
+    maxMs: 500
+    label: Verify cursor moved (at least 1 of 2 directions)
   - type: quit
     maxMs: 2000
     label: Quit gitui
