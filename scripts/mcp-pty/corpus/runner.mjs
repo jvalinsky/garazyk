@@ -45,8 +45,44 @@ function parseYaml(text) {
   return doc;
 }
 
+function parseNestedMap(lines, startIdx, baseIndent) {
+  const map = {};
+  let j = startIdx;
+  while (j < lines.length) {
+    const subLine = lines[j];
+    const subIndent = subLine.length - subLine.trimStart().length;
+    // Stop at same-or-less indentation (including sub-lines starting with "-")
+    if (subIndent < baseIndent + 1 || subLine.trimStart().startsWith("-")) break;
+    const subColon = subLine.indexOf(":");
+    if (subColon !== -1) {
+      const subKey = subLine.substring(0, subColon).trim();
+      const subValue = subLine.substring(subColon + 1).trim();
+      if (subValue === "" && j + 1 < lines.length) {
+        // This sub-key might also have a nested map
+        const deeperIndent = lines[j + 1].length - lines[j + 1].trimStart().length;
+        if (deeperIndent > subIndent) {
+          map[subKey] = parseNestedMap(lines, j + 1, subIndent);
+          // Skip past the deeper lines
+          while (j + 1 < lines.length) {
+            const nextIndent = lines[j + 1].length - lines[j + 1].trimStart().length;
+            if (nextIndent < deeperIndent) break;
+            j++;
+          }
+          j++;
+          continue;
+        }
+      }
+      map[subKey] = parseYamlValue(subValue);
+    }
+    j++;
+  }
+  return map;
+}
+
 function parseStepsDoc(lines, doc) {
   let i = 0;
+  const getIndent = (l) => l.length - l.trimStart().length;
+
   // Parse top-level keys until we hit steps array
   while (i < lines.length && !lines[i].trimStart().startsWith("- type:")) {
     const line = lines[i];
@@ -54,6 +90,23 @@ function parseStepsDoc(lines, doc) {
     if (colonIdx !== -1 && !line.trimStart().startsWith("-")) {
       const key = line.substring(0, colonIdx).trim();
       const value = line.substring(colonIdx + 1).trim();
+      if (value === "" && key !== "" && i + 1 < lines.length) {
+        // Empty value — check for nested map on next lines
+        const baseIndent = getIndent(line);
+        const nextLine = lines[i + 1];
+        const nextIndent = getIndent(nextLine);
+        if (nextIndent > baseIndent + 1 && nextLine.includes(":") && !nextLine.trimStart().startsWith("-")) {
+          doc[key] = parseNestedMap(lines, i + 1, baseIndent);
+          // Advance past the nested lines
+          let j = i + 1;
+          while (j < lines.length) {
+            if (getIndent(lines[j]) <= baseIndent && !lines[j].trimStart().startsWith("-")) break;
+            j++;
+          }
+          i = j - 1;
+          continue;
+        }
+      }
       doc[key] = parseYamlValue(value);
     }
     i++;
@@ -853,13 +906,33 @@ async function runScenario(scenarioPath, options = {}) {
     if (!resolvedCommand) {
       throw new Error(`Command not found in PATH: ${scenario.command}`);
     }
-  }
-
-  // Resolve args: support space-separated string, resolve relative to scenario dir
+  }    // Resolve args: support space-separated string, resolve relative to scenario dir
   const scenarioDir = path.dirname(fullPath);
   const scenarioArgs = normalizeScenarioArgs(scenario.args, scenarioDir, {
     resolveArgsRelative: scenario.resolveArgsRelative === true,
   });
+
+  // Validate env before we start (must be a flat map of strings)
+  if (scenario.env !== undefined) {
+    if (typeof scenario.env !== "object" || Array.isArray(scenario.env)) {
+      throw new Error("Scenario 'env' must be a flat map of string key-value pairs");
+    }
+    for (const [k, v] of Object.entries(scenario.env)) {
+      if (typeof v !== "string") {
+        throw new Error(`Scenario 'env.${k}' must be a string, got ${typeof v}`);
+      }
+    }
+    // Pre-create any temp files referenced by env values
+    for (const val of Object.values(scenario.env)) {
+      const maybePath = val.trim();
+      if (maybePath.startsWith("/tmp/") && !fs.existsSync(maybePath)) {
+        try {
+          fs.writeFileSync(maybePath, "");
+          console.log(`│  Created temp file for env: ${maybePath}`);
+        } catch { /* ignore — best effort */ }
+      }
+    }
+  }
 
   const useSidecar = options.sidecar === true;
 
@@ -886,13 +959,17 @@ async function runScenario(scenarioPath, options = {}) {
 
   try {
     // Create session (async when using sidecar ptyFactory)
+    const sessionEnv = {
+      ...(scenario.env || {}),
+      TERM: scenario.term || "xterm-256color",
+    };
     session = await manager.create({
       command: resolvedCommand,
       args: scenarioArgs,
       cols: scenario.cols || 80,
       rows: scenario.rows || 24,
       cwd: scenario.cwd || process.cwd(),
-      env: { TERM: scenario.term || "xterm-256color" },
+      env: sessionEnv,
     });
 
     // Initial settle

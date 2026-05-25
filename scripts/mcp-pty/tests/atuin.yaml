@@ -4,7 +4,9 @@
 name: atuin shell history
 description: "Launch atuin, verify semantic detection, exercise shell-history patterns, then quit"
 command: /opt/homebrew/bin/atuin
-args: [history, list]
+args: [search]
+env:
+  ATUIN_SESSION: ci-test
 cols: 80
 rows: 24
 settleMs: 2000
