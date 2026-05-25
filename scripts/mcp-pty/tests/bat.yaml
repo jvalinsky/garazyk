@@ -3,7 +3,8 @@
 # UI Patterns: syntax-highlighting, pager, scroll, line-numbers, status-bar
 name: bat pager
 description: "Launch bat, verify semantic detection, exercise pager patterns, then quit"
-command: /opt/homebrew/bin/bat
+command: /run/current-system/sw/bin/bat
+args: [README.md]
 cols: 80
 rows: 24
 settleMs: 500

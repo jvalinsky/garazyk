@@ -309,8 +309,8 @@ function gameSteps(app) {
   );
 
   // nudoku: full grid may have no empty cells to navigate into (known limitation)
-  // nsnake: ncurses game uses reverse-video highlight, terminal cursor stays {0,0}
-  if (app.id === "nudoku" || app.id === "nsnake") {
+  // nsnake, nethack: ncurses game uses reverse-video highlight, terminal cursor stays
+  if (app.id === "nudoku" || app.id === "nsnake" || app.id === "nethack") {
     const reason = app.id === "nudoku" ? "full grid" : "ncurses cursor";
     steps.push({
       type: "observe",

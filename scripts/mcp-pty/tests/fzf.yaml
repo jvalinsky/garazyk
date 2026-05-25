@@ -4,6 +4,7 @@
 name: fzf picker
 description: "Launch fzf, verify semantic detection, exercise picker patterns, then quit"
 command: /opt/homebrew/bin/fzf
+args: [--walker=file, --walker-root=.]
 cols: 80
 rows: 24
 settleMs: 500
