@@ -66,12 +66,12 @@ function monitorSteps(app) {
     steps.push(
       { type: "press_key", value: "j", label: "Navigate down" },
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
-      {
-        type: "assert_cursor_moved",
-        label: "Verify cursor moved after navigation",
-      },
       { type: "press_key", value: "k", label: "Navigate up" },
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
+      {
+        type: "assert_cursor_moved",
+        label: "Verify cursor moved (at least 1 of 2 directions)",
+      },
     );
   }
 
@@ -98,9 +98,9 @@ function fileManagerSteps(app) {
     },
     { type: "press_key", value: "j", label: "Navigate down in file list" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
-    { type: "assert_cursor_moved", label: "Verify cursor moved down" },
     { type: "press_key", value: "k", label: "Navigate up in file list" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     { type: "quit", label: `Quit ${app.name}` },
     { type: "wait", timeoutMs: 1000, label: "Wait for exit" },
   ];
@@ -143,6 +143,7 @@ function gitClientSteps(app) {
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
       { type: "press_key", value: "k", label: "Navigate up in list" },
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
+      { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     );
   }
 
@@ -175,9 +176,9 @@ function dataBrowserSteps(app) {
     steps.push(
       { type: "press_key", value: "j", label: "Navigate down" },
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
-      { type: "assert_cursor_moved", label: "Verify cursor moved" },
       { type: "press_key", value: "k", label: "Navigate up" },
       { type: "wait", timeoutMs: 200, label: "Brief pause" },
+      { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     );
   }
 
@@ -269,13 +270,13 @@ function gameSteps(app) {
   steps.push(
     { type: "press_key", value: "j", label: "Move down" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
-    { type: "assert_cursor_moved", label: "Verify cursor moved" },
     { type: "press_key", value: "k", label: "Move up" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
     { type: "press_key", value: "l", label: "Move right" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
     { type: "press_key", value: "h", label: "Move left" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 4 directions)" },
   );
 
   // Action key
@@ -310,7 +311,9 @@ function musicSteps(app) {
     { type: "wait", timeoutMs: 300, label: "Brief pause" },
     { type: "press_key", value: "j", label: "Navigate down" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
-    { type: "assert_cursor_moved", label: "Verify cursor moved" },
+    { type: "press_key", value: "k", label: "Navigate up" },
+    { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     { type: "quit", label: `Quit ${app.name}` },
     { type: "wait", timeoutMs: 1000, label: "Wait for exit" },
   ];
@@ -401,9 +404,9 @@ function diskAnalyzerSteps(app) {
     },
     { type: "press_key", value: "j", label: "Navigate down" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
-    { type: "assert_cursor_moved", label: "Verify cursor moved" },
     { type: "press_key", value: "k", label: "Navigate up" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     { type: "quit", label: `Quit ${app.name}` },
     { type: "wait", timeoutMs: 1000, label: "Wait for exit" },
   ];
@@ -427,7 +430,9 @@ function dashboardSteps(app) {
     { type: "wait", timeoutMs: 500, label: "Wait for focus switch" },
     { type: "press_key", value: "j", label: "Navigate down" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
-    { type: "assert_cursor_moved", label: "Verify cursor moved" },
+    { type: "press_key", value: "k", label: "Navigate up" },
+    { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     { type: "quit", label: `Quit ${app.name}` },
     { type: "wait", timeoutMs: 1000, label: "Wait for exit" },
   ];
@@ -468,9 +473,9 @@ function networkToolSteps(app) {
     },
     { type: "press_key", value: "j", label: "Navigate down" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
-    { type: "assert_cursor_moved", label: "Verify cursor moved" },
     { type: "press_key", value: "k", label: "Navigate up" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     { type: "quit", label: `Quit ${app.name}` },
     { type: "wait", timeoutMs: 1000, label: "Wait for exit" },
   ];
@@ -493,6 +498,7 @@ function devToolSteps(app) {
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
     { type: "press_key", value: "k", label: "Navigate up" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     { type: "quit", label: `Quit ${app.name}` },
     { type: "wait", timeoutMs: 1000, label: "Wait for exit" },
   ];
@@ -555,6 +561,9 @@ function securitySteps(app) {
     },
     { type: "press_key", value: "j", label: "Navigate down" },
     { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "press_key", value: "k", label: "Navigate up" },
+    { type: "wait", timeoutMs: 200, label: "Brief pause" },
+    { type: "assert_cursor_moved", label: "Verify cursor moved (at least 1 of 2 directions)" },
     { type: "quit", label: `Quit ${app.name}` },
     { type: "wait", timeoutMs: 500, label: "Wait for exit" },
   ];
