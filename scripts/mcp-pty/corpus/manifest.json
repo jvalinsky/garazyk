@@ -17,7 +17,14 @@
       "vim",
       "broot",
       "cbonsai",
-      "greed"
+      "greed",
+      "ranger",
+      "htop",
+      "lazygit",
+      "nano",
+      "nsnake",
+      "tig",
+      "dua-cli"
     ],
     "candidateDefault": true,
     "edgeDirectory": "edge_cases"
