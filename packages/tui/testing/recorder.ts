@@ -13,6 +13,7 @@ import {
   serializeAsciicast,
 } from "./cast.ts";
 import type { ReplayStep } from "./replay_types.ts";
+import { dirname } from "@std/path";
 
 /** @deprecated Use CastEvent */
 export type AsciicastFrame = CastEvent;
@@ -44,7 +45,9 @@ export class CastRecorder {
   private lastFrameTime = -Infinity;
   private file: Deno.FsFile | undefined;
   private replayFile: Deno.FsFile | undefined;
-  private headerWritten = false;
+  private closed = false;
+  private unsubscribeRender?: () => void;
+  private encoder = new TextEncoder();
 
   constructor(harness: VirtualTuiHarness, options: CastRecorderOptions = {}) {
     this.harness = harness;
@@ -52,35 +55,29 @@ export class CastRecorder {
     this.recordInput = options.recordInput ?? true;
     this.minFrameInterval = options.minFrameInterval ?? 0;
 
-    this.harness.onRender((frameAnsi: string) => {
+    this.unsubscribeRender = this.harness.onRender((frameAnsi: string) => {
       this.recordOutput(frameAnsi);
     });
-    this.recordOutput(this.harness.buffer.fullRedraw());
 
     if (options.path) {
-      void this.#openFiles(options.path, options.replayPath);
+      this.#openFiles(options.path, options.replayPath);
     }
+
+    this.recordOutput(this.harness.buffer.fullRedraw());
   }
 
-  async #openFiles(castPath: string, replayPath?: string): Promise<void> {
-    await Deno.mkdir(castPath.replace(/\/[^/]+$/, ""), { recursive: true }).catch(
-      () => {},
-    );
-    this.file = await Deno.open(castPath, {
+  #openFiles(castPath: string, replayPath?: string): void {
+    Deno.mkdirSync(dirname(castPath), { recursive: true });
+    this.file = Deno.openSync(castPath, {
       write: true,
       create: true,
       truncate: true,
     });
-    const header = this.#buildHeader();
-    const line = JSON.stringify(header) + "\n";
-    await this.file.write(new TextEncoder().encode(line));
-    this.headerWritten = true;
+    this.#appendCastLine(JSON.stringify(this.#buildHeader()));
 
     const rpath = replayPath ?? `${castPath}.replay.jsonl`;
-    await Deno.mkdir(rpath.replace(/\/[^/]+$/, ""), { recursive: true }).catch(
-      () => {},
-    );
-    this.replayFile = await Deno.open(rpath, {
+    Deno.mkdirSync(dirname(rpath), { recursive: true });
+    this.replayFile = Deno.openSync(rpath, {
       write: true,
       create: true,
       truncate: true,
@@ -104,16 +101,18 @@ export class CastRecorder {
 
   /** Record terminal output frame. */
   recordOutput(ansiContent: string): void {
+    if (this.closed) return;
     const t = this.#elapsed();
     if (t - this.lastFrameTime < this.minFrameInterval) return;
     this.lastFrameTime = t;
     const ev: CastEvent = [t, "o", ansiContent];
     this.events.push(ev);
-    void this.#appendCastLine(JSON.stringify(ev));
+    this.#appendCastLine(JSON.stringify(ev));
   }
 
   /** Record a key event from the harness. */
   recordKey(key: Key): void {
+    if (this.closed) return;
     const t = this.#elapsed();
     const step: ReplayStep = {
       t,
@@ -124,48 +123,50 @@ export class CastRecorder {
       shift: key.shift || undefined,
     };
     this.replaySteps.push(step);
-    void this.#appendReplayLine(JSON.stringify(step));
+    this.#appendReplayLine(JSON.stringify(step));
 
     if (this.recordInput) {
       const data = encodeKeyInput(key.key, key);
       if (data.length > 0) {
         const ev: CastEvent = [t, "i", data];
         this.events.push(ev);
-        void this.#appendCastLine(JSON.stringify(ev));
+        this.#appendCastLine(JSON.stringify(ev));
       }
     }
   }
 
   /** Record terminal resize. */
   recordResize(cols: number, rows: number): void {
+    if (this.closed) return;
     const t = this.#elapsed();
     const step: ReplayStep = { t, kind: "resize", cols, rows };
     this.replaySteps.push(step);
-    void this.#appendReplayLine(JSON.stringify(step));
+    this.#appendReplayLine(JSON.stringify(step));
     const ev: CastEvent = [t, "r", `${cols}x${rows}`];
     this.events.push(ev);
-    void this.#appendCastLine(JSON.stringify(ev));
+    this.#appendCastLine(JSON.stringify(ev));
   }
 
   /** Insert a named marker for timeline navigation. */
   marker(label: string): void {
+    if (this.closed) return;
     const t = this.#elapsed();
     const step: ReplayStep = { t, kind: "marker", label };
     this.replaySteps.push(step);
-    void this.#appendReplayLine(JSON.stringify(step));
+    this.#appendReplayLine(JSON.stringify(step));
     const ev: CastEvent = [t, "m", label];
     this.events.push(ev);
-    void this.#appendCastLine(JSON.stringify(ev));
+    this.#appendCastLine(JSON.stringify(ev));
   }
 
-  async #appendCastLine(line: string): Promise<void> {
+  #appendCastLine(line: string): void {
     if (!this.file) return;
-    await this.file.write(new TextEncoder().encode(line + "\n"));
+    this.file.writeSync(this.encoder.encode(line + "\n"));
   }
 
-  async #appendReplayLine(line: string): Promise<void> {
+  #appendReplayLine(line: string): void {
     if (!this.replayFile) return;
-    await this.replayFile.write(new TextEncoder().encode(line + "\n"));
+    this.replayFile.writeSync(this.encoder.encode(line + "\n"));
   }
 
   /** Export session as asciicast v2 string. */
@@ -184,7 +185,12 @@ export class CastRecorder {
   }
 
   /** Flush and close optional output files. */
-  async close(): Promise<void> {
+  close(): Promise<void> {
+    if (this.closed) return Promise.resolve();
+    this.closed = true;
+    this.unsubscribeRender?.();
+    this.unsubscribeRender = undefined;
+    this.harness.detachRecorder(this);
     if (this.file) {
       this.file.close();
       this.file = undefined;
@@ -193,6 +199,7 @@ export class CastRecorder {
       this.replayFile.close();
       this.replayFile = undefined;
     }
+    return Promise.resolve();
   }
 }
 

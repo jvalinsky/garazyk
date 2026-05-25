@@ -8,7 +8,7 @@
  * @module tui/testing/locators
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert } from "@std/assert";
 import type { VirtualTuiHarness } from "./harness.ts";
 import type { CellStyle } from "../renderer.ts";
 import type { ResolvedNode } from "../layout_tree.ts";
@@ -81,9 +81,7 @@ export class Locator {
    * coordinate clicks or simulating focus events.
    */
   async click(): Promise<void> {
-    const bounds = this.resolve();
-    const clickX = bounds.x + Math.floor(bounds.width / 2);
-    const clickY = bounds.y + Math.floor(bounds.height / 2);
+    this.resolve();
 
     // In TUI context, clicking targets often activates them or focuses them.
     // If the harness has coordinate click handlers, we would dispatch it.
