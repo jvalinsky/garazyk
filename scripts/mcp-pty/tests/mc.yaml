@@ -10,30 +10,40 @@ settleMs: 1000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for midnight-commander to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: mc
+    maxMs: 500
     label: Verify app is mc
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down in file list
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: assert_cursor_moved
+    maxMs: 500
     label: Verify cursor moved down
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up in file list
   - type: wait
     timeoutMs: 200
+    maxMs: 500
     label: Brief pause
   - type: press_key
     value: "F10"
+    maxMs: 3000
     label: Quit midnight-commander (F10)
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit
