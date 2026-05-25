@@ -14,10 +14,6 @@ const DEFAULT_MAX_SESSIONS = 4;
 
 const DEFAULT_ALLOWLIST = [
   "/usr/bin/top",
-  "/usr/bin/less",
-  "/usr/bin/vim",
-  "/usr/bin/vi",
-  "/usr/bin/nano",
   "/opt/homebrew/bin/htop",
   "/usr/bin/htop",
   "/etc/profiles/per-user/jack/bin/btop",
@@ -211,7 +207,12 @@ export class TerminalSession {
       this.running = false;
       this.exitCode = exitCode;
       this.signal = signal;
-      if (this.recording) this.recording.close();
+      const recorder = this.detachRecording();
+      if (recorder) {
+        void recorder.close().catch((error) => {
+          console.error(`failed to close PTY recording: ${error.message}`);
+        });
+      }
     });
   }
 
@@ -407,6 +408,10 @@ export class TerminalSession {
       clearInterval(this._captureTimer);
       this._captureTimer = null;
     }
+    if (this.recordingSemanticDebounce) {
+      clearTimeout(this.recordingSemanticDebounce);
+      this.recordingSemanticDebounce = null;
+    }
   }
 
   attachRecording(recorder) {
@@ -418,6 +423,7 @@ export class TerminalSession {
   detachRecording() {
     const recorder = this.recording;
     this.recording = null;
+    this.stopScreenCapture();
     return recorder;
   }
 
