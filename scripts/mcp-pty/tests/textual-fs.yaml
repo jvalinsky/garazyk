@@ -10,29 +10,39 @@ settleMs: 2000
 steps:
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for textual-fs to render
   - type: observe
+    maxMs: 500
     label: Take semantic snapshot
   - type: assert_semantic
     target: app
     expected: textual-fs
+    maxMs: 500
     label: Verify app is textual-fs
   - type: press_key
     value: j
+    maxMs: 500
     label: Navigate down in file list
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: assert_cursor_moved
+    maxMs: 500
     label: Verify cursor moved down
   - type: press_key
     value: k
+    maxMs: 500
     label: Navigate up in file list
   - type: wait
     timeoutMs: 200
+    maxMs: 1500
     label: Brief pause
   - type: quit
+    maxMs: 2000
     label: Quit textual-fs
   - type: wait
     timeoutMs: 1000
+    maxMs: 3000
     label: Wait for exit
