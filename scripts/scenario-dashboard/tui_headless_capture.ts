@@ -84,7 +84,7 @@ export async function captureHeadlessReplay(
   await Deno.mkdir(outputDir, { recursive: true });
   const recorder = new CastRecorder(harness, {
     title: options.title ?? "Garazyk Dashboard — Headless Capture",
-    minFrameInterval: 30,
+    minFrameInterval: 0,
   });
 
   // 7. Wire key handler (emitKey already calls render() after the callback)
@@ -151,7 +151,10 @@ export async function captureHeadlessReplay(
   });
 
   // 8. Replay steps (recorder constructor already captured the initial frame)
-  await replayScript(harness, options.steps, { speed: options.speed ?? 2 });
+  await replayScript(harness, options.steps, {
+    speed: options.speed ?? 2,
+    onMarker: (label) => recorder.marker(label),
+  });
 
   // 9. Close recorder and write cast from in-memory data
   await recorder.close();
