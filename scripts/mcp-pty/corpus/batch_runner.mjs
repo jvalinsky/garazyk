@@ -11,6 +11,7 @@
  *   node corpus/batch_runner.mjs --apps gitui,yazi    # specific app IDs
  *   node corpus/batch_runner.mjs --limit 10
  *   node corpus/batch_runner.mjs --report batch.json
+ *   node corpus/batch_runner.mjs --sidecar --record    # record asciicasts
  */
 
 import fs from "node:fs";
@@ -42,6 +43,13 @@ const FALLBACK_CURATED_IDS = new Set([
   "broot",
   "cbonsai",
   "greed",
+  "ranger",
+  "htop",
+  "lazygit",
+  "nano",
+  "nsnake",
+  "tig",
+  "dua-cli",
 ]);
 
 function loadManifest() {
@@ -136,6 +144,7 @@ function runOne(app, manifest, options = {}) {
     const timeoutMs = options.timeoutMs || 15_000;
     const args = [RUNNER_PATH, scenarioPath, "--continue-on-failure"];
     if (options.sidecar) args.push("--sidecar");
+    if (options.record) args.push("--record");
 
     const childEnv = { ...process.env };
     // Propagate sidecar binary path so runner.mjs can find garazyk-ptyd.
@@ -269,6 +278,7 @@ async function runBatch(options = {}) {
       const result = await runOne(app, manifest, {
         timeoutMs,
         sidecar: options.sidecar,
+        record: options.record,
       });
       const status = result.passed ? "✓" : (result.timeout ? "⏱" : "✗");
       const detail = result.error || (result.passed ? "PASS" : "FAIL");
@@ -335,6 +345,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       ? args[args.indexOf("--report") + 1]
       : null,
     sidecar: args.includes("--sidecar"),
+    record: args.includes("--record"),
   };
 
   runBatch(options).then((report) => {
