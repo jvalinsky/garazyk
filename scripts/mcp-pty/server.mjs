@@ -265,6 +265,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       case "pty_rec_start": {
         const session = manager.get(args.sessionId);
+        if (session.recording) {
+          throw new Error("recording already active");
+        }
         const outputDir = typeof args.outputDir === "string"
           ? args.outputDir
           : defaultRecordingDir(process.cwd());

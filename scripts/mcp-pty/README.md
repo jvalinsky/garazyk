@@ -1,6 +1,6 @@
 # garazyk-pty MCP
 
-`garazyk-pty` is a local MCP server for external terminal programs that need a real pseudo-terminal, such as `top`, `less`, `vim`, `vi`, `nano`, and `htop`.
+`garazyk-pty` is a local MCP server for trusted local terminal programs that need a real pseudo-terminal, such as `top`, `htop`, `btop`, and terminal games.
 
 This is intentionally separate from `scripts/mcp-tui/`. The existing `garazyk-tui` MCP is dashboard-specific and uses `VirtualTuiHarness` for semantic snapshots. This package uses `node-pty` to run real terminal processes and `@xterm/headless` to maintain a terminal buffer for snapshots.
 
@@ -188,6 +188,25 @@ Examples:
 
 Strict lookup is the default. If two nodes match, `pty_world_query` returns an ambiguity error with candidate refs instead of guessing.
 
+## Corpus Scenario Runner
+
+`scripts/mcp-pty/corpus/runner.mjs` executes YAML scenarios against real PTY
+apps. New scenarios should assert through `snapshot.world` when possible and
+fall back to legacy detector arrays only for compatibility.
+
+World-aware step types:
+
+- `assert_world_node`
+- `assert_world_relation`
+- `assert_world_action`
+- `assert_world_valid`
+- `activate_primary`
+- `select_by_role`
+
+The corpus manifest supports curated and candidate tiers. Default batch runs
+target curated scenarios; pass `--include-candidates` to include generated or
+install-dependent candidates.
+
 ## Key Input
 
 `press_key` supports:
@@ -208,19 +227,18 @@ The server does not run arbitrary shell commands by default. Commands must be ab
 Default allowlist:
 
 - `/usr/bin/top`
-- `/usr/bin/less`
-- `/usr/bin/vim`
-- `/usr/bin/vi`
-- `/usr/bin/nano`
 - `/opt/homebrew/bin/htop`
 - `/usr/bin/htop`
 - `/etc/profiles/per-user/jack/bin/btop`
+- `/opt/homebrew/bin/ttysolitaire`
 
 Add more commands with `GARAZYK_PTY_MCP_ALLOW`, using a colon-separated list of absolute paths:
 
 ```sh
 GARAZYK_PTY_MCP_ALLOW=/bin/cat:/usr/bin/sed node scripts/mcp-pty/server.mjs
 ```
+
+Explicitly allowed apps are trusted-local software. Apps such as pagers, editors, file managers, and terminal multiplexers can expose their own shell or file features even when the MCP server blocks direct shell entrypoints.
 
 Shell entrypoints named `sh`, `bash`, and `zsh` stay blocked unless `GARAZYK_PTY_MCP_ALLOW_SHELL=1` is set. Keep that disabled for normal MCP use.
 
@@ -265,18 +283,20 @@ Quit:
 }
 ```
 
-Open `less` for a temporary file, search, then quit:
+Start an explicitly allowlisted pager for a temporary file:
 
 ```json
 {
-  "name": "pty_action",
+  "name": "pty_start",
   "arguments": {
-    "sessionId": "s2",
-    "action": "type",
-    "value": "/pattern\rq"
+    "command": "/usr/bin/less",
+    "args": ["/tmp/example.log"],
+    "title": "less"
   }
 }
 ```
+
+Start the server with `GARAZYK_PTY_MCP_ALLOW=/usr/bin/less` before using that example.
 
 Record with semantic overlay enabled:
 

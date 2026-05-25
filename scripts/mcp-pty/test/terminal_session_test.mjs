@@ -37,6 +37,17 @@ test("validateCommand requires absolute allowlisted commands and blocks shells",
   assert.equal(validateCommand("/bin/bash", { ...env, GARAZYK_PTY_MCP_ALLOW_SHELL: "1" }), "/bin/bash");
 });
 
+test("validateCommand default allowlist excludes shell-capable editors and pagers", () => {
+  const env = {};
+  for (const command of ["/usr/bin/less", "/usr/bin/vim", "/usr/bin/vi", "/usr/bin/nano"]) {
+    assert.throws(() => validateCommand(command, env), /allowlisted/);
+  }
+  assert.equal(
+    validateCommand("/usr/bin/less", { GARAZYK_PTY_MCP_ALLOW: "/usr/bin/less" }),
+    "/usr/bin/less",
+  );
+});
+
 test("headless xterm exposes lines, cursor, and dimensions", async () => {
   const term = new Terminal({ cols: 20, rows: 4, allowProposedApi: true });
   await new Promise((resolve) => term.write("hello\r\nworld", resolve));

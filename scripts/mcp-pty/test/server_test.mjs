@@ -3,25 +3,29 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const serverPath = path.join(__dirname, "..", "server.mjs");
 
 test("stdio MCP flow starts cat, sends input, resizes, records, and stops", async () => {
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: ["server.mjs"],
+    args: [serverPath],
     env: {
       ...process.env,
       GARAZYK_PTY_MCP_ALLOW: "/bin/cat",
       GARAZYK_PTY_MCP_MAX_SESSIONS: "2",
-    }
+    },
   });
 
   const client = new Client({
     name: "test-client",
     version: "1.0.0",
   }, {
-    capabilities: {}
+    capabilities: {},
   });
 
   await client.connect(transport);
@@ -48,7 +52,11 @@ test("stdio MCP flow starts cat, sends input, resizes, records, and stops", asyn
       name: "pty_action",
       arguments: { sessionId, action: "type", value: "hello\r" },
     });
-    assert.ok(action._meta.structuredContent.lines.some((line) => line.includes("hello")));
+    assert.ok(
+      action._meta.structuredContent.lines.some((line) =>
+        line.includes("hello")
+      ),
+    );
 
     const worldQuery = await client.callTool({
       name: "pty_world_query",
@@ -57,12 +65,27 @@ test("stdio MCP flow starts cat, sends input, resizes, records, and stops", asyn
     assert.equal(worldQuery.isError, false);
     assert.equal(worldQuery._meta.structuredContent.nodes.length, 1);
 
-    const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "garazyk-pty-mcp-"));
+    const outputDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "garazyk-pty-mcp-"),
+    );
     const recStart = await client.callTool({
       name: "pty_rec_start",
       arguments: { sessionId, outputDir, recordInput: true },
     });
     assert.equal(recStart.isError, false);
+
+    const duplicateOutputDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "garazyk-pty-mcp-duplicate-"),
+    );
+    const duplicateRecStart = await client.callTool({
+      name: "pty_rec_start",
+      arguments: { sessionId, outputDir: duplicateOutputDir },
+    });
+    assert.equal(duplicateRecStart.isError, true);
+    assert.equal(
+      fs.existsSync(path.join(duplicateOutputDir, "session.cast")),
+      false,
+    );
 
     const resize = await client.callTool({
       name: "pty_resize",
@@ -76,7 +99,10 @@ test("stdio MCP flow starts cat, sends input, resizes, records, and stops", asyn
       arguments: { sessionId },
     });
     assert.equal(recStop.isError, false);
-    const castLines = fs.readFileSync(recStop._meta.structuredContent.castPath, "utf8");
+    const castLines = fs.readFileSync(
+      recStop._meta.structuredContent.castPath,
+      "utf8",
+    );
     assert.match(castLines, /"r","30x6"/);
 
     const stop = await client.callTool({
