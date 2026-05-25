@@ -1,0 +1,38 @@
+# Auto-generated scenario for alpine (ncurses/email)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, compose, tree, search, sidebar
+name: alpine email
+description: "Launch alpine, verify semantic detection, exercise email patterns, then quit"
+command: /opt/homebrew/bin/alpine
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for alpine to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: alpine
+    label: Verify app is alpine
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit alpine
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

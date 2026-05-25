@@ -1,0 +1,28 @@
+# Auto-generated scenario for posting (textual/api-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tab-navigation, form-input, response-viewer
+name: posting api client
+description: "Launch posting, verify semantic detection, exercise api-client patterns, then quit"
+command: /opt/homebrew/bin/posting
+cols: 80
+rows: 24
+settleMs: 5000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for posting to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: posting
+    label: Verify app is posting
+  - type: assert_semantic
+    target: framework
+    expected: textual
+    label: Verify framework is textual
+  - type: quit
+    label: Quit posting
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

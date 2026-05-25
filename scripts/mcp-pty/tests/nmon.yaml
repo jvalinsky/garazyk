@@ -1,0 +1,42 @@
+# Auto-generated scenario for nmon (ncurses/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, gauge, table, tab-navigation, real-time-data
+name: nmon system monitor
+description: "Launch nmon, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /opt/homebrew/bin/nmon
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for nmon to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: nmon
+    label: Verify app is nmon
+  - type: assert_semantic
+    target: framework
+    expected: ncurses
+    label: Verify framework is ncurses
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after tab switch
+  - type: press_key
+    value: tab
+    label: Switch to third tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: quit
+    label: Quit nmon
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

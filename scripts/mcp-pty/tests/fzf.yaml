@@ -1,0 +1,32 @@
+# Auto-generated scenario for fzf (bubbletea/picker)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: filter-search, list-selection, inline-preview
+name: fzf picker
+description: "Launch fzf, verify semantic detection, exercise picker patterns, then quit"
+command: /opt/homebrew/bin/fzf
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for fzf to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: fzf
+    label: Verify app is fzf
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit fzf
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

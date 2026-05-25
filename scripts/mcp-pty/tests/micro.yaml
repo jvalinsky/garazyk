@@ -1,0 +1,24 @@
+# Auto-generated scenario for micro (bubbletea/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: text-editor, syntax-highlighting, tab-navigation, split-pane, status-bar
+name: micro text editor
+description: "Launch micro, verify semantic detection, exercise text-editor patterns, then quit"
+command: /opt/homebrew/bin/micro
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for micro to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: micro
+    label: Verify app is micro
+  - type: quit
+    label: Quit micro
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

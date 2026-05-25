@@ -1,0 +1,36 @@
+# Auto-generated scenario for inspect (rich/debugger)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tree, table, scroll
+name: inspect debugger
+description: "Launch inspect, verify semantic detection, exercise debugger patterns, then quit"
+command: inspect
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for inspect to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: inspect
+    label: Verify app is inspect
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit inspect
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

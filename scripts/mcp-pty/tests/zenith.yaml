@@ -1,0 +1,28 @@
+# Auto-generated scenario for zenith (ratatui/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, table, braille-chart
+name: zenith system monitor
+description: "Launch zenith, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /opt/homebrew/bin/zenith
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for zenith to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: zenith
+    label: Verify app is zenith
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: quit
+    label: Quit zenith
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

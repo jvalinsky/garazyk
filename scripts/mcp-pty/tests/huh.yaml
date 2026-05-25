@@ -1,0 +1,28 @@
+# Auto-generated scenario for huh (bubbletea/form-library)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, choose, multiselect, confirm
+name: huh form library
+description: "Launch huh, verify semantic detection, exercise form-library patterns, then quit"
+command: /Users/jack/go/bin/huh
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for huh to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: huh
+    label: Verify app is huh
+  - type: assert_capability
+    target: quit.keys
+    contains: q, ctrl+c
+    label: Verify quit key is available
+  - type: quit
+    label: Quit huh
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

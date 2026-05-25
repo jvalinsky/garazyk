@@ -1,0 +1,30 @@
+# Auto-generated scenario for gpg-tui (ratatui/security)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, form-input, popup-modal
+name: gpg-tui security
+description: "Launch gpg-tui, verify semantic detection, exercise security patterns, then quit"
+command: /opt/homebrew/bin/gpg-tui
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for gpg-tui to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: gpg-tui
+    label: Verify app is gpg-tui
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit gpg-tui
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

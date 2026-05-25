@@ -1,0 +1,32 @@
+# Auto-generated scenario for skate (bubbletea/key-value)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, form-input, search
+name: skate key value
+description: "Launch skate, verify semantic detection, exercise key-value patterns, then quit"
+command: /opt/homebrew/bin/skate
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for skate to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: skate
+    label: Verify app is skate
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit skate
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

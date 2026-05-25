@@ -1,0 +1,38 @@
+# Auto-generated scenario for sampler (bubbletea/dashboard)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: dashboard, gauge, chart, real-time-data, meter
+name: sampler dashboard
+description: "Launch sampler, verify semantic detection, exercise dashboard patterns, then quit"
+command: /opt/homebrew/bin/sampler
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for sampler to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: sampler
+    label: Verify app is sampler
+  - type: press_key
+    value: tab
+    label: Switch panel focus
+  - type: wait
+    timeoutMs: 500
+    label: Wait for focus switch
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: quit
+    label: Quit sampler
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

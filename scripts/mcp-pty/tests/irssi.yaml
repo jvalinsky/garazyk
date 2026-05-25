@@ -1,0 +1,28 @@
+# Auto-generated scenario for irssi (ncurses/chat)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: split-pane, list-selection, input, nicklist, status-bar
+name: irssi chat
+description: "Launch irssi, verify semantic detection, exercise chat patterns, then quit"
+command: /opt/homebrew/bin/irssi
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for irssi to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: irssi
+    label: Verify app is irssi
+  - type: assert_semantic
+    target: framework
+    expected: ncurses
+    label: Verify framework is ncurses
+  - type: quit
+    label: Quit irssi
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

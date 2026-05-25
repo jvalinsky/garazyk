@@ -1,0 +1,24 @@
+# Auto-generated scenario for wordgrinder (ncurses/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: editor, menu-bar, status-bar, spellcheck
+name: wordgrinder text editor
+description: "Launch wordgrinder, verify semantic detection, exercise text-editor patterns, then quit"
+command: /opt/homebrew/bin/wordgrinder
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for wordgrinder to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: wordgrinder
+    label: Verify app is wordgrinder
+  - type: quit
+    label: Quit wordgrinder
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

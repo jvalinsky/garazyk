@@ -1,0 +1,42 @@
+# Auto-generated scenario for k9s (bubbletea/kubernetes)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, tab-navigation, log-viewer, search, confirm-dialog
+name: k9s kubernetes
+description: "Launch k9s, verify semantic detection, exercise kubernetes patterns, then quit"
+command: /opt/homebrew/bin/k9s
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for k9s to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: k9s
+    label: Verify app is k9s
+  - type: assert_semantic
+    target: framework
+    expected: bubbletea
+    label: Verify framework is bubbletea
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after tab switch
+  - type: press_key
+    value: tab
+    label: Switch to third tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: quit
+    label: Quit k9s
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

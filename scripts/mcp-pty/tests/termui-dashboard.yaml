@@ -1,0 +1,38 @@
+# Auto-generated scenario for termui-dashboard (termui/dashboard)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: dashboard, chart, gauge, sparkline, table
+name: termui-dashboard dashboard
+description: "Launch termui-dashboard, verify semantic detection, exercise dashboard patterns, then quit"
+command: /opt/homebrew/bin/termui-dashboard
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for termui-dashboard to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: termui-dashboard
+    label: Verify app is termui-dashboard
+  - type: press_key
+    value: tab
+    label: Switch panel focus
+  - type: wait
+    timeoutMs: 500
+    label: Wait for focus switch
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: quit
+    label: Quit termui-dashboard
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

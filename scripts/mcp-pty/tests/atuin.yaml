@@ -1,0 +1,33 @@
+# Auto-generated scenario for atuin (ratatui/shell-history)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, search, filter-search, stats
+name: atuin shell history
+description: "Launch atuin, verify semantic detection, exercise shell-history patterns, then quit"
+command: /opt/homebrew/bin/atuin
+args: history, list
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for atuin to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: atuin
+    label: Verify app is atuin
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit atuin
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

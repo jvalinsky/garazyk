@@ -1,0 +1,24 @@
+# Auto-generated scenario for textual-paint (textual/drawing)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: canvas, palette, tool-select
+name: textual-paint drawing
+description: "Launch textual-paint, verify semantic detection, exercise drawing patterns, then quit"
+command: textual-paint
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for textual-paint to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: textual-paint
+    label: Verify app is textual-paint
+  - type: quit
+    label: Quit textual-paint
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

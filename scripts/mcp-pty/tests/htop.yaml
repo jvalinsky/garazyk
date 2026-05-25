@@ -1,0 +1,42 @@
+# Auto-generated scenario for htop (ncurses/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, pipe-meter, f-key-bar, process-list
+name: htop system monitor
+description: "Launch htop, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /opt/homebrew/bin/htop
+cols: 120
+rows: 30
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for htop to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: htop
+    label: Verify app is htop
+  - type: assert_semantic
+    target: framework
+    expected: ncurses
+    label: Verify framework is ncurses
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit htop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

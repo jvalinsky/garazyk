@@ -1,0 +1,50 @@
+# Auto-generated scenario for greed (ncurses/game)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: game-board, grid, score-bar, 2d-movement
+name: greed game
+description: "Launch greed, verify semantic detection, exercise game patterns, then quit"
+command: /opt/homebrew/bin/greed
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for greed to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: greed
+    label: Verify app is greed
+  - type: press_key
+    value: j
+    label: Move down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Move up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: l
+    label: Move right
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: h
+    label: Move left
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit greed
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,24 @@
+# Auto-generated scenario for pastel (ink/color-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: gradient, palette, picker
+name: pastel color tool
+description: "Launch pastel, verify semantic detection, exercise color-tool patterns, then quit"
+command: /opt/homebrew/bin/pastel
+cols: 80
+rows: 24
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for pastel to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pastel
+    label: Verify app is pastel
+  - type: quit
+    label: Quit pastel
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

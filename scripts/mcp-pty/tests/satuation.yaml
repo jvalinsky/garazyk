@@ -1,0 +1,42 @@
+# Auto-generated scenario for satuation (ratatui/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, gauge, real-time-data, list-selection
+name: satuation system monitor
+description: "Launch satuation, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /opt/homebrew/bin/satuation
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for satuation to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: satuation
+    label: Verify app is satuation
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit satuation
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

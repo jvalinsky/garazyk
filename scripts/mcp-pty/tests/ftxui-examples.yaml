@@ -1,0 +1,24 @@
+# Auto-generated scenario for ftxui-examples (ftxui/demo)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: animation, color, gauge, chart, list-selection
+name: ftxui-examples demo
+description: "Launch ftxui-examples, verify semantic detection, exercise demo patterns, then quit"
+command: /opt/homebrew/bin/ftxui-examples
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for ftxui-examples to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ftxui-examples
+    label: Verify app is ftxui-examples
+  - type: quit
+    label: Quit ftxui-examples
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

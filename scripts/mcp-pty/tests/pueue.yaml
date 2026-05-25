@@ -1,0 +1,37 @@
+# Auto-generated scenario for pueue (ratatui/task-mgmt)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, progress-bar, table, status-bar
+name: pueue task mgmt
+description: "Launch pueue, verify semantic detection, exercise task-mgmt patterns, then quit"
+command: /opt/homebrew/bin/pueue
+args: status
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for pueue to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pueue
+    label: Verify app is pueue
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit pueue
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

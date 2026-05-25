@@ -1,0 +1,40 @@
+# Auto-generated scenario for tig (ncurses/git-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: split-pane, list-selection, filter-search, scroll
+name: tig git client
+description: "Launch tig, verify semantic detection, exercise git-client patterns, then quit"
+command: /opt/homebrew/bin/tig
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for tig to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tig
+    label: Verify app is tig
+  - type: assert_semantic
+    target: framework
+    expected: ncurses
+    label: Verify framework is ncurses
+  - type: press_key
+    value: j
+    label: Navigate down in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit tig
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

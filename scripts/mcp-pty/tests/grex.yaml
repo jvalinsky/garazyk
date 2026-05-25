@@ -1,0 +1,36 @@
+# Auto-generated scenario for grex (ratatui/dev-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, table, syntax-highlight
+name: grex dev tool
+description: "Launch grex, verify semantic detection, exercise dev-tool patterns, then quit"
+command: /opt/homebrew/bin/grex
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for grex to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: grex
+    label: Verify app is grex
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit grex
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

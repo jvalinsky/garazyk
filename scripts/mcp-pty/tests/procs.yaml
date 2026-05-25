@@ -1,0 +1,42 @@
+# Auto-generated scenario for procs (ratatui/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, process-list, filter-search, tree
+name: procs system monitor
+description: "Launch procs, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /opt/homebrew/bin/procs
+cols: 120
+rows: 30
+settleMs: 1000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for procs to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: procs
+    label: Verify app is procs
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit procs
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

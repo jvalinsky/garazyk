@@ -1,0 +1,28 @@
+# Auto-generated edge case scenario: Sixel graphics
+# Tests: Image data in terminal via sixel protocol (notcurses-demo)
+name: notcurses-demo sixel graphics
+description: "Verify semantic detection handles sixel graphics sequences in notcurses-demo"
+command: notcurses-demo
+cols: 120
+rows: 40
+settleMs: 3000
+
+steps:
+  - type: wait
+    timeoutMs: 4000
+    label: Wait for notcurses-demo to render sixel content
+  - type: observe
+    label: Take semantic snapshot with sixel graphics
+  - type: assert_semantic
+    target: app
+    expected: notcurses-demo
+    label: Verify app detection with sixel content
+  - type: assert_semantic
+    target: framework
+    expected: notcurses
+    label: Verify notcurses framework detection
+  - type: quit
+    label: Quit notcurses-demo
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

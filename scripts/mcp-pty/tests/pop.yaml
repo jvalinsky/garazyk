@@ -1,0 +1,38 @@
+# Auto-generated scenario for pop (bubbletea/email)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, compose, search, sidebar
+name: pop email
+description: "Launch pop, verify semantic detection, exercise email patterns, then quit"
+command: /Users/jack/go/bin/pop
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for pop to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pop
+    label: Verify app is pop
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit pop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

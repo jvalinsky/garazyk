@@ -1,0 +1,56 @@
+# Auto-generated scenario for dry (bubbletea/docker)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, log-viewer, tab-navigation, form-input
+name: dry docker
+description: "Launch dry, verify semantic detection, exercise docker patterns, then quit"
+command: /opt/homebrew/bin/dry
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for dry to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: dry
+    label: Verify app is dry
+  - type: assert_semantic
+    target: framework
+    expected: bubbletea
+    label: Verify framework is bubbletea
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after tab switch
+  - type: press_key
+    value: tab
+    label: Switch to third tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit dry
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

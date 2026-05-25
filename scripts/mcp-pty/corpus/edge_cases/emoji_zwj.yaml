@@ -1,0 +1,33 @@
+# Auto-generated edge case scenario: Emoji ZWJ sequences
+# Tests: Zero-width joiners, skin tones, flags, combined emoji width
+name: glow emoji ZWJ sequences
+description: "Verify semantic detection handles emoji ZWJ sequences (👨‍👩‍👧‍👦, 🏳️‍🌈) in glow"
+command: glow
+args: fixtures/emoji_zwj.md
+cols: 80
+rows: 24
+settleMs: 2000
+
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for glow to render emoji content
+  - type: observe
+    label: Take semantic snapshot with emoji sequences
+  - type: assert_semantic
+    target: app
+    expected: glow
+    label: Verify app detection with emoji content
+  - type: press_key
+    value: j
+    label: Scroll through emoji content
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed with emoji text
+  - type: quit
+    label: Quit glow
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

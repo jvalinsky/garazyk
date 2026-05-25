@@ -1,0 +1,28 @@
+# Auto-generated scenario for termui-gauge (termui/chart)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: gauge, sparkline, chart, list-selection
+name: termui-gauge chart
+description: "Launch termui-gauge, verify semantic detection, exercise chart patterns, then quit"
+command: /opt/homebrew/bin/termui-gauge
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for termui-gauge to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: termui-gauge
+    label: Verify app is termui-gauge
+  - type: assert_capability
+    target: quit.keys
+    contains: q
+    label: Verify quit key is available
+  - type: quit
+    label: Quit termui-gauge
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

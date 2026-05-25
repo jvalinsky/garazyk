@@ -1,0 +1,44 @@
+# Auto-generated scenario for ijavascript (blessed/notebook)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: editor, table, chart, tab-navigation
+name: ijavascript notebook
+description: "Launch ijavascript, verify semantic detection, exercise notebook patterns, then quit"
+command: /opt/homebrew/bin/ijavascript
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for ijavascript to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ijavascript
+    label: Verify app is ijavascript
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: tab
+    label: Switch tab
+  - type: wait
+    timeoutMs: 500
+    label: Wait for tab switch
+  - type: quit
+    label: Quit ijavascript
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

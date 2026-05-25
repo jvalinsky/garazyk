@@ -1,0 +1,38 @@
+# Auto-generated scenario for iftop (ncurses/network-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, list-selection, real-time-data, sort
+name: iftop network tool
+description: "Launch iftop, verify semantic detection, exercise network-tool patterns, then quit"
+command: /opt/homebrew/sbin/iftop
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for iftop to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: iftop
+    label: Verify app is iftop
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit iftop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

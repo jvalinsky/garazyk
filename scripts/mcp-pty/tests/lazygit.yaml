@@ -1,0 +1,52 @@
+# Auto-generated scenario for lazygit (bubbletea/git-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: split-pane, list-selection, tab-navigation, text-input, popup-modal, filter-search, confirm-dialog
+name: lazygit git client
+description: "Launch lazygit, verify semantic detection, exercise git-client patterns, then quit"
+command: /opt/homebrew/bin/lazygit
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for lazygit to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: lazygit
+    label: Verify app is lazygit
+  - type: assert_semantic
+    target: framework
+    expected: bubbletea
+    label: Verify framework is bubbletea
+  - type: press_key
+    value: "1"
+    label: Switch to first panel
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: "2"
+    label: Switch to second panel
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Navigate down in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit lazygit
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,28 @@
+# Auto-generated scenario for http-prompt (rich/api-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, syntax-highlight, autocomplete
+name: http-prompt api client
+description: "Launch http-prompt, verify semantic detection, exercise api-client patterns, then quit"
+command: http-prompt
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for http-prompt to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: http-prompt
+    label: Verify app is http-prompt
+  - type: assert_semantic
+    target: framework
+    expected: rich
+    label: Verify framework is rich
+  - type: quit
+    label: Quit http-prompt
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,38 @@
+# Auto-generated scenario for tui-inbox (opentui/email)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, compose, sidebar, tree, viewer
+name: tui-inbox email
+description: "Launch tui-inbox, verify semantic detection, exercise email patterns, then quit"
+command: /opt/homebrew/bin/tui-inbox
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for tui-inbox to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tui-inbox
+    label: Verify app is tui-inbox
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit tui-inbox
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

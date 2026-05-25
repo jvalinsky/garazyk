@@ -1,0 +1,36 @@
+# Auto-generated scenario for mdcat (ratatui/markdown-viewer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: markdown, syntax-highlight, scroll, table
+name: mdcat markdown viewer
+description: "Launch mdcat, verify semantic detection, exercise markdown-viewer patterns, then quit"
+command: /opt/homebrew/bin/mdcat
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for mdcat to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: mdcat
+    label: Verify app is mdcat
+  - type: press_key
+    value: j
+    label: Scroll down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Scroll up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit mdcat
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

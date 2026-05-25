@@ -1,0 +1,42 @@
+# Auto-generated scenario for bottom (ratatui/system-monitor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, table, tab-navigation
+name: bottom system monitor
+description: "Launch bottom, verify semantic detection, exercise system-monitor patterns, then quit"
+command: /opt/homebrew/bin/btm
+cols: 120
+rows: 30
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for bottom to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: bottom
+    label: Verify app is bottom
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after tab switch
+  - type: press_key
+    value: tab
+    label: Switch to third tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: quit
+    label: Quit bottom
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

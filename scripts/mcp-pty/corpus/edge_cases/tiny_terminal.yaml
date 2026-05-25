@@ -1,0 +1,24 @@
+# Auto-generated edge case scenario: Tiny terminal (20x10)
+# Tests: Layout collapse, text truncation at minimal terminal size
+name: htop tiny terminal 20x10
+description: "Verify semantic detection handles minimal terminal (20x10) in htop — layout collapse"
+command: htop
+cols: 20
+rows: 10
+settleMs: 2000
+
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for htop to render at 20x10
+  - type: observe
+    label: Take semantic snapshot at minimal terminal
+  - type: assert_semantic
+    target: app
+    expected: htop
+    label: Verify app detection at 20x10
+  - type: quit
+    label: Quit htop
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

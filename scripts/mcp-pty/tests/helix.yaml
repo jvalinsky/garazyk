@@ -1,0 +1,45 @@
+# Auto-generated scenario for helix (ratatui/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: modal-editing, syntax-highlighting, multi-buffer, status-bar
+name: helix text editor
+description: "Launch helix, verify semantic detection, exercise text-editor patterns, then quit"
+command: /opt/homebrew/bin/hx
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for helix to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: helix
+    label: Verify app is helix
+  - type: press_key
+    value: i
+    label: Enter insert mode
+  - type: wait
+    timeoutMs: 200
+    label: Wait for mode switch
+  - type: type
+    value: Hello from TUI test
+    label: Type some text
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed
+  - type: press_key
+    value: escape
+    label: Return to normal mode
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: type
+    value: ":q!"
+    label: Force quit without saving
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

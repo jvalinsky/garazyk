@@ -1,0 +1,28 @@
+# Auto-generated scenario for onefetch (ratatui/git-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: stats, chart, language-bar, info-panel
+name: onefetch git client
+description: "Launch onefetch, verify semantic detection, exercise git-client patterns, then quit"
+command: /opt/homebrew/bin/onefetch
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for onefetch to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: onefetch
+    label: Verify app is onefetch
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: quit
+    label: Quit onefetch
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

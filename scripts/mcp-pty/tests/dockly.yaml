@@ -1,0 +1,56 @@
+# Auto-generated scenario for dockly (blessed/docker)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, tab-navigation, log-viewer, status-bar
+name: dockly docker
+description: "Launch dockly, verify semantic detection, exercise docker patterns, then quit"
+command: /opt/homebrew/bin/dockly
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for dockly to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: dockly
+    label: Verify app is dockly
+  - type: assert_semantic
+    target: framework
+    expected: blessed
+    label: Verify framework is blessed
+  - type: press_key
+    value: tab
+    label: Switch to next tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content changed after tab switch
+  - type: press_key
+    value: tab
+    label: Switch to third tab
+  - type: wait
+    timeoutMs: 500
+    label: Brief pause
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved after navigation
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit dockly
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

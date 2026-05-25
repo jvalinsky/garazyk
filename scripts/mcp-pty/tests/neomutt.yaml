@@ -1,0 +1,38 @@
+# Auto-generated scenario for neomutt (notcurses/email)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, compose, sidebar, search, status-bar
+name: neomutt email
+description: "Launch neomutt, verify semantic detection, exercise email patterns, then quit"
+command: /opt/homebrew/bin/neomutt
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for neomutt to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: neomutt
+    label: Verify app is neomutt
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit neomutt
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

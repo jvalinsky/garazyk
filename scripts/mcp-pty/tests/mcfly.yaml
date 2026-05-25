@@ -1,0 +1,32 @@
+# Auto-generated scenario for mcfly (ratatui/shell-history)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: search, list-selection, filter-search
+name: mcfly shell history
+description: "Launch mcfly, verify semantic detection, exercise shell-history patterns, then quit"
+command: /opt/homebrew/bin/mcfly
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for mcfly to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: mcfly
+    label: Verify app is mcfly
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit mcfly
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

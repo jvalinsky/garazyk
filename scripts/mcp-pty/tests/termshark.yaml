@@ -1,0 +1,38 @@
+# Auto-generated scenario for termshark (bubbletea/network-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, filter-search, tree, detail-view, tab-navigation
+name: termshark network tool
+description: "Launch termshark, verify semantic detection, exercise network-tool patterns, then quit"
+command: /opt/homebrew/bin/termshark
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for termshark to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: termshark
+    label: Verify app is termshark
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit termshark
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

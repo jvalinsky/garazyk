@@ -1,0 +1,28 @@
+# Auto-generated scenario for delta (ratatui/git-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: syntax-highlighting, diff, pager, line-numbers
+name: delta git client
+description: "Launch delta, verify semantic detection, exercise git-client patterns, then quit"
+command: /opt/homebrew/bin/delta
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for delta to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: delta
+    label: Verify app is delta
+  - type: assert_semantic
+    target: framework
+    expected: ratatui
+    label: Verify framework is ratatui
+  - type: quit
+    label: Quit delta
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

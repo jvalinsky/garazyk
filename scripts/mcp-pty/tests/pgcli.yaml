@@ -1,0 +1,38 @@
+# Auto-generated scenario for pgcli (textual/database)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, autocomplete, syntax-highlighting, editor
+name: pgcli database
+description: "Launch pgcli, verify semantic detection, exercise database patterns, then quit"
+command: /opt/homebrew/bin/pgcli
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for pgcli to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pgcli
+    label: Verify app is pgcli
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit pgcli
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

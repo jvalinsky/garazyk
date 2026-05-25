@@ -1,0 +1,38 @@
+# Auto-generated scenario for tickrs (ratatui/finance)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chart, real-time-data, scroll, list-selection
+name: tickrs finance
+description: "Launch tickrs, verify semantic detection, exercise finance patterns, then quit"
+command: /opt/homebrew/bin/tickrs
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for tickrs to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tickrs-rat
+    label: Verify app is tickrs-rat
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit tickrs
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

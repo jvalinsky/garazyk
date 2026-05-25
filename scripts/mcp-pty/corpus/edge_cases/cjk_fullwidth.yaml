@@ -1,0 +1,39 @@
+# Auto-generated edge case scenario: CJK Fullwidth text
+# Tests: Width calculation, wrapping, alignment with 中文, 日本語, 한국어
+name: glow CJK fullwidth text
+description: "Verify semantic detection handles CJK characters (fullwidth) in glow markdown viewer"
+command: glow
+args: fixtures/cjk_fullwidth.md
+cols: 80
+rows: 24
+settleMs: 2000
+
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for glow to render CJK content
+  - type: observe
+    label: Take semantic snapshot with CJK text
+  - type: assert_semantic
+    target: app
+    expected: glow
+    label: Verify app detection with CJK content
+  - type: press_key
+    value: j
+    label: Scroll down through CJK text
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: assert_content_changed
+    label: Verify content scrolled with CJK text
+  - type: press_key
+    value: k
+    label: Scroll up through CJK text
+  - type: wait
+    timeoutMs: 300
+    label: Brief pause
+  - type: quit
+    label: Quit glow
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

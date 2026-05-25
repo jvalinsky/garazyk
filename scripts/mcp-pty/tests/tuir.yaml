@@ -1,0 +1,44 @@
+# Auto-generated scenario for tuir (ncurses/rss)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, tab-navigation, viewer
+name: tuir rss
+description: "Launch tuir, verify semantic detection, exercise rss patterns, then quit"
+command: tuir
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for tuir to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tuir
+    label: Verify app is tuir
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: tab
+    label: Switch tab
+  - type: wait
+    timeoutMs: 500
+    label: Wait for tab switch
+  - type: quit
+    label: Quit tuir
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,24 @@
+# Auto-generated scenario for textual-mandelbrot (textual/art)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: braille, zoom, pan, color-palette
+name: textual-mandelbrot art
+description: "Launch textual-mandelbrot, verify semantic detection, exercise art patterns, then quit"
+command: textual-mandelbrot
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for textual-mandelbrot to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: textual-mandelbrot
+    label: Verify app is textual-mandelbrot
+  - type: quit
+    label: Quit textual-mandelbrot
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

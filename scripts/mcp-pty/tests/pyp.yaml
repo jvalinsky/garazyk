@@ -1,0 +1,32 @@
+# Auto-generated scenario for pyp (rich/picker)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, search, filter-search
+name: pyp picker
+description: "Launch pyp, verify semantic detection, exercise picker patterns, then quit"
+command: pyp
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for pyp to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: pyp
+    label: Verify app is pyp
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit pyp
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

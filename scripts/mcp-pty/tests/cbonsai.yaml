@@ -1,0 +1,24 @@
+# Auto-generated scenario for cbonsai (ratatui/art)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: animation, ascii-art, color
+name: cbonsai art
+description: "Launch cbonsai, verify semantic detection, exercise art patterns, then quit"
+command: /opt/homebrew/bin/cbonsai
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for cbonsai to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: cbonsai
+    label: Verify app is cbonsai
+  - type: quit
+    label: Quit cbonsai
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

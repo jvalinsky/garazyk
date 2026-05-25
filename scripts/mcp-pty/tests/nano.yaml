@@ -1,0 +1,37 @@
+# Auto-generated scenario for nano (ncurses/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: text-editor, f-key-bar, status-bar
+name: nano text editor
+description: "Launch nano, verify semantic detection, exercise text-editor patterns, then quit"
+command: /usr/bin/nano
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for nano to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: nano
+    label: Verify app is nano
+  - type: type
+    value: Hello from TUI test
+    label: Type some text
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: ctrl+x
+    label: Exit nano (Ctrl+X)
+  - type: wait
+    timeoutMs: 300
+    label: Wait for save prompt
+  - type: press_key
+    value: n
+    label: Don't save
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

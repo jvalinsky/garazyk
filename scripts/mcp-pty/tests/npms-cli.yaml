@@ -1,0 +1,32 @@
+# Auto-generated scenario for npms-cli (ink/package-mgmt)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: search, list-selection, detail-view
+name: npms-cli package mgmt
+description: "Launch npms-cli, verify semantic detection, exercise package-mgmt patterns, then quit"
+command: /opt/homebrew/bin/npms-cli
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for npms-cli to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: npms-cli
+    label: Verify app is npms-cli
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit npms-cli
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

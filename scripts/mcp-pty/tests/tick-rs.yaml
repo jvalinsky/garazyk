@@ -1,0 +1,36 @@
+# Auto-generated scenario for tick-rs (cursive/task-mgmt)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, checkbox, calendar-view, timer
+name: tick-rs task mgmt
+description: "Launch tick-rs, verify semantic detection, exercise task-mgmt patterns, then quit"
+command: /opt/homebrew/bin/tickrs
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for tick-rs to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: tick-rs
+    label: Verify app is tick-rs
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit tick-rs
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

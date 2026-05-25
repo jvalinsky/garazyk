@@ -1,0 +1,28 @@
+# Auto-generated scenario for trogon (textual/cli-builder)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: form-input, wizard, tab-navigation
+name: trogon cli builder
+description: "Launch trogon, verify semantic detection, exercise cli-builder patterns, then quit"
+command: trogon
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for trogon to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: trogon
+    label: Verify app is trogon
+  - type: assert_capability
+    target: quit.keys
+    contains: ctrl+c
+    label: Verify quit key is available
+  - type: quit
+    label: Quit trogon
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

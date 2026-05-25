@@ -1,0 +1,45 @@
+# Auto-generated edge case scenario: Bracketed paste
+# Tests: Bracketed paste mode — pasted text vs typed input distinction in vim
+name: vim bracketed paste test
+description: "Verify semantic detection handles bracketed paste sequences in vim"
+command: vim
+cols: 80
+rows: 24
+settleMs: 1000
+
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for vim to render
+  - type: observe
+    label: Take initial semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: vim
+    label: Verify app detection
+  - type: press_key
+    value: i
+    label: Enter insert mode
+  - type: wait
+    timeoutMs: 200
+    label: Wait for mode switch
+  - type: type
+    value: "line1\nline2\nline3\n"
+    label: Type multi-line text (bracketed paste)
+  - type: wait
+    timeoutMs: 500
+    label: Wait for paste to complete
+  - type: assert_content_changed
+    label: Verify content changed after paste
+  - type: press_key
+    value: escape
+    label: Return to normal mode
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: type
+    value: ":q!\n"
+    label: Force quit without saving
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

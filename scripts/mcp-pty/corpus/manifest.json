@@ -1,0 +1,6614 @@
+{
+  "$schema": "manifest_schema.json",
+  "version": 1,
+  "description": "TUI Corpus — catalog of terminal applications for semantic recognition testing",
+  "tiers": {
+    "curated": [
+      "gitui",
+      "yazi",
+      "csvlens",
+      "btop",
+      "bottom",
+      "ncdu",
+      "tty-solitaire",
+      "nudoku",
+      "mc",
+      "glow",
+      "vim",
+      "broot",
+      "cbonsai",
+      "greed"
+    ],
+    "candidateDefault": true,
+    "edgeDirectory": "edge_cases"
+  },
+  "apps": [
+    {
+      "id": "lazygit",
+      "name": "lazygit",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "git-client",
+      "installMethod": "brew",
+      "installPackage": "lazygit",
+      "binary": "/opt/homebrew/bin/lazygit",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "split-pane",
+        "list-selection",
+        "tab-navigation",
+        "text-input",
+        "popup-modal",
+        "filter-search",
+        "confirm-dialog"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "lazygit.yaml"
+    },
+    {
+      "id": "gitui",
+      "name": "gitui",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "git-client",
+      "installMethod": "brew",
+      "installPackage": "gitui",
+      "binary": "/opt/homebrew/bin/gitui",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "split-pane",
+        "list-selection",
+        "popup-modal",
+        "confirm-dialog",
+        "tab-navigation"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "gitui.yaml"
+    },
+    {
+      "id": "yazi",
+      "name": "yazi",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "file-manager",
+      "installMethod": "cargo",
+      "installPackage": "yazi-fm",
+      "binary": "/opt/homebrew/bin/yazi",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "dual-pane",
+        "tab-navigation",
+        "file-preview",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "yazi.yaml"
+    },
+    {
+      "id": "csvlens",
+      "name": "csvlens",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "data-browser",
+      "installMethod": "cargo",
+      "installPackage": "csvlens",
+      "binary": "/opt/homebrew/bin/csvlens",
+      "launchArgs": [],
+      "needsFile": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "horizontal-scroll",
+        "filter-search",
+        "sort"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "csvlens.yaml"
+    },
+    {
+      "id": "trippy",
+      "name": "trippy",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "network-tool",
+      "installMethod": "cargo",
+      "installPackage": "trippy",
+      "binary": "/opt/homebrew/bin/trip",
+      "launchArgs": [
+        "-u",
+        "1.1.1.1"
+      ],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 3000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "real-time-chart",
+        "table"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "trippy.yaml"
+    },
+    {
+      "id": "btop",
+      "name": "btop",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "system-monitor",
+      "installMethod": "brew",
+      "installPackage": "btop",
+      "binary": "btop",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 3000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "braille-chart",
+        "tab-navigation",
+        "table",
+        "block-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "btop_charts.yaml"
+    },
+    {
+      "id": "bottom",
+      "name": "bottom",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "system-monitor",
+      "installMethod": "cargo",
+      "installPackage": "bottom",
+      "binary": "/opt/homebrew/bin/btm",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "table",
+        "tab-navigation"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "bottom.yaml"
+    },
+    {
+      "id": "zellij",
+      "name": "zellij",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "terminal-mux",
+      "installMethod": "cargo",
+      "installPackage": "zellij",
+      "binary": "/opt/homebrew/bin/zellij",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "split-pane",
+        "tab-navigation",
+        "status-bar"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "zellij.yaml"
+    },
+    {
+      "id": "dua-cli",
+      "name": "dua-cli",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "disk-analyzer",
+      "installMethod": "cargo",
+      "installPackage": "dua-cli",
+      "binary": "/opt/homebrew/bin/dua",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tree",
+        "chart",
+        "list-selection"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "dua.yaml"
+    },
+    {
+      "id": "gpg-tui",
+      "name": "gpg-tui",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "security",
+      "installMethod": "cargo",
+      "installPackage": "gpg-tui",
+      "binary": "/opt/homebrew/bin/gpg-tui",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "form-input",
+        "popup-modal"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "gpg-tui.yaml"
+    },
+    {
+      "id": "ncdu",
+      "name": "ncdu",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "disk-analyzer",
+      "installMethod": "brew",
+      "installPackage": "ncdu",
+      "binary": "/opt/homebrew/bin/ncdu",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tree",
+        "list-selection",
+        "confirm-dialog",
+        "sort"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "ncdu.yaml"
+    },
+    {
+      "id": "htop",
+      "name": "htop",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "system-monitor",
+      "installMethod": "brew",
+      "installPackage": "htop",
+      "binary": "/opt/homebrew/bin/htop",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q",
+        "F10"
+      ],
+      "uiPatterns": [
+        "table",
+        "pipe-meter",
+        "f-key-bar",
+        "process-list"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "htop.yaml"
+    },
+    {
+      "id": "tty-solitaire",
+      "name": "tty-solitaire",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "ttysolitaire",
+      "binary": "/opt/homebrew/bin/ttysolitaire",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 3000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "card-grid",
+        "2d-selection",
+        "game-board",
+        "score-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "ttysolitaire_play.yaml"
+    },
+    {
+      "id": "nsnake",
+      "name": "nsnake",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "nsnake",
+      "binary": "/opt/homebrew/bin/nsnake",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "game-board",
+        "score-bar",
+        "2d-movement"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": false,
+      "scenario": "nsnake.yaml"
+    },
+    {
+      "id": "nudoku",
+      "name": "nudoku",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "nudoku",
+      "binary": "/opt/homebrew/bin/nudoku",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "Q"
+      ],
+      "uiPatterns": [
+        "grid",
+        "selection",
+        "input"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": false,
+      "scenario": "nudoku.yaml"
+    },
+    {
+      "id": "nethack",
+      "name": "nethack",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "nethack",
+      "binary": "/opt/homebrew/bin/nethack",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "S"
+      ],
+      "uiPatterns": [
+        "game-board",
+        "inventory",
+        "dungeon",
+        "status-bar"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "nethack.yaml"
+    },
+    {
+      "id": "cmus",
+      "name": "cmus",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "music",
+      "installMethod": "brew",
+      "installPackage": "cmus",
+      "binary": "/opt/homebrew/bin/cmus",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        ":q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "tree",
+        "tab-navigation",
+        "status-bar",
+        "filter-search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "cmus.yaml"
+    },
+    {
+      "id": "mc",
+      "name": "midnight-commander",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "file-manager",
+      "installMethod": "brew",
+      "installPackage": "midnight-commander",
+      "binary": "/opt/homebrew/bin/mc",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "F10"
+      ],
+      "uiPatterns": [
+        "dual-pane",
+        "menu",
+        "form",
+        "dialog",
+        "f-key-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "mc.yaml"
+    },
+    {
+      "id": "ranger",
+      "name": "ranger",
+      "framework": "ncurses",
+      "frameworkLang": "python",
+      "category": "file-manager",
+      "installMethod": "brew",
+      "installPackage": "ranger",
+      "binary": "/opt/homebrew/bin/ranger",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "dual-pane",
+        "file-preview",
+        "tab-navigation",
+        "vim-keys"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "ranger.yaml"
+    },
+    {
+      "id": "glow",
+      "name": "glow",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "markdown-viewer",
+      "installMethod": "brew",
+      "installPackage": "glow",
+      "binary": "/opt/homebrew/bin/glow",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "scroll",
+        "render",
+        "search"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "glow.yaml"
+    },
+    {
+      "id": "gum",
+      "name": "gum",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "form-tool",
+      "installMethod": "brew",
+      "installPackage": "gum",
+      "binary": "/opt/homebrew/bin/gum",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q",
+        "escape"
+      ],
+      "uiPatterns": [
+        "input",
+        "choose",
+        "confirm",
+        "filter"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "gum.yaml"
+    },
+    {
+      "id": "posting",
+      "name": "posting",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "api-client",
+      "installMethod": "pip",
+      "installPackage": "posting",
+      "binary": "/opt/homebrew/bin/posting",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 5000,
+      "quitKeys": [
+        "ctrl+c",
+        "ctrl+q"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "form-input",
+        "response-viewer"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "posting.yaml"
+    },
+    {
+      "id": "harlequin",
+      "name": "harlequin",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "database",
+      "installMethod": "pip",
+      "installPackage": "harlequin",
+      "binary": "/opt/homebrew/bin/harlequin",
+      "launchArgs": [],
+      "needsDatabase": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+q"
+      ],
+      "uiPatterns": [
+        "schema-tree",
+        "editor",
+        "table"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "harlequin.yaml"
+    },
+    {
+      "id": "textual-paint",
+      "name": "textual-paint",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "drawing",
+      "installMethod": "pip",
+      "installPackage": "textual-paint",
+      "binary": "textual-paint",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "canvas",
+        "palette",
+        "tool-select"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "textual-paint.yaml"
+    },
+    {
+      "id": "toolong",
+      "name": "toolong",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "log-viewer",
+      "installMethod": "pip",
+      "installPackage": "toolong",
+      "binary": "toolong",
+      "launchArgs": [],
+      "needsFile": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "filter-search",
+        "scroll"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "toolong.yaml"
+    },
+    {
+      "id": "dolphie",
+      "name": "dolphie",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "database",
+      "installMethod": "pip",
+      "installPackage": "dolphie",
+      "binary": "dolphie",
+      "launchArgs": [],
+      "needsDatabase": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "schema",
+        "query"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "dolphie.yaml"
+    },
+    {
+      "id": "rich-cli",
+      "name": "rich-cli",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "renderer",
+      "installMethod": "pip",
+      "installPackage": "rich-cli",
+      "binary": "rich",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "panel",
+        "tree",
+        "markdown"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "rich-cli.yaml"
+    },
+    {
+      "id": "fzf",
+      "name": "fzf",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "picker",
+      "installMethod": "brew",
+      "installPackage": "fzf",
+      "binary": "/opt/homebrew/bin/fzf",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "escape",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "filter-search",
+        "list-selection",
+        "inline-preview"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "fzf.yaml"
+    },
+    {
+      "id": "vim",
+      "name": "vim",
+      "framework": "vim",
+      "frameworkLang": "c",
+      "category": "text-editor",
+      "installMethod": "brew",
+      "installPackage": "vim",
+      "binary": "/usr/bin/vim",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        ":q"
+      ],
+      "uiPatterns": [
+        "modal-editing",
+        "syntax-highlighting",
+        "multi-buffer"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "vim.yaml"
+    },
+    {
+      "id": "helix",
+      "name": "helix",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "text-editor",
+      "installMethod": "brew",
+      "installPackage": "helix",
+      "binary": "/opt/homebrew/bin/hx",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        ":q"
+      ],
+      "uiPatterns": [
+        "modal-editing",
+        "syntax-highlighting",
+        "multi-buffer",
+        "status-bar"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "helix.yaml"
+    },
+    {
+      "id": "nano",
+      "name": "nano",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "text-editor",
+      "installMethod": "brew",
+      "installPackage": "nano",
+      "binary": "/usr/bin/nano",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "ctrl+x"
+      ],
+      "uiPatterns": [
+        "text-editor",
+        "f-key-bar",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "nano.yaml"
+    },
+    {
+      "id": "top",
+      "name": "top",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "system-monitor",
+      "installMethod": "brew",
+      "installPackage": "top",
+      "binary": "/usr/bin/top",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "process-list",
+        "real-time-data"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "top.yaml"
+    },
+    {
+      "id": "tmux",
+      "name": "tmux",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "terminal-mux",
+      "installMethod": "brew",
+      "installPackage": "tmux",
+      "binary": "/opt/homebrew/bin/tmux",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "exit"
+      ],
+      "uiPatterns": [
+        "split-pane",
+        "tab-navigation",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tmux.yaml"
+    },
+    {
+      "id": "less",
+      "name": "less",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "pager",
+      "installMethod": "brew",
+      "installPackage": "less",
+      "binary": "/usr/bin/less",
+      "launchArgs": [],
+      "needsFile": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 300,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "scroll",
+        "search",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "less.yaml"
+    },
+    {
+      "id": "moar",
+      "name": "moar",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "pager",
+      "installMethod": "brew",
+      "installPackage": "moar",
+      "binary": "/opt/homebrew/bin/moar",
+      "launchArgs": [],
+      "needsFile": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "scroll",
+        "search",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "moar.yaml"
+    },
+    {
+      "id": "broot",
+      "name": "broot",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "file-manager",
+      "installMethod": "cargo",
+      "installPackage": "broot",
+      "binary": "/opt/homebrew/bin/broot",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        ":q"
+      ],
+      "uiPatterns": [
+        "tree",
+        "search",
+        "filter",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "broot.yaml"
+    },
+    {
+      "id": "lf",
+      "name": "lf",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "file-manager",
+      "installMethod": "brew",
+      "installPackage": "lf",
+      "binary": "/opt/homebrew/bin/lf",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "dual-pane",
+        "tree",
+        "file-preview",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "lf.yaml"
+    },
+    {
+      "id": "cbonsai",
+      "name": "cbonsai",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "art",
+      "installMethod": "cargo",
+      "installPackage": "cbonsai",
+      "binary": "/opt/homebrew/bin/cbonsai",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "animation",
+        "ascii-art",
+        "color"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": false,
+      "scenario": "cbonsai.yaml"
+    },
+    {
+      "id": "tig",
+      "name": "tig",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "git-client",
+      "installMethod": "brew",
+      "installPackage": "tig",
+      "binary": "/opt/homebrew/bin/tig",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "split-pane",
+        "list-selection",
+        "filter-search",
+        "scroll"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tig.yaml"
+    },
+    {
+      "id": "bandwhich",
+      "name": "bandwhich",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "network-tool",
+      "installMethod": "cargo",
+      "installPackage": "bandwhich",
+      "binary": "/opt/homebrew/bin/bandwhich",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "real-time-chart",
+        "tree"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "bandwhich.yaml"
+    },
+    {
+      "id": "bacon",
+      "name": "bacon",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "dev-tool",
+      "installMethod": "cargo",
+      "installPackage": "bacon",
+      "binary": "/opt/homebrew/bin/bacon",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "status-bar",
+        "scroll",
+        "real-time-data"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "bacon.yaml"
+    },
+    {
+      "id": "joshuto",
+      "name": "joshuto",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "file-manager",
+      "installMethod": "cargo",
+      "installPackage": "joshuto",
+      "binary": "/opt/homebrew/bin/joshuto",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "dual-pane",
+        "tab-navigation",
+        "file-preview"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "joshuto.yaml"
+    },
+    {
+      "id": "diskonaut",
+      "name": "diskonaut",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "disk-analyzer",
+      "installMethod": "cargo",
+      "installPackage": "diskonaut",
+      "binary": "/opt/homebrew/bin/diskonaut",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tree",
+        "chart",
+        "table",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "diskonaut.yaml"
+    },
+    {
+      "id": "xplr",
+      "name": "xplr",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "file-manager",
+      "installMethod": "cargo",
+      "installPackage": "xplr",
+      "binary": "/opt/homebrew/bin/xplr",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tree",
+        "dual-pane",
+        "form",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "xplr.yaml"
+    },
+    {
+      "id": "zenith",
+      "name": "zenith",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "system-monitor",
+      "installMethod": "cargo",
+      "installPackage": "zenith",
+      "binary": "/opt/homebrew/bin/zenith",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "table",
+        "braille-chart"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "zenith.yaml"
+    },
+    {
+      "id": "tickrs",
+      "name": "tickrs",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "stocks",
+      "installMethod": "cargo",
+      "installPackage": "tickrs",
+      "binary": "/opt/homebrew/bin/tickrs",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "table",
+        "real-time-data"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "tickrs.yaml"
+    },
+    {
+      "id": "dashboard",
+      "name": "garazyk-scenario-dashboard",
+      "framework": "opentui",
+      "frameworkLang": "typescript",
+      "category": "dashboard",
+      "installMethod": "local",
+      "cwd": "scripts/scenario-dashboard",
+      "installPackage": null,
+      "binary": "deno",
+      "launchArgs": [
+        "task",
+        "tui"
+      ],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 5000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "dashboard",
+        "tab-navigation",
+        "list-selection",
+        "table",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "dashboard_navigate.yaml"
+    },
+    {
+      "id": "mods",
+      "name": "mods",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "ai-chat",
+      "installMethod": "brew",
+      "installPackage": "mods",
+      "binary": "/opt/homebrew/bin/mods",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chat",
+        "scroll",
+        "input",
+        "markdown"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "mods.yaml"
+    },
+    {
+      "id": "tz",
+      "name": "tz",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "timezone",
+      "installMethod": "go",
+      "installPackage": "github.com/oz/tz",
+      "binary": "/Users/jack/go/bin/tz",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "search",
+        "list-selection"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tz.yaml"
+    },
+    {
+      "id": "blessed-contrib",
+      "name": "blessed-contrib",
+      "framework": "blessed",
+      "frameworkLang": "js",
+      "category": "dashboard",
+      "installMethod": "npm",
+      "installPackage": "blessed-contrib",
+      "binary": "/opt/homebrew/bin/blessed-contrib",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q",
+        "escape",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "dashboard",
+        "gauge",
+        "chart",
+        "table",
+        "map"
+      ],
+      "complexity": "medium",
+      "hasHelp": false,
+      "hasRealTimeData": true,
+      "scenario": "blessed-contrib.yaml"
+    },
+    {
+      "id": "vtop",
+      "name": "vtop",
+      "framework": "blessed",
+      "frameworkLang": "js",
+      "category": "system-monitor",
+      "installMethod": "npm",
+      "installPackage": "vtop",
+      "binary": "/opt/homebrew/bin/vtop",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "table",
+        "braille-chart"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "vtop.yaml"
+    },
+    {
+      "id": "pastel",
+      "name": "pastel",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "color-tool",
+      "installMethod": "npm",
+      "installPackage": "pastel",
+      "binary": "/opt/homebrew/bin/pastel",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q",
+        "escape"
+      ],
+      "uiPatterns": [
+        "gradient",
+        "palette",
+        "picker"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": false,
+      "scenario": "pastel.yaml"
+    },
+    {
+      "id": "speed-test",
+      "name": "speed-test",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "network-tool",
+      "installMethod": "npm",
+      "installPackage": "speed-test",
+      "binary": "/opt/homebrew/bin/speed-test",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "real-time-data",
+        "meter"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": true,
+      "scenario": "speed-test.yaml"
+    },
+    {
+      "id": "ncmpcpp",
+      "name": "ncmpcpp",
+      "framework": "notcurses",
+      "frameworkLang": "c",
+      "category": "music",
+      "installMethod": "brew",
+      "installPackage": "ncmpcpp",
+      "binary": "/opt/homebrew/bin/ncmpcpp",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "tree",
+        "tab-navigation",
+        "status-bar",
+        "filter-search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "ncmpcpp.yaml"
+    },
+    {
+      "id": "spotify-tui",
+      "name": "spotify-tui",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "music",
+      "installMethod": "cargo",
+      "installPackage": "spotify-tui",
+      "binary": "/opt/homebrew/bin/spt",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "search",
+        "status-bar",
+        "tab-navigation"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "spotify-tui.yaml"
+    },
+    {
+      "id": "taskwarrior-tui",
+      "name": "taskwarrior-tui",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "task-mgmt",
+      "installMethod": "cargo",
+      "installPackage": "taskwarrior-tui",
+      "binary": "/opt/homebrew/bin/taskwarrior-tui",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "list-selection",
+        "filter",
+        "form-input",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "taskwarrior-tui.yaml"
+    },
+    {
+      "id": "tui-journal",
+      "name": "tui-journal",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "notes",
+      "installMethod": "cargo",
+      "installPackage": "tui-journal",
+      "binary": "/opt/homebrew/bin/tui-journal",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "form-input",
+        "search",
+        "markdown"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tui-journal.yaml"
+    },
+    {
+      "id": "rust-battleship",
+      "name": "rust-battleship",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "game",
+      "installMethod": "cargo",
+      "installPackage": "battleship",
+      "binary": "/opt/homebrew/bin/battleship",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "game-board",
+        "grid",
+        "2d-selection",
+        "score-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": false,
+      "scenario": "rust-battleship.yaml"
+    },
+    {
+      "id": "soft-serve",
+      "name": "soft-serve",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "git-server",
+      "installMethod": "brew",
+      "installPackage": "soft-serve",
+      "binary": "/opt/homebrew/bin/soft",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "tab-navigation",
+        "status-bar",
+        "form-input"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "soft-serve.yaml"
+    },
+    {
+      "id": "vhs",
+      "name": "vhs",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "terminal-recorder",
+      "installMethod": "brew",
+      "installPackage": "vhs",
+      "binary": "/opt/homebrew/bin/vhs",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "status-bar",
+        "progress"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "vhs.yaml"
+    },
+    {
+      "id": "arttime",
+      "name": "arttime",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "art",
+      "installMethod": "brew",
+      "installPackage": "arttime",
+      "binary": "/opt/homebrew/bin/arttime",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q",
+        "escape"
+      ],
+      "uiPatterns": [
+        "animation",
+        "color",
+        "list-selection"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "arttime.yaml"
+    },
+    {
+      "id": "charm",
+      "name": "charm",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "crypto",
+      "installMethod": "brew",
+      "installPackage": "charm",
+      "binary": "/opt/homebrew/bin/charm",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "list-selection",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "charm.yaml"
+    },
+    {
+      "id": "skate",
+      "name": "skate",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "key-value",
+      "installMethod": "brew",
+      "installPackage": "skate",
+      "binary": "/opt/homebrew/bin/skate",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "form-input",
+        "search"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "skate.yaml"
+    },
+    {
+      "id": "pop",
+      "name": "pop",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "email",
+      "installMethod": "go",
+      "installPackage": "github.com/charmbracelet/pop",
+      "binary": "/Users/jack/go/bin/pop",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "compose",
+        "search",
+        "sidebar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "pop.yaml"
+    },
+    {
+      "id": "wishlist",
+      "name": "wishlist",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "ssh-directory",
+      "installMethod": "go",
+      "installPackage": "github.com/charmbracelet/wishlist",
+      "binary": "/Users/jack/go/bin/wishlist",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "form-input",
+        "ssh",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "wishlist.yaml"
+    },
+    {
+      "id": "huh",
+      "name": "huh",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "form-library",
+      "installMethod": "go",
+      "installPackage": "github.com/charmbracelet/huh",
+      "binary": "/Users/jack/go/bin/huh",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "choose",
+        "multiselect",
+        "confirm"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "huh.yaml"
+    },
+    {
+      "id": "textual-fspicker",
+      "name": "textual-fspicker",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "file-picker",
+      "installMethod": "pip",
+      "installPackage": "textual-fspicker",
+      "binary": "textual-fspicker",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "tree",
+        "search",
+        "form-input",
+        "list-selection"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "textual-fspicker.yaml"
+    },
+    {
+      "id": "textual-dev",
+      "name": "textual-dev",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "dev-tool",
+      "installMethod": "pip",
+      "installPackage": "textual-dev",
+      "binary": "textual-dev",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "log-viewer",
+        "css-editor",
+        "repl",
+        "tab-navigation"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "textual-dev.yaml"
+    },
+    {
+      "id": "trogon",
+      "name": "trogon",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "cli-builder",
+      "installMethod": "pip",
+      "installPackage": "trogon",
+      "binary": "trogon",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "wizard",
+        "tab-navigation"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "trogon.yaml"
+    },
+    {
+      "id": "elia",
+      "name": "elia",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "ai-chat",
+      "installMethod": "pip",
+      "installPackage": "elia",
+      "binary": "elia",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "chat",
+        "scroll",
+        "markdown",
+        "input"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "elia.yaml"
+    },
+    {
+      "id": "textual-astview",
+      "name": "textual-astview",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "dev-tool",
+      "installMethod": "pip",
+      "installPackage": "textual-astview",
+      "binary": "textual-astview",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "tree",
+        "syntax-highlighting",
+        "scroll"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "textual-astview.yaml"
+    },
+    {
+      "id": "memray",
+      "name": "memray",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "profiler",
+      "installMethod": "pip",
+      "installPackage": "memray",
+      "binary": "memray",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "chart",
+        "table",
+        "flame-graph",
+        "tab-navigation"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "memray.yaml"
+    },
+    {
+      "id": "textual-markdown",
+      "name": "textual-markdown",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "markdown",
+      "installMethod": "pip",
+      "installPackage": "textual-markdown",
+      "binary": "textual-markdown",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "render",
+        "scroll",
+        "link"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "textual-markdown.yaml"
+    },
+    {
+      "id": "greed",
+      "name": "greed",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "greed",
+      "binary": "/opt/homebrew/bin/greed",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "game-board",
+        "grid",
+        "score-bar",
+        "2d-movement"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": false,
+      "scenario": "greed.yaml"
+    },
+    {
+      "id": "alpine",
+      "name": "alpine",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "email",
+      "installMethod": "brew",
+      "installPackage": "alpine",
+      "binary": "/opt/homebrew/bin/alpine",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "compose",
+        "tree",
+        "search",
+        "sidebar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "alpine.yaml"
+    },
+    {
+      "id": "irssi",
+      "name": "irssi",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "chat",
+      "installMethod": "brew",
+      "installPackage": "irssi",
+      "binary": "/opt/homebrew/bin/irssi",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "/quit"
+      ],
+      "uiPatterns": [
+        "split-pane",
+        "list-selection",
+        "input",
+        "nicklist",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "irssi.yaml"
+    },
+    {
+      "id": "emoji-cli",
+      "name": "emoji-cli",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "emoji-tool",
+      "installMethod": "npm",
+      "installPackage": "emoji-cli",
+      "binary": "/opt/homebrew/bin/emoji-cli",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q",
+        "esc"
+      ],
+      "uiPatterns": [
+        "search",
+        "grid-select",
+        "copy"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "emoji-cli.yaml"
+    },
+    {
+      "id": "jira-cli",
+      "name": "jira-cli",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "project-mgmt",
+      "installMethod": "npm",
+      "installPackage": "jira-cli",
+      "binary": "/opt/homebrew/bin/jira-cli",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "form-input",
+        "tab-navigation",
+        "filter-search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "jira-cli.yaml"
+    },
+    {
+      "id": "npms-cli",
+      "name": "npms-cli",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "package-mgmt",
+      "installMethod": "npm",
+      "installPackage": "npms-cli",
+      "binary": "/opt/homebrew/bin/npms-cli",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "search",
+        "list-selection",
+        "detail-view"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "npms-cli.yaml"
+    },
+    {
+      "id": "pageres-cli",
+      "name": "pageres-cli",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "screenshot",
+      "installMethod": "npm",
+      "installPackage": "pageres-cli",
+      "binary": "/opt/homebrew/bin/pageres-cli",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "progress",
+        "list-selection"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "pageres-cli.yaml"
+    },
+    {
+      "id": "clipboard-cli",
+      "name": "clipboard-cli",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "clipboard",
+      "installMethod": "npm",
+      "installPackage": "clipboard-cli",
+      "binary": "/opt/homebrew/bin/clipboard-cli",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "search",
+        "form-input"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "clipboard-cli.yaml"
+    },
+    {
+      "id": "carbon-now-cli",
+      "name": "carbon-now-cli",
+      "framework": "ink",
+      "frameworkLang": "js",
+      "category": "image-gen",
+      "installMethod": "npm",
+      "installPackage": "carbon-now-cli",
+      "binary": "/opt/homebrew/bin/carbon-now-cli",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "preview",
+        "select"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "carbon-now-cli.yaml"
+    },
+    {
+      "id": "textual-web",
+      "name": "textual-web",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "web",
+      "installMethod": "pip",
+      "installPackage": "textual-web",
+      "binary": "textual-web",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "proxy",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "textual-web.yaml"
+    },
+    {
+      "id": "inspect",
+      "name": "inspect",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "debugger",
+      "installMethod": "pip",
+      "installPackage": "inspect",
+      "binary": "inspect",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "tree",
+        "table",
+        "scroll"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "inspect.yaml"
+    },
+    {
+      "id": "pytest-rich",
+      "name": "pytest-rich",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "testing",
+      "installMethod": "pip",
+      "installPackage": "pytest-rich",
+      "binary": "pytest",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "progress",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "pytest-rich.yaml"
+    },
+    {
+      "id": "cyclopts",
+      "name": "cyclopts",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "cli-builder",
+      "installMethod": "pip",
+      "installPackage": "cyclopts",
+      "binary": "cyclopts",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "panel",
+        "help-viewer"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "cyclopts.yaml"
+    },
+    {
+      "id": "ijavascript",
+      "name": "ijavascript",
+      "framework": "blessed",
+      "frameworkLang": "js",
+      "category": "notebook",
+      "installMethod": "npm",
+      "installPackage": "ijavascript",
+      "binary": "/opt/homebrew/bin/ijavascript",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "editor",
+        "table",
+        "chart",
+        "tab-navigation"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "ijavascript.yaml"
+    },
+    {
+      "id": "ftxui-starter",
+      "name": "ftxui-starter",
+      "framework": "ftxui",
+      "frameworkLang": "cpp",
+      "category": "demo",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/ftxui-starter",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "menu",
+        "input",
+        "table",
+        "animation"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "ftxui-starter.yaml"
+    },
+    {
+      "id": "ftxui-examples",
+      "name": "ftxui-examples",
+      "framework": "ftxui",
+      "frameworkLang": "cpp",
+      "category": "demo",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/ftxui-examples",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "animation",
+        "color",
+        "gauge",
+        "chart",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "ftxui-examples.yaml"
+    },
+    {
+      "id": "game-of-life",
+      "name": "game-of-life",
+      "framework": "ftxui",
+      "frameworkLang": "cpp",
+      "category": "game",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/game-of-life",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "grid",
+        "animation",
+        "controls",
+        "game-board"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": true,
+      "scenario": "game-of-life.yaml"
+    },
+    {
+      "id": "notcurses-demo",
+      "name": "notcurses-demo",
+      "framework": "notcurses",
+      "frameworkLang": "c",
+      "category": "demo",
+      "installMethod": "brew",
+      "installPackage": "notcurses",
+      "binary": "/opt/homebrew/bin/notcurses-demo",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 3000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "multimedia",
+        "sixel",
+        "rgb",
+        "animation",
+        "true-color"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "notcurses-demo.yaml"
+    },
+    {
+      "id": "neomutt",
+      "name": "neomutt",
+      "framework": "notcurses",
+      "frameworkLang": "c",
+      "category": "email",
+      "installMethod": "brew",
+      "installPackage": "neomutt",
+      "binary": "/opt/homebrew/bin/neomutt",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "compose",
+        "sidebar",
+        "search",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "neomutt.yaml"
+    },
+    {
+      "id": "tui-realm-starter",
+      "name": "tui-realm-starter",
+      "framework": "cursive",
+      "frameworkLang": "rust",
+      "category": "demo",
+      "installMethod": "cargo",
+      "installPackage": "tui-realm-starter",
+      "binary": "/opt/homebrew/bin/tui-realm-starter",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "list-selection",
+        "status-bar",
+        "form-input"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tui-realm-starter.yaml"
+    },
+    {
+      "id": "tetris-tui",
+      "name": "tetris-tui",
+      "framework": "cursive",
+      "frameworkLang": "rust",
+      "category": "game",
+      "installMethod": "cargo",
+      "installPackage": "tetris-tui",
+      "binary": "/opt/homebrew/bin/tetris-tui",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "game-board",
+        "grid",
+        "score-bar",
+        "controls"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": true,
+      "scenario": "tetris-tui.yaml"
+    },
+    {
+      "id": "tui-form-wizard",
+      "name": "tui-form-wizard",
+      "framework": "opentui",
+      "frameworkLang": "typescript",
+      "category": "form",
+      "installMethod": "local",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/tui-form-wizard",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "wizard",
+        "checkbox",
+        "select",
+        "progress"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tui-form-wizard.yaml"
+    },
+    {
+      "id": "tui-kanban",
+      "name": "tui-kanban",
+      "framework": "opentui",
+      "frameworkLang": "typescript",
+      "category": "board",
+      "installMethod": "local",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/tui-kanban",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "board",
+        "card",
+        "drag",
+        "tag",
+        "search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tui-kanban.yaml"
+    },
+    {
+      "id": "tui-inbox",
+      "name": "tui-inbox",
+      "framework": "opentui",
+      "frameworkLang": "typescript",
+      "category": "email",
+      "installMethod": "local",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/tui-inbox",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "compose",
+        "sidebar",
+        "tree",
+        "viewer"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tui-inbox.yaml"
+    },
+    {
+      "id": "tui-snake",
+      "name": "tui-snake",
+      "framework": "opentui",
+      "frameworkLang": "typescript",
+      "category": "game",
+      "installMethod": "local",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/tui-snake",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "game-board",
+        "2d-movement",
+        "score-bar",
+        "popup-modal"
+      ],
+      "complexity": "low",
+      "hasHelp": false,
+      "hasRealTimeData": true,
+      "scenario": "tui-snake.yaml"
+    },
+    {
+      "id": "tui-settings",
+      "name": "tui-settings",
+      "framework": "opentui",
+      "frameworkLang": "typescript",
+      "category": "settings",
+      "installMethod": "local",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/tui-settings",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "toggle",
+        "select",
+        "form-input"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tui-settings.yaml"
+    },
+    {
+      "id": "tui-log-viewer",
+      "name": "tui-log-viewer",
+      "framework": "opentui",
+      "frameworkLang": "typescript",
+      "category": "log-viewer",
+      "installMethod": "local",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/tui-log-viewer",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "filter-search",
+        "scroll",
+        "real-time-data",
+        "highlight"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "tui-log-viewer.yaml"
+    },
+    {
+      "id": "lazydocker",
+      "name": "lazydocker",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "docker",
+      "installMethod": "brew",
+      "installPackage": "lazydocker",
+      "binary": "/opt/homebrew/bin/lazydocker",
+      "launchArgs": [],
+      "needsDocker": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "list-selection",
+        "log-viewer",
+        "split-pane",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "lazydocker.yaml"
+    },
+    {
+      "id": "dry",
+      "name": "dry",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "docker",
+      "installMethod": "brew",
+      "installPackage": "dry",
+      "binary": "/opt/homebrew/bin/dry",
+      "launchArgs": [],
+      "needsDocker": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "log-viewer",
+        "tab-navigation",
+        "form-input"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "dry.yaml"
+    },
+    {
+      "id": "ctop",
+      "name": "ctop",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "docker",
+      "installMethod": "brew",
+      "installPackage": "ctop",
+      "binary": "/opt/homebrew/bin/ctop",
+      "launchArgs": [],
+      "needsDocker": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "chart",
+        "real-time-data",
+        "list-selection"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "ctop.yaml"
+    },
+    {
+      "id": "dockly",
+      "name": "dockly",
+      "framework": "blessed",
+      "frameworkLang": "js",
+      "category": "docker",
+      "installMethod": "npm",
+      "installPackage": "dockly",
+      "binary": "/opt/homebrew/bin/dockly",
+      "launchArgs": [],
+      "needsDocker": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "tab-navigation",
+        "log-viewer",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "dockly.yaml"
+    },
+    {
+      "id": "k9s",
+      "name": "k9s",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "kubernetes",
+      "installMethod": "brew",
+      "installPackage": "k9s",
+      "binary": "/opt/homebrew/bin/k9s",
+      "launchArgs": [],
+      "needsK8s": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        ":q"
+      ],
+      "uiPatterns": [
+        "table",
+        "tab-navigation",
+        "log-viewer",
+        "search",
+        "confirm-dialog"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "k9s.yaml"
+    },
+    {
+      "id": "termshark",
+      "name": "termshark",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "network-tool",
+      "installMethod": "brew",
+      "installPackage": "termshark",
+      "binary": "/opt/homebrew/bin/termshark",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "filter-search",
+        "tree",
+        "detail-view",
+        "tab-navigation"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "termshark.yaml"
+    },
+    {
+      "id": "mitmproxy",
+      "name": "mitmproxy",
+      "framework": "ncurses",
+      "frameworkLang": "python",
+      "category": "network-tool",
+      "installMethod": "brew",
+      "installPackage": "mitmproxy",
+      "binary": "/opt/homebrew/bin/mitmproxy",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "detail-view",
+        "tab-navigation",
+        "filter-search"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "mitmproxy.yaml"
+    },
+    {
+      "id": "newsboat",
+      "name": "newsboat",
+      "framework": "ncurses",
+      "frameworkLang": "cpp",
+      "category": "rss",
+      "installMethod": "brew",
+      "installPackage": "newsboat",
+      "binary": "/opt/homebrew/bin/newsboat",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "tab-navigation",
+        "status-bar",
+        "filter-search",
+        "form-input"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "newsboat.yaml"
+    },
+    {
+      "id": "tuir",
+      "name": "tuir",
+      "framework": "ncurses",
+      "frameworkLang": "python",
+      "category": "rss",
+      "installMethod": "pip",
+      "installPackage": "tuir",
+      "binary": "tuir",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "tab-navigation",
+        "viewer"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "tuir.yaml"
+    },
+    {
+      "id": "cointop",
+      "name": "cointop",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "finance",
+      "installMethod": "brew",
+      "installPackage": "cointop",
+      "binary": "/opt/homebrew/bin/cointop",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "chart",
+        "search",
+        "real-time-data",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "cointop.yaml"
+    },
+    {
+      "id": "procs",
+      "name": "procs",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "system-monitor",
+      "installMethod": "cargo",
+      "installPackage": "procs",
+      "binary": "/opt/homebrew/bin/procs",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "process-list",
+        "filter-search",
+        "tree"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "procs.yaml"
+    },
+    {
+      "id": "dust",
+      "name": "dust",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "disk-analyzer",
+      "installMethod": "cargo",
+      "installPackage": "du-dust",
+      "binary": "/opt/homebrew/bin/dust",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tree",
+        "chart",
+        "list-selection"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "dust.yaml"
+    },
+    {
+      "id": "fd",
+      "name": "fd",
+      "framework": "stdout",
+      "frameworkLang": "rust",
+      "category": "search",
+      "installMethod": "brew",
+      "installPackage": "fd",
+      "binary": "/opt/homebrew/bin/fd",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "search",
+        "list-output",
+        "color"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "fd.yaml"
+    },
+    {
+      "id": "bat",
+      "name": "bat",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "pager",
+      "installMethod": "brew",
+      "installPackage": "bat",
+      "binary": "/opt/homebrew/bin/bat",
+      "launchArgs": [],
+      "needsFile": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "syntax-highlighting",
+        "pager",
+        "scroll",
+        "line-numbers",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "bat.yaml"
+    },
+    {
+      "id": "delta",
+      "name": "delta",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "git-client",
+      "installMethod": "brew",
+      "installPackage": "git-delta",
+      "binary": "/opt/homebrew/bin/delta",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "syntax-highlighting",
+        "diff",
+        "pager",
+        "line-numbers"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "delta.yaml"
+    },
+    {
+      "id": "sd",
+      "name": "sd",
+      "framework": "stdout",
+      "frameworkLang": "rust",
+      "category": "search",
+      "installMethod": "cargo",
+      "installPackage": "sd",
+      "binary": "/opt/homebrew/bin/sd",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 300,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "search",
+        "color",
+        "replace"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "sd.yaml"
+    },
+    {
+      "id": "pgcli",
+      "name": "pgcli",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "database",
+      "installMethod": "pip",
+      "installPackage": "pgcli",
+      "binary": "/opt/homebrew/bin/pgcli",
+      "launchArgs": [],
+      "needsDatabase": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "d",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "autocomplete",
+        "syntax-highlighting",
+        "editor"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "pgcli.yaml"
+    },
+    {
+      "id": "mycli",
+      "name": "mycli",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "database",
+      "installMethod": "pip",
+      "installPackage": "mycli",
+      "binary": "/opt/homebrew/bin/mycli",
+      "launchArgs": [],
+      "needsDatabase": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "d",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "autocomplete",
+        "syntax-highlighting",
+        "editor"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "mycli.yaml"
+    },
+    {
+      "id": "litecli",
+      "name": "litecli",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "database",
+      "installMethod": "pip",
+      "installPackage": "litecli",
+      "binary": "/opt/homebrew/bin/litecli",
+      "launchArgs": [],
+      "needsDatabase": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "d",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "autocomplete",
+        "syntax-highlighting",
+        "editor"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "litecli.yaml"
+    },
+    {
+      "id": "usql",
+      "name": "usql",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "database",
+      "installMethod": "brew",
+      "installPackage": "usql",
+      "binary": "/opt/homebrew/bin/usql",
+      "launchArgs": [],
+      "needsDatabase": true,
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 1500,
+      "quitKeys": [
+        "q",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "table",
+        "editor",
+        "autocomplete",
+        "syntax-highlighting"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "usql.yaml"
+    },
+    {
+      "id": "sgpt",
+      "name": "shell-gpt",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "ai-chat",
+      "installMethod": "pip",
+      "installPackage": "shell-gpt",
+      "binary": "/opt/homebrew/bin/sgpt",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "chat",
+        "markdown",
+        "scroll",
+        "input"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "sgpt.yaml"
+    },
+    {
+      "id": "micro",
+      "name": "micro",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "text-editor",
+      "installMethod": "brew",
+      "installPackage": "micro",
+      "binary": "/opt/homebrew/bin/micro",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "ctrl+q"
+      ],
+      "uiPatterns": [
+        "text-editor",
+        "syntax-highlighting",
+        "tab-navigation",
+        "split-pane",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "micro.yaml"
+    },
+    {
+      "id": "ne",
+      "name": "ne",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "text-editor",
+      "installMethod": "brew",
+      "installPackage": "ne",
+      "binary": "/opt/homebrew/bin/ne",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "ctrl+q"
+      ],
+      "uiPatterns": [
+        "text-editor",
+        "syntax-highlighting",
+        "menu",
+        "status-bar"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "ne.yaml"
+    },
+    {
+      "id": "kakoune",
+      "name": "kakoune",
+      "framework": "kakoune",
+      "frameworkLang": "cpp",
+      "category": "text-editor",
+      "installMethod": "brew",
+      "installPackage": "kakoune",
+      "binary": "/opt/homebrew/bin/kak",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        ":q"
+      ],
+      "uiPatterns": [
+        "modal-editing",
+        "syntax-highlighting",
+        "multi-buffer",
+        "status-bar"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "kakoune.yaml"
+    },
+    {
+      "id": "lsd",
+      "name": "lsd",
+      "framework": "stdout",
+      "frameworkLang": "rust",
+      "category": "file-lister",
+      "installMethod": "brew",
+      "installPackage": "lsd",
+      "binary": "/opt/homebrew/bin/lsd",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 300,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-output",
+        "color",
+        "icon",
+        "tree"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "lsd.yaml"
+    },
+    {
+      "id": "btop4win",
+      "name": "btop4win",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "system-monitor",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/btop4win",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "linux"
+      ],
+      "settleMs": 3000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "braille-chart",
+        "tab-navigation",
+        "table",
+        "block-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "btop4win.yaml"
+    },
+    {
+      "id": "sampler",
+      "name": "sampler",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "dashboard",
+      "installMethod": "brew",
+      "installPackage": "sampler",
+      "binary": "/opt/homebrew/bin/sampler",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "dashboard",
+        "gauge",
+        "chart",
+        "real-time-data",
+        "meter"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true,
+      "scenario": "sampler.yaml"
+    },
+    {
+      "id": "mcfly",
+      "name": "mcfly",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "shell-history",
+      "installMethod": "brew",
+      "installPackage": "mcfly",
+      "binary": "/opt/homebrew/bin/mcfly",
+      "launchArgs": [],
+      "needsRepo": false,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 500,
+      "quitKeys": [
+        "escape",
+        "ctrl+c"
+      ],
+      "uiPatterns": [
+        "search",
+        "list-selection",
+        "filter-search"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false,
+      "scenario": "mcfly.yaml"
+    },
+    {
+      "id": "http-prompt",
+      "name": "http-prompt",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "api-client",
+      "installMethod": "pipx",
+      "installPackage": "http-prompt",
+      "binary": "http-prompt",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "syntax-highlight",
+        "autocomplete"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "glances",
+      "name": "glances",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "system-monitor",
+      "installMethod": "pipx",
+      "installPackage": "glances",
+      "binary": "glances",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "gauge",
+        "table",
+        "real-time-data",
+        "alert"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "saws",
+      "name": "saws",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "dev-tool",
+      "installMethod": "pipx",
+      "installPackage": "saws",
+      "binary": "saws",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "autocomplete",
+        "syntax-highlight",
+        "table"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "pyp",
+      "name": "pyp",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "picker",
+      "installMethod": "pipx",
+      "installPackage": "pyp",
+      "binary": "pyp",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Enter"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "search",
+        "filter-search"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "httpie",
+      "name": "httpie",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "api-client",
+      "installMethod": "pipx",
+      "installPackage": "httpie",
+      "binary": "http",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "syntax-highlight",
+        "table",
+        "form-input"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "s-tui",
+      "name": "s-tui",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "system-monitor",
+      "installMethod": "pipx",
+      "installPackage": "s-tui",
+      "binary": "s-tui",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "gauge",
+        "real-time-data",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "visidata",
+      "name": "visidata",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "data-browser",
+      "installMethod": "pipx",
+      "installPackage": "visidata",
+      "binary": "vd",
+      "launchArgs": [],
+      "needsFile": "*.csv",
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "column-sort",
+        "filter",
+        "chart",
+        "form-input"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "ftxui-chart",
+      "name": "ftxui-chart",
+      "framework": "ftxui",
+      "frameworkLang": "cpp",
+      "category": "chart",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/ftxui-chart",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "chart",
+        "gauge",
+        "graph",
+        "braille"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "ftxui-game",
+      "name": "ftxui-game",
+      "framework": "ftxui",
+      "frameworkLang": "cpp",
+      "category": "game",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/ftxui-game",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "board",
+        "player",
+        "score",
+        "entities"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "ftxui-editor",
+      "name": "ftxui-editor",
+      "framework": "ftxui",
+      "frameworkLang": "cpp",
+      "category": "text-editor",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/ftxui-editor",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": "*.txt",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "editor",
+        "syntax-highlight",
+        "cursor",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "notcurses-inspect",
+      "name": "notcurses-inspect",
+      "framework": "notcurses",
+      "frameworkLang": "c",
+      "category": "dev-tool",
+      "installMethod": "brew",
+      "installPackage": "notcurses",
+      "binary": "/opt/homebrew/bin/notcurses-inspect",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "grid",
+        "hexview",
+        "tree-view",
+        "search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "nctetris",
+      "name": "nctetris",
+      "framework": "notcurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "notcurses",
+      "binary": "/opt/homebrew/bin/nctetris",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "board",
+        "score",
+        "entities",
+        "game-loop"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "ncdirect",
+      "name": "ncdirect",
+      "framework": "notcurses",
+      "frameworkLang": "c",
+      "category": "renderer",
+      "installMethod": "brew",
+      "installPackage": "notcurses",
+      "binary": "/opt/homebrew/bin/ncdirect",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "sixels",
+        "multimedia",
+        "sprites"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "hexyl",
+      "name": "hexyl",
+      "framework": "cursive",
+      "frameworkLang": "rust",
+      "category": "dev-tool",
+      "installMethod": "cargo",
+      "installPackage": "hexyl",
+      "binary": "/opt/homebrew/bin/hexyl",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": "*.bin",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "hexview",
+        "scroll",
+        "search"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "tick-rs",
+      "name": "tick-rs",
+      "framework": "cursive",
+      "frameworkLang": "rust",
+      "category": "task-mgmt",
+      "installMethod": "cargo",
+      "installPackage": "tickrs",
+      "binary": "/opt/homebrew/bin/tickrs",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "checkbox",
+        "calendar-view",
+        "timer"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "git-interactive-rebase-tool",
+      "name": "interactive-rebase-tool",
+      "framework": "cursive",
+      "frameworkLang": "rust",
+      "category": "git-client",
+      "installMethod": "cargo",
+      "installPackage": "git-interactive-rebase-tool",
+      "binary": "/opt/homebrew/bin/interactive-rebase-tool",
+      "launchArgs": [],
+      "needsRepo": true,
+      "needsNetwork": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "reorder-list",
+        "confirm-dialog",
+        "status-bar"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "textual-fs",
+      "name": "textual-fs",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "file-manager",
+      "installMethod": "pipx",
+      "installPackage": "textual-fs",
+      "binary": "textual-fs",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tree-view",
+        "list-selection",
+        "file-ops",
+        "preview"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "kak-lsp",
+      "name": "kak-lsp",
+      "framework": "kakoune",
+      "frameworkLang": "rust",
+      "category": "text-editor",
+      "installMethod": "cargo",
+      "installPackage": "kak-lsp",
+      "binary": "/opt/homebrew/bin/kak-lsp",
+      "launchArgs": [
+        "--kakoune"
+      ],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        ":q"
+      ],
+      "uiPatterns": [
+        "lsp",
+        "completion",
+        "diagnostics",
+        "hover"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "pomo",
+      "name": "pomo",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "productivity",
+      "installMethod": "brew",
+      "installPackage": "pomo",
+      "binary": "/opt/homebrew/bin/pomo",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "timer",
+        "progress-bar",
+        "list-selection",
+        "notification"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "bubbles",
+      "name": "bubbles",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "demo",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/bubbles",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "form-input",
+        "table",
+        "viewport",
+        "progress-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "transition",
+      "name": "transition",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "demo",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/transition",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "animation",
+        "transition",
+        "styling"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "xh",
+      "name": "xh",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "api-client",
+      "installMethod": "cargo",
+      "installPackage": "xh",
+      "binary": "/opt/homebrew/bin/xh",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "syntax-highlight",
+        "table",
+        "form-input"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "oha",
+      "name": "oha",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "network-tool",
+      "installMethod": "cargo",
+      "installPackage": "oha",
+      "binary": "/opt/homebrew/bin/oha",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "chart",
+        "gauge",
+        "real-time-data",
+        "progress-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "mdcat",
+      "name": "mdcat",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "markdown-viewer",
+      "installMethod": "cargo",
+      "installPackage": "mdcat",
+      "binary": "/opt/homebrew/bin/mdcat",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": "*.md",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "markdown",
+        "syntax-highlight",
+        "scroll",
+        "table"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "satuation",
+      "name": "satuation",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "system-monitor",
+      "installMethod": "cargo",
+      "installPackage": "satuation",
+      "binary": "/opt/homebrew/bin/satuation",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "gauge",
+        "real-time-data",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "ttyper",
+      "name": "ttyper",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "game",
+      "installMethod": "cargo",
+      "installPackage": "ttyper",
+      "binary": "/opt/homebrew/bin/ttyper",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc",
+        "q"
+      ],
+      "uiPatterns": [
+        "game-loop",
+        "score",
+        "text-input",
+        "timer"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "chess-tui",
+      "name": "chess-tui",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "game",
+      "installMethod": "cargo",
+      "installPackage": "chess-tui",
+      "binary": "/opt/homebrew/bin/chess-tui",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "board",
+        "entities",
+        "game-loop",
+        "move-list",
+        "timer"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "rusty-krab",
+      "name": "rusty-krab-manager",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "file-manager",
+      "installMethod": "cargo",
+      "installPackage": "rusty-krab-manager",
+      "binary": "/opt/homebrew/bin/rkm",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "tree-view",
+        "list-selection",
+        "tab-navigation",
+        "search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "gifski-tui",
+      "name": "gifski",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "image-gen",
+      "installMethod": "cargo",
+      "installPackage": "gifski",
+      "binary": "/opt/homebrew/bin/gifski",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": "*.png",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "progress-bar",
+        "file-picker",
+        "form-input"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "frogmouth",
+      "name": "frogmouth",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "markdown-viewer",
+      "installMethod": "pipx",
+      "installPackage": "frogmouth",
+      "binary": "frogmouth",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": "*.md",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "markdown",
+        "tree-view",
+        "tab-navigation",
+        "search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "textual-mandelbrot",
+      "name": "textual-mandelbrot",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "art",
+      "installMethod": "pipx",
+      "installPackage": "textual-mandelbrot",
+      "binary": "textual-mandelbrot",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "braille",
+        "zoom",
+        "pan",
+        "color-palette"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "textual-stopwatch",
+      "name": "textual-stopwatch",
+      "framework": "textual",
+      "frameworkLang": "python",
+      "category": "productivity",
+      "installMethod": "pipx",
+      "installPackage": "textual-stopwatch",
+      "binary": "textual-stopwatch",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "timer",
+        "button",
+        "digital-display",
+        "lap-list"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "gum-form",
+      "name": "gum",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "form-tool",
+      "installMethod": "brew",
+      "installPackage": "gum",
+      "binary": "/opt/homebrew/bin/gum",
+      "launchArgs": [
+        "choose",
+        "--help"
+      ],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q",
+        "Esc"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "picker",
+        "confirm-dialog",
+        "filter-search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "wish",
+      "name": "wish",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "form-library",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/wish",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "button",
+        "checkbox",
+        "dropdown"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "lipgloss-app",
+      "name": "lipgloss",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "renderer",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/lipgloss",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "styling",
+        "gradient",
+        "border",
+        "shadow"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "weechat",
+      "name": "weechat",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "chat",
+      "installMethod": "brew",
+      "installPackage": "weechat",
+      "binary": "/opt/homebrew/bin/weechat",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "/quit"
+      ],
+      "uiPatterns": [
+        "buffer-list",
+        "tab-navigation",
+        "split-panel",
+        "chat",
+        "search"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "calcurse",
+      "name": "calcurse",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "calendar",
+      "installMethod": "brew",
+      "installPackage": "calcurse",
+      "binary": "/opt/homebrew/bin/calcurse",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "calendar-view",
+        "list-selection",
+        "form-input",
+        "todo-list"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "taskwarrior-nc",
+      "name": "taskwarrior",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "task-mgmt",
+      "installMethod": "brew",
+      "installPackage": "task",
+      "binary": "/opt/homebrew/bin/task",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "filter-search",
+        "tag",
+        "priority",
+        "urgency"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "vitetris",
+      "name": "vitetris",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "vitetris",
+      "binary": "/opt/homebrew/bin/vitetris",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "board",
+        "score",
+        "entities",
+        "game-loop"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "kubectl-view-secret",
+      "name": "kubectl-view-secret",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "kubernetes",
+      "installMethod": "cargo",
+      "installPackage": "kubectl-view-secret",
+      "binary": "/opt/homebrew/bin/kubectl-view-secret",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "table",
+        "form-input",
+        "masked-view",
+        "tree-view"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "imtui-demo",
+      "name": "imtui-demo",
+      "framework": "imtui",
+      "frameworkLang": "cpp",
+      "category": "demo",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/imtui-demo",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "tab-navigation",
+        "form-input",
+        "chart",
+        "table",
+        "tree-view",
+        "window"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "imtui-editor",
+      "name": "imtui-editor",
+      "framework": "imtui",
+      "frameworkLang": "cpp",
+      "category": "text-editor",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/imtui-editor",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": "*.txt",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "editor",
+        "syntax-highlight",
+        "cursor",
+        "status-bar",
+        "tree-view"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "wiki-tui",
+      "name": "wiki-tui",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "search",
+      "installMethod": "cargo",
+      "installPackage": "wiki-tui",
+      "binary": "/opt/homebrew/bin/wiki-tui",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "search",
+        "list-selection",
+        "pager",
+        "markdown"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "git-peek",
+      "name": "git-peek",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "git-client",
+      "installMethod": "brew",
+      "installPackage": "git-peek",
+      "binary": "/opt/homebrew/bin/git-peek",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "diff-view",
+        "scroll",
+        "tab-navigation"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "nmon",
+      "name": "nmon",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "system-monitor",
+      "installMethod": "brew",
+      "installPackage": "nmon",
+      "binary": "/opt/homebrew/bin/nmon",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "gauge",
+        "table",
+        "tab-navigation",
+        "real-time-data"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "iftop",
+      "name": "iftop",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "network-tool",
+      "installMethod": "brew",
+      "installPackage": "iftop",
+      "binary": "/opt/homebrew/sbin/iftop",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "list-selection",
+        "real-time-data",
+        "sort"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "wordgrinder",
+      "name": "wordgrinder",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "text-editor",
+      "installMethod": "brew",
+      "installPackage": "wordgrinder",
+      "binary": "/opt/homebrew/bin/wordgrinder",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": "*.doc",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+Q"
+      ],
+      "uiPatterns": [
+        "editor",
+        "menu-bar",
+        "status-bar",
+        "spellcheck"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "lynx",
+      "name": "lynx",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "web",
+      "installMethod": "brew",
+      "installPackage": "lynx",
+      "binary": "/opt/homebrew/bin/lynx",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "pager",
+        "form-input",
+        "list-selection",
+        "link-navigation"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "promptui-select",
+      "name": "promptui-select",
+      "framework": "promptui",
+      "frameworkLang": "go",
+      "category": "picker",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/promptui-select",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "search",
+        "filter-search",
+        "highlight"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "promptui-prompt",
+      "name": "promptui-prompt",
+      "framework": "promptui",
+      "frameworkLang": "go",
+      "category": "form-library",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/promptui-prompt",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "confirm-dialog",
+        "select",
+        "masked-input"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "survey-demo",
+      "name": "survey-demo",
+      "framework": "survey",
+      "frameworkLang": "go",
+      "category": "form-library",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/survey-demo",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "multi-select",
+        "confirm-dialog",
+        "password-input",
+        "dropdown"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "survey-multiselect",
+      "name": "survey-multiselect",
+      "framework": "survey",
+      "frameworkLang": "go",
+      "category": "picker",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/survey-multiselect",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "multi-select",
+        "checkbox",
+        "list-selection",
+        "toggle"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "ishell-demo",
+      "name": "ishell-demo",
+      "framework": "ishell",
+      "frameworkLang": "go",
+      "category": "form-library",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/ishell-demo",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "autocomplete",
+        "menu",
+        "progress-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "termui-dashboard",
+      "name": "termui-dashboard",
+      "framework": "termui",
+      "frameworkLang": "go",
+      "category": "dashboard",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/termui-dashboard",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "dashboard",
+        "chart",
+        "gauge",
+        "sparkline",
+        "table"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "termui-gauge",
+      "name": "termui-gauge",
+      "framework": "termui",
+      "frameworkLang": "go",
+      "category": "chart",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/termui-gauge",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "gauge",
+        "sparkline",
+        "chart",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "atuin",
+      "name": "atuin",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "shell-history",
+      "installMethod": "cargo",
+      "installPackage": "atuin",
+      "binary": "/opt/homebrew/bin/atuin",
+      "launchArgs": [
+        "history",
+        "list"
+      ],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "search",
+        "filter-search",
+        "stats"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "zoxide-tui",
+      "name": "zoxide",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "picker",
+      "installMethod": "brew",
+      "installPackage": "zoxide",
+      "binary": "/opt/homebrew/bin/zoxide",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Enter"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "search",
+        "frecency",
+        "sort"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "pueue",
+      "name": "pueue",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "task-mgmt",
+      "installMethod": "cargo",
+      "installPackage": "pueue",
+      "binary": "/opt/homebrew/bin/pueue",
+      "launchArgs": [
+        "status"
+      ],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "progress-bar",
+        "table",
+        "status-bar"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "grex",
+      "name": "grex",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "dev-tool",
+      "installMethod": "cargo",
+      "installPackage": "grex",
+      "binary": "/opt/homebrew/bin/grex",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "table",
+        "syntax-highlight"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "onefetch",
+      "name": "onefetch",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "git-client",
+      "installMethod": "brew",
+      "installPackage": "onefetch",
+      "binary": "/opt/homebrew/bin/onefetch",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "stats",
+        "chart",
+        "language-bar",
+        "info-panel"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "macchina",
+      "name": "macchina",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "system-monitor",
+      "installMethod": "cargo",
+      "installPackage": "macchina",
+      "binary": "/opt/homebrew/bin/macchina",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "info-panel",
+        "chart",
+        "color-bar",
+        "styling"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "screen",
+      "name": "screen",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "terminal-mux",
+      "installMethod": "brew",
+      "installPackage": "screen",
+      "binary": "/usr/bin/screen",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+A",
+        "d"
+      ],
+      "uiPatterns": [
+        "multiplex",
+        "split-panel",
+        "status-bar",
+        "scrollback"
+      ],
+      "complexity": "high",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "trakteer",
+      "name": "trakteer",
+      "framework": "ink",
+      "frameworkLang": "javascript",
+      "category": "task-mgmt",
+      "installMethod": "npm",
+      "installPackage": "trakteer",
+      "binary": "/opt/homebrew/bin/trakteer",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "board",
+        "list-selection",
+        "status-bar",
+        "filter-search"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "qoa",
+      "name": "qoa",
+      "framework": "ink",
+      "frameworkLang": "javascript",
+      "category": "form-tool",
+      "installMethod": "npm",
+      "installPackage": "qoa",
+      "binary": "/opt/homebrew/bin/qoa",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Enter"
+      ],
+      "uiPatterns": [
+        "form-input",
+        "confirm-dialog",
+        "select",
+        "multi-select"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "textualize-frogmouth",
+      "name": "frogmouth",
+      "framework": "rich",
+      "frameworkLang": "python",
+      "category": "markdown-viewer",
+      "installMethod": "pipx",
+      "installPackage": "frogmouth",
+      "binary": "frogmouth",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": "*.md",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "markdown",
+        "syntax-highlight",
+        "pager",
+        "panel"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "ftxui-radiobox",
+      "name": "ftxui-radiobox",
+      "framework": "ftxui",
+      "frameworkLang": "cpp",
+      "category": "form-library",
+      "installMethod": "source",
+      "installPackage": null,
+      "binary": "/opt/homebrew/bin/ftxui-radiobox",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": true,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Esc"
+      ],
+      "uiPatterns": [
+        "radio",
+        "toggle",
+        "checkbox",
+        "button"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "mdcat-stdout",
+      "name": "mdcat",
+      "framework": "stdout",
+      "frameworkLang": "rust",
+      "category": "markdown-viewer",
+      "installMethod": "cargo",
+      "installPackage": "mdcat",
+      "binary": "/opt/homebrew/bin/mdcat",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": "*.md",
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "markdown",
+        "syntax-highlight",
+        "pager"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "tickrs-rat",
+      "name": "tickrs",
+      "framework": "ratatui",
+      "frameworkLang": "rust",
+      "category": "finance",
+      "installMethod": "brew",
+      "installPackage": "tickrs",
+      "binary": "/opt/homebrew/bin/tickrs",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "chart",
+        "real-time-data",
+        "scroll",
+        "list-selection"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "termenv",
+      "name": "termenv",
+      "framework": "bubbletea",
+      "frameworkLang": "go",
+      "category": "color-tool",
+      "installMethod": "brew",
+      "installPackage": "termenv",
+      "binary": "/opt/homebrew/bin/termenv",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "color-palette",
+        "swatch",
+        "export",
+        "styling"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "cmatrix",
+      "name": "cmatrix",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "art",
+      "installMethod": "brew",
+      "installPackage": "cmatrix",
+      "binary": "/opt/homebrew/bin/cmatrix",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "animation",
+        "styling",
+        "scroll"
+      ],
+      "complexity": "low",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "bastet",
+      "name": "bastet",
+      "framework": "ncurses",
+      "frameworkLang": "c",
+      "category": "game",
+      "installMethod": "brew",
+      "installPackage": "bastet",
+      "binary": "/opt/homebrew/bin/bastet",
+      "launchArgs": [],
+      "needsNetwork": false,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "board",
+        "score",
+        "entities",
+        "game-loop"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": true
+    },
+    {
+      "id": "ncspot",
+      "name": "ncspot",
+      "framework": "ncspot",
+      "frameworkLang": "rust",
+      "category": "music",
+      "installMethod": "brew",
+      "installPackage": "ncspot",
+      "binary": "/opt/homebrew/bin/ncspot",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "q"
+      ],
+      "uiPatterns": [
+        "list-selection",
+        "search",
+        "status-bar",
+        "queue"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    },
+    {
+      "id": "spotifyd",
+      "name": "spotifyd",
+      "framework": "ncspot",
+      "frameworkLang": "rust",
+      "category": "music",
+      "installMethod": "brew",
+      "installPackage": "spotifyd",
+      "binary": "/opt/homebrew/bin/spotifyd",
+      "launchArgs": [],
+      "needsNetwork": true,
+      "needsRepo": false,
+      "needsFile": null,
+      "needsDatabase": null,
+      "platforms": [
+        "darwin",
+        "linux"
+      ],
+      "settleMs": 2000,
+      "quitKeys": [
+        "Ctrl+C"
+      ],
+      "uiPatterns": [
+        "status-bar",
+        "list-selection",
+        "queue"
+      ],
+      "complexity": "medium",
+      "hasHelp": true,
+      "hasRealTimeData": false
+    }
+  ]
+}

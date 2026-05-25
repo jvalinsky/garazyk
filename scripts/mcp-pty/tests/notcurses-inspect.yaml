@@ -1,0 +1,36 @@
+# Auto-generated scenario for notcurses-inspect (notcurses/dev-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: grid, hexview, tree-view, search
+name: notcurses-inspect dev tool
+description: "Launch notcurses-inspect, verify semantic detection, exercise dev-tool patterns, then quit"
+command: /opt/homebrew/bin/notcurses-inspect
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for notcurses-inspect to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: notcurses-inspect
+    label: Verify app is notcurses-inspect
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit notcurses-inspect
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

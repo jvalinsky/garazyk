@@ -1,0 +1,32 @@
+# Auto-generated scenario for wishlist (bubbletea/ssh-directory)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, form-input, ssh, status-bar
+name: wishlist ssh directory
+description: "Launch wishlist, verify semantic detection, exercise ssh-directory patterns, then quit"
+command: /Users/jack/go/bin/wishlist
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for wishlist to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: wishlist
+    label: Verify app is wishlist
+  - type: type
+    value: test
+    label: Type search filter
+  - type: wait
+    timeoutMs: 300
+    label: Wait for filter
+  - type: assert_content_changed
+    label: Verify content filtered
+  - type: quit
+    label: Quit wishlist
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

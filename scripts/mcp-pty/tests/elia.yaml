@@ -1,0 +1,28 @@
+# Auto-generated scenario for elia (textual/ai-chat)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: chat, scroll, markdown, input
+name: elia ai chat
+description: "Launch elia, verify semantic detection, exercise ai-chat patterns, then quit"
+command: elia
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for elia to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: elia
+    label: Verify app is elia
+  - type: assert_semantic
+    target: framework
+    expected: textual
+    label: Verify framework is textual
+  - type: quit
+    label: Quit elia
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

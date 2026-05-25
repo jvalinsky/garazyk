@@ -1,0 +1,39 @@
+# Auto-generated scenario for trippy (ratatui/network-tool)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tab-navigation, real-time-chart, table
+name: trippy network tool
+description: "Launch trippy, verify semantic detection, exercise network-tool patterns, then quit"
+command: /opt/homebrew/bin/trip
+args: -u, 1.1.1.1
+cols: 80
+rows: 24
+settleMs: 3000
+steps:
+  - type: wait
+    timeoutMs: 3000
+    label: Wait for trippy to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: trippy
+    label: Verify app is trippy
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit trippy
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

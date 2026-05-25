@@ -1,0 +1,24 @@
+# Auto-generated scenario for bubbles (bubbletea/demo)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: tab-navigation, form-input, table, viewport, progress-bar
+name: bubbles demo
+description: "Launch bubbles, verify semantic detection, exercise demo patterns, then quit"
+command: /opt/homebrew/bin/bubbles
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 2000
+    label: Wait for bubbles to animate
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: bubbles
+    label: Verify app is bubbles
+  - type: quit
+    label: Quit bubbles
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

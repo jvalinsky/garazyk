@@ -1,0 +1,36 @@
+# Auto-generated scenario for soft-serve (bubbletea/git-server)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, tab-navigation, status-bar, form-input
+name: soft-serve git server
+description: "Launch soft-serve, verify semantic detection, exercise git-server patterns, then quit"
+command: /opt/homebrew/bin/soft
+cols: 80
+rows: 24
+settleMs: 1500
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for soft-serve to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: soft-serve
+    label: Verify app is soft-serve
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit soft-serve
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

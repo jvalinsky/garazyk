@@ -1,0 +1,36 @@
+# Auto-generated scenario for frogmouth (rich/markdown-viewer)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: markdown, syntax-highlight, pager, panel
+name: frogmouth markdown viewer
+description: "Launch frogmouth, verify semantic detection, exercise markdown-viewer patterns, then quit"
+command: frogmouth
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for frogmouth to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: textualize-frogmouth
+    label: Verify app is textualize-frogmouth
+  - type: press_key
+    value: j
+    label: Scroll down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Scroll up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit frogmouth
+  - type: wait
+    timeoutMs: 500
+    label: Wait for exit

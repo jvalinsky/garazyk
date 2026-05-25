@@ -1,0 +1,40 @@
+# Auto-generated scenario for interactive-rebase-tool (cursive/git-client)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: list-selection, reorder-list, confirm-dialog, status-bar
+name: interactive-rebase-tool git client
+description: "Launch interactive-rebase-tool, verify semantic detection, exercise git-client patterns, then quit"
+command: /opt/homebrew/bin/interactive-rebase-tool
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for interactive-rebase-tool to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: git-interactive-rebase-tool
+    label: Verify app is git-interactive-rebase-tool
+  - type: assert_semantic
+    target: framework
+    expected: cursive
+    label: Verify framework is cursive
+  - type: press_key
+    value: j
+    label: Navigate down in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: press_key
+    value: k
+    label: Navigate up in list
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit interactive-rebase-tool
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

@@ -1,0 +1,38 @@
+# Auto-generated scenario for dolphie (textual/database)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: table, schema, query
+name: dolphie database
+description: "Launch dolphie, verify semantic detection, exercise database patterns, then quit"
+command: dolphie
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1500
+    label: Wait for dolphie to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: dolphie
+    label: Verify app is dolphie
+  - type: press_key
+    value: j
+    label: Navigate down
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: assert_cursor_moved
+    label: Verify cursor moved
+  - type: press_key
+    value: k
+    label: Navigate up
+  - type: wait
+    timeoutMs: 200
+    label: Brief pause
+  - type: quit
+    label: Quit dolphie
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

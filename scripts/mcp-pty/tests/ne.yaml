@@ -1,0 +1,24 @@
+# Auto-generated scenario for ne (ncurses/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: text-editor, syntax-highlighting, menu, status-bar
+name: ne text editor
+description: "Launch ne, verify semantic detection, exercise text-editor patterns, then quit"
+command: /opt/homebrew/bin/ne
+cols: 80
+rows: 24
+settleMs: 500
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for ne to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ne
+    label: Verify app is ne
+  - type: quit
+    label: Quit ne
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit

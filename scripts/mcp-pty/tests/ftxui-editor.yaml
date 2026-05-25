@@ -1,0 +1,24 @@
+# Auto-generated scenario for ftxui-editor (ftxui/text-editor)
+# Framework confidence via semantic detection will be verified
+# UI Patterns: editor, syntax-highlight, cursor, status-bar
+name: ftxui-editor text editor
+description: "Launch ftxui-editor, verify semantic detection, exercise text-editor patterns, then quit"
+command: /opt/homebrew/bin/ftxui-editor
+cols: 80
+rows: 24
+settleMs: 2000
+steps:
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for ftxui-editor to render
+  - type: observe
+    label: Take semantic snapshot
+  - type: assert_semantic
+    target: app
+    expected: ftxui-editor
+    label: Verify app is ftxui-editor
+  - type: quit
+    label: Quit ftxui-editor
+  - type: wait
+    timeoutMs: 1000
+    label: Wait for exit
