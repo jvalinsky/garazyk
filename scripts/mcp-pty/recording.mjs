@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { buildAsciinemaOverlayHtml, splitSemanticCast } from "./semantic_overlay_html.mjs";
+import { buildAsciinemaOverlayHtml, splitSemanticCast, splitSemanticCastFile } from "./semantic_overlay_html.mjs";
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -75,11 +75,42 @@ export class AsciicastRecorder {
   async close() {
     if (this.closed) return;
     this.closed = true;
+
     await new Promise((resolve, reject) => {
       this.stream.end((err) => (err ? reject(err) : resolve()));
     });
-    const castContent = fs.readFileSync(this.castPath, "utf8");
-    const { standardCast, semanticEvents } = splitSemanticCast(castContent);
+
+    // Force-flush the file to disk before reading
+    // After stream.end(), the fd is available
+    if (typeof this.stream.fd === 'number') {
+      try { fs.fsyncSync(this.stream.fd); } catch {}
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Use streaming for large files, in-memory for small ones
+    const stat = fs.statSync(this.castPath);
+    const LARGE_FILE = 200 * 1024 * 1024; // 200MB threshold
+    let standardCast, semanticEvents;
+
+    if (stat.size > LARGE_FILE) {
+      const result = await splitSemanticCastFile(this.castPath);
+      standardCast = result.standardCast;
+      semanticEvents = result.semanticEvents;
+    } else {
+      // Retry reading the file — OS may not have flushed yet
+      let castContent;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        castContent = fs.readFileSync(this.castPath, "utf8");
+        if (castContent && castContent.trim().length > 0) break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      if (!castContent || castContent.trim().length === 0) {
+        throw new Error(`Cast file is empty after retries (size=${stat.size}, path=${this.castPath})`);
+      }
+      const result = splitSemanticCast(castContent);
+      standardCast = result.standardCast;
+      semanticEvents = result.semanticEvents;
+    }
 
     // Write the clean cast (no semantic events) for Asciinema Player to fetch
     const playbackCastPath = path.join(this.outputDir, "playback.cast");
@@ -91,12 +122,20 @@ export class AsciicastRecorder {
       fs.writeFileSync(semanticPath, JSON.stringify(semanticEvents));
     }
 
-    const html = buildStandaloneHtml({
+    const html = buildAsciinemaOverlayHtml({
       title: this.title,
-      castContent,
+      castFileName: "playback.cast",
+      semanticFileName: "semantic-events.json",
       semanticOverlay: this.semanticOverlay,
     });
+    if (!html || html.length === 0) {
+      throw new Error("buildAsciinemaOverlayHtml returned empty HTML");
+    }
     fs.writeFileSync(this.htmlPath, html);
+    // Verify write
+    if (!fs.existsSync(this.htmlPath)) {
+      throw new Error(`fs.writeFileSync failed: ${this.htmlPath} does not exist`);
+    }
   }
 }
 
