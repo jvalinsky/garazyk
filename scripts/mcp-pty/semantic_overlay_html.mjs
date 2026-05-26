@@ -206,6 +206,18 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
     .cap-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; }
     .cap-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     .cap-key { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; padding: 0 5px; background: #1a4a6e; color: #79c0ff; border: 1px solid #388bfd; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .game-log { display: none; max-height: 300px; overflow-y: auto; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .game-log.visible { display: block; }
+    .game-turn { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .game-turn:last-child { border-bottom: none; }
+    .turn-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .turn-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 18px; padding: 0 4px; background: #6e3a1a; color: #f0883e; border: 1px solid #f0883e; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .turn-move { color: var(--text); font-weight: 600; }
+    .turn-reason { color: var(--muted); font-size: 10px; }
+    .turn-state { color: #8b949e; font-size: 10px; margin-top: 2px; }
+    .turn-score { color: #3fb950; font-size: 10px; }
+    .turn-fail { color: #f85149; font-size: 10px; }
+    .beam-seq { color: #bc8cff; font-size: 10px; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -223,6 +235,7 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
         <div class="cap-card"><h3>Application</h3><div id="app-info">-</div></div>
         <div class="cap-card"><h3>Navigate</h3><div id="nav-info">-</div></div>
         <div class="cap-card"><h3>Actions</h3><div id="actions-info">-</div></div>
+        <div class="cap-card" id="game-log-card" style="display:none"><h3>Move Log</h3><div class="game-log" id="game-log"></div></div>
         <div class="cap-card" style="font-size:11px;font-family:monospace;white-space:pre-wrap"><h3>Debug</h3><div id="debug-info">-</div></div>
       </aside>
     </div>
@@ -232,8 +245,10 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
     const CAST_URL = "${escapeHtml(castFileName)}";
     const SEMANTIC_INDEX_URL = "semantic-index.json";
     const SEMANTIC_SNAPSHOTS_URL = "semantic-snapshots.json";
+    const GAME_LOG_URL = "game-log.json";
     let SEMANTIC_INDEX = [];       // [{t, sid, app, framework, confidence, cursor, altScreen}]
     let SEMANTIC_SNAPSHOTS = null;  // [{elements, capabilities, controls, ...}] or null if not loaded yet
+    let GAME_LOG = null;           // [{turn, t, state, legalMoves, beamSearch, chosen, outcome}] or null
     let snapshotsLoading = false;
     let overlayEnabled = ${overlayEnabled ? "true" : "false"};
 
@@ -343,6 +358,9 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
           renderSemanticOverlay(snapshot);
         }
       }
+
+      // Sync game log to current time
+      syncGameLog(t);
     }
 
     function startPolling() {
@@ -477,6 +495,119 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
       snapshotsLoading = false;
     }
 
+    // --- Game Log ---
+
+    async function loadGameLog() {
+      if (GAME_LOG) return;
+      try {
+        const resp = await fetch(GAME_LOG_URL);
+        if (resp.ok) {
+          GAME_LOG = await resp.json();
+          console.log("Loaded " + GAME_LOG.length + " game log entries");
+          const card = document.getElementById("game-log-card");
+          if (card && GAME_LOG.length > 0) {
+            card.style.display = "";
+            renderGameLog();
+          }
+        } else if (resp.status !== 404) {
+          console.warn("Game log fetch failed: " + resp.status);
+        }
+      } catch (err) {
+        // 404 is fine — not all recordings have game logs
+        if (!err.message?.includes("404")) console.warn("Failed to load game log:", err);
+      }
+    }
+
+    function moveLabel(m) {
+      if (!m) return "?";
+      const card = m.card || "";
+      switch (m.type) {
+        case "waste_to_foundation": return card + " → F" + m.to;
+        case "tableau_to_foundation": return card + " → F" + m.to;
+        case "tableau_to_tableau": return card + " T" + m.from + "→T" + m.to;
+        case "waste_to_tableau": return card + " → T" + m.to;
+        case "deal_stock": return "deal";
+        case "recycle_stock": return "recycle";
+        default: return m.type;
+      }
+    }
+
+    function renderGameLog() {
+      const el = document.getElementById("game-log");
+      if (!el || !GAME_LOG) return;
+      el.classList.add("visible");
+      el.innerHTML = "";
+      for (const entry of GAME_LOG) {
+        const div = document.createElement("div");
+        div.className = "game-turn";
+        div.dataset.turn = entry.turn;
+        div.dataset.t = entry.t;
+
+        const chosen = moveLabel(entry.chosen?.move);
+        const reason = entry.chosen?.reason || "";
+        const success = entry.outcome?.success;
+        const state = entry.state;
+        const beam = entry.beamSearch?.topSequences || [];
+
+        let html = '<div class="turn-header">';
+        html += '<span class="turn-badge">' + entry.turn + '</span>';
+        html += '<span class="turn-move">' + escapeHtml(chosen) + '</span>';
+        if (success === false) html += ' <span class="turn-fail">FAILED</span>';
+        else if (success === true) html += ' <span class="turn-score">✓</span>';
+        html += '</div>';
+        html += '<div class="turn-reason">' + escapeHtml(reason) + '</div>';
+
+        // Compact state: foundations + face-down count
+        if (state) {
+          const fStr = (state.foundations || []).map(f => f.length > 0 ? f[f.length-1] : "·").join(" ");
+          html += '<div class="turn-state">F:' + fStr + ' ↓' + (state.faceDownCount ?? "?") + '</div>';
+        }
+
+        // Top beam sequences (compact)
+        if (beam.length > 1) {
+          html += '<div class="beam-seq">';
+          html += 'beam: ' + beam.slice(0, 2).map(s =>
+            s.moves.map(m => moveLabel(m)).join("→") + " (" + s.score + ")"
+          ).join(" | ");
+          html += '</div>';
+        }
+
+        div.innerHTML = html;
+        el.appendChild(div);
+      }
+    }
+
+    function syncGameLog(t) {
+      if (!GAME_LOG || GAME_LOG.length === 0) return;
+      const el = document.getElementById("game-log");
+      if (!el) return;
+
+      // Find the latest turn at or before current time
+      let lo = 0, hi = GAME_LOG.length - 1, result = null;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (GAME_LOG[mid].t <= t + 0.05) { result = GAME_LOG[mid]; lo = mid + 1; }
+        else { hi = mid - 1; }
+      }
+
+      // Highlight the current turn, scroll to it
+      const turns = el.querySelectorAll(".game-turn");
+      let found = false;
+      for (const turn of turns) {
+        if (result && Number(turn.dataset.turn) === result.turn) {
+          if (!turn.classList.contains("active")) {
+            turn.classList.add("active");
+            turn.style.background = "rgba(56,139,253,.08)";
+            if (!found) turn.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            found = true;
+          }
+        } else {
+          turn.classList.remove("active");
+          turn.style.background = "";
+        }
+      }
+    }
+
     // --- Initialization ---
 
     async function loadSemanticIndex() {
@@ -500,6 +631,9 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
       if (overlayEnabled && SEMANTIC_INDEX.length > 0) {
         loadSnapshots();
       }
+
+      // Load game log eagerly (it's tiny — ~100KB)
+      loadGameLog();
 
       try {
         player = window.AsciinemaPlayer.create(
