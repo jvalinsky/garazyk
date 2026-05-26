@@ -14,6 +14,10 @@
 import type { DidResolver, DnsResolver, RecordFetcher } from "./ports.ts";
 import type { Did, DidDocument, Domain, LexiconDoc, Result } from "./types.ts";
 
+export interface ResolverOptions {
+  timeoutMs?: number;
+}
+
 // ---------------------------------------------------------------------------
 // DenoDnsResolver
 // ---------------------------------------------------------------------------
@@ -34,6 +38,11 @@ import type { Did, DidDocument, Domain, LexiconDoc, Result } from "./types.ts";
 export class DenoDnsResolver implements DnsResolver {
   /** Subdomain prefix for AT Protocol lexicon DNS queries. */
   private readonly prefix = "_lexicon";
+  private readonly timeoutMs: number;
+
+  constructor(opts?: ResolverOptions) {
+    this.timeoutMs = opts?.timeoutMs ?? 5000;
+  }
 
   /**
    * Resolve TXT records for `_lexicon.<domain>`.
@@ -49,7 +58,16 @@ export class DenoDnsResolver implements DnsResolver {
   async resolveTxt(domain: Domain): Promise<Result<string[][], string>> {
     const fqdn = `${this.prefix}.${domain}`;
     try {
-      const records = await Deno.resolveDns(fqdn, "TXT");
+      let timeoutId: number | undefined;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Timeout")), this.timeoutMs);
+      });
+      
+      const resolvePromise = Deno.resolveDns(fqdn, "TXT").finally(() => {
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
+      });
+      
+      const records = await Promise.race([resolvePromise, timeoutPromise]);
       return { ok: true, value: records };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
@@ -82,6 +100,11 @@ export class DenoDnsResolver implements DnsResolver {
 export class HttpDidResolver implements DidResolver {
   /** Base URL of the PLC directory (DID resolution for `did:plc`). */
   private readonly plcDirectory = "https://plc.directory";
+  private readonly timeoutMs: number;
+
+  constructor(opts?: ResolverOptions) {
+    this.timeoutMs = opts?.timeoutMs ?? 5000;
+  }
 
   /**
    * Resolve a DID to its DID document via HTTP.
@@ -99,6 +122,7 @@ export class HttpDidResolver implements DidResolver {
       const url = this.buildResolutionUrl(did);
       const response = await fetch(url, {
         headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
       if (!response.ok) {
         return {
@@ -167,6 +191,12 @@ export class HttpDidResolver implements DidResolver {
  * ```
  */
 export class HttpRecordFetcher implements RecordFetcher {
+  private readonly timeoutMs: number;
+
+  constructor(opts?: ResolverOptions) {
+    this.timeoutMs = opts?.timeoutMs ?? 5000;
+  }
+
   /**
    * Fetch a lexicon record from a PDS.
    *
@@ -182,6 +212,7 @@ export class HttpRecordFetcher implements RecordFetcher {
     try {
       const response = await fetch(endpoint, {
         headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
       if (!response.ok) {
         return {

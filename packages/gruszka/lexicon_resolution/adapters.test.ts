@@ -244,6 +244,26 @@ Deno.test("DenoDnsResolver: resolveTxt handles multiple TXT records", async () =
   }
 });
 
+Deno.test("DenoDnsResolver: resolveTxt rejects on timeout", async () => {
+  const restore = mockFn(
+    Deno as unknown as Record<string, unknown>,
+    "resolveDns",
+    () => new Promise(() => {}) // Never resolves
+  );
+
+  try {
+    const resolver = new DenoDnsResolver({ timeoutMs: 10 });
+    const result = await resolver.resolveTxt(asDomain("feed.bsky.app"));
+
+    assert(!result.ok);
+    if (!result.ok) {
+      assert(result.error.includes("Timeout"));
+    }
+  } finally {
+    restore();
+  }
+});
+
 // ===========================================================================
 // HttpDidResolver — did:plc
 // ===========================================================================
@@ -450,6 +470,22 @@ Deno.test("HttpDidResolver: falls back to PLC directory for unknown DID methods"
   }
 });
 
+Deno.test("HttpDidResolver: rejects on timeout", async () => {
+  const restore = mockFetch(() => new Promise(() => {})); // Never resolves
+
+  try {
+    const resolver = new HttpDidResolver({ timeoutMs: 10 });
+    const result = await resolver.resolve(asDid("did:plc:test"));
+
+    assert(!result.ok);
+    if (!result.ok) {
+      assert(result.error.includes("TimeoutError") || result.error.includes("Timeout"));
+    }
+  } finally {
+    restore();
+  }
+});
+
 // ===========================================================================
 // HttpDidResolver — non-string error handling
 // ===========================================================================
@@ -651,6 +687,22 @@ Deno.test("HttpRecordFetcher: error message includes the endpoint URL", async ()
     assert(!result.ok);
     if (!result.ok) {
       assert(result.error.includes("https://pds.bsky.app"));
+    }
+  } finally {
+    restore();
+  }
+});
+
+Deno.test("HttpRecordFetcher: rejects on timeout", async () => {
+  const restore = mockFetch(() => new Promise(() => {})); // Never resolves
+
+  try {
+    const fetcher = new HttpRecordFetcher({ timeoutMs: 10 });
+    const result = await fetcher.fetch("https://pds.example/xrpc/...");
+
+    assert(!result.ok);
+    if (!result.ok) {
+      assert(result.error.includes("TimeoutError") || result.error.includes("Timeout"));
     }
   } finally {
     restore();
