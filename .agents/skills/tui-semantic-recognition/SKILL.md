@@ -91,6 +91,70 @@ Games require specialized detection beyond standard UI patterns:
   - Tableau: columns with face-up cards below top row
 - **Suit colors**: ♥♦ = red (fg=1), ♣♠ = black (fg=7)
 
+## Screen State Extraction
+
+When the semantic snapshot doesn't provide enough structured data,
+parse raw screen lines to build a state model. This is the technique
+used by the solitaire AI player and generalizes to any structured TUI.
+
+### Pattern: Position-Based State Extraction
+
+1. **Identify structural regions** by x/y position:
+   - Top row: stock, waste, foundations (card games)
+   - Main area: tableau columns, list items, table rows
+   - Bottom row: status bar, key hints
+
+2. **Find character patterns** that mark elements:
+   - Card faces: `([2-9]|10|J|Q|K|A)[♠♥♦♣]` or `[♠♥♦♣]([2-9]|10|J|Q|K|A)`
+   - List markers: `▸`, `▾`, `>`, Nerd Font icons
+   - Cell borders: `│`, `┃`, `|`
+   - Selection highlight: inverse styling, `> ` prefix
+
+3. **Group by position** into semantic collections:
+   - Same x-position → same column/pile
+   - Adjacent y-positions → same group
+   - Position relative to screen center → left/right role
+
+4. **Build a state object** with:
+   - `legalMoves()` — enumerate all valid actions
+   - `applyMove(move)` — return new state after action (immutable)
+   - `clone()` — deep copy for search tree exploration
+   - `isWon` / `isStuck` — terminal condition detection
+
+### Generalization Table
+
+| TUI Type | State Elements | Position Heuristic | Pattern |
+|----------|---------------|-------------------|---------|
+| Card games | cards, piles, foundations | x-position → pile role | rank+suit regex |
+| File managers | files, dirs, selection | column → pane, y → item | icon+name regex |
+| Process monitors | processes, CPU, mem | column → field, y → process | fixed-width fields |
+| Git UIs | files, diffs, staging | panel → role, y → item | status prefix |
+| Form editors | fields, values, validation | y → field, x → label/value | `: ` separator |
+
+### Example: Solitaire Screen Parser
+
+```javascript
+function parseScreen(lines, cols) {
+  const state = new GameState();
+  const cardPattern = /([2-9]|10|J|Q|K|A)([♠♥♦♣])/g;
+  const suitFirstPattern = /([♠♥♦♣])([2-9]|10|J|Q|K|A)/g;
+
+  for (let y = 0; y < lines.length; y++) {
+    const line = lines[y];
+    // Find all card faces in this line
+    // Group by x-position into columns
+    // Top row (y < 5): stock/waste/foundations
+    // Main area (y >= 5): tableau columns
+    // Face-down cards: ┌─────┐ pattern
+  }
+  return state;
+}
+```
+
+This pattern applies to any TUI where the screen layout maps to a
+structured domain model. The key insight: **position is semantics** in
+TUIs — where something appears on screen determines what it means.
+
 ## Chart Detection
 
 TUI monitoring apps render data visualizations using terminal characters:
