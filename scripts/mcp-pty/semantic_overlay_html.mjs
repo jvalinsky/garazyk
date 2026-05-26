@@ -33,6 +33,59 @@ export function splitSemanticCast(castContent) {
   };
 }
 
+/**
+ * Streaming variant of splitSemanticCast for large cast files.
+ * Reads line-by-line to avoid V8 string size limits (~512MB).
+ */
+import fs from "node:fs";
+import readline from "node:readline";
+
+export async function splitSemanticCastFile(castPath) {
+  const stream = fs.createReadStream(castPath, { encoding: "utf8" });
+  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+  let header = null;
+  const standardLines = [];
+  const semanticEvents = [];
+
+  let lineNum = 0;
+  for await (const line of rl) {
+    lineNum++;
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (lineNum === 1) {
+      header = JSON.parse(trimmed);
+      standardLines.push(JSON.stringify(header));
+      continue;
+    }
+
+    let event;
+    try {
+      event = JSON.parse(trimmed);
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(event) || event.length !== 3) continue;
+    const [time, kind, data] = event;
+    if (kind === "s") {
+      semanticEvents.push({ time: Number(time) || 0, snapshot: data });
+      continue;
+    }
+    if (STANDARD_ASCIICAST_EVENTS.has(kind)) {
+      standardLines.push(JSON.stringify(event));
+    }
+  }
+
+  if (!header) throw new Error("empty asciicast content");
+
+  return {
+    header,
+    standardCast: standardLines.join("\n") + "\n",
+    semanticEvents,
+  };
+}
+
 export function latestSemanticSnapshotAt(events, timeSeconds) {
   let current = null;
   for (const event of events) {
@@ -50,10 +103,74 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+/**
+ * Write tiered semantic data files for fast incremental loading.
+ *
+ * Produces:
+ *   semantic-index.json   — tiny (~40KB), loaded immediately for sidebar
+ *   semantic-snapshots.json — deduped (~2MB), loaded lazily when overlay is toggled on
+ *
+ * Fields stripped (never used by overlay): world, lines, sessionId, frameId,
+ * relations, diagnostics, vdomViz
+ */
+export function writeTieredSemanticData(semanticEvents, outputDir, fsMod = fs, pathMod = path) {
+  // Dedup snapshots by content hash
+  const snapshotMap = new Map(); // JSON string → numeric id
+  const snapshots = [];          // array of {elements, capabilities, controls, facts, ...}
+  const OVERLAY_FIELDS = ["elements", "capabilities", "controls", "facts", "tables", "regions",
+    "tabs", "panes", "lists", "statusBars", "popups", "gameElements", "charts", "actions"];
+  const INDEX_FIELDS = ["app", "framework", "confidence", "cursor", "altScreen", "cols", "rows"];
+
+  const index = [];
+
+  for (const event of semanticEvents) {
+    const s = event.snapshot || event[2] || {};
+    const time = event.time ?? event[0] ?? 0;
+
+    // Build sidebar-only index entry
+    const idx = { t: time };
+    for (const k of INDEX_FIELDS) {
+      if (s[k] !== undefined) idx[k] = s[k];
+    }
+
+    // Build stripped snapshot for dedup (only overlay-relevant fields)
+    const stripped = {};
+    for (const k of OVERLAY_FIELDS) {
+      if (s[k] !== undefined) stripped[k] = s[k];
+    }
+    const key = JSON.stringify(stripped);
+
+    let sid;
+    if (snapshotMap.has(key)) {
+      sid = snapshotMap.get(key);
+    } else {
+      sid = snapshots.length;
+      snapshotMap.set(key, sid);
+      snapshots.push(stripped);
+    }
+    idx.sid = sid;
+    index.push(idx);
+  }
+
+  const indexPath = pathMod.join(outputDir, "semantic-index.json");
+  const snapshotsPath = pathMod.join(outputDir, "semantic-snapshots.json");
+
+  fsMod.writeFileSync(indexPath, JSON.stringify(index));
+  fsMod.writeFileSync(snapshotsPath, JSON.stringify(snapshots));
+
+  return {
+    indexSize: fsMod.statSync(indexPath).size,
+    snapshotsSize: fsMod.statSync(snapshotsPath).size,
+    eventCount: index.length,
+    snapshotCount: snapshots.length,
+  };
+}
+
 export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay = false, castFileName = "playback.cast", semanticFileName = "semantic-events.json" }) {
-  const { standardCast, semanticEvents } = splitSemanticCast(castContent);
+  const splitResult = castContent ? splitSemanticCast(castContent) : { standardCast: "", semanticEvents: [] };
+  const { standardCast, semanticEvents } = splitResult;
   const overlayEnabled = semanticOverlay === true;
-  const hasSemanticEvents = semanticEvents.length > 0;
+  const hasSemanticEvents = semanticEvents.length > 0 || !!semanticFileName;
 
   return `<!doctype html>
 <html lang="en">
@@ -113,8 +230,11 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
   <script src="https://cdn.jsdelivr.net/npm/asciinema-player@3.8.0/dist/bundle/asciinema-player.min.js"></script>
   <script>
     const CAST_URL = "${escapeHtml(castFileName)}";
-    const SEMANTIC_URL = "${escapeHtml(semanticFileName)}";
-    let SEMANTIC_EVENTS = [];
+    const SEMANTIC_INDEX_URL = "semantic-index.json";
+    const SEMANTIC_SNAPSHOTS_URL = "semantic-snapshots.json";
+    let SEMANTIC_INDEX = [];       // [{t, sid, app, framework, confidence, cursor, altScreen}]
+    let SEMANTIC_SNAPSHOTS = null;  // [{elements, capabilities, controls, ...}] or null if not loaded yet
+    let snapshotsLoading = false;
     let overlayEnabled = ${overlayEnabled ? "true" : "false"};
 
     // --- Part 3: Cell Metrics ---
@@ -173,32 +293,55 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
       }
     }
 
-    function latestSemanticSnapshotAt(timeSeconds) {
-      let current = null;
-      for (const event of SEMANTIC_EVENTS) {
-        if (event.time <= timeSeconds) current = event.snapshot;
-        else break;
+    // Binary search the index for the latest event at or before timeSeconds
+    function latestIndexAt(timeSeconds) {
+      let lo = 0, hi = SEMANTIC_INDEX.length - 1, result = null;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (SEMANTIC_INDEX[mid].t <= timeSeconds + 0.05) { result = SEMANTIC_INDEX[mid]; lo = mid + 1; }
+        else { hi = mid - 1; }
       }
-      return current;
+      return result;
+    }
+
+    // Reconstruct a full snapshot from index entry + snapshots table
+    function snapshotFromIndex(idx) {
+      if (!idx) return null;
+      const base = { app: idx.app, framework: idx.framework, confidence: idx.confidence, cursor: idx.cursor, altScreen: idx.altScreen };
+      if (SEMANTIC_SNAPSHOTS && idx.sid !== undefined) {
+        const detail = SEMANTIC_SNAPSHOTS[idx.sid];
+        if (detail) return Object.assign({}, base, detail);
+      }
+      return base; // sidebar-only data if snapshots not loaded yet
     }
 
     let player = null;
-    let lastSnapshot = null;
+    let lastSid = -1; // track snapshot ID changes to avoid re-rendering same snapshot
     let pollInterval = null;
 
     function syncOverlay() {
       const t = currentPlayerTime();
-      const snapshot = latestSemanticSnapshotAt(t);
+      const idx = latestIndexAt(t);
       const dbg = document.getElementById("debug-info");
       if (dbg) dbg.textContent =
         "time: " + t.toFixed(2) + "\\n" +
-        "events: " + SEMANTIC_EVENTS.length + "\\n" +
+        "events: " + SEMANTIC_INDEX.length + "\\n" +
+        "snapshots: " + (SEMANTIC_SNAPSHOTS ? SEMANTIC_SNAPSHOTS.length : "not loaded") + "\\n" +
         "overlay: " + overlayEnabled + "\\n" +
-        "snapshot: " + (snapshot ? snapshot.app : "null") + "\\n" +
+        "app: " + (idx ? idx.app : "null") + "\\n" +
+        "sid: " + (idx ? idx.sid : "-") + "\\n" +
         "metrics: " + (findTerminalMetrics() ? "ok" : "null");
-      if (snapshot !== lastSnapshot) {
-        lastSnapshot = snapshot;
-        renderSemanticOverlay(snapshot);
+
+      // Always update sidebar (works with just index data)
+      if (idx) updateSidebarFromIndex(idx);
+
+      // Only re-render overlay if snapshot changed and snapshots are loaded
+      if (idx && idx.sid !== lastSid) {
+        lastSid = idx.sid;
+        if (SEMANTIC_SNAPSHOTS) {
+          const snapshot = snapshotFromIndex(idx);
+          renderSemanticOverlay(snapshot);
+        }
       }
     }
 
@@ -267,18 +410,23 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
         overlay.appendChild(box);
       }
 
-      updateSidebar(snapshot);
+      updateSidebarFromSnapshot(snapshot);
     }
 
-    function updateSidebar(snapshot) {
-      const app = snapshot.app || "unknown";
-      const framework = snapshot.framework || "";
+    // Sidebar update from index data only (no snapshots needed)
+    function updateSidebarFromIndex(idx) {
+      const app = idx.app || "unknown";
+      const framework = idx.framework || "";
       document.getElementById("app-info").innerHTML =
         escapeHtml(app) +
         (framework
           ? '<br><span style="color:var(--muted)">' + escapeHtml(framework) + "</span>"
           : "");
+    }
 
+    // Full sidebar update from snapshot (when overlays are loaded)
+    function updateSidebarFromSnapshot(snapshot) {
+      updateSidebarFromIndex(snapshot);
       const caps = snapshot.capabilities || {};
       const navKeys = caps.navigate?.keys || [];
       document.getElementById("nav-info").innerHTML = navKeys.length
@@ -307,24 +455,51 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
         : "-";
     }
 
-    // --- Initialization ---
+    // --- Lazy snapshot loading ---
 
-    async function loadSemanticEvents() {
-      ${hasSemanticEvents ? `try {
-        const resp = await fetch(SEMANTIC_URL);
+    async function loadSnapshots() {
+      if (SEMANTIC_SNAPSHOTS || snapshotsLoading) return;
+      snapshotsLoading = true;
+      try {
+        const resp = await fetch(SEMANTIC_SNAPSHOTS_URL);
         if (resp.ok) {
-          SEMANTIC_EVENTS = await resp.json();
-          console.log("Loaded " + SEMANTIC_EVENTS.length + " semantic events");
+          SEMANTIC_SNAPSHOTS = await resp.json();
+          console.log("Loaded " + SEMANTIC_SNAPSHOTS.length + " semantic snapshots");
+          // Re-render with full data now
+          lastSid = -1;
+          syncOverlay();
         } else {
-          console.warn("Semantic fetch failed: " + resp.status);
+          console.warn("Snapshots fetch failed: " + resp.status);
         }
       } catch (err) {
-        console.warn("Failed to load semantic events:", err);
+        console.warn("Failed to load semantic snapshots:", err);
+      }
+      snapshotsLoading = false;
+    }
+
+    // --- Initialization ---
+
+    async function loadSemanticIndex() {
+      ${hasSemanticEvents ? `try {
+        const resp = await fetch(SEMANTIC_INDEX_URL);
+        if (resp.ok) {
+          SEMANTIC_INDEX = await resp.json();
+          console.log("Loaded " + SEMANTIC_INDEX.length + " semantic index entries");
+        } else {
+          console.warn("Semantic index fetch failed: " + resp.status);
+        }
+      } catch (err) {
+        console.warn("Failed to load semantic index:", err);
       }` : `// No semantic events in this recording`}
     }
 
     async function initPlayer() {
-      await loadSemanticEvents();
+      await loadSemanticIndex();
+
+      // If overlay is enabled by default, start loading snapshots immediately
+      if (overlayEnabled && SEMANTIC_INDEX.length > 0) {
+        loadSnapshots();
+      }
 
       try {
         player = window.AsciinemaPlayer.create(
@@ -356,7 +531,7 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
       });
 
       player.addEventListener("seeked", () => {
-        lastSnapshot = null; // force re-render even if same snapshot
+        lastSid = -1; // force re-render even if same snapshot
         syncOverlay();
       });
 
@@ -367,13 +542,19 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
 
       player.addEventListener("resize", () => {
         invalidateMetrics();
-        if (lastSnapshot) renderSemanticOverlay(lastSnapshot);
+        if (lastSid >= 0) {
+          const idx = latestIndexAt(currentPlayerTime());
+          if (idx) renderSemanticOverlay(snapshotFromIndex(idx));
+        }
       });
 
       // ResizeObserver for font-loading layout shifts on ap-terminal
       const apTermObserver = new ResizeObserver(() => {
         invalidateMetrics();
-        if (lastSnapshot) renderSemanticOverlay(lastSnapshot);
+        if (lastSid >= 0) {
+          const idx = latestIndexAt(currentPlayerTime());
+          if (idx) renderSemanticOverlay(snapshotFromIndex(idx));
+        }
       });
 
       const waitForApTerm = setInterval(() => {
@@ -388,19 +569,31 @@ export function buildAsciinemaOverlayHtml({ title, castContent, semanticOverlay 
       syncOverlay();
     }
 
-    // Overlay toggle
+    // Overlay toggle — loads snapshots lazily on first enable
     document.getElementById("toggle-overlay").addEventListener("click", () => {
       overlayEnabled = !overlayEnabled;
       document.getElementById("toggle-overlay").setAttribute(
         "aria-pressed", overlayEnabled ? "true" : "false"
       );
-      renderSemanticOverlay(lastSnapshot);
+      // Lazy-load snapshots when overlay is first enabled
+      if (overlayEnabled && !SEMANTIC_SNAPSHOTS && SEMANTIC_INDEX.length > 0) {
+        loadSnapshots();
+      }
+      if (overlayEnabled && SEMANTIC_SNAPSHOTS) {
+        lastSid = -1;
+        syncOverlay();
+      } else {
+        document.getElementById("semantic-overlay").innerHTML = "";
+      }
     });
 
     // Window resize
     window.addEventListener("resize", () => {
       invalidateMetrics();
-      if (lastSnapshot) renderSemanticOverlay(lastSnapshot);
+      if (lastSid >= 0) {
+        const idx = latestIndexAt(currentPlayerTime());
+        if (idx) renderSemanticOverlay(snapshotFromIndex(idx));
+      }
     });
 
     // Wait for DOM + AsciinemaPlayer to be ready
