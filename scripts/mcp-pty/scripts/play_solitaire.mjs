@@ -20,7 +20,7 @@
  */
 import { TerminalSessionManager } from "../terminal_session.mjs";
 import { AsciicastRecorder } from "../recording.mjs";
-import { buildAsciinemaOverlayHtml } from "../semantic_overlay_html.mjs";
+import { buildAsciinemaOverlayHtml, writeTieredSemanticData } from "../semantic_overlay_html.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -757,6 +757,11 @@ async function main() {
   const gameLog = [];
   let turnStartTime = 0; // will be set from recorder timestamps
 
+  // Oscillation detection: track recent card movements to detect back-and-forth
+  const recentCardMoves = []; // [{card, from, to, turn}]
+  const OSCILLATION_WINDOW = 6; // look back this many turns
+  const OSCILLATION_THRESHOLD = 3; // if same card moves between same cols N times, blacklist the pair
+
   // Press space to start the game
   await sleep(800);
   await key("space");
@@ -814,9 +819,35 @@ async function main() {
     let move = bestMoves[0];
     let moveIdx = 0;
     const moveKey = (m) => m.type + ":" + m.from + ":" + m.to;
-    while (moveIdx < bestMoves.length && failedMoveTypes.has(moveKey(move))) {
-      moveIdx++;
-      move = bestMoves[moveIdx];
+
+    // Build a set of oscillating pairs: if card X moved between cols A and B
+    // OSCILLATION_THRESHOLD times in the last OSCILLATION_WINDOW turns, blacklist both directions
+    const oscillatingPairs = new Set();
+    const recentMoves = recentCardMoves.slice(-OSCILLATION_WINDOW);
+    for (const rm of recentMoves) {
+      if (rm.card && rm.from !== undefined && rm.to !== undefined) {
+        const pairKey = [rm.card, Math.min(rm.from, rm.to), Math.max(rm.from, rm.to)].join(":");
+        // Count how many times this pair appears in the window
+        const count = recentMoves.filter(r =>
+          r.card === rm.card &&
+          Math.min(r.from, r.to) === Math.min(rm.from, rm.to) &&
+          Math.max(r.from, r.to) === Math.max(rm.from, rm.to)
+        ).length;
+        if (count >= OSCILLATION_THRESHOLD) {
+          oscillatingPairs.add(rm.card + ":" + rm.from + ":" + rm.to);
+          oscillatingPairs.add(rm.card + ":" + rm.to + ":" + rm.from);
+        }
+      }
+    }
+
+    while (moveIdx < bestMoves.length) {
+      const mk = moveKey(move);
+      if (failedMoveTypes.has(mk) || oscillatingPairs.has(move.card + ":" + move.from + ":" + move.to)) {
+        moveIdx++;
+        move = bestMoves[moveIdx];
+      } else {
+        break;
+      }
     }
     if (!move) {
       process.stderr.write("\n  All moves blacklisted. Game stuck.\n");
@@ -855,6 +886,11 @@ async function main() {
     };
 
     process.stderr.write(`\r  Turn ${turn+1}: ${move.type} ${move.card || ""} ${move.from !== undefined ? "col" + move.from : ""} ${move.to !== undefined ? "-> " + move.to : ""}   (moves: ${moves})  `);
+
+    // Track card movement for oscillation detection
+    if (move.card && move.from !== undefined && move.to !== undefined) {
+      recentCardMoves.push({ card: move.card.toString(), from: move.from, to: move.to, turn: turn + 1 });
+    }
 
     await executor.executeMove(move);
 
@@ -929,8 +965,7 @@ async function main() {
     if (session.running) { try { await session.stop({ force: true }); } catch {} }
     try {
       // Check cast file before trying to close
-      const fs = await import("fs");
-      const castStat = fs.default.statSync(recorder.castPath);
+      const castStat = fs.statSync(recorder.castPath);
       process.stderr.write(`  Cast file: ${recorder.castPath} (${castStat.size} bytes)\n`);
       process.stderr.write(`  Recorder closed: ${recorder.closed}\n`);
 
@@ -950,10 +985,8 @@ async function main() {
       process.stderr.write(`  recorder.close() error: ${err.message}\n`);
       // Fallback: write a working HTML player manually
       try {
-        const fs = await import("fs");
-        const path = await import("path");
         // Read the cast file and split it ourselves
-        const castContent = fs.default.readFileSync(recorder.castPath, "utf8");
+        const castContent = fs.readFileSync(recorder.castPath, "utf8");
         const lines = castContent.trimEnd().split("\n").filter(Boolean);
         const header = JSON.parse(lines[0]);
         const standardLines = [JSON.stringify(header)];
@@ -971,8 +1004,8 @@ async function main() {
         const standardCast = standardLines.join("\n") + "\n";
 
         // Write playback.cast
-        const playbackPath = path.default.join(OUTPUT_DIR, "playback.cast");
-        fs.default.writeFileSync(playbackPath, standardCast);
+        const playbackPath = path.join(OUTPUT_DIR, "playback.cast");
+        fs.writeFileSync(playbackPath, standardCast);
 
         // Write semantic-events.json in the format the overlay HTML expects
         if (semanticEvents.length > 0) {
@@ -980,16 +1013,18 @@ async function main() {
             time: e[0],
             snapshot: e[2] || {},
           }));
-          const semanticPath = path.default.join(OUTPUT_DIR, "semantic-events.json");
-          fs.default.writeFileSync(semanticPath, JSON.stringify(events));
+          const semanticPath = path.join(OUTPUT_DIR, "semantic-events.json");
+          fs.writeFileSync(semanticPath, JSON.stringify(events));
+          // Also write tiered files for fast loading
+          writeTieredSemanticData(events, OUTPUT_DIR);
         }
 
         // Write HTML (uses relative URLs — serve via HTTP)
         const html = buildPlayerHtml({ title: "tty-solitaire" });
-        fs.default.writeFileSync(recorder.htmlPath, html);
+        fs.writeFileSync(recorder.htmlPath, html);
         // Write game-log.json in fallback path too
         if (gameLog.length > 0) {
-          fs.default.writeFileSync(path.default.join(OUTPUT_DIR, "game-log.json"), JSON.stringify(gameLog));
+          fs.writeFileSync(path.join(OUTPUT_DIR, "game-log.json"), JSON.stringify(gameLog));
           process.stderr.write(`  Game log (fallback): ${gameLog.length} turns\n`);
         }
         process.stderr.write(`  Fallback HTML written to: ${recorder.htmlPath}\n`);
@@ -1025,8 +1060,21 @@ async function main() {
     }
   });
 
-  const port = 3000;
-  await new Promise(resolve => server.listen(port, resolve));
+  let port = 3000;
+  try {
+    await new Promise(resolve => server.listen(port, resolve));
+  } catch (err) {
+    if (err.code === "EADDRINUSE") {
+      process.stderr.write(`\n  Port ${port} in use, trying ${port + 1}...\n`);
+      try {
+        await new Promise(resolve => server.listen(port + 1, resolve));
+        port++;
+      } catch {
+        process.stderr.write(`  Could not bind to port. Use: cd ${OUTPUT_DIR} && python3 -m http.server 3000\n`);
+        process.exit(0);
+      }
+    } else throw err;
+  }
   const url = `http://localhost:${port}/index.html`;
   process.stderr.write(`\n  Player: ${url}\n`);
 

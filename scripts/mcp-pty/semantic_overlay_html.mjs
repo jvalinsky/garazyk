@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 const STANDARD_ASCIICAST_EVENTS = new Set(["o", "i", "r", "m"]);
 
 export function splitSemanticCast(castContent) {
@@ -37,7 +40,6 @@ export function splitSemanticCast(castContent) {
  * Streaming variant of splitSemanticCast for large cast files.
  * Reads line-by-line to avoid V8 string size limits (~512MB).
  */
-import fs from "node:fs";
 import readline from "node:readline";
 
 export async function splitSemanticCastFile(castPath) {
