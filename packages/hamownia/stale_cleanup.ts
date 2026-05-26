@@ -19,6 +19,37 @@ import {
 import { neededPorts } from "@garazyk/schemat/runtime";
 import type { ResourceIsolationMode } from "@garazyk/schemat";
 
+const LOCK_PATH = "/tmp/garazyk-stale-cleanup.lock";
+
+export async function withCleanupLock<T>(action: () => Promise<T>): Promise<T> {
+  let file: Deno.FsFile;
+  try {
+    file = await Deno.open(LOCK_PATH, { create: true, write: true });
+  } catch (err) {
+    console.debug(`[stale-cleanup] failed to open lock file at ${LOCK_PATH}:`, err);
+    return action();
+  }
+
+  try {
+    await file.lock(true); // Wait for exclusive lock
+  } catch (err) {
+    console.debug(`[stale-cleanup] failed to acquire lock:`, err);
+    try { file.close(); } catch { /* ignore */ }
+    return action();
+  }
+
+  try {
+    return await action();
+  } finally {
+    try {
+      await file.unlock();
+    } catch { /* ignore */ }
+    try {
+      file.close();
+    } catch { /* ignore */ }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Stale container cleanup
 // ---------------------------------------------------------------------------
@@ -35,37 +66,39 @@ export async function stopStaleDockerE2e(
     return [];
   }
 
-  const client = await createDockerClient();
-  if (!client) {
-    return stopStaleDockerE2eCLI(opts, currentProject);
-  }
-
-  try {
-    const ports = neededPorts(opts);
-    const staleProjects = await findStaleProjectsOnPorts(
-      client,
-      ports,
-      currentProject,
-    );
-
-    if (staleProjects.size === 0) return [];
-
-    const projectNames = [...staleProjects];
-    console.log(
-      `[WARN] Stale e2e projects holding needed ports: ${
-        projectNames.join(", ")
-      }`,
-    );
-
-    for (const project of projectNames) {
-      console.log(`[INFO] Tearing down stale compose project: ${project}`);
-      await composeDown(project);
+  return withCleanupLock(async () => {
+    const client = await createDockerClient();
+    if (!client) {
+      return stopStaleDockerE2eCLI(opts, currentProject);
     }
 
-    return projectNames;
-  } finally {
-    client.close();
-  }
+    try {
+      const ports = neededPorts(opts);
+      const staleProjects = await findStaleProjectsOnPorts(
+        client,
+        ports,
+        currentProject,
+      );
+
+      if (staleProjects.size === 0) return [];
+
+      const projectNames = [...staleProjects];
+      console.log(
+        `[WARN] Stale e2e projects holding needed ports: ${
+          projectNames.join(", ")
+        }`,
+      );
+
+      for (const project of projectNames) {
+        console.log(`[INFO] Tearing down stale compose project: ${project}`);
+        await composeDown(project);
+      }
+
+      return projectNames;
+    } finally {
+      client.close();
+    }
+  });
 }
 
 async function stopStaleDockerE2eCLI(
@@ -151,62 +184,64 @@ export async function stopStaleHostProcesses(
     return;
   }
 
-  const ports = neededPorts(opts);
-  const knownBinaries = new Set([
-    "kaszlak",
-    "garazyk-ui",
-    "campagnola",
-    "zuk",
-    "syrena",
-    "syrena-chat",
-    "jelcz",
-    "germ",
-    "mikrus",
-    "beskid",
-  ]);
+  return withCleanupLock(async () => {
+    const ports = neededPorts(opts);
+    const knownBinaries = new Set([
+      "kaszlak",
+      "garazyk-ui",
+      "campagnola",
+      "zuk",
+      "syrena",
+      "syrena-chat",
+      "jelcz",
+      "germ",
+      "mikrus",
+      "beskid",
+    ]);
 
-  for (const port of ports) {
-    try {
-      const lsofProc = new Deno.Command("lsof", {
-        args: ["-ti", `:${port}`],
-        stdout: "piped",
-        stderr: "piped",
-      });
-      const { code, stdout } = await lsofProc.output();
-      if (code !== 0) continue;
-
-      const pids = new TextDecoder().decode(stdout).trim().split("\n").filter(
-        Boolean,
-      );
-      for (const pid of pids) {
-        const psProc = new Deno.Command("ps", {
-          args: ["-p", pid, "-o", "comm="],
+    for (const port of ports) {
+      try {
+        const lsofProc = new Deno.Command("lsof", {
+          args: ["-nPti", `:${port}`],
           stdout: "piped",
+          stderr: "piped",
         });
-        const { code: pc, stdout: pout } = await psProc.output();
-        if (pc !== 0) continue;
+        const { code, stdout } = await lsofProc.output();
+        if (code !== 0) continue;
 
-        const cmd = new TextDecoder().decode(pout).trim();
-        const baseCmd = cmd.split('/').pop() || cmd;
-        if (
-          knownBinaries.has(baseCmd) || baseCmd.startsWith("garazyk") ||
-          baseCmd.startsWith("atproto")
-        ) {
-          console.log(
-            `[WARN] Stale host process holding port ${port} (PID: ${pid}, cmd: ${cmd})`,
-          );
-          try {
-            const killProc = new Deno.Command("kill", { args: ["-15", pid] });
-            await killProc.output();
-          } catch {
-            /* cleanup */
+        const pids = new TextDecoder().decode(stdout).trim().split("\n").filter(
+          Boolean,
+        );
+        for (const pid of pids) {
+          const psProc = new Deno.Command("ps", {
+            args: ["-p", pid, "-o", "comm="],
+            stdout: "piped",
+          });
+          const { code: pc, stdout: pout } = await psProc.output();
+          if (pc !== 0) continue;
+
+          const cmd = new TextDecoder().decode(pout).trim();
+          const baseCmd = cmd.split('/').pop() || cmd;
+          if (
+            knownBinaries.has(baseCmd) || baseCmd.startsWith("garazyk") ||
+            baseCmd.startsWith("atproto")
+          ) {
+            console.log(
+              `[WARN] Stale host process holding port ${port} (PID: ${pid}, cmd: ${cmd})`,
+            );
+            try {
+              const killProc = new Deno.Command("kill", { args: ["-15", pid] });
+              await killProc.output();
+            } catch {
+              /* cleanup */
+            }
           }
         }
+      } catch (e) {
+        console.debug("[docker] lsof lookup failed for port", port, e);
       }
-    } catch (e) {
-      console.debug("[docker] lsof lookup failed for port", port, e);
     }
-  }
 
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  });
 }
