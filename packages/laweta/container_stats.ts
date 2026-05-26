@@ -108,6 +108,20 @@ export interface ContainerStatsSnapshot {
   timestamp: number;
 }
 
+/** State tracking for adaptive polling adaptivity. */
+export interface ContainerActivityState {
+  /** If true, the container is currently classified as idle. */
+  isIdle: boolean;
+  /** Number of polling cycles remaining to skip. */
+  skipCycles: number;
+  /** CPU percentage history for the last 3 samples. */
+  cpuHistory: number[];
+  /** Total network bytes (Rx + Tx) from the last sample. */
+  lastNetBytes: number;
+  /** Total block IO bytes (Read + Write) from the last sample. */
+  lastBlockBytes: number;
+}
+
 // ---------------------------------------------------------------------------
 // ContainerStatsSampler
 // ---------------------------------------------------------------------------
@@ -123,6 +137,7 @@ export class ContainerStatsSampler {
   private sampleInFlight: Promise<ContainerStatsSnapshot[]> | null = null;
   private previousFailcnt = new Map<string, number>();
   private previousCounters = new Map<string, number>();
+  private activityStates = new Map<string, ContainerActivityState>();
 
   /**
    * Create a stats sampler.
@@ -191,6 +206,24 @@ export class ContainerStatsSampler {
       });
 
       for (const container of projectContainers) {
+        let state = this.activityStates.get(container.Id);
+        if (!state) {
+          state = {
+            isIdle: false,
+            skipCycles: 0,
+            cpuHistory: [],
+            lastNetBytes: 0,
+            lastBlockBytes: 0,
+          };
+          this.activityStates.set(container.Id, state);
+        }
+
+        // Skip sampling if container is idle and has skip cycles remaining
+        if (state.isIdle && state.skipCycles > 0) {
+          state.skipCycles--;
+          continue;
+        }
+
         try {
           const stats = await this.client.containerStats(container.Id, {
             oneShot: true,
@@ -201,8 +234,35 @@ export class ContainerStatsSampler {
             this.recordMetrics(snapshot);
           }
           this.checkMemoryPressure(container, stats);
+
+          // Update activity state for adaptivity
+          const totalNetBytes = snapshot.networkRxBytes + snapshot.networkTxBytes;
+          const netDelta = Math.abs(totalNetBytes - state.lastNetBytes);
+          state.lastNetBytes = totalNetBytes;
+
+          const totalBlockBytes = snapshot.blockioReadBytes + snapshot.blockioWriteBytes;
+          const blockDelta = Math.abs(totalBlockBytes - state.lastBlockBytes);
+          state.lastBlockBytes = totalBlockBytes;
+
+          state.cpuHistory.push(snapshot.cpuPercent);
+          if (state.cpuHistory.length > 3) {
+            state.cpuHistory.shift();
+          }
+
+          const avgCpu = state.cpuHistory.length > 0 
+            ? state.cpuHistory.reduce((a, b) => a + b, 0) / state.cpuHistory.length 
+            : 0;
+
+          if (state.cpuHistory.length === 3 && avgCpu < 0.1 && netDelta < 128 && blockDelta === 0) {
+            state.isIdle = true;
+            state.skipCycles = 3;
+          } else {
+            state.isIdle = false;
+            state.skipCycles = 0;
+          }
         } catch {
           // Container may have stopped between list and stats
+          this.activityStates.delete(container.Id);
         }
       }
     } catch {
