@@ -724,6 +724,92 @@ Deno.test("sampler: start/stop lifecycle", async () => {
   assertEquals((sampler as any).running, false);
 });
 
+Deno.test("sampler: adaptively skips polling for idle containers", async () => {
+  const container = makeContainerSummary();
+  let calls = 0;
+
+  const idleStat = makeContainerStats({
+    cpu_stats: {
+      cpu_usage: {
+        total_usage: 100,
+        percpu_usage: [50, 50],
+        usage_in_kernelmode: 0,
+        usage_in_usermode: 100,
+      },
+      system_cpu_usage: 10000000000,
+      online_cpus: 2,
+      throttling_data: { periods: 0, throttled_periods: 0, throttled_time: 0 },
+    },
+    precpu_stats: {
+      cpu_usage: {
+        total_usage: 100,
+        percpu_usage: [50, 50],
+        usage_in_kernelmode: 0,
+        usage_in_usermode: 100,
+      },
+      system_cpu_usage: 5000000000,
+      online_cpus: 2,
+      throttling_data: { periods: 0, throttled_periods: 0, throttled_time: 0 },
+    },
+    networks: {
+      eth0: {
+        rx_bytes: 100,
+        rx_packets: 0,
+        rx_errors: 0,
+        rx_dropped: 0,
+        tx_bytes: 100,
+        tx_packets: 0,
+        tx_errors: 0,
+        tx_dropped: 0,
+      },
+    },
+    blkio_stats: { io_service_bytes_recursive: [] },
+  });
+
+  const client = {
+    listContainers() {
+      return Promise.resolve([container]);
+    },
+    containerStats() {
+      calls += 1;
+      return Promise.resolve(idleStat);
+    },
+  } as unknown as DockerApiClient;
+
+  const sampler = new ContainerStatsSampler({
+    client,
+    composeProject: "garazyk-e2e-test",
+  });
+
+  // Cycle 1: Stats fetched, history=[0]
+  await sampler.sample();
+  assertEquals(calls, 1);
+
+  // Cycle 2: Stats fetched, history=[0, 0]
+  await sampler.sample();
+  assertEquals(calls, 2);
+
+  // Cycle 3: Stats fetched, history=[0, 0, 0]. isIdle set to true, skipCycles=3
+  await sampler.sample();
+  assertEquals(calls, 3);
+
+  // Cycle 4: Skipped, skipCycles=2
+  await sampler.sample();
+  assertEquals(calls, 3); // Calls did not increase
+
+  // Cycle 5: Skipped, skipCycles=1
+  await sampler.sample();
+  assertEquals(calls, 3);
+
+  // Cycle 6: Skipped, skipCycles=0
+  await sampler.sample();
+  assertEquals(calls, 3);
+
+  // Cycle 7: Stats fetched again, history updated
+  await sampler.sample();
+  assertEquals(calls, 4);
+});
+
 Deno.test("buildSnapshot: handles missing blkio_stats gracefully", async () => {
   const container = makeContainerSummary();
   const stats = makeContainerStats({
