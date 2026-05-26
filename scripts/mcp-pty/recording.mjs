@@ -296,12 +296,15 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     const reset = document.getElementById("reset");
     const toggleOverlay = document.getElementById("toggle-overlay");
     let timers = [];
-    const width = Number(header.width) || 80;
-    const height = Number(header.height) || 24;
+    const initialWidth = Number(header.width) || 80;
+    const initialHeight = Number(header.height) || 24;
+    let width = initialWidth;
+    let height = initialHeight;
     let cursorX = 0;
     let cursorY = 0;
     let savedX = 0;
     let savedY = 0;
+    let pendingWrap = false;
     let grid = [];
     let overlayEnabled = ${semanticOverlay ? "true" : "false"};
     const defaultStyle = Object.freeze({ fg: null, bg: null, bold: false, dim: false, underline: false, inverse: false });
@@ -357,24 +360,30 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     }
 
     function clearScreen(mode = 2) {
+      pendingWrap = false;
       if (mode === 2 || mode === 3) { grid = blankGrid(); cursorX = 0; cursorY = 0; return; }
       if (mode === 0) { clearLine(cursorY, 0); for (let y = cursorY + 1; y < height; y += 1) for (let x = 0; x < width; x += 1) grid[y][x] = blankCell(); }
       else if (mode === 1) { for (let y = 0; y < cursorY; y += 1) for (let x = 0; x < width; x += 1) grid[y][x] = blankCell(); clearLine(cursorY, 1); }
     }
 
     function newline() {
+      pendingWrap = false;
       cursorX = 0; cursorY += 1;
       if (cursorY >= height) { grid.shift(); grid.push(Array.from({ length: width }, () => blankCell())); cursorY = height - 1; }
     }
 
     function putChar(ch) {
       if (ch === "\\n") { newline(); return; }
-      if (ch === "\\r") { cursorX = 0; return; }
-      if (ch === "\\b") { cursorX = Math.max(0, cursorX - 1); return; }
+      if (ch === "\\r") { pendingWrap = false; cursorX = 0; return; }
+      if (ch === "\\b") { pendingWrap = false; cursorX = Math.max(0, cursorX - 1); return; }
       if (ch < " ") return;
+      if (pendingWrap) newline();
       grid[cursorY][cursorX] = { ch, style: cloneStyle(currentStyle) };
-      cursorX += 1;
-      if (cursorX >= width) newline();
+      if (cursorX === width - 1) {
+        pendingWrap = true;
+      } else {
+        cursorX += 1;
+      }
     }
 
     function csiParam(params, index, fallback) {
@@ -417,19 +426,32 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       const params = paramsText.split(";").map((part) => part.replace(/^\\?/, ""));
       const n = csiParam(params, 0, 1);
       switch (finalByte) {
-        case "A": cursorY -= n; break; case "B": cursorY += n; break;
-        case "C": cursorX += n; break; case "D": cursorX -= n; break;
-        case "E": cursorY += n; cursorX = 0; break; case "F": cursorY -= n; cursorX = 0; break;
-        case "G": cursorX = n - 1; break;
-        case "H": case "f": cursorY = csiParam(params, 0, 1) - 1; cursorX = csiParam(params, 1, 1) - 1; break;
+        case "A": pendingWrap = false; cursorY -= n; break; case "B": pendingWrap = false; cursorY += n; break;
+        case "C": pendingWrap = false; cursorX += n; break; case "D": pendingWrap = false; cursorX -= n; break;
+        case "E": pendingWrap = false; cursorY += n; cursorX = 0; break; case "F": pendingWrap = false; cursorY -= n; cursorX = 0; break;
+        case "G": pendingWrap = false; cursorX = n - 1; break;
+        case "H": case "f": pendingWrap = false; cursorY = csiParam(params, 0, 1) - 1; cursorX = csiParam(params, 1, 1) - 1; break;
         case "J": clearScreen(csiParam(params, 0, 0)); break;
         case "K": clearLine(cursorY, csiParam(params, 0, 0)); break;
         case "s": savedX = cursorX; savedY = cursorY; break;
-        case "u": cursorX = savedX; cursorY = savedY; break;
+        case "u": pendingWrap = false; cursorX = savedX; cursorY = savedY; break;
         case "m": handleSgr(paramsText); break;
         case "h": case "l": break;
       }
       clampCursor();
+    }
+
+    function applyResizeEvent(data) {
+      const match = String(data || "").match(/^(\\d+)x(\\d+)$/);
+      if (!match) return;
+      width = Math.max(1, Number(match[1]));
+      height = Math.max(1, Number(match[2]));
+      grid = blankGrid();
+      cursorX = 0;
+      cursorY = 0;
+      savedX = 0;
+      savedY = 0;
+      pendingWrap = false;
     }
 
     function applyTerminalData(data) {
@@ -448,7 +470,13 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       }
     }
 
-    function escapeHtml(text) { return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"); }
+    function displayText(value) {
+      if (value == null) return "";
+      if (typeof value === "object") return value.name || value.label || JSON.stringify(value);
+      return String(value);
+    }
+
+    function escapeHtml(text) { return displayText(text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"); }
 
     function styleToCss(style) {
       const fg = style.inverse ? style.bg : style.fg;
@@ -813,7 +841,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
 
     function applyTheme(snap) {
       if (!snap || !snap.app) return;
-      const app = String(snap.app).toLowerCase();
+      const app = displayText(snap.app).toLowerCase();
       const html = document.documentElement;
       let theme = "";
       if (/\b(solitaire|card|poker|blackjack|mahjong|klondike|spider)\b/.test(app)) {
@@ -843,7 +871,7 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
 
       // App card
       const appInfo = document.getElementById("app-info");
-      const app = snap.app || "unknown";
+      const app = displayText(snap.app) || "unknown";
       const fw = snap.framework || "unknown";
       const conf = snap.confidence || 0;
       appInfo.innerHTML =
@@ -951,7 +979,8 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     function clearTimers() { for (const timer of timers) clearTimeout(timer); timers = []; }
 
     reset.addEventListener("click", () => {
-      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+      width = initialWidth; height = initialHeight;
+      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; pendingWrap = false; currentStyle = { ...defaultStyle };
       currentEventIndex = -1; currentSemanticSnapshot = null; overlayDirty = true; render();
     });
 
@@ -963,8 +992,9 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
     });
 
     play.addEventListener("click", () => {
-      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
-      currentEventIndex = -1; render();
+      width = initialWidth; height = initialHeight;
+      clearTimers(); grid = blankGrid(); cursorX = 0; cursorY = 0; pendingWrap = false; currentStyle = { ...defaultStyle };
+      currentEventIndex = -1; currentSemanticSnapshot = null; markOverlayDirty(); render();
       for (let ei = 0; ei < events.length; ei += 1) {
         const [time, kind, data] = events[ei];
         if (kind === "o") {
@@ -973,6 +1003,9 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         } else if (kind === "s") {
           const idx = ei;
           timers.push(setTimeout(() => { currentEventIndex = idx; currentSemanticSnapshot = data; applyTheme(data); markOverlayDirty(); updateSidebar(data); render(); }, Math.max(0, time * 1000)));
+        } else if (kind === "r") {
+          const idx = ei;
+          timers.push(setTimeout(() => { currentEventIndex = idx; applyResizeEvent(data); render(); }, Math.max(0, time * 1000)));
         }
       }
     });
@@ -993,11 +1026,13 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         }
         if (closest > 0 && closest < events.length) {
           clearTimers();
-          grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+          width = initialWidth; height = initialHeight; currentSemanticSnapshot = null;
+          grid = blankGrid(); cursorX = 0; cursorY = 0; pendingWrap = false; currentStyle = { ...defaultStyle };
           for (let ei = 0; ei <= closest; ei += 1) {
             const [time, kind, data] = events[ei];
             if (kind === "o") applyTerminalData(data);
             else if (kind === "s") { currentSemanticSnapshot = data; applyTheme(data); markOverlayDirty(); }
+            else if (kind === "r") applyResizeEvent(data);
           }
           currentEventIndex = closest;
           render();
@@ -1035,11 +1070,13 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
         }
         if (closest > 0 && closest < events.length) {
           clearTimers();
-          grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+          width = initialWidth; height = initialHeight; currentSemanticSnapshot = null;
+          grid = blankGrid(); cursorX = 0; cursorY = 0; pendingWrap = false; currentStyle = { ...defaultStyle };
           for (let ei = 0; ei <= closest; ei += 1) {
             const [time, kind, data] = events[ei];
             if (kind === "o") applyTerminalData(data);
             else if (kind === "s") { currentSemanticSnapshot = data; applyTheme(data); markOverlayDirty(); }
+            else if (kind === "r") applyResizeEvent(data);
           }
           currentEventIndex = closest;
           render();
@@ -1048,20 +1085,28 @@ export function buildStandaloneHtml({ title, castContent, semanticOverlay = fals
       });
     }
 
-    grid = blankGrid(); cursorX = 0; cursorY = 0; currentStyle = { ...defaultStyle };
+    width = initialWidth; height = initialHeight;
+    grid = blankGrid(); cursorX = 0; cursorY = 0; pendingWrap = false; currentStyle = { ...defaultStyle };
+    const firstRenderable = events.find((event) => event[1] === "o" || event[1] === "s");
+    const initialTime = firstRenderable ? firstRenderable[0] : 0;
     for (let ei = 0; ei < events.length; ei += 1) {
       const [time, kind, data] = events[ei];
-      if (kind === "o" && time <= 0) {
+      if (kind === "o" && time <= initialTime) {
         applyTerminalData(data);
-      } else if (kind === "s" && time <= 0 && data) {
+        currentEventIndex = ei;
+      } else if (kind === "s" && time <= initialTime && data) {
         currentSemanticSnapshot = data;
+        currentEventIndex = ei;
+      } else if (kind === "r" && time <= initialTime) {
+        applyResizeEvent(data);
+        currentEventIndex = ei;
       }
     }
     if (currentSemanticSnapshot) {
       applyTheme(currentSemanticSnapshot);
       updateSidebar(currentSemanticSnapshot);
     }
-    currentEventIndex = 0;
+    if (currentEventIndex < 0) currentEventIndex = 0;
     markOverlayDirty();
     buildTimelineTicks();
     render();
