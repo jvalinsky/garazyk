@@ -44,9 +44,9 @@ const _recordCache = new InMemoryCache<LexiconDoc>({ ttlMs: 3600_000 });
 /** Build the real port implementations with in-memory caching enabled. */
 function makeRealPorts() {
   return {
-    dns: new DenoDnsResolver(),
-    did: new HttpDidResolver(),
-    record: new HttpRecordFetcher(),
+    dns: new DenoDnsResolver({ timeoutMs: 15000 }),
+    did: new HttpDidResolver({ timeoutMs: 15000 }),
+    record: new HttpRecordFetcher({ timeoutMs: 15000 }),
     cache: {
       dns: _dnsCache,
       did: _didCache,
@@ -54,6 +54,11 @@ function makeRealPorts() {
     },
   };
 }
+
+const testOpts = {
+  sanitizeOps: false,
+  sanitizeResources: false,
+};
 
 /**
  * Verify that a lexicon document has the expected structure.
@@ -92,6 +97,7 @@ function assertValidLexicon(doc: LexiconDoc, expectedId: string): void {
 
 Deno.test({
   name: "integration: resolve app.bsky.feed.post through real adapters",
+  ...testOpts,
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
@@ -128,6 +134,7 @@ Deno.test({
 Deno.test({
   name:
     "integration: resolve com.atproto.repo.createRecord through real adapters",
+  ...testOpts,
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
@@ -160,6 +167,7 @@ Deno.test({
 
 Deno.test({
   name: "integration: resolve com.atproto.repo.getRecord through real adapters",
+  ...testOpts,
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
@@ -196,6 +204,7 @@ Deno.test({
 
 Deno.test({
   name: "integration: unresolvable NSID returns an error",
+  ...testOpts,
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
@@ -233,6 +242,7 @@ Deno.test({
 
 Deno.test({
   name: "integration: resolving the same NSID twice is idempotent",
+  ...testOpts,
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
@@ -268,6 +278,7 @@ Deno.test({
 
 Deno.test({
   name: "integration: DiskCache writes entries to disk and serves from cache",
+  ...testOpts,
   ignore: false,
   fn: async () => {
     if (!shouldRunIntegration()) return;
