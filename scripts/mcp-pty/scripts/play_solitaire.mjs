@@ -295,7 +295,7 @@ function evaluate(state) {
  * - Full search is intractable (52! states)
  * - Beam keeps only the top-K states at each depth level
  */
-function beamSearch(state, { beamWidth = 5, depth = 5 } = {}) {
+function beamSearch(state, { beamWidth = 5, depth = 5, returnBeam = false } = {}) {
   // Each beam entry: { state, moves, score }
   let beam = [{ state, moves: [], score: evaluate(state) }];
 
@@ -306,7 +306,7 @@ function beamSearch(state, { beamWidth = 5, depth = 5 } = {}) {
       const legalMoves = entry.state.legalMoves();
 
       // If won, return immediately
-      if (entry.state.isWon) return entry.moves;
+      if (entry.state.isWon) return returnBeam ? { moves: entry.moves, beam } : entry.moves;
 
       // If stuck, this branch is dead
       if (legalMoves.length === 0) {
@@ -336,7 +336,18 @@ function beamSearch(state, { beamWidth = 5, depth = 5 } = {}) {
   }
 
   // Return the best move sequence found
-  return beam.length > 0 ? beam[0].moves : [];
+  const best = beam.length > 0 ? beam[0].moves : [];
+  if (returnBeam) {
+    return {
+      moves: best,
+      beam: beam.map(b => ({
+        moves: b.moves,
+        score: b.score,
+        state: b.state,
+      })),
+    };
+  }
+  return best;
 }
 
 // ── Screen Parser ──────────────────────────────────────────────────────────
@@ -602,6 +613,34 @@ class MoveExecutor {
   }
 }
 
+// ── Game Log Serialization ────────────────────────────────────────────────
+
+/** Serialize a GameState to a compact JSON-friendly object for game-log.json */
+function serializeState(state) {
+  return {
+    foundations: state.foundations.map(f => f.map(c => c.toString())),
+    waste: state.waste.map(c => c.toString()),
+    tableau: state.tableau.map(col => ({
+      faceDown: col.filter(c => !c.faceUp).length,
+      faceUp: col.filter(c => c.faceUp).map(c => c.toString()),
+    })),
+    stock: state.stock.length,
+    stockPasses: state.stockPasses,
+    foundationCount: state.foundationCount,
+    faceDownCount: state.faceDownCount,
+  };
+}
+
+/** Serialize a move for game-log.json */
+function serializeMove(m) {
+  const base = { type: m.type };
+  if (m.card) base.card = m.card.toString();
+  if (m.from !== undefined) base.from = m.from;
+  if (m.to !== undefined) base.to = m.to;
+  if (m.count !== undefined) base.count = m.count;
+  return base;
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -651,6 +690,11 @@ async function main() {
       // Close recording — try recorder.close(), fall back to manual HTML
       try {
         await recorder.close();
+        // Write game-log.json
+        if (gameLog.length > 0) {
+          fs.writeFileSync(path.join(OUTPUT_DIR, "game-log.json"), JSON.stringify(gameLog));
+          process.stderr.write(`  Game log: ${gameLog.length} turns\n`);
+        }
         process.stderr.write(`  Session dumped to: ${OUTPUT_DIR}\n`);
         process.stderr.write(`  Open: file://${OUTPUT_DIR}/index.html\n`);
       } catch (err) {
@@ -709,6 +753,10 @@ async function main() {
   let consecutiveFailedMoves = 0;
   const failedMoveTypes = new Set();
 
+  // Game log: per-turn AI reasoning for game-log.json export
+  const gameLog = [];
+  let turnStartTime = 0; // will be set from recorder timestamps
+
   // Press space to start the game
   await sleep(800);
   await key("space");
@@ -753,8 +801,9 @@ async function main() {
       break;
     }
 
-    // Run beam search
-    const bestMoves = beamSearch(state, { beamWidth: 8, depth: 6 });
+    // Run beam search (with full beam data for logging)
+    const searchResult = beamSearch(state, { beamWidth: 8, depth: 6, returnBeam: true });
+    const bestMoves = searchResult.moves;
 
     if (bestMoves.length === 0) {
       process.stderr.write("\n  No moves found. Game stuck.\n");
@@ -773,6 +822,38 @@ async function main() {
       process.stderr.write("\n  All moves blacklisted. Game stuck.\n");
       break;
     }
+
+    // Capture per-turn reasoning for game-log.json
+    const legalMoves = state.legalMoves();
+    const entry = {
+      turn: turn + 1,
+      t: recorder.elapsedSeconds(),
+      state: serializeState(state),
+      legalMoves: legalMoves.map(m => {
+        const sm = serializeMove(m);
+        // Score each legal move by applying it
+        const after = state.applyMove(m);
+        sm.score = evaluate(after);
+        return sm;
+      }),
+      beamSearch: {
+        width: 8,
+        depth: 6,
+        topSequences: searchResult.beam.slice(0, 3).map(b => ({
+          moves: b.moves.map(serializeMove),
+          score: b.score,
+        })),
+      },
+      chosen: {
+        move: serializeMove(move),
+        reason: move.type.includes("foundation") ? "Foundation move — always highest priority"
+          : move.type === "deal_stock" ? "Deal from stock — no card plays available"
+          : move.type === "recycle_stock" ? "Recycle stock — cycling through for new cards"
+          : move.type === "waste_to_tableau" ? "Play waste card to tableau"
+          : `Move ${move.card} from col ${move.from} to col ${move.to} — exposes face-down card or builds run`,
+      },
+    };
+
     process.stderr.write(`\r  Turn ${turn+1}: ${move.type} ${move.card || ""} ${move.from !== undefined ? "col" + move.from : ""} ${move.to !== undefined ? "-> " + move.to : ""}   (moves: ${moves})  `);
 
     await executor.executeMove(move);
@@ -782,7 +863,7 @@ async function main() {
     const { lines: postLines } = session.snapshot();
     const screenChanged = postLines.some((l, i) => l !== (lines[i] || ""));
     if (!screenChanged) {
-      process.stderr.write(" [FAILED - no change]");
+      entry.outcome = { success: false, reason: "no_screen_change" };
       // Try pressing escape to clear any stuck state
       await key("escape");
       await sleep(100);
@@ -797,7 +878,16 @@ async function main() {
     } else {
       consecutiveFailedMoves = 0;
       failedMoveTypes.clear();
+      // Parse the new state after the move
+      const { lines: newLines } = session.snapshot();
+      const newState = parseScreen(newLines, COLS);
+      entry.outcome = {
+        success: true,
+        newState: serializeState(newState),
+      };
     }
+
+    gameLog.push(entry);
 
     // Take semantic snapshot periodically
     if (turn % 10 === 0) await snap();
@@ -850,6 +940,11 @@ async function main() {
         setTimeout(() => reject(new Error("recorder.close() timed out after 15s")), 15000)
       );
       await Promise.race([closePromise, timeoutPromise]);
+      // Write game-log.json
+      if (gameLog.length > 0) {
+        fs.writeFileSync(path.join(OUTPUT_DIR, "game-log.json"), JSON.stringify(gameLog));
+        process.stderr.write(`  Game log: ${gameLog.length} turns\n`);
+      }
       process.stderr.write(`  HTML written to: ${recorder.htmlPath}\n`);
     } catch (err) {
       process.stderr.write(`  recorder.close() error: ${err.message}\n`);
@@ -892,6 +987,11 @@ async function main() {
         // Write HTML (uses relative URLs — serve via HTTP)
         const html = buildPlayerHtml({ title: "tty-solitaire" });
         fs.default.writeFileSync(recorder.htmlPath, html);
+        // Write game-log.json in fallback path too
+        if (gameLog.length > 0) {
+          fs.default.writeFileSync(path.default.join(OUTPUT_DIR, "game-log.json"), JSON.stringify(gameLog));
+          process.stderr.write(`  Game log (fallback): ${gameLog.length} turns\n`);
+        }
         process.stderr.write(`  Fallback HTML written to: ${recorder.htmlPath}\n`);
       } catch (e2) {
         process.stderr.write(`  Fallback HTML also failed: ${e2.message}\n`);

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { buildAsciinemaOverlayHtml, splitSemanticCast, splitSemanticCastFile } from "./semantic_overlay_html.mjs";
+import { buildAsciinemaOverlayHtml, splitSemanticCast, splitSemanticCastFile, writeTieredSemanticData } from "./semantic_overlay_html.mjs";
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -120,6 +120,9 @@ export class AsciicastRecorder {
     if (semanticEvents.length > 0) {
       const semanticPath = path.join(this.outputDir, "semantic-events.json");
       fs.writeFileSync(semanticPath, JSON.stringify(semanticEvents));
+
+      // Write tiered files for fast incremental loading
+      writeTieredSemanticData(semanticEvents, this.outputDir);
     }
 
     const html = buildAsciinemaOverlayHtml({
