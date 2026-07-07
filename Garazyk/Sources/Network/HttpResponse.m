@@ -35,8 +35,6 @@ NS_ASSUME_NONNULL_END
 
 @implementation HttpResponse
 
-@synthesize headers = _headers;
-
 + (instancetype)response {
     return [[self alloc] init];
 }
