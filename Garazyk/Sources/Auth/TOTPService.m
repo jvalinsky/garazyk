@@ -18,10 +18,6 @@
 
 @implementation TOTPService
 
-@synthesize yubiKeyManager = _yubiKeyManager;
-@synthesize secret = _secret;
-@synthesize counter = _counter;
-
 - (instancetype)initWithSecret:(NSData *)secret {
     self = [super init];
     if (self) {

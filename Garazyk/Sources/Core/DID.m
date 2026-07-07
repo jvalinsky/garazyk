@@ -101,11 +101,6 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     // _cacheTimestamps is synthesized property
 }
 
-@synthesize cache = _cache;
-@synthesize cacheTimestamps = _cacheTimestamps;
-@synthesize staleTTL = _staleTTL;
-@synthesize maxTTL = _maxTTL;
-
 + (instancetype)sharedResolver {
     static DIDResolver *shared;
     static dispatch_once_t onceToken;

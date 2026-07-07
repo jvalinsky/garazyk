@@ -72,8 +72,6 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 @implementation Session
 
-@synthesize minter = _minter;
-
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
@@ -569,7 +567,6 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 @implementation SessionStore
 
-@synthesize minter = _minter;
 @synthesize clockSkew = _clockSkew;
 
 + (instancetype)sharedStore {
