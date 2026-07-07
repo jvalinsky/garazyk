@@ -253,14 +253,6 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 @implementation JWTVerifier
 
-@synthesize expectedIssuer = _expectedIssuer;
-@synthesize expectedAudience = _expectedAudience;
-@synthesize allowedAlgorithms = _allowedAlgorithms;
-@synthesize clockOffset = _clockOffset;
-@synthesize publicKey = _publicKey;
-@synthesize keyManager = _keyManager;
-@synthesize allowMissingSubject = _allowMissingSubject;
-
 - (instancetype)init {
     self = [super init];
     if (self) {
@@ -407,13 +399,6 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 @end
 
 @implementation JWTMinter
-
-@synthesize issuer = _issuer;
-@synthesize signingAlgorithm = _signingAlgorithm;
-@synthesize defaultExpiration = _defaultExpiration;
-@synthesize privateKey = _privateKey;
-@synthesize publicKey = _publicKey;
-@synthesize keyManager = _keyManager;
 
 - (instancetype)init {
     self = [super init];
