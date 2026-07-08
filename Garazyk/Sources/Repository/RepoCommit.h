@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) CID *prevCID;
 
 /** @abstract Cryptographic signature (secp256k1). */
-@property (nonatomic, strong, nullable) NSData *signature;
+@property (nonatomic, copy, nullable) NSData *signature;
 
 /**
  * @abstract Creates a new repository commit.

@@ -184,7 +184,7 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 /** @abstract The CID of the root node. */
 @property(nonatomic, strong, readonly, nullable) CID *rootCID;
 /** @abstract Hash of an empty tree. */
-@property(nonatomic, strong, readonly) NSData *emptyTreeHash;
+@property(nonatomic, copy, readonly) NSData *emptyTreeHash;
 
 /** @abstract Initializes an MST with a root CID. */
 - (instancetype)initWithRootCID:(nullable CID *)rootCID;

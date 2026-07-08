@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (readonly, nonatomic) NSUInteger codec;
 
 /*! Multihash data (algorithm + digest). */
-@property (readonly, nonatomic, strong) NSData *multihash;
+@property (readonly, nonatomic, copy) NSData *multihash;
 
 /*!
  @method cidWithDigest:codec:

@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface TID : NSObject <NSCopying, NSSecureCoding>
 
 /*! The raw TID string (13-character base32). */
-@property (readonly, nonatomic, strong) NSString *stringValue;
+@property (readonly, nonatomic, copy) NSString *stringValue;
 
 /*! The timestamp component (microseconds since Unix epoch). */
 @property (readonly, nonatomic) uint64_t timestamp;

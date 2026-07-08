@@ -71,7 +71,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 @property (nonatomic, strong, nullable) CID *data;
 @property (nonatomic, copy) NSString *rev;
 @property (nonatomic, strong, nullable) CID *prev;
-@property (nonatomic, strong, nullable) NSData *sig;
+@property (nonatomic, copy, nullable) NSData *sig;
 
 /**
  * @abstract Performs the commitWithDid operation.
@@ -339,7 +339,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  * @abstract Exposes the root cid value.
  */
 @property (nonatomic, strong, readonly, nullable) CID *rootCID;
-@property (nonatomic, strong, readonly) NSArray<CARBlock *> *blocks;
+@property (nonatomic, copy, readonly) NSArray<CARBlock *> *blocks;
 @property (nonatomic, assign, readonly) STARVariant variant;
 @property (nonatomic, strong, readonly, nullable) STARCommit *commit;
 
