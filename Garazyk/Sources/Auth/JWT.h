@@ -341,7 +341,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @property (nonatomic, strong) NSDate *clockOffset;
 
 /*! Public key for verification. */
-@property (nonatomic, strong, nullable) NSData *publicKey;
+@property (nonatomic, copy, nullable) NSData *publicKey;
 
 /*! Optional key rotation manager for verifying with multiple keys. */
 @property (nonatomic, strong, nullable) id<PDSKeyManager> keyManager;
@@ -399,10 +399,10 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @property (nonatomic, assign) NSTimeInterval defaultExpiration;
 
 /*! The private key for signing (PEM format). */
-@property (nonatomic, strong, nullable) NSData *privateKey;
+@property (nonatomic, copy, nullable) NSData *privateKey;
 
 /*! The public key for verification. */
-@property (nonatomic, strong, nullable) NSData *publicKey;
+@property (nonatomic, copy, nullable) NSData *publicKey;
 
 /*! Optional key rotation manager for signing with rotated keys. */
 @property (nonatomic, strong, nullable) id<PDSKeyManager> keyManager;

@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** PLC resolver used for relay identity lookups. */
 @property (nonatomic, strong, nullable) DIDPLCResolver *plcResolver;
 /** PLC service URL used when constructing resolver helpers. */
-@property (nonatomic, strong, nullable) NSString *plcUrl;
+@property (nonatomic, copy, nullable) NSString *plcUrl;
 /** Upstream manager used for relay synchronization routes. */
 @property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
 
