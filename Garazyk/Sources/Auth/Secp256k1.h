@@ -29,13 +29,13 @@ extern NSString * const Secp256k1ErrorDomain;
 @interface Secp256k1KeyPair : NSObject
 
 /*! The 32-byte private key. */
-@property (nonatomic, strong, readonly) NSData *privateKey;
+@property (nonatomic, copy, readonly) NSData *privateKey;
 
 /*! The 65-byte uncompressed public key. */
-@property (nonatomic, strong, readonly) NSData *publicKey;
+@property (nonatomic, copy, readonly) NSData *publicKey;
 
 /*! The 33-byte compressed public key. */
-@property (nonatomic, strong, readonly) NSData *compressedPublicKey;
+@property (nonatomic, copy, readonly) NSData *compressedPublicKey;
 
 /*! Returns the DID key string (did:key:z...). */
 - (NSString *)didKeyString;

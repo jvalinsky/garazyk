@@ -92,26 +92,32 @@ extern NSString * const GZLogComponentCLI;
  */
 + (instancetype)sharedLogger;
 
-/*! Minimum log level to output. Messages below this level are ignored. */
-@property (nonatomic, assign) GZLogLevel logLevel;
+/*! Minimum log level to output. Messages below this level are ignored.
+    Atomic: read on the caller thread in logWithLevel: and inside logQueue. */
+@property (atomic, assign) GZLogLevel logLevel;
 
 /*! Path to write log file, or nil to disable file logging. */
 @property (nonatomic, copy, nullable) NSString *logFilePath;
 
-/*! If YES, also print log messages to stdout. */
-@property (nonatomic, assign) BOOL printToStdout;
+/*! If YES, also print log messages to stdout.
+    Atomic: read inside the logQueue dispatch block from the caller thread. */
+@property (atomic, assign) BOOL printToStdout;
 
-/*! Log output format (text, JSON, or both). Default: GZLogFormatText. */
-@property (nonatomic, assign) GZLogFormat logFormat;
+/*! Log output format (text, JSON, or both). Default: GZLogFormatText.
+    Atomic: read inside the logQueue dispatch block from the caller thread. */
+@property (atomic, assign) GZLogFormat logFormat;
 
-/*! Maximum log file size in bytes before rotation. Default: 10MB. */
-@property (nonatomic, assign) NSUInteger maxLogFileSize;
+/*! Maximum log file size in bytes before rotation. Default: 10MB.
+    Atomic: read inside the logQueue/ioQueue dispatch blocks from the caller thread. */
+@property (atomic, assign) NSUInteger maxLogFileSize;
 
-/*! Maximum number of rotated log files to keep. Default: 5. */
-@property (nonatomic, assign) NSUInteger maxLogFiles;
+/*! Maximum number of rotated log files to keep. Default: 5.
+    Atomic: read inside the logQueue/ioQueue dispatch blocks from the caller thread. */
+@property (atomic, assign) NSUInteger maxLogFiles;
 
-/*! If YES, use async logging with background queue. Default: YES. */
-@property (nonatomic, assign) BOOL asyncLogging;
+/*! If YES, use async logging with background queue. Default: YES.
+    Atomic: read inside the logQueue dispatch block from the caller thread. */
+@property (atomic, assign) BOOL asyncLogging;
 
 /*! Set of enabled component tags. If nil, all components are enabled. */
 @property (nonatomic, copy, nullable) NSSet<NSString *> *enabledComponents;
