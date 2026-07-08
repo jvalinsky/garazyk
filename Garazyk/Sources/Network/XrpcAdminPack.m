@@ -96,6 +96,8 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     PDSRecordService *recordService = services.recordService;
     PDSBlobAuditManager *auditManager = services.blobAuditManager;
     
+    #pragma mark - com.atproto.admin.* Account Lookup, Search & Email
+
     // Register com.atproto.admin.searchAccounts
     [dispatcher registerComAtprotoAdminSearchAccounts:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
@@ -379,6 +381,8 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
         [response setJsonBody:adminAccountViewFromAccount([serviceDatabases getAccountByDid:did error:nil])];
     }];
 
+    #pragma mark - com.atproto.admin.* Server Stats, Audit & Repair
+
     // com.atproto.admin.getServerStats
     [dispatcher registerMethod:@"com.atproto.admin.getServerStats"
                        handler:^(HttpRequest *request, HttpResponse *response) {
@@ -542,6 +546,8 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:status];
     }];
+
+    #pragma mark - com.atproto.admin.* Account Info, Invites & Subject Status
 
     // Register com.atproto.admin.getAccountUsage
     [dispatcher registerMethod:@"com.atproto.admin.getAccountUsage"
@@ -869,6 +875,8 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
         [response setJsonBody:@{}];
     }];
 
+    #pragma mark - com.atproto.admin.* Account Lifecycle, Records & Takedown
+
     // Register com.atproto.admin.updateSubjectStatus
     [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
@@ -1160,6 +1168,8 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
+
+    #pragma mark - com.atproto.admin.* Moderation (deprecated → tools.ozone.*)
 
     // Register com.atproto.admin.moderateAccount
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
