@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) YubiKeyOATHManager *yubiKeyManager;
 
 /*! The shared secret for TOTP generation. */
-@property (nonatomic, strong) NSData *secret;
+@property (nonatomic, copy) NSData *secret;
 
 /*! Counter for HOTP mode (if used). */
 @property (nonatomic, assign) uint64_t counter;

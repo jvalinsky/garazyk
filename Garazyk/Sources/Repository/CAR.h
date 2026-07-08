@@ -36,7 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) CID *cid;
 
 /*! The block data content. */
-@property (nonatomic, strong, readonly) NSData *data;
+@property (nonatomic, copy, readonly) NSData *data;
 
 /*!
  @method blockWithCID:data:
@@ -91,7 +91,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly, nullable) CID *rootCID;
 
 /*! All blocks contained in the archive. */
-@property (nonatomic, strong, readonly) NSArray<CARBlock *> *blocks;
+@property (nonatomic, copy, readonly) NSArray<CARBlock *> *blocks;
 
 /*!
  @method readFromData:error:

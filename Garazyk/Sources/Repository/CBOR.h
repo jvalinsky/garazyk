@@ -71,7 +71,7 @@ typedef NS_ENUM(NSInteger, CBORType) {
 @property (nonatomic, strong, readonly, nullable) NSNumber *negativeInteger;
 
 /*! Byte string for type 2. */
-@property (nonatomic, strong, readonly, nullable) NSData *byteString;
+@property (nonatomic, copy, readonly, nullable) NSData *byteString;
 
 /*! Text string for type 3. */
 @property (nonatomic, copy, readonly, nullable) NSString *textString;
