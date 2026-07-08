@@ -62,6 +62,8 @@
 
 @implementation PDSRepositoryService
 
+#pragma mark - Initialization
+
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
     if (self = [super init]) {
         self.databasePool = databasePool;
@@ -240,6 +242,8 @@
     NSString *rev = [store getRepoRevisionForDid:did error:nil] ?: @"";
     return @{@"cid": commitCID.stringValue ?: @"", @"rev": rev};
 }
+
+#pragma mark - CAR Export
 
 - (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error {
     CARWriter *writer = [self buildRepoWriterForDid:did since:sinceRev error:error];
@@ -1038,6 +1042,8 @@
                                 sig:sig];
 }
 
+#pragma mark - Export State Preparation
+
 - (BOOL)prepareRepoExportForDid:(NSString *)did
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
@@ -1442,6 +1448,8 @@
     return YES;
 }
 
+#pragma mark - CAR Assembly Helpers
+
 - (nullable CARWriter *)buildRepoWriterForDid:(NSString *)did
                                          since:(nullable NSString *)sinceRev
                                          error:(NSError **)error {
@@ -1599,6 +1607,8 @@
     return [blocks copy];
 }
 
+#pragma mark - Repo Import
+
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {
     // Detect format: STAR (0x2A magic) vs CAR
     if (STARDetectFormatFromData(commitData)) {
@@ -1615,6 +1625,8 @@
     }
     return NO;
 }
+
+#pragma mark - Record & Block Loading
 
 - (NSArray<PDSDatabaseRecord *> *)loadAllRecordsForStore:(PDSActorStore *)store
                                                       did:(NSString *)did
@@ -1746,6 +1758,8 @@
     [cidBytes appendData:cid.bytes];
     return [CBORValue tag:42 value:[CBORValue byteString:cidBytes]];
 }
+
+#pragma mark - Repository Initialization
 
 - (BOOL)initializeRepoForDid:(NSString *)did error:(NSError **)error {
     if (!did || did.length == 0) {
