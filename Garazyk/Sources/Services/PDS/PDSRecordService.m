@@ -251,6 +251,8 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
 
 @implementation PDSRecordService
 
+#pragma mark - Initialization
+
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
     if (self = [super init]) {
         self.databasePool = databasePool;
@@ -823,6 +825,8 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
                 error:(NSError **)error {
     return [self deleteRecord:collection rkey:rkey forDid:did actorDid:did error:error];
 }
+
+#pragma mark - Apply Writes (Batch Operations)
 
 - (nullable NSDictionary *)applyWrites:(NSArray<NSDictionary *> *)writes
                                  forDid:(NSString *)did
@@ -1534,6 +1538,8 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
     return [self applyWrites:writes forDid:did actorDid:did validationMode:mode swapCommit:swapCommit error:error];
 }
 
+#pragma mark - Commit Plumbing (MST & Signed Commits)
+
 - (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error {
@@ -1830,6 +1836,8 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
         @"rev": rev ?: @""
     };
 }
+
+#pragma mark - Repository Statistics
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
     __block NSDictionary *cached;

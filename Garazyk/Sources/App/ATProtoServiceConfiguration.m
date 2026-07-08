@@ -110,6 +110,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
   ATProtoDataPaths *_dataPaths;
 }
 
+#pragma mark - Init / Lifecycle / Shared Configuration
+
 + (instancetype)sharedConfiguration {
   static ATProtoServiceConfiguration *shared = nil;
   static dispatch_once_t onceToken;
@@ -295,6 +297,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
   return self;
 }
 
+#pragma mark - Config File Loading
+
 - (BOOL)loadFromPath:(NSString *)path error:(NSError **)error {
   NSFileManager *fm = [NSFileManager defaultManager];
   if (![fm fileExistsAtPath:path]) {
@@ -366,6 +370,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
   [self applyConfig:_config];
   return YES;
 }
+
+#pragma mark - Config Application (applyConfig)
 
 - (void)applyConfig:(NSDictionary *)config {
   _dataPaths = nil; // Reset cached data paths so they are re-evaluated
@@ -1087,6 +1093,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _cdnURL = envCdnURL;
 }
 
+#pragma mark - Config Accessors (Env / Key Lookups)
+
 - (BOOL)envVarExists:(NSString *)envKey {
   return [self resolveEnvOverrideForKey:envKey default:nil] != nil;
 }
@@ -1160,6 +1168,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
   }
   return NO;
 }
+
+#pragma mark - Derived Config (Issuer / Hostname / Paths / Providers / Secrets)
 
 - (NSString *)canonicalIssuer {
   return [self canonicalIssuerWithPortHint:0];

@@ -119,6 +119,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   JWTMinter *_minter;
 }
 
+#pragma mark - Init / Lifecycle
 - (instancetype)init {
   [self doesNotRecognizeSelector:_cmd];
   return nil;
@@ -182,6 +183,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return self;
 }
 
+#pragma mark - Client Validation
 - (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient
                                         clientID:(NSString *)clientID {
   if (!validatedClient) {
@@ -404,6 +406,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
          error.code == kClientValidationTimeoutCode;
 }
 
+#pragma mark - OAuth Error Response
 - (void)setOAuthErrorResponse:(HttpResponse *)response
                        status:(NSInteger)status
                         error:(NSString *)errorCode
@@ -415,6 +418,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   }];
 }
 
+#pragma mark - Client Metadata & JWT Validation
 - (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
                                    error:(NSError **)error {
   if (!metadata || ![metadata isKindOfClass:[NSDictionary class]]) {
@@ -1499,6 +1503,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return NO;
 }
 
+#pragma mark - CORS
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSArray<NSString *> *allowedOrigins =
@@ -1542,6 +1547,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   [response setHeader:@"Origin" forKey:@"Vary"];
 }
 
+#pragma mark - Route Registration
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
   // Serve shared design system CSS files (tokens, reset, components, etc.)
   [httpServer addHandlerForPath:@"/css/"
@@ -1674,6 +1680,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                handler:corsPreflightHandler];
 }
 
+#pragma mark - Metadata Endpoints
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request
                                  response:(HttpResponse *)response {
   GZ_LOG_AUTH_DEBUG(@"authorization-server-metadata request: path=%@", request.path);
@@ -1743,6 +1750,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   response.statusCode = 200;
 }
 
+#pragma mark - Authorization Endpoint
 - (void)handleAuthorizeRequest:(HttpRequest *)request
                       response:(HttpResponse *)response {
   GZ_LOG_AUTH_INFO(@"Starting authorize request for path: %@", request.path);
@@ -2187,6 +2195,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                       }];
 }
 
+#pragma mark - Passkey Auth
 - (void)handlePasskeyChallenge:(HttpRequest *)request
                       response:(HttpResponse *)response {
   NSDictionary *body = [self parseJSONBody:request.body];
@@ -2432,6 +2441,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   }];
 }
 
+#pragma mark - Authorization Sign-In
 - (void)handleAuthorizeSignIn:(HttpRequest *)request
                      response:(HttpResponse *)response {
   NSString *body = [[NSString alloc] initWithData:request.body
@@ -2513,6 +2523,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   }
 }
 
+#pragma mark - JSON Parsing
 - (NSDictionary *)parseJSONBody:(NSData *)data {
   if (!data || data.length == 0) {
     return nil;
@@ -2526,6 +2537,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return (NSDictionary *)json;
 }
 
+#pragma mark - Consent & Passkey Session Store
 - (NSString *)createPendingConsentSessionForDid:(NSString *)did
                                          handle:(NSString *)handle {
   if (did.length == 0) {
@@ -2584,6 +2596,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return challengeInfo;
 }
 
+#pragma mark - Form Parsing
 - (NSDictionary *)parseFormUrlEncodedString:(NSString *)input {
   NSMutableDictionary *params = [NSMutableDictionary dictionary];
   // NSURLComponents parses percent-encoded query strings automatically
@@ -2598,6 +2611,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return [params copy];
 }
 
+#pragma mark - Token Endpoint
 - (void)handleTokenRequest:(HttpRequest *)request
                   response:(HttpResponse *)response {
   [response setHeader:@"no-store" forKey:@"Cache-Control"];
@@ -3039,6 +3053,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   response.statusCode = 200;
 }
 
+#pragma mark - JWKS Endpoint
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response {
   // Access JWKS via the minter
   NSDictionary *jwks = [self.minter toJWKS];
@@ -3056,6 +3071,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
 }
 
+#pragma mark - PAR (Pushed Authorization Request)
 - (void)handlePARRequest:(HttpRequest *)request
                 response:(HttpResponse *)response {
   GZ_LOG_AUTH_INFO(@"Handling PAR request");
@@ -3354,6 +3370,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       setJsonBody:@{@"request_uri" : requestURI, @"expires_in" : @(expiresIn)}];
 }
 
+#pragma mark - Client Metadata Parsing
 - (NSDictionary *)parseClientMetadataFromInput:(id)clientMetadataInput {
   if ([clientMetadataInput isKindOfClass:[NSDictionary class]]) {
     return (NSDictionary *)clientMetadataInput;
@@ -3395,6 +3412,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return nil;
 }
 
+#pragma mark - Date Helpers
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
   return [NSDateFormatter atproto_stringFromDate:date];
 }
@@ -3403,6 +3421,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return [NSDateFormatter atproto_dateFromString:dateString];
 }
 
+#pragma mark - PAR Request Store
 - (NSDictionary *)consumePARRequestForURI:(NSString *)requestURI
                                  clientID:(NSString *)clientID
                                     error:(NSError **)error {
@@ -3560,6 +3579,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return [merged copy];
 }
 
+#pragma mark - Consent Session Store
 - (void)cleanupExpiredPendingConsentsLocked {
   if (!sPendingConsents || sPendingConsents.count == 0) {
     return;
@@ -3614,6 +3634,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   });
 }
 
+#pragma mark - Forwarded Header Trust
 - (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request {
   NSDictionary *env = [[NSProcessInfo processInfo] environment];
   NSString *rawTrustProxy = [env[@"PDS_TRUST_PROXY_HEADERS"] lowercaseString];
@@ -3650,6 +3671,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return NO;
 }
 
+#pragma mark - DPoP & Request Origin Helpers
 - (NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request {
   NSString *path = request.path ?: @"/";
   NSString *hostHeader = [[request headerForKey:@"host"]
@@ -3783,6 +3805,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return [NSString stringWithFormat:@"%@://%@", scheme, authority];
 }
 
+#pragma mark - DPoP Validation
 - (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response {
   NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
   if (existingNonce.length > 0) {
@@ -3876,6 +3899,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return YES;
 }
 
+#pragma mark - HTML & Asset Helpers
 - (NSString *)escapeHtml:(NSString *)input {
   if (!input)
     return @"";
@@ -4015,6 +4039,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   [response setBodyData:data];
 }
 
+#pragma mark - Client Metadata Fetch
 - (void)fetchClientMetadataFromURL:(NSString *)urlStr
                         completion:(void (^)(NSDictionary *_Nullable metadata,
                                              NSError *_Nullable error))completion {
