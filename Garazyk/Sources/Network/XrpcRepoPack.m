@@ -76,6 +76,8 @@ static BOOL rejectRecordTakedown(NSString *uri,
                                  PDSServiceDatabases *serviceDatabases,
                                  HttpResponse *response);
 
+#pragma mark - Helpers
+
 static BOOL isReplyNotAllowedError(NSError *error) {
     return [error.localizedDescription containsString:@"ReplyNotAllowed"];
 }
@@ -353,6 +355,8 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
     }
     return nil;
 }
+
+#pragma mark - Repo Import Validator
 
 @interface PDSRepoImportValidationResult : NSObject
 @property (nonatomic, strong) NSArray<PDSDatabaseBlock *> *blocks;
@@ -667,6 +671,8 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
 
 @implementation XrpcRepoPack
 
+#pragma mark - Init
+
 + (NSString *)routePackIdentifier {
   return @"com.atproto.repo";
 }
@@ -681,6 +687,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     RateLimiter *rateLimiter = services.rateLimiter;
     
+#pragma mark - com.atproto.repo.* Route Registration
     // com.atproto.repo.listRecords
     [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
         NSString *repo = [request queryParamForKey:@"repo"];
