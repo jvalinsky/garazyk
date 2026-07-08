@@ -93,6 +93,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @implementation OAuth2AuthorizationRequest
 
+#pragma mark - Authorization Request Model
 - (NSURL *)authorizationURL {
     NSURLComponents *components = [NSURLComponents componentsWithString:@"/oauth/authorize"];
     NSMutableArray<NSURLQueryItem *> *queryItems = [NSMutableArray array];
@@ -128,6 +129,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @implementation OAuth2AuthorizationResponse
 
+#pragma mark - Authorization Response Model
 + (nullable instancetype)responseFromURL:(NSURL *)url expectedState:(nullable NSString *)state error:(NSError **)error {
     OAuth2AuthorizationResponse *response = [[OAuth2AuthorizationResponse alloc] init];
     NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];

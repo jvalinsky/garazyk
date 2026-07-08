@@ -364,6 +364,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 + (void)registerDescribeServerWithDispatcher:(XrpcDispatcher *)dispatcher
                                configuration:(ATProtoServiceConfiguration *)config
                             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
+#pragma mark - com.atproto.server.describeServer
     [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
         NSString *issuer = [config canonicalIssuerWithPortHint:0];
         NSString *hostname = [config canonicalHostname];
@@ -433,6 +434,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     ATProtoServiceConfiguration *config = services.configuration;
     BOOL enforceDidWebServiceAuth = NO; // Default to NO as per registry
+#pragma mark - com.atproto.server.session.*
     [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *email = body[@"email"];
@@ -676,6 +678,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     JWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+#pragma mark - com.atproto.server.inviteCodes.*
     [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
@@ -811,6 +814,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     id<PDSAdminController> adminController = services.adminController;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
+#pragma mark - com.atproto.server.appPasswords.*
     [dispatcher registerComAtprotoServerCreateAppPassword:^(HttpRequest *request, HttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
@@ -932,6 +936,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     PDSDatabasePool *userDatabasePool = services.userDatabasePool;
 
+#pragma mark - com.atproto.server.accountManagement.*
     [dispatcher registerComAtprotoServerRequestEmailConfirmation:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
@@ -1274,6 +1279,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     JWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     id<PDSAccountService> accountService = services.accountService;
+#pragma mark - com.atproto.server.accountLifecycle.*
     [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
