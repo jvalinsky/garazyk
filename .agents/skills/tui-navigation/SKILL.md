@@ -350,6 +350,288 @@ tree even though the TUI is clearly rendering content.
 4. Consider extending `semantic.mjs` with app-specific detectors for
    commonly used TUIs.
 
+### E7: Oscillation (agent loops between two states)
+
+**Symptoms:** The agent repeatedly takes actions that change the screen
+but make no progress — the state oscillates between two configurations.
+
+**Causes:**
+- The heuristic evaluator scores the oscillating move highest at each
+  step (local optimum trap).
+- The agent doesn't track history, so it can't detect that it's been
+  here before.
+- The action space is small and all non-oscillating moves score lower.
+
+**Recovery:**
+1. Track recent actions in a sliding window (last 6 turns).
+2. If the same entity (card, panel, item) moves between the same two
+   positions 3+ times, blacklist both directions.
+3. Force the agent to try the next-best action from the beam search.
+4. If all actions are blacklisted, the agent is stuck — report and exit.
+5. For non-game TUIs: if the agent cycles between two panels, force a
+   different panel or dismiss any blocking overlay first.
+
+**This is the most common failure mode in autonomous TUI navigation.**
+The agent always finds *something* to do, but that something may be
+useless. Screen change verification alone is insufficient — the screen
+changes but no progress is made. Combine with state progress tracking.
+
+---
+
+## Agent-Driven Interaction Loops
+
+The solitaire AI player revealed a deeper pattern: **autonomous agents
+that drive TUIs through repeated observe-decide-act-verify cycles with
+state tracking**. This goes beyond one-shot navigation — the agent
+maintains a model of the TUI state, generates candidate actions, evaluates
+them, and adapts when actions fail.
+
+### The Full Loop
+
+```
+  ┌───────────────────────────────────────────────────────────┐
+  │  1. OBSERVE  — pty_semantic_snapshot OR screen parser     │
+  │  2. PARSE    — extract structured state from raw screen   │
+  │  3. GENERATE — enumerate candidate actions (legal moves)  │
+  │  4. EVALUATE — score actions / search ahead (beam search) │
+  │  5. SELECT   — pick best action, skip blacklisted ones    │
+  │  6. ACT      — pty_action / pressKey                      │
+  │  7. VERIFY   — did the screen change? did state advance? │
+  │  8. LOG      — record turn, reasoning, outcome           │
+  │  9. ADAPT    — blacklist failures, detect oscillation     │
+  └───────────────────────────────────────────────────────────┘
+```
+
+Steps 1–5 are DECIDE; steps 6–7 are ACT+VERIFY; steps 8–9 are new.
+
+### When to Use This Pattern
+
+Not every TUI interaction needs the full loop. Use it when:
+
+- The agent must make **sequences of decisions** where each choice
+  affects future options (games, multi-step workflows).
+- The TUI has **structured state** that can be extracted from the screen
+  (card positions, list selections, form values).
+- Actions can **fail silently** — the screen changes but the action had
+  no useful effect (oscillation, wrong panel focus).
+- You need to **record the agent's reasoning** for later review
+  (game-log.json, action audit trail).
+
+For simple one-shot navigation (go to panel, select item, press Enter),
+the standard observe-decide-act-verify loop is sufficient.
+
+### State Extraction from Screen
+
+When the semantic snapshot doesn't provide enough structured data, parse
+raw screen lines directly:
+
+```javascript
+// Example: extract card positions from tty-solitaire screen
+function parseScreen(lines, cols) {
+  const state = new GameState();
+  // Parse each line for card patterns (rank+suit, suit+rank)
+  // Group by x-position into tableau columns
+  // Identify stock/waste/foundations by position
+  return state;
+}
+```
+
+**Generalization pattern:**
+1. Identify the **structural elements** of the TUI (columns, rows,
+   regions, piles).
+2. Find **character patterns** that mark each element (card faces,
+   list markers, cell borders).
+3. Map **x/y positions** to semantic roles (left=stock, center=waste,
+   right=foundations).
+4. Build a **state object** that supports `legalMoves()`,
+   `applyMove()`, and `clone()`.
+
+This pattern works for any structured TUI:
+- **File managers**: parse directory listing into {name, type, size}[]
+- **Process monitors**: parse process table into {pid, cpu, mem, cmd}[]
+- **Git UIs**: parse diff view into {file, status, hunks}[]
+- **Card games**: parse card positions into {rank, suit, pile, column}[]
+
+### Action Generation and Evaluation
+
+For games and multi-step workflows, generate all legal actions and
+evaluate them:
+
+**Simple heuristic evaluation** (for quick decisions):
+```javascript
+function evaluate(state) {
+  let score = 0;
+  score += state.foundationCount * 1000;  // primary goal
+  score -= state.faceDownCount * 50;       // secondary goal
+  score -= state.waste.length * 5;         // smaller is better
+  return score;
+}
+```
+
+**Beam search** (for looking ahead):
+```javascript
+function beamSearch(state, { beamWidth = 5, depth = 5 } = {}) {
+  let beam = [{ state, moves: [], score: evaluate(state) }];
+  for (let d = 0; d < depth; d++) {
+    const candidates = [];
+    for (const entry of beam) {
+      for (const move of entry.state.legalMoves()) {
+        const newState = entry.state.applyMove(move);
+        candidates.push({
+          state: newState,
+          moves: [...entry.moves, move],
+          score: evaluate(newState),
+        });
+      }
+    }
+    candidates.sort((a, b) => b.score - a.score);
+    beam = candidates.slice(0, beamWidth);
+  }
+  return beam[0]?.moves ?? [];
+}
+```
+
+Beam search is the right technique for single-player TUIs because:
+- Branching factor is ~10–30 actions per state
+- Full search is intractable
+- Beam keeps only the top-K states at each depth
+- Unlike minimax (adversarial), we just maximize our own heuristic
+
+**Priority rules for action selection:**
+1. Foundation moves (always highest priority — irreversible progress)
+2. Moves that expose face-down cards / reveal hidden state
+3. Moves that build organized runs (same-suit descending)
+4. Deal/recycle stock (only when no card plays available)
+5. Moves that just shift cards between equivalent positions (low priority)
+
+### Oscillation Detection
+
+Agents can get stuck in **oscillation loops** — repeatedly moving
+between two states with no progress. This is the most common failure
+mode in game AI and multi-step TUI navigation.
+
+**Detection algorithm:**
+```javascript
+const recentMoves = []; // sliding window of last N moves
+const WINDOW = 6;
+const THRESHOLD = 3;
+
+function detectOscillation(move) {
+  recentMoves.push({ card: move.card, from: move.from, to: move.to });
+  if (recentMoves.length < THRESHOLD) return false;
+
+  const window = recentMoves.slice(-WINDOW);
+  for (const rm of window) {
+    const pairKey = [rm.card, Math.min(rm.from, rm.to), Math.max(rm.from, rm.to)].join(":");
+    const count = window.filter(r =>
+      r.card === rm.card &&
+      Math.min(r.from, r.to) === Math.min(rm.from, rm.to) &&
+      Math.max(r.from, r.to) === Math.max(rm.from, rm.to)
+    ).length;
+    if (count >= THRESHOLD) return true; // oscillating
+  }
+  return false;
+}
+```
+
+**Oscillation generalizes beyond games:**
+- **Tab switching**: agent cycles between two panels without acting
+- **Modal dismiss**: agent opens and closes the same dialog
+- **Scroll bounce**: agent scrolls up then down in a list
+- **Selection flip**: agent selects then deselects the same item
+
+**Recovery:** When oscillation is detected, blacklist the oscillating
+action pair and force the agent to try a different action. If no
+alternative exists, the agent is stuck — report and exit.
+
+### Stuck-Move Detection
+
+When an action produces no screen change, the action failed:
+
+```javascript
+const { lines: before } = session.snapshot();
+await executor.executeMove(move);
+await sleep(200);
+const { lines: after } = session.snapshot();
+const screenChanged = after.some((l, i) => l !== (before[i] || ""));
+if (!screenChanged) {
+  // Action failed — blacklist this specific move
+  failedMoveTypes.add(move.type + ":" + move.from + ":" + move.to);
+}
+```
+
+**Important:** Screen change alone is not sufficient to confirm success.
+A card moving back and forth changes the screen but makes no progress.
+Combine screen change verification with **state progress tracking**:
+
+```javascript
+if (newState.foundationCount > lastFoundationCount) {
+  lastFoundationCount = newState.foundationCount;
+  consecutiveNoProgress = 0;
+} else {
+  consecutiveNoProgress++;
+}
+if (consecutiveNoProgress > 30) {
+  // Force a different strategy (e.g., cycle stock)
+}
+```
+
+### Action Logging (game-log.json)
+
+For any agent-driven interaction, log per-turn reasoning:
+
+```json
+{
+  "turn": 1,
+  "t": 3.45,
+  "state": { "foundations": ["A♥"], "faceDownCount": 21 },
+  "legalMoves": [
+    { "type": "tableau_to_foundation", "card": "A♥", "score": 1050 },
+    { "type": "deal_stock", "score": -15 }
+  ],
+  "beamSearch": {
+    "width": 8,
+    "depth": 6,
+    "topSequences": [
+      { "moves": ["A♥→F0", "2♥→F0"], "score": 2100 }
+    ]
+  },
+  "chosen": {
+    "move": { "type": "tableau_to_foundation", "card": "A♥" },
+    "reason": "Foundation move — always highest priority"
+  },
+  "outcome": { "success": true }
+}
+```
+
+This generalizes to any turn-based interaction:
+- **Games**: per-move reasoning with beam search
+- **Form filling**: per-field reasoning with validation
+- **Workflow steps**: per-step reasoning with rollback options
+- **Debugging**: per-action reasoning with state diffs
+
+The log is written as `game-log.json` (third tier alongside
+`semantic-index.json` and `semantic-snapshots.json`) and rendered in
+the Move Log sidebar panel synced to playback time.
+
+### Tiered Data Model for Recordings
+
+Recordings produce three tiers of data, loaded at different times:
+
+| File | Size | When loaded | Content |
+|------|------|-------------|---------|
+| `semantic-index.json` | ~50KB | Immediately | Sidebar metadata (app, framework, cursor) |
+| `semantic-snapshots.json` | ~1.3MB | On overlay toggle | Full semantic elements for overlay boxes |
+| `game-log.json` | ~100KB | When game detected | Per-turn AI reasoning |
+
+**Deduplication:** The tiered writer deduplicates snapshots by JSON
+hash. 402 events → 70 unique snapshots (98.6% size reduction from the
+old monolithic `semantic-events.json` which was 97MB).
+
+**Lazy loading:** The overlay HTML loads the index immediately for
+sidebar rendering. Snapshots are fetched only when the user toggles the
+overlay. Game log is fetched eagerly (small enough).
+
 ---
 
 ## Navigation Patterns
@@ -942,6 +1224,24 @@ navigation.
 - **Key insight**: The welcome screen must be dismissed with `space` before
   the game renders. Card faces use two formats: rank+suit for top of cascade,
   suit+rank for cards below.
+
+**AI Player Integration** (`play_solitaire.mjs`):
+- **State model**: GameState class with rank/suit cards, tableau/foundations/
+  stock/waste, `legalMoves()`, `applyMove()`, `clone()`
+- **Screen parser**: Extracts card positions from raw terminal lines via regex,
+  groups by x-position into piles, identifies face-down cards by border patterns
+- **Move executor**: Translates abstract moves to hjkl+space key sequences
+  (navigate to source card, select, navigate to destination, place)
+- **Beam search**: Width=8, depth=6; heuristic scores foundation progress,
+  face-down exposure, run length, waste size
+- **Oscillation detection**: Sliding window (6 turns), blacklists card pairs
+  that bounce between same columns 3+ times
+- **Stuck-move detection**: Verifies screen change after each action;
+  blacklists moves that produce no change after 3 consecutive failures
+- **Recording**: Full asciicast with tiered semantic data + game-log.json
+  (per-turn AI reasoning synced to playback time)
+- **Key lesson**: The beam search can get trapped in local optima —
+  oscillation detection is essential for any autonomous TUI agent
 
 ### /dev/tty Limitation (Bubbletea Apps)
 
