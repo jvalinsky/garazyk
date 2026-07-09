@@ -28,7 +28,7 @@ export async function spawnCli(
   args: string[],
 ): Promise<SpawnResult> {
   const cmd = new Deno.Command("deno", {
-    args: ["run", "-A", CLI_PATH, ...args],
+    args: ["run", "--quiet", "-A", CLI_PATH, ...args],
     stdout: "piped",
     stderr: "piped",
   });
@@ -56,7 +56,7 @@ export async function spawnCliWithTimeout(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const cmd = new Deno.Command("deno", {
-      args: ["run", "-A", CLI_PATH, ...args],
+      args: ["run", "--quiet", "-A", CLI_PATH, ...args],
       stdout: "piped",
       stderr: "piped",
       signal: controller.signal,
