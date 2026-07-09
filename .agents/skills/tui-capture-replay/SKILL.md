@@ -1,7 +1,7 @@
 # TUI Capture & Replay
 
 Record TUI interactions as asciicast v2 and export standalone HTML playback via
-Asciinema Player.
+Asciinema Player with tiered semantic data overlay.
 
 ## When to Use
 
@@ -9,23 +9,44 @@ Asciinema Player.
   recorded as a playable demo.
 - You need to create offline HTML exports of TUI sessions for sharing or docs.
 - You are testing or demonstrating a TUI built on `@garazyk/tui` primitives.
+- You are building an autonomous TUI agent that needs to record its reasoning
+  alongside its actions (game AI, workflow automation).
 
 ## Architecture
 
 ```
-Interaction script (ReplayStep[])
+TUI Session (PTY)
          │
          ▼
-┌─────────────────┐    ┌───────────────┐    ┌──────────────┐
-│ VirtualTuiHarness│───▶│ CastRecorder  │───▶│ buildExportHtml│
-│ (headless render)│    │ (asciicast v2)│    │ (standalone   │
-│                 │    │               │    │  HTML player) │
-└─────────────────┘    └───────────────┘    └──────────────┘
+┌─────────────────────┐
+│ TerminalSession      │─── pty_semantic_snapshot() ──→ semantic events
+│ (terminal_session.mjs│─── snapshot().lines ────────→ raw screen frames
+│  + node-pty + xterm) │─── pressKey() / type() ─────→ input events
+└─────────┬───────────┘
+          │ attachRecording()
+          ▼
+┌─────────────────────┐    ┌───────────────────────────────────────┐
+│ AsciicastRecorder   │───▶│ session.cast (asciicast v2 + semantic) │
+│ (recording.mjs)     │    └──────────────────┬────────────────────┘
+└─────────┬───────────┘                       │
+          │ close()                             │ splitSemanticCast()
+          ▼                                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Output Directory                                                │
+│ ├── playback.cast          — standard asciicast (no semantic)  │
+│ ├── semantic-index.json    — ~50KB, loaded immediately         │
+│ ├── semantic-snapshots.json — ~1.3MB, loaded lazily on toggle  │
+│ ├── game-log.json          — ~100KB, per-turn AI reasoning     │
+│ └── index.html             — Asciinema Player + overlay         │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-The harness wraps a `ScreenBuffer` and a render callback. Each keystroke or
-resize triggers a re-render. The recorder captures every frame as an asciicast
-v2 event. The HTML exporter inlines the cast with Asciinema Player v3.8.
+The recorder captures output, input, resize, and semantic events into a
+single `session.cast` file. On close, it splits the cast into a clean
+playback file (for Asciinema Player) and tiered semantic data files
+(for the overlay). The HTML player loads the index immediately, fetches
+snapshots lazily on overlay toggle, and syncs game-log turns to
+playback time.
 
 ## ReplayStep Format
 
@@ -210,16 +231,96 @@ const result = await captureHeadlessReplay({
 
 | Path | Format | Use |
 |------|--------|-----|
-| `{outputDir}/dashboard.cast` | asciicast v2 | Raw recording |
-| `{outputDir}/index.html` | Standalone HTML | Open in browser |
+| `{outputDir}/playback.cast` | asciicast v2 | Clean recording for Asciinema Player |
+| `{outputDir}/semantic-index.json` | JSON (~50KB) | Sidebar metadata, loaded immediately |
+| `{outputDir}/semantic-snapshots.json` | JSON (~1.3MB) | Overlay data, loaded lazily on toggle |
+| `{outputDir}/game-log.json` | JSON (~100KB) | Per-turn AI reasoning, synced to playback |
+| `{outputDir}/index.html` | Standalone HTML | Asciinema Player + semantic overlay |
 
-The HTML embeds Asciinema Player v3.8 loaded from CDN. Markers render as
-clickable timeline buttons.
+The HTML loads Asciinema Player v3.8 from CDN. The overlay syncs via
+`player.getCurrentTime()` polling (every 100ms) with binary search for
+the latest semantic event. Game log turns highlight and auto-scroll
+as playback progresses.
+
+### PTY Recording (AsciicastRecorder)
+
+For recording real PTY sessions (not headless harness):
+
+```javascript
+import { AsciicastRecorder } from "../recording.mjs";
+import { TerminalSessionManager } from "../terminal_session.mjs";
+
+const manager = new TerminalSessionManager({ env: { TERM: "xterm-256color" } });
+const session = await manager.create({
+  command: "/opt/homebrew/bin/ttysolitaire",
+  args: ["--no-background-color"],
+  cols: 57, rows: 28,
+});
+
+const recorder = new AsciicastRecorder({
+  outputDir: "/tmp/capture",
+  cols: session.cols,
+  rows: session.rows,
+  title: "tty-solitaire",
+  semanticOverlay: true,
+  recordInput: false,
+  command: "ttysolitaire",
+});
+
+session.attachRecording(recorder);
+session.startScreenCapture(500); // 2 fps
+
+// ... interact with session ...
+
+await recorder.close();
+// Writes: playback.cast, semantic-index.json, semantic-snapshots.json, index.html
+```
+
+**Key methods:**
+- `session.attachRecording(recorder)` — wire output/input events to recorder
+- `session.startScreenCapture(intervalMs)` — periodic semantic snapshots
+- `recorder.recordSemanticSnapshot(snapshot)` — manual snapshot at key moments
+- `recorder.close()` — split cast, write tiered files, generate HTML
+- `recorder.elapsedSeconds()` — current recording timestamp for game-log sync
+
+**Fallback handling:** If `recorder.close()` fails (common with large files),
+the fallback path manually splits the cast and writes all files. Always
+handle this case — see `play_solitaire.mjs` for the pattern.
+
+### Game Log Integration
+
+For autonomous agents, write `game-log.json` alongside the recording:
+
+```javascript
+const gameLog = [];
+
+// Each turn:
+gameLog.push({
+  turn: turn + 1,
+  t: recorder.elapsedSeconds(),
+  state: serializeState(currentState),
+  legalMoves: legalMoves.map(m => ({ ...serializeMove(m), score: evaluate(state.applyMove(m)) })),
+  beamSearch: { width: 8, depth: 6, topSequences: beam.slice(0, 3) },
+  chosen: { move: serializeMove(chosenMove), reason: "Foundation move — highest priority" },
+  outcome: { success: true, newState: serializeState(newState) },
+});
+
+// At shutdown:
+fs.writeFileSync(path.join(outputDir, "game-log.json"), JSON.stringify(gameLog));
+```
+
+The Move Log panel in the sidebar renders this data, highlighting the
+current turn and auto-scrolling as playback progresses.
 
 ## Related
 
 - `@garazyk/tui/testing` — VirtualTuiHarness, CastRecorder, replayScript,
   replay_types (the core primitives)
+- `scripts/mcp-pty/recording.mjs` — AsciicastRecorder for PTY sessions
+- `scripts/mcp-pty/semantic_overlay_html.mjs` — buildAsciinemaOverlayHtml,
+  writeTieredSemanticData, splitSemanticCast
+- `scripts/mcp-pty/terminal_session.mjs` — TerminalSession, TerminalSessionManager
+- `scripts/mcp-pty/scripts/play_solitaire.mjs` — Full AI player example
 - `scripts/scenario-dashboard/tui_headless_capture.ts` — project-specific
   capture script
 - `scripts/scenario-dashboard/tui.ts` — live interactive TUI with recording
