@@ -94,7 +94,8 @@ test("buildStandaloneHtml can enable semantic overlay controls", () => {
     castContent,
     semanticOverlay: true,
   });
-  assert.match(html, /id="overlay"/);
+  assert.match(html, /id="semantic-overlay"/);
+  assert.match(html, /id="toggle-overlay"/);
   assert.match(html, /semantic-box/);
   assert.match(html, /let overlayEnabled = true/);
 });
