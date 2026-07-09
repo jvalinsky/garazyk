@@ -135,7 +135,7 @@ test("buildAsciinemaOverlayHtml uses relative URL for cast source", () => {
   assert.doesNotMatch(html, /STANDARD_CAST_BASE64/);
 });
 
-test("buildAsciinemaOverlayHtml fetches semantic events from separate file", () => {
+test("buildAsciinemaOverlayHtml fetches semantic index from separate file", () => {
   const cast = [
     JSON.stringify({ version: 2, width: 20, height: 5, title: "demo" }),
     JSON.stringify([0.1, "o", "hello"]),
@@ -148,14 +148,14 @@ test("buildAsciinemaOverlayHtml fetches semantic events from separate file", () 
     semanticOverlay: true,
   });
 
-  assert.match(html, /SEMANTIC_URL/);
-  assert.match(html, /semantic-events\.json/);
-  assert.match(html, /fetch\(SEMANTIC_URL\)/);
+  assert.match(html, /SEMANTIC_INDEX_URL/);
+  assert.match(html, /semantic-index\.json/);
+  assert.match(html, /fetch\(SEMANTIC_INDEX_URL\)/);
   // No inline embedding of large semantic data (only empty initializer)
-  assert.doesNotMatch(html, /SEMANTIC_EVENTS\s*=\s*\[{/);
+  assert.doesNotMatch(html, /SEMANTIC_INDEX\s*=\s*\[{/);
 });
 
-test("buildAsciinemaOverlayHtml skips semantic fetch when no events", () => {
+test("buildAsciinemaOverlayHtml keeps semantic index external when no inline events", () => {
   const cast = [
     JSON.stringify({ version: 2, width: 20, height: 5, title: "demo" }),
     JSON.stringify([0.1, "o", "hello"]),
@@ -167,8 +167,9 @@ test("buildAsciinemaOverlayHtml skips semantic fetch when no events", () => {
     semanticOverlay: true,
   });
 
-  assert.match(html, /No semantic events in this recording/);
-  assert.doesNotMatch(html, /fetch\(SEMANTIC_URL\)/);
+  assert.match(html, /let SEMANTIC_INDEX = \[\]/);
+  assert.match(html, /fetch\(SEMANTIC_INDEX_URL\)/);
+  assert.doesNotMatch(html, /SEMANTIC_INDEX\s*=\s*\[{/);
 });
 
 test("buildAsciinemaOverlayHtml sets overlay toggle to false when semanticOverlay is false", () => {
