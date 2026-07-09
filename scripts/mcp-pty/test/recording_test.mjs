@@ -14,7 +14,7 @@ test("buildStandaloneHtml delegates to Asciinema Player (no custom emulator)", (
   assert.match(html, /id="player"/);
   assert.match(html, /id="semantic-overlay"/);
   assert.match(html, /CAST_URL/);
-  assert.match(html, /SEMANTIC_EVENTS/);
+  assert.match(html, /SEMANTIC_INDEX/);
 
   // No base64 embedding or Blob URL
   assert.doesNotMatch(html, /STANDARD_CAST_BASE64/);
