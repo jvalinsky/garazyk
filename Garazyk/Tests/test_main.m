@@ -1130,6 +1130,7 @@ int main(int argc, char *argv[]) {
       @"ChatGroupLifecycleTests",
       @"ATProtoMediaCoreTests",
       @"JelczCLITests",
+      @"JelczDatabaseTests",
       @"ATProtoMediaServiceRuntimeTests",
       @"BeskidConfigurationTests",
       @"BeskidDatabaseTests",
