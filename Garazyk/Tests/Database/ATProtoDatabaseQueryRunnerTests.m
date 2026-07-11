@@ -48,17 +48,15 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
 - (void)testQueryReturnsTypedValuesNullsAndBlobs {
     NSError *error = nil;
     NSData *blob = [NSData dataWithBytes:"\x01\x02\x03" length:3];
-    BOOL seeded = [self.runner performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        if (![self.runner executeUpdate:@"CREATE TABLE values_test(i INTEGER, f REAL, t TEXT, b BLOB, n TEXT)"
-                                 params:nil
-                             connection:db
-                                  error:innerError]) {
+    BOOL seeded = [self.runner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        if (![tx executeUpdate:@"CREATE TABLE values_test(i INTEGER, f REAL, t TEXT, b BLOB, n TEXT)"
+                        params:nil
+                         error:innerError]) {
             return NO;
         }
-        return [self.runner executeUpdate:@"INSERT INTO values_test(i, f, t, b, n) VALUES(?,?,?,?,?)"
-                                   params:@[@7, @(3.5), @"hello", blob, [NSNull null]]
-                               connection:db
-                                    error:innerError];
+        return [tx executeUpdate:@"INSERT INTO values_test(i, f, t, b, n) VALUES(?,?,?,?,?)"
+                          params:@[@7, @(3.5), @"hello", blob, [NSNull null]]
+                           error:innerError];
     } error:&error];
     XCTAssertTrue(seeded, @"seed values: %@", error);
 
@@ -111,23 +109,20 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
 
 - (void)testUpdateFailureUsesServiceErrorDomain {
     NSError *error = nil;
-    BOOL updated = [self.runner performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        if (![self.runner executeUpdate:@"CREATE TABLE unique_test(value TEXT UNIQUE)"
-                                 params:nil
-                             connection:db
-                                  error:innerError]) {
+    BOOL updated = [self.runner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        if (![tx executeUpdate:@"CREATE TABLE unique_test(value TEXT UNIQUE)"
+                        params:nil
+                         error:innerError]) {
             return NO;
         }
-        if (![self.runner executeUpdate:@"INSERT INTO unique_test(value) VALUES(?)"
-                                 params:@[@"one"]
-                             connection:db
-                                  error:innerError]) {
+        if (![tx executeUpdate:@"INSERT INTO unique_test(value) VALUES(?)"
+                        params:@[@"one"]
+                         error:innerError]) {
             return NO;
         }
-        return [self.runner executeUpdate:@"INSERT INTO unique_test(value) VALUES(?)"
-                                   params:@[@"one"]
-                               connection:db
-                                    error:innerError];
+        return [tx executeUpdate:@"INSERT INTO unique_test(value) VALUES(?)"
+                          params:@[@"one"]
+                           error:innerError];
     } error:&error];
     XCTAssertFalse(updated);
     XCTAssertEqualObjects(error.domain, ATProtoDatabaseQueryRunnerTestDomain);
@@ -136,25 +131,22 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
 
 - (void)testTransactionRollbackPreservesBlockError {
     NSError *error = nil;
-    BOOL created = [self.runner performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        return [self.runner executeUpdate:@"CREATE TABLE rollback_test(value TEXT)"
-                                   params:nil
-                               connection:db
-                                    error:innerError];
+    BOOL created = [self.runner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        return [tx executeUpdate:@"CREATE TABLE rollback_test(value TEXT)"
+                          params:nil
+                           error:innerError];
     } error:&error];
     XCTAssertTrue(created, @"create table: %@", error);
 
-    BOOL rolledBack = [self.runner performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        if (![self.runner executeUpdate:@"INSERT INTO rollback_test(value) VALUES(?)"
-                                 params:@[@"kept-out"]
-                             connection:db
-                                  error:innerError]) {
+    BOOL rolledBack = [self.runner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        if (![tx executeUpdate:@"INSERT INTO rollback_test(value) VALUES(?)"
+                        params:@[@"kept-out"]
+                         error:innerError]) {
             return NO;
         }
-        return [self.runner executeUpdate:@"INSERT INTO missing_table(value) VALUES(?)"
-                                   params:@[@"fail"]
-                               connection:db
-                                    error:innerError];
+        return [tx executeUpdate:@"INSERT INTO missing_table(value) VALUES(?)"
+                          params:@[@"fail"]
+                           error:innerError];
     } error:&error];
     XCTAssertFalse(rolledBack);
     XCTAssertEqualObjects(error.domain, ATProtoDatabaseQueryRunnerTestDomain);
@@ -164,6 +156,40 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
                            params:nil
                             error:&error];
     XCTAssertEqual(rows.count, 0u, @"transaction should roll back inserted row");
+}
+
+- (void)testTransactorReadsUncommittedWriteWithinTransaction {
+    NSError *error = nil;
+    __block NSInteger seenWithinTx = -1;
+    __block NSString *seenValue = nil;
+    BOOL ok = [self.runner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        if (![tx executeUpdate:@"CREATE TABLE tx_read_test(value TEXT)"
+                        params:nil
+                         error:innerError]) {
+            return NO;
+        }
+        if (![tx executeUpdate:@"INSERT INTO tx_read_test(value) VALUES(?)"
+                        params:@[@"inside"]
+                         error:innerError]) {
+            return NO;
+        }
+        // The transactor's read must see the not-yet-committed write on the same connection.
+        NSArray<NSDictionary<NSString *, id> *> *seen =
+            [tx executeQuery:@"SELECT value FROM tx_read_test" params:nil error:innerError];
+        if (!seen) return NO;
+        seenWithinTx = (NSInteger)seen.count;
+        seenValue = seen.firstObject[@"value"];
+        return YES;
+    } error:&error];
+
+    XCTAssertTrue(ok, @"transactor read+write: %@", error);
+    XCTAssertEqual(seenWithinTx, 1, @"read within the transaction should see the uncommitted insert");
+    XCTAssertEqualObjects(seenValue, @"inside");
+
+    // And it committed: a fresh self-managed read sees the row too.
+    NSArray<NSDictionary<NSString *, id> *> *committed =
+        [self.runner executeQuery:@"SELECT value FROM tx_read_test" params:nil error:&error];
+    XCTAssertEqual(committed.count, 1u, @"committed row visible after transaction: %@", error);
 }
 
 - (void)testSelfManagedExecuteUpdateReportsAffectedRows {
