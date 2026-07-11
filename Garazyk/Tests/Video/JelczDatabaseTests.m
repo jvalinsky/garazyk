@@ -15,7 +15,11 @@
  */
 
 #import <XCTest/XCTest.h>
+#import <sqlite3.h>
 #import "Video/JelczDatabase.h"
+
+// Defined (external linkage) in JelczDatabase.m; not exported via the header.
+extern NSString * const JelczDatabaseErrorDomain;
 
 @interface JelczDatabaseTests : XCTestCase
 @property (nonatomic, strong) JelczDatabase *db;
@@ -99,7 +103,7 @@
     XCTAssertEqualObjects(job[@"service_auth_token"], [NSNull null]);
 }
 
-- (void)testDuplicateJobIdIsRejected {
+- (void)testDuplicateJobIdReturnsError {
     [self createJob:@"dup"];
 
     NSError *error = nil;
@@ -111,10 +115,11 @@
                            serviceAuthToken:nil
                                       error:&error];
     XCTAssertFalse(ok, @"duplicate primary key fails the insert");
-    // Characterization of a latent quirk: the PK constraint is detected (create returns
-    // NO) but the store does NOT surface an NSError for it — error stays nil. Captured
-    // as-is; a refactor that propagates the constraint error would flip this assertion.
-    XCTAssertNil(error);
+    // Post-migration onto ATProtoDatabaseQueryRunner the constraint is now surfaced —
+    // previously the create returned NO but swallowed the error (the old characterization
+    // asserted a nil error here).
+    XCTAssertEqualObjects(error.domain, JelczDatabaseErrorDomain);
+    XCTAssertEqual(error.code, SQLITE_CONSTRAINT);
     // INSERT (not upsert): the rejected duplicate leaves the original row untouched.
     NSDictionary *job = [self.db getVideoJobById:@"dup" error:NULL];
     XCTAssertEqualObjects(job[@"did"], @"did:plc:tester", @"original row preserved");

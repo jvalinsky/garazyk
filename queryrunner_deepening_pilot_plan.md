@@ -143,7 +143,7 @@ Post-pilot, reassess. Not part of this pilot:
 
 | Store | Disposition | Reason |
 |---|---|---|
-| `JelczDatabase` | **Ready (Tier 1)** | characterization net added 2026-07-11 (`Tests/Video/JelczDatabaseTests.m`, 18 tests) — closed report candidate 10; now unblocked for the QueryRunner migration. Tests pin a latent quirk: a duplicate-`job_id` create returns NO but surfaces no `NSError` |
+| `JelczDatabase` | **Migrated 2026-07-11** | characterization net added first (`Tests/Video/JelczDatabaseTests.m`, 18 tests, closed report candidate 10), then migrated onto QueryRunner — all reads/writes route through `executeQuery:`/`executeUpdate:`, bespoke prepare/bind/step deleted. Kept its looser update semantics (missing-job update returns YES; no 404, unlike MediaSQLiteStore). The migration surfaced the previously-swallowed duplicate-`job_id` create error (one characterization test updated to assert it) |
 | `Session` | Defer (Tier 2) | owns hand-rolled queue → full concurrency migration; auth-critical (53 test refs) |
 | `PDSReplayCache` | Defer (Tier 2) | owns hand-rolled queue |
 | `PLCReplicaStore` | Defer (Tier 2) | owns hand-rolled queue; 0 tests |
