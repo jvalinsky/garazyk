@@ -76,6 +76,36 @@
     return result;
 }
 
+- (NSInteger)executeUpdate:(NSString *)sql
+                    params:(nullable NSArray *)params
+                     error:(NSError **)error {
+    __block NSInteger changes = -1;
+    __block NSError *innerError = nil;
+    NSError *managerError = nil;
+    BOOL executed = [self.connectionManager execute:^(sqlite3 *db) {
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            innerError = self.errorFactory(db, rc, @"Failed to prepare update");
+            return;
+        }
+        ATProtoDBBindParams(stmt, params ?: @[]);
+
+        rc = sqlite3_step(stmt);
+        if (rc != SQLITE_DONE) {
+            innerError = self.errorFactory(db, rc, @"Failed to execute update");
+            return;
+        }
+        changes = sqlite3_changes(db);
+    } error:&managerError];
+
+    if (!executed || changes < 0) {
+        if (error) *error = innerError ?: [self errorFromManagerError:managerError fallback:@"Failed to execute update"];
+        return -1;
+    }
+    return changes;
+}
+
 - (BOOL)executeUpdate:(NSString *)sql
                params:(nullable NSArray *)params
            connection:(sqlite3 *)db

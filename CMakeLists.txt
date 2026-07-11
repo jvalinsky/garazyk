@@ -192,6 +192,18 @@ if(APPLE)
     # Find SQLite3
     find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
 
+    # Prefer Homebrew's stable unversioned openssl@3 symlink so a patch bump
+    # (e.g. 3.6.2 -> 3.6.3) does not leave a cached build dir pointing at a
+    # deleted Cellar path. Only applied when the caller has not pinned it.
+    if(NOT DEFINED OPENSSL_ROOT_DIR)
+        foreach(_gz_ssl_prefix /opt/homebrew/opt/openssl@3 /usr/local/opt/openssl@3)
+            if(EXISTS "${_gz_ssl_prefix}/include/openssl/opensslv.h")
+                set(OPENSSL_ROOT_DIR "${_gz_ssl_prefix}")
+                break()
+            endif()
+        endforeach()
+    endif()
+
     # Optional OpenSSL (enables non-keychain session key manager on macOS)
     set(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE OFF)
     find_package(OpenSSL QUIET)
