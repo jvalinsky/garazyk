@@ -166,6 +166,41 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
     XCTAssertEqual(rows.count, 0u, @"transaction should roll back inserted row");
 }
 
+- (void)testSelfManagedExecuteUpdateReportsAffectedRows {
+    NSError *error = nil;
+    XCTAssertEqual([self.runner executeUpdate:@"CREATE TABLE affected_test(id TEXT PRIMARY KEY, n INTEGER)"
+                                       params:nil
+                                        error:&error], 0, @"create table: %@", error);
+
+    // Array-literal params are hoisted into locals so their internal comma is not
+    // mis-parsed as an extra XCTAssertEqual macro argument (only () protects commas,
+    // not @[]); the commas inside the SQL string literals are safe.
+    NSArray *insertRow = @[@"a", @1];
+    XCTAssertEqual([self.runner executeUpdate:@"INSERT INTO affected_test(id, n) VALUES(?, ?)"
+                                       params:insertRow
+                                        error:&error], 1, @"insert one row: %@", error);
+
+    NSArray *updateRow = @[@2, @"a"];
+    XCTAssertEqual([self.runner executeUpdate:@"UPDATE affected_test SET n = ? WHERE id = ?"
+                                       params:updateRow
+                                        error:&error], 1, @"update matching row: %@", error);
+
+    NSArray *missingRow = @[@9, @"missing"];
+    XCTAssertEqual([self.runner executeUpdate:@"UPDATE affected_test SET n = ? WHERE id = ?"
+                                       params:missingRow
+                                        error:&error], 0, @"update non-matching row returns 0 changes");
+}
+
+- (void)testSelfManagedExecuteUpdateReportsErrorWithDomain {
+    NSError *error = nil;
+    NSInteger changed = [self.runner executeUpdate:@"INSERT INTO missing_table(value) VALUES(?)"
+                                            params:@[@"x"]
+                                             error:&error];
+    XCTAssertTrue(changed < 0, @"failed update should return a negative row count");
+    XCTAssertEqualObjects(error.domain, ATProtoDatabaseQueryRunnerTestDomain);
+    XCTAssertEqual(error.code, SQLITE_ERROR);
+}
+
 - (void)testCustomErrorFactoryIsUsed {
     ATProtoDatabaseQueryRunner *custom =
         [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:self.manager
