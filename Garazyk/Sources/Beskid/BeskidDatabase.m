@@ -198,18 +198,16 @@ static NSString *BeskidNow(void) {
     __block BOOL success = NO;
     __block NSError *localError = nil;
     dispatch_sync(_writeQueue, ^{
-        success = [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
+        success = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
             // Delete old record mapping to satisfy unique constraint of did/collection/rkey if URI is changing
-            [self executeUpdate:@"DELETE FROM beskid_records WHERE did = ? AND collection = ? AND rkey = ?"
-                         params:@[did, collection, rkey]
-                     connection:db
-                          error:nil];
+            [tx executeUpdate:@"DELETE FROM beskid_records WHERE did = ? AND collection = ? AND rkey = ?"
+                       params:@[did, collection, rkey]
+                        error:nil];
 
             NSString *sql = @"INSERT OR REPLACE INTO beskid_records(uri, did, collection, rkey, cid, value_json, indexed_at, expires_at) VALUES(?,?,?,?,?,?,?,?)";
-            return [self executeUpdate:sql
-                                params:@[uri, did, collection, rkey, cid, valueJson, @(now), @(expiresAt)]
-                            connection:db
-                                 error:innerError];
+            return [tx executeUpdate:sql
+                              params:@[uri, did, collection, rkey, cid, valueJson, @(now), @(expiresAt)]
+                               error:innerError];
         } error:&localError];
     });
 
@@ -224,9 +222,9 @@ static NSString *BeskidNow(void) {
     __block BOOL success = NO;
     __block NSError *localError = nil;
     dispatch_sync(_writeQueue, ^{
-        success = [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
+        success = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
             NSString *sql = @"DELETE FROM beskid_records WHERE did = ? AND collection = ? AND rkey = ?";
-            return [self executeUpdate:sql params:@[did, collection, rkey] connection:db error:innerError];
+            return [tx executeUpdate:sql params:@[did, collection, rkey] error:innerError];
         } error:&localError];
     });
     if (!success && error) *error = localError;
@@ -244,37 +242,33 @@ static NSString *BeskidNow(void) {
     __block BOOL success = NO;
     __block NSError *localError = nil;
     dispatch_sync(_writeQueue, ^{
-        success = [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
+        success = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
             NSString *pds = @"";
             NSString *key = @"";
             NSString *doc = @"{}";
             
-            // Check if identity already exists
-            sqlite3_stmt *stmt = NULL;
-            if (sqlite3_prepare_v2(db, "SELECT pds_endpoint, signing_key, raw_doc_json FROM beskid_identities WHERE did = ? LIMIT 1", -1, &stmt, NULL) == SQLITE_OK) {
-                sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-                if (sqlite3_step(stmt) == SQLITE_ROW) {
-                    const char *pdsPtr = (const char *)sqlite3_column_text(stmt, 0);
-                    const char *keyPtr = (const char *)sqlite3_column_text(stmt, 1);
-                    const char *docPtr = (const char *)sqlite3_column_text(stmt, 2);
-                    if (pdsPtr) pds = [NSString stringWithUTF8String:pdsPtr];
-                    if (keyPtr) key = [NSString stringWithUTF8String:keyPtr];
-                    if (docPtr) doc = [NSString stringWithUTF8String:docPtr];
-                }
-                sqlite3_finalize(stmt);
+            // Preserve any existing identity fields for this DID — this is a handle-only
+            // upsert, so read the current row (within the transaction) and carry its values.
+            NSArray<NSDictionary *> *existing =
+                [tx executeQuery:@"SELECT pds_endpoint, signing_key, raw_doc_json FROM beskid_identities WHERE did = ? LIMIT 1"
+                          params:@[did]
+                           error:NULL];
+            if (existing.count > 0) {
+                NSDictionary *row = existing.firstObject;
+                if ([row[@"pds_endpoint"] isKindOfClass:[NSString class]]) pds = row[@"pds_endpoint"];
+                if ([row[@"signing_key"] isKindOfClass:[NSString class]]) key = row[@"signing_key"];
+                if ([row[@"raw_doc_json"] isKindOfClass:[NSString class]]) doc = row[@"raw_doc_json"];
             }
 
             // Delete standard mappings
-            [self executeUpdate:@"DELETE FROM beskid_identities WHERE handle = ? OR did = ?"
-                         params:@[normalized, did]
-                     connection:db
-                          error:nil];
+            [tx executeUpdate:@"DELETE FROM beskid_identities WHERE handle = ? OR did = ?"
+                       params:@[normalized, did]
+                        error:nil];
 
             NSString *sql = @"INSERT OR REPLACE INTO beskid_identities(did, handle, pds_endpoint, signing_key, raw_doc_json, indexed_at, expires_at) VALUES(?,?,?,?,?,?,?)";
-            return [self executeUpdate:sql
-                                params:@[did, normalized, pds, key, doc, @(now), @(expiresAt)]
-                            connection:db
-                                 error:innerError];
+            return [tx executeUpdate:sql
+                              params:@[did, normalized, pds, key, doc, @(now), @(expiresAt)]
+                               error:innerError];
         } error:&localError];
     });
     if (!success && error) *error = localError;
@@ -331,17 +325,15 @@ static NSString *BeskidNow(void) {
     __block BOOL success = NO;
     __block NSError *localError = nil;
     dispatch_sync(_writeQueue, ^{
-        success = [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-            [self executeUpdate:@"DELETE FROM beskid_identities WHERE did = ? OR handle = ?"
-                         params:@[did, normalizedHandle]
-                     connection:db
-                          error:nil];
+        success = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+            [tx executeUpdate:@"DELETE FROM beskid_identities WHERE did = ? OR handle = ?"
+                       params:@[did, normalizedHandle]
+                        error:nil];
 
             NSString *sql = @"INSERT OR REPLACE INTO beskid_identities(did, handle, pds_endpoint, signing_key, raw_doc_json, indexed_at, expires_at) VALUES(?,?,?,?,?,?,?)";
-            return [self executeUpdate:sql
-                                params:@[did, normalizedHandle, pdsEndpoint ?: @"", signingKey ?: @"", rawDocJson, @(now), @(expiresAt)]
-                            connection:db
-                                 error:innerError];
+            return [tx executeUpdate:sql
+                              params:@[did, normalizedHandle, pdsEndpoint ?: @"", signingKey ?: @"", rawDocJson, @(now), @(expiresAt)]
+                               error:innerError];
         } error:&localError];
     });
 
@@ -394,14 +386,7 @@ static NSString *BeskidNow(void) {
     return [self.queryRunner executeQuery:sql params:params error:error];
 }
 
-- (BOOL)executeUpdate:(NSString *)sql
-               params:(NSArray *)params
-           connection:(sqlite3 *)db
-                error:(NSError **)error {
-    return [self.queryRunner executeUpdate:sql params:params connection:db error:error];
-}
-
-- (BOOL)performWriteTransaction:(BOOL (^)(sqlite3 *db, NSError **error))block
+- (BOOL)performWriteTransaction:(BOOL (^)(id<ATProtoDatabaseTransactor> tx, NSError **error))block
                           error:(NSError **)error {
     return [self.queryRunner performWriteTransaction:block error:error];
 }
