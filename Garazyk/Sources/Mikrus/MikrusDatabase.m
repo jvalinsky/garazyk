@@ -215,9 +215,9 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
     int64_t indexedAt = MikrusIndexValue(seq);
     NSString *now = MikrusNow();
 
-    return [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
+    return [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
         NSString *deleteLinks = @"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?";
-        if (![self executeUpdate:deleteLinks params:@[did, collection, rkey] connection:db error:innerError]) return NO;
+        if (![tx executeUpdate:deleteLinks params:@[did, collection, rkey] error:innerError]) return NO;
 
         NSString *upsertRecord =
             @"INSERT INTO mikrus_records(uri, did, collection, rkey, cid, value_json, indexed_at, updated_at) "
@@ -225,10 +225,9 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
             "ON CONFLICT(uri) DO UPDATE SET "
             "did=excluded.did, collection=excluded.collection, rkey=excluded.rkey, cid=excluded.cid, "
             "value_json=excluded.value_json, indexed_at=excluded.indexed_at, updated_at=excluded.updated_at";
-        if (![self executeUpdate:upsertRecord
-                          params:@[uri, did, collection, rkey, cid ?: [NSNull null], json ?: @"{}", @(indexedAt), now]
-                      connection:db
-                           error:innerError]) {
+        if (![tx executeUpdate:upsertRecord
+                        params:@[uri, did, collection, rkey, cid ?: [NSNull null], json ?: @"{}", @(indexedAt), now]
+                         error:innerError]) {
             return NO;
         }
 
@@ -241,7 +240,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
             NSString *subject = entry[@"subject"];
             if (path.length == 0 || subject.length == 0) continue;
             NSArray *params = @[subject, collection, path, did, collection, rkey, uri, cid ?: [NSNull null], @(indexedAt), now];
-            if (![self executeUpdate:insertLink params:params connection:db error:innerError]) return NO;
+            if (![tx executeUpdate:insertLink params:params error:innerError]) return NO;
         }
         return YES;
     } error:error];
@@ -259,17 +258,15 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
     }
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-    return [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        if (![self executeUpdate:@"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?"
-                          params:@[did, collection, rkey]
-                      connection:db
-                           error:innerError]) {
+    return [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        if (![tx executeUpdate:@"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?"
+                        params:@[did, collection, rkey]
+                         error:innerError]) {
             return NO;
         }
-        return [self executeUpdate:@"DELETE FROM mikrus_records WHERE uri = ?"
-                            params:@[uri]
-                        connection:db
-                             error:innerError];
+        return [tx executeUpdate:@"DELETE FROM mikrus_records WHERE uri = ?"
+                          params:@[uri]
+                           error:innerError];
     } error:error];
 }
 
@@ -589,17 +586,15 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 - (BOOL)saveHandle:(NSString *)handle did:(NSString *)did error:(NSError **)error {
     if (handle.length == 0 || did.length == 0) return YES;
     NSString *normalized = [handle lowercaseString];
-    return [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        if (![self executeUpdate:@"DELETE FROM mikrus_handles WHERE did = ?"
-                          params:@[did]
-                      connection:db
-                           error:innerError]) {
+    return [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        if (![tx executeUpdate:@"DELETE FROM mikrus_handles WHERE did = ?"
+                        params:@[did]
+                         error:innerError]) {
             return NO;
         }
-        return [self executeUpdate:@"INSERT OR REPLACE INTO mikrus_handles(handle, did, updated_at) VALUES(?,?,?)"
-                            params:@[normalized, did, MikrusNow()]
-                        connection:db
-                             error:innerError];
+        return [tx executeUpdate:@"INSERT OR REPLACE INTO mikrus_handles(handle, did, updated_at) VALUES(?,?,?)"
+                          params:@[normalized, did, MikrusNow()]
+                           error:innerError];
     } error:error];
 }
 
@@ -627,14 +622,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
     return [self.queryRunner executeQuery:sql params:params error:error];
 }
 
-- (BOOL)executeUpdate:(NSString *)sql
-               params:(NSArray *)params
-           connection:(sqlite3 *)db
-                error:(NSError **)error {
-    return [self.queryRunner executeUpdate:sql params:params connection:db error:error];
-}
-
-- (BOOL)performWriteTransaction:(BOOL (^)(sqlite3 *db, NSError **error))block
+- (BOOL)performWriteTransaction:(BOOL (^)(id<ATProtoDatabaseTransactor> tx, NSError **error))block
                           error:(NSError **)error {
     return [self.queryRunner performWriteTransaction:block error:error];
 }

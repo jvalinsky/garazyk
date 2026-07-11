@@ -1,9 +1,15 @@
 # QueryRunner Deepening — Pilot Plan
 
-**Status:** Steps 1 & 4 **enacted and verified** 2026-07-11 (QueryRunner gains a
-self-managing single-write method; `ATProtoMediaSQLiteStore` migrated onto the seam).
-Steps 2 & 3 (Transactor reshape of the write-transaction path + updating the Mikrus/Beskid
-adopters) remain — deferred because the pilot store has no multi-statement transactions.
+**Status:** **All four steps enacted and verified 2026-07-11.** Steps 1 & 4 added the
+self-managing `executeUpdate:params:error:` and migrated `ATProtoMediaSQLiteStore` onto the
+seam. Steps 2 & 3 reshaped `performWriteTransaction:` to hand the block an
+`id<ATProtoDatabaseTransactor>` (adding the protocol + a private transactor over shared
+`…OnConnection:` mechanics, and **deleting** the `connection:`-taking `executeUpdate:`), then
+migrated the two adopters `Mikrus/MikrusDatabase.m` and `Beskid/BeskidDatabase.m` — including
+Beskid's one raw `sqlite3` in-transaction SELECT, now `[tx executeQuery:…]`. **No raw
+`sqlite3 *` remains in the data-access interface** (candidate 2's leak is closed on this seam).
+Verified through AllTests: QueryRunner **9/9**, MediaCore **22/22**, Mikrus **12/12**,
+Beskid **8/8**.
 **Date:** 2026-07-11
 **Lineage:** Successor to `refactor_opportunity_audit_report.md` (May 2026). That audit
 extracted `ATProtoDatabaseQueryRunner`; this plan finishes deepening it and proves the

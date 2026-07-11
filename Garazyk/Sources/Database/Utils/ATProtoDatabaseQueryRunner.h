@@ -12,6 +12,26 @@ typedef NSError * _Nonnull (^ATProtoDatabaseQueryRunnerErrorFactory)(sqlite3 * _
                                                                      NSInteger code,
                                                                      NSString *fallback);
 
+/// A database handle scoped to a single in-flight write transaction — the object handed to a
+/// @c -performWriteTransaction: block. It exposes the same read/write verbs as the runner but
+/// bound to the transaction's connection, so the block never touches a raw @c sqlite3 *.
+/// Mirrors the Reader / Transactor role split of @c PDSActorStore.
+@protocol ATProtoDatabaseTransactor <NSObject>
+
+/// Runs a query within the transaction; same row shape as the runner's
+/// @c executeQuery:params:error:.
+- (nullable NSArray<NSDictionary<NSString *, id> *> *)executeQuery:(NSString *)sql
+                                                            params:(nullable NSArray *)params
+                                                             error:(NSError **)error;
+
+/// Runs a single write within the transaction. Returns @c YES on success; on failure returns
+/// @c NO and populates @c error — which the block should propagate to roll the transaction back.
+- (BOOL)executeUpdate:(NSString *)sql
+               params:(nullable NSArray *)params
+                error:(NSError **)error;
+
+@end
+
 @interface ATProtoDatabaseQueryRunner : NSObject
 
 - (instancetype)init NS_UNAVAILABLE;
@@ -32,12 +52,10 @@ typedef NSError * _Nonnull (^ATProtoDatabaseQueryRunnerErrorFactory)(sqlite3 * _
                     params:(nullable NSArray *)params
                      error:(NSError **)error;
 
-- (BOOL)executeUpdate:(NSString *)sql
-               params:(nullable NSArray *)params
-           connection:(sqlite3 *)db
-                error:(NSError **)error;
-
-- (BOOL)performWriteTransaction:(BOOL (^)(sqlite3 *db, NSError **error))block
+/// Runs @c block inside a write transaction (BEGIN … COMMIT/ROLLBACK). The block receives a
+/// transactor bound to the transaction's connection; returning @c NO (or leaving @c *error set)
+/// rolls the transaction back. No raw @c sqlite3 * is exposed to the block.
+- (BOOL)performWriteTransaction:(BOOL (^)(id<ATProtoDatabaseTransactor> tx, NSError **error))block
                           error:(NSError **)error;
 
 @end
