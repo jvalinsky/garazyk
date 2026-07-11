@@ -24,6 +24,14 @@ typedef NSError * _Nonnull (^ATProtoDatabaseQueryRunnerErrorFactory)(sqlite3 * _
                                                             params:(nullable NSArray *)params
                                                              error:(NSError **)error;
 
+/// Executes a single write statement (INSERT/UPDATE/DELETE/DDL) on a self-managed
+/// connection, mirroring @c executeQuery:params:error: for the write side.
+/// @return The number of rows changed (>= 0), or a negative value on failure (with
+///         @c error populated). A statement that succeeds but matches no rows returns 0.
+- (NSInteger)executeUpdate:(NSString *)sql
+                    params:(nullable NSArray *)params
+                     error:(NSError **)error;
+
 - (BOOL)executeUpdate:(NSString *)sql
                params:(nullable NSArray *)params
            connection:(sqlite3 *)db
