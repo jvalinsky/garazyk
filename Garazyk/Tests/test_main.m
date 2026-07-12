@@ -814,6 +814,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoNetworkTransportTests",
       @"PLCOperationTests",
       @"PLCStoreTests",
+      @"PLCReplicaStoreTests",
       @"PLCAuditorTests",
       @"PLCServerTests",
       @"PLCReplicaServerTests",
