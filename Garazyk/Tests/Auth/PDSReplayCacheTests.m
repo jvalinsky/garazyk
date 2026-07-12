@@ -163,4 +163,36 @@
     [cache invalidate];
 }
 
+- (void)testDistinctJTIsAreIndependent {
+    PDSReplayCache *cache = [[PDSReplayCache alloc] initWithDatabasePath:nil];
+    XCTAssertNotNil(cache);
+    NSDate *futureExpiry = [NSDate dateWithTimeIntervalSinceNow:3600];
+
+    XCTAssertTrue([cache checkAndAddJTI:@"jti-A" expiration:futureExpiry], @"first JTI is new");
+    XCTAssertTrue([cache checkAndAddJTI:@"jti-B" expiration:futureExpiry], @"a distinct JTI is independent");
+    XCTAssertFalse([cache checkAndAddJTI:@"jti-A" expiration:futureExpiry], @"jti-A is now a replay");
+    XCTAssertFalse([cache checkAndAddJTI:@"jti-B" expiration:futureExpiry], @"jti-B is now a replay");
+
+    [cache invalidate];
+}
+
+- (void)testSharedCacheReturnsSingleton {
+    // Process-wide singleton; deliberately not mutated or invalidated here.
+    XCTAssertNotNil([PDSReplayCache sharedCache]);
+    XCTAssertEqual([PDSReplayCache sharedCache], [PDSReplayCache sharedCache], @"sharedCache is a singleton");
+}
+
+- (void)testCheckAndAddAfterInvalidateReturnsNO {
+    PDSReplayCache *cache = [[PDSReplayCache alloc] initWithDatabasePath:nil];
+    XCTAssertNotNil(cache);
+    NSDate *futureExpiry = [NSDate dateWithTimeIntervalSinceNow:3600];
+
+    [cache invalidate];
+    // With the database closed, check-and-add reports NO rather than admitting the JTI.
+    XCTAssertFalse([cache checkAndAddJTI:@"jti-after-invalidate" expiration:futureExpiry],
+                   @"a closed cache admits nothing");
+    // A second invalidate must be safe (idempotent).
+    [cache invalidate];
+}
+
 @end
