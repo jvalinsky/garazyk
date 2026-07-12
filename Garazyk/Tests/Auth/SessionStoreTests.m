@@ -353,4 +353,119 @@
     [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
 }
 
+#pragma mark - SQLite storage characterization (PDSSQLiteSessionStorage, file-backed)
+// These drive SessionStore with a file path, which routes to PDSSQLiteSessionStorage
+// (the in-memory path uses PDSMemorySessionStorage). They are the safety net for
+// migrating that storage onto ConnectionManagerSerial + QueryRunner.
+
+- (NSString *)freshSQLiteDbPath {
+    NSString *p = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    return [p stringByAppendingPathExtension:@"sqlite"];
+}
+
+- (SessionStore *)fileStoreAtPath:(NSString *)path {
+    SessionStore *store = [[SessionStore alloc] initWithDatabasePath:path];
+    store.minter = self.minter;
+    store.clockSkew = 0;
+    return store;
+}
+
+- (void)removeSQLiteDb:(NSString *)path {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    [fm removeItemAtPath:path error:nil];
+    [fm removeItemAtPath:[path stringByAppendingString:@"-wal"] error:nil];
+    [fm removeItemAtPath:[path stringByAppendingString:@"-shm"] error:nil];
+}
+
+- (void)testSQLiteStorageRoundTripsAllFields {
+    NSString *path = [self freshSQLiteDbPath];
+    SessionStore *store = [self fileStoreAtPath:path];
+    Session *created = [store createSessionForDID:@"did:plc:full" handle:@"full.example" scope:@"atproto"
+                                          dpopJWK:@{@"kid": @"thumb-xyz"} error:nil];
+    XCTAssertNotNil(created);
+
+    Session *got = [store getSessionByID:created.sessionID error:nil];
+    XCTAssertNotNil(got, @"round-trip by id");
+    XCTAssertEqualObjects(got.did, @"did:plc:full");
+    XCTAssertEqualObjects(got.handle, @"full.example");
+    XCTAssertEqualObjects(got.scope, @"atproto");
+    XCTAssertEqualObjects(got.accessToken, created.accessToken);
+    XCTAssertEqualObjects(got.refreshToken, created.refreshToken);
+    XCTAssertEqualObjects(got.dpopKeyThumbprint, @"thumb-xyz");
+    XCTAssertEqualObjects(got.tokenType, created.tokenType);
+    XCTAssertEqualWithAccuracy(got.accessTokenExpiresAt.timeIntervalSince1970,
+                               created.accessTokenExpiresAt.timeIntervalSince1970, 1.0);
+    [self removeSQLiteDb:path];
+}
+
+- (void)testSQLiteStorageGetByRefreshToken {
+    NSString *path = [self freshSQLiteDbPath];
+    SessionStore *store = [self fileStoreAtPath:path];
+    Session *created = [store createSessionForDID:@"did:plc:rt" handle:@"rt.example" scope:@"atproto" dpopJWK:nil error:nil];
+
+    Session *got = [store getSessionByRefreshToken:created.refreshToken error:nil];
+    XCTAssertNotNil(got);
+    XCTAssertEqualObjects(got.sessionID, created.sessionID);
+    [self removeSQLiteDb:path];
+}
+
+- (void)testSQLiteStorageRevokeRemovesSession {
+    NSString *path = [self freshSQLiteDbPath];
+    SessionStore *store = [self fileStoreAtPath:path];
+    Session *created = [store createSessionForDID:@"did:plc:rev" handle:@"rev.example" scope:@"atproto" dpopJWK:nil error:nil];
+
+    NSError *error = nil;
+    XCTAssertTrue([store revokeSession:created.sessionID error:&error], @"revoke: %@", error);
+    XCTAssertNil([store getSessionByID:created.sessionID error:NULL], @"session is gone after revoke");
+    [self removeSQLiteDb:path];
+}
+
+- (void)testSQLiteStorageRevokeNonexistentReturnsNO {
+    NSString *path = [self freshSQLiteDbPath];
+    SessionStore *store = [self fileStoreAtPath:path];
+    // Characterization: revokeSessionByID reports sqlite3_changes > 0, so revoking a
+    // missing session id returns NO.
+    XCTAssertFalse([store revokeSession:@"no-such-session" error:NULL]);
+    [self removeSQLiteDb:path];
+}
+
+- (void)testSQLiteStorageGetSessionsForDID {
+    NSString *path = [self freshSQLiteDbPath];
+    SessionStore *store = [self fileStoreAtPath:path];
+    [store createSessionForDID:@"did:plc:multi" handle:@"a.example" scope:@"atproto" dpopJWK:nil error:nil];
+    [store createSessionForDID:@"did:plc:multi" handle:@"a.example" scope:@"atproto" dpopJWK:nil error:nil];
+    [store createSessionForDID:@"did:plc:other" handle:@"b.example" scope:@"atproto" dpopJWK:nil error:nil];
+
+    XCTAssertEqual([store getSessionsForDID:@"did:plc:multi" error:nil].count, 2u);
+    XCTAssertEqual([store getSessionsForDID:@"did:plc:other" error:nil].count, 1u);
+    [self removeSQLiteDb:path];
+}
+
+- (void)testSQLiteStorageAllActiveSessions {
+    NSString *path = [self freshSQLiteDbPath];
+    SessionStore *store = [self fileStoreAtPath:path];
+    [store createSessionForDID:@"did:plc:act1" handle:@"a.example" scope:@"atproto" dpopJWK:nil error:nil];
+    [store createSessionForDID:@"did:plc:act2" handle:@"b.example" scope:@"atproto" dpopJWK:nil error:nil];
+
+    XCTAssertEqual([store allActiveSessions:nil].count, 2u, @"both freshly-created sessions are active");
+    [self removeSQLiteDb:path];
+}
+
+- (void)testSQLiteStorageRefreshRotatesSession {
+    NSString *path = [self freshSQLiteDbPath];
+    SessionStore *store = [self fileStoreAtPath:path];
+    Session *original = [store createSessionForDID:@"did:plc:refresh" handle:@"r.example" scope:@"atproto" dpopJWK:nil error:nil];
+
+    Session *refreshed = nil;
+    NSError *error = nil;
+    BOOL ok = [store refreshSession:original.sessionID scope:nil dpopJWK:nil newSession:&refreshed error:&error];
+    XCTAssertTrue(ok, @"refresh: %@", error);
+    XCTAssertNotNil(refreshed);
+    XCTAssertNotEqualObjects(refreshed.sessionID, original.sessionID, @"a new session is minted");
+    XCTAssertNotEqualObjects(refreshed.accessToken, original.accessToken, @"new access token");
+    XCTAssertNil([store getSessionByID:original.sessionID error:NULL], @"old session revoked by the rotation");
+    XCTAssertNotNil([store getSessionByID:refreshed.sessionID error:NULL], @"new session persisted");
+    [self removeSQLiteDb:path];
+}
+
 @end
