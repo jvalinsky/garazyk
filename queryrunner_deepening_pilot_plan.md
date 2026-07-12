@@ -161,6 +161,38 @@ concept and must not be folded into `ATProtoDIDDocumentFields`. Only `VideoJWTAu
 `XrpcIdentityHelper`, and `XrpcLexiconResolver` are genuine DID-doc adopters (a separate
 future slice).
 
+## PLCPersistentStore migration — worked design (foundation landed 2026-07-11)
+
+Config foundation is in (`PLCPersistentStoreDBConfig` + `ATProtoDBConfigurePragmas`). The
+remaining connection migration is **atomic** (parent + `PLCReplicaStore` subclass + the
+internal header must all change together) and is a large edit on a core service, so it is
+deferred to a fresh focused pass. The design, fully worked out, so it can be executed directly:
+
+- **`PLCPersistentStoreInternal.h`** — remove `db` / `stmtCache` / `transactionQueue` /
+  `prepareStatement:`; expose `@property (readonly) ATProtoConnectionManagerSerial
+  *connectionManager` and `ATProtoDatabaseQueryRunner *queryRunner` to subclasses (keep
+  `dbPath`, `open`). Redeclare both `readwrite` in the `.m` class extension.
+- **`PLCPersistentStore.m`** — `init`: create the manager + runner. `openWithError:`: use
+  `[connectionManager openWithPath:dbPath config:PLCPersistentStoreDBConfig error:]` (drops
+  the manual `sqlite3_open_v2` + `configureDatabase`), then run `createSchema` /
+  `ensureSchemaUpgrades` inside `[connectionManager execute:^(sqlite3 *db){ … }]` (raw
+  multi-statement schema + `PRAGMA table_info` ALTERs preserved **verbatim**). `close`:
+  `[connectionManager close]`. **Safest path for the query methods:** keep each method's raw
+  prepare/bind/step and `operationFromStatement:` **unchanged**, just move them inside
+  `[connectionManager execute:^(sqlite3 *db){ … }]` (`self.db`→`db`, `prepareStatement:`→
+  `sqlite3_prepare_v2` + `sqlite3_finalize`). `appendOperation:` → the same `execute:` block,
+  keeping its manual `BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK`, `sqlite3_last_insert_rowid`, and
+  the dynamic `IN (?,…)` nullify with the exact-changes check verbatim (the Transactor can't
+  express `last_insert_rowid`, so don't force it through QueryRunner). Delete
+  `prepareStatement:` / `finalizeStatement:`. Accepted tradeoff: statement cache gone
+  (per-call prepare).
+- **`PLCReplicaStore.m`** — its sync-state get/set + counts + `createSyncStateTableIfNeeded`
+  are simple single statements → route through the inherited `queryRunner`
+  (`executeUpdate:`/`executeQuery:`); drop the `dispatch_sync(self.transactionQueue,…)` +
+  `prepareStatement:` usage.
+- **Net:** PLCStoreTests 11, PLCReplicaStoreTests 9, PLCCacheDirectoryTests 7,
+  PLCAuditorTests 11 — all must stay green.
+
 ## Related records
 
 - `docs/adr/0001-compat-shims-must-not-depend-on-database.md`
