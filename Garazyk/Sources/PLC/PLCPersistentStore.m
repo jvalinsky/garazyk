@@ -5,11 +5,25 @@
 #import "PLCMockStore.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "PLC/PLCMetrics.h"
 #import "PLC/PLCConstants.h"
 #import "Core/NSDateFormatter+ATProto.h"
 
 NSString * const PLCPersistentStoreErrorDomain = @"com.atproto.pds.plc.persistentstore";
+
+// Database configuration for the PLC persistent store: replicates the previously
+// hand-rolled PRAGMA set exactly (WAL, synchronous=NORMAL, foreign_keys=ON,
+// temp_store=MEMORY, busy_timeout=5s, 64 MB cache, wal_autocheckpoint=1000). This is the
+// value that will be handed to ConnectionManagerSerial when the store adopts QueryRunner,
+// so the DB configuration is preserved across that migration.
+static const ATProtoDBConfig PLCPersistentStoreDBConfig = {
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal
+             | ATProtoDBConfigFlagForeignKeys | ATProtoDBConfigFlagTempStoreMemory,
+    .busyTimeout = 5000,
+    .cacheSize = -64000,
+    .walAutocheckpoint = 1000,
+};
 
 static NSDateFormatter *PLCStoreDBDateFormatter(void) {
     static NSDateFormatter *formatter = nil;
@@ -172,44 +186,11 @@ static NSString * const kSelectAllDIDsSQL =
 }
 
 - (BOOL)configureDatabase:(NSError **)error {
-    // Configure a 5-second busy timeout for concurrent WAL access
-    int busyResult = sqlite3_busy_timeout(self.db, 5000);
-    if (busyResult != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
-                                        code:busyResult
-                                    userInfo:@{NSLocalizedDescriptionKey:
-                                        [NSString stringWithFormat:@"Failed to set busy timeout: %s",
-                                         sqlite3_errmsg(self.db)]}];
-        }
-        return NO;
-    }
-    
-    const char *pragmas[] = {
-        "PRAGMA journal_mode=WAL",
-        "PRAGMA synchronous=NORMAL",
-        "PRAGMA wal_autocheckpoint=1000",
-        "PRAGMA cache_size=-64000",
-        "PRAGMA temp_store=MEMORY",
-        "PRAGMA foreign_keys=ON",
-        "PRAGMA encoding='UTF-8'",
-        NULL
-    };
-    
-    for (int i = 0; pragmas[i] != NULL; i++) {
-        char *errMsg = NULL;
-        int result = sqlite3_exec(self.db, pragmas[i], NULL, NULL, &errMsg);
-        if (result != SQLITE_OK) {
-            if (error) {
-                *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
-                                            code:result
-                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg ?: "Unknown error"]}];
-            }
-            if (errMsg) sqlite3_free(errMsg);
-            return NO;
-        }
-    }
-    
+    // Applies the shared PLC pragma set (see PLCPersistentStoreDBConfig). Best-effort,
+    // matching the other stores that use ATProtoDBConfigurePragmas; pragma configuration
+    // does not fail in practice. (The old code also issued PRAGMA encoding='UTF-8', which
+    // is SQLite's default set at database creation, so dropping it changes nothing.)
+    ATProtoDBConfigurePragmas(self.db, PLCPersistentStoreDBConfig);
     return YES;
 }
 
