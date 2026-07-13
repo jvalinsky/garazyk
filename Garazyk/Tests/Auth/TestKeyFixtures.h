@@ -65,4 +65,9 @@ static inline SecKeyRef _Nullable PDSTestCreateFixedP256PrivateKey(NSError **err
     return privateKey;
 }
 
+/*! Test-only DPoP base URL shared by SecurityHardeningTests and XrpcMethodRegistryTests.
+ *  Matches the developer's default local PDS issuer. Append the per-endpoint path
+ *  (`xrpc/com.atproto.server.getSession`, etc.) to build a full DPoP `htu` claim. */
+#define kPDSTestDPoPBaseURL @"http://localhost:2583"
+
 NS_ASSUME_NONNULL_END
