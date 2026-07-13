@@ -1,3 +1,8 @@
+---
+name: tui-capture-replay
+description: Record TUI interactions as asciicast v2 and export standalone HTML playback via Asciinema Player with tiered semantic data overlay. Use when recording TUI demos, creating offline HTML exports of terminal sessions, wiring the @garazyk/tui VirtualTuiHarness to a CastRecorder, capturing real PTY sessions with AsciicastRecorder, or syncing per-turn AI reasoning (game logs) to playback.
+---
+
 # TUI Capture & Replay
 
 Record TUI interactions as asciicast v2 and export standalone HTML playback via
