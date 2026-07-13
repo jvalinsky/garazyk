@@ -10,6 +10,9 @@
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
+@class ATProtoConnectionManagerSerial;
+@class ATProtoDatabaseQueryRunner;
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface PLCPersistentStore ()
@@ -18,16 +21,16 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Exposes the db path value.
  */
 @property (nonatomic, copy, readwrite) NSString *dbPath;
-@property (nonatomic, assign, readwrite, nullable) sqlite3 *db;
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSValue *> *stmtCache;
 
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t transactionQueue;
+/// Serial connection manager that owns the SQLite connection, replacing the previously
+/// hand-rolled transaction queue + raw sqlite3 handle. Subclasses may use it for raw
+/// multi-statement work via -execute:/-transact:.
+@property (nonatomic, strong, readonly) ATProtoConnectionManagerSerial *connectionManager;
 
-/**
- * @abstract Performs the prepareStatement operation.
- */
-- (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
+/// Deep module over the connection for prepare/bind/step; subclasses run their queries
+/// through this instead of touching a raw sqlite3 *.
+@property (nonatomic, strong, readonly) ATProtoDatabaseQueryRunner *queryRunner;
 
 @end
 
