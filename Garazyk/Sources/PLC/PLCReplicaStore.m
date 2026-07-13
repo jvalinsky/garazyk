@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PLCReplicaStore.h"
 #import "PLCPersistentStoreInternal.h"
+#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 
 NSString * const PLCReplicaStoreErrorDomain = @"com.atproto.pds.plc.replicastore";
 
@@ -50,31 +51,11 @@ static NSString * const kCountUniqueDIDsSQL =
         return YES;
     }
     
-    __block BOOL success = NO;
-    __block NSError *blockError = nil;
-    
-    dispatch_sync(self.transactionQueue, ^{
-        char *errMsg = NULL;
-        int result = sqlite3_exec(self.db, kCreateSyncStateTableSQL.UTF8String, NULL, NULL, &errMsg);
-        
-        if (result == SQLITE_OK) {
-            success = YES;
-            self.syncStateTableCreated = YES;
-        } else {
-            if (errMsg) {
-                blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
-                                                 code:PLCPersistentStoreErrorInvalidOperation
-                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg]}];
-                sqlite3_free(errMsg);
-            }
-        }
-    });
-    
-    if (error && blockError) {
-        *error = blockError;
+    if ([self.queryRunner executeUpdate:kCreateSyncStateTableSQL params:nil error:error] < 0) {
+        return NO;
     }
-    
-    return success;
+    self.syncStateTableCreated = YES;
+    return YES;
 }
 
 - (BOOL)updateSyncStateValue:(NSString *)key value:(NSString *)value error:(NSError **)error {
@@ -91,36 +72,10 @@ static NSString * const kCountUniqueDIDsSQL =
         return NO;
     }
     
-    __block BOOL success = NO;
-    __block NSError *blockError = nil;
     NSInteger now = (NSInteger)[[NSDate date] timeIntervalSince1970];
-    
-    dispatch_sync(self.transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kUpsertSyncStateSQL error:&blockError];
-        if (!stmt) {
-            return;
-        }
-        
-        sqlite3_bind_text(stmt, 1, key.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, value.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt, 3, now);
-        
-        if (sqlite3_step(stmt) == SQLITE_DONE) {
-            success = YES;
-        } else {
-            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
-                                            code:PLCPersistentStoreErrorInvalidOperation
-                                        userInfo:@{NSLocalizedDescriptionKey: @"Failed to update sync state"}];
-        }
-        
-        sqlite3_reset(stmt);
-    });
-    
-    if (error && blockError) {
-        *error = blockError;
-    }
-    
-    return success;
+    return [self.queryRunner executeUpdate:kUpsertSyncStateSQL
+                                    params:@[key, value, @(now)]
+                                     error:error] >= 0;
 }
 
 - (nullable NSString *)getSyncStateValue:(NSString *)key error:(NSError **)error {
@@ -133,32 +88,16 @@ static NSString * const kCountUniqueDIDsSQL =
         return nil;
     }
     
-    __block NSString *value = nil;
-    __block NSError *blockError = nil;
-    
-    dispatch_sync(self.transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kSelectSyncStateSQL error:&blockError];
-        if (!stmt) {
-            return;
+    NSArray<NSDictionary<NSString *, id> *> *rows = [self.queryRunner executeQuery:kSelectSyncStateSQL
+                                                                            params:@[key]
+                                                                             error:error];
+    if (rows.count > 0) {
+        id val = rows.firstObject[@"value"];
+        if ([val isKindOfClass:[NSString class]]) {
+            return val;
         }
-        
-        sqlite3_bind_text(stmt, 1, key.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            const char *text = (const char *)sqlite3_column_text(stmt, 0);
-            if (text) {
-                value = [NSString stringWithUTF8String:text];
-            }
-        }
-        
-        sqlite3_reset(stmt);
-    });
-    
-    if (error && blockError) {
-        *error = blockError;
     }
-    
-    return value;
+    return nil;
 }
 
 #pragma mark - Public Sync State Methods
@@ -226,27 +165,16 @@ static NSString * const kCountUniqueDIDsSQL =
         return 0;
     }
     
-    __block NSUInteger count = 0;
-    __block NSError *blockError = nil;
-    
-    dispatch_sync(self.transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kCountOperationsSQL error:&blockError];
-        if (!stmt) {
-            return;
+    NSArray<NSDictionary<NSString *, id> *> *rows = [self.queryRunner executeQuery:kCountOperationsSQL
+                                                                            params:nil
+                                                                             error:error];
+    if (rows.count > 0) {
+        id countVal = rows.firstObject.allValues.firstObject;
+        if ([countVal respondsToSelector:@selector(unsignedIntegerValue)]) {
+            return [countVal unsignedIntegerValue];
         }
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            count = (NSUInteger)sqlite3_column_int64(stmt, 0);
-        }
-        
-        sqlite3_reset(stmt);
-    });
-    
-    if (error && blockError) {
-        *error = blockError;
     }
-    
-    return count;
+    return 0;
 }
 
 - (NSUInteger)uniqueDIDCountWithError:(NSError **)error {
@@ -259,27 +187,16 @@ static NSString * const kCountUniqueDIDsSQL =
         return 0;
     }
     
-    __block NSUInteger count = 0;
-    __block NSError *blockError = nil;
-    
-    dispatch_sync(self.transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kCountUniqueDIDsSQL error:&blockError];
-        if (!stmt) {
-            return;
+    NSArray<NSDictionary<NSString *, id> *> *rows = [self.queryRunner executeQuery:kCountUniqueDIDsSQL
+                                                                            params:nil
+                                                                             error:error];
+    if (rows.count > 0) {
+        id countVal = rows.firstObject.allValues.firstObject;
+        if ([countVal respondsToSelector:@selector(unsignedIntegerValue)]) {
+            return [countVal unsignedIntegerValue];
         }
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            count = (NSUInteger)sqlite3_column_int64(stmt, 0);
-        }
-        
-        sqlite3_reset(stmt);
-    });
-    
-    if (error && blockError) {
-        *error = blockError;
     }
-    
-    return count;
+    return 0;
 }
 
 @end
