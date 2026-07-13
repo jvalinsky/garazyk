@@ -6,6 +6,8 @@
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 #import "Database/Utils/ATProtoDatabaseUtilities.h"
+#import "Database/Connection/ATProtoConnectionManagerSerial.h"
+#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 #import "PLC/PLCMetrics.h"
 #import "PLC/PLCConstants.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -107,9 +109,7 @@ static NSString * const kSelectExportOperationsBySeqSQL =
 static NSString * const kSelectAllDIDsSQL =
     @"SELECT DISTINCT did FROM plc_operations ORDER BY did ASC;";
 
-@implementation PLCPersistentStore {
-    dispatch_queue_t _transactionQueue;
-}
+@implementation PLCPersistentStore
 
 + (nullable instancetype)storeWithPath:(NSString *)dbPath error:(NSError **)error {
     PLCPersistentStore *store = [[PLCPersistentStore alloc] initWithPath:dbPath];
@@ -123,10 +123,10 @@ static NSString * const kSelectAllDIDsSQL =
     self = [super init];
     if (self) {
         _dbPath = [dbPath copy];
-        _db = NULL;
         _open = NO;
-        _stmtCache = [NSMutableDictionary dictionary];
-        _transactionQueue = dispatch_queue_create("com.atproto.pds.plc.persistentstore.transaction", DISPATCH_QUEUE_SERIAL);
+        _connectionManager = [[ATProtoConnectionManagerSerial alloc] initWithLabel:@"com.atproto.pds.plc.persistentstore"];
+        _queryRunner = [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:_connectionManager
+                                                                         errorDomain:PLCPersistentStoreErrorDomain];
     }
     return self;
 }
@@ -141,11 +141,10 @@ static NSString * const kSelectAllDIDsSQL =
     if (self.open) {
         return YES;
     }
-    
+
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *dbDir = [self.dbPath stringByDeletingLastPathComponent];
-    
-    if (![fm fileExistsAtPath:dbDir]) {
+    if (dbDir.length > 0 && ![fm fileExistsAtPath:dbDir]) {
         NSError *createError = nil;
         if (![fm createDirectoryAtPath:dbDir withIntermediateDirectories:YES attributes:nil error:&createError]) {
             if (error) {
@@ -157,46 +156,34 @@ static NSString * const kSelectAllDIDsSQL =
             return NO;
         }
     }
-    
-    int result = sqlite3_open_v2(self.dbPath.UTF8String, &_db,
-        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, NULL);
-    if (result != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
-                                        code:result
-                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to open database: %s", sqlite3_errmsg(_db)]}];
-        }
+
+    // The connection manager owns the connection and applies PLCPersistentStoreDBConfig
+    // (WAL, foreign_keys, 64 MB cache, ...) — exactly the pragmas the store set by hand.
+    if (![self.connectionManager openWithPath:self.dbPath config:PLCPersistentStoreDBConfig error:error]) {
         return NO;
     }
-    
-    if (![self configureDatabase:error]) {
-        sqlite3_close(_db);
-        _db = NULL;
+
+    // Schema creation and legacy upgrades run raw on the managed connection in one
+    // serialized block; createSchemaOnConnection: threads the same handle through
+    // ensureSchemaUpgradesOnConnection: to keep the table -> ALTER -> index ordering.
+    __block BOOL schemaOK = NO;
+    __block NSError *schemaError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
+        schemaOK = [self createSchemaOnConnection:db error:&schemaError];
+    } error:&schemaError];
+    if (!schemaOK) {
+        [self.connectionManager close];
+        if (error) *error = schemaError;
         return NO;
     }
-    
-    if (![self createSchema:error]) {
-        sqlite3_close(_db);
-        _db = NULL;
-        return NO;
-    }
-    
+
     self.open = YES;
     return YES;
 }
 
-- (BOOL)configureDatabase:(NSError **)error {
-    // Applies the shared PLC pragma set (see PLCPersistentStoreDBConfig). Best-effort,
-    // matching the other stores that use ATProtoDBConfigurePragmas; pragma configuration
-    // does not fail in practice. (The old code also issued PRAGMA encoding='UTF-8', which
-    // is SQLite's default set at database creation, so dropping it changes nothing.)
-    ATProtoDBConfigurePragmas(self.db, PLCPersistentStoreDBConfig);
-    return YES;
-}
-
-- (BOOL)createSchema:(NSError **)error {
+- (BOOL)createSchemaOnConnection:(sqlite3 *)db error:(NSError **)error {
     char *errMsg = NULL;
-    int result = sqlite3_exec(self.db, kCreateOperationsTableSQL.UTF8String, NULL, NULL, &errMsg);
+    int result = sqlite3_exec(db, kCreateOperationsTableSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -207,11 +194,11 @@ static NSString * const kSelectAllDIDsSQL =
         return NO;
     }
 
-    if (![self ensureSchemaUpgrades:error]) {
+    if (![self ensureSchemaUpgradesOnConnection:db error:error]) {
         return NO;
     }
-    
-    result = sqlite3_exec(self.db, kCreateDidIndexSQL.UTF8String, NULL, NULL, &errMsg);
+
+    result = sqlite3_exec(db, kCreateDidIndexSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -222,7 +209,7 @@ static NSString * const kSelectAllDIDsSQL =
         return NO;
     }
     
-    result = sqlite3_exec(self.db, kCreatePrevIndexSQL.UTF8String, NULL, NULL, &errMsg);
+    result = sqlite3_exec(db, kCreatePrevIndexSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -233,7 +220,7 @@ static NSString * const kSelectAllDIDsSQL =
         return NO;
     }
 
-    result = sqlite3_exec(self.db, kCreateSeqIndexSQL.UTF8String, NULL, NULL, &errMsg);
+    result = sqlite3_exec(db, kCreateSeqIndexSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -244,7 +231,7 @@ static NSString * const kSelectAllDIDsSQL =
         return NO;
     }
 
-    result = sqlite3_exec(self.db, kCreateDidCidIndexSQL.UTF8String, NULL, NULL, &errMsg);
+    result = sqlite3_exec(db, kCreateDidCidIndexSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -258,10 +245,10 @@ static NSString * const kSelectAllDIDsSQL =
     return YES;
 }
 
-- (BOOL)ensureSchemaUpgrades:(NSError **)error {
+- (BOOL)ensureSchemaUpgradesOnConnection:(sqlite3 *)db error:(NSError **)error {
     NSMutableSet<NSString *> *columns = [NSMutableSet set];
     sqlite3_stmt *stmt = NULL;
-    int prepareResult = sqlite3_prepare_v2(self.db, "PRAGMA table_info(plc_operations);", -1, &stmt, NULL);
+    int prepareResult = sqlite3_prepare_v2(db, "PRAGMA table_info(plc_operations);", -1, &stmt, NULL);
     if (prepareResult != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -281,7 +268,7 @@ static NSString * const kSelectAllDIDsSQL =
 
     if (![columns containsObject:@"cid"]) {
         char *errMsg = NULL;
-        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN cid TEXT;", NULL, NULL, &errMsg);
+        int result = sqlite3_exec(db, "ALTER TABLE plc_operations ADD COLUMN cid TEXT;", NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
             if (error) {
                 *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -295,7 +282,7 @@ static NSString * const kSelectAllDIDsSQL =
 
     if (![columns containsObject:@"nullified"]) {
         char *errMsg = NULL;
-        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN nullified INTEGER DEFAULT 0;", NULL, NULL, &errMsg);
+        int result = sqlite3_exec(db, "ALTER TABLE plc_operations ADD COLUMN nullified INTEGER DEFAULT 0;", NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
             if (error) {
                 *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -309,7 +296,7 @@ static NSString * const kSelectAllDIDsSQL =
 
     if (![columns containsObject:@"seq"]) {
         char *errMsg = NULL;
-        int result = sqlite3_exec(self.db, "ALTER TABLE plc_operations ADD COLUMN seq INTEGER;", NULL, NULL, &errMsg);
+        int result = sqlite3_exec(db, "ALTER TABLE plc_operations ADD COLUMN seq INTEGER;", NULL, NULL, &errMsg);
         if (result != SQLITE_OK) {
             if (error) {
                 *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -322,7 +309,7 @@ static NSString * const kSelectAllDIDsSQL =
     }
 
     char *errMsg = NULL;
-    int backfillResult = sqlite3_exec(self.db, "UPDATE plc_operations SET seq = id WHERE seq IS NULL;", NULL, NULL, &errMsg);
+    int backfillResult = sqlite3_exec(db, "UPDATE plc_operations SET seq = id WHERE seq IS NULL;", NULL, NULL, &errMsg);
     if (backfillResult != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -340,68 +327,8 @@ static NSString * const kSelectAllDIDsSQL =
     if (!self.open) {
         return;
     }
-
-    dispatch_sync(_transactionQueue, ^{
-        for (NSValue *boxedStmt in self.stmtCache.allValues) {
-            sqlite3_stmt *stmt = NULL;
-            [boxedStmt getValue:&stmt];
-            if (stmt) {
-                sqlite3_finalize(stmt);
-            }
-        }
-        [self.stmtCache removeAllObjects];
-
-        if (self.db) {
-            sqlite3_close(self.db);
-            self.db = NULL;
-        }
-    });
-
+    [self.connectionManager close];
     self.open = NO;
-}
-
-#pragma mark - Prepared Statements
-
-- (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error {
-    NSValue *cachedValue = self.stmtCache[sql];
-    sqlite3_stmt *cachedStmt = NULL;
-    [cachedValue getValue:&cachedStmt];
-    
-    if (cachedStmt) {
-        return cachedStmt;
-    }
-    
-    const char *pzTail = NULL;
-    int result = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &cachedStmt, &pzTail);
-    if (result != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
-                                        code:result
-                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(self.db)]}];
-        }
-        return NULL;
-    }
-    
-    self.stmtCache[sql] = [NSValue valueWithPointer:cachedStmt];
-    return cachedStmt;
-}
-
-- (void)finalizeStatement:(sqlite3_stmt *)stmt {
-    if (stmt) {
-        sqlite3_finalize(stmt);
-        NSString *keyToRemove = nil;
-        for (NSString *key in self.stmtCache) {
-            sqlite3_stmt *cachedStmt = NULL;
-            [self.stmtCache[key] getValue:&cachedStmt];
-            if (cachedStmt == stmt) {
-                keyToRemove = key;
-                break;
-            }
-        }
-        if (keyToRemove) {
-            [self.stmtCache removeObjectForKey:keyToRemove];
-        }
-    }
 }
 
 #pragma mark - PLCStore Protocol
@@ -421,24 +348,28 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
     
-    dispatch_sync(_transactionQueue, ^{
+    [self.connectionManager execute:^(sqlite3 *db) {
         NSString *query = includeNullified ? kSelectHistoryIncludingNullifiedSQL : kSelectHistorySQL;
-        sqlite3_stmt *stmt = [self prepareStatement:query error:&blockError];
-        if (!stmt) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, query.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
             return;
         }
-        
+
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-        
+
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             PLCOperation *op = [self operationFromStatement:stmt];
             if (op) {
                 [operations addObject:op];
             }
         }
-        
-        sqlite3_reset(stmt);
-    });
+
+        sqlite3_finalize(stmt);
+    } error:NULL];
     
     if (blockError && error) {
         *error = blockError;
@@ -478,9 +409,9 @@ static NSString * const kSelectAllDIDsSQL =
     __block BOOL success = NO;
     __block NSError *blockError = nil;
     
-    dispatch_sync(_transactionQueue, ^{
+    [self.connectionManager execute:^(sqlite3 *db) {
         char *txErr = NULL;
-        if (sqlite3_exec(self.db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, &txErr) != SQLITE_OK) {
+        if (sqlite3_exec(db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, &txErr) != SQLITE_OK) {
             blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                             code:PLCPersistentStoreErrorInvalidOperation
                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:txErr ?: "Failed to begin operation transaction"]}];
@@ -488,22 +419,26 @@ static NSString * const kSelectAllDIDsSQL =
             return;
         }
 
-        sqlite3_stmt *stmt = [self prepareStatement:kInsertOperationSQL error:&blockError];
-        if (!stmt) {
-            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+        sqlite3_stmt *stmt = NULL;
+        int prepareRC = sqlite3_prepare_v2(db, kInsertOperationSQL.UTF8String, -1, &stmt, NULL);
+        if (prepareRC != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:prepareRC
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
+            sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
             return;
         }
-        
+
         sqlite3_bind_text(stmt, 1, op.did.UTF8String, -1, SQLITE_TRANSIENT);
-        
+
         if (op.prev) {
             sqlite3_bind_text(stmt, 2, op.prev.UTF8String, -1, SQLITE_TRANSIENT);
         } else {
             sqlite3_bind_null(stmt, 2);
         }
-        
+
         sqlite3_bind_text(stmt, 3, op.sig.UTF8String, -1, SQLITE_TRANSIENT);
-        
+
         NSError *dataError = nil;
         NSData *cborData = [NSJSONSerialization dataWithJSONObject:op.data options:0 error:&dataError];
         if (!cborData) {
@@ -511,10 +446,11 @@ static NSString * const kSelectAllDIDsSQL =
                                             code:PLCPersistentStoreErrorInvalidOperation
                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize operation data",
                                                  NSUnderlyingErrorKey: dataError}];
-            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+            sqlite3_finalize(stmt);
+            sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
             return;
         }
-        
+
         sqlite3_bind_blob(stmt, 4, cborData.bytes, (int)cborData.length, SQLITE_TRANSIENT);
 
         NSError *cidError = nil;
@@ -528,7 +464,8 @@ static NSString * const kSelectAllDIDsSQL =
                                             code:PLCPersistentStoreErrorInvalidOperation
                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to calculate CID for operation",
                                                  NSUnderlyingErrorKey: cidError ?: [NSNull null]}];
-            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+            sqlite3_finalize(stmt);
+            sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
             return;
         }
 
@@ -544,20 +481,20 @@ static NSString * const kSelectAllDIDsSQL =
         }
         NSString *createdString = [NSDateFormatter atproto_stringFromDate:op.createdAt];
         sqlite3_bind_text(stmt, 8, createdString.UTF8String, -1, SQLITE_TRANSIENT);
-        
+
         int result = sqlite3_step(stmt);
         if (result != SQLITE_DONE) {
             blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                             code:result
-                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to insert operation: %s", sqlite3_errmsg(self.db)]}];
-            sqlite3_reset(stmt);
-            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to insert operation: %s", sqlite3_errmsg(db)]}];
+            sqlite3_finalize(stmt);
+            sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
             return;
         }
         if (!op.sequence) {
-            sqlite3_int64 rowid = sqlite3_last_insert_rowid(self.db);
+            sqlite3_int64 rowid = sqlite3_last_insert_rowid(db);
             sqlite3_stmt *seqStmt = NULL;
-            if (sqlite3_prepare_v2(self.db, "SELECT seq FROM plc_operations WHERE id = ?;", -1, &seqStmt, NULL) == SQLITE_OK) {
+            if (sqlite3_prepare_v2(db, "SELECT seq FROM plc_operations WHERE id = ?;", -1, &seqStmt, NULL) == SQLITE_OK) {
                 sqlite3_bind_int64(seqStmt, 1, rowid);
                 if (sqlite3_step(seqStmt) == SQLITE_ROW) {
                     op.sequence = @(sqlite3_column_int64(seqStmt, 0));
@@ -565,8 +502,8 @@ static NSString * const kSelectAllDIDsSQL =
             }
             if (seqStmt) sqlite3_finalize(seqStmt);
         }
-        
-        sqlite3_reset(stmt);
+
+        sqlite3_finalize(stmt);
         success = YES;
 
         if (success && nullified.count > 0) {
@@ -576,13 +513,13 @@ static NSString * const kSelectAllDIDsSQL =
             }
             [sql appendString:@");"];
             sqlite3_stmt *updateStmt = NULL;
-            int updateResult = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &updateStmt, NULL);
+            int updateResult = sqlite3_prepare_v2(db, sql.UTF8String, -1, &updateStmt, NULL);
             if (updateResult != SQLITE_OK) {
                 blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                                 code:updateResult
                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare nullify statement"}];
                 if (updateStmt) sqlite3_finalize(updateStmt);
-                sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+                sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
                 success = NO;
                 return;
             }
@@ -596,7 +533,7 @@ static NSString * const kSelectAllDIDsSQL =
                                                 code:updateStep
                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to nullify operations"}];
                 success = NO;
-            } else if (sqlite3_changes(self.db) != (int)nullified.count) {
+            } else if (sqlite3_changes(db) != (int)nullified.count) {
                 blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                                 code:PLCPersistentStoreErrorInvalidOperation
                                             userInfo:@{NSLocalizedDescriptionKey: @"Nullification did not match all requested CIDs"}];
@@ -606,18 +543,18 @@ static NSString * const kSelectAllDIDsSQL =
         }
 
         if (success) {
-            if (sqlite3_exec(self.db, "COMMIT;", NULL, NULL, &txErr) != SQLITE_OK) {
+            if (sqlite3_exec(db, "COMMIT;", NULL, NULL, &txErr) != SQLITE_OK) {
                 blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                                 code:PLCPersistentStoreErrorInvalidOperation
                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:txErr ?: "Failed to commit operation transaction"]}];
                 if (txErr) sqlite3_free(txErr);
-                sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+                sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
                 success = NO;
             }
         } else {
-            sqlite3_exec(self.db, "ROLLBACK;", NULL, NULL, NULL);
+            sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
         }
-    });
+    } error:NULL];
     
     if (blockError && error) {
         *error = blockError;
@@ -689,20 +626,24 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSInteger count = -1;
     __block NSError *blockError = nil;
     
-    dispatch_sync(_transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kCountOperationsSQL error:&blockError];
-        if (!stmt) {
+    [self.connectionManager execute:^(sqlite3 *db) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, kCountOperationsSQL.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
             return;
         }
-        
+
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-        
+
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             count = sqlite3_column_int64(stmt, 0);
         }
-        
-        sqlite3_reset(stmt);
-    });
+
+        sqlite3_finalize(stmt);
+    } error:NULL];
     
     if (blockError && error) {
         *error = blockError;
@@ -724,26 +665,30 @@ static NSString * const kSelectAllDIDsSQL =
     __block BOOL success = NO;
     __block NSError *blockError = nil;
     
-    dispatch_sync(_transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kDeleteOperationsSQL error:&blockError];
-        if (!stmt) {
+    [self.connectionManager execute:^(sqlite3 *db) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, kDeleteOperationsSQL.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
             return;
         }
-        
+
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-        
+
         int result = sqlite3_step(stmt);
         if (result != SQLITE_DONE) {
             blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                             code:result
-                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to delete operations: %s", sqlite3_errmsg(self.db)]}];
-            sqlite3_reset(stmt);
+                                        userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to delete operations: %s", sqlite3_errmsg(db)]}];
+            sqlite3_finalize(stmt);
             return;
         }
-        
-        sqlite3_reset(stmt);
+
+        sqlite3_finalize(stmt);
         success = YES;
-    });
+    } error:NULL];
     
     if (blockError && error) {
         *error = blockError;
@@ -765,9 +710,13 @@ static NSString * const kSelectAllDIDsSQL =
     __block PLCOperation *operation = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(_transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kSelectLatestOperationSQL error:&blockError];
-        if (!stmt) {
+    [self.connectionManager execute:^(sqlite3 *db) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, kSelectLatestOperationSQL.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
             return;
         }
 
@@ -777,8 +726,8 @@ static NSString * const kSelectAllDIDsSQL =
             operation = [self operationFromStatement:stmt];
         }
 
-        sqlite3_reset(stmt);
-    });
+        sqlite3_finalize(stmt);
+    } error:NULL];
 
     if (blockError && error) {
         *error = blockError;
@@ -802,9 +751,13 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
 
-    dispatch_sync(_transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kSelectExportOperationsSQL error:&blockError];
-        if (!stmt) {
+    [self.connectionManager execute:^(sqlite3 *db) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, kSelectExportOperationsSQL.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
             return;
         }
 
@@ -823,8 +776,8 @@ static NSString * const kSelectAllDIDsSQL =
             }
         }
 
-        sqlite3_reset(stmt);
-    });
+        sqlite3_finalize(stmt);
+    } error:NULL];
 
     if (blockError && error) {
         *error = blockError;
@@ -848,9 +801,13 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
 
-    dispatch_sync(_transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kSelectExportOperationsBySeqSQL error:&blockError];
-        if (!stmt) {
+    [self.connectionManager execute:^(sqlite3 *db) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, kSelectExportOperationsBySeqSQL.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
             return;
         }
 
@@ -864,8 +821,8 @@ static NSString * const kSelectAllDIDsSQL =
             }
         }
 
-        sqlite3_reset(stmt);
-    });
+        sqlite3_finalize(stmt);
+    } error:NULL];
 
     if (blockError && error) {
         *error = blockError;
@@ -887,9 +844,13 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSMutableArray<NSString *> *dids = [NSMutableArray array];
     __block NSError *blockError = nil;
 
-    dispatch_sync(_transactionQueue, ^{
-        sqlite3_stmt *stmt = [self prepareStatement:kSelectAllDIDsSQL error:&blockError];
-        if (!stmt) {
+    [self.connectionManager execute:^(sqlite3 *db) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, kSelectAllDIDsSQL.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to prepare statement: %s", sqlite3_errmsg(db)]}];
             return;
         }
 
@@ -900,8 +861,8 @@ static NSString * const kSelectAllDIDsSQL =
             }
         }
 
-        sqlite3_reset(stmt);
-    });
+        sqlite3_finalize(stmt);
+    } error:NULL];
 
     if (blockError && error) {
         *error = blockError;
