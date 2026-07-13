@@ -84,7 +84,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         }
 
         NSString *path = @"/xrpc/com.atproto.server.getSession";
-        NSString *dpopURLString = @"http://localhost:2583/xrpc/com.atproto.server.getSession";
+        NSString *dpopURLString = [NSString stringWithFormat:@"%@/xrpc/com.atproto.server.getSession", kPDSTestDPoPBaseURL];
         NSURL *dpopURL = [NSURL URLWithString:dpopURLString];
 
         DPoPToken *initialProof = [DPoPUtil createDPoPForMethod:@"GET"
