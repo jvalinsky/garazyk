@@ -5,350 +5,122 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Garazyk Admin UI — Design System & Screens</title>
-    <link rel="stylesheet" href="/css/system.css">
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      html, body {
-        margin: 0;
-        padding: 0;
-      }
-
-      body {
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-family: var(--font-system);
-      }
-
-      .demo-container {
-        display: flex;
-        height: 100vh;
-        overflow: hidden;
-      }
-
-      .demo-sidebar {
-        width: 240px;
-        border-right: 1px solid var(--separator-color);
-        background: var(--color-bg-secondary);
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-        flex-shrink: 0;
-      }
-
-      .demo-sidebar-header {
-        padding: var(--space-md);
-        border-bottom: 1px solid var(--separator-color);
-        font-weight: 600;
-        font-size: var(--font-size-sm);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--color-text-secondary);
-      }
-
-      .demo-nav {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-      }
-
-      .demo-nav-item {
-        padding: 0;
-      }
-
-      .demo-nav-link {
-        display: block;
-        padding: var(--space-sm) var(--space-md);
-        color: var(--color-text-primary);
-        text-decoration: none;
-        font-size: var(--font-size-sm);
-        border-left: 3px solid transparent;
-        transition: all var(--transition-fast);
-        cursor: pointer;
-      }
-
-      .demo-nav-link:hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-      }
-
-      .demo-nav-link.active {
-        background: rgba(0, 113, 227, 0.1);
-        color: var(--color-accent);
-        border-left-color: var(--color-accent);
-        font-weight: 500;
-      }
-
-      .demo-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-
-      .demo-viewport {
-        flex: 1;
-        overflow-y: auto;
-        padding: var(--space-xl);
-        background: var(--color-bg-primary);
-      }
-
-      .demo-section {
-        display: none;
-      }
-
-      .demo-section.active {
-        display: block;
-      }
-
-      .demo-title {
-        font-size: var(--font-size-2xl);
-        font-weight: 600;
-        margin: 0 0 var(--space-lg) 0;
-        color: var(--color-text-primary);
-      }
-
-      .demo-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: var(--space-lg);
-        margin-bottom: var(--space-xl);
-      }
-
-      .demo-item {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .demo-label {
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        color: var(--color-text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: var(--space-sm);
-      }
-
-      .demo-screen {
-        min-height: 600px;
-        border: 1px solid var(--separator-color);
-        border-radius: var(--radius-lg);
-        background: var(--color-bg-secondary);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Theme toggle */
-      .demo-theme-toggle {
-        position: fixed;
-        bottom: var(--space-lg);
-        right: var(--space-lg);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        gap: var(--space-sm);
-        padding: var(--space-md);
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--separator-color);
-        border-radius: var(--radius-full);
-        box-shadow: var(--shadow-lg);
-      }
-
-      .demo-theme-toggle button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: var(--space-xs);
-        font-size: var(--font-size-lg);
-        color: var(--color-text-primary);
-        transition: transform var(--transition-fast);
-      }
-
-      .demo-theme-toggle button:hover {
-        transform: scale(1.1);
-      }
-
-      /* Component showcase */
-      .component-showcase {
-        margin-bottom: var(--space-lg);
-      }
-
-      .component-title {
-        font-size: var(--font-size-md);
-        font-weight: 600;
-        margin-bottom: var(--space-sm);
-        color: var(--color-text-primary);
-      }
-
-      .component-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--space-md);
-      }
-
-      /* Mock screens */
-      .mock-header {
-        height: 52px;
-        background: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--separator-color);
-        display: flex;
-        align-items: center;
-        padding: 0 var(--space-lg);
-        gap: var(--space-lg);
-        font-weight: 600;
-        flex-shrink: 0;
-      }
-
-      .mock-body {
-        flex: 1;
-        display: flex;
-        overflow: hidden;
-      }
-
-      .mock-sidebar {
-        width: 220px;
-        border-right: 1px solid var(--separator-color);
-        background: var(--color-bg-secondary);
-        padding: var(--space-md) 0;
-        flex-shrink: 0;
-        overflow-y: auto;
-      }
-
-      .mock-sidebar-item {
-        padding: var(--space-sm) var(--space-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        border-radius: 0;
-      }
-
-      .mock-sidebar-item.active {
-        background: var(--color-accent);
-        color: white;
-      }
-
-      .mock-content {
-        flex: 1;
-        padding: var(--space-lg);
-        overflow-y: auto;
-        background: var(--color-bg-primary);
-      }
-
-      .mock-section {
-        margin-bottom: var(--space-xl);
-      }
-
-      .mock-section-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        margin-bottom: var(--space-lg);
-        padding-bottom: var(--space-md);
-        border-bottom: 1px solid var(--separator-color);
-      }
-
-      .mock-metric-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: var(--space-md);
-        margin-bottom: var(--space-lg);
-      }
-
-      .mock-table {
-        width: 100%;
-        font-size: var(--font-size-xs);
-        border-collapse: collapse;
-        background: var(--color-bg-secondary);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        margin-bottom: var(--space-lg);
-      }
-
-      .mock-table thead {
-        background: var(--color-bg-tertiary);
-      }
-
-      .mock-table th {
-        padding: var(--space-sm);
-        text-align: left;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        border-bottom: 1px solid var(--separator-color);
-      }
-
-      .mock-table td {
-        padding: var(--space-sm);
-        border-bottom: 1px solid var(--separator-color-secondary);
-        color: var(--color-text-primary);
-      }
-
-      .mock-table tbody tr:hover {
-        background: var(--color-bg-tertiary);
-      }
-
-      /* Status indicators */
-      .status-dot {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: var(--space-xs);
-      }
-
-      .status-dot.healthy {
-        background: var(--color-success);
-      }
-
-      .status-dot.warning {
-        background: var(--color-warning);
-      }
-
-      .status-dot.critical {
-        background: var(--color-destructive);
-      }
-    </style>
+    <title>Garazyk Admin UI: Design System &amp; Screens</title>
+    <link rel="stylesheet" href="../css/system.css">
+    <link rel="stylesheet" href="../css/demo.css">
+    <script src="../js/demo.js" defer></script>
   </head>
   <body>
     <div class="demo-container">
       <!-- Sidebar Navigation -->
-      <div class="demo-sidebar">
-        <div class="demo-sidebar-header">Screens</div>
+      <nav class="demo-sidebar" aria-label="Demo screens">
+        <div class="demo-sidebar-header">
+          <span class="demo-sidebar-brand">Garazyk Admin</span>
+          <span class="demo-sidebar-label">Screen previews</span>
+        </div>
         <ul class="demo-nav">
           <li class="demo-nav-item">
-            <a class="demo-nav-link active" data-screen="login">Login</a>
+            <button
+              id="demo-nav-login"
+              class="demo-nav-link active"
+              type="button"
+              data-screen="login"
+              aria-controls="login"
+              aria-current="page"
+            >
+              Login
+            </button>
           </li>
           <li class="demo-nav-item">
-            <a class="demo-nav-link" data-screen="dashboard">Dashboard</a>
+            <button
+              id="demo-nav-dashboard"
+              class="demo-nav-link"
+              type="button"
+              data-screen="dashboard"
+              aria-controls="dashboard"
+            >
+              Dashboard
+            </button>
           </li>
           <li class="demo-nav-item">
-            <a class="demo-nav-link" data-screen="accounts">Accounts</a>
+            <button
+              id="demo-nav-accounts"
+              class="demo-nav-link"
+              type="button"
+              data-screen="accounts"
+              aria-controls="accounts"
+            >
+              Accounts
+            </button>
           </li>
           <li class="demo-nav-item">
-            <a class="demo-nav-link" data-screen="connections">Connections</a>
+            <button
+              id="demo-nav-connections"
+              class="demo-nav-link"
+              type="button"
+              data-screen="connections"
+              aria-controls="connections"
+            >
+              Connections
+            </button>
           </li>
           <li class="demo-nav-item">
-            <a class="demo-nav-link" data-screen="metrics">Metrics</a>
+            <button
+              id="demo-nav-metrics"
+              class="demo-nav-link"
+              type="button"
+              data-screen="metrics"
+              aria-controls="metrics"
+            >
+              Metrics
+            </button>
           </li>
           <li class="demo-nav-item">
-            <a class="demo-nav-link" data-screen="components">Components</a>
+            <button
+              id="demo-nav-components"
+              class="demo-nav-link"
+              type="button"
+              data-screen="components"
+              aria-controls="components"
+            >
+              Components
+            </button>
           </li>
           <li class="demo-nav-item">
-            <a class="demo-nav-link" data-screen="colors">Colors</a>
+            <button
+              id="demo-nav-colors"
+              class="demo-nav-link"
+              type="button"
+              data-screen="colors"
+              aria-controls="colors"
+            >
+              Colors
+            </button>
           </li>
         </ul>
-      </div>
+      </nav>
 
       <!-- Main Content -->
-      <div class="demo-content">
+      <main class="demo-content">
+        <header class="demo-window-titlebar">
+          <div>
+            <div class="demo-window-title">Garazyk Admin UI</div>
+            <div class="demo-window-subtitle">Classic interface preview</div>
+          </div>
+          <button
+            id="demo-theme-toggle"
+            class="demo-theme-toggle"
+            type="button"
+          >
+            <span class="demo-theme-icon" aria-hidden="true">◐</span>
+            <span class="demo-theme-label">Appearance</span>
+          </button>
+        </header>
         <div class="demo-viewport">
           <!-- Login Screen -->
-          <div id="login" class="demo-section active">
+          <div id="login" class="demo-section active" aria-hidden="false">
             <h1 class="demo-title">Login</h1>
-            <div style="max-width: 400px; margin: 0 auto">
+            <div class="demo-narrow-panel">
               <div class="card">
                 <div class="card-header">
                   <h2 class="card-title">Admin UI Service</h2>
@@ -357,18 +129,24 @@
                   <p class="description">Sign in to access the admin panel.</p>
                   <div class="form-group">
                     <label class="form-label">Admin Password</label>
-                    <input type="password" class="form-input" placeholder="Enter password">
+                    <input
+                      type="password"
+                      class="form-input"
+                      placeholder="Enter password"
+                    >
                   </div>
-                  <button class="btn btn-primary" style="width: 100%">Sign in</button>
+                  <button class="btn btn-primary demo-full-width" type="button">
+                    Sign in
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Dashboard Screen -->
-          <div id="dashboard" class="demo-section">
+          <div id="dashboard" class="demo-section" aria-hidden="true">
             <div class="demo-screen">
-              <div class="mock-header">Garazyk Admin UI — Overview</div>
+              <div class="mock-header">Garazyk Admin UI: Overview</div>
               <div class="mock-body">
                 <div class="mock-sidebar">
                   <div class="mock-sidebar-item active">Overview</div>
@@ -415,19 +193,25 @@
                       <tbody>
                         <tr>
                           <td>PDS</td>
-                          <td><span class="status-dot healthy"></span>Healthy</td>
+                          <td>
+                            <span class="status-dot healthy"></span>Healthy
+                          </td>
                           <td>42d 3h</td>
                           <td>1.2M</td>
                         </tr>
                         <tr>
                           <td>AppView</td>
-                          <td><span class="status-dot healthy"></span>Healthy</td>
+                          <td>
+                            <span class="status-dot healthy"></span>Healthy
+                          </td>
                           <td>42d 3h</td>
                           <td>890K</td>
                         </tr>
                         <tr>
                           <td>Relay</td>
-                          <td><span class="status-dot healthy"></span>Healthy</td>
+                          <td>
+                            <span class="status-dot healthy"></span>Healthy
+                          </td>
                           <td>42d 3h</td>
                           <td>2.3M</td>
                         </tr>
@@ -440,9 +224,9 @@
           </div>
 
           <!-- Accounts Screen -->
-          <div id="accounts" class="demo-section">
+          <div id="accounts" class="demo-section" aria-hidden="true">
             <div class="demo-screen">
-              <div class="mock-header">Garazyk Admin UI — Accounts</div>
+              <div class="mock-header">Garazyk Admin UI: Accounts</div>
               <div class="mock-body">
                 <div class="mock-sidebar">
                   <div class="mock-sidebar-item">Overview</div>
@@ -455,13 +239,10 @@
                 <div class="mock-content">
                   <div class="mock-section">
                     <div class="mock-section-title">Accounts</div>
-                    <div
-                      style="margin-bottom: var(--space-lg); display: flex; gap: var(--space-sm)"
-                    >
+                    <div class="demo-inline-search">
                       <input
                         type="text"
-                        class="form-input"
-                        style="flex: 1"
+                        class="form-input demo-flex-fill"
                         placeholder="Search email or DID"
                       >
                       <button class="btn btn-primary btn-sm">Search</button>
@@ -482,22 +263,40 @@
                           <td>alice.bsky.social</td>
                           <td>did:plc:z72i7hdynmk6r33q4qgq6got</td>
                           <td>2024-01-15</td>
-                          <td><span class="badge badge-success">Active</span></td>
-                          <td><button class="btn btn-secondary btn-sm">Details</button></td>
+                          <td>
+                            <span class="badge badge-success">Active</span>
+                          </td>
+                          <td>
+                            <button class="btn btn-secondary btn-sm">
+                              Details
+                            </button>
+                          </td>
                         </tr>
                         <tr>
                           <td>bob.bsky.social</td>
                           <td>did:plc:y61j6gcdqnz5s22p3pqp5gst</td>
                           <td>2024-02-20</td>
-                          <td><span class="badge badge-success">Active</span></td>
-                          <td><button class="btn btn-secondary btn-sm">Details</button></td>
+                          <td>
+                            <span class="badge badge-success">Active</span>
+                          </td>
+                          <td>
+                            <button class="btn btn-secondary btn-sm">
+                              Details
+                            </button>
+                          </td>
                         </tr>
                         <tr>
                           <td>suspended.bsky.social</td>
                           <td>did:plc:x50k5fcbqnz5s22p3pqp5gst</td>
                           <td>2023-12-10</td>
-                          <td><span class="badge badge-warning">Suspended</span></td>
-                          <td><button class="btn btn-secondary btn-sm">Details</button></td>
+                          <td>
+                            <span class="badge badge-warning">Suspended</span>
+                          </td>
+                          <td>
+                            <button class="btn btn-secondary btn-sm">
+                              Details
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -508,41 +307,57 @@
           </div>
 
           <!-- Connections Screen -->
-          <div id="connections" class="demo-section">
+          <div id="connections" class="demo-section" aria-hidden="true">
             <h1 class="demo-title">Connections</h1>
-            <div style="max-width: 900px">
+            <div class="demo-wide-panel">
               <div class="card">
                 <div class="card-header">
                   <h2 class="card-title">Service Configuration</h2>
                 </div>
                 <div class="card-body">
                   <p class="description">
-                    Configure URLs and admin tokens for each AT Protocol service.
+                    Configure URLs and admin tokens for each AT Protocol
+                    service.
                   </p>
 
-                  <div
-                    style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg)"
-                  >
+                  <div class="demo-connection-grid">
                     <div class="form-group">
                       <label class="form-label">PDS URL</label>
-                      <input type="text" class="form-input" value="http://localhost:3000">
+                      <input
+                        type="text"
+                        class="form-input"
+                        value="http://localhost:3000"
+                      >
                     </div>
                     <div class="form-group">
                       <label class="form-label">PDS Admin Token</label>
-                      <input type="password" class="form-input" placeholder="Bearer token">
+                      <input
+                        type="password"
+                        class="form-input"
+                        placeholder="Bearer token"
+                      >
                     </div>
                     <div class="form-group">
                       <label class="form-label">AppView URL</label>
-                      <input type="text" class="form-input" value="http://localhost:3001">
+                      <input
+                        type="text"
+                        class="form-input"
+                        value="http://localhost:3001"
+                      >
                     </div>
                     <div class="form-group">
                       <label class="form-label">AppView Admin Token</label>
-                      <input type="password" class="form-input" placeholder="Bearer token">
+                      <input
+                        type="password"
+                        class="form-input"
+                        placeholder="Bearer token"
+                      >
                     </div>
                   </div>
 
                   <div class="alert alert-info">
-                    <span>Changes apply immediately but are not persisted across restarts.</span>
+                    <span>Changes apply immediately but are not persisted across
+                      restarts.</span>
                   </div>
 
                   <div class="card-footer">
@@ -555,17 +370,15 @@
           </div>
 
           <!-- Metrics Screen -->
-          <div id="metrics" class="demo-section">
-            <h1 class="demo-title">Metrics & Monitoring</h1>
+          <div id="metrics" class="demo-section" aria-hidden="true">
+            <h1 class="demo-title">Metrics &amp; Monitoring</h1>
             <div class="demo-grid">
               <div class="card">
                 <div class="card-header">
                   <h3 class="card-title">Request Rate (24h)</h3>
                 </div>
                 <div class="card-body">
-                  <div
-                    style="height: 200px; background: var(--color-bg-tertiary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary)"
-                  >
+                  <div class="demo-chart-placeholder">
                     [Chart Placeholder]
                   </div>
                 </div>
@@ -576,9 +389,7 @@
                   <h3 class="card-title">Error Rate (24h)</h3>
                 </div>
                 <div class="card-body">
-                  <div
-                    style="height: 200px; background: var(--color-bg-tertiary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary)"
-                  >
+                  <div class="demo-chart-placeholder">
                     [Chart Placeholder]
                   </div>
                 </div>
@@ -589,9 +400,7 @@
                   <h3 class="card-title">Response Time (P95)</h3>
                 </div>
                 <div class="card-body">
-                  <div
-                    style="height: 200px; background: var(--color-bg-tertiary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary)"
-                  >
+                  <div class="demo-chart-placeholder">
                     [Chart Placeholder]
                   </div>
                 </div>
@@ -602,11 +411,11 @@
                   <h3 class="card-title">Database Size</h3>
                 </div>
                 <div class="card-body">
-                  <div class="stat-value" style="margin-bottom: var(--space-sm)">847 GB</div>
+                  <div class="stat-value demo-stat-value">847 GB</div>
                   <div class="progress">
-                    <div class="progress-bar" style="width: 76%"></div>
+                    <div class="progress-bar demo-progress-bar"></div>
                   </div>
-                  <div class="stat-change positive" style="margin-top: var(--space-sm)">
+                  <div class="stat-change positive demo-space-top">
                     +12 GB (7 days)
                   </div>
                 </div>
@@ -615,7 +424,7 @@
           </div>
 
           <!-- Components Library -->
-          <div id="components" class="demo-section">
+          <div id="components" class="demo-section" aria-hidden="true">
             <h1 class="demo-title">Component Library</h1>
 
             <!-- Buttons -->
@@ -644,7 +453,9 @@
                 </div>
                 <div>
                   <div class="demo-label">Icon</div>
-                  <button class="btn btn-secondary btn-icon" title="Settings">⚙️</button>
+                  <button class="btn btn-secondary btn-icon" title="Settings">
+                    ⚙️
+                  </button>
                 </div>
               </div>
             </div>
@@ -664,15 +475,24 @@
             <!-- Form Elements -->
             <div class="component-showcase">
               <h2 class="component-title">Form Elements</h2>
-              <div style="max-width: 400px">
+              <div class="demo-form-preview">
                 <div class="form-group">
                   <label class="form-label required">Username</label>
-                  <input type="text" class="form-input" placeholder="Enter username">
-                  <span class="form-help">This will be visible to other users</span>
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Enter username"
+                  >
+                  <span class="form-help"
+                  >This will be visible to other users</span>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Email</label>
-                  <input type="email" class="form-input" placeholder="you@example.com">
+                  <input
+                    type="email"
+                    class="form-input"
+                    placeholder="you@example.com"
+                  >
                 </div>
                 <div class="form-group">
                   <label class="form-label">Country</label>
@@ -683,9 +503,7 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label
-                    style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer"
-                  >
+                  <label class="demo-checkbox-label">
                     <input type="checkbox" checked>
                     <span>I agree to the terms</span>
                   </label>
@@ -698,11 +516,15 @@
               <h2 class="component-title">Alerts</h2>
               <div class="alert alert-info">
                 <div class="alert-title">Informational</div>
-                <div class="alert-message">This is an informational message.</div>
+                <div class="alert-message">
+                  This is an informational message.
+                </div>
               </div>
               <div class="alert alert-success">
                 <div class="alert-title">Success</div>
-                <div class="alert-message">Operation completed successfully.</div>
+                <div class="alert-message">
+                  Operation completed successfully.
+                </div>
               </div>
               <div class="alert alert-warning">
                 <div class="alert-title">Warning</div>
@@ -710,7 +532,9 @@
               </div>
               <div class="alert alert-destructive">
                 <div class="alert-title">Error</div>
-                <div class="alert-message">Something went wrong. Please try again.</div>
+                <div class="alert-message">
+                  Something went wrong. Please try again.
+                </div>
               </div>
             </div>
 
@@ -723,7 +547,10 @@
                     <h3 class="card-title">Card Title</h3>
                   </div>
                   <div class="card-body">
-                    <p>This is card content. Cards are used to group related information.</p>
+                    <p>
+                      This is card content. Cards are used to group related
+                      information.
+                    </p>
                   </div>
                 </div>
                 <div class="stat-card">
@@ -736,165 +563,81 @@
           </div>
 
           <!-- Colors -->
-          <div id="colors" class="demo-section">
+          <div id="colors" class="demo-section" aria-hidden="true">
             <h1 class="demo-title">Color System</h1>
             <p class="description">
-              OKLCH-based color tokens with strawberry red brand tinting. Both light and dark modes.
+              OKLCH-based color tokens with strawberry red brand tinting. Both
+              light and dark modes.
             </p>
 
-            <h2
-              style="font-size: var(--font-size-lg); font-weight: 600; margin: var(--space-xl) 0 var(--space-md) 0"
-            >
+            <h2 class="demo-section-heading">
               Semantic Colors
             </h2>
             <div class="demo-grid">
               <div>
                 <div class="demo-label">Background Primary</div>
-                <div
-                  style="height: 80px; background: var(--color-bg-primary); border: 1px solid var(--separator-color); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-primary"></div>
               </div>
               <div>
                 <div class="demo-label">Background Secondary</div>
-                <div
-                  style="height: 80px; background: var(--color-bg-secondary); border: 1px solid var(--separator-color); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-secondary"></div>
               </div>
               <div>
                 <div class="demo-label">Background Tertiary</div>
-                <div
-                  style="height: 80px; background: var(--color-bg-tertiary); border: 1px solid var(--separator-color); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-tertiary"></div>
               </div>
               <div>
                 <div class="demo-label">Accent</div>
-                <div
-                  style="height: 80px; background: var(--color-accent); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-accent"></div>
               </div>
               <div>
                 <div class="demo-label">Success</div>
-                <div
-                  style="height: 80px; background: var(--color-success); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-success"></div>
               </div>
               <div>
                 <div class="demo-label">Warning</div>
-                <div
-                  style="height: 80px; background: var(--color-warning); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-warning"></div>
               </div>
               <div>
                 <div class="demo-label">Destructive</div>
-                <div
-                  style="height: 80px; background: var(--color-destructive); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-destructive"></div>
               </div>
               <div>
                 <div class="demo-label">Info</div>
-                <div
-                  style="height: 80px; background: var(--color-info); border-radius: var(--radius-md)"
-                >
-                </div>
+                <div class="demo-swatch demo-swatch-info"></div>
               </div>
             </div>
 
-            <h2
-              style="font-size: var(--font-size-lg); font-weight: 600; margin: var(--space-xl) 0 var(--space-md) 0"
-            >
+            <h2 class="demo-section-heading">
               Typography
             </h2>
             <div class="card">
               <div class="card-body">
-                <h3 style="font-size: var(--font-size-2xl); margin: 0 0 var(--space-sm) 0">
+                <h3 class="demo-type-display">
                   Large Heading (2xl)
                 </h3>
-                <h3
-                  style="font-size: var(--font-size-xl); margin: var(--space-lg) 0 var(--space-sm) 0"
-                >
+                <h3 class="demo-type-headline">
                   Medium Heading (xl)
                 </h3>
-                <h3
-                  style="font-size: var(--font-size-lg); margin: var(--space-lg) 0 var(--space-sm) 0"
-                >
+                <h3 class="demo-type-title">
                   Small Heading (lg)
                 </h3>
-                <p style="margin: var(--space-lg) 0 var(--space-sm) 0">
-                  Body text (md) — This is the standard text size for content. Line height is
-                  optimized for readability. Lorem ipsum dolor sit amet.
+                <p class="demo-type-body">
+                  Body text (md): This is the standard text size for content.
+                  Line height is optimized for readability. Lorem ipsum dolor
+                  sit amet.
                 </p>
-                <p
-                  style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: var(--space-lg) 0 var(--space-sm) 0"
-                >
-                  Small text (sm) — Used for secondary information and captions.
+                <p class="demo-type-small">
+                  Small text (sm): Used for secondary information and captions.
                 </p>
-                <p
-                  style="font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin: var(--space-lg) 0 0 0"
-                >
-                  Extra small text (xs) — Used for labels and helper text.
+                <p class="demo-type-xs">
+                  Extra small text (xs): Used for labels and helper text.
                 </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
-
-    <!-- Theme Toggle -->
-    <div class="demo-theme-toggle">
-      <button onclick="toggleTheme()" title="Toggle theme">🌙</button>
-    </div>
-
-    <script>
-      // Navigation
-      document.querySelectorAll(".demo-nav-link").forEach((link) => {
-        link.addEventListener("click", (e) => {
-          e.preventDefault();
-          const screen = e.target.dataset.screen;
-
-          // Hide all sections
-          document.querySelectorAll(".demo-section").forEach((s) =>
-            s.classList.remove("active")
-          );
-
-          // Show selected section
-          const section = document.getElementById(screen);
-          if (section) {
-            section.classList.add("active");
-            section.scrollIntoView();
-          }
-
-          // Update active nav
-          document.querySelectorAll(".demo-nav-link").forEach((l) =>
-            l.classList.remove("active")
-          );
-          e.target.classList.add("active");
-        });
-      });
-
-      // Theme toggle
-      function toggleTheme() {
-        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-          document.documentElement.style.colorScheme = "light";
-          localStorage.setItem("theme", "light");
-        } else {
-          document.documentElement.style.colorScheme = "dark";
-          localStorage.setItem("theme", "dark");
-        }
-      }
-
-      // Restore theme from localStorage
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
-        document.documentElement.style.colorScheme = savedTheme;
-      }
-    </script>
   </body>
 </html>

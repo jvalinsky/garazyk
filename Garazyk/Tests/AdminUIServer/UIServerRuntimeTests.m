@@ -23,6 +23,7 @@
 @property(nonatomic, copy) NSString *lastServiceName;
 @property(nonatomic, strong) NSURL *lastBaseURL;
 @property(nonatomic, copy) NSString *lastAdminToken;
+@property(nonatomic, copy) NSDictionary *sessionsResult;
 @end
 
 @implementation UIServerRuntimeBackendStub
@@ -47,6 +48,9 @@
 - (NSDictionary *)fetchActiveSessionsForDID:(NSString *)did {
     [self recordCall:NSStringFromSelector(_cmd)];
     self.lastDID = did;
+    if (self.sessionsResult) {
+        return self.sessionsResult;
+    }
     return @{@"sessions": @[@{@"id": @"session-hash", @"did": did ?: @"", @"createdAt": @"2026-04-28T00:00:00Z"}]};
 }
 
@@ -206,6 +210,35 @@
                                                    remoteAddress:@"127.0.0.1"];
 
     return request;
+}
+
+/// Creates an otherwise-valid request without a CSRF nonce for negative tests.
+- (HttpRequest *)createRequestWithoutCSRFWithMethod:(NSString *)method
+                                                path:(NSString *)path
+                                         sessionToken:(NSString *)token
+                                            jsonBody:(NSDictionary *)jsonBody {
+    NSMutableDictionary *headers = [NSMutableDictionary dictionary];
+    if (token.length > 0) {
+        headers[@"Cookie"] = [NSString stringWithFormat:@"ui_admin_token=%@", token];
+    }
+
+    NSData *bodyData = [NSData data];
+    if (jsonBody) {
+        NSError *error = nil;
+        bodyData = [NSJSONSerialization dataWithJSONObject:jsonBody options:0 error:&error];
+        XCTAssertNil(error);
+        headers[@"Content-Type"] = @"application/json";
+    }
+
+    return [[HttpRequest alloc] initWithMethod:[self httpMethodFromString:method]
+                                  methodString:method
+                                          path:path
+                                   queryString:@""
+                                   queryParams:@{}
+                                       version:@"HTTP/1.1"
+                                       headers:[headers copy]
+                                          body:bodyData
+                                 remoteAddress:@"127.0.0.1"];
 }
 
 /*!
@@ -611,7 +644,86 @@
     XCTAssertTrue([response.bodyString containsString:@"Connections updated"]);
     XCTAssertTrue([response.bodyString containsString:@"id=\"conn-appview-url\""]);
     XCTAssertTrue([response.bodyString containsString:@"id=\"conn-appview-token\""]);
-    XCTAssertTrue([response.bodyString containsString:@"onclick=\"testConnection('appview')\""]);
+    XCTAssertTrue([response.bodyString containsString:@"data-ui-action=\"test-connection\""]);
+    XCTAssertTrue([response.bodyString containsString:@"data-ui-service=\"appview\""]);
+}
+
+- (void)testAuthenticatedAdminMutationRejectsMissingCSRFToken {
+    NSString *token = [self loginAndReturnSessionToken];
+    NSString *originalPDSURL = self.config.pdsBaseURL.absoluteString;
+    HttpRequest *request = [self createRequestWithoutCSRFWithMethod:@"POST"
+                                                               path:@"/admin/actions/update-connections"
+                                                        sessionToken:token
+                                                           jsonBody:@{@"pdsURL": @"http://untrusted.example"}];
+
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+
+    XCTAssertEqual(response.statusCode, 403);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_csrf_token");
+    XCTAssertEqualObjects(self.config.pdsBaseURL.absoluteString, originalPDSURL);
+}
+
+- (void)testLogoutRequiresSessionAndCSRFValidation {
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *logoutRequest = [self createRequestWithoutCSRFWithMethod:@"POST"
+                                                                      path:@"/admin/logout"
+                                                               sessionToken:token
+                                                                  jsonBody:nil];
+
+    HttpResponse *logoutResponse = [self.runtime dispatchRequestForTesting:logoutRequest];
+    XCTAssertEqual(logoutResponse.statusCode, 403);
+    XCTAssertEqualObjects(logoutResponse.jsonBody[@"error"], @"invalid_csrf_token");
+
+    HttpRequest *adminRequest = [self createRequestWithMethod:@"GET"
+                                                          path:@"/admin"
+                                                   sessionToken:token
+                                                      jsonBody:nil];
+    HttpResponse *adminResponse = [self.runtime dispatchRequestForTesting:adminRequest];
+    XCTAssertEqual(adminResponse.statusCode, 200);
+}
+
+- (void)testAdminShellUsesExternalBrowserModuleAndBlocksInlineHandlers {
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                    path:@"/admin"
+                                             sessionToken:token
+                                                jsonBody:nil];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    NSString *csp = [response headerForKey:@"content-security-policy"];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([csp containsString:@"script-src-attr 'none'"]);
+    XCTAssertTrue([response.bodyString containsString:@"/js/admin-ui.js"]);
+    XCTAssertTrue([response.bodyString containsString:@"data-ui-action=\"switch-tab\""]);
+    XCTAssertFalse([response.bodyString containsString:@"onclick="]);
+    XCTAssertFalse([response.bodyString containsString:@"onchange="]);
+    XCTAssertFalse([response.bodyString containsString:@"onsubmit="]);
+}
+
+- (void)testHostileSessionValuesAreRenderedAsInertDataAttributes {
+    UIServerRuntimeBackendStub *stub = [self installBackendStub];
+    NSString *hostileValue = @"session\"><img src=x onerror=alert(1)>";
+    stub.sessionsResult = @{
+        @"sessions": @[@{
+            @"id": hostileValue,
+            @"did": @"did:plc:alice",
+            @"deviceInfo": @"test device",
+            @"createdAt": @"2026-04-28T00:00:00Z"
+        }]
+    };
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                    path:@"/admin/partials/sessions?did=did:plc:alice"
+                                             sessionToken:token
+                                                jsonBody:nil];
+
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.bodyString containsString:@"data-ui-action=\"revoke-session\""]);
+    XCTAssertTrue([response.bodyString containsString:@"data-ui-session-id=\"session&quot;&gt;&lt;img src=x onerror=alert(1)&gt;\""]);
+    XCTAssertFalse([response.bodyString containsString:@"onclick="]);
+    XCTAssertFalse([response.bodyString containsString:@"<img src=x onerror=alert(1)>"]);
 }
 
 - (void)testConnectionTestActionRunsServerSideProbe {

@@ -5,6 +5,18 @@
  * Handles PKCE, DPoP, PAR, and user account operations
  */
 
+function labConfigValue(name) {
+  return document.querySelector(`meta[name="${name}"]`)?.content || "";
+}
+
+// Server-provided configuration is transported as inert HTML attributes, never
+// interpolated into executable JavaScript.
+const LAB_CONFIG = Object.freeze({
+  pdsUrl: labConfigValue("lab-pds-url"),
+  clientId: labConfigValue("lab-client-id"),
+  redirectUri: labConfigValue("lab-redirect-uri"),
+});
+
 // Session storage keys
 const SESSION_KEYS = {
   state: "lab_oauth_state",
@@ -506,6 +518,18 @@ async function createDPoPProofFromJWK(jwk, method, url, options = {}) {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", function () {
+  document.querySelector('[data-lab-form="start-oauth"]')?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    startOAuthFlow();
+  });
+  document.querySelector('[data-lab-form="update-handle"]')?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    updateHandleFlow();
+  });
+  document.querySelector('[data-lab-action="sign-out"]')?.addEventListener("click", () => {
+    signOutOAuth();
+  });
+
   if (window.location.pathname.endsWith("/lab/callback")) {
     handleCallback();
   } else {
