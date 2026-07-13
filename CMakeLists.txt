@@ -1512,8 +1512,8 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ConnectionPoolTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/RecordCacheTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/MigrationTests.m")
-  # Exclude duplicate SecurityHardeningTests - keep only the Security/ one
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SecurityHardeningTests.m")
+  # Network/SecurityHardeningTests.m defines NetworkSecurityHardeningTests (renamed to avoid
+  # colliding with Security/SecurityHardeningTests). Both classes now coexist and compile.
 
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")

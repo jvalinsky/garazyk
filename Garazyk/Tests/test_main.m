@@ -1094,6 +1094,7 @@ int main(int argc, char *argv[]) {
       @"RelayAPIHandlerTests",
       @"RelayDownstreamHandlerTests",
       @"SecurityHardeningTests",
+      @"NetworkSecurityHardeningTests",
       @"XrpcAppBskyGraphHelpersTests",
       @"XrpcChatBskyGroupTests",
       @"XrpcIntegrationTests",
