@@ -2,10 +2,11 @@
 import { dirname, fromFileUrl, join } from "$std/path/mod.ts";
 import { start } from "$fresh/server.ts";
 import manifest from "./fresh.gen.ts";
+import { getDashboardSecurity } from "./services/dashboard_security.ts";
 import { runManager } from "./services/run_manager.ts";
 
 const dir = dirname(fromFileUrl(import.meta.url));
-const port = parseInt(Deno.env.get("DASHBOARD_PORT") || "3001");
+const security = getDashboardSecurity();
 
 // Recover any active run state from previous session
 await runManager.recover();
@@ -16,5 +17,5 @@ await start(manifest, {
   router: {
     trailingSlash: false,
   },
-  server: { port },
+  server: { hostname: security.host, port: security.port },
 });

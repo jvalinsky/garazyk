@@ -2,10 +2,11 @@
 import { signal } from "@preact/signals";
 import type { Cmd, DashboardState, Msg } from "./dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "./dashboard_state.ts";
-import { constructMsg, constructErrorMsg } from "./cmd_interpreter.ts";
+import { constructErrorMsg, constructMsg } from "./cmd_interpreter.ts";
 import { readAgentLaunchFromUrl } from "./utils/client_launch.ts";
 
-const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
+const IS_BROWSER = typeof globalThis !== "undefined" &&
+  "document" in globalThis;
 
 // Wraps a Preact Signal to present a non-nullable DashboardState type.
 // Preact Signal<T> resolves as value: T|undefined in the version served
@@ -52,7 +53,10 @@ export function getRuntime(): RuntimeHandle | null {
 }
 
 /** Hook for islands to access the runtime state signal and dispatch. SSR-safe. */
-export function useRuntime(): { state: TypedSignal; dispatch: (msg: Msg) => void } {
+export function useRuntime(): {
+  state: TypedSignal;
+  dispatch: (msg: Msg) => void;
+} {
   const runtime = getRuntime();
   if (!runtime) {
     // SSR guard — return inert handles so islands don't crash during hydration
@@ -81,6 +85,8 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
   );
   const timerIds: number[] = [];
   const intervalIds: number[] = [];
+  let mutationCapability: string | undefined;
+  let mutationCapabilityRequest: Promise<string | undefined> | undefined;
 
   function dispatch(msg: Msg): void {
     try {
@@ -119,7 +125,22 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
       const opts: RequestInit = {};
       if (cmd.method) opts.method = cmd.method;
       if (cmd.body !== undefined) opts.body = JSON.stringify(cmd.body);
-      opts.headers = { "Content-Type": "application/json" };
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (isMutationMethod(cmd.method)) {
+        const capability = await getMutationCapability();
+        if (!capability) {
+          d(constructErrorMsg(
+            cmd.onError,
+            "Dashboard mutation capability is unavailable",
+            cmd.meta,
+          ));
+          return;
+        }
+        headers["X-Dashboard-Capability"] = capability;
+      }
+      opts.headers = headers;
 
       const res = await fetch(cmd.url, opts);
       const text = await res.text();
@@ -130,11 +151,16 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
         data = text;
       }
 
+      if (cmd.onSuccess === "config/received") {
+        const capability = capabilityFromConfig(data);
+        if (capability) mutationCapability = capability;
+      }
+
       if (!res.ok) {
-        const errMsg =
-          (data && typeof data === "object" && "error" in (data as Record<string, unknown>))
-            ? String((data as Record<string, string>).error)
-            : `HTTP ${res.status}: ${res.statusText}`;
+        const errMsg = (data && typeof data === "object" &&
+            "error" in (data as Record<string, unknown>))
+          ? String((data as Record<string, string>).error)
+          : `HTTP ${res.status}: ${res.statusText}`;
         d(constructErrorMsg(cmd.onError, errMsg, cmd.meta));
         return;
       }
@@ -146,7 +172,31 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
     }
   }
 
-  function handleSchedule(cmd: Extract<Cmd, { type: "schedule" }>, d: (msg: Msg) => void): void {
+  async function getMutationCapability(): Promise<string | undefined> {
+    if (mutationCapability) return mutationCapability;
+    if (!mutationCapabilityRequest) {
+      mutationCapabilityRequest = (async () => {
+        const response = await fetch("/api/config", {
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) return undefined;
+        const capability = capabilityFromConfig(await response.json());
+        if (capability) mutationCapability = capability;
+        return capability;
+      })();
+    }
+
+    try {
+      return await mutationCapabilityRequest;
+    } finally {
+      mutationCapabilityRequest = undefined;
+    }
+  }
+
+  function handleSchedule(
+    cmd: Extract<Cmd, { type: "schedule" }>,
+    d: (msg: Msg) => void,
+  ): void {
     const id = setTimeout(() => {
       const idx = timerIds.indexOf(id);
       if (idx !== -1) timerIds.splice(idx, 1);
@@ -157,7 +207,7 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
 
   function handleNavigate(cmd: Extract<Cmd, { type: "navigate" }>): void {
     if (IS_BROWSER) {
-      window.location.href = cmd.url;
+      globalThis.location.href = cmd.url;
     }
   }
 
@@ -184,6 +234,19 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
   return { state, dispatch, destroy };
 }
 
+function isMutationMethod(method: string | undefined): boolean {
+  if (!method) return false;
+  return !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
+}
+
+function capabilityFromConfig(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const capability = (data as Record<string, unknown>).mutationCapability;
+  return typeof capability === "string" && capability.length > 0
+    ? capability
+    : undefined;
+}
+
 // Re-export shared Msg constructors from cmd_interpreter for backward compatibility.
 // The web runtime has no extra branches — the shared module handles all cases.
-export { constructMsg, constructErrorMsg } from "./cmd_interpreter.ts";
+export { constructErrorMsg, constructMsg } from "./cmd_interpreter.ts";
