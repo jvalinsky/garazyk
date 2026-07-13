@@ -401,7 +401,10 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
     if (!html) {
         return;
     }
-    XCTAssertTrue([html containsString:@"LAB_CONFIG"]);
+    // Config is delivered via <meta name="lab-*"> tags consumed client-side by lab.js
+    // (which builds its own frozen LAB_CONFIG object); the literal "LAB_CONFIG" is no
+    // longer server-rendered. Assert the pds-url config meta is present instead.
+    XCTAssertTrue([html containsString:@"lab-pds-url"]);
 }
 
 /*!
@@ -443,7 +446,10 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
     if (!html) {
         return;
     }
-    XCTAssertTrue([html containsString:@"signOutOAuth"]);
+    // The sign-out control is rendered as <button data-lab-action="sign-out">; the
+    // signOutOAuth() handler lives in lab.js and is wired to that attribute. Assert the
+    // control rather than the JS-only function name.
+    XCTAssertTrue([html containsString:@"data-lab-action=\"sign-out\""]);
 }
 
 #pragma mark - Session Token Tests
