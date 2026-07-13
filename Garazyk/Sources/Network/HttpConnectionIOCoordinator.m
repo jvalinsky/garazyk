@@ -24,9 +24,19 @@
 @property (nonatomic, assign) BOOL readScheduled;
 @property (nonatomic, assign) BOOL isClosed;
 @property (nonatomic, assign) NSTimeInterval headerStartTime;
+@property (nonatomic, assign) BOOL isReadingRequestBody;
+@property (nonatomic, assign) NSUInteger headerTerminatorMatchLength;
+@property (nonatomic, assign) NSTimeInterval idleHeaderTimeout;
+@property (nonatomic, assign) NSTimeInterval aggregateHeaderTimeout;
+@property (nonatomic, assign) NSUInteger idleDeadlineGeneration;
+@property (nonatomic, assign) NSUInteger aggregateDeadlineGeneration;
+@property (nonatomic, assign) BOOL didEmitTerminalTimeout;
 @end
 
-static const NSTimeInterval kHttpHeaderTimeout = 30.0;
+static const NSTimeInterval kDefaultHttpHeaderIdleTimeout = 30.0;
+static const NSTimeInterval kDefaultHttpHeaderAggregateTimeout = 30.0;
+static NSString * const kHttpConnectionIOCoordinatorErrorDomain = @"HttpConnectionIOCoordinator";
+static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
 
 @implementation HttpConnectionIOCoordinator
 
@@ -38,6 +48,18 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
                            protocol:(HttpProtocolDriver *)driver
                        responseSender:(HttpResponseSender *)sender {
+    return [self initWithConnection:connection
+                           protocol:driver
+                     responseSender:sender
+                  idleHeaderTimeout:kDefaultHttpHeaderIdleTimeout
+             aggregateHeaderTimeout:kDefaultHttpHeaderAggregateTimeout];
+}
+
+- (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
+                           protocol:(HttpProtocolDriver *)driver
+                     responseSender:(HttpResponseSender *)sender
+                  idleHeaderTimeout:(NSTimeInterval)idleHeaderTimeout
+             aggregateHeaderTimeout:(NSTimeInterval)aggregateHeaderTimeout {
     self = [super init];
     if (self) {
         _connection = connection;
@@ -46,7 +68,14 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
         _isPaused = NO;
         _readScheduled = NO;
         _isClosed = NO;
-        _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
+        _headerStartTime = 0;
+        _isReadingRequestBody = NO;
+        _headerTerminatorMatchLength = 0;
+        _idleHeaderTimeout = idleHeaderTimeout > 0 ? idleHeaderTimeout : kDefaultHttpHeaderIdleTimeout;
+        _aggregateHeaderTimeout = aggregateHeaderTimeout > 0 ? aggregateHeaderTimeout : kDefaultHttpHeaderAggregateTimeout;
+        _idleDeadlineGeneration = 0;
+        _aggregateDeadlineGeneration = 0;
+        _didEmitTerminalTimeout = NO;
 
         NSString *queueName = [NSString stringWithFormat:@"com.atproto.http.io-coordinator.%p", self];
         _coordinationQueue = dispatch_queue_create([queueName UTF8String], DISPATCH_QUEUE_SERIAL);
@@ -77,8 +106,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
 
 - (void)close {
     dispatch_async(self.coordinationQueue, ^{
-        self.isClosed = YES;
-        self.readScheduled = NO;
+        [self closeOnCoordinationQueue];
     });
 }
 
@@ -88,18 +116,15 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
     }
 
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
-    if (now - self.headerStartTime > kHttpHeaderTimeout) {
-        if (self.errorHandler) {
-            self.errorHandler([NSError errorWithDomain:@"HttpConnectionIOCoordinator" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Read timeout"}]);
-        }
-        [self close];
+    if ([self aggregateHeaderDeadlineExpiredAtTime:now]) {
+        [self terminateForHeaderTimeoutWithDescription:@"HTTP header deadline exceeded"];
         return;
     }
 
     NSUInteger queueSize = self.outputQueueSizeProvider ? self.outputQueueSizeProvider() : 0;
     if (![self.driver shouldContinueReading:self.headerStartTime
                                outputQueueSize:queueSize
-                                  headerTimeout:kHttpHeaderTimeout
+                                  headerTimeout:self.aggregateHeaderTimeout
                                             now:now]) {
         __weak typeof(self) weakSelf = self;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(50 * NSEC_PER_MSEC)),
@@ -110,6 +135,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
     }
 
     self.readScheduled = YES;
+    [self armIdleHeaderDeadline];
 
     __weak typeof(self) weakSelf = self;
     [self.connection receiveWithMinimumLength:1
@@ -126,7 +152,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
         }
 
         self.readScheduled = NO;
-        self.headerStartTime = [NSDate timeIntervalSinceReferenceDate];
+        [self invalidateIdleHeaderDeadline];
 
         if (error) {
             if (self.errorHandler) {
@@ -136,6 +162,20 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
         }
 
         if (data && data.length > 0) {
+            NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+            if (!self.isReadingRequestBody && self.headerStartTime <= 0) {
+                [self beginAggregateHeaderDeadlineAtTime:now];
+            }
+
+            if ([self aggregateHeaderDeadlineExpiredAtTime:now]) {
+                [self terminateForHeaderTimeoutWithDescription:@"HTTP header deadline exceeded"];
+                return;
+            }
+
+            if (!self.isReadingRequestBody && [self observeHeaderTerminatorInData:data]) {
+                [self finishHeaderAndBeginBody];
+            }
+
             NSArray<NSNumber *> *events = [self.driver feedData:data];
             [self processProtocolEvents:events];
         }
@@ -151,6 +191,117 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
     });
 }
 
+- (void)armIdleHeaderDeadline {
+    self.idleDeadlineGeneration += 1;
+    NSUInteger generation = self.idleDeadlineGeneration;
+    NSTimeInterval timeout = self.idleHeaderTimeout;
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)),
+                   self.coordinationQueue, ^{
+        HttpConnectionIOCoordinator *strongSelf = weakSelf;
+        if (!strongSelf || strongSelf.isClosed || !strongSelf.readScheduled ||
+            strongSelf.idleDeadlineGeneration != generation) {
+            return;
+        }
+        [strongSelf terminateForHeaderTimeoutWithDescription:@"HTTP header idle deadline exceeded"];
+    });
+}
+
+- (void)invalidateIdleHeaderDeadline {
+    self.idleDeadlineGeneration += 1;
+}
+
+- (void)beginAggregateHeaderDeadlineAtTime:(NSTimeInterval)time {
+    self.headerStartTime = time;
+    self.headerTerminatorMatchLength = 0;
+    self.aggregateDeadlineGeneration += 1;
+    NSUInteger generation = self.aggregateDeadlineGeneration;
+    NSTimeInterval timeout = self.aggregateHeaderTimeout;
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)),
+                   self.coordinationQueue, ^{
+        HttpConnectionIOCoordinator *strongSelf = weakSelf;
+        if (!strongSelf || strongSelf.isClosed || strongSelf.headerStartTime <= 0 ||
+            strongSelf.aggregateDeadlineGeneration != generation) {
+            return;
+        }
+        [strongSelf terminateForHeaderTimeoutWithDescription:@"HTTP header deadline exceeded"];
+    });
+}
+
+- (void)completeCurrentHeader {
+    self.isReadingRequestBody = NO;
+    self.headerStartTime = 0;
+    self.headerTerminatorMatchLength = 0;
+    self.aggregateDeadlineGeneration += 1;
+}
+
+- (void)finishHeaderAndBeginBody {
+    self.isReadingRequestBody = YES;
+    self.headerStartTime = 0;
+    self.headerTerminatorMatchLength = 0;
+    self.aggregateDeadlineGeneration += 1;
+}
+
+- (BOOL)observeHeaderTerminatorInData:(NSData *)data {
+    const uint8_t *bytes = data.bytes;
+    for (NSUInteger index = 0; index < data.length; index += 1) {
+        uint8_t byte = bytes[index];
+        switch (self.headerTerminatorMatchLength) {
+            case 0:
+                self.headerTerminatorMatchLength = byte == '\r' ? 1 : 0;
+                break;
+            case 1:
+                self.headerTerminatorMatchLength = byte == '\n' ? 2 : (byte == '\r' ? 1 : 0);
+                break;
+            case 2:
+                self.headerTerminatorMatchLength = byte == '\r' ? 3 : 0;
+                break;
+            case 3:
+                if (byte == '\n') {
+                    return YES;
+                }
+                self.headerTerminatorMatchLength = byte == '\r' ? 1 : 0;
+                break;
+            default:
+                self.headerTerminatorMatchLength = 0;
+                break;
+        }
+    }
+    return NO;
+}
+
+- (BOOL)aggregateHeaderDeadlineExpiredAtTime:(NSTimeInterval)now {
+    return self.headerStartTime > 0 &&
+           now - self.headerStartTime >= self.aggregateHeaderTimeout;
+}
+
+- (void)terminateForHeaderTimeoutWithDescription:(NSString *)description {
+    if (self.isClosed || self.didEmitTerminalTimeout) {
+        return;
+    }
+
+    self.didEmitTerminalTimeout = YES;
+    if (self.errorHandler) {
+        self.errorHandler([NSError errorWithDomain:kHttpConnectionIOCoordinatorErrorDomain
+                                               code:kHttpConnectionIOCoordinatorHeaderTimeoutError
+                                           userInfo:@{NSLocalizedDescriptionKey: description}]);
+    }
+    [self closeOnCoordinationQueue];
+}
+
+- (void)closeOnCoordinationQueue {
+    if (self.isClosed) {
+        return;
+    }
+
+    self.isClosed = YES;
+    self.readScheduled = NO;
+    [self invalidateIdleHeaderDeadline];
+    [self completeCurrentHeader];
+    [self.connection cancel];
+}
+
 - (void)processProtocolEvents:(NSArray<NSNumber *> *)events {
     for (NSNumber *eventNum in events) {
         HttpProtocolEvent event = (HttpProtocolEvent)[eventNum integerValue];
@@ -161,6 +312,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
                 if (request && self.requestReadyHandler) {
                     self.requestReadyHandler(request);
                 }
+                [self completeCurrentHeader];
                 break;
             }
 
@@ -170,6 +322,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
                     self.upgradeHandler(upgradeRequest);
                 }
                 self.isPaused = YES;
+                [self completeCurrentHeader];
                 break;
             }
 
@@ -178,6 +331,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
                 if (self.errorHandler) {
                     self.errorHandler(error ?: [NSError errorWithDomain:@"HttpProtocol" code:-1 userInfo:nil]);
                 }
+                [self completeCurrentHeader];
                 break;
             }
 
