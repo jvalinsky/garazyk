@@ -3,11 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-export interface LexiconQuery<
-  Params = unknown,
-  Input = unknown,
-  Output = unknown,
-> {
+export interface LexiconQuery<Params = unknown, Input = unknown, Output = unknown> {
   inputEncoding?: string;
   outputEncoding?: string;
   params?: Params;
@@ -22,754 +18,9453 @@ export interface LexiconProcedure<Input = unknown, Output = unknown> {
   output?: Output;
 }
 
-export type BinaryXrpcResponse = [
-  status: number,
-  contentType: string,
-  data: Uint8Array,
-];
+export type BinaryXrpcResponse = [status: number, contentType: string, data: Uint8Array];
 
-/** Type definitions for lexicon schema records (populated at generation time). */
 export interface LexiconDefs {
+  "app.bsky.actor.defs": {
+    "adultContentPref": {
+      "enabled": boolean;
+    };
+    "bskyAppProgressGuide": {
+      "guide": string;
+    };
+    "bskyAppStatePref": {
+      "activeProgressGuide"?: LexiconDefs["app.bsky.actor.defs"]["bskyAppProgressGuide"];
+      "nuxs"?: Array<LexiconDefs["app.bsky.actor.defs"]["nux"]>;
+      "queuedNudges"?: Array<string>;
+    };
+    "contentLabelPref": {
+      "label": string;
+      "labelerDid"?: string;
+      "visibility": string;
+    };
+    "feedViewPref": {
+      "feed": string;
+      "hideQuotePosts"?: boolean;
+      "hideReplies"?: boolean;
+      "hideRepliesByLikeCount"?: number;
+      "hideRepliesByUnfollowed"?: boolean;
+      "hideReposts"?: boolean;
+    };
+    "hiddenPostsPref": {
+      "items": Array<string>;
+    };
+    "interestsPref": {
+      "tags": Array<string>;
+    };
+    "knownFollowers": {
+      "count": number;
+      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
+    };
+    "labelerPrefItem": {
+      "did": string;
+    };
+    "labelersPref": {
+      "labelers": Array<LexiconDefs["app.bsky.actor.defs"]["labelerPrefItem"]>;
+    };
+    "mutedWord": {
+      "actorTarget"?: string;
+      "expiresAt"?: string;
+      "id"?: string;
+      "targets": Array<LexiconDefs["app.bsky.actor.defs"]["mutedWordTarget"]>;
+      "value": string;
+    };
+    "mutedWordTarget": string;
+    "mutedWordsPref": {
+      "items": Array<LexiconDefs["app.bsky.actor.defs"]["mutedWord"]>;
+    };
+    "nux": {
+      "completed": boolean;
+      "data"?: string;
+      "expiresAt"?: string;
+      "id": string;
+    };
+    "personalDetailsPref": {
+      "birthDate"?: string;
+    };
+    "postInteractionSettingsPref": {
+      "postgateEmbeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
+      "threadgateAllowRules"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
+    };
+    "preferences": Array<LexiconDefs["app.bsky.actor.defs"]["adultContentPref"] | LexiconDefs["app.bsky.actor.defs"]["contentLabelPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPrefV2"] | LexiconDefs["app.bsky.actor.defs"]["personalDetailsPref"] | LexiconDefs["app.bsky.actor.defs"]["feedViewPref"] | LexiconDefs["app.bsky.actor.defs"]["threadViewPref"] | LexiconDefs["app.bsky.actor.defs"]["interestsPref"] | LexiconDefs["app.bsky.actor.defs"]["mutedWordsPref"] | LexiconDefs["app.bsky.actor.defs"]["hiddenPostsPref"] | LexiconDefs["app.bsky.actor.defs"]["bskyAppStatePref"] | LexiconDefs["app.bsky.actor.defs"]["labelersPref"] | LexiconDefs["app.bsky.actor.defs"]["postInteractionSettingsPref"] | Record<string, any>>;
+    "profileAssociated": {
+      "chat"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociatedChat"];
+      "feedgens"?: number;
+      "labeler"?: boolean;
+      "lists"?: number;
+      "starterPacks"?: number;
+    };
+    "profileAssociatedChat": {
+      "allowIncoming": string;
+    };
+    "profileView": {
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "avatar"?: string;
+      "createdAt"?: string;
+      "description"?: string;
+      "did": string;
+      "displayName"?: string;
+      "handle": string;
+      "indexedAt"?: string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+    };
+    "profileViewBasic": {
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "avatar"?: string;
+      "createdAt"?: string;
+      "did": string;
+      "displayName"?: string;
+      "handle": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+    };
+    "profileViewDetailed": {
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "avatar"?: string;
+      "banner"?: string;
+      "createdAt"?: string;
+      "description"?: string;
+      "did": string;
+      "displayName"?: string;
+      "followersCount"?: number;
+      "followsCount"?: number;
+      "handle": string;
+      "indexedAt"?: string;
+      "joinedViaStarterPack"?: LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"];
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "pinnedPost"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "postsCount"?: number;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+    };
+    "savedFeed": {
+      "id": string;
+      "pinned": boolean;
+      "type": string;
+      "value": string;
+    };
+    "savedFeedsPref": {
+      "pinned": Array<string>;
+      "saved": Array<string>;
+      "timelineIndex"?: number;
+    };
+    "savedFeedsPrefV2": {
+      "items": Array<LexiconDefs["app.bsky.actor.defs"]["savedFeed"]>;
+    };
+    "threadViewPref": {
+      "prioritizeFollowedUsers"?: boolean;
+      "sort"?: string;
+    };
+    "viewerState": {
+      "blockedBy"?: boolean;
+      "blocking"?: string;
+      "blockingByList"?: LexiconDefs["app.bsky.graph.defs"]["listViewBasic"];
+      "followedBy"?: string;
+      "following"?: string;
+      "knownFollowers"?: LexiconDefs["app.bsky.actor.defs"]["knownFollowers"];
+      "muted"?: boolean;
+      "mutedByList"?: LexiconDefs["app.bsky.graph.defs"]["listViewBasic"];
+    };
+  };
+  "app.bsky.actor.getPreferences": {
+    "main": never;
+  };
+  "app.bsky.actor.getProfile": {
+    "main": never;
+  };
+  "app.bsky.actor.getProfiles": {
+    "main": never;
+  };
+  "app.bsky.actor.getSuggestions": {
+    "main": never;
+  };
+  "app.bsky.actor.profile": {
+    "main": {
+      "avatar"?: any /* blob */;
+      "banner"?: any /* blob */;
+      "createdAt"?: string;
+      "description"?: string;
+      "displayName"?: string;
+      "joinedViaStarterPack"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "pinnedPost"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.bsky.actor.putPreferences": {
+    "main": never;
+  };
+  "app.bsky.actor.searchActors": {
+    "main": never;
+  };
+  "app.bsky.actor.searchActorsTypeahead": {
+    "main": never;
+  };
+  "app.bsky.actor.status": {
+    "live": string;
+    "main": {
+      "createdAt": string;
+      "durationMinutes"?: number;
+      "embed"?: LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
+      "status": string;
+    };
+  };
+  "app.bsky.ageassurance.begin": {
+    "main": never;
+  };
+  "app.bsky.ageassurance.defs": {
+    "access": string;
+    "config": {
+      "regions": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegion"]>;
+    };
+    "configRegion": {
+      "countryCode": string;
+      "minAccessAge": number;
+      "regionCode"?: string;
+      "rules": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleDefault"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountNewerThan"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountOlderThan"] | Record<string, any>>;
+    };
+    "configRegionRuleDefault": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "configRegionRuleIfAccountNewerThan": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "date": string;
+    };
+    "configRegionRuleIfAccountOlderThan": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "date": string;
+    };
+    "configRegionRuleIfAssuredOverAge": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "age": number;
+    };
+    "configRegionRuleIfAssuredUnderAge": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "age": number;
+    };
+    "configRegionRuleIfDeclaredOverAge": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "age": number;
+    };
+    "configRegionRuleIfDeclaredUnderAge": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "age": number;
+    };
+    "event": {
+      "access": string;
+      "attemptId": string;
+      "completeIp"?: string;
+      "completeUa"?: string;
+      "countryCode": string;
+      "createdAt": string;
+      "email"?: string;
+      "initIp"?: string;
+      "initUa"?: string;
+      "regionCode"?: string;
+      "status": string;
+    };
+    "state": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "lastInitiatedAt"?: string;
+      "status": LexiconDefs["app.bsky.ageassurance.defs"]["status"];
+    };
+    "stateMetadata": {
+      "accountCreatedAt"?: string;
+    };
+    "status": string;
+  };
+  "app.bsky.ageassurance.getConfig": {
+    "main": never;
+  };
+  "app.bsky.ageassurance.getState": {
+    "main": never;
+  };
+  "app.bsky.authCreatePosts": {
+    "main": any;
+  };
+  "app.bsky.authFullApp": {
+    "main": any;
+  };
+  "app.bsky.authManageFeedDeclarations": {
+    "main": any;
+  };
+  "app.bsky.authManageLabelerService": {
+    "main": any;
+  };
+  "app.bsky.authManageModeration": {
+    "main": any;
+  };
+  "app.bsky.authManageNotifications": {
+    "main": any;
+  };
+  "app.bsky.authManageProfile": {
+    "main": any;
+  };
+  "app.bsky.authViewAll": {
+    "main": any;
+  };
+  "app.bsky.bookmark.createBookmark": {
+    "main": never;
+  };
+  "app.bsky.bookmark.defs": {
+    "bookmark": {
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "bookmarkView": {
+      "createdAt"?: string;
+      "item": LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["postView"] | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.bsky.bookmark.deleteBookmark": {
+    "main": never;
+  };
+  "app.bsky.bookmark.getBookmarks": {
+    "main": never;
+  };
+  "app.bsky.contact.defs": {
+    "matchAndContactIndex": {
+      "contactIndex": number;
+      "match": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+    };
+    "notification": {
+      "from": string;
+      "to": string;
+    };
+    "syncStatus": {
+      "matchesCount": number;
+      "syncedAt": string;
+    };
+  };
+  "app.bsky.contact.dismissMatch": {
+    "main": never;
+  };
+  "app.bsky.contact.getMatches": {
+    "main": never;
+  };
+  "app.bsky.contact.getSyncStatus": {
+    "main": never;
+  };
+  "app.bsky.contact.importContacts": {
+    "main": never;
+  };
+  "app.bsky.contact.removeData": {
+    "main": never;
+  };
+  "app.bsky.contact.sendNotification": {
+    "main": never;
+  };
+  "app.bsky.contact.startPhoneVerification": {
+    "main": never;
+  };
+  "app.bsky.contact.verifyPhone": {
+    "main": never;
+  };
+  "app.bsky.draft.createDraft": {
+    "main": never;
+  };
+  "app.bsky.draft.deleteDraft": {
+    "main": never;
+  };
+  "app.bsky.draft.getDrafts": {
+    "main": never;
+  };
+  "app.bsky.draft.updateDraft": {
+    "main": never;
+  };
+  "app.bsky.embed.defs": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+  };
+  "app.bsky.embed.external": {
+    "external": {
+      "description": string;
+      "thumb"?: any /* blob */;
+      "title": string;
+      "uri": string;
+    };
+    "main": {
+      "external": LexiconDefs["app.bsky.embed.external"]["external"];
+    };
+    "view": {
+      "external": LexiconDefs["app.bsky.embed.external"]["viewExternal"];
+    };
+    "viewExternal": {
+      "description": string;
+      "thumb"?: string;
+      "title": string;
+      "uri": string;
+    };
+  };
+  "app.bsky.embed.images": {
+    "image": {
+      "alt": string;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+      "image": any /* blob */;
+    };
+    "main": {
+      "images": Array<LexiconDefs["app.bsky.embed.images"]["image"]>;
+    };
+    "view": {
+      "images": Array<LexiconDefs["app.bsky.embed.images"]["viewImage"]>;
+    };
+    "viewImage": {
+      "alt": string;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+      "fullsize": string;
+      "thumb": string;
+    };
+  };
+  "app.bsky.embed.record": {
+    "main": {
+      "record": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "view": {
+      "record": LexiconDefs["app.bsky.embed.record"]["viewRecord"] | LexiconDefs["app.bsky.embed.record"]["viewNotFound"] | LexiconDefs["app.bsky.embed.record"]["viewBlocked"] | LexiconDefs["app.bsky.embed.record"]["viewDetached"] | LexiconDefs["app.bsky.feed.defs"]["generatorView"] | LexiconDefs["app.bsky.graph.defs"]["listView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"] | Record<string, any>;
+    };
+    "viewBlocked": {
+      "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
+      "blocked": boolean;
+      "uri": string;
+    };
+    "viewDetached": {
+      "detached": boolean;
+      "uri": string;
+    };
+    "viewNotFound": {
+      "notFound": boolean;
+      "uri": string;
+    };
+    "viewRecord": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "embeds"?: Array<LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>>;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "likeCount"?: number;
+      "quoteCount"?: number;
+      "replyCount"?: number;
+      "repostCount"?: number;
+      "uri": string;
+      "value": unknown;
+    };
+  };
+  "app.bsky.embed.recordWithMedia": {
+    "main": {
+      "media": LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
+      "record": LexiconDefs["app.bsky.embed.record"]["main"];
+    };
+    "view": {
+      "media": LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | Record<string, any>;
+      "record": LexiconDefs["app.bsky.embed.record"]["view"];
+    };
+  };
+  "app.bsky.embed.video": {
+    "caption": {
+      "file": any /* blob */;
+      "lang": string;
+    };
+    "main": {
+      "alt"?: string;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+      "captions"?: Array<LexiconDefs["app.bsky.embed.video"]["caption"]>;
+      "video": any /* blob */;
+    };
+    "view": {
+      "alt"?: string;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+      "cid": string;
+      "playlist": string;
+      "thumbnail"?: string;
+    };
+  };
+  "app.bsky.feed.defs": {
+    "blockedAuthor": {
+      "did": string;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+    };
+    "blockedPost": {
+      "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
+      "blocked": boolean;
+      "uri": string;
+    };
+    "clickthroughAuthor": string;
+    "clickthroughEmbed": string;
+    "clickthroughItem": string;
+    "clickthroughReposter": string;
+    "contentModeUnspecified": string;
+    "contentModeVideo": string;
+    "feedViewPost": {
+      "feedContext"?: string;
+      "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
+      "reason"?: LexiconDefs["app.bsky.feed.defs"]["reasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["reasonPin"] | Record<string, any>;
+      "reply"?: LexiconDefs["app.bsky.feed.defs"]["replyRef"];
+    };
+    "generatorView": {
+      "acceptsInteractions"?: boolean;
+      "avatar"?: string;
+      "cid": string;
+      "contentMode"?: string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "did": string;
+      "displayName": string;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "likeCount"?: number;
+      "uri": string;
+      "viewer"?: LexiconDefs["app.bsky.feed.defs"]["generatorViewerState"];
+    };
+    "generatorViewerState": {
+      "like"?: string;
+    };
+    "interaction": {
+      "event"?: string;
+      "feedContext"?: string;
+      "item"?: string;
+    };
+    "interactionLike": string;
+    "interactionQuote": string;
+    "interactionReply": string;
+    "interactionRepost": string;
+    "interactionSeen": string;
+    "interactionShare": string;
+    "notFoundPost": {
+      "notFound": boolean;
+      "uri": string;
+    };
+    "postView": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "embed"?: LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "likeCount"?: number;
+      "quoteCount"?: number;
+      "record": unknown;
+      "replyCount"?: number;
+      "repostCount"?: number;
+      "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
+      "uri": string;
+      "viewer"?: LexiconDefs["app.bsky.feed.defs"]["viewerState"];
+    };
+    "reasonPin": {
+    };
+    "reasonRepost": {
+      "by": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "indexedAt": string;
+    };
+    "replyRef": {
+      "grandparentAuthor"?: LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "parent": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "root": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+    };
+    "requestLess": string;
+    "requestMore": string;
+    "skeletonFeedPost": {
+      "feedContext"?: string;
+      "post": string;
+      "reason"?: LexiconDefs["app.bsky.feed.defs"]["skeletonReasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonPin"] | Record<string, any>;
+    };
+    "skeletonReasonPin": {
+    };
+    "skeletonReasonRepost": {
+      "repost": string;
+    };
+    "threadContext": {
+      "rootAuthorLike"?: string;
+    };
+    "threadViewPost": {
+      "parent"?: LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
+      "replies"?: Array<LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>>;
+      "threadContext"?: LexiconDefs["app.bsky.feed.defs"]["threadContext"];
+    };
+    "threadgateView": {
+      "cid"?: string;
+      "lists"?: Array<LexiconDefs["app.bsky.graph.defs"]["listViewBasic"]>;
+      "record"?: unknown;
+      "uri"?: string;
+    };
+    "viewerState": {
+      "embeddingDisabled"?: boolean;
+      "like"?: string;
+      "pinned"?: boolean;
+      "replyDisabled"?: boolean;
+      "repost"?: string;
+      "threadMuted"?: boolean;
+    };
+  };
+  "app.bsky.feed.describeFeedGenerator": {
+    "feed": {
+      "uri": string;
+    };
+    "links": {
+      "privacyPolicy"?: string;
+      "termsOfService"?: string;
+    };
+    "main": never;
+  };
+  "app.bsky.feed.generator": {
+    "main": {
+      "acceptsInteractions"?: boolean;
+      "avatar"?: any /* blob */;
+      "contentMode"?: string;
+      "createdAt": string;
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "did": string;
+      "displayName": string;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+    };
+  };
+  "app.bsky.feed.getActorFeeds": {
+    "main": never;
+  };
+  "app.bsky.feed.getActorLikes": {
+    "main": never;
+  };
+  "app.bsky.feed.getAuthorFeed": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeed": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeedGenerator": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeedGenerators": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeedSkeleton": {
+    "main": never;
+  };
+  "app.bsky.feed.getLikes": {
+    "like": {
+      "actor": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "createdAt": string;
+      "indexedAt": string;
+    };
+    "main": never;
+  };
+  "app.bsky.feed.getListFeed": {
+    "main": never;
+  };
+  "app.bsky.feed.getPosts": {
+    "main": never;
+  };
+  "app.bsky.feed.getPostThread": {
+    "main": never;
+  };
+  "app.bsky.feed.getQuotes": {
+    "main": never;
+  };
+  "app.bsky.feed.getRepostedBy": {
+    "main": never;
+  };
+  "app.bsky.feed.getSuggestedFeeds": {
+    "main": never;
+  };
+  "app.bsky.feed.getTimeline": {
+    "main": never;
+  };
+  "app.bsky.feed.like": {
+    "main": {
+      "createdAt": string;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "via"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.bsky.feed.post": {
+    "entity": {
+      "index": LexiconDefs["app.bsky.feed.post"]["textSlice"];
+      "type": string;
+      "value": string;
+    };
+    "main": {
+      "createdAt": string;
+      "embed"?: LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | LexiconDefs["app.bsky.embed.record"]["main"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["main"] | Record<string, any>;
+      "entities"?: Array<LexiconDefs["app.bsky.feed.post"]["entity"]>;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "langs"?: Array<string>;
+      "reply"?: LexiconDefs["app.bsky.feed.post"]["replyRef"];
+      "tags"?: Array<string>;
+      "text": string;
+    };
+    "replyRef": {
+      "parent": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "root": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "textSlice": {
+      "end": number;
+      "start": number;
+    };
+  };
+  "app.bsky.feed.postgate": {
+    "disableRule": {
+    };
+    "main": {
+      "createdAt": string;
+      "detachedEmbeddingUris"?: Array<string>;
+      "embeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
+      "post": string;
+    };
+  };
+  "app.bsky.feed.repost": {
+    "main": {
+      "createdAt": string;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "via"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.bsky.feed.searchPosts": {
+    "main": never;
+  };
+  "app.bsky.feed.sendInteractions": {
+    "main": never;
+  };
+  "app.bsky.feed.threadgate": {
+    "followerRule": {
+    };
+    "followingRule": {
+    };
+    "listRule": {
+      "list": string;
+    };
+    "main": {
+      "allow"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
+      "createdAt": string;
+      "hiddenReplies"?: Array<string>;
+      "post": string;
+    };
+    "mentionRule": {
+    };
+  };
+  "app.bsky.graph.block": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "app.bsky.graph.defs": {
+    "curatelist": string;
+    "listItemView": {
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "uri": string;
+    };
+    "listPurpose": string;
+    "listView": {
+      "avatar"?: string;
+      "cid": string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "listItemCount"?: number;
+      "name": string;
+      "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
+      "uri": string;
+      "viewer"?: LexiconDefs["app.bsky.graph.defs"]["listViewerState"];
+    };
+    "listViewBasic": {
+      "avatar"?: string;
+      "cid": string;
+      "indexedAt"?: string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "listItemCount"?: number;
+      "name": string;
+      "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
+      "uri": string;
+      "viewer"?: LexiconDefs["app.bsky.graph.defs"]["listViewerState"];
+    };
+    "listViewerState": {
+      "blocked"?: string;
+      "muted"?: boolean;
+    };
+    "modlist": string;
+    "notFoundActor": {
+      "actor": string;
+      "notFound": boolean;
+    };
+    "referencelist": string;
+    "relationship": {
+      "did": string;
+      "followedBy"?: string;
+      "following"?: string;
+    };
+    "starterPackView": {
+      "cid": string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "feeds"?: Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
+      "indexedAt": string;
+      "joinedAllTimeCount"?: number;
+      "joinedWeekCount"?: number;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "list"?: LexiconDefs["app.bsky.graph.defs"]["listViewBasic"];
+      "listItemsSample"?: Array<LexiconDefs["app.bsky.graph.defs"]["listItemView"]>;
+      "record": unknown;
+      "uri": string;
+    };
+    "starterPackViewBasic": {
+      "cid": string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "indexedAt": string;
+      "joinedAllTimeCount"?: number;
+      "joinedWeekCount"?: number;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "listItemCount"?: number;
+      "record": unknown;
+      "uri": string;
+    };
+  };
+  "app.bsky.graph.follow": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "app.bsky.graph.getActorStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.graph.getBlocks": {
+    "main": never;
+  };
+  "app.bsky.graph.getFollowers": {
+    "main": never;
+  };
+  "app.bsky.graph.getFollows": {
+    "main": never;
+  };
+  "app.bsky.graph.getKnownFollowers": {
+    "main": never;
+  };
+  "app.bsky.graph.getList": {
+    "main": never;
+  };
+  "app.bsky.graph.getListBlocks": {
+    "main": never;
+  };
+  "app.bsky.graph.getListMutes": {
+    "main": never;
+  };
+  "app.bsky.graph.getLists": {
+    "main": never;
+  };
+  "app.bsky.graph.getListsWithMembership": {
+    "listWithMembership": {
+      "list": LexiconDefs["app.bsky.graph.defs"]["listView"];
+      "listItem"?: LexiconDefs["app.bsky.graph.defs"]["listItemView"];
+    };
+    "main": never;
+  };
+  "app.bsky.graph.getMutes": {
+    "main": never;
+  };
+  "app.bsky.graph.getRelationships": {
+    "main": never;
+  };
+  "app.bsky.graph.getStarterPack": {
+    "main": never;
+  };
+  "app.bsky.graph.getStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.graph.getStarterPacksWithMembership": {
+    "main": never;
+    "starterPackWithMembership": {
+      "listItem"?: LexiconDefs["app.bsky.graph.defs"]["listItemView"];
+      "starterPack": LexiconDefs["app.bsky.graph.defs"]["starterPackView"];
+    };
+  };
+  "app.bsky.graph.getSuggestedFollowsByActor": {
+    "main": never;
+  };
+  "app.bsky.graph.list": {
+    "main": {
+      "avatar"?: any /* blob */;
+      "createdAt": string;
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "name": string;
+      "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
+    };
+  };
+  "app.bsky.graph.listblock": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "app.bsky.graph.listitem": {
+    "main": {
+      "createdAt": string;
+      "list": string;
+      "subject": string;
+    };
+  };
+  "app.bsky.graph.muteActor": {
+    "main": never;
+  };
+  "app.bsky.graph.muteActorList": {
+    "main": never;
+  };
+  "app.bsky.graph.muteThread": {
+    "main": never;
+  };
+  "app.bsky.graph.searchStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.graph.starterpack": {
+    "feedItem": {
+      "uri": string;
+    };
+    "main": {
+      "createdAt": string;
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "feeds"?: Array<LexiconDefs["app.bsky.graph.starterpack"]["feedItem"]>;
+      "list": string;
+      "name": string;
+    };
+  };
+  "app.bsky.graph.unmuteActor": {
+    "main": never;
+  };
+  "app.bsky.graph.unmuteActorList": {
+    "main": never;
+  };
+  "app.bsky.graph.unmuteThread": {
+    "main": never;
+  };
+  "app.bsky.graph.verification": {
+    "main": {
+      "createdAt": string;
+      "displayName": string;
+      "handle": string;
+      "subject": string;
+    };
+  };
+  "app.bsky.graph.verification.createVerification": {
+    "main": never;
+  };
+  "app.bsky.graph.verification.deleteVerification": {
+    "main": never;
+  };
+  "app.bsky.labeler.defs": {
+    "labelerPolicies": {
+      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
+      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
+    };
+    "labelerView": {
+      "cid": string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "likeCount"?: number;
+      "uri": string;
+      "viewer"?: LexiconDefs["app.bsky.labeler.defs"]["labelerViewerState"];
+    };
+    "labelerViewDetailed": {
+      "cid": string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "likeCount"?: number;
+      "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
+      "uri": string;
+      "viewer"?: LexiconDefs["app.bsky.labeler.defs"]["labelerViewerState"];
+    };
+    "labelerViewerState": {
+      "like"?: string;
+    };
+  };
+  "app.bsky.labeler.getServices": {
+    "main": never;
+  };
+  "app.bsky.labeler.service": {
+    "main": {
+      "createdAt": string;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectCollections"?: Array<string>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+    };
+  };
+  "app.bsky.notification.declaration": {
+    "main": {
+      "allowSubscriptions": string;
+    };
+  };
+  "app.bsky.notification.defs": {
+    "activitySubscription": {
+      "post": boolean;
+      "reply": boolean;
+    };
+    "chatPreference": {
+      "include": string;
+      "push": boolean;
+    };
+    "filterablePreference": {
+      "include": string;
+      "list": boolean;
+      "push": boolean;
+    };
+    "preference": {
+      "list": boolean;
+      "push": boolean;
+    };
+    "preferences": {
+      "chat": LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
+      "follow": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "like": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "likeViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined": LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "subscribedPost": LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "unverified": LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "verified": LexiconDefs["app.bsky.notification.defs"]["preference"];
+    };
+    "recordDeleted": {
+    };
+    "subjectActivitySubscription": {
+      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "subject": string;
+    };
+  };
+  "app.bsky.notification.getPreferences": {
+    "main": never;
+  };
+  "app.bsky.notification.getUnreadCount": {
+    "main": never;
+  };
+  "app.bsky.notification.listActivitySubscriptions": {
+    "main": never;
+  };
+  "app.bsky.notification.listNotifications": {
+    "main": never;
+    "notification": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "cid": string;
+      "indexedAt": string;
+      "isRead": boolean;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "reason": string;
+      "reasonSubject"?: string;
+      "record": unknown;
+      "uri": string;
+    };
+  };
+  "app.bsky.notification.putActivitySubscription": {
+    "main": never;
+  };
+  "app.bsky.notification.putNotificationPreferences": {
+    "main": never;
+  };
+  "app.bsky.notification.putPreferences": {
+    "main": never;
+  };
+  "app.bsky.notification.putPreferencesV2": {
+    "main": never;
+  };
+  "app.bsky.notification.registerPush": {
+    "main": never;
+  };
+  "app.bsky.notification.unregisterPush": {
+    "main": never;
+  };
+  "app.bsky.notification.updateSeen": {
+    "main": never;
+  };
+  "app.bsky.richtext.facet": {
+    "byteSlice": {
+      "byteEnd": number;
+      "byteStart": number;
+    };
+    "link": {
+      "uri": string;
+    };
+    "main": {
+      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | LexiconDefs["app.bsky.richtext.facet"]["tag"] | Record<string, any>>;
+      "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
+    };
+    "mention": {
+      "did": string;
+    };
+    "tag": {
+      "tag": string;
+    };
+  };
+  "app.bsky.unspecced.confirmAgeAssurance": {
+    "main": never;
+  };
+  "app.bsky.unspecced.defs": {
+    "ageAssuranceEvent": {
+      "attemptId": string;
+      "completeIp"?: string;
+      "completeUa"?: string;
+      "createdAt": string;
+      "email"?: string;
+      "initIp"?: string;
+      "initUa"?: string;
+      "status": string;
+    };
+    "ageAssuranceState": {
+      "lastInitiatedAt"?: string;
+      "status": string;
+    };
+    "skeletonSearchActor": {
+      "did": string;
+    };
+    "skeletonSearchPost": {
+      "uri": string;
+    };
+    "skeletonSearchStarterPack": {
+      "uri": string;
+    };
+    "skeletonTrend": {
+      "category"?: string;
+      "dids": Array<string>;
+      "displayName": string;
+      "link": string;
+      "postCount": number;
+      "startedAt": string;
+      "status"?: string;
+      "topic": string;
+    };
+    "threadItemBlocked": {
+      "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
+    };
+    "threadItemNoUnauthenticated": {
+    };
+    "threadItemNotFound": {
+    };
+    "threadItemPost": {
+      "hiddenByThreadgate": boolean;
+      "moreParents": boolean;
+      "moreReplies": number;
+      "mutedByViewer": boolean;
+      "opThread": boolean;
+      "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
+    };
+    "trendView": {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
+      "category"?: string;
+      "displayName": string;
+      "link": string;
+      "postCount": number;
+      "startedAt": string;
+      "status"?: string;
+      "topic": string;
+    };
+    "trendingTopic": {
+      "description"?: string;
+      "displayName"?: string;
+      "link": string;
+      "topic": string;
+    };
+  };
+  "app.bsky.unspecced.getAgeAssuranceState": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getConfig": {
+    "liveNowConfig": {
+      "did": string;
+      "domains": Array<string>;
+    };
+    "main": never;
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getPopularFeedGenerators": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getPostThreadOtherV2": {
+    "main": never;
+    "threadItem": {
+      "depth": number;
+      "uri": string;
+      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | Record<string, any>;
+    };
+  };
+  "app.bsky.unspecced.getPostThreadV2": {
+    "main": never;
+    "threadItem": {
+      "depth": number;
+      "uri": string;
+      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNoUnauthenticated"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNotFound"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemBlocked"] | Record<string, any>;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedFeeds": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsers": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForExplore": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestionsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getTaggedSuggestions": {
+    "main": never;
+    "suggestion": {
+      "subject": string;
+      "subjectType": string;
+      "tag": string;
+    };
+  };
+  "app.bsky.unspecced.getTrendingTopics": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getTrends": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getTrendsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.initAgeAssurance": {
+    "main": never;
+  };
+  "app.bsky.unspecced.searchActorsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.searchPostsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.searchStarterPacksSkeleton": {
+    "main": never;
+  };
+  "app.bsky.video.defs": {
+    "jobStatus": {
+      "aspectRatio"?: {
+      "height"?: number;
+      "width"?: number;
+    };
+      "blob"?: any /* blob */;
+      "did": string;
+      "error"?: string;
+      "jobId": string;
+      "message"?: string;
+      "progress"?: number;
+      "state": string;
+    };
+  };
+  "app.bsky.video.getJobStatus": {
+    "main": never;
+  };
+  "app.bsky.video.getUploadLimits": {
+    "main": never;
+  };
+  "app.bsky.video.uploadVideo": {
+    "main": never;
+  };
+  "blue.linkat.board": {
+    "card": {
+      "text"?: string;
+      "url"?: string;
+    };
+    "main": {
+      "cards": Array<LexiconDefs["blue.linkat.board"]["card"]>;
+    };
+  };
+  "chat.bsky.actor.declaration": {
+    "main": {
+      "allowIncoming": string;
+    };
+  };
+  "chat.bsky.actor.defs": {
+    "profileViewBasic": {
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "avatar"?: string;
+      "chatDisabled"?: boolean;
+      "did": string;
+      "displayName"?: string;
+      "handle": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "verification"?: any /* unresolved ref: app.bsky.actor.defs#verificationState */;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+    };
+  };
+  "chat.bsky.actor.deleteAccount": {
+    "main": never;
+  };
+  "chat.bsky.actor.exportAccountData": {
+    "main": never;
+  };
+  "chat.bsky.authFullChatClient": {
+    "main": any;
+  };
+  "chat.bsky.convo.acceptConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.addReaction": {
+    "main": never;
+  };
+  "chat.bsky.convo.defs": {
+    "convoView": {
+      "id": string;
+      "lastMessage"?: LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "lastReaction"?: LexiconDefs["chat.bsky.convo.defs"]["messageAndReactionView"] | Record<string, any>;
+      "members": Array<LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"]>;
+      "muted": boolean;
+      "rev": string;
+      "status"?: string;
+      "unreadCount": number;
+    };
+    "deletedMessageView": {
+      "id": string;
+      "rev": string;
+      "sender": LexiconDefs["chat.bsky.convo.defs"]["messageViewSender"];
+      "sentAt": string;
+    };
+    "logAcceptConvo": {
+      "convoId": string;
+      "rev": string;
+    };
+    "logAddReaction": {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
+      "rev": string;
+    };
+    "logBeginConvo": {
+      "convoId": string;
+      "rev": string;
+    };
+    "logCreateMessage": {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "rev": string;
+    };
+    "logDeleteMessage": {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "rev": string;
+    };
+    "logLeaveConvo": {
+      "convoId": string;
+      "rev": string;
+    };
+    "logMuteConvo": {
+      "convoId": string;
+      "rev": string;
+    };
+    "logReadMessage": {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "rev": string;
+    };
+    "logRemoveReaction": {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
+      "rev": string;
+    };
+    "logUnmuteConvo": {
+      "convoId": string;
+      "rev": string;
+    };
+    "messageAndReactionView": {
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"];
+      "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
+    };
+    "messageInput": {
+      "embed"?: LexiconDefs["app.bsky.embed.record"]["main"] | Record<string, any>;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "text": string;
+    };
+    "messageRef": {
+      "convoId": string;
+      "did": string;
+      "messageId": string;
+    };
+    "messageView": {
+      "embed"?: LexiconDefs["app.bsky.embed.record"]["view"] | Record<string, any>;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "id": string;
+      "reactions"?: Array<LexiconDefs["chat.bsky.convo.defs"]["reactionView"]>;
+      "rev": string;
+      "sender": LexiconDefs["chat.bsky.convo.defs"]["messageViewSender"];
+      "sentAt": string;
+      "text": string;
+    };
+    "messageViewSender": {
+      "did": string;
+    };
+    "reactionView": {
+      "createdAt": string;
+      "sender": LexiconDefs["chat.bsky.convo.defs"]["reactionViewSender"];
+      "value": string;
+    };
+    "reactionViewSender": {
+      "did": string;
+    };
+  };
+  "chat.bsky.convo.deleteMessageForSelf": {
+    "main": never;
+  };
+  "chat.bsky.convo.getConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.getConvoAvailability": {
+    "main": never;
+  };
+  "chat.bsky.convo.getConvoForMembers": {
+    "main": never;
+  };
+  "chat.bsky.convo.getLog": {
+    "main": never;
+  };
+  "chat.bsky.convo.getMessages": {
+    "main": never;
+  };
+  "chat.bsky.convo.leaveConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.listConvoRequests": {
+    "main": never;
+  };
+  "chat.bsky.convo.listConvos": {
+    "main": never;
+  };
+  "chat.bsky.convo.lockConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.muteConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.removeReaction": {
+    "main": never;
+  };
+  "chat.bsky.convo.sendMessage": {
+    "main": never;
+  };
+  "chat.bsky.convo.sendMessageBatch": {
+    "batchItem": {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageInput"];
+    };
+    "main": never;
+  };
+  "chat.bsky.convo.unlockConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.unmuteConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.updateAllRead": {
+    "main": never;
+  };
+  "chat.bsky.convo.updateRead": {
+    "main": never;
+  };
+  "chat.bsky.group.addMembers": {
+    "main": never;
+  };
+  "chat.bsky.group.addReaction": {
+    "main": never;
+  };
+  "chat.bsky.group.approveJoinRequest": {
+    "main": never;
+  };
+  "chat.bsky.group.createGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.createJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.defs": {
+    "groupPublicView": {
+      "memberCount": number;
+      "name": string;
+      "owner": LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"];
+      "requireApproval": boolean;
+    };
+    "joinLinkView": {
+      "code": string;
+      "createdAt": string;
+      "enabledStatus": LexiconDefs["chat.bsky.group.defs"]["linkEnabledStatus"];
+      "joinRule": LexiconDefs["chat.bsky.group.defs"]["joinRule"];
+      "requireApproval": boolean;
+    };
+    "joinRequestView": {
+      "convoId": string;
+      "requestedAt": string;
+      "requestedBy": LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"];
+    };
+    "joinRule": string;
+    "linkEnabledStatus": string;
+  };
+  "chat.bsky.group.deleteGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.deleteMessageForSelf": {
+    "main": never;
+  };
+  "chat.bsky.group.disableJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.editGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.editJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.enableJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.getGroupPublicInfo": {
+    "main": never;
+  };
+  "chat.bsky.group.getMessages": {
+    "main": never;
+  };
+  "chat.bsky.group.leaveGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.listGroups": {
+    "main": never;
+  };
+  "chat.bsky.group.listInviteLinks": {
+    "main": never;
+  };
+  "chat.bsky.group.listJoinRequests": {
+    "main": never;
+  };
+  "chat.bsky.group.listMembers": {
+    "main": never;
+  };
+  "chat.bsky.group.rejectJoinRequest": {
+    "main": never;
+  };
+  "chat.bsky.group.removeMembers": {
+    "main": never;
+  };
+  "chat.bsky.group.removeReaction": {
+    "main": never;
+  };
+  "chat.bsky.group.requestJoin": {
+    "main": never;
+  };
+  "chat.bsky.group.sendMessage": {
+    "main": never;
+  };
+  "chat.bsky.moderation.getActorMetadata": {
+    "main": never;
+    "metadata": {
+      "convos": number;
+      "convosStarted": number;
+      "messagesReceived": number;
+      "messagesSent": number;
+    };
+  };
+  "chat.bsky.moderation.getMessageContext": {
+    "main": never;
+  };
+  "chat.bsky.moderation.updateActorAccess": {
+    "main": never;
+  };
+  "com.atproto.admin.defs": {
+    "accountView": {
+      "deactivatedAt"?: string;
+      "did": string;
+      "email"?: string;
+      "emailConfirmedAt"?: string;
+      "handle": string;
+      "indexedAt": string;
+      "inviteNote"?: string;
+      "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
+      "invites"?: Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
+      "invitesDisabled"?: boolean;
+      "relatedRecords"?: Array<unknown>;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+    };
+    "repoBlobRef": {
+      "cid": string;
+      "did": string;
+      "recordUri"?: string;
+    };
+    "repoRef": {
+      "did": string;
+    };
+    "statusAttr": {
+      "applied": boolean;
+      "ref"?: string;
+    };
+    "threatSignature": {
+      "property": string;
+      "value": string;
+    };
+  };
+  "com.atproto.admin.deleteAccount": {
+    "main": never;
+  };
+  "com.atproto.admin.disableAccountInvites": {
+    "main": never;
+  };
+  "com.atproto.admin.disableInviteCodes": {
+    "main": never;
+  };
+  "com.atproto.admin.enableAccountInvites": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountInfo": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountInfos": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountTakedown": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountUsage": {
+    "main": never;
+  };
+  "com.atproto.admin.getBlobAuditStatus": {
+    "main": never;
+  };
+  "com.atproto.admin.getInviteCodes": {
+    "main": never;
+  };
+  "com.atproto.admin.getModerationReports": {
+    "main": never;
+  };
+  "com.atproto.admin.getServerStats": {
+    "main": never;
+  };
+  "com.atproto.admin.getSubjectStatus": {
+    "main": never;
+  };
+  "com.atproto.admin.moderateAccount": {
+    "main": never;
+  };
+  "com.atproto.admin.moderateRecord": {
+    "main": never;
+  };
+  "com.atproto.admin.queryAuditLog": {
+    "main": never;
+  };
+  "com.atproto.admin.repairRepo": {
+    "main": never;
+  };
+  "com.atproto.admin.resolveReport": {
+    "main": never;
+  };
+  "com.atproto.admin.runBlobAudit": {
+    "main": never;
+  };
+  "com.atproto.admin.searchAccounts": {
+    "main": never;
+  };
+  "com.atproto.admin.sendEmail": {
+    "main": never;
+  };
+  "com.atproto.admin.takeDownAccount": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountEmail": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountHandle": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountPassword": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountSigningKey": {
+    "main": never;
+  };
+  "com.atproto.admin.updateSubjectStatus": {
+    "main": never;
+  };
+  "com.atproto.identity.defs": {
+    "identityInfo": {
+      "did": string;
+      "didDoc": unknown;
+      "handle": string;
+    };
+  };
+  "com.atproto.identity.getRecommendedDidCredentials": {
+    "main": never;
+  };
+  "com.atproto.identity.refreshIdentity": {
+    "main": never;
+  };
+  "com.atproto.identity.requestPlcOperationSignature": {
+    "main": never;
+  };
+  "com.atproto.identity.resolveDid": {
+    "main": never;
+  };
+  "com.atproto.identity.resolveHandle": {
+    "main": never;
+  };
+  "com.atproto.identity.resolveIdentity": {
+    "main": never;
+  };
+  "com.atproto.identity.signPlcOperation": {
+    "main": never;
+  };
+  "com.atproto.identity.submitPlcOperation": {
+    "main": never;
+  };
+  "com.atproto.identity.updateHandle": {
+    "main": never;
+  };
+  "com.atproto.label.createLabel": {
+    "main": never;
+  };
+  "com.atproto.label.defs": {
+    "label": {
+      "cid"?: string;
+      "cts": string;
+      "neg"?: boolean;
+      "src": string;
+      "uri": string;
+      "val": string;
+    };
+    "selfLabel": {
+      "val": string;
+    };
+    "selfLabels": {
+      "values": Array<LexiconDefs["com.atproto.label.defs"]["selfLabel"]>;
+    };
+  };
+  "com.atproto.label.getLabels": {
+    "main": never;
+  };
+  "com.atproto.label.queryLabels": {
+    "main": never;
+  };
+  "com.atproto.label.subscribeLabels": {
+    "info": {
+      "message"?: string;
+      "name": string;
+    };
+    "labels": {
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "seq": number;
+    };
+    "main": any;
+  };
+  "com.atproto.lexicon.resolveLexicon": {
+    "main": never;
+  };
+  "com.atproto.lexicon.schema": {
+    "main": {
+      "lexicon": number;
+    };
+  };
+  "com.atproto.moderation.createReport": {
+    "main": never;
+    "modTool": {
+      "meta"?: unknown;
+      "name": string;
+    };
+  };
+  "com.atproto.moderation.defs": {
+    "reasonAppeal": string;
+    "reasonMisleading": string;
+    "reasonOther": string;
+    "reasonRude": string;
+    "reasonSexual": string;
+    "reasonSpam": string;
+    "reasonType": string;
+    "reasonViolation": string;
+    "subjectType": string;
+  };
+  "com.atproto.repo.applyWrites": {
+    "create": {
+      "collection": string;
+      "rkey"?: string;
+      "value": unknown;
+    };
+    "createResult": {
+      "cid": string;
+      "uri": string;
+      "validationStatus"?: string;
+    };
+    "delete": {
+      "collection": string;
+      "rkey": string;
+    };
+    "deleteResult": {
+    };
+    "main": never;
+    "update": {
+      "collection": string;
+      "rkey": string;
+      "value": unknown;
+    };
+    "updateResult": {
+      "cid": string;
+      "uri": string;
+      "validationStatus"?: string;
+    };
+  };
+  "com.atproto.repo.createRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.defs": {
+    "commitMeta": {
+      "cid": string;
+      "rev": string;
+    };
+  };
+  "com.atproto.repo.deleteBlob": {
+    "main": never;
+  };
+  "com.atproto.repo.deleteRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.describeRepo": {
+    "main": never;
+  };
+  "com.atproto.repo.getBlob": {
+    "main": never;
+  };
+  "com.atproto.repo.getRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.importRepo": {
+    "main": never;
+  };
+  "com.atproto.repo.listMissingBlobs": {
+    "main": never;
+    "recordBlob": {
+      "cid": string;
+      "recordUri": string;
+    };
+  };
+  "com.atproto.repo.listRecords": {
+    "main": never;
+    "record": {
+      "cid": string;
+      "uri": string;
+      "value": unknown;
+    };
+  };
+  "com.atproto.repo.putRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.strongRef": {
+    "main": {
+      "cid": string;
+      "uri": string;
+    };
+  };
+  "com.atproto.repo.updateRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.uploadBlob": {
+    "main": never;
+  };
+  "com.atproto.server.activateAccount": {
+    "main": never;
+  };
+  "com.atproto.server.checkAccountStatus": {
+    "main": never;
+  };
+  "com.atproto.server.confirmEmail": {
+    "main": never;
+  };
+  "com.atproto.server.createAccount": {
+    "main": never;
+  };
+  "com.atproto.server.createAppPassword": {
+    "appPassword": {
+      "createdAt": string;
+      "name": string;
+      "password": string;
+      "privileged"?: boolean;
+    };
+    "main": never;
+  };
+  "com.atproto.server.createInviteCode": {
+    "main": never;
+  };
+  "com.atproto.server.createInviteCodes": {
+    "accountCodes": {
+      "account": string;
+      "codes": Array<string>;
+    };
+    "main": never;
+  };
+  "com.atproto.server.createSession": {
+    "main": never;
+  };
+  "com.atproto.server.deactivateAccount": {
+    "main": never;
+  };
+  "com.atproto.server.defs": {
+    "inviteCode": {
+      "available": number;
+      "code": string;
+      "createdAt": string;
+      "createdBy": string;
+      "disabled": boolean;
+      "forAccount": string;
+      "uses": Array<LexiconDefs["com.atproto.server.defs"]["inviteCodeUse"]>;
+    };
+    "inviteCodeUse": {
+      "usedAt": string;
+      "usedBy": string;
+    };
+  };
+  "com.atproto.server.deleteAccount": {
+    "main": never;
+  };
+  "com.atproto.server.deleteSession": {
+    "main": never;
+  };
+  "com.atproto.server.describeServer": {
+    "links": {
+      "privacyPolicy"?: string;
+      "termsOfService"?: string;
+    };
+    "main": never;
+  };
+  "com.atproto.server.getAccount": {
+    "main": never;
+  };
+  "com.atproto.server.getAccountInviteCodes": {
+    "main": never;
+  };
+  "com.atproto.server.getServiceAuth": {
+    "main": never;
+  };
+  "com.atproto.server.getSession": {
+    "main": never;
+  };
+  "com.atproto.server.listAppPasswords": {
+    "appPassword": {
+      "createdAt": string;
+      "name": string;
+      "privileged"?: boolean;
+    };
+    "main": never;
+  };
+  "com.atproto.server.refreshSession": {
+    "main": never;
+  };
+  "com.atproto.server.requestAccountDelete": {
+    "main": never;
+  };
+  "com.atproto.server.requestEmailConfirmation": {
+    "main": never;
+  };
+  "com.atproto.server.requestEmailUpdate": {
+    "main": never;
+  };
+  "com.atproto.server.requestPasswordReset": {
+    "main": never;
+  };
+  "com.atproto.server.reserveSigningKey": {
+    "main": never;
+  };
+  "com.atproto.server.resetPassword": {
+    "main": never;
+  };
+  "com.atproto.server.revokeAppPassword": {
+    "main": never;
+  };
+  "com.atproto.server.updateEmail": {
+    "main": never;
+  };
+  "com.atproto.sync.defs": {
+    "hostStatus": string;
+  };
+  "com.atproto.sync.getBlob": {
+    "main": never;
+  };
+  "com.atproto.sync.getBlocks": {
+    "main": never;
+  };
+  "com.atproto.sync.getCheckout": {
+    "main": never;
+  };
+  "com.atproto.sync.getHead": {
+    "main": never;
+  };
+  "com.atproto.sync.getHostStatus": {
+    "main": never;
+  };
+  "com.atproto.sync.getLatestCommit": {
+    "main": never;
+  };
+  "com.atproto.sync.getRecord": {
+    "main": never;
+  };
+  "com.atproto.sync.getRepo": {
+    "main": never;
+  };
+  "com.atproto.sync.getRepoStatus": {
+    "main": never;
+  };
+  "com.atproto.sync.listBlobs": {
+    "main": never;
+  };
+  "com.atproto.sync.listHosts": {
+    "host": {
+      "accountCount"?: number;
+      "hostname": string;
+      "seq"?: number;
+      "status"?: LexiconDefs["com.atproto.sync.defs"]["hostStatus"];
+    };
+    "main": never;
+  };
+  "com.atproto.sync.listRepos": {
+    "main": never;
+    "repo": {
+      "active"?: boolean;
+      "did": string;
+      "head": string;
+      "rev": string;
+      "status"?: string;
+    };
+  };
+  "com.atproto.sync.listReposByCollection": {
+    "main": never;
+    "repo": {
+      "did": string;
+    };
+  };
+  "com.atproto.sync.notifyOfUpdate": {
+    "main": never;
+  };
+  "com.atproto.sync.requestCrawl": {
+    "main": never;
+  };
+  "com.atproto.sync.subscribeRepos": {
+    "account": {
+      "active": boolean;
+      "did": string;
+      "seq": number;
+      "status"?: string;
+      "time": string;
+    };
+    "commit": {
+      "blobs": Array<unknown /* cid-link */>;
+      "blocks": { $bytes: string } | string;
+      "commit": unknown /* cid-link */;
+      "ops": Array<LexiconDefs["com.atproto.sync.subscribeRepos"]["repoOp"]>;
+      "prevData"?: unknown /* cid-link */;
+      "rebase": boolean;
+      "repo": string;
+      "rev": string;
+      "seq": number;
+      "since": string;
+      "time": string;
+      "tooBig": boolean;
+    };
+    "identity": {
+      "did": string;
+      "handle"?: string;
+      "seq": number;
+      "time": string;
+    };
+    "info": {
+      "message"?: string;
+      "name": string;
+    };
+    "main": any;
+    "repoOp": {
+      "action": string;
+      "cid": unknown /* cid-link */;
+      "path": string;
+      "prev"?: unknown /* cid-link */;
+    };
+    "sync": {
+      "blocks": { $bytes: string } | string;
+      "did": string;
+      "rev": string;
+      "seq": number;
+      "time": string;
+    };
+  };
+  "com.atproto.temp.addReservedHandle": {
+    "main": never;
+  };
+  "com.atproto.temp.checkHandleAvailability": {
+    "main": never;
+    "resultAvailable": {
+    };
+    "resultUnavailable": {
+      "suggestions": Array<LexiconDefs["com.atproto.temp.checkHandleAvailability"]["suggestion"]>;
+    };
+    "suggestion": {
+      "handle": string;
+      "method": string;
+    };
+  };
+  "com.atproto.temp.checkSignupQueue": {
+    "main": never;
+  };
+  "com.atproto.temp.dereferenceScope": {
+    "main": never;
+  };
+  "com.atproto.temp.fetchLabels": {
+    "main": never;
+  };
+  "com.atproto.temp.requestPhoneVerification": {
+    "main": never;
+  };
+  "com.atproto.temp.revokeAccountCredentials": {
+    "main": never;
+  };
+  "com.germnetwork.authManageDeclaration": {
+    "main": any;
+  };
+  "com.germnetwork.declaration": {
+    "main": {
+      "continuityProofs"?: Array<{ $bytes: string } | string>;
+      "currentKey": { $bytes: string } | string;
+      "keyPackage"?: { $bytes: string } | string;
+      "messageMe"?: LexiconDefs["com.germnetwork.declaration"]["messageMe"];
+      "version": string;
+    };
+    "messageMe": {
+      "messageMeUrl": string;
+      "showButtonTo": string;
+    };
+  };
+  "com.germnetwork.identity.getAnchorKey": {
+    "main": never;
+  };
+  "com.germnetwork.keypackage": {
+    "main": {
+      "anchorHello": { $bytes: string } | string;
+      "anchorSignature"?: { $bytes: string } | string;
+      "version": string;
+    };
+  };
+  "com.germnetwork.mailbox.claimAddresses": {
+    "main": never;
+  };
+  "com.germnetwork.mailbox.deliver": {
+    "main": never;
+  };
+  "com.germnetwork.mailbox.poll": {
+    "main": never;
+    "message": {
+      "address": string;
+      "ciphertext": { $bytes: string } | string;
+    };
+  };
+  "com.germnetwork.rendezvous.deliver": {
+    "main": never;
+  };
+  "com.germnetwork.rendezvous.register": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.appViewDefs": {
+    "author": {
+      "did": string;
+      "handle": string;
+    };
+    "hydratedOekaki": {
+      "alt"?: string;
+      "at": string;
+      "author": LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["author"];
+      "cid": string;
+      "creationTime": string;
+      "image": string;
+      "nsfw": boolean;
+      "tags"?: Array<string>;
+    };
+    "oekakiTombstone": {
+      "formerAt": string;
+    };
+  };
+  "com.shinolabs.pinksea.getAuthorFeed": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getAuthorReplies": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getHandleFromDid": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getIdentity": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getOekaki": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getParentForReply": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getRecent": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getTagFeed": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.oekaki": {
+    "image": {
+      "blob": any /* blob */;
+      "imageLink": LexiconDefs["com.shinolabs.pinksea.oekaki"]["imageLink"];
+    };
+    "imageLink": {
+      "alt"?: string;
+    };
+    "main": {
+      "createdAt": string;
+      "image": LexiconDefs["com.shinolabs.pinksea.oekaki"]["image"];
+      "inResponseTo"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "nsfw"?: boolean;
+      "tags"?: Array<string>;
+    };
+  };
+  "com.shinolabs.pinksea.profile": {
+    "main": {
+      "avatar"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "bio"?: string;
+      "links"?: Array<LexiconDefs["com.shinolabs.pinksea.profile"]["profileLink"]>;
+      "nickname"?: string;
+    };
+    "profileLink": {
+      "link": string;
+      "name": string;
+    };
+  };
+  "com.whtwnd.blog.defs": {
+    "blobMetadata": {
+      "blobref": any /* blob */;
+      "name"?: string;
+    };
+    "blogEntry": {
+      "content": string;
+      "createdAt"?: string;
+    };
+    "comment": {
+      "content": string;
+      "entryUri": string;
+    };
+    "ogp": {
+      "height"?: number;
+      "url": string;
+      "width"?: number;
+    };
+  };
+  "com.whtwnd.blog.entry": {
+    "main": {
+      "blobs"?: Array<LexiconDefs["com.whtwnd.blog.defs"]["blobMetadata"]>;
+      "content": string;
+      "createdAt"?: string;
+      "isDraft"?: boolean;
+      "ogp"?: LexiconDefs["com.whtwnd.blog.defs"]["ogp"];
+      "subtitle"?: string;
+      "theme"?: string;
+      "title"?: string;
+      "visibility"?: string;
+    };
+  };
+  "com.whtwnd.blog.getAuthorPosts": {
+    "main": never;
+  };
+  "com.whtwnd.blog.getEntryMetadataByName": {
+    "main": never;
+  };
+  "com.whtwnd.blog.getMentionsByEntry": {
+    "main": never;
+  };
+  "com.whtwnd.blog.notifyOfNewEntry": {
+    "main": never;
+  };
+  "fyi.frontpage.feed.comment": {
+    "main": {
+      "blocks": Array<LexiconDefs["fyi.frontpage.richtext.block"]["main"]>;
+      "createdAt": string;
+      "parent"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "post": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "fyi.frontpage.feed.post": {
+    "main": {
+      "createdAt": string;
+      "subject": LexiconDefs["fyi.frontpage.feed.post"]["urlSubject"] | Record<string, any>;
+      "title": string;
+    };
+    "urlSubject": {
+      "url": string;
+    };
+  };
+  "fyi.frontpage.feed.vote": {
+    "main": {
+      "createdAt": string;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "fyi.frontpage.richtext.block": {
+    "main": {
+      "content": LexiconDefs["fyi.frontpage.richtext.block"]["plaintextParagraph"] | Record<string, any>;
+    };
+    "plaintextParagraph": {
+      "text": string;
+    };
+  };
+  "fyi.unravel.frontpage.comment": {
+    "main": {
+      "content": string;
+      "createdAt": string;
+      "parent"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "post": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "fyi.unravel.frontpage.post": {
+    "main": {
+      "createdAt": string;
+      "title": string;
+      "url": string;
+    };
+  };
+  "fyi.unravel.frontpage.vote": {
+    "main": {
+      "createdAt": string;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "my.skylights.defs": {
+    "item": {
+      "ref": string;
+      "value": string;
+    };
+  };
+  "my.skylights.list": {
+    "main": {
+      "createdAt"?: string;
+      "description"?: string;
+      "sortBy"?: string;
+      "title": string;
+    };
+  };
+  "my.skylights.listItem": {
+    "abandoned": string;
+    "builtin": {
+      "type"?: LexiconDefs["my.skylights.listItem"]["inProgress"] | LexiconDefs["my.skylights.listItem"]["queue"] | LexiconDefs["my.skylights.listItem"]["abandoned"] | LexiconDefs["my.skylights.listItem"]["owned"] | LexiconDefs["my.skylights.listItem"]["wishlist"] | Record<string, any>;
+    };
+    "inProgress": string;
+    "main": {
+      "addedAt": string;
+      "item"?: LexiconDefs["my.skylights.defs"]["item"];
+      "list": LexiconDefs["my.skylights.list"]["main"] | LexiconDefs["my.skylights.listItem"]["builtin"] | Record<string, any>;
+      "note"?: string;
+      "position": string;
+    };
+    "owned": string;
+    "queue": string;
+    "wishlist": string;
+  };
+  "my.skylights.rel": {
+    "main": {
+      "finishedAt"?: Array<string>;
+      "item": LexiconDefs["my.skylights.defs"]["item"];
+      "note"?: LexiconDefs["my.skylights.rel"]["note"];
+      "rating"?: LexiconDefs["my.skylights.rel"]["rating"];
+    };
+    "note": {
+      "createdAt": string;
+      "updatedAt": string;
+      "value": string;
+    };
+    "rating": {
+      "createdAt": string;
+      "value": number;
+    };
+  };
+  "place.stream.branding.deleteBlob": {
+    "main": never;
+  };
+  "place.stream.branding.getBlob": {
+    "main": never;
+  };
+  "place.stream.branding.getBranding": {
+    "brandingAsset": {
+      "data"?: string;
+      "height"?: number;
+      "key": string;
+      "mimeType": string;
+      "url"?: string;
+      "width"?: number;
+    };
+    "main": never;
+  };
+  "place.stream.branding.updateBlob": {
+    "main": never;
+  };
+  "place.stream.broadcast.defs": {
+    "broadcastOriginView": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "record": unknown;
+      "uri": string;
+    };
+  };
+  "place.stream.broadcast.getBroadcaster": {
+    "main": never;
+  };
+  "place.stream.broadcast.origin": {
+    "main": {
+      "broadcaster"?: string;
+      "irohTicket"?: string;
+      "server": string;
+      "streamer": string;
+      "updatedAt": string;
+      "websocketURL"?: string;
+    };
+  };
+  "place.stream.broadcast.syndication": {
+    "main": {
+      "broadcaster": string;
+      "createdAt": string;
+      "streamer": string;
+    };
+  };
+  "place.stream.chat.defs": {
+    "messageView": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "chatProfile"?: LexiconDefs["place.stream.chat.profile"]["main"];
+      "cid": string;
+      "deleted"?: boolean;
+      "indexedAt": string;
+      "record": unknown;
+      "replyTo"?: LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
+      "uri": string;
+    };
+  };
+  "place.stream.chat.gate": {
+    "main": {
+      "hiddenMessage": string;
+    };
+  };
+  "place.stream.chat.message": {
+    "main": {
+      "createdAt": string;
+      "facets"?: Array<LexiconDefs["place.stream.richtext.facet"]["main"]>;
+      "reply"?: LexiconDefs["place.stream.chat.message"]["replyRef"];
+      "streamer": string;
+      "text": string;
+    };
+    "replyRef": {
+      "parent": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "root": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "place.stream.chat.profile": {
+    "color": {
+      "blue": number;
+      "green": number;
+      "red": number;
+    };
+    "main": {
+      "color"?: LexiconDefs["place.stream.chat.profile"]["color"];
+    };
+  };
+  "place.stream.defs": {
+    "blockView": {
+      "blocker": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "indexedAt": string;
+      "record": LexiconDefs["app.bsky.graph.block"]["main"];
+      "uri": string;
+    };
+    "rendition": {
+      "name": string;
+    };
+    "renditions": {
+      "renditions": Array<LexiconDefs["place.stream.defs"]["rendition"]>;
+    };
+  };
+  "place.stream.graph.getFollowingUser": {
+    "main": never;
+  };
+  "place.stream.key": {
+    "main": {
+      "createdAt": string;
+      "createdBy"?: string;
+      "signingKey": string;
+    };
+  };
+  "place.stream.live.getLiveUsers": {
+    "main": never;
+  };
+  "place.stream.live.getProfileCard": {
+    "main": never;
+  };
+  "place.stream.live.getRecommendations": {
+    "livestreamRecommendation": {
+      "did": string;
+      "source": string;
+    };
+    "main": never;
+  };
+  "place.stream.live.getSegments": {
+    "main": never;
+  };
+  "place.stream.live.recommendations": {
+    "main": {
+      "createdAt": string;
+      "streamers": Array<string>;
+    };
+  };
+  "place.stream.live.searchActorsTypeahead": {
+    "actor": {
+      "did": string;
+      "handle": string;
+    };
+    "main": never;
+  };
+  "place.stream.live.subscribeSegments": {
+    "main": any;
+    "segment": { $bytes: string } | string;
+  };
+  "place.stream.livestream": {
+    "livestreamView": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "indexedAt": string;
+      "record": unknown;
+      "uri": string;
+      "viewerCount"?: LexiconDefs["place.stream.livestream"]["viewerCount"];
+    };
+    "main": {
+      "agent"?: string;
+      "canonicalUrl"?: string;
+      "createdAt": string;
+      "notificationSettings"?: LexiconDefs["place.stream.livestream"]["notificationSettings"];
+      "post"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "thumb"?: any /* blob */;
+      "title": string;
+      "url"?: string;
+    };
+    "notificationSettings": {
+      "pushNotification"?: boolean;
+    };
+    "streamplaceAnything": {
+      "livestream": LexiconDefs["place.stream.livestream"]["livestreamView"] | LexiconDefs["place.stream.livestream"]["viewerCount"] | LexiconDefs["place.stream.defs"]["blockView"] | LexiconDefs["place.stream.defs"]["renditions"] | LexiconDefs["place.stream.defs"]["rendition"] | LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
+    };
+    "viewerCount": {
+      "count": number;
+    };
+  };
+  "place.stream.metadata.configuration": {
+    "main": {
+      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+    };
+  };
+  "place.stream.metadata.contentRights": {
+    "all-rights-reserved": string;
+    "cc-by-nc-nd_4__0": string;
+    "cc-by-nc-sa_4__0": string;
+    "cc-by-nc_4__0": string;
+    "cc-by-nd_4__0": string;
+    "cc-by-sa_4__0": string;
+    "cc-by_4__0": string;
+    "cc0_1__0": string;
+    "main": {
+      "copyrightNotice"?: string;
+      "copyrightYear"?: number;
+      "creator"?: string;
+      "creditLine"?: string;
+      "license"?: string;
+    };
+  };
+  "place.stream.metadata.contentWarnings": {
+    "PII": string;
+    "death": string;
+    "drugUse": string;
+    "fantasyViolence": string;
+    "flashingLights": string;
+    "language": string;
+    "main": {
+      "warnings"?: Array<string>;
+    };
+    "nudity": string;
+    "sexuality": string;
+    "suffering": string;
+    "violence": string;
+  };
+  "place.stream.metadata.distributionPolicy": {
+    "main": {
+      "allowedBroadcasters"?: Array<string>;
+      "deleteAfter"?: number;
+    };
+  };
+  "place.stream.moderation.createBlock": {
+    "main": never;
+  };
+  "place.stream.moderation.createGate": {
+    "main": never;
+  };
+  "place.stream.moderation.defs": {
+    "permissionView": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "record": unknown;
+      "uri": string;
+    };
+  };
+  "place.stream.moderation.deleteBlock": {
+    "main": never;
+  };
+  "place.stream.moderation.deleteGate": {
+    "main": never;
+  };
+  "place.stream.moderation.permission": {
+    "main": {
+      "createdAt": string;
+      "expirationTime"?: string;
+      "moderator": string;
+      "permissions": Array<string>;
+    };
+  };
+  "place.stream.moderation.updateLivestream": {
+    "main": never;
+  };
+  "place.stream.multistream.createTarget": {
+    "main": never;
+  };
+  "place.stream.multistream.defs": {
+    "event": {
+      "createdAt": string;
+      "message": string;
+      "status": string;
+    };
+    "targetView": {
+      "cid": string;
+      "latestEvent"?: LexiconDefs["place.stream.multistream.defs"]["event"];
+      "record": unknown;
+      "uri": string;
+    };
+  };
+  "place.stream.multistream.deleteTarget": {
+    "main": never;
+  };
+  "place.stream.multistream.listTargets": {
+    "main": never;
+    "record": {
+      "cid": string;
+      "uri": string;
+      "value": unknown;
+    };
+  };
+  "place.stream.multistream.putTarget": {
+    "main": never;
+  };
+  "place.stream.multistream.target": {
+    "main": {
+      "active": boolean;
+      "createdAt": string;
+      "name"?: string;
+      "url": string;
+    };
+  };
+  "place.stream.richtext.facet": {
+    "main": {
+      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | Record<string, any>>;
+      "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
+    };
+  };
+  "place.stream.segment": {
+    "audio": {
+      "channels": number;
+      "codec": string;
+      "rate": number;
+    };
+    "framerate": {
+      "den": number;
+      "num": number;
+    };
+    "main": {
+      "audio"?: Array<LexiconDefs["place.stream.segment"]["audio"]>;
+      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "creator": string;
+      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+      "duration"?: number;
+      "id": string;
+      "signingKey": string;
+      "size"?: number;
+      "startTime": string;
+      "video"?: Array<LexiconDefs["place.stream.segment"]["video"]>;
+    };
+    "segmentView": {
+      "cid": string;
+      "record": unknown;
+    };
+    "video": {
+      "bframes"?: boolean;
+      "codec": string;
+      "framerate"?: LexiconDefs["place.stream.segment"]["framerate"];
+      "height": number;
+      "width": number;
+    };
+  };
+  "place.stream.server.createWebhook": {
+    "main": never;
+  };
+  "place.stream.server.defs": {
+    "rewriteRule": {
+      "from": string;
+      "to": string;
+    };
+    "webhook": {
+      "active": boolean;
+      "createdAt": string;
+      "description"?: string;
+      "errorCount"?: number;
+      "events": Array<string>;
+      "id": string;
+      "lastTriggered"?: string;
+      "muteWords"?: Array<string>;
+      "name"?: string;
+      "prefix"?: string;
+      "rewrite"?: Array<LexiconDefs["place.stream.server.defs"]["rewriteRule"]>;
+      "suffix"?: string;
+      "updatedAt"?: string;
+      "url": string;
+    };
+  };
+  "place.stream.server.deleteWebhook": {
+    "main": never;
+  };
+  "place.stream.server.getServerTime": {
+    "main": never;
+  };
+  "place.stream.server.getWebhook": {
+    "main": never;
+  };
+  "place.stream.server.listWebhooks": {
+    "main": never;
+  };
+  "place.stream.server.settings": {
+    "main": {
+      "debugRecording"?: boolean;
+    };
+  };
+  "place.stream.server.updateWebhook": {
+    "main": never;
+  };
+  "sh.tangled.actor.profile": {
+    "main": {
+      "bluesky": boolean;
+      "description"?: string;
+      "links"?: Array<string>;
+      "location"?: string;
+      "pinnedRepositories"?: Array<string>;
+      "stats"?: Array<string>;
+    };
+  };
+  "sh.tangled.graph.follow": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "social.grain.actor.defs": {
+    "profileView": {
+      "avatar"?: string;
+      "cid": string;
+      "createdAt"?: string;
+      "description"?: string;
+      "did": string;
+      "displayName"?: string;
+      "handle": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+    "profileViewDetailed": {
+      "avatar"?: string;
+      "cameras"?: Array<string>;
+      "cid": string;
+      "createdAt"?: string;
+      "description"?: string;
+      "did": string;
+      "displayName"?: string;
+      "followersCount"?: number;
+      "followsCount"?: number;
+      "galleryCount"?: number;
+      "handle": string;
+      "indexedAt"?: string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["social.grain.actor.defs"]["viewerState"];
+    };
+    "viewerState": {
+      "followedBy"?: string;
+      "following"?: string;
+    };
+  };
+  "social.grain.actor.getActorFavs": {
+    "main": never;
+  };
+  "social.grain.actor.getProfile": {
+    "main": never;
+  };
+  "social.grain.actor.profile": {
+    "main": {
+      "avatar"?: any /* blob */;
+      "createdAt"?: string;
+      "description"?: string;
+      "displayName"?: string;
+    };
+  };
+  "social.grain.actor.searchActors": {
+    "main": never;
+  };
+  "social.grain.actor.updateAvatar": {
+    "main": never;
+  };
+  "social.grain.actor.updateProfile": {
+    "main": never;
+  };
+  "social.grain.comment": {
+    "main": {
+      "createdAt": string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "focus"?: string;
+      "replyTo"?: string;
+      "subject": string;
+      "text": string;
+    };
+  };
+  "social.grain.comment.createComment": {
+    "main": never;
+  };
+  "social.grain.comment.defs": {
+    "commentView": {
+      "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "cid": string;
+      "createdAt": string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "focus"?: LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>;
+      "record"?: unknown;
+      "replyTo"?: string;
+      "subject"?: LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
+      "text": string;
+      "uri": string;
+    };
+  };
+  "social.grain.comment.deleteComment": {
+    "main": never;
+  };
+  "social.grain.darkroom.getGalleryComposite": {
+    "main": never;
+  };
+  "social.grain.defs": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+  };
+  "social.grain.favorite": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "social.grain.favorite.createFavorite": {
+    "main": never;
+  };
+  "social.grain.favorite.deleteFavorite": {
+    "main": never;
+  };
+  "social.grain.feed.getTimeline": {
+    "main": never;
+  };
+  "social.grain.gallery": {
+    "main": {
+      "createdAt": string;
+      "description"?: string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "title": string;
+      "updatedAt"?: string;
+    };
+  };
+  "social.grain.gallery.applySort": {
+    "main": never;
+    "update": {
+      "itemUri": string;
+      "position": number;
+    };
+  };
+  "social.grain.gallery.createGallery": {
+    "main": never;
+  };
+  "social.grain.gallery.createItem": {
+    "main": never;
+  };
+  "social.grain.gallery.defs": {
+    "galleryView": {
+      "cameras"?: Array<string>;
+      "cid": string;
+      "commentCount"?: number;
+      "createdAt"?: string;
+      "creator": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "description"?: string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "favCount"?: number;
+      "indexedAt": string;
+      "items"?: Array<LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>>;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "record": unknown;
+      "title"?: string;
+      "uri": string;
+      "viewer"?: LexiconDefs["social.grain.gallery.defs"]["viewerState"];
+    };
+    "viewerState": {
+      "fav"?: string;
+    };
+  };
+  "social.grain.gallery.deleteGallery": {
+    "main": never;
+  };
+  "social.grain.gallery.deleteItem": {
+    "main": never;
+  };
+  "social.grain.gallery.getActorGalleries": {
+    "main": never;
+  };
+  "social.grain.gallery.getGallery": {
+    "main": never;
+  };
+  "social.grain.gallery.getGalleryThread": {
+    "main": never;
+  };
+  "social.grain.gallery.item": {
+    "main": {
+      "createdAt": string;
+      "gallery": string;
+      "item": string;
+      "position"?: number;
+    };
+  };
+  "social.grain.gallery.updateGallery": {
+    "main": never;
+  };
+  "social.grain.graph.createFollow": {
+    "main": never;
+  };
+  "social.grain.graph.deleteFollow": {
+    "main": never;
+  };
+  "social.grain.graph.follow": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "social.grain.graph.getFollowers": {
+    "main": never;
+  };
+  "social.grain.graph.getFollows": {
+    "main": never;
+  };
+  "social.grain.labeler.defs": {
+    "labelerPolicies": {
+      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
+      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
+    };
+    "labelerView": {
+      "cid": string;
+      "creator": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "favoriteCount"?: number;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "uri": string;
+      "viewer"?: LexiconDefs["social.grain.labeler.defs"]["labelerViewerState"];
+    };
+    "labelerViewDetailed": {
+      "cid": string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "favoriteCount"?: number;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "policies": any /* unresolved ref: social.grain.actor.defs#labelerPolicies */;
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectCollections"?: Array<string>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+      "uri": string;
+      "viewer"?: LexiconDefs["social.grain.labeler.defs"]["labelerViewerState"];
+    };
+    "labelerViewerState": {
+      "like"?: string;
+    };
+  };
+  "social.grain.labeler.service": {
+    "main": {
+      "createdAt": string;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectCollections"?: Array<string>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+    };
+  };
+  "social.grain.notification.defs": {
+    "notificationView": {
+      "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "cid": string;
+      "indexedAt": string;
+      "isRead": boolean;
+      "reason": string;
+      "reasonSubject"?: string;
+      "record": unknown;
+      "uri": string;
+    };
+    "notificationViewDetailed": {
+      "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "cid": string;
+      "indexedAt": string;
+      "isRead": boolean;
+      "reason": string;
+      "reasonSubject"?: LexiconDefs["social.grain.actor.defs"]["profileView"] | LexiconDefs["social.grain.comment.defs"]["commentView"] | LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
+      "record": unknown;
+      "uri": string;
+    };
+  };
+  "social.grain.notification.getNotifications": {
+    "main": never;
+  };
+  "social.grain.notification.updateSeen": {
+    "main": never;
+  };
+  "social.grain.photo": {
+    "main": {
+      "alt"?: string;
+      "aspectRatio": LexiconDefs["social.grain.defs"]["aspectRatio"];
+      "createdAt": string;
+      "photo": any /* blob */;
+    };
+  };
+  "social.grain.photo.applyAlts": {
+    "main": never;
+    "update": {
+      "alt": string;
+      "photoUri": string;
+    };
+  };
+  "social.grain.photo.createExif": {
+    "main": never;
+  };
+  "social.grain.photo.defs": {
+    "exifView": {
+      "cid": string;
+      "createdAt": string;
+      "dateTimeOriginal"?: string;
+      "exposureTime"?: string;
+      "fNumber"?: string;
+      "flash"?: string;
+      "focalLengthIn35mmFormat"?: string;
+      "iSO"?: number;
+      "lensMake"?: string;
+      "lensModel"?: string;
+      "make"?: string;
+      "model"?: string;
+      "photo": string;
+      "record": unknown;
+      "uri": string;
+    };
+    "galleryState": {
+      "item": string;
+      "itemCreatedAt": string;
+      "itemPosition": number;
+    };
+    "photoView": {
+      "alt"?: string;
+      "aspectRatio": LexiconDefs["social.grain.defs"]["aspectRatio"];
+      "cid": string;
+      "exif"?: LexiconDefs["social.grain.photo.defs"]["exifView"];
+      "fullsize": string;
+      "gallery"?: LexiconDefs["social.grain.photo.defs"]["galleryState"];
+      "thumb": string;
+      "uri": string;
+    };
+  };
+  "social.grain.photo.deletePhoto": {
+    "main": never;
+  };
+  "social.grain.photo.exif": {
+    "main": {
+      "createdAt": string;
+      "dateTimeOriginal"?: string;
+      "exposureTime"?: number;
+      "fNumber"?: number;
+      "flash"?: string;
+      "focalLengthIn35mmFormat"?: number;
+      "iSO"?: number;
+      "lensMake"?: string;
+      "lensModel"?: string;
+      "make"?: string;
+      "model"?: string;
+      "photo": string;
+    };
+  };
+  "social.grain.photo.getActorPhotos": {
+    "main": never;
+  };
+  "social.grain.photo.uploadPhoto": {
+    "main": never;
+  };
+  "tools.garazyk.account.getUsage": {
+    "main": never;
+  };
+  "tools.garazyk.sync.getRepoFiltered": {
+    "main": never;
+  };
+  "tools.ozone.communication.createTemplate": {
+    "main": never;
+  };
+  "tools.ozone.communication.defs": {
+    "templateView": {
+      "contentMarkdown": string;
+      "createdAt": string;
+      "disabled": boolean;
+      "id": string;
+      "lang"?: string;
+      "lastUpdatedBy": string;
+      "name": string;
+      "subject"?: string;
+      "updatedAt": string;
+    };
+  };
+  "tools.ozone.communication.deleteTemplate": {
+    "main": never;
+  };
+  "tools.ozone.communication.listTemplates": {
+    "main": never;
+  };
+  "tools.ozone.communication.updateTemplate": {
+    "main": never;
+  };
+  "tools.ozone.hosting.getAccountHistory": {
+    "accountCreated": {
+      "email"?: string;
+      "handle"?: string;
+    };
+    "emailConfirmed": {
+      "email": string;
+    };
+    "emailUpdated": {
+      "email": string;
+    };
+    "event": {
+      "createdAt": string;
+      "createdBy": string;
+      "details": LexiconDefs["tools.ozone.hosting.getAccountHistory"]["accountCreated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailConfirmed"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["passwordUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["handleUpdated"] | Record<string, any>;
+    };
+    "handleUpdated": {
+      "handle": string;
+    };
+    "main": never;
+    "passwordUpdated": {
+    };
+  };
+  "tools.ozone.moderation.cancelScheduledAction": {
+    "main": never;
+  };
+  "tools.ozone.moderation.cancelScheduledActions": {
+    "cancellationResults": {
+      "failed": Array<LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["failedCancellation"]>;
+      "succeeded": Array<string>;
+    };
+    "failedCancellation": {
+      "did": string;
+      "error": string;
+      "errorCode"?: string;
+    };
+    "main": never;
+  };
+  "tools.ozone.moderation.defs": {
+    "accountEvent": {
+      "active": boolean;
+      "comment"?: string;
+      "status"?: string;
+      "timestamp": string;
+    };
+    "accountHosting": {
+      "createdAt"?: string;
+      "deactivatedAt"?: string;
+      "deletedAt"?: string;
+      "reactivatedAt"?: string;
+      "status": string;
+      "updatedAt"?: string;
+    };
+    "accountStats": {
+      "appealCount"?: number;
+      "escalateCount"?: number;
+      "reportCount"?: number;
+      "suspendCount"?: number;
+      "takedownCount"?: number;
+    };
+    "accountStrike": {
+      "activeStrikeCount"?: number;
+      "firstStrikeAt"?: string;
+      "lastStrikeAt"?: string;
+      "totalStrikeCount"?: number;
+    };
+    "ageAssuranceEvent": {
+      "access"?: LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "attemptId": string;
+      "completeIp"?: string;
+      "completeUa"?: string;
+      "countryCode"?: string;
+      "createdAt": string;
+      "initIp"?: string;
+      "initUa"?: string;
+      "regionCode"?: string;
+      "status": string;
+    };
+    "ageAssuranceOverrideEvent": {
+      "access"?: LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "comment": string;
+      "status": string;
+    };
+    "blobView": {
+      "cid": string;
+      "createdAt": string;
+      "details"?: LexiconDefs["tools.ozone.moderation.defs"]["imageDetails"] | LexiconDefs["tools.ozone.moderation.defs"]["videoDetails"] | Record<string, any>;
+      "mimeType": string;
+      "moderation"?: LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
+      "size": number;
+    };
+    "cancelScheduledTakedownEvent": {
+      "comment"?: string;
+    };
+    "identityEvent": {
+      "comment"?: string;
+      "handle"?: string;
+      "pdsHost"?: string;
+      "timestamp": string;
+      "tombstone"?: boolean;
+    };
+    "imageDetails": {
+      "height": number;
+      "width": number;
+    };
+    "modEventAcknowledge": {
+      "acknowledgeAccountSubjects"?: boolean;
+      "comment"?: string;
+    };
+    "modEventComment": {
+      "comment"?: string;
+      "sticky"?: boolean;
+    };
+    "modEventDivert": {
+      "comment"?: string;
+    };
+    "modEventEmail": {
+      "comment"?: string;
+      "content"?: string;
+      "isDelivered"?: boolean;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "strikeCount"?: number;
+      "strikeExpiresAt"?: string;
+      "subjectLine": string;
+    };
+    "modEventEscalate": {
+      "comment"?: string;
+    };
+    "modEventLabel": {
+      "comment"?: string;
+      "createLabelVals": Array<string>;
+      "durationInHours"?: number;
+      "negateLabelVals": Array<string>;
+    };
+    "modEventMute": {
+      "comment"?: string;
+      "durationInHours": number;
+    };
+    "modEventMuteReporter": {
+      "comment"?: string;
+      "durationInHours"?: number;
+    };
+    "modEventPriorityScore": {
+      "comment"?: string;
+      "score": number;
+    };
+    "modEventReport": {
+      "comment"?: string;
+      "isReporterMuted"?: boolean;
+      "reportType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
+    };
+    "modEventResolveAppeal": {
+      "comment"?: string;
+    };
+    "modEventReverseTakedown": {
+      "comment"?: string;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "strikeCount"?: number;
+    };
+    "modEventTag": {
+      "add": Array<string>;
+      "comment"?: string;
+      "remove": Array<string>;
+    };
+    "modEventTakedown": {
+      "acknowledgeAccountSubjects"?: boolean;
+      "comment"?: string;
+      "durationInHours"?: number;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "strikeCount"?: number;
+      "strikeExpiresAt"?: string;
+      "targetServices"?: Array<string>;
+    };
+    "modEventUnmute": {
+      "comment"?: string;
+    };
+    "modEventUnmuteReporter": {
+      "comment"?: string;
+    };
+    "modEventView": {
+      "createdAt": string;
+      "createdBy": string;
+      "creatorHandle"?: string;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "id": number;
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
+      "subjectBlobCids": Array<string>;
+      "subjectHandle"?: string;
+    };
+    "modEventViewDetail": {
+      "createdAt": string;
+      "createdBy": string;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "id": number;
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
+      "subject": LexiconDefs["tools.ozone.moderation.defs"]["repoView"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | LexiconDefs["tools.ozone.moderation.defs"]["recordView"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>;
+      "subjectBlobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
+    };
+    "modTool": {
+      "meta"?: unknown;
+      "name": string;
+    };
+    "moderation": {
+      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+    };
+    "moderationDetail": {
+      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+    };
+    "recordEvent": {
+      "cid"?: string;
+      "comment"?: string;
+      "op": string;
+      "timestamp": string;
+    };
+    "recordHosting": {
+      "createdAt"?: string;
+      "deletedAt"?: string;
+      "status": string;
+      "updatedAt"?: string;
+    };
+    "recordView": {
+      "blobCids": Array<string>;
+      "cid": string;
+      "indexedAt": string;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
+      "repo": LexiconDefs["tools.ozone.moderation.defs"]["repoView"];
+      "uri": string;
+      "value": unknown;
+    };
+    "recordViewDetail": {
+      "blobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
+      "cid": string;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "repo": LexiconDefs["tools.ozone.moderation.defs"]["repoView"];
+      "uri": string;
+      "value": unknown;
+    };
+    "recordViewNotFound": {
+      "uri": string;
+    };
+    "recordsStats": {
+      "appealedCount"?: number;
+      "escalatedCount"?: number;
+      "pendingCount"?: number;
+      "processedCount"?: number;
+      "reportedCount"?: number;
+      "subjectCount"?: number;
+      "takendownCount"?: number;
+      "totalReports"?: number;
+    };
+    "repoView": {
+      "deactivatedAt"?: string;
+      "did": string;
+      "email"?: string;
+      "handle": string;
+      "indexedAt": string;
+      "inviteNote"?: string;
+      "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
+      "invitesDisabled"?: boolean;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
+      "relatedRecords": Array<unknown>;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+    };
+    "repoViewDetail": {
+      "deactivatedAt"?: string;
+      "did": string;
+      "email"?: string;
+      "emailConfirmedAt"?: string;
+      "handle": string;
+      "indexedAt": string;
+      "inviteNote"?: string;
+      "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
+      "invites"?: Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
+      "invitesDisabled"?: boolean;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "relatedRecords": Array<unknown>;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+    };
+    "repoViewNotFound": {
+      "did": string;
+    };
+    "reporterStats": {
+      "accountReportCount": number;
+      "did": string;
+      "labeledAccountCount": number;
+      "labeledRecordCount": number;
+      "recordReportCount": number;
+      "reportedAccountCount": number;
+      "reportedRecordCount": number;
+      "takendownAccountCount": number;
+      "takendownRecordCount": number;
+    };
+    "reviewClosed": string;
+    "reviewEscalated": string;
+    "reviewNone": string;
+    "reviewOpen": string;
+    "revokeAccountCredentialsEvent": {
+      "comment": string;
+    };
+    "scheduleTakedownEvent": {
+      "comment"?: string;
+      "executeAfter"?: string;
+      "executeAt"?: string;
+      "executeUntil"?: string;
+    };
+    "scheduledActionView": {
+      "action": string;
+      "createdAt": string;
+      "createdBy": string;
+      "did": string;
+      "eventData"?: unknown;
+      "executeAfter"?: string;
+      "executeAt"?: string;
+      "executeUntil"?: string;
+      "executionEventId"?: number;
+      "id": number;
+      "lastExecutedAt"?: string;
+      "lastFailureReason"?: string;
+      "randomizeExecution"?: boolean;
+      "status": string;
+      "updatedAt"?: string;
+    };
+    "subjectReviewState": string;
+    "subjectStatusView": {
+      "accountStats"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStats"];
+      "accountStrike"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStrike"];
+      "ageAssuranceState"?: string;
+      "ageAssuranceUpdatedBy"?: string;
+      "appealed"?: boolean;
+      "comment"?: string;
+      "createdAt": string;
+      "hosting"?: LexiconDefs["tools.ozone.moderation.defs"]["accountHosting"] | LexiconDefs["tools.ozone.moderation.defs"]["recordHosting"] | Record<string, any>;
+      "id": number;
+      "lastAppealedAt"?: string;
+      "lastReportedAt"?: string;
+      "lastReviewedAt"?: string;
+      "lastReviewedBy"?: string;
+      "muteReportingUntil"?: string;
+      "muteUntil"?: string;
+      "priorityScore"?: number;
+      "recordsStats"?: LexiconDefs["tools.ozone.moderation.defs"]["recordsStats"];
+      "reviewState": LexiconDefs["tools.ozone.moderation.defs"]["subjectReviewState"];
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
+      "subjectBlobCids"?: Array<string>;
+      "subjectRepoHandle"?: string;
+      "suspendUntil"?: string;
+      "tags"?: Array<string>;
+      "takendown"?: boolean;
+      "updatedAt": string;
+    };
+    "subjectView": {
+      "profile"?: never | Record<string, any>;
+      "record"?: LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"];
+      "repo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"];
+      "status"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "subject": string;
+      "type": LexiconDefs["com.atproto.moderation.defs"]["subjectType"];
+    };
+    "timelineEventPlcCreate": string;
+    "timelineEventPlcOperation": string;
+    "timelineEventPlcTombstone": string;
+    "videoDetails": {
+      "height": number;
+      "length": number;
+      "width": number;
+    };
+  };
+  "tools.ozone.moderation.emitEvent": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getAccountTimeline": {
+    "main": never;
+    "timelineItem": {
+      "day": string;
+      "summary": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItemSummary"]>;
+    };
+    "timelineItemSummary": {
+      "count": number;
+      "eventSubjectType": string;
+      "eventType": string;
+    };
+  };
+  "tools.ozone.moderation.getEvent": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRecord": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRecords": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRepo": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getReporterStats": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRepos": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getSubjects": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getSubjectStatus": {
+    "main": never;
+  };
+  "tools.ozone.moderation.listScheduledActions": {
+    "main": never;
+  };
+  "tools.ozone.moderation.queryEvents": {
+    "main": never;
+  };
+  "tools.ozone.moderation.queryStatuses": {
+    "main": never;
+  };
+  "tools.ozone.moderation.scheduleAction": {
+    "failedScheduling": {
+      "error": string;
+      "errorCode"?: string;
+      "subject": string;
+    };
+    "main": never;
+    "scheduledActionResults": {
+      "failed": Array<LexiconDefs["tools.ozone.moderation.scheduleAction"]["failedScheduling"]>;
+      "succeeded": Array<string>;
+    };
+    "schedulingConfig": {
+      "executeAfter"?: string;
+      "executeAt"?: string;
+      "executeUntil"?: string;
+    };
+    "takedown": {
+      "acknowledgeAccountSubjects"?: boolean;
+      "comment"?: string;
+      "durationInHours"?: number;
+      "emailContent"?: string;
+      "emailSubject"?: string;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "strikeCount"?: number;
+      "strikeExpiresAt"?: string;
+    };
+  };
+  "tools.ozone.moderation.searchRepos": {
+    "main": never;
+  };
+  "tools.ozone.report.defs": {
+    "reasonAppeal": string;
+    "reasonChildSafetyCSAM": string;
+    "reasonChildSafetyGroom": string;
+    "reasonChildSafetyHarassment": string;
+    "reasonChildSafetyOther": string;
+    "reasonChildSafetyPrivacy": string;
+    "reasonHarassmentDoxxing": string;
+    "reasonHarassmentHateSpeech": string;
+    "reasonHarassmentOther": string;
+    "reasonHarassmentTargeted": string;
+    "reasonHarassmentTroll": string;
+    "reasonMisleadingBot": string;
+    "reasonMisleadingElections": string;
+    "reasonMisleadingImpersonation": string;
+    "reasonMisleadingOther": string;
+    "reasonMisleadingScam": string;
+    "reasonMisleadingSpam": string;
+    "reasonOther": string;
+    "reasonRuleBanEvasion": string;
+    "reasonRuleOther": string;
+    "reasonRuleProhibitedSales": string;
+    "reasonRuleSiteSecurity": string;
+    "reasonSelfHarmContent": string;
+    "reasonSelfHarmED": string;
+    "reasonSelfHarmOther": string;
+    "reasonSelfHarmStunts": string;
+    "reasonSelfHarmSubstances": string;
+    "reasonSexualAbuseContent": string;
+    "reasonSexualAnimal": string;
+    "reasonSexualDeepfake": string;
+    "reasonSexualNCII": string;
+    "reasonSexualOther": string;
+    "reasonSexualUnlabeled": string;
+    "reasonType": string;
+    "reasonViolenceAnimal": string;
+    "reasonViolenceExtremistContent": string;
+    "reasonViolenceGlorification": string;
+    "reasonViolenceGraphicContent": string;
+    "reasonViolenceOther": string;
+    "reasonViolenceThreats": string;
+    "reasonViolenceTrafficking": string;
+  };
+  "tools.ozone.safelink.addRule": {
+    "main": never;
+  };
+  "tools.ozone.safelink.defs": {
+    "actionType": string;
+    "event": {
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "comment"?: string;
+      "createdAt": string;
+      "createdBy": string;
+      "eventType": LexiconDefs["tools.ozone.safelink.defs"]["eventType"];
+      "id": number;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
+      "url": string;
+    };
+    "eventType": string;
+    "patternType": string;
+    "reasonType": string;
+    "urlRule": {
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "comment"?: string;
+      "createdAt": string;
+      "createdBy": string;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
+      "updatedAt": string;
+      "url": string;
+    };
+  };
+  "tools.ozone.safelink.queryEvents": {
+    "main": never;
+  };
+  "tools.ozone.safelink.queryRules": {
+    "main": never;
+  };
+  "tools.ozone.safelink.removeRule": {
+    "main": never;
+  };
+  "tools.ozone.safelink.updateRule": {
+    "main": never;
+  };
+  "tools.ozone.server.getConfig": {
+    "main": never;
+    "serviceConfig": {
+      "url"?: string;
+    };
+    "viewerConfig": {
+      "role"?: string;
+    };
+  };
+  "tools.ozone.server.updateConfig": {
+    "main": never;
+  };
+  "tools.ozone.set.addValues": {
+    "main": never;
+  };
+  "tools.ozone.set.defs": {
+    "set": {
+      "description"?: string;
+      "name": string;
+    };
+    "setView": {
+      "createdAt": string;
+      "description"?: string;
+      "name": string;
+      "setSize": number;
+      "updatedAt": string;
+    };
+  };
+  "tools.ozone.set.deleteSet": {
+    "main": never;
+  };
+  "tools.ozone.set.deleteValues": {
+    "main": never;
+  };
+  "tools.ozone.set.getValues": {
+    "main": never;
+  };
+  "tools.ozone.set.querySets": {
+    "main": never;
+  };
+  "tools.ozone.set.upsertSet": {
+    "main": never;
+  };
+  "tools.ozone.setting.defs": {
+    "option": {
+      "createdAt"?: string;
+      "createdBy": string;
+      "description"?: string;
+      "did": string;
+      "key": string;
+      "lastUpdatedBy": string;
+      "managerRole"?: string;
+      "scope": string;
+      "updatedAt"?: string;
+      "value": unknown;
+    };
+  };
+  "tools.ozone.setting.listOptions": {
+    "main": never;
+  };
+  "tools.ozone.setting.removeOptions": {
+    "main": never;
+  };
+  "tools.ozone.setting.upsertOption": {
+    "main": never;
+  };
+  "tools.ozone.signature.defs": {
+    "sigDetail": {
+      "property": string;
+      "value": string;
+    };
+  };
+  "tools.ozone.signature.findCorrelation": {
+    "main": never;
+  };
+  "tools.ozone.signature.findRelatedAccounts": {
+    "main": never;
+    "relatedAccount": {
+      "account": LexiconDefs["com.atproto.admin.defs"]["accountView"];
+      "similarities"?: Array<LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]>;
+    };
+  };
+  "tools.ozone.signature.searchAccounts": {
+    "main": never;
+  };
+  "tools.ozone.team.addMember": {
+    "main": never;
+  };
+  "tools.ozone.team.defs": {
+    "member": {
+      "createdAt"?: string;
+      "did": string;
+      "disabled"?: boolean;
+      "lastUpdatedBy"?: string;
+      "profile"?: LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"];
+      "role": string;
+      "updatedAt"?: string;
+    };
+    "roleAdmin": string;
+    "roleModerator": string;
+    "roleTriage": string;
+    "roleVerifier": string;
+  };
+  "tools.ozone.team.deleteMember": {
+    "main": never;
+  };
+  "tools.ozone.team.listMembers": {
+    "main": never;
+  };
+  "tools.ozone.team.updateMember": {
+    "main": never;
+  };
+  "tools.ozone.verification.defs": {
+    "verificationView": {
+      "createdAt": string;
+      "displayName": string;
+      "handle": string;
+      "issuer": string;
+      "issuerProfile"?: never | Record<string, any>;
+      "issuerRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
+      "revokeReason"?: string;
+      "revokedAt"?: string;
+      "revokedBy"?: string;
+      "subject": string;
+      "subjectProfile"?: never | Record<string, any>;
+      "subjectRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
+      "uri": string;
+    };
+  };
+  "tools.ozone.verification.grantVerifications": {
+    "grantError": {
+      "error": string;
+      "subject": string;
+    };
+    "main": never;
+    "verificationInput": {
+      "createdAt"?: string;
+      "displayName": string;
+      "handle": string;
+      "subject": string;
+    };
+  };
+  "tools.ozone.verification.listVerifications": {
+    "main": never;
+  };
+  "tools.ozone.verification.revokeVerifications": {
+    "main": never;
+    "revokeError": {
+      "error": string;
+      "uri": string;
+    };
+  };
+  "xyz.statusphere.status": {
+    "main": {
+      "createdAt": string;
+      "status": string;
+    };
+  };
 }
 
-/** Populated AT Protocol lexicon method definitions. */
 export interface Lexicons {
-  "app.bsky.actor.getPreferences": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.actor.getProfile": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.actor.getProfiles": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.actor.getSuggestions": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.actor.putPreferences": LexiconProcedure<unknown, unknown>;
-  "app.bsky.actor.searchActors": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.actor.searchActorsTypeahead": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.ageassurance.begin": LexiconProcedure<unknown, unknown>;
-  "app.bsky.ageassurance.getConfig": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.ageassurance.getState": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.bookmark.createBookmark": LexiconProcedure<unknown, unknown>;
-  "app.bsky.bookmark.deleteBookmark": LexiconProcedure<unknown, unknown>;
-  "app.bsky.bookmark.getBookmarks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.contact.dismissMatch": LexiconProcedure<unknown, unknown>;
-  "app.bsky.contact.getMatches": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.contact.getSyncStatus": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.contact.importContacts": LexiconProcedure<unknown, unknown>;
-  "app.bsky.contact.removeData": LexiconProcedure<unknown, unknown>;
-  "app.bsky.contact.sendNotification": LexiconProcedure<unknown, unknown>;
-  "app.bsky.contact.startPhoneVerification": LexiconProcedure<unknown, unknown>;
-  "app.bsky.contact.verifyPhone": LexiconProcedure<unknown, unknown>;
-  "app.bsky.draft.createDraft": LexiconProcedure<unknown, unknown>;
-  "app.bsky.draft.deleteDraft": LexiconProcedure<unknown, unknown>;
-  "app.bsky.draft.getDrafts": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.draft.updateDraft": LexiconProcedure<unknown, unknown>;
-  "app.bsky.feed.describeFeedGenerator": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.feed.getActorFeeds": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getActorLikes": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getAuthorFeed": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getFeed": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getFeedGenerator": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getFeedGenerators": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getFeedSkeleton": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getLikes": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getListFeed": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getPosts": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getPostThread": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getQuotes": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getRepostedBy": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getSuggestedFeeds": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.getTimeline": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.searchPosts": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.feed.sendInteractions": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.getActorStarterPacks": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.graph.getBlocks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getFollowers": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getFollows": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getKnownFollowers": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getList": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getListBlocks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getListMutes": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getLists": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getListsWithMembership": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.graph.getMutes": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getRelationships": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getStarterPack": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getStarterPacks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.getStarterPacksWithMembership": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.graph.getSuggestedFollowsByActor": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.graph.muteActor": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.muteActorList": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.muteThread": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.searchStarterPacks": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.graph.unmuteActor": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.unmuteActorList": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.unmuteThread": LexiconProcedure<unknown, unknown>;
-  "app.bsky.graph.verification.createVerification": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "app.bsky.graph.verification.deleteVerification": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "app.bsky.labeler.getServices": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.notification.getPreferences": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.notification.getUnreadCount": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.notification.listActivitySubscriptions": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.notification.listNotifications": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.notification.putActivitySubscription": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "app.bsky.notification.putNotificationPreferences": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "app.bsky.notification.putPreferences": LexiconProcedure<unknown, unknown>;
-  "app.bsky.notification.putPreferencesV2": LexiconProcedure<unknown, unknown>;
-  "app.bsky.notification.registerPush": LexiconProcedure<unknown, unknown>;
-  "app.bsky.notification.unregisterPush": LexiconProcedure<unknown, unknown>;
-  "app.bsky.notification.updateSeen": LexiconProcedure<unknown, unknown>;
-  "app.bsky.unspecced.confirmAgeAssurance": LexiconProcedure<unknown, unknown>;
-  "app.bsky.unspecced.getAgeAssuranceState": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getConfig": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getPopularFeedGenerators": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getPostThreadOtherV2": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getPostThreadV2": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getSuggestedFeeds": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedFeedsSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedOnboardingUsers": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedStarterPacks": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsers": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsersForDiscover": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsersForExplore": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsersForSeeMore": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestedUsersSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getSuggestionsSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getTaggedSuggestions": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getTrendingTopics": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.getTrends": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.unspecced.getTrendsSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.initAgeAssurance": LexiconProcedure<unknown, unknown>;
-  "app.bsky.unspecced.searchActorsSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.searchPostsSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.unspecced.searchStarterPacksSkeleton": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "app.bsky.video.getJobStatus": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.video.getUploadLimits": LexiconQuery<unknown, unknown, unknown>;
-  "app.bsky.video.uploadVideo": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.actor.deleteAccount": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.actor.exportAccountData": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.acceptConvo": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.addReaction": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.deleteMessageForSelf": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.getConvo": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.getConvoAvailability": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "chat.bsky.convo.getConvoForMembers": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.getLog": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.getMessages": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.leaveConvo": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.listConvoRequests": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.listConvos": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.convo.lockConvo": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.muteConvo": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.removeReaction": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.sendMessage": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.sendMessageBatch": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.unlockConvo": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.unmuteConvo": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.updateAllRead": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.convo.updateRead": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.addMembers": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.addReaction": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.approveJoinRequest": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.createGroup": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.createJoinLink": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.deleteGroup": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.deleteMessageForSelf": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.disableJoinLink": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.editGroup": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.editJoinLink": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.enableJoinLink": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.getGroupPublicInfo": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.group.getMessages": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.group.leaveGroup": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.listGroups": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.group.listInviteLinks": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.group.listJoinRequests": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.group.listMembers": LexiconQuery<unknown, unknown, unknown>;
-  "chat.bsky.group.rejectJoinRequest": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.removeMembers": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.removeReaction": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.requestJoin": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.group.sendMessage": LexiconProcedure<unknown, unknown>;
-  "chat.bsky.moderation.getActorMetadata": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "chat.bsky.moderation.getMessageContext": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "chat.bsky.moderation.updateActorAccess": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.deleteAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.disableAccountInvites": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.disableInviteCodes": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.enableAccountInvites": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.getAccountInfo": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.getAccountInfos": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.getAccountTakedown": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.getAccountUsage": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.getBlobAuditStatus": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.admin.getInviteCodes": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.getModerationReports": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.admin.getServerStats": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.getSubjectStatus": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.moderateAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.moderateRecord": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.queryAuditLog": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.repairRepo": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.resolveReport": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.runBlobAudit": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.searchAccounts": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.admin.sendEmail": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.takeDownAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.updateAccountEmail": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.updateAccountHandle": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.updateAccountPassword": LexiconProcedure<unknown, unknown>;
-  "com.atproto.admin.updateAccountSigningKey": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "com.atproto.admin.updateSubjectStatus": LexiconProcedure<unknown, unknown>;
-  "com.atproto.identity.getRecommendedDidCredentials": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.identity.refreshIdentity": LexiconProcedure<unknown, unknown>;
-  "com.atproto.identity.requestPlcOperationSignature": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "com.atproto.identity.resolveDid": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.identity.resolveHandle": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.identity.resolveIdentity": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.identity.signPlcOperation": LexiconProcedure<unknown, unknown>;
-  "com.atproto.identity.submitPlcOperation": LexiconProcedure<unknown, unknown>;
-  "com.atproto.identity.updateHandle": LexiconProcedure<unknown, unknown>;
-  "com.atproto.label.createLabel": LexiconProcedure<unknown, unknown>;
-  "com.atproto.label.getLabels": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.label.queryLabels": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.lexicon.resolveLexicon": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.moderation.createReport": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.applyWrites": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.createRecord": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.deleteBlob": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.deleteRecord": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.describeRepo": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.repo.getBlob": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.repo.getRecord": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.repo.importRepo": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.listMissingBlobs": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.repo.listRecords": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.repo.putRecord": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.updateRecord": LexiconProcedure<unknown, unknown>;
-  "com.atproto.repo.uploadBlob": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.activateAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.checkAccountStatus": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.server.confirmEmail": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.createAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.createAppPassword": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.createInviteCode": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.createInviteCodes": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.createSession": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.deactivateAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.deleteAccount": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.deleteSession": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.describeServer": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.server.getAccount": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.server.getAccountInviteCodes": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.server.getServiceAuth": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.server.getSession": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.server.listAppPasswords": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.server.refreshSession": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.requestAccountDelete": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.requestEmailConfirmation": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "com.atproto.server.requestEmailUpdate": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.requestPasswordReset": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.reserveSigningKey": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.resetPassword": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.revokeAppPassword": LexiconProcedure<unknown, unknown>;
-  "com.atproto.server.updateEmail": LexiconProcedure<unknown, unknown>;
-  "com.atproto.sync.getBlob": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getBlocks": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getCheckout": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getHead": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getHostStatus": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getLatestCommit": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getRecord": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getRepo": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.getRepoStatus": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.listBlobs": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.listHosts": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.listRepos": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.sync.listReposByCollection": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.sync.notifyOfUpdate": LexiconProcedure<unknown, unknown>;
-  "com.atproto.sync.requestCrawl": LexiconProcedure<unknown, unknown>;
-  "com.atproto.temp.addReservedHandle": LexiconProcedure<unknown, unknown>;
-  "com.atproto.temp.checkHandleAvailability": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.atproto.temp.checkSignupQueue": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.temp.dereferenceScope": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.temp.fetchLabels": LexiconQuery<unknown, unknown, unknown>;
-  "com.atproto.temp.requestPhoneVerification": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "com.atproto.temp.revokeAccountCredentials": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "com.germnetwork.identity.getAnchorKey": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.germnetwork.mailbox.claimAddresses": LexiconProcedure<unknown, unknown>;
-  "com.germnetwork.mailbox.deliver": LexiconProcedure<unknown, unknown>;
-  "com.germnetwork.mailbox.poll": LexiconQuery<unknown, unknown, unknown>;
-  "com.germnetwork.rendezvous.deliver": LexiconProcedure<unknown, unknown>;
-  "com.germnetwork.rendezvous.register": LexiconProcedure<unknown, unknown>;
-  "com.shinolabs.pinksea.getAuthorFeed": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.shinolabs.pinksea.getAuthorReplies": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.shinolabs.pinksea.getHandleFromDid": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.shinolabs.pinksea.getIdentity": LexiconQuery<unknown, unknown, unknown>;
-  "com.shinolabs.pinksea.getOekaki": LexiconQuery<unknown, unknown, unknown>;
-  "com.shinolabs.pinksea.getParentForReply": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.shinolabs.pinksea.getRecent": LexiconQuery<unknown, unknown, unknown>;
-  "com.shinolabs.pinksea.getTagFeed": LexiconQuery<unknown, unknown, unknown>;
-  "com.whtwnd.blog.getAuthorPosts": LexiconQuery<unknown, unknown, unknown>;
-  "com.whtwnd.blog.getEntryMetadataByName": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "com.whtwnd.blog.getMentionsByEntry": LexiconQuery<unknown, unknown, unknown>;
-  "com.whtwnd.blog.notifyOfNewEntry": LexiconProcedure<unknown, unknown>;
-  "place.stream.branding.deleteBlob": LexiconProcedure<unknown, unknown>;
-  "place.stream.branding.getBlob": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.branding.getBranding": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.branding.updateBlob": LexiconProcedure<unknown, unknown>;
-  "place.stream.broadcast.getBroadcaster": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "place.stream.graph.getFollowingUser": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "place.stream.live.getLiveUsers": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.live.getProfileCard": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.live.getRecommendations": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "place.stream.live.getSegments": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.live.searchActorsTypeahead": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "place.stream.moderation.createBlock": LexiconProcedure<unknown, unknown>;
-  "place.stream.moderation.createGate": LexiconProcedure<unknown, unknown>;
-  "place.stream.moderation.deleteBlock": LexiconProcedure<unknown, unknown>;
-  "place.stream.moderation.deleteGate": LexiconProcedure<unknown, unknown>;
-  "place.stream.moderation.updateLivestream": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "place.stream.multistream.createTarget": LexiconProcedure<unknown, unknown>;
-  "place.stream.multistream.deleteTarget": LexiconProcedure<unknown, unknown>;
-  "place.stream.multistream.listTargets": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "place.stream.multistream.putTarget": LexiconProcedure<unknown, unknown>;
-  "place.stream.server.createWebhook": LexiconProcedure<unknown, unknown>;
-  "place.stream.server.deleteWebhook": LexiconProcedure<unknown, unknown>;
-  "place.stream.server.getServerTime": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.server.getWebhook": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.server.listWebhooks": LexiconQuery<unknown, unknown, unknown>;
-  "place.stream.server.updateWebhook": LexiconProcedure<unknown, unknown>;
-  "social.grain.actor.getActorFavs": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.actor.getProfile": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.actor.searchActors": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.actor.updateAvatar": LexiconProcedure<unknown, unknown>;
-  "social.grain.actor.updateProfile": LexiconProcedure<unknown, unknown>;
-  "social.grain.comment.createComment": LexiconProcedure<unknown, unknown>;
-  "social.grain.comment.deleteComment": LexiconProcedure<unknown, unknown>;
-  "social.grain.darkroom.getGalleryComposite": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "social.grain.favorite.createFavorite": LexiconProcedure<unknown, unknown>;
-  "social.grain.favorite.deleteFavorite": LexiconProcedure<unknown, unknown>;
-  "social.grain.feed.getTimeline": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.gallery.applySort": LexiconProcedure<unknown, unknown>;
-  "social.grain.gallery.createGallery": LexiconProcedure<unknown, unknown>;
-  "social.grain.gallery.createItem": LexiconProcedure<unknown, unknown>;
-  "social.grain.gallery.deleteGallery": LexiconProcedure<unknown, unknown>;
-  "social.grain.gallery.deleteItem": LexiconProcedure<unknown, unknown>;
-  "social.grain.gallery.getActorGalleries": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "social.grain.gallery.getGallery": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.gallery.getGalleryThread": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "social.grain.gallery.updateGallery": LexiconProcedure<unknown, unknown>;
-  "social.grain.graph.createFollow": LexiconProcedure<unknown, unknown>;
-  "social.grain.graph.deleteFollow": LexiconProcedure<unknown, unknown>;
-  "social.grain.graph.getFollowers": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.graph.getFollows": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.notification.getNotifications": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "social.grain.notification.updateSeen": LexiconProcedure<unknown, unknown>;
-  "social.grain.photo.applyAlts": LexiconProcedure<unknown, unknown>;
-  "social.grain.photo.createExif": LexiconProcedure<unknown, unknown>;
-  "social.grain.photo.deletePhoto": LexiconProcedure<unknown, unknown>;
-  "social.grain.photo.getActorPhotos": LexiconQuery<unknown, unknown, unknown>;
-  "social.grain.photo.uploadPhoto": LexiconProcedure<unknown, unknown>;
-  "tools.garazyk.account.getUsage": LexiconQuery<unknown, unknown, unknown>;
-  "tools.garazyk.sync.getRepoFiltered": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.communication.createTemplate": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "tools.ozone.communication.deleteTemplate": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "tools.ozone.communication.listTemplates": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.communication.updateTemplate": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "tools.ozone.hosting.getAccountHistory": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.cancelScheduledAction": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.cancelScheduledActions": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.emitEvent": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.moderation.getAccountTimeline": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.getEvent": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getRecord": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getRecords": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getRepo": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getReporterStats": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.getRepos": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getSubjects": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.getSubjectStatus": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.listScheduledActions": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.queryEvents": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.moderation.queryStatuses": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.moderation.scheduleAction": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.moderation.searchRepos": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.safelink.addRule": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.safelink.queryEvents": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.safelink.queryRules": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.safelink.removeRule": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.safelink.updateRule": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.server.getConfig": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.server.updateConfig": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.set.addValues": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.set.deleteSet": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.set.deleteValues": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.set.getValues": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.set.querySets": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.set.upsertSet": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.setting.listOptions": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.setting.removeOptions": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.setting.upsertOption": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.signature.findCorrelation": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.signature.findRelatedAccounts": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.signature.searchAccounts": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.team.addMember": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.team.deleteMember": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.team.listMembers": LexiconQuery<unknown, unknown, unknown>;
-  "tools.ozone.team.updateMember": LexiconProcedure<unknown, unknown>;
-  "tools.ozone.verification.grantVerifications": LexiconProcedure<
-    unknown,
-    unknown
-  >;
-  "tools.ozone.verification.listVerifications": LexiconQuery<
-    unknown,
-    unknown,
-    unknown
-  >;
-  "tools.ozone.verification.revokeVerifications": LexiconProcedure<
-    unknown,
-    unknown
-  >;
+  "app.bsky.actor.getPreferences": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "preferences": LexiconDefs["app.bsky.actor.defs"]["preferences"];
+    };
+  };
+  "app.bsky.actor.getProfile": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+    };
+    input: never;
+    output: LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"];
+  };
+  "app.bsky.actor.getProfiles": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actors": Array<string>;
+    };
+    input: never;
+    output: {
+      "profiles": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"]>;
+    };
+  };
+  "app.bsky.actor.getSuggestions": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "cursor"?: string;
+      "recId"?: number;
+    };
+  };
+  "app.bsky.actor.profile": {
+    type: "record";
+    record: LexiconDefs["app.bsky.actor.profile"]["main"];
+  };
+  "app.bsky.actor.putPreferences": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "preferences": LexiconDefs["app.bsky.actor.defs"]["preferences"];
+    };
+    output: never;
+  };
+  "app.bsky.actor.searchActors": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "q"?: string;
+      "term"?: string;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "cursor"?: string;
+    };
+  };
+  "app.bsky.actor.searchActorsTypeahead": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "q"?: string;
+      "term"?: string;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
+    };
+  };
+  "app.bsky.actor.status": {
+    type: "record";
+    record: LexiconDefs["app.bsky.actor.status"]["main"];
+  };
+  "app.bsky.ageassurance.begin": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "countryCode": string;
+      "email": string;
+      "language": string;
+      "regionCode"?: string;
+    };
+    output: LexiconDefs["app.bsky.ageassurance.defs"]["state"];
+  };
+  "app.bsky.ageassurance.getConfig": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: LexiconDefs["app.bsky.ageassurance.defs"]["config"];
+  };
+  "app.bsky.ageassurance.getState": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "countryCode": string;
+      "regionCode"?: string;
+    };
+    input: never;
+    output: {
+      "metadata": LexiconDefs["app.bsky.ageassurance.defs"]["stateMetadata"];
+      "state": LexiconDefs["app.bsky.ageassurance.defs"]["state"];
+    };
+  };
+  "app.bsky.bookmark.createBookmark": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "cid": string;
+      "uri": string;
+    };
+    output: never;
+  };
+  "app.bsky.bookmark.deleteBookmark": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "uri": string;
+    };
+    output: never;
+  };
+  "app.bsky.bookmark.getBookmarks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "bookmarks": Array<LexiconDefs["app.bsky.bookmark.defs"]["bookmarkView"]>;
+      "cursor"?: string;
+    };
+  };
+  "app.bsky.contact.dismissMatch": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "subject": string;
+    };
+    output: {
+    };
+  };
+  "app.bsky.contact.getMatches": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "matches": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+    };
+  };
+  "app.bsky.contact.getSyncStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "syncStatus"?: LexiconDefs["app.bsky.contact.defs"]["syncStatus"];
+    };
+  };
+  "app.bsky.contact.importContacts": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "contacts": Array<string>;
+      "token": string;
+    };
+    output: {
+      "matchesAndContactIndexes": Array<LexiconDefs["app.bsky.contact.defs"]["matchAndContactIndex"]>;
+    };
+  };
+  "app.bsky.contact.removeData": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+    };
+    output: {
+    };
+  };
+  "app.bsky.contact.sendNotification": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "from": string;
+      "to": string;
+    };
+    output: {
+    };
+  };
+  "app.bsky.contact.startPhoneVerification": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "phone": string;
+    };
+    output: {
+    };
+  };
+  "app.bsky.contact.verifyPhone": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "code": string;
+      "phone": string;
+    };
+    output: {
+      "token": string;
+    };
+  };
+  "app.bsky.draft.createDraft": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "langs"?: Array<string>;
+      "text"?: string;
+    };
+    output: {
+      "uri"?: string;
+    };
+  };
+  "app.bsky.draft.deleteDraft": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "uri": string;
+    };
+    output: {
+    };
+  };
+  "app.bsky.draft.getDrafts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "drafts": Array<unknown>;
+    };
+  };
+  "app.bsky.draft.updateDraft": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "langs"?: Array<string>;
+      "text"?: string;
+      "uri": string;
+    };
+    output: {
+    };
+  };
+  "app.bsky.feed.describeFeedGenerator": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "did": string;
+      "feeds": Array<LexiconDefs["app.bsky.feed.describeFeedGenerator"]["feed"]>;
+      "links"?: LexiconDefs["app.bsky.feed.describeFeedGenerator"]["links"];
+    };
+  };
+  "app.bsky.feed.generator": {
+    type: "record";
+    record: LexiconDefs["app.bsky.feed.generator"]["main"];
+  };
+  "app.bsky.feed.getActorFeeds": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
+    };
+  };
+  "app.bsky.feed.getActorLikes": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
+    };
+  };
+  "app.bsky.feed.getAuthorFeed": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "filter"?: string;
+      "includePins"?: boolean;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
+    };
+  };
+  "app.bsky.feed.getFeed": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "feed": string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
+    };
+  };
+  "app.bsky.feed.getFeedGenerator": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "feed": string;
+    };
+    input: never;
+    output: {
+      "isOnline": boolean;
+      "isValid": boolean;
+      "view": LexiconDefs["app.bsky.feed.defs"]["generatorView"];
+    };
+  };
+  "app.bsky.feed.getFeedGenerators": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "feeds": Array<string>;
+    };
+    input: never;
+    output: {
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
+    };
+  };
+  "app.bsky.feed.getFeedSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "feed": string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["skeletonFeedPost"]>;
+      "reqId"?: string;
+    };
+  };
+  "app.bsky.feed.getLikes": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cid"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+      "uri": string;
+    };
+    input: never;
+    output: {
+      "cid"?: string;
+      "cursor"?: string;
+      "likes": Array<LexiconDefs["app.bsky.feed.getLikes"]["like"]>;
+      "uri": string;
+    };
+  };
+  "app.bsky.feed.getListFeed": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "list": string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
+    };
+  };
+  "app.bsky.feed.getPosts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uris": Array<string>;
+    };
+    input: never;
+    output: {
+      "posts": Array<LexiconDefs["app.bsky.feed.defs"]["postView"]>;
+    };
+  };
+  "app.bsky.feed.getPostThread": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "depth"?: number;
+      "parentHeight"?: number;
+      "uri": string;
+    };
+    input: never;
+    output: {
+      "thread": LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
+    };
+  };
+  "app.bsky.feed.getQuotes": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cid"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+      "uri": string;
+    };
+    input: never;
+    output: {
+      "cid"?: string;
+      "cursor"?: string;
+      "posts": Array<LexiconDefs["app.bsky.feed.defs"]["postView"]>;
+      "uri": string;
+    };
+  };
+  "app.bsky.feed.getRepostedBy": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cid"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+      "uri": string;
+    };
+    input: never;
+    output: {
+      "cid"?: string;
+      "cursor"?: string;
+      "repostedBy": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "uri": string;
+    };
+  };
+  "app.bsky.feed.getSuggestedFeeds": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
+    };
+  };
+  "app.bsky.feed.getTimeline": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "algorithm"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
+    };
+  };
+  "app.bsky.feed.like": {
+    type: "record";
+    record: LexiconDefs["app.bsky.feed.like"]["main"];
+  };
+  "app.bsky.feed.post": {
+    type: "record";
+    record: LexiconDefs["app.bsky.feed.post"]["main"];
+  };
+  "app.bsky.feed.postgate": {
+    type: "record";
+    record: LexiconDefs["app.bsky.feed.postgate"]["main"];
+  };
+  "app.bsky.feed.repost": {
+    type: "record";
+    record: LexiconDefs["app.bsky.feed.repost"]["main"];
+  };
+  "app.bsky.feed.searchPosts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "author"?: string;
+      "cursor"?: string;
+      "domain"?: string;
+      "lang"?: string;
+      "limit"?: number;
+      "mentions"?: string;
+      "q": string;
+      "since"?: string;
+      "sort"?: string;
+      "tag"?: Array<string>;
+      "until"?: string;
+      "url"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "hitsTotal"?: number;
+      "posts": Array<LexiconDefs["app.bsky.feed.defs"]["postView"]>;
+    };
+  };
+  "app.bsky.feed.sendInteractions": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "interactions": Array<LexiconDefs["app.bsky.feed.defs"]["interaction"]>;
+    };
+    output: {
+    };
+  };
+  "app.bsky.feed.threadgate": {
+    type: "record";
+    record: LexiconDefs["app.bsky.feed.threadgate"]["main"];
+  };
+  "app.bsky.graph.block": {
+    type: "record";
+    record: LexiconDefs["app.bsky.graph.block"]["main"];
+  };
+  "app.bsky.graph.follow": {
+    type: "record";
+    record: LexiconDefs["app.bsky.graph.follow"]["main"];
+  };
+  "app.bsky.graph.getActorStarterPacks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
+    };
+  };
+  "app.bsky.graph.getBlocks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "blocks": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "cursor"?: string;
+    };
+  };
+  "app.bsky.graph.getFollowers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+    };
+  };
+  "app.bsky.graph.getFollows": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "follows": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+    };
+  };
+  "app.bsky.graph.getKnownFollowers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+    };
+  };
+  "app.bsky.graph.getList": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "list": string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "items": Array<LexiconDefs["app.bsky.graph.defs"]["listItemView"]>;
+      "list": LexiconDefs["app.bsky.graph.defs"]["listView"];
+    };
+  };
+  "app.bsky.graph.getListBlocks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "lists": Array<LexiconDefs["app.bsky.graph.defs"]["listView"]>;
+    };
+  };
+  "app.bsky.graph.getListMutes": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "lists": Array<LexiconDefs["app.bsky.graph.defs"]["listView"]>;
+    };
+  };
+  "app.bsky.graph.getLists": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+      "purposes"?: Array<string>;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "lists": Array<LexiconDefs["app.bsky.graph.defs"]["listView"]>;
+    };
+  };
+  "app.bsky.graph.getListsWithMembership": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+      "purposes"?: Array<string>;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "listsWithMembership": Array<LexiconDefs["app.bsky.graph.getListsWithMembership"]["listWithMembership"]>;
+    };
+  };
+  "app.bsky.graph.getMutes": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "mutes": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+    };
+  };
+  "app.bsky.graph.getRelationships": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "others"?: Array<string>;
+    };
+    input: never;
+    output: {
+      "actor"?: string;
+      "relationships": Array<LexiconDefs["app.bsky.graph.defs"]["relationship"] | LexiconDefs["app.bsky.graph.defs"]["notFoundActor"] | Record<string, any>>;
+    };
+  };
+  "app.bsky.graph.getStarterPack": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "starterPack": string;
+    };
+    input: never;
+    output: {
+      "starterPack": LexiconDefs["app.bsky.graph.defs"]["starterPackView"];
+    };
+  };
+  "app.bsky.graph.getStarterPacks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uris": Array<string>;
+    };
+    input: never;
+    output: {
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
+    };
+  };
+  "app.bsky.graph.getStarterPacksWithMembership": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "starterPacksWithMembership": Array<LexiconDefs["app.bsky.graph.getStarterPacksWithMembership"]["starterPackWithMembership"]>;
+    };
+  };
+  "app.bsky.graph.getSuggestedFollowsByActor": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+    };
+    input: never;
+    output: {
+      "isFallback"?: boolean;
+      "recId"?: number;
+      "suggestions": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+    };
+  };
+  "app.bsky.graph.list": {
+    type: "record";
+    record: LexiconDefs["app.bsky.graph.list"]["main"];
+  };
+  "app.bsky.graph.listblock": {
+    type: "record";
+    record: LexiconDefs["app.bsky.graph.listblock"]["main"];
+  };
+  "app.bsky.graph.listitem": {
+    type: "record";
+    record: LexiconDefs["app.bsky.graph.listitem"]["main"];
+  };
+  "app.bsky.graph.muteActor": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "actor": string;
+    };
+    output: never;
+  };
+  "app.bsky.graph.muteActorList": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "list": string;
+    };
+    output: never;
+  };
+  "app.bsky.graph.muteThread": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "root": string;
+    };
+    output: never;
+  };
+  "app.bsky.graph.searchStarterPacks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "q": string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
+    };
+  };
+  "app.bsky.graph.starterpack": {
+    type: "record";
+    record: LexiconDefs["app.bsky.graph.starterpack"]["main"];
+  };
+  "app.bsky.graph.unmuteActor": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "actor": string;
+    };
+    output: never;
+  };
+  "app.bsky.graph.unmuteActorList": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "list": string;
+    };
+    output: never;
+  };
+  "app.bsky.graph.unmuteThread": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "root": string;
+    };
+    output: never;
+  };
+  "app.bsky.graph.verification": {
+    type: "record";
+    record: LexiconDefs["app.bsky.graph.verification"]["main"];
+  };
+  "app.bsky.graph.verification.createVerification": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "subject": string;
+    };
+    output: {
+    };
+  };
+  "app.bsky.graph.verification.deleteVerification": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "subject": string;
+    };
+    output: {
+    };
+  };
+  "app.bsky.labeler.getServices": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "detailed"?: boolean;
+      "dids": Array<string>;
+    };
+    input: never;
+    output: {
+      "views": Array<LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerViewDetailed"] | Record<string, any>>;
+    };
+  };
+  "app.bsky.labeler.service": {
+    type: "record";
+    record: LexiconDefs["app.bsky.labeler.service"]["main"];
+  };
+  "app.bsky.notification.declaration": {
+    type: "record";
+    record: LexiconDefs["app.bsky.notification.declaration"]["main"];
+  };
+  "app.bsky.notification.getPreferences": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "preferences": LexiconDefs["app.bsky.notification.defs"]["preferences"];
+    };
+  };
+  "app.bsky.notification.getUnreadCount": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "priority"?: boolean;
+      "seenAt"?: string;
+    };
+    input: never;
+    output: {
+      "count": number;
+    };
+  };
+  "app.bsky.notification.listActivitySubscriptions": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "subscriptions": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+    };
+  };
+  "app.bsky.notification.listNotifications": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "priority"?: boolean;
+      "reasons"?: Array<string>;
+      "seenAt"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "notifications": Array<LexiconDefs["app.bsky.notification.listNotifications"]["notification"]>;
+      "priority"?: boolean;
+      "seenAt"?: string;
+    };
+  };
+  "app.bsky.notification.putActivitySubscription": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "subject": string;
+    };
+    output: {
+      "activitySubscription"?: LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "subject": string;
+    };
+  };
+  "app.bsky.notification.putNotificationPreferences": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "priority": boolean;
+    };
+    output: {
+    };
+  };
+  "app.bsky.notification.putPreferences": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "priority": boolean;
+    };
+    output: never;
+  };
+  "app.bsky.notification.putPreferencesV2": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "chat"?: LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
+      "follow"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "like"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "likeViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "subscribedPost"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "unverified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "verified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+    };
+    output: {
+      "preferences": LexiconDefs["app.bsky.notification.defs"]["preferences"];
+    };
+  };
+  "app.bsky.notification.registerPush": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "ageRestricted"?: boolean;
+      "appId": string;
+      "platform": string;
+      "serviceDid": string;
+      "token": string;
+    };
+    output: never;
+  };
+  "app.bsky.notification.unregisterPush": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "appId": string;
+      "platform": string;
+      "serviceDid": string;
+      "token": string;
+    };
+    output: never;
+  };
+  "app.bsky.notification.updateSeen": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "seenAt": string;
+    };
+    output: never;
+  };
+  "app.bsky.unspecced.confirmAgeAssurance": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "token": string;
+    };
+    output: never;
+  };
+  "app.bsky.unspecced.getAgeAssuranceState": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: LexiconDefs["app.bsky.unspecced.defs"]["ageAssuranceState"];
+  };
+  "app.bsky.unspecced.getConfig": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "checkEmailConfirmed"?: boolean;
+      "liveNow"?: Array<LexiconDefs["app.bsky.unspecced.getConfig"]["liveNowConfig"]>;
+    };
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
+    };
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "starterPacks": Array<string>;
+    };
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "dids": Array<string>;
+      "recId"?: string;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getPopularFeedGenerators": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "query"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
+    };
+  };
+  "app.bsky.unspecced.getPostThreadOtherV2": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "anchor": string;
+    };
+    input: never;
+    output: {
+      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadOtherV2"]["threadItem"]>;
+    };
+  };
+  "app.bsky.unspecced.getPostThreadV2": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "above"?: boolean;
+      "anchor": string;
+      "below"?: number;
+      "branchingFactor"?: number;
+      "sort"?: string;
+    };
+    input: never;
+    output: {
+      "hasOtherReplies": boolean;
+      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadV2"]["threadItem"]>;
+      "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
+    };
+  };
+  "app.bsky.unspecced.getSuggestedFeeds": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "feeds": Array<string>;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "recId"?: string;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedStarterPacks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "starterPacks": Array<string>;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "recId"?: number;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "dids": Array<string>;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsersForExplore": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "dids": Array<string>;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "dids": Array<string>;
+      "recIdStr"?: string;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "category"?: string;
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "dids": Array<string>;
+      "recId"?: number;
+    };
+  };
+  "app.bsky.unspecced.getSuggestionsSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "relativeToDid"?: string;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
+      "cursor"?: string;
+      "recId"?: number;
+      "relativeToDid"?: string;
+    };
+  };
+  "app.bsky.unspecced.getTaggedSuggestions": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "suggestions": Array<LexiconDefs["app.bsky.unspecced.getTaggedSuggestions"]["suggestion"]>;
+    };
+  };
+  "app.bsky.unspecced.getTrendingTopics": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "suggested": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
+      "topics": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
+    };
+  };
+  "app.bsky.unspecced.getTrends": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "trends": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendView"]>;
+    };
+  };
+  "app.bsky.unspecced.getTrendsSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "trends": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonTrend"]>;
+    };
+  };
+  "app.bsky.unspecced.initAgeAssurance": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "countryCode": string;
+      "email": string;
+      "language": string;
+    };
+    output: LexiconDefs["app.bsky.unspecced.defs"]["ageAssuranceState"];
+  };
+  "app.bsky.unspecced.searchActorsSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "q": string;
+      "typeahead"?: boolean;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
+      "cursor"?: string;
+      "hitsTotal"?: number;
+    };
+  };
+  "app.bsky.unspecced.searchPostsSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "author"?: string;
+      "cursor"?: string;
+      "domain"?: string;
+      "lang"?: string;
+      "limit"?: number;
+      "mentions"?: string;
+      "q": string;
+      "since"?: string;
+      "sort"?: string;
+      "tag"?: Array<string>;
+      "until"?: string;
+      "url"?: string;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "hitsTotal"?: number;
+      "posts": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchPost"]>;
+    };
+  };
+  "app.bsky.unspecced.searchStarterPacksSkeleton": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "q": string;
+      "viewer"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "hitsTotal"?: number;
+      "starterPacks": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchStarterPack"]>;
+    };
+  };
+  "app.bsky.video.getJobStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "jobId": string;
+    };
+    input: never;
+    output: {
+      "jobStatus": LexiconDefs["app.bsky.video.defs"]["jobStatus"];
+    };
+  };
+  "app.bsky.video.getUploadLimits": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "canUpload": boolean;
+      "error"?: string;
+      "message"?: string;
+      "remainingDailyBytes"?: number;
+      "remainingDailyVideos"?: number;
+    };
+  };
+  "app.bsky.video.uploadVideo": {
+    type: "procedure";
+    inputEncoding: "video/mp4";
+    outputEncoding: "application/json";
+    input: Uint8Array;
+    output: {
+      "jobStatus": LexiconDefs["app.bsky.video.defs"]["jobStatus"];
+    };
+  };
+  "blue.linkat.board": {
+    type: "record";
+    record: LexiconDefs["blue.linkat.board"]["main"];
+  };
+  "chat.bsky.actor.declaration": {
+    type: "record";
+    record: LexiconDefs["chat.bsky.actor.declaration"]["main"];
+  };
+  "chat.bsky.actor.deleteAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: {
+    };
+  };
+  "chat.bsky.actor.exportAccountData": {
+    type: "query";
+    outputEncoding: "application/jsonl";
+    params: Record<string, never>;
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "chat.bsky.convo.acceptConvo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "rev"?: string;
+    };
+  };
+  "chat.bsky.convo.addReaction": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "messageId": string;
+      "value": string;
+    };
+    output: {
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"];
+    };
+  };
+  "chat.bsky.convo.deleteMessageForSelf": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "messageId": string;
+    };
+    output: LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"];
+  };
+  "chat.bsky.convo.getConvo": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "convoId": string;
+    };
+    input: never;
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.convo.getConvoAvailability": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "members": Array<string>;
+    };
+    input: never;
+    output: {
+      "canChat": boolean;
+      "convo"?: LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.convo.getConvoForMembers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "members": Array<string>;
+    };
+    input: never;
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.convo.getLog": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "logs": Array<LexiconDefs["chat.bsky.convo.defs"]["logBeginConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logAcceptConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logLeaveConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logMuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logUnmuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logCreateMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logDeleteMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logReadMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logAddReaction"] | LexiconDefs["chat.bsky.convo.defs"]["logRemoveReaction"] | Record<string, any>>;
+    };
+  };
+  "chat.bsky.convo.getMessages": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "convoId": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
+    };
+  };
+  "chat.bsky.convo.leaveConvo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "convoId": string;
+      "rev": string;
+    };
+  };
+  "chat.bsky.convo.listConvoRequests": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "requests": Array<LexiconDefs["chat.bsky.convo.defs"]["convoView"] | LexiconDefs["chat.bsky.group.defs"]["joinRequestView"] | Record<string, any>>;
+    };
+  };
+  "chat.bsky.convo.listConvos": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "readState"?: string;
+      "status"?: string;
+    };
+    input: never;
+    output: {
+      "convos": Array<LexiconDefs["chat.bsky.convo.defs"]["convoView"]>;
+      "cursor"?: string;
+    };
+  };
+  "chat.bsky.convo.lockConvo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.convo.muteConvo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.convo.removeReaction": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "messageId": string;
+      "value": string;
+    };
+    output: {
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"];
+    };
+  };
+  "chat.bsky.convo.sendMessage": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageInput"];
+    };
+    output: LexiconDefs["chat.bsky.convo.defs"]["messageView"];
+  };
+  "chat.bsky.convo.sendMessageBatch": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "items": Array<LexiconDefs["chat.bsky.convo.sendMessageBatch"]["batchItem"]>;
+    };
+    output: {
+      "items": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"]>;
+    };
+  };
+  "chat.bsky.convo.unlockConvo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.convo.unmuteConvo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.convo.updateAllRead": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "status"?: string;
+    };
+    output: {
+      "updatedCount": number;
+    };
+  };
+  "chat.bsky.convo.updateRead": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "messageId"?: string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.group.addMembers": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "members": Array<string>;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.group.addReaction": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "messageId": string;
+      "reaction": string;
+    };
+    output: never;
+  };
+  "chat.bsky.group.approveJoinRequest": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "member": string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.group.createGroup": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "members": Array<string>;
+      "name": string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.group.createJoinLink": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "joinRule": LexiconDefs["chat.bsky.group.defs"]["joinRule"];
+      "requireApproval"?: boolean;
+    };
+    output: {
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
+    };
+  };
+  "chat.bsky.group.deleteGroup": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "groupUri": string;
+    };
+    output: never;
+  };
+  "chat.bsky.group.deleteMessageForSelf": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "messageId": string;
+    };
+    output: never;
+  };
+  "chat.bsky.group.disableJoinLink": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
+    };
+  };
+  "chat.bsky.group.editGroup": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "name": string;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.group.editJoinLink": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "joinRule"?: LexiconDefs["chat.bsky.group.defs"]["joinRule"];
+      "requireApproval"?: boolean;
+    };
+    output: {
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
+    };
+  };
+  "chat.bsky.group.enableJoinLink": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+    };
+    output: {
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
+    };
+  };
+  "chat.bsky.group.getGroupPublicInfo": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "code": string;
+    };
+    input: never;
+    output: {
+      "group": LexiconDefs["chat.bsky.group.defs"]["groupPublicView"];
+    };
+  };
+  "chat.bsky.group.getMessages": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "groupUri": string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "messages"?: Array<Record<string, never>>;
+    };
+  };
+  "chat.bsky.group.leaveGroup": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "groupUri": string;
+    };
+    output: never;
+  };
+  "chat.bsky.group.listGroups": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "groups"?: Array<Record<string, never>>;
+    };
+  };
+  "chat.bsky.group.listInviteLinks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "groupUri": string;
+    };
+    input: never;
+    output: {
+      "links"?: Array<Record<string, never>>;
+    };
+  };
+  "chat.bsky.group.listJoinRequests": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "convoId": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "requests": Array<LexiconDefs["chat.bsky.group.defs"]["joinRequestView"]>;
+    };
+  };
+  "chat.bsky.group.listMembers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "groupUri": string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "members"?: Array<Record<string, never>>;
+    };
+  };
+  "chat.bsky.group.rejectJoinRequest": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "member": string;
+    };
+    output: {
+    };
+  };
+  "chat.bsky.group.removeMembers": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "convoId": string;
+      "members": Array<string>;
+    };
+    output: {
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+    };
+  };
+  "chat.bsky.group.removeReaction": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "messageId": string;
+    };
+    output: never;
+  };
+  "chat.bsky.group.requestJoin": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "code": string;
+    };
+    output: {
+      "convo"?: LexiconDefs["chat.bsky.convo.defs"]["convoView"];
+      "status": string;
+    };
+  };
+  "chat.bsky.group.sendMessage": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "groupUri": string;
+      "message": string;
+    };
+    output: never;
+  };
+  "chat.bsky.moderation.getActorMetadata": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+    };
+    input: never;
+    output: {
+      "all": LexiconDefs["chat.bsky.moderation.getActorMetadata"]["metadata"];
+      "day": LexiconDefs["chat.bsky.moderation.getActorMetadata"]["metadata"];
+      "month": LexiconDefs["chat.bsky.moderation.getActorMetadata"]["metadata"];
+    };
+  };
+  "chat.bsky.moderation.getMessageContext": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "after"?: number;
+      "before"?: number;
+      "convoId"?: string;
+      "messageId": string;
+    };
+    input: never;
+    output: {
+      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
+    };
+  };
+  "chat.bsky.moderation.updateActorAccess": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "actor": string;
+      "allowAccess": boolean;
+      "ref"?: string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.deleteAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.disableAccountInvites": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "account": string;
+      "note"?: string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.disableInviteCodes": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "accounts"?: Array<string>;
+      "codes"?: Array<string>;
+    };
+    output: never;
+  };
+  "com.atproto.admin.enableAccountInvites": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "account": string;
+      "note"?: string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.getAccountInfo": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: LexiconDefs["com.atproto.admin.defs"]["accountView"];
+  };
+  "com.atproto.admin.getAccountInfos": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "dids": Array<string>;
+    };
+    input: never;
+    output: {
+      "infos": Array<LexiconDefs["com.atproto.admin.defs"]["accountView"]>;
+    };
+  };
+  "com.atproto.admin.getAccountTakedown": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+    };
+    output: {
+      "applied": boolean;
+      "did": string;
+    };
+  };
+  "com.atproto.admin.getAccountUsage": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "blobBytes": number;
+      "blobCount": number;
+      "did": string;
+      "recordCount": number;
+      "repoBytes": number;
+    };
+  };
+  "com.atproto.admin.getBlobAuditStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "jobId": string;
+    };
+    input: never;
+    output: {
+      "errorCount"?: number;
+      "jobId": string;
+      "processedBlobs"?: number;
+      "progress"?: number;
+      "status"?: string;
+      "totalBlobs"?: number;
+    };
+  };
+  "com.atproto.admin.getInviteCodes": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "sort"?: string;
+    };
+    input: never;
+    output: {
+      "codes": Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
+      "cursor"?: string;
+    };
+  };
+  "com.atproto.admin.getModerationReports": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "reports": Array<unknown>;
+    };
+  };
+  "com.atproto.admin.getServerStats": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "accountCount"?: number;
+      "blobCount"?: number;
+      "lastIndexed"?: string;
+      "repoCount"?: number;
+    };
+  };
+  "com.atproto.admin.getSubjectStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "blob"?: string;
+      "did"?: string;
+      "uri"?: string;
+    };
+    input: never;
+    output: {
+      "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
+    };
+  };
+  "com.atproto.admin.moderateAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "action": string;
+      "did": string;
+      "note"?: string;
+      "reason"?: string;
+    };
+    output: {
+      "action": string;
+      "did": string;
+      "status": string;
+      "timestamp": string;
+    };
+  };
+  "com.atproto.admin.moderateRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "action": string;
+      "note"?: string;
+      "reason"?: string;
+      "uri": string;
+    };
+    output: {
+      "action": string;
+      "status": string;
+      "timestamp": string;
+      "uri": string;
+    };
+  };
+  "com.atproto.admin.queryAuditLog": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "adminDid"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "events": Array<any /* unresolved ref: com.atproto.admin.defs#auditLogEvent */>;
+    };
+  };
+  "com.atproto.admin.repairRepo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+    };
+    output: {
+      "did": string;
+      "success": boolean;
+    };
+  };
+  "com.atproto.admin.resolveReport": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "action"?: string;
+      "comment"?: string;
+      "id": number;
+    };
+    output: {
+    };
+  };
+  "com.atproto.admin.runBlobAudit": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "dryRun"?: boolean;
+      "type"?: string;
+    };
+    output: {
+      "jobId": string;
+      "status": string;
+      "type": string;
+    };
+  };
+  "com.atproto.admin.searchAccounts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "email"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "accounts": Array<LexiconDefs["com.atproto.admin.defs"]["accountView"]>;
+      "cursor"?: string;
+    };
+  };
+  "com.atproto.admin.sendEmail": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "comment"?: string;
+      "content": string;
+      "recipientDid": string;
+      "senderDid": string;
+      "subject"?: string;
+    };
+    output: {
+      "sent": boolean;
+    };
+  };
+  "com.atproto.admin.takeDownAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "reason"?: string;
+    };
+    output: {
+      "applied": boolean;
+      "did": string;
+    };
+  };
+  "com.atproto.admin.updateAccountEmail": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "account": string;
+      "email": string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.updateAccountHandle": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "handle": string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.updateAccountPassword": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "password": string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.updateAccountSigningKey": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "signingKey": string;
+    };
+    output: never;
+  };
+  "com.atproto.admin.updateSubjectStatus": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
+    };
+    output: {
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
+    };
+  };
+  "com.atproto.identity.getRecommendedDidCredentials": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "alsoKnownAs"?: Array<string>;
+      "rotationKeys"?: Array<string>;
+      "services"?: unknown;
+      "verificationMethods"?: unknown;
+    };
+  };
+  "com.atproto.identity.refreshIdentity": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "identifier": string;
+    };
+    output: LexiconDefs["com.atproto.identity.defs"]["identityInfo"];
+  };
+  "com.atproto.identity.requestPlcOperationSignature": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: never;
+  };
+  "com.atproto.identity.resolveDid": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "didDoc": unknown;
+    };
+  };
+  "com.atproto.identity.resolveHandle": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "handle": string;
+    };
+    input: never;
+    output: {
+      "did": string;
+    };
+  };
+  "com.atproto.identity.resolveIdentity": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "identifier": string;
+    };
+    input: never;
+    output: LexiconDefs["com.atproto.identity.defs"]["identityInfo"];
+  };
+  "com.atproto.identity.signPlcOperation": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "alsoKnownAs"?: Array<string>;
+      "rotationKeys"?: Array<string>;
+      "services"?: unknown;
+      "token"?: string;
+      "verificationMethods"?: unknown;
+    };
+    output: {
+      "operation": unknown;
+    };
+  };
+  "com.atproto.identity.submitPlcOperation": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "operation": unknown;
+    };
+    output: never;
+  };
+  "com.atproto.identity.updateHandle": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "handle": string;
+    };
+    output: never;
+  };
+  "com.atproto.label.createLabel": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "cid"?: string;
+      "cts"?: string;
+      "neg"?: boolean;
+      "src"?: string;
+      "uri": string;
+      "val": string;
+    };
+    output: LexiconDefs["com.atproto.label.defs"]["label"];
+  };
+  "com.atproto.label.getLabels": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "collection"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+      "since"?: string;
+      "sources"?: Array<string>;
+      "uriPatterns"?: Array<string>;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+  };
+  "com.atproto.label.queryLabels": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "sources"?: Array<string>;
+      "uriPatterns": Array<string>;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+  };
+  "com.atproto.lexicon.resolveLexicon": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "nsid": string;
+    };
+    input: never;
+    output: {
+      "cid": string;
+      "schema": LexiconDefs["com.atproto.lexicon.schema"]["main"];
+      "uri": string;
+    };
+  };
+  "com.atproto.lexicon.schema": {
+    type: "record";
+    record: LexiconDefs["com.atproto.lexicon.schema"]["main"];
+  };
+  "com.atproto.moderation.createReport": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "modTool"?: LexiconDefs["com.atproto.moderation.createReport"]["modTool"];
+      "reason"?: string;
+      "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
+    };
+    output: {
+      "createdAt": string;
+      "id": number;
+      "reason"?: string;
+      "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
+      "reportedBy": string;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
+    };
+  };
+  "com.atproto.repo.applyWrites": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "repo": string;
+      "swapCommit"?: string;
+      "validate"?: boolean;
+      "writes": Array<LexiconDefs["com.atproto.repo.applyWrites"]["create"] | LexiconDefs["com.atproto.repo.applyWrites"]["update"] | LexiconDefs["com.atproto.repo.applyWrites"]["delete"]>;
+    };
+    output: {
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
+      "results"?: Array<LexiconDefs["com.atproto.repo.applyWrites"]["createResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["updateResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["deleteResult"]>;
+    };
+  };
+  "com.atproto.repo.createRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "collection": string;
+      "record": unknown;
+      "repo": string;
+      "rkey"?: string;
+      "swapCommit"?: string;
+      "validate"?: boolean;
+    };
+    output: {
+      "cid": string;
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
+      "uri": string;
+      "validationStatus"?: string;
+    };
+  };
+  "com.atproto.repo.deleteBlob": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "blob": string;
+      "collection"?: string;
+      "rkey"?: string;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "com.atproto.repo.deleteRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "collection": string;
+      "repo": string;
+      "rkey": string;
+      "swapCommit"?: string;
+      "swapRecord"?: string;
+    };
+    output: {
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
+    };
+  };
+  "com.atproto.repo.describeRepo": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "repo": string;
+    };
+    input: never;
+    output: {
+      "collectionStats"?: Array<{
+      "count": number;
+      "name": string;
+    }>;
+      "collections": Array<string>;
+      "did": string;
+      "didDoc": unknown;
+      "handle": string;
+      "handleIsCorrect": boolean;
+    };
+  };
+  "com.atproto.repo.getBlob": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cid": string;
+      "did"?: string;
+    };
+    input: never;
+    output: unknown;
+  };
+  "com.atproto.repo.getRecord": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cid"?: string;
+      "collection": string;
+      "repo": string;
+      "rkey": string;
+    };
+    input: never;
+    output: {
+      "cid"?: string;
+      "uri": string;
+      "value": unknown;
+    };
+  };
+  "com.atproto.repo.importRepo": {
+    type: "procedure";
+    inputEncoding: "application/vnd.ipld.car";
+    outputEncoding: "application/json";
+    input: Uint8Array;
+    output: never;
+  };
+  "com.atproto.repo.listMissingBlobs": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "blobs": Array<LexiconDefs["com.atproto.repo.listMissingBlobs"]["recordBlob"]>;
+      "cursor"?: string;
+    };
+  };
+  "com.atproto.repo.listRecords": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "collection": string;
+      "cursor"?: string;
+      "limit"?: number;
+      "repo": string;
+      "reverse"?: boolean;
+      "rkeyEnd"?: string;
+      "rkeyStart"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "records": Array<LexiconDefs["com.atproto.repo.listRecords"]["record"]>;
+    };
+  };
+  "com.atproto.repo.putRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "collection": string;
+      "record": unknown;
+      "repo": string;
+      "rkey": string;
+      "swapCommit"?: string;
+      "swapRecord"?: string;
+      "validate"?: boolean;
+    };
+    output: {
+      "cid": string;
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
+      "uri": string;
+      "validationStatus"?: string;
+    };
+  };
+  "com.atproto.repo.updateRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "collection": string;
+      "record": unknown;
+      "rkey": string;
+      "validate"?: boolean;
+    };
+    output: unknown;
+  };
+  "com.atproto.repo.uploadBlob": {
+    type: "procedure";
+    inputEncoding: "*/*";
+    outputEncoding: "application/json";
+    input: Uint8Array;
+    output: {
+      "blob": any /* blob */;
+    };
+  };
+  "com.atproto.server.activateAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: never;
+  };
+  "com.atproto.server.checkAccountStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "activated": boolean;
+      "expectedBlobs": number;
+      "importedBlobs": number;
+      "indexedRecords": number;
+      "privateStateValues": number;
+      "repoBlocks": number;
+      "repoCommit": string;
+      "repoRev": string;
+      "validDid": boolean;
+    };
+  };
+  "com.atproto.server.confirmEmail": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "email": string;
+      "token": string;
+    };
+    output: never;
+  };
+  "com.atproto.server.createAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did"?: string;
+      "email"?: string;
+      "handle": string;
+      "inviteCode"?: string;
+      "password"?: string;
+      "plcOp"?: unknown;
+      "recoveryKey"?: string;
+      "verificationCode"?: string;
+      "verificationPhone"?: string;
+    };
+    output: {
+      "accessJwt": string;
+      "did": string;
+      "didDoc"?: unknown;
+      "handle": string;
+      "refreshJwt": string;
+    };
+  };
+  "com.atproto.server.createAppPassword": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "name": string;
+      "privileged"?: boolean;
+    };
+    output: LexiconDefs["com.atproto.server.createAppPassword"]["appPassword"];
+  };
+  "com.atproto.server.createInviteCode": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "forAccount"?: string;
+      "useCount": number;
+    };
+    output: {
+      "code": string;
+    };
+  };
+  "com.atproto.server.createInviteCodes": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "codeCount": number;
+      "forAccounts"?: Array<string>;
+      "useCount": number;
+    };
+    output: {
+      "codes": Array<LexiconDefs["com.atproto.server.createInviteCodes"]["accountCodes"]>;
+    };
+  };
+  "com.atproto.server.createSession": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "authFactorToken"?: string;
+      "identifier": string;
+      "password": string;
+    };
+    output: {
+      "accessJwt": string;
+      "did": string;
+      "didDoc"?: unknown;
+      "email"?: string;
+      "emailConfirmed"?: boolean;
+      "handle": string;
+      "refreshJwt": string;
+    };
+  };
+  "com.atproto.server.deactivateAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "deleteAfter"?: string;
+    };
+    output: never;
+  };
+  "com.atproto.server.deleteAccount": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "password": string;
+      "token": string;
+    };
+    output: never;
+  };
+  "com.atproto.server.deleteSession": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: never;
+  };
+  "com.atproto.server.describeServer": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "availableUserDomains": Array<string>;
+      "did": string;
+      "inviteCodeRequired"?: boolean;
+      "links"?: LexiconDefs["com.atproto.server.describeServer"]["links"];
+      "phoneVerificationRequired"?: boolean;
+    };
+  };
+  "com.atproto.server.getAccount": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "did": string;
+      "email"?: string;
+      "emailConfirmed"?: boolean;
+      "handle": string;
+    };
+  };
+  "com.atproto.server.getAccountInviteCodes": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "createAvailable"?: boolean;
+      "includeUsed"?: boolean;
+    };
+    input: never;
+    output: {
+      "codes": Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
+    };
+  };
+  "com.atproto.server.getServiceAuth": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "aud": string;
+      "exp"?: number;
+      "lxm"?: string;
+    };
+    input: never;
+    output: {
+      "token": string;
+    };
+  };
+  "com.atproto.server.getSession": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "active"?: boolean;
+      "did": string;
+      "didDoc"?: unknown;
+      "email"?: string;
+      "emailAuthFactor"?: boolean;
+      "emailConfirmed"?: boolean;
+      "handle": string;
+      "status"?: string;
+    };
+  };
+  "com.atproto.server.listAppPasswords": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "passwords": Array<LexiconDefs["com.atproto.server.listAppPasswords"]["appPassword"]>;
+    };
+  };
+  "com.atproto.server.refreshSession": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: {
+      "accessJwt": string;
+      "did": string;
+      "didDoc"?: unknown;
+      "handle": string;
+      "refreshJwt": string;
+    };
+  };
+  "com.atproto.server.requestAccountDelete": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: never;
+  };
+  "com.atproto.server.requestEmailConfirmation": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: never;
+  };
+  "com.atproto.server.requestEmailUpdate": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: {
+      "tokenRequired": boolean;
+    };
+  };
+  "com.atproto.server.requestPasswordReset": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "email": string;
+    };
+    output: never;
+  };
+  "com.atproto.server.reserveSigningKey": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did"?: string;
+    };
+    output: {
+      "signingKey": string;
+    };
+  };
+  "com.atproto.server.resetPassword": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "password": string;
+      "token": string;
+    };
+    output: never;
+  };
+  "com.atproto.server.revokeAppPassword": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "name": string;
+    };
+    output: never;
+  };
+  "com.atproto.server.updateEmail": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "email": string;
+      "emailAuthFactor"?: boolean;
+      "token"?: string;
+    };
+    output: never;
+  };
+  "com.atproto.sync.getBlob": {
+    type: "query";
+    outputEncoding: "*/*";
+    params: {
+      "cid": string;
+      "did": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "com.atproto.sync.getBlocks": {
+    type: "query";
+    outputEncoding: "application/vnd.ipld.car";
+    params: {
+      "cids": Array<string>;
+      "did": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "com.atproto.sync.getCheckout": {
+    type: "query";
+    outputEncoding: "application/vnd.ipld.car";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "com.atproto.sync.getHead": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "root": string;
+    };
+  };
+  "com.atproto.sync.getHostStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "hostname": string;
+    };
+    input: never;
+    output: {
+      "accountCount"?: number;
+      "hostname": string;
+      "seq"?: number;
+      "status"?: LexiconDefs["com.atproto.sync.defs"]["hostStatus"];
+    };
+  };
+  "com.atproto.sync.getLatestCommit": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "cid": string;
+      "rev": string;
+    };
+  };
+  "com.atproto.sync.getRecord": {
+    type: "query";
+    outputEncoding: "application/vnd.ipld.car";
+    params: {
+      "collection": string;
+      "did": string;
+      "rkey": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "com.atproto.sync.getRepo": {
+    type: "query";
+    outputEncoding: "application/vnd.ipld.car";
+    params: {
+      "did": string;
+      "since"?: string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "com.atproto.sync.getRepoStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "active": boolean;
+      "did": string;
+      "rev"?: string;
+      "status"?: string;
+    };
+  };
+  "com.atproto.sync.listBlobs": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "did": string;
+      "limit"?: number;
+      "since"?: string;
+    };
+    input: never;
+    output: {
+      "cids": Array<string>;
+      "cursor"?: string;
+    };
+  };
+  "com.atproto.sync.listHosts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "hosts": Array<LexiconDefs["com.atproto.sync.listHosts"]["host"]>;
+    };
+  };
+  "com.atproto.sync.listRepos": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "repos": Array<LexiconDefs["com.atproto.sync.listRepos"]["repo"]>;
+    };
+  };
+  "com.atproto.sync.listReposByCollection": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "collection": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "repos": Array<LexiconDefs["com.atproto.sync.listReposByCollection"]["repo"]>;
+    };
+  };
+  "com.atproto.sync.notifyOfUpdate": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "hostname": string;
+    };
+    output: never;
+  };
+  "com.atproto.sync.requestCrawl": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "hostname": string;
+    };
+    output: never;
+  };
+  "com.atproto.temp.addReservedHandle": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "handle": string;
+    };
+    output: {
+    };
+  };
+  "com.atproto.temp.checkHandleAvailability": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "birthDate"?: string;
+      "email"?: string;
+      "handle": string;
+    };
+    input: never;
+    output: {
+      "handle": string;
+      "result": LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultAvailable"] | LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultUnavailable"] | Record<string, any>;
+    };
+  };
+  "com.atproto.temp.checkSignupQueue": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "activated": boolean;
+      "estimatedTimeMs"?: number;
+      "placeInQueue"?: number;
+    };
+  };
+  "com.atproto.temp.dereferenceScope": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "scope": string;
+    };
+    input: never;
+    output: {
+      "scope": string;
+    };
+  };
+  "com.atproto.temp.fetchLabels": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "since"?: number;
+    };
+    input: never;
+    output: {
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+  };
+  "com.atproto.temp.requestPhoneVerification": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "phoneNumber": string;
+    };
+    output: never;
+  };
+  "com.atproto.temp.revokeAccountCredentials": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "account": string;
+    };
+    output: never;
+  };
+  "com.germnetwork.declaration": {
+    type: "record";
+    record: LexiconDefs["com.germnetwork.declaration"]["main"];
+  };
+  "com.germnetwork.identity.getAnchorKey": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "algorithm"?: string;
+      "anchorKey": { $bytes: string } | string;
+      "keyHistory"?: Array<{ $bytes: string } | string>;
+    };
+  };
+  "com.germnetwork.keypackage": {
+    type: "record";
+    record: LexiconDefs["com.germnetwork.keypackage"]["main"];
+  };
+  "com.germnetwork.mailbox.claimAddresses": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "agentRef": string;
+      "count": number;
+    };
+    output: {
+      "addresses": Array<string>;
+    };
+  };
+  "com.germnetwork.mailbox.deliver": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "address": string;
+      "ciphertext": { $bytes: string } | string;
+    };
+    output: {
+      "delivered": boolean;
+    };
+  };
+  "com.germnetwork.mailbox.poll": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "agentRef": string;
+    };
+    input: never;
+    output: {
+      "messages": Array<LexiconDefs["com.germnetwork.mailbox.poll"]["message"]>;
+    };
+  };
+  "com.germnetwork.rendezvous.deliver": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "address": string;
+      "ciphertext": { $bytes: string } | string;
+    };
+    output: {
+      "delivered": boolean;
+    };
+  };
+  "com.germnetwork.rendezvous.register": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "address": string;
+      "agentRef": string;
+      "epoch": number;
+    };
+    output: {
+      "registered": boolean;
+    };
+  };
+  "com.shinolabs.pinksea.getAuthorFeed": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+      "limit"?: number;
+      "since"?: string;
+    };
+    input: never;
+    output: {
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+    };
+  };
+  "com.shinolabs.pinksea.getAuthorReplies": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+      "limit"?: number;
+      "since"?: string;
+    };
+    input: never;
+    output: {
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+    };
+  };
+  "com.shinolabs.pinksea.getHandleFromDid": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "handle": string;
+    };
+  };
+  "com.shinolabs.pinksea.getIdentity": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "did": string;
+      "handle": string;
+    };
+  };
+  "com.shinolabs.pinksea.getOekaki": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+      "rkey": string;
+    };
+    input: never;
+    output: {
+      "children": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+      "parent": LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"] | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["oekakiTombstone"] | Record<string, any>;
+    };
+  };
+  "com.shinolabs.pinksea.getParentForReply": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+      "rkey": string;
+    };
+    input: never;
+    output: {
+      "did": string;
+      "rkey": string;
+    };
+  };
+  "com.shinolabs.pinksea.getRecent": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "since"?: string;
+    };
+    input: never;
+    output: {
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+    };
+  };
+  "com.shinolabs.pinksea.getTagFeed": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "since"?: string;
+      "tag": string;
+    };
+    input: never;
+    output: {
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+    };
+  };
+  "com.shinolabs.pinksea.oekaki": {
+    type: "record";
+    record: LexiconDefs["com.shinolabs.pinksea.oekaki"]["main"];
+  };
+  "com.shinolabs.pinksea.profile": {
+    type: "record";
+    record: LexiconDefs["com.shinolabs.pinksea.profile"]["main"];
+  };
+  "com.whtwnd.blog.entry": {
+    type: "record";
+    record: LexiconDefs["com.whtwnd.blog.entry"]["main"];
+  };
+  "com.whtwnd.blog.getAuthorPosts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "author": string;
+    };
+    input: never;
+    output: {
+      "post": Array<LexiconDefs["com.whtwnd.blog.defs"]["blogEntry"]>;
+    };
+  };
+  "com.whtwnd.blog.getEntryMetadataByName": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "author": string;
+      "entryTitle": string;
+    };
+    input: never;
+    output: {
+      "cid"?: string;
+      "entryUri": string;
+      "lastUpdate"?: string;
+    };
+  };
+  "com.whtwnd.blog.getMentionsByEntry": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "postUri": string;
+    };
+    input: never;
+    output: {
+      "mentions": Array<string>;
+    };
+  };
+  "com.whtwnd.blog.notifyOfNewEntry": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "entryUri": string;
+    };
+    output: {
+    };
+  };
+  "fyi.frontpage.feed.comment": {
+    type: "record";
+    record: LexiconDefs["fyi.frontpage.feed.comment"]["main"];
+  };
+  "fyi.frontpage.feed.post": {
+    type: "record";
+    record: LexiconDefs["fyi.frontpage.feed.post"]["main"];
+  };
+  "fyi.frontpage.feed.vote": {
+    type: "record";
+    record: LexiconDefs["fyi.frontpage.feed.vote"]["main"];
+  };
+  "fyi.unravel.frontpage.comment": {
+    type: "record";
+    record: LexiconDefs["fyi.unravel.frontpage.comment"]["main"];
+  };
+  "fyi.unravel.frontpage.post": {
+    type: "record";
+    record: LexiconDefs["fyi.unravel.frontpage.post"]["main"];
+  };
+  "fyi.unravel.frontpage.vote": {
+    type: "record";
+    record: LexiconDefs["fyi.unravel.frontpage.vote"]["main"];
+  };
+  "my.skylights.rel": {
+    type: "record";
+    record: LexiconDefs["my.skylights.rel"]["main"];
+  };
+  "place.stream.branding.deleteBlob": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "broadcaster"?: string;
+      "key": string;
+    };
+    output: {
+      "success": boolean;
+    };
+  };
+  "place.stream.branding.getBlob": {
+    type: "query";
+    outputEncoding: "*/*";
+    params: {
+      "broadcaster"?: string;
+      "key": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "place.stream.branding.getBranding": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "broadcaster"?: string;
+    };
+    input: never;
+    output: {
+      "assets": Array<LexiconDefs["place.stream.branding.getBranding"]["brandingAsset"]>;
+    };
+  };
+  "place.stream.branding.updateBlob": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "broadcaster"?: string;
+      "data": string;
+      "height"?: number;
+      "key": string;
+      "mimeType": string;
+      "width"?: number;
+    };
+    output: {
+      "success": boolean;
+    };
+  };
+  "place.stream.broadcast.getBroadcaster": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "admins"?: Array<string>;
+      "broadcaster": string;
+      "server"?: string;
+    };
+  };
+  "place.stream.broadcast.origin": {
+    type: "record";
+    record: LexiconDefs["place.stream.broadcast.origin"]["main"];
+  };
+  "place.stream.broadcast.syndication": {
+    type: "record";
+    record: LexiconDefs["place.stream.broadcast.syndication"]["main"];
+  };
+  "place.stream.chat.gate": {
+    type: "record";
+    record: LexiconDefs["place.stream.chat.gate"]["main"];
+  };
+  "place.stream.chat.message": {
+    type: "record";
+    record: LexiconDefs["place.stream.chat.message"]["main"];
+  };
+  "place.stream.chat.profile": {
+    type: "record";
+    record: LexiconDefs["place.stream.chat.profile"]["main"];
+  };
+  "place.stream.graph.getFollowingUser": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "subjectDID": string;
+      "userDID": string;
+    };
+    input: never;
+    output: {
+      "follow"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "place.stream.key": {
+    type: "record";
+    record: LexiconDefs["place.stream.key"]["main"];
+  };
+  "place.stream.live.getLiveUsers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "before"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "streams"?: Array<LexiconDefs["place.stream.livestream"]["livestreamView"]>;
+    };
+  };
+  "place.stream.live.getProfileCard": {
+    type: "query";
+    outputEncoding: "*/*";
+    params: {
+      "id": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "place.stream.live.getRecommendations": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "userDID": string;
+    };
+    input: never;
+    output: {
+      "recommendations": Array<LexiconDefs["place.stream.live.getRecommendations"]["livestreamRecommendation"] | Record<string, any>>;
+      "userDID"?: string;
+    };
+  };
+  "place.stream.live.getSegments": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "before"?: string;
+      "limit"?: number;
+      "userDID": string;
+    };
+    input: never;
+    output: {
+      "segments"?: Array<LexiconDefs["place.stream.segment"]["segmentView"]>;
+    };
+  };
+  "place.stream.live.recommendations": {
+    type: "record";
+    record: LexiconDefs["place.stream.live.recommendations"]["main"];
+  };
+  "place.stream.live.searchActorsTypeahead": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "limit"?: number;
+      "q"?: string;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["place.stream.live.searchActorsTypeahead"]["actor"]>;
+    };
+  };
+  "place.stream.livestream": {
+    type: "record";
+    record: LexiconDefs["place.stream.livestream"]["main"];
+  };
+  "place.stream.metadata.configuration": {
+    type: "record";
+    record: LexiconDefs["place.stream.metadata.configuration"]["main"];
+  };
+  "place.stream.moderation.createBlock": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "reason"?: string;
+      "streamer": string;
+      "subject": string;
+    };
+    output: {
+      "cid": string;
+      "uri": string;
+    };
+  };
+  "place.stream.moderation.createGate": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "messageUri": string;
+      "streamer": string;
+    };
+    output: {
+      "cid": string;
+      "uri": string;
+    };
+  };
+  "place.stream.moderation.deleteBlock": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "blockUri": string;
+      "streamer": string;
+    };
+    output: {
+    };
+  };
+  "place.stream.moderation.deleteGate": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "gateUri": string;
+      "streamer": string;
+    };
+    output: {
+    };
+  };
+  "place.stream.moderation.permission": {
+    type: "record";
+    record: LexiconDefs["place.stream.moderation.permission"]["main"];
+  };
+  "place.stream.moderation.updateLivestream": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "livestreamUri": string;
+      "streamer": string;
+      "title"?: string;
+    };
+    output: {
+      "cid": string;
+      "uri": string;
+    };
+  };
+  "place.stream.multistream.createTarget": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
+    };
+    output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
+  };
+  "place.stream.multistream.deleteTarget": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "rkey": string;
+    };
+    output: {
+    };
+  };
+  "place.stream.multistream.listTargets": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "targets": Array<LexiconDefs["place.stream.multistream.defs"]["targetView"]>;
+    };
+  };
+  "place.stream.multistream.putTarget": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
+      "rkey"?: string;
+    };
+    output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
+  };
+  "place.stream.multistream.target": {
+    type: "record";
+    record: LexiconDefs["place.stream.multistream.target"]["main"];
+  };
+  "place.stream.segment": {
+    type: "record";
+    record: LexiconDefs["place.stream.segment"]["main"];
+  };
+  "place.stream.server.createWebhook": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "active"?: boolean;
+      "description"?: string;
+      "events": Array<string>;
+      "muteWords"?: Array<string>;
+      "name"?: string;
+      "prefix"?: string;
+      "rewrite"?: Array<LexiconDefs["place.stream.server.defs"]["rewriteRule"]>;
+      "suffix"?: string;
+      "url": string;
+    };
+    output: {
+      "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
+    };
+  };
+  "place.stream.server.deleteWebhook": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "id": string;
+    };
+    output: {
+      "success": boolean;
+    };
+  };
+  "place.stream.server.getServerTime": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "serverTime": string;
+    };
+  };
+  "place.stream.server.getWebhook": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "id": string;
+    };
+    input: never;
+    output: {
+      "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
+    };
+  };
+  "place.stream.server.listWebhooks": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "active"?: boolean;
+      "cursor"?: string;
+      "event"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "webhooks": Array<LexiconDefs["place.stream.server.defs"]["webhook"]>;
+    };
+  };
+  "place.stream.server.settings": {
+    type: "record";
+    record: LexiconDefs["place.stream.server.settings"]["main"];
+  };
+  "place.stream.server.updateWebhook": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "active"?: boolean;
+      "description"?: string;
+      "events"?: Array<string>;
+      "id": string;
+      "muteWords"?: Array<string>;
+      "name"?: string;
+      "prefix"?: string;
+      "rewrite"?: Array<LexiconDefs["place.stream.server.defs"]["rewriteRule"]>;
+      "suffix"?: string;
+      "url"?: string;
+    };
+    output: {
+      "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
+    };
+  };
+  "sh.tangled.actor.profile": {
+    type: "record";
+    record: LexiconDefs["sh.tangled.actor.profile"]["main"];
+  };
+  "sh.tangled.graph.follow": {
+    type: "record";
+    record: LexiconDefs["sh.tangled.graph.follow"]["main"];
+  };
+  "social.grain.actor.getActorFavs": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "items": Array<LexiconDefs["social.grain.gallery.defs"]["galleryView"]>;
+    };
+  };
+  "social.grain.actor.getProfile": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+    };
+    input: never;
+    output: LexiconDefs["social.grain.actor.defs"]["profileViewDetailed"];
+  };
+  "social.grain.actor.profile": {
+    type: "record";
+    record: LexiconDefs["social.grain.actor.profile"]["main"];
+  };
+  "social.grain.actor.searchActors": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "q"?: string;
+    };
+    input: never;
+    output: {
+      "actors": Array<LexiconDefs["social.grain.actor.defs"]["profileView"]>;
+      "cursor"?: string;
+    };
+  };
+  "social.grain.actor.updateAvatar": {
+    type: "procedure";
+    inputEncoding: "*/*";
+    outputEncoding: "application/json";
+    input: Uint8Array;
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.actor.updateProfile": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "description"?: string;
+      "displayName"?: string;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.comment": {
+    type: "record";
+    record: LexiconDefs["social.grain.comment"]["main"];
+  };
+  "social.grain.comment.createComment": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "focus"?: string;
+      "replyTo"?: string;
+      "subject": string;
+      "text": string;
+    };
+    output: {
+      "commentUri"?: string;
+    };
+  };
+  "social.grain.comment.deleteComment": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "uri": string;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.darkroom.getGalleryComposite": {
+    type: "query";
+    outputEncoding: "*/*";
+    params: {
+      "uri": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "social.grain.favorite": {
+    type: "record";
+    record: LexiconDefs["social.grain.favorite"]["main"];
+  };
+  "social.grain.favorite.createFavorite": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "subject": string;
+    };
+    output: {
+      "favoriteUri": string;
+    };
+  };
+  "social.grain.favorite.deleteFavorite": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "uri": string;
+    };
+    output: {
+      "success": boolean;
+    };
+  };
+  "social.grain.feed.getTimeline": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "algorithm"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "feed": Array<LexiconDefs["social.grain.gallery.defs"]["galleryView"]>;
+    };
+  };
+  "social.grain.gallery": {
+    type: "record";
+    record: LexiconDefs["social.grain.gallery"]["main"];
+  };
+  "social.grain.gallery.applySort": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "writes": Array<LexiconDefs["social.grain.gallery.applySort"]["update"]>;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.gallery.createGallery": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "description"?: string;
+      "title": string;
+    };
+    output: {
+      "galleryUri"?: string;
+    };
+  };
+  "social.grain.gallery.createItem": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "galleryUri": string;
+      "photoUri": string;
+      "position": number;
+    };
+    output: {
+      "itemUri"?: string;
+    };
+  };
+  "social.grain.gallery.deleteGallery": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "cascade"?: boolean;
+      "uri": string;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.gallery.deleteItem": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "uri": string;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.gallery.getActorGalleries": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "items": Array<LexiconDefs["social.grain.gallery.defs"]["galleryView"]>;
+    };
+  };
+  "social.grain.gallery.getGallery": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uri": string;
+    };
+    input: never;
+    output: LexiconDefs["social.grain.gallery.defs"]["galleryView"];
+  };
+  "social.grain.gallery.getGalleryThread": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uri": string;
+    };
+    input: never;
+    output: {
+      "comments": Array<LexiconDefs["social.grain.comment.defs"]["commentView"]>;
+      "gallery": LexiconDefs["social.grain.gallery.defs"]["galleryView"];
+    };
+  };
+  "social.grain.gallery.item": {
+    type: "record";
+    record: LexiconDefs["social.grain.gallery.item"]["main"];
+  };
+  "social.grain.gallery.updateGallery": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "description"?: string;
+      "galleryUri": string;
+      "title": string;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.graph.createFollow": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "subject": string;
+    };
+    output: {
+      "followUri"?: string;
+    };
+  };
+  "social.grain.graph.deleteFollow": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "uri": string;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.graph.follow": {
+    type: "record";
+    record: LexiconDefs["social.grain.graph.follow"]["main"];
+  };
+  "social.grain.graph.getFollowers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "followers": Array<LexiconDefs["social.grain.actor.defs"]["profileView"]>;
+      "subject": LexiconDefs["social.grain.actor.defs"]["profileView"];
+    };
+  };
+  "social.grain.graph.getFollows": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "follows": Array<LexiconDefs["social.grain.actor.defs"]["profileView"]>;
+      "subject": LexiconDefs["social.grain.actor.defs"]["profileView"];
+    };
+  };
+  "social.grain.labeler.service": {
+    type: "record";
+    record: LexiconDefs["social.grain.labeler.service"]["main"];
+  };
+  "social.grain.notification.getNotifications": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "notifications": Array<LexiconDefs["social.grain.notification.defs"]["notificationViewDetailed"]>;
+      "seenAt"?: string;
+    };
+  };
+  "social.grain.notification.updateSeen": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "seenAt": string;
+    };
+    output: never;
+  };
+  "social.grain.photo": {
+    type: "record";
+    record: LexiconDefs["social.grain.photo"]["main"];
+  };
+  "social.grain.photo.applyAlts": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "writes": Array<LexiconDefs["social.grain.photo.applyAlts"]["update"]>;
+    };
+    output: {
+      "success"?: boolean;
+    };
+  };
+  "social.grain.photo.createExif": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "dateTimeOriginal"?: string;
+      "exposureTime"?: number;
+      "fNumber"?: number;
+      "flash"?: string;
+      "focalLengthIn35mmFormat"?: number;
+      "iSO"?: number;
+      "lensMake"?: string;
+      "lensModel"?: string;
+      "make"?: string;
+      "model"?: string;
+      "photo": string;
+    };
+    output: {
+      "exifUri"?: string;
+    };
+  };
+  "social.grain.photo.deletePhoto": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "cascade"?: boolean;
+      "uri": string;
+    };
+    output: {
+      "success": boolean;
+    };
+  };
+  "social.grain.photo.exif": {
+    type: "record";
+    record: LexiconDefs["social.grain.photo.exif"]["main"];
+  };
+  "social.grain.photo.getActorPhotos": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "actor": string;
+      "cursor"?: string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "items": Array<LexiconDefs["social.grain.photo.defs"]["photoView"]>;
+    };
+  };
+  "social.grain.photo.uploadPhoto": {
+    type: "procedure";
+    inputEncoding: "*/*";
+    outputEncoding: "application/json";
+    input: Uint8Array;
+    output: {
+      "photoUri"?: string;
+    };
+  };
+  "tools.garazyk.account.getUsage": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+    };
+    input: never;
+    output: {
+      "blobBytes": number;
+      "blobCount": number;
+      "did": string;
+      "recordCount": number;
+      "repoBytes": number;
+    };
+  };
+  "tools.garazyk.sync.getRepoFiltered": {
+    type: "query";
+    outputEncoding: "application/vnd.ipld.car";
+    params: {
+      "collections": Array<string>;
+      "did": string;
+      "since"?: string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "tools.ozone.communication.createTemplate": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "contentMarkdown": string;
+      "createdBy"?: string;
+      "lang"?: string;
+      "name": string;
+      "subject": string;
+    };
+    output: LexiconDefs["tools.ozone.communication.defs"]["templateView"];
+  };
+  "tools.ozone.communication.deleteTemplate": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "id": string;
+    };
+    output: never;
+  };
+  "tools.ozone.communication.listTemplates": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "communicationTemplates": Array<LexiconDefs["tools.ozone.communication.defs"]["templateView"]>;
+    };
+  };
+  "tools.ozone.communication.updateTemplate": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "contentMarkdown"?: string;
+      "disabled"?: boolean;
+      "id": string;
+      "lang"?: string;
+      "name"?: string;
+      "subject"?: string;
+      "updatedBy"?: string;
+    };
+    output: LexiconDefs["tools.ozone.communication.defs"]["templateView"];
+  };
+  "tools.ozone.hosting.getAccountHistory": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "did": string;
+      "events"?: Array<string>;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "events": Array<LexiconDefs["tools.ozone.hosting.getAccountHistory"]["event"]>;
+    };
+  };
+  "tools.ozone.moderation.cancelScheduledAction": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "id": string;
+    };
+    output: {
+      "success": boolean;
+    };
+  };
+  "tools.ozone.moderation.cancelScheduledActions": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "comment"?: string;
+      "subjects": Array<string>;
+    };
+    output: LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["cancellationResults"];
+  };
+  "tools.ozone.moderation.emitEvent": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "createdBy": string;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "externalId"?: string;
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
+      "subjectBlobCids"?: Array<string>;
+    };
+    output: LexiconDefs["tools.ozone.moderation.defs"]["modEventView"];
+  };
+  "tools.ozone.moderation.getAccountTimeline": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: {
+      "timeline": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItem"]>;
+    };
+  };
+  "tools.ozone.moderation.getEvent": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "id": number;
+    };
+    input: never;
+    output: LexiconDefs["tools.ozone.moderation.defs"]["modEventViewDetail"];
+  };
+  "tools.ozone.moderation.getRecord": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cid"?: string;
+      "uri": string;
+    };
+    input: never;
+    output: LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"];
+  };
+  "tools.ozone.moderation.getRecords": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uris": Array<string>;
+    };
+    input: never;
+    output: {
+      "records": Array<LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>>;
+    };
+  };
+  "tools.ozone.moderation.getRepo": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did": string;
+    };
+    input: never;
+    output: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"];
+  };
+  "tools.ozone.moderation.getReporterStats": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "dids": Array<string>;
+    };
+    input: never;
+    output: {
+      "stats": Array<LexiconDefs["tools.ozone.moderation.defs"]["reporterStats"]>;
+    };
+  };
+  "tools.ozone.moderation.getRepos": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "dids": Array<string>;
+    };
+    input: never;
+    output: {
+      "repos": Array<LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>>;
+    };
+  };
+  "tools.ozone.moderation.getSubjects": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "subjects": Array<string>;
+    };
+    input: never;
+    output: {
+      "subjects": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectView"]>;
+    };
+  };
+  "tools.ozone.moderation.getSubjectStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "did"?: string;
+      "uri"?: string;
+    };
+    input: never;
+    output: {
+      "status": LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+    };
+  };
+  "tools.ozone.moderation.listScheduledActions": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "cursor"?: string;
+      "endsBefore"?: string;
+      "limit"?: number;
+      "startsAfter"?: string;
+      "statuses": Array<string>;
+      "subjects"?: Array<string>;
+    };
+    output: {
+      "actions": Array<LexiconDefs["tools.ozone.moderation.defs"]["scheduledActionView"]>;
+      "cursor"?: string;
+    };
+  };
+  "tools.ozone.moderation.queryEvents": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "addedLabels"?: Array<string>;
+      "addedTags"?: Array<string>;
+      "ageAssuranceState"?: string;
+      "batchId"?: string;
+      "collections"?: Array<string>;
+      "comment"?: string;
+      "createdAfter"?: string;
+      "createdBefore"?: string;
+      "createdBy"?: string;
+      "cursor"?: string;
+      "hasComment"?: boolean;
+      "includeAllUserRecords"?: boolean;
+      "limit"?: number;
+      "modTool"?: Array<string>;
+      "policies"?: Array<string>;
+      "removedLabels"?: Array<string>;
+      "removedTags"?: Array<string>;
+      "reportTypes"?: Array<string>;
+      "sortDirection"?: string;
+      "subject"?: string;
+      "subjectType"?: string;
+      "types"?: Array<string>;
+      "withStrike"?: boolean;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "events": Array<LexiconDefs["tools.ozone.moderation.defs"]["modEventView"]>;
+    };
+  };
+  "tools.ozone.moderation.queryStatuses": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "ageAssuranceState"?: string;
+      "appealed"?: boolean;
+      "collections"?: Array<string>;
+      "comment"?: string;
+      "cursor"?: string;
+      "excludeTags"?: Array<string>;
+      "hostingDeletedAfter"?: string;
+      "hostingDeletedBefore"?: string;
+      "hostingStatuses"?: Array<string>;
+      "hostingUpdatedAfter"?: string;
+      "hostingUpdatedBefore"?: string;
+      "ignoreSubjects"?: Array<string>;
+      "includeAllUserRecords"?: boolean;
+      "includeMuted"?: boolean;
+      "lastReviewedBy"?: string;
+      "limit"?: number;
+      "minAccountSuspendCount"?: number;
+      "minPriorityScore"?: number;
+      "minReportedRecordsCount"?: number;
+      "minStrikeCount"?: number;
+      "minTakendownRecordsCount"?: number;
+      "onlyMuted"?: boolean;
+      "queueCount"?: number;
+      "queueIndex"?: number;
+      "queueSeed"?: string;
+      "reportedAfter"?: string;
+      "reportedBefore"?: string;
+      "reviewState"?: string;
+      "reviewedAfter"?: string;
+      "reviewedBefore"?: string;
+      "sortDirection"?: string;
+      "sortField"?: string;
+      "subject"?: string;
+      "subjectType"?: string;
+      "tags"?: Array<string>;
+      "takendown"?: boolean;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "subjectStatuses": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"]>;
+    };
+  };
+  "tools.ozone.moderation.scheduleAction": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "action": LexiconDefs["tools.ozone.moderation.scheduleAction"]["takedown"] | Record<string, any>;
+      "createdBy": string;
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
+      "scheduling": LexiconDefs["tools.ozone.moderation.scheduleAction"]["schedulingConfig"];
+      "subjects": Array<string>;
+    };
+    output: LexiconDefs["tools.ozone.moderation.scheduleAction"]["scheduledActionResults"];
+  };
+  "tools.ozone.moderation.searchRepos": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "q"?: string;
+      "term"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "repos": Array<LexiconDefs["tools.ozone.moderation.defs"]["repoView"]>;
+    };
+  };
+  "tools.ozone.safelink.addRule": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "comment"?: string;
+      "createdBy"?: string;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
+      "url": string;
+    };
+    output: LexiconDefs["tools.ozone.safelink.defs"]["event"];
+  };
+  "tools.ozone.safelink.queryEvents": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "cursor"?: string;
+      "limit"?: number;
+      "patternType"?: string;
+      "sortDirection"?: string;
+      "urls"?: Array<string>;
+    };
+    output: {
+      "cursor"?: string;
+      "events": Array<LexiconDefs["tools.ozone.safelink.defs"]["event"]>;
+    };
+  };
+  "tools.ozone.safelink.queryRules": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "actions"?: Array<string>;
+      "createdBy"?: string;
+      "cursor"?: string;
+      "limit"?: number;
+      "patternType"?: string;
+      "reason"?: string;
+      "sortDirection"?: string;
+      "urls"?: Array<string>;
+    };
+    output: {
+      "cursor"?: string;
+      "rules": Array<LexiconDefs["tools.ozone.safelink.defs"]["urlRule"]>;
+    };
+  };
+  "tools.ozone.safelink.removeRule": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "comment"?: string;
+      "createdBy"?: string;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "url": string;
+    };
+    output: LexiconDefs["tools.ozone.safelink.defs"]["event"];
+  };
+  "tools.ozone.safelink.updateRule": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "comment"?: string;
+      "createdBy"?: string;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
+      "url": string;
+    };
+    output: LexiconDefs["tools.ozone.safelink.defs"]["event"];
+  };
+  "tools.ozone.server.getConfig": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: Record<string, never>;
+    input: never;
+    output: {
+      "appview"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "blobDivert"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "chat"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "pds"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "verifierDid"?: string;
+      "viewer"?: LexiconDefs["tools.ozone.server.getConfig"]["viewerConfig"];
+    };
+  };
+  "tools.ozone.server.updateConfig": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "settings"?: Record<string, never>;
+    };
+    output: {
+      "success": boolean;
+    };
+  };
+  "tools.ozone.set.addValues": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "name": string;
+      "values": Array<string>;
+    };
+    output: never;
+  };
+  "tools.ozone.set.deleteSet": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "name": string;
+    };
+    output: {
+    };
+  };
+  "tools.ozone.set.deleteValues": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "name": string;
+      "values": Array<string>;
+    };
+    output: never;
+  };
+  "tools.ozone.set.getValues": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "name": string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "set": LexiconDefs["tools.ozone.set.defs"]["setView"];
+      "values": Array<string>;
+    };
+  };
+  "tools.ozone.set.querySets": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "namePrefix"?: string;
+      "sortBy"?: string;
+      "sortDirection"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "sets": Array<LexiconDefs["tools.ozone.set.defs"]["setView"]>;
+    };
+  };
+  "tools.ozone.set.upsertSet": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: LexiconDefs["tools.ozone.set.defs"]["set"];
+    output: LexiconDefs["tools.ozone.set.defs"]["setView"];
+  };
+  "tools.ozone.setting.listOptions": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "keys"?: Array<string>;
+      "limit"?: number;
+      "prefix"?: string;
+      "scope"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "options": Array<LexiconDefs["tools.ozone.setting.defs"]["option"]>;
+    };
+  };
+  "tools.ozone.setting.removeOptions": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "keys": Array<string>;
+      "scope": string;
+    };
+    output: {
+    };
+  };
+  "tools.ozone.setting.upsertOption": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "description"?: string;
+      "key": string;
+      "managerRole"?: string;
+      "scope": string;
+      "value": unknown;
+    };
+    output: {
+      "option": LexiconDefs["tools.ozone.setting.defs"]["option"];
+    };
+  };
+  "tools.ozone.signature.findCorrelation": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "dids": Array<string>;
+    };
+    input: never;
+    output: {
+      "details": Array<LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]>;
+    };
+  };
+  "tools.ozone.signature.findRelatedAccounts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "did": string;
+      "limit"?: number;
+    };
+    input: never;
+    output: {
+      "accounts": Array<LexiconDefs["tools.ozone.signature.findRelatedAccounts"]["relatedAccount"]>;
+      "cursor"?: string;
+    };
+  };
+  "tools.ozone.signature.searchAccounts": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "values": Array<string>;
+    };
+    input: never;
+    output: {
+      "accounts": Array<LexiconDefs["com.atproto.admin.defs"]["accountView"]>;
+      "cursor"?: string;
+    };
+  };
+  "tools.ozone.team.addMember": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "role": string;
+    };
+    output: LexiconDefs["tools.ozone.team.defs"]["member"];
+  };
+  "tools.ozone.team.deleteMember": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+    };
+    output: never;
+  };
+  "tools.ozone.team.listMembers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "disabled"?: boolean;
+      "limit"?: number;
+      "q"?: string;
+      "roles"?: Array<string>;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "members": Array<LexiconDefs["tools.ozone.team.defs"]["member"]>;
+    };
+  };
+  "tools.ozone.team.updateMember": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "disabled"?: boolean;
+      "role"?: string;
+    };
+    output: LexiconDefs["tools.ozone.team.defs"]["member"];
+  };
+  "tools.ozone.verification.grantVerifications": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "verifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["verificationInput"]>;
+    };
+    output: {
+      "failedVerifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["grantError"]>;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
+    };
+  };
+  "tools.ozone.verification.listVerifications": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "createdAfter"?: string;
+      "createdBefore"?: string;
+      "cursor"?: string;
+      "isRevoked"?: boolean;
+      "issuers"?: Array<string>;
+      "limit"?: number;
+      "sortDirection"?: string;
+      "subjects"?: Array<string>;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
+    };
+  };
+  "tools.ozone.verification.revokeVerifications": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "revokeReason"?: string;
+      "uris": Array<string>;
+    };
+    output: {
+      "failedRevocations": Array<LexiconDefs["tools.ozone.verification.revokeVerifications"]["revokeError"]>;
+      "revokedVerifications": Array<string>;
+    };
+  };
+  "xyz.statusphere.status": {
+    type: "record";
+    record: LexiconDefs["xyz.statusphere.status"]["main"];
+  };
 }
+
+export const LEXICON_DEFINITION_KINDS = {
+  "app.bsky.actor.defs": "other",
+  "app.bsky.actor.getPreferences": "query",
+  "app.bsky.actor.getProfile": "query",
+  "app.bsky.actor.getProfiles": "query",
+  "app.bsky.actor.getSuggestions": "query",
+  "app.bsky.actor.profile": "record",
+  "app.bsky.actor.putPreferences": "procedure",
+  "app.bsky.actor.searchActors": "query",
+  "app.bsky.actor.searchActorsTypeahead": "query",
+  "app.bsky.actor.status": "record",
+  "app.bsky.ageassurance.begin": "procedure",
+  "app.bsky.ageassurance.defs": "other",
+  "app.bsky.ageassurance.getConfig": "query",
+  "app.bsky.ageassurance.getState": "query",
+  "app.bsky.authCreatePosts": "other",
+  "app.bsky.authFullApp": "other",
+  "app.bsky.authManageFeedDeclarations": "other",
+  "app.bsky.authManageLabelerService": "other",
+  "app.bsky.authManageModeration": "other",
+  "app.bsky.authManageNotifications": "other",
+  "app.bsky.authManageProfile": "other",
+  "app.bsky.authViewAll": "other",
+  "app.bsky.bookmark.createBookmark": "procedure",
+  "app.bsky.bookmark.defs": "other",
+  "app.bsky.bookmark.deleteBookmark": "procedure",
+  "app.bsky.bookmark.getBookmarks": "query",
+  "app.bsky.contact.defs": "other",
+  "app.bsky.contact.dismissMatch": "procedure",
+  "app.bsky.contact.getMatches": "query",
+  "app.bsky.contact.getSyncStatus": "query",
+  "app.bsky.contact.importContacts": "procedure",
+  "app.bsky.contact.removeData": "procedure",
+  "app.bsky.contact.sendNotification": "procedure",
+  "app.bsky.contact.startPhoneVerification": "procedure",
+  "app.bsky.contact.verifyPhone": "procedure",
+  "app.bsky.draft.createDraft": "procedure",
+  "app.bsky.draft.deleteDraft": "procedure",
+  "app.bsky.draft.getDrafts": "query",
+  "app.bsky.draft.updateDraft": "procedure",
+  "app.bsky.embed.defs": "other",
+  "app.bsky.embed.external": "other",
+  "app.bsky.embed.images": "other",
+  "app.bsky.embed.record": "other",
+  "app.bsky.embed.recordWithMedia": "other",
+  "app.bsky.embed.video": "other",
+  "app.bsky.feed.defs": "other",
+  "app.bsky.feed.describeFeedGenerator": "query",
+  "app.bsky.feed.generator": "record",
+  "app.bsky.feed.getActorFeeds": "query",
+  "app.bsky.feed.getActorLikes": "query",
+  "app.bsky.feed.getAuthorFeed": "query",
+  "app.bsky.feed.getFeed": "query",
+  "app.bsky.feed.getFeedGenerator": "query",
+  "app.bsky.feed.getFeedGenerators": "query",
+  "app.bsky.feed.getFeedSkeleton": "query",
+  "app.bsky.feed.getLikes": "query",
+  "app.bsky.feed.getListFeed": "query",
+  "app.bsky.feed.getPosts": "query",
+  "app.bsky.feed.getPostThread": "query",
+  "app.bsky.feed.getQuotes": "query",
+  "app.bsky.feed.getRepostedBy": "query",
+  "app.bsky.feed.getSuggestedFeeds": "query",
+  "app.bsky.feed.getTimeline": "query",
+  "app.bsky.feed.like": "record",
+  "app.bsky.feed.post": "record",
+  "app.bsky.feed.postgate": "record",
+  "app.bsky.feed.repost": "record",
+  "app.bsky.feed.searchPosts": "query",
+  "app.bsky.feed.sendInteractions": "procedure",
+  "app.bsky.feed.threadgate": "record",
+  "app.bsky.graph.block": "record",
+  "app.bsky.graph.defs": "other",
+  "app.bsky.graph.follow": "record",
+  "app.bsky.graph.getActorStarterPacks": "query",
+  "app.bsky.graph.getBlocks": "query",
+  "app.bsky.graph.getFollowers": "query",
+  "app.bsky.graph.getFollows": "query",
+  "app.bsky.graph.getKnownFollowers": "query",
+  "app.bsky.graph.getList": "query",
+  "app.bsky.graph.getListBlocks": "query",
+  "app.bsky.graph.getListMutes": "query",
+  "app.bsky.graph.getLists": "query",
+  "app.bsky.graph.getListsWithMembership": "query",
+  "app.bsky.graph.getMutes": "query",
+  "app.bsky.graph.getRelationships": "query",
+  "app.bsky.graph.getStarterPack": "query",
+  "app.bsky.graph.getStarterPacks": "query",
+  "app.bsky.graph.getStarterPacksWithMembership": "query",
+  "app.bsky.graph.getSuggestedFollowsByActor": "query",
+  "app.bsky.graph.list": "record",
+  "app.bsky.graph.listblock": "record",
+  "app.bsky.graph.listitem": "record",
+  "app.bsky.graph.muteActor": "procedure",
+  "app.bsky.graph.muteActorList": "procedure",
+  "app.bsky.graph.muteThread": "procedure",
+  "app.bsky.graph.searchStarterPacks": "query",
+  "app.bsky.graph.starterpack": "record",
+  "app.bsky.graph.unmuteActor": "procedure",
+  "app.bsky.graph.unmuteActorList": "procedure",
+  "app.bsky.graph.unmuteThread": "procedure",
+  "app.bsky.graph.verification": "record",
+  "app.bsky.graph.verification.createVerification": "procedure",
+  "app.bsky.graph.verification.deleteVerification": "procedure",
+  "app.bsky.labeler.defs": "other",
+  "app.bsky.labeler.getServices": "query",
+  "app.bsky.labeler.service": "record",
+  "app.bsky.notification.declaration": "record",
+  "app.bsky.notification.defs": "other",
+  "app.bsky.notification.getPreferences": "query",
+  "app.bsky.notification.getUnreadCount": "query",
+  "app.bsky.notification.listActivitySubscriptions": "query",
+  "app.bsky.notification.listNotifications": "query",
+  "app.bsky.notification.putActivitySubscription": "procedure",
+  "app.bsky.notification.putNotificationPreferences": "procedure",
+  "app.bsky.notification.putPreferences": "procedure",
+  "app.bsky.notification.putPreferencesV2": "procedure",
+  "app.bsky.notification.registerPush": "procedure",
+  "app.bsky.notification.unregisterPush": "procedure",
+  "app.bsky.notification.updateSeen": "procedure",
+  "app.bsky.richtext.facet": "other",
+  "app.bsky.unspecced.confirmAgeAssurance": "procedure",
+  "app.bsky.unspecced.defs": "other",
+  "app.bsky.unspecced.getAgeAssuranceState": "query",
+  "app.bsky.unspecced.getConfig": "query",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": "query",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": "query",
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": "query",
+  "app.bsky.unspecced.getPopularFeedGenerators": "query",
+  "app.bsky.unspecced.getPostThreadOtherV2": "query",
+  "app.bsky.unspecced.getPostThreadV2": "query",
+  "app.bsky.unspecced.getSuggestedFeeds": "query",
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": "query",
+  "app.bsky.unspecced.getSuggestedStarterPacks": "query",
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsers": "query",
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": "query",
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsersForExplore": "query",
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": "query",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": "query",
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": "query",
+  "app.bsky.unspecced.getSuggestionsSkeleton": "query",
+  "app.bsky.unspecced.getTaggedSuggestions": "query",
+  "app.bsky.unspecced.getTrendingTopics": "query",
+  "app.bsky.unspecced.getTrends": "query",
+  "app.bsky.unspecced.getTrendsSkeleton": "query",
+  "app.bsky.unspecced.initAgeAssurance": "procedure",
+  "app.bsky.unspecced.searchActorsSkeleton": "query",
+  "app.bsky.unspecced.searchPostsSkeleton": "query",
+  "app.bsky.unspecced.searchStarterPacksSkeleton": "query",
+  "app.bsky.video.defs": "other",
+  "app.bsky.video.getJobStatus": "query",
+  "app.bsky.video.getUploadLimits": "query",
+  "app.bsky.video.uploadVideo": "procedure",
+  "blue.linkat.board": "record",
+  "chat.bsky.actor.declaration": "record",
+  "chat.bsky.actor.defs": "other",
+  "chat.bsky.actor.deleteAccount": "procedure",
+  "chat.bsky.actor.exportAccountData": "query",
+  "chat.bsky.authFullChatClient": "other",
+  "chat.bsky.convo.acceptConvo": "procedure",
+  "chat.bsky.convo.addReaction": "procedure",
+  "chat.bsky.convo.defs": "other",
+  "chat.bsky.convo.deleteMessageForSelf": "procedure",
+  "chat.bsky.convo.getConvo": "query",
+  "chat.bsky.convo.getConvoAvailability": "query",
+  "chat.bsky.convo.getConvoForMembers": "query",
+  "chat.bsky.convo.getLog": "query",
+  "chat.bsky.convo.getMessages": "query",
+  "chat.bsky.convo.leaveConvo": "procedure",
+  "chat.bsky.convo.listConvoRequests": "query",
+  "chat.bsky.convo.listConvos": "query",
+  "chat.bsky.convo.lockConvo": "procedure",
+  "chat.bsky.convo.muteConvo": "procedure",
+  "chat.bsky.convo.removeReaction": "procedure",
+  "chat.bsky.convo.sendMessage": "procedure",
+  "chat.bsky.convo.sendMessageBatch": "procedure",
+  "chat.bsky.convo.unlockConvo": "procedure",
+  "chat.bsky.convo.unmuteConvo": "procedure",
+  "chat.bsky.convo.updateAllRead": "procedure",
+  "chat.bsky.convo.updateRead": "procedure",
+  "chat.bsky.group.addMembers": "procedure",
+  "chat.bsky.group.addReaction": "procedure",
+  "chat.bsky.group.approveJoinRequest": "procedure",
+  "chat.bsky.group.createGroup": "procedure",
+  "chat.bsky.group.createJoinLink": "procedure",
+  "chat.bsky.group.defs": "other",
+  "chat.bsky.group.deleteGroup": "procedure",
+  "chat.bsky.group.deleteMessageForSelf": "procedure",
+  "chat.bsky.group.disableJoinLink": "procedure",
+  "chat.bsky.group.editGroup": "procedure",
+  "chat.bsky.group.editJoinLink": "procedure",
+  "chat.bsky.group.enableJoinLink": "procedure",
+  "chat.bsky.group.getGroupPublicInfo": "query",
+  "chat.bsky.group.getMessages": "query",
+  "chat.bsky.group.leaveGroup": "procedure",
+  "chat.bsky.group.listGroups": "query",
+  "chat.bsky.group.listInviteLinks": "query",
+  "chat.bsky.group.listJoinRequests": "query",
+  "chat.bsky.group.listMembers": "query",
+  "chat.bsky.group.rejectJoinRequest": "procedure",
+  "chat.bsky.group.removeMembers": "procedure",
+  "chat.bsky.group.removeReaction": "procedure",
+  "chat.bsky.group.requestJoin": "procedure",
+  "chat.bsky.group.sendMessage": "procedure",
+  "chat.bsky.moderation.getActorMetadata": "query",
+  "chat.bsky.moderation.getMessageContext": "query",
+  "chat.bsky.moderation.updateActorAccess": "procedure",
+  "com.atproto.admin.defs": "other",
+  "com.atproto.admin.deleteAccount": "procedure",
+  "com.atproto.admin.disableAccountInvites": "procedure",
+  "com.atproto.admin.disableInviteCodes": "procedure",
+  "com.atproto.admin.enableAccountInvites": "procedure",
+  "com.atproto.admin.getAccountInfo": "query",
+  "com.atproto.admin.getAccountInfos": "query",
+  "com.atproto.admin.getAccountTakedown": "procedure",
+  "com.atproto.admin.getAccountUsage": "query",
+  "com.atproto.admin.getBlobAuditStatus": "query",
+  "com.atproto.admin.getInviteCodes": "query",
+  "com.atproto.admin.getModerationReports": "query",
+  "com.atproto.admin.getServerStats": "query",
+  "com.atproto.admin.getSubjectStatus": "query",
+  "com.atproto.admin.moderateAccount": "procedure",
+  "com.atproto.admin.moderateRecord": "procedure",
+  "com.atproto.admin.queryAuditLog": "query",
+  "com.atproto.admin.repairRepo": "procedure",
+  "com.atproto.admin.resolveReport": "procedure",
+  "com.atproto.admin.runBlobAudit": "procedure",
+  "com.atproto.admin.searchAccounts": "query",
+  "com.atproto.admin.sendEmail": "procedure",
+  "com.atproto.admin.takeDownAccount": "procedure",
+  "com.atproto.admin.updateAccountEmail": "procedure",
+  "com.atproto.admin.updateAccountHandle": "procedure",
+  "com.atproto.admin.updateAccountPassword": "procedure",
+  "com.atproto.admin.updateAccountSigningKey": "procedure",
+  "com.atproto.admin.updateSubjectStatus": "procedure",
+  "com.atproto.identity.defs": "other",
+  "com.atproto.identity.getRecommendedDidCredentials": "query",
+  "com.atproto.identity.refreshIdentity": "procedure",
+  "com.atproto.identity.requestPlcOperationSignature": "procedure",
+  "com.atproto.identity.resolveDid": "query",
+  "com.atproto.identity.resolveHandle": "query",
+  "com.atproto.identity.resolveIdentity": "query",
+  "com.atproto.identity.signPlcOperation": "procedure",
+  "com.atproto.identity.submitPlcOperation": "procedure",
+  "com.atproto.identity.updateHandle": "procedure",
+  "com.atproto.label.createLabel": "procedure",
+  "com.atproto.label.defs": "other",
+  "com.atproto.label.getLabels": "query",
+  "com.atproto.label.queryLabels": "query",
+  "com.atproto.label.subscribeLabels": "subscription",
+  "com.atproto.lexicon.resolveLexicon": "query",
+  "com.atproto.lexicon.schema": "record",
+  "com.atproto.moderation.createReport": "procedure",
+  "com.atproto.moderation.defs": "other",
+  "com.atproto.repo.applyWrites": "procedure",
+  "com.atproto.repo.createRecord": "procedure",
+  "com.atproto.repo.defs": "other",
+  "com.atproto.repo.deleteBlob": "procedure",
+  "com.atproto.repo.deleteRecord": "procedure",
+  "com.atproto.repo.describeRepo": "query",
+  "com.atproto.repo.getBlob": "query",
+  "com.atproto.repo.getRecord": "query",
+  "com.atproto.repo.importRepo": "procedure",
+  "com.atproto.repo.listMissingBlobs": "query",
+  "com.atproto.repo.listRecords": "query",
+  "com.atproto.repo.putRecord": "procedure",
+  "com.atproto.repo.strongRef": "other",
+  "com.atproto.repo.updateRecord": "procedure",
+  "com.atproto.repo.uploadBlob": "procedure",
+  "com.atproto.server.activateAccount": "procedure",
+  "com.atproto.server.checkAccountStatus": "query",
+  "com.atproto.server.confirmEmail": "procedure",
+  "com.atproto.server.createAccount": "procedure",
+  "com.atproto.server.createAppPassword": "procedure",
+  "com.atproto.server.createInviteCode": "procedure",
+  "com.atproto.server.createInviteCodes": "procedure",
+  "com.atproto.server.createSession": "procedure",
+  "com.atproto.server.deactivateAccount": "procedure",
+  "com.atproto.server.defs": "other",
+  "com.atproto.server.deleteAccount": "procedure",
+  "com.atproto.server.deleteSession": "procedure",
+  "com.atproto.server.describeServer": "query",
+  "com.atproto.server.getAccount": "query",
+  "com.atproto.server.getAccountInviteCodes": "query",
+  "com.atproto.server.getServiceAuth": "query",
+  "com.atproto.server.getSession": "query",
+  "com.atproto.server.listAppPasswords": "query",
+  "com.atproto.server.refreshSession": "procedure",
+  "com.atproto.server.requestAccountDelete": "procedure",
+  "com.atproto.server.requestEmailConfirmation": "procedure",
+  "com.atproto.server.requestEmailUpdate": "procedure",
+  "com.atproto.server.requestPasswordReset": "procedure",
+  "com.atproto.server.reserveSigningKey": "procedure",
+  "com.atproto.server.resetPassword": "procedure",
+  "com.atproto.server.revokeAppPassword": "procedure",
+  "com.atproto.server.updateEmail": "procedure",
+  "com.atproto.sync.defs": "other",
+  "com.atproto.sync.getBlob": "query",
+  "com.atproto.sync.getBlocks": "query",
+  "com.atproto.sync.getCheckout": "query",
+  "com.atproto.sync.getHead": "query",
+  "com.atproto.sync.getHostStatus": "query",
+  "com.atproto.sync.getLatestCommit": "query",
+  "com.atproto.sync.getRecord": "query",
+  "com.atproto.sync.getRepo": "query",
+  "com.atproto.sync.getRepoStatus": "query",
+  "com.atproto.sync.listBlobs": "query",
+  "com.atproto.sync.listHosts": "query",
+  "com.atproto.sync.listRepos": "query",
+  "com.atproto.sync.listReposByCollection": "query",
+  "com.atproto.sync.notifyOfUpdate": "procedure",
+  "com.atproto.sync.requestCrawl": "procedure",
+  "com.atproto.sync.subscribeRepos": "subscription",
+  "com.atproto.temp.addReservedHandle": "procedure",
+  "com.atproto.temp.checkHandleAvailability": "query",
+  "com.atproto.temp.checkSignupQueue": "query",
+  "com.atproto.temp.dereferenceScope": "query",
+  "com.atproto.temp.fetchLabels": "query",
+  "com.atproto.temp.requestPhoneVerification": "procedure",
+  "com.atproto.temp.revokeAccountCredentials": "procedure",
+  "com.germnetwork.authManageDeclaration": "other",
+  "com.germnetwork.declaration": "record",
+  "com.germnetwork.identity.getAnchorKey": "query",
+  "com.germnetwork.keypackage": "record",
+  "com.germnetwork.mailbox.claimAddresses": "procedure",
+  "com.germnetwork.mailbox.deliver": "procedure",
+  "com.germnetwork.mailbox.poll": "query",
+  "com.germnetwork.rendezvous.deliver": "procedure",
+  "com.germnetwork.rendezvous.register": "procedure",
+  "com.shinolabs.pinksea.appViewDefs": "other",
+  "com.shinolabs.pinksea.getAuthorFeed": "query",
+  "com.shinolabs.pinksea.getAuthorReplies": "query",
+  "com.shinolabs.pinksea.getHandleFromDid": "query",
+  "com.shinolabs.pinksea.getIdentity": "query",
+  "com.shinolabs.pinksea.getOekaki": "query",
+  "com.shinolabs.pinksea.getParentForReply": "query",
+  "com.shinolabs.pinksea.getRecent": "query",
+  "com.shinolabs.pinksea.getTagFeed": "query",
+  "com.shinolabs.pinksea.oekaki": "record",
+  "com.shinolabs.pinksea.profile": "record",
+  "com.whtwnd.blog.defs": "other",
+  "com.whtwnd.blog.entry": "record",
+  "com.whtwnd.blog.getAuthorPosts": "query",
+  "com.whtwnd.blog.getEntryMetadataByName": "query",
+  "com.whtwnd.blog.getMentionsByEntry": "query",
+  "com.whtwnd.blog.notifyOfNewEntry": "procedure",
+  "fyi.frontpage.feed.comment": "record",
+  "fyi.frontpage.feed.post": "record",
+  "fyi.frontpage.feed.vote": "record",
+  "fyi.frontpage.richtext.block": "other",
+  "fyi.unravel.frontpage.comment": "record",
+  "fyi.unravel.frontpage.post": "record",
+  "fyi.unravel.frontpage.vote": "record",
+  "my.skylights.defs": "other",
+  "my.skylights.list": "other",
+  "my.skylights.listItem": "other",
+  "my.skylights.rel": "record",
+  "place.stream.branding.deleteBlob": "procedure",
+  "place.stream.branding.getBlob": "query",
+  "place.stream.branding.getBranding": "query",
+  "place.stream.branding.updateBlob": "procedure",
+  "place.stream.broadcast.defs": "other",
+  "place.stream.broadcast.getBroadcaster": "query",
+  "place.stream.broadcast.origin": "record",
+  "place.stream.broadcast.syndication": "record",
+  "place.stream.chat.defs": "other",
+  "place.stream.chat.gate": "record",
+  "place.stream.chat.message": "record",
+  "place.stream.chat.profile": "record",
+  "place.stream.defs": "other",
+  "place.stream.graph.getFollowingUser": "query",
+  "place.stream.key": "record",
+  "place.stream.live.getLiveUsers": "query",
+  "place.stream.live.getProfileCard": "query",
+  "place.stream.live.getRecommendations": "query",
+  "place.stream.live.getSegments": "query",
+  "place.stream.live.recommendations": "record",
+  "place.stream.live.searchActorsTypeahead": "query",
+  "place.stream.live.subscribeSegments": "subscription",
+  "place.stream.livestream": "record",
+  "place.stream.metadata.configuration": "record",
+  "place.stream.metadata.contentRights": "other",
+  "place.stream.metadata.contentWarnings": "other",
+  "place.stream.metadata.distributionPolicy": "other",
+  "place.stream.moderation.createBlock": "procedure",
+  "place.stream.moderation.createGate": "procedure",
+  "place.stream.moderation.defs": "other",
+  "place.stream.moderation.deleteBlock": "procedure",
+  "place.stream.moderation.deleteGate": "procedure",
+  "place.stream.moderation.permission": "record",
+  "place.stream.moderation.updateLivestream": "procedure",
+  "place.stream.multistream.createTarget": "procedure",
+  "place.stream.multistream.defs": "other",
+  "place.stream.multistream.deleteTarget": "procedure",
+  "place.stream.multistream.listTargets": "query",
+  "place.stream.multistream.putTarget": "procedure",
+  "place.stream.multistream.target": "record",
+  "place.stream.richtext.facet": "other",
+  "place.stream.segment": "record",
+  "place.stream.server.createWebhook": "procedure",
+  "place.stream.server.defs": "other",
+  "place.stream.server.deleteWebhook": "procedure",
+  "place.stream.server.getServerTime": "query",
+  "place.stream.server.getWebhook": "query",
+  "place.stream.server.listWebhooks": "query",
+  "place.stream.server.settings": "record",
+  "place.stream.server.updateWebhook": "procedure",
+  "sh.tangled.actor.profile": "record",
+  "sh.tangled.graph.follow": "record",
+  "social.grain.actor.defs": "other",
+  "social.grain.actor.getActorFavs": "query",
+  "social.grain.actor.getProfile": "query",
+  "social.grain.actor.profile": "record",
+  "social.grain.actor.searchActors": "query",
+  "social.grain.actor.updateAvatar": "procedure",
+  "social.grain.actor.updateProfile": "procedure",
+  "social.grain.comment": "record",
+  "social.grain.comment.createComment": "procedure",
+  "social.grain.comment.defs": "other",
+  "social.grain.comment.deleteComment": "procedure",
+  "social.grain.darkroom.getGalleryComposite": "query",
+  "social.grain.defs": "other",
+  "social.grain.favorite": "record",
+  "social.grain.favorite.createFavorite": "procedure",
+  "social.grain.favorite.deleteFavorite": "procedure",
+  "social.grain.feed.getTimeline": "query",
+  "social.grain.gallery": "record",
+  "social.grain.gallery.applySort": "procedure",
+  "social.grain.gallery.createGallery": "procedure",
+  "social.grain.gallery.createItem": "procedure",
+  "social.grain.gallery.defs": "other",
+  "social.grain.gallery.deleteGallery": "procedure",
+  "social.grain.gallery.deleteItem": "procedure",
+  "social.grain.gallery.getActorGalleries": "query",
+  "social.grain.gallery.getGallery": "query",
+  "social.grain.gallery.getGalleryThread": "query",
+  "social.grain.gallery.item": "record",
+  "social.grain.gallery.updateGallery": "procedure",
+  "social.grain.graph.createFollow": "procedure",
+  "social.grain.graph.deleteFollow": "procedure",
+  "social.grain.graph.follow": "record",
+  "social.grain.graph.getFollowers": "query",
+  "social.grain.graph.getFollows": "query",
+  "social.grain.labeler.defs": "other",
+  "social.grain.labeler.service": "record",
+  "social.grain.notification.defs": "other",
+  "social.grain.notification.getNotifications": "query",
+  "social.grain.notification.updateSeen": "procedure",
+  "social.grain.photo": "record",
+  "social.grain.photo.applyAlts": "procedure",
+  "social.grain.photo.createExif": "procedure",
+  "social.grain.photo.defs": "other",
+  "social.grain.photo.deletePhoto": "procedure",
+  "social.grain.photo.exif": "record",
+  "social.grain.photo.getActorPhotos": "query",
+  "social.grain.photo.uploadPhoto": "procedure",
+  "tools.garazyk.account.getUsage": "query",
+  "tools.garazyk.sync.getRepoFiltered": "query",
+  "tools.ozone.communication.createTemplate": "procedure",
+  "tools.ozone.communication.defs": "other",
+  "tools.ozone.communication.deleteTemplate": "procedure",
+  "tools.ozone.communication.listTemplates": "query",
+  "tools.ozone.communication.updateTemplate": "procedure",
+  "tools.ozone.hosting.getAccountHistory": "query",
+  "tools.ozone.moderation.cancelScheduledAction": "procedure",
+  "tools.ozone.moderation.cancelScheduledActions": "procedure",
+  "tools.ozone.moderation.defs": "other",
+  "tools.ozone.moderation.emitEvent": "procedure",
+  "tools.ozone.moderation.getAccountTimeline": "query",
+  "tools.ozone.moderation.getEvent": "query",
+  "tools.ozone.moderation.getRecord": "query",
+  "tools.ozone.moderation.getRecords": "query",
+  "tools.ozone.moderation.getRepo": "query",
+  "tools.ozone.moderation.getReporterStats": "query",
+  "tools.ozone.moderation.getRepos": "query",
+  "tools.ozone.moderation.getSubjects": "query",
+  "tools.ozone.moderation.getSubjectStatus": "query",
+  "tools.ozone.moderation.listScheduledActions": "procedure",
+  "tools.ozone.moderation.queryEvents": "query",
+  "tools.ozone.moderation.queryStatuses": "query",
+  "tools.ozone.moderation.scheduleAction": "procedure",
+  "tools.ozone.moderation.searchRepos": "query",
+  "tools.ozone.report.defs": "other",
+  "tools.ozone.safelink.addRule": "procedure",
+  "tools.ozone.safelink.defs": "other",
+  "tools.ozone.safelink.queryEvents": "procedure",
+  "tools.ozone.safelink.queryRules": "procedure",
+  "tools.ozone.safelink.removeRule": "procedure",
+  "tools.ozone.safelink.updateRule": "procedure",
+  "tools.ozone.server.getConfig": "query",
+  "tools.ozone.server.updateConfig": "procedure",
+  "tools.ozone.set.addValues": "procedure",
+  "tools.ozone.set.defs": "other",
+  "tools.ozone.set.deleteSet": "procedure",
+  "tools.ozone.set.deleteValues": "procedure",
+  "tools.ozone.set.getValues": "query",
+  "tools.ozone.set.querySets": "query",
+  "tools.ozone.set.upsertSet": "procedure",
+  "tools.ozone.setting.defs": "other",
+  "tools.ozone.setting.listOptions": "query",
+  "tools.ozone.setting.removeOptions": "procedure",
+  "tools.ozone.setting.upsertOption": "procedure",
+  "tools.ozone.signature.defs": "other",
+  "tools.ozone.signature.findCorrelation": "query",
+  "tools.ozone.signature.findRelatedAccounts": "query",
+  "tools.ozone.signature.searchAccounts": "query",
+  "tools.ozone.team.addMember": "procedure",
+  "tools.ozone.team.defs": "other",
+  "tools.ozone.team.deleteMember": "procedure",
+  "tools.ozone.team.listMembers": "query",
+  "tools.ozone.team.updateMember": "procedure",
+  "tools.ozone.verification.defs": "other",
+  "tools.ozone.verification.grantVerifications": "procedure",
+  "tools.ozone.verification.listVerifications": "query",
+  "tools.ozone.verification.revokeVerifications": "procedure",
+  "xyz.statusphere.status": "record",
+} as const;
 
 export const LEXICON_METHOD_TYPES = {
   "app.bsky.actor.getPreferences": "query",
@@ -1196,6 +9891,7 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "app.bsky.unspecced.confirmAgeAssurance": "application/json",
   "app.bsky.unspecced.initAgeAssurance": "application/json",
   "app.bsky.video.uploadVideo": "video/mp4",
+  "chat.bsky.actor.deleteAccount": "application/json",
   "chat.bsky.convo.acceptConvo": "application/json",
   "chat.bsky.convo.addReaction": "application/json",
   "chat.bsky.convo.deleteMessageForSelf": "application/json",
@@ -1245,6 +9941,7 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "com.atproto.admin.updateAccountSigningKey": "application/json",
   "com.atproto.admin.updateSubjectStatus": "application/json",
   "com.atproto.identity.refreshIdentity": "application/json",
+  "com.atproto.identity.requestPlcOperationSignature": "application/json",
   "com.atproto.identity.signPlcOperation": "application/json",
   "com.atproto.identity.submitPlcOperation": "application/json",
   "com.atproto.identity.updateHandle": "application/json",
@@ -1258,6 +9955,7 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "com.atproto.repo.putRecord": "application/json",
   "com.atproto.repo.updateRecord": "application/json",
   "com.atproto.repo.uploadBlob": "*/*",
+  "com.atproto.server.activateAccount": "application/json",
   "com.atproto.server.confirmEmail": "application/json",
   "com.atproto.server.createAccount": "application/json",
   "com.atproto.server.createAppPassword": "application/json",
@@ -1266,6 +9964,11 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "com.atproto.server.createSession": "application/json",
   "com.atproto.server.deactivateAccount": "application/json",
   "com.atproto.server.deleteAccount": "application/json",
+  "com.atproto.server.deleteSession": "application/json",
+  "com.atproto.server.refreshSession": "application/json",
+  "com.atproto.server.requestAccountDelete": "application/json",
+  "com.atproto.server.requestEmailConfirmation": "application/json",
+  "com.atproto.server.requestEmailUpdate": "application/json",
   "com.atproto.server.requestPasswordReset": "application/json",
   "com.atproto.server.reserveSigningKey": "application/json",
   "com.atproto.server.resetPassword": "application/json",
@@ -1345,11 +10048,14 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "app.bsky.actor.getProfile": "application/json",
   "app.bsky.actor.getProfiles": "application/json",
   "app.bsky.actor.getSuggestions": "application/json",
+  "app.bsky.actor.putPreferences": "application/json",
   "app.bsky.actor.searchActors": "application/json",
   "app.bsky.actor.searchActorsTypeahead": "application/json",
   "app.bsky.ageassurance.begin": "application/json",
   "app.bsky.ageassurance.getConfig": "application/json",
   "app.bsky.ageassurance.getState": "application/json",
+  "app.bsky.bookmark.createBookmark": "application/json",
+  "app.bsky.bookmark.deleteBookmark": "application/json",
   "app.bsky.bookmark.getBookmarks": "application/json",
   "app.bsky.contact.dismissMatch": "application/json",
   "app.bsky.contact.getMatches": "application/json",
@@ -1397,7 +10103,13 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "app.bsky.graph.getStarterPacks": "application/json",
   "app.bsky.graph.getStarterPacksWithMembership": "application/json",
   "app.bsky.graph.getSuggestedFollowsByActor": "application/json",
+  "app.bsky.graph.muteActor": "application/json",
+  "app.bsky.graph.muteActorList": "application/json",
+  "app.bsky.graph.muteThread": "application/json",
   "app.bsky.graph.searchStarterPacks": "application/json",
+  "app.bsky.graph.unmuteActor": "application/json",
+  "app.bsky.graph.unmuteActorList": "application/json",
+  "app.bsky.graph.unmuteThread": "application/json",
   "app.bsky.graph.verification.createVerification": "application/json",
   "app.bsky.graph.verification.deleteVerification": "application/json",
   "app.bsky.labeler.getServices": "application/json",
@@ -1407,12 +10119,16 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "app.bsky.notification.listNotifications": "application/json",
   "app.bsky.notification.putActivitySubscription": "application/json",
   "app.bsky.notification.putNotificationPreferences": "application/json",
+  "app.bsky.notification.putPreferences": "application/json",
   "app.bsky.notification.putPreferencesV2": "application/json",
+  "app.bsky.notification.registerPush": "application/json",
+  "app.bsky.notification.unregisterPush": "application/json",
+  "app.bsky.notification.updateSeen": "application/json",
+  "app.bsky.unspecced.confirmAgeAssurance": "application/json",
   "app.bsky.unspecced.getAgeAssuranceState": "application/json",
   "app.bsky.unspecced.getConfig": "application/json",
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": "application/json",
-  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton":
-    "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": "application/json",
   "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": "application/json",
   "app.bsky.unspecced.getPopularFeedGenerators": "application/json",
   "app.bsky.unspecced.getPostThreadOtherV2": "application/json",
@@ -1465,24 +10181,35 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "chat.bsky.convo.updateAllRead": "application/json",
   "chat.bsky.convo.updateRead": "application/json",
   "chat.bsky.group.addMembers": "application/json",
+  "chat.bsky.group.addReaction": "application/json",
   "chat.bsky.group.approveJoinRequest": "application/json",
   "chat.bsky.group.createGroup": "application/json",
   "chat.bsky.group.createJoinLink": "application/json",
+  "chat.bsky.group.deleteGroup": "application/json",
+  "chat.bsky.group.deleteMessageForSelf": "application/json",
   "chat.bsky.group.disableJoinLink": "application/json",
   "chat.bsky.group.editGroup": "application/json",
   "chat.bsky.group.editJoinLink": "application/json",
   "chat.bsky.group.enableJoinLink": "application/json",
   "chat.bsky.group.getGroupPublicInfo": "application/json",
   "chat.bsky.group.getMessages": "application/json",
+  "chat.bsky.group.leaveGroup": "application/json",
   "chat.bsky.group.listGroups": "application/json",
   "chat.bsky.group.listInviteLinks": "application/json",
   "chat.bsky.group.listJoinRequests": "application/json",
   "chat.bsky.group.listMembers": "application/json",
   "chat.bsky.group.rejectJoinRequest": "application/json",
   "chat.bsky.group.removeMembers": "application/json",
+  "chat.bsky.group.removeReaction": "application/json",
   "chat.bsky.group.requestJoin": "application/json",
+  "chat.bsky.group.sendMessage": "application/json",
   "chat.bsky.moderation.getActorMetadata": "application/json",
   "chat.bsky.moderation.getMessageContext": "application/json",
+  "chat.bsky.moderation.updateActorAccess": "application/json",
+  "com.atproto.admin.deleteAccount": "application/json",
+  "com.atproto.admin.disableAccountInvites": "application/json",
+  "com.atproto.admin.disableInviteCodes": "application/json",
+  "com.atproto.admin.enableAccountInvites": "application/json",
   "com.atproto.admin.getAccountInfo": "application/json",
   "com.atproto.admin.getAccountInfos": "application/json",
   "com.atproto.admin.getAccountTakedown": "application/json",
@@ -1501,13 +10228,20 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "com.atproto.admin.searchAccounts": "application/json",
   "com.atproto.admin.sendEmail": "application/json",
   "com.atproto.admin.takeDownAccount": "application/json",
+  "com.atproto.admin.updateAccountEmail": "application/json",
+  "com.atproto.admin.updateAccountHandle": "application/json",
+  "com.atproto.admin.updateAccountPassword": "application/json",
+  "com.atproto.admin.updateAccountSigningKey": "application/json",
   "com.atproto.admin.updateSubjectStatus": "application/json",
   "com.atproto.identity.getRecommendedDidCredentials": "application/json",
   "com.atproto.identity.refreshIdentity": "application/json",
+  "com.atproto.identity.requestPlcOperationSignature": "application/json",
   "com.atproto.identity.resolveDid": "application/json",
   "com.atproto.identity.resolveHandle": "application/json",
   "com.atproto.identity.resolveIdentity": "application/json",
   "com.atproto.identity.signPlcOperation": "application/json",
+  "com.atproto.identity.submitPlcOperation": "application/json",
+  "com.atproto.identity.updateHandle": "application/json",
   "com.atproto.label.createLabel": "application/json",
   "com.atproto.label.getLabels": "application/json",
   "com.atproto.label.queryLabels": "application/json",
@@ -1520,17 +10254,23 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "com.atproto.repo.describeRepo": "application/json",
   "com.atproto.repo.getBlob": "application/json",
   "com.atproto.repo.getRecord": "application/json",
+  "com.atproto.repo.importRepo": "application/json",
   "com.atproto.repo.listMissingBlobs": "application/json",
   "com.atproto.repo.listRecords": "application/json",
   "com.atproto.repo.putRecord": "application/json",
   "com.atproto.repo.updateRecord": "application/json",
   "com.atproto.repo.uploadBlob": "application/json",
+  "com.atproto.server.activateAccount": "application/json",
   "com.atproto.server.checkAccountStatus": "application/json",
+  "com.atproto.server.confirmEmail": "application/json",
   "com.atproto.server.createAccount": "application/json",
   "com.atproto.server.createAppPassword": "application/json",
   "com.atproto.server.createInviteCode": "application/json",
   "com.atproto.server.createInviteCodes": "application/json",
   "com.atproto.server.createSession": "application/json",
+  "com.atproto.server.deactivateAccount": "application/json",
+  "com.atproto.server.deleteAccount": "application/json",
+  "com.atproto.server.deleteSession": "application/json",
   "com.atproto.server.describeServer": "application/json",
   "com.atproto.server.getAccount": "application/json",
   "com.atproto.server.getAccountInviteCodes": "application/json",
@@ -1538,8 +10278,14 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "com.atproto.server.getSession": "application/json",
   "com.atproto.server.listAppPasswords": "application/json",
   "com.atproto.server.refreshSession": "application/json",
+  "com.atproto.server.requestAccountDelete": "application/json",
+  "com.atproto.server.requestEmailConfirmation": "application/json",
   "com.atproto.server.requestEmailUpdate": "application/json",
+  "com.atproto.server.requestPasswordReset": "application/json",
   "com.atproto.server.reserveSigningKey": "application/json",
+  "com.atproto.server.resetPassword": "application/json",
+  "com.atproto.server.revokeAppPassword": "application/json",
+  "com.atproto.server.updateEmail": "application/json",
   "com.atproto.sync.getBlob": "*/*",
   "com.atproto.sync.getBlocks": "application/vnd.ipld.car",
   "com.atproto.sync.getCheckout": "application/vnd.ipld.car",
@@ -1553,11 +10299,15 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "com.atproto.sync.listHosts": "application/json",
   "com.atproto.sync.listRepos": "application/json",
   "com.atproto.sync.listReposByCollection": "application/json",
+  "com.atproto.sync.notifyOfUpdate": "application/json",
+  "com.atproto.sync.requestCrawl": "application/json",
   "com.atproto.temp.addReservedHandle": "application/json",
   "com.atproto.temp.checkHandleAvailability": "application/json",
   "com.atproto.temp.checkSignupQueue": "application/json",
   "com.atproto.temp.dereferenceScope": "application/json",
   "com.atproto.temp.fetchLabels": "application/json",
+  "com.atproto.temp.requestPhoneVerification": "application/json",
+  "com.atproto.temp.revokeAccountCredentials": "application/json",
   "com.germnetwork.identity.getAnchorKey": "application/json",
   "com.germnetwork.mailbox.claimAddresses": "application/json",
   "com.germnetwork.mailbox.deliver": "application/json",
@@ -1627,6 +10377,7 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "social.grain.graph.getFollowers": "application/json",
   "social.grain.graph.getFollows": "application/json",
   "social.grain.notification.getNotifications": "application/json",
+  "social.grain.notification.updateSeen": "application/json",
   "social.grain.photo.applyAlts": "application/json",
   "social.grain.photo.createExif": "application/json",
   "social.grain.photo.deletePhoto": "application/json",
@@ -1635,6 +10386,7 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "tools.garazyk.account.getUsage": "application/json",
   "tools.garazyk.sync.getRepoFiltered": "application/vnd.ipld.car",
   "tools.ozone.communication.createTemplate": "application/json",
+  "tools.ozone.communication.deleteTemplate": "application/json",
   "tools.ozone.communication.listTemplates": "application/json",
   "tools.ozone.communication.updateTemplate": "application/json",
   "tools.ozone.hosting.getAccountHistory": "application/json",
@@ -1662,7 +10414,9 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "tools.ozone.safelink.updateRule": "application/json",
   "tools.ozone.server.getConfig": "application/json",
   "tools.ozone.server.updateConfig": "application/json",
+  "tools.ozone.set.addValues": "application/json",
   "tools.ozone.set.deleteSet": "application/json",
+  "tools.ozone.set.deleteValues": "application/json",
   "tools.ozone.set.getValues": "application/json",
   "tools.ozone.set.querySets": "application/json",
   "tools.ozone.set.upsertSet": "application/json",
@@ -1673,6 +10427,7 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "tools.ozone.signature.findRelatedAccounts": "application/json",
   "tools.ozone.signature.searchAccounts": "application/json",
   "tools.ozone.team.addMember": "application/json",
+  "tools.ozone.team.deleteMember": "application/json",
   "tools.ozone.team.listMembers": "application/json",
   "tools.ozone.team.updateMember": "application/json",
   "tools.ozone.verification.grantVerifications": "application/json",
@@ -1680,108 +10435,609 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "tools.ozone.verification.revokeVerifications": "application/json",
 } as const;
 
-/** Allow any procedure or query name (widened from `keyof Lexicons` to `string`
- *  so that code consuming the generated types compiles even when the
- *  `Lexicons` map has not been fully populated yet). */
+
 export type LexiconIds = string;
-
-/** Query method names. Resolves to `never` when the Lexicons map is empty;
- *  widened to `string` so that consumers with placeholder endpoints compile. */
 export type LexiconQueryIds = string;
-
-/** Procedure method names. Resolves to `never` when the Lexicons map is empty;
- *  widened to `string` so that consumers with placeholder endpoints compile. */
 export type LexiconProcedureIds = string;
 
-export type QueryParams<K extends string> = K extends keyof Lexicons
-  ? Lexicons[K] extends { params: infer P } ? P : unknown
-  : unknown;
-
-export type QueryOutput<K extends string> = K extends keyof Lexicons
-  ? Lexicons[K] extends { output: infer O } ? O : unknown
-  : unknown;
-
-export type ProcedureInput<K extends string> = K extends keyof Lexicons
-  ? Lexicons[K] extends { input: infer I } ? I : unknown
-  : unknown;
-
-export type ProcedureOutput<K extends string> = K extends keyof Lexicons
-  ? Lexicons[K] extends { output: infer O } ? O : unknown
-  : unknown;
-
-export type QueryOutputEncoding<K extends string> = K extends keyof Lexicons
-  ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
-  : unknown;
-
-export type ProcedureInputEncoding<K extends string> = K extends keyof Lexicons
-  ? Lexicons[K] extends { inputEncoding: infer E } ? E : unknown
-  : unknown;
-
-export type ProcedureOutputEncoding<K extends string> = K extends keyof Lexicons
-  ? Lexicons[K] extends { outputEncoding: infer E } ? E : unknown
-  : unknown;
+export type QueryParams<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { params: infer Params } ? Params : unknown
+    : unknown;
+export type QueryOutput<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { output: infer Output } ? Output : unknown
+    : unknown;
+export type ProcedureInput<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { input: infer Input } ? Input : unknown
+    : unknown;
+export type ProcedureOutput<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { output: infer Output } ? Output : unknown
+    : unknown;
+export type QueryOutputEncoding<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { outputEncoding: infer Encoding } ? Encoding : unknown
+    : unknown;
+export type ProcedureInputEncoding<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { inputEncoding: infer Encoding } ? Encoding : unknown
+    : unknown;
+export type ProcedureOutputEncoding<K extends string> =
+  K extends keyof Lexicons
+    ? Lexicons[K] extends { outputEncoding: infer Encoding } ? Encoding : unknown
+    : unknown;
 
 export interface CallOptions {
   headers?: { Authorization?: string };
 }
 
 export interface XrpcCaller {
-  call(
-    method: string,
-    data?: unknown,
-    tokenOrOpts?: string | CallOptions,
-  ): Promise<unknown>;
+  call(method: string, data?: unknown, tokenOrOpts?: string | CallOptions): Promise<unknown>;
 }
 
-/** Strongly typed nested API client. Methods are resolved dynamically
- *  via a JavaScript Proxy at runtime, so this interface only needs the
- *  index signature for TypeScript to accept arbitrary namespace chains. */
+/** Typed nested API client backed by a Proxy. */
 export interface GeneratedClient {
-  /** Allow dynamic namespace access for methods not yet in generated map. */
+  "app": {
+    "bsky": {
+      "actor": {
+        "getPreferences"(params?: QueryParams<"app.bsky.actor.getPreferences">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getPreferences">>;
+        "getProfile"(params?: QueryParams<"app.bsky.actor.getProfile">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getProfile">>;
+        "getProfiles"(params?: QueryParams<"app.bsky.actor.getProfiles">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getProfiles">>;
+        "getSuggestions"(params?: QueryParams<"app.bsky.actor.getSuggestions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getSuggestions">>;
+        "putPreferences"(input?: ProcedureInput<"app.bsky.actor.putPreferences">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.actor.putPreferences">>;
+        "searchActors"(params?: QueryParams<"app.bsky.actor.searchActors">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.searchActors">>;
+        "searchActorsTypeahead"(params?: QueryParams<"app.bsky.actor.searchActorsTypeahead">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.searchActorsTypeahead">>;
+      };
+      "ageassurance": {
+        "begin"(input?: ProcedureInput<"app.bsky.ageassurance.begin">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.ageassurance.begin">>;
+        "getConfig"(params?: QueryParams<"app.bsky.ageassurance.getConfig">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.ageassurance.getConfig">>;
+        "getState"(params?: QueryParams<"app.bsky.ageassurance.getState">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.ageassurance.getState">>;
+      };
+      "bookmark": {
+        "createBookmark"(input?: ProcedureInput<"app.bsky.bookmark.createBookmark">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.bookmark.createBookmark">>;
+        "deleteBookmark"(input?: ProcedureInput<"app.bsky.bookmark.deleteBookmark">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.bookmark.deleteBookmark">>;
+        "getBookmarks"(params?: QueryParams<"app.bsky.bookmark.getBookmarks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.bookmark.getBookmarks">>;
+      };
+      "contact": {
+        "dismissMatch"(input?: ProcedureInput<"app.bsky.contact.dismissMatch">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">>;
+        "getMatches"(params?: QueryParams<"app.bsky.contact.getMatches">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.contact.getMatches">>;
+        "getSyncStatus"(params?: QueryParams<"app.bsky.contact.getSyncStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">>;
+        "importContacts"(input?: ProcedureInput<"app.bsky.contact.importContacts">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.importContacts">>;
+        "removeData"(input?: ProcedureInput<"app.bsky.contact.removeData">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.removeData">>;
+        "sendNotification"(input?: ProcedureInput<"app.bsky.contact.sendNotification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.sendNotification">>;
+        "startPhoneVerification"(input?: ProcedureInput<"app.bsky.contact.startPhoneVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>;
+        "verifyPhone"(input?: ProcedureInput<"app.bsky.contact.verifyPhone">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">>;
+      };
+      "draft": {
+        "createDraft"(input?: ProcedureInput<"app.bsky.draft.createDraft">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.draft.createDraft">>;
+        "deleteDraft"(input?: ProcedureInput<"app.bsky.draft.deleteDraft">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.draft.deleteDraft">>;
+        "getDrafts"(params?: QueryParams<"app.bsky.draft.getDrafts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.draft.getDrafts">>;
+        "updateDraft"(input?: ProcedureInput<"app.bsky.draft.updateDraft">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.draft.updateDraft">>;
+      };
+      "feed": {
+        "describeFeedGenerator"(params?: QueryParams<"app.bsky.feed.describeFeedGenerator">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.describeFeedGenerator">>;
+        "getActorFeeds"(params?: QueryParams<"app.bsky.feed.getActorFeeds">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getActorFeeds">>;
+        "getActorLikes"(params?: QueryParams<"app.bsky.feed.getActorLikes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getActorLikes">>;
+        "getAuthorFeed"(params?: QueryParams<"app.bsky.feed.getAuthorFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getAuthorFeed">>;
+        "getFeed"(params?: QueryParams<"app.bsky.feed.getFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeed">>;
+        "getFeedGenerator"(params?: QueryParams<"app.bsky.feed.getFeedGenerator">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeedGenerator">>;
+        "getFeedGenerators"(params?: QueryParams<"app.bsky.feed.getFeedGenerators">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeedGenerators">>;
+        "getFeedSkeleton"(params?: QueryParams<"app.bsky.feed.getFeedSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeedSkeleton">>;
+        "getLikes"(params?: QueryParams<"app.bsky.feed.getLikes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getLikes">>;
+        "getListFeed"(params?: QueryParams<"app.bsky.feed.getListFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getListFeed">>;
+        "getPosts"(params?: QueryParams<"app.bsky.feed.getPosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getPosts">>;
+        "getPostThread"(params?: QueryParams<"app.bsky.feed.getPostThread">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getPostThread">>;
+        "getQuotes"(params?: QueryParams<"app.bsky.feed.getQuotes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getQuotes">>;
+        "getRepostedBy"(params?: QueryParams<"app.bsky.feed.getRepostedBy">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getRepostedBy">>;
+        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.feed.getSuggestedFeeds">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getSuggestedFeeds">>;
+        "getTimeline"(params?: QueryParams<"app.bsky.feed.getTimeline">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getTimeline">>;
+        "searchPosts"(params?: QueryParams<"app.bsky.feed.searchPosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.searchPosts">>;
+        "sendInteractions"(input?: ProcedureInput<"app.bsky.feed.sendInteractions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.feed.sendInteractions">>;
+      };
+      "graph": {
+        "getActorStarterPacks"(params?: QueryParams<"app.bsky.graph.getActorStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getActorStarterPacks">>;
+        "getBlocks"(params?: QueryParams<"app.bsky.graph.getBlocks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getBlocks">>;
+        "getFollowers"(params?: QueryParams<"app.bsky.graph.getFollowers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getFollowers">>;
+        "getFollows"(params?: QueryParams<"app.bsky.graph.getFollows">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getFollows">>;
+        "getKnownFollowers"(params?: QueryParams<"app.bsky.graph.getKnownFollowers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getKnownFollowers">>;
+        "getList"(params?: QueryParams<"app.bsky.graph.getList">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getList">>;
+        "getListBlocks"(params?: QueryParams<"app.bsky.graph.getListBlocks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getListBlocks">>;
+        "getListMutes"(params?: QueryParams<"app.bsky.graph.getListMutes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getListMutes">>;
+        "getLists"(params?: QueryParams<"app.bsky.graph.getLists">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getLists">>;
+        "getListsWithMembership"(params?: QueryParams<"app.bsky.graph.getListsWithMembership">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getListsWithMembership">>;
+        "getMutes"(params?: QueryParams<"app.bsky.graph.getMutes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getMutes">>;
+        "getRelationships"(params?: QueryParams<"app.bsky.graph.getRelationships">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getRelationships">>;
+        "getStarterPack"(params?: QueryParams<"app.bsky.graph.getStarterPack">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getStarterPack">>;
+        "getStarterPacks"(params?: QueryParams<"app.bsky.graph.getStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getStarterPacks">>;
+        "getStarterPacksWithMembership"(params?: QueryParams<"app.bsky.graph.getStarterPacksWithMembership">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getStarterPacksWithMembership">>;
+        "getSuggestedFollowsByActor"(params?: QueryParams<"app.bsky.graph.getSuggestedFollowsByActor">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getSuggestedFollowsByActor">>;
+        "muteActor"(input?: ProcedureInput<"app.bsky.graph.muteActor">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.muteActor">>;
+        "muteActorList"(input?: ProcedureInput<"app.bsky.graph.muteActorList">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.muteActorList">>;
+        "muteThread"(input?: ProcedureInput<"app.bsky.graph.muteThread">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.muteThread">>;
+        "searchStarterPacks"(params?: QueryParams<"app.bsky.graph.searchStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.searchStarterPacks">>;
+        "unmuteActor"(input?: ProcedureInput<"app.bsky.graph.unmuteActor">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.unmuteActor">>;
+        "unmuteActorList"(input?: ProcedureInput<"app.bsky.graph.unmuteActorList">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.unmuteActorList">>;
+        "unmuteThread"(input?: ProcedureInput<"app.bsky.graph.unmuteThread">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.unmuteThread">>;
+        "verification": {
+          "createVerification"(input?: ProcedureInput<"app.bsky.graph.verification.createVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.verification.createVerification">>;
+          "deleteVerification"(input?: ProcedureInput<"app.bsky.graph.verification.deleteVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.verification.deleteVerification">>;
+        };
+      };
+      "labeler": {
+        "getServices"(params?: QueryParams<"app.bsky.labeler.getServices">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.labeler.getServices">>;
+      };
+      "notification": {
+        "getPreferences"(params?: QueryParams<"app.bsky.notification.getPreferences">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.getPreferences">>;
+        "getUnreadCount"(params?: QueryParams<"app.bsky.notification.getUnreadCount">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.getUnreadCount">>;
+        "listActivitySubscriptions"(params?: QueryParams<"app.bsky.notification.listActivitySubscriptions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.listActivitySubscriptions">>;
+        "listNotifications"(params?: QueryParams<"app.bsky.notification.listNotifications">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.listNotifications">>;
+        "putActivitySubscription"(input?: ProcedureInput<"app.bsky.notification.putActivitySubscription">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putActivitySubscription">>;
+        "putNotificationPreferences"(input?: ProcedureInput<"app.bsky.notification.putNotificationPreferences">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putNotificationPreferences">>;
+        "putPreferences"(input?: ProcedureInput<"app.bsky.notification.putPreferences">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putPreferences">>;
+        "putPreferencesV2"(input?: ProcedureInput<"app.bsky.notification.putPreferencesV2">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putPreferencesV2">>;
+        "registerPush"(input?: ProcedureInput<"app.bsky.notification.registerPush">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.registerPush">>;
+        "unregisterPush"(input?: ProcedureInput<"app.bsky.notification.unregisterPush">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.unregisterPush">>;
+        "updateSeen"(input?: ProcedureInput<"app.bsky.notification.updateSeen">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.updateSeen">>;
+      };
+      "unspecced": {
+        "confirmAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.confirmAgeAssurance">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.unspecced.confirmAgeAssurance">>;
+        "getAgeAssuranceState"(params?: QueryParams<"app.bsky.unspecced.getAgeAssuranceState">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getAgeAssuranceState">>;
+        "getConfig"(params?: QueryParams<"app.bsky.unspecced.getConfig">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getConfig">>;
+        "getOnboardingSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">>;
+        "getOnboardingSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">>;
+        "getOnboardingSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">>;
+        "getPopularFeedGenerators"(params?: QueryParams<"app.bsky.unspecced.getPopularFeedGenerators">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getPopularFeedGenerators">>;
+        "getPostThreadOtherV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadOtherV2">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadOtherV2">>;
+        "getPostThreadV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadV2">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadV2">>;
+        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeeds">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeeds">>;
+        "getSuggestedFeedsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeedsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeedsSkeleton">>;
+        "getSuggestedOnboardingUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedOnboardingUsers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedOnboardingUsers">>;
+        "getSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacks">>;
+        "getSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">>;
+        "getSuggestedUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsers">>;
+        "getSuggestedUsersForDiscover"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscover">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscover">>;
+        "getSuggestedUsersForDiscoverSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">>;
+        "getSuggestedUsersForExplore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExplore">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExplore">>;
+        "getSuggestedUsersForExploreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">>;
+        "getSuggestedUsersForSeeMore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMore">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMore">>;
+        "getSuggestedUsersForSeeMoreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">>;
+        "getSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersSkeleton">>;
+        "getSuggestionsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestionsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestionsSkeleton">>;
+        "getTaggedSuggestions"(params?: QueryParams<"app.bsky.unspecced.getTaggedSuggestions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTaggedSuggestions">>;
+        "getTrendingTopics"(params?: QueryParams<"app.bsky.unspecced.getTrendingTopics">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTrendingTopics">>;
+        "getTrends"(params?: QueryParams<"app.bsky.unspecced.getTrends">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTrends">>;
+        "getTrendsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getTrendsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTrendsSkeleton">>;
+        "initAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.initAgeAssurance">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.unspecced.initAgeAssurance">>;
+        "searchActorsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchActorsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.searchActorsSkeleton">>;
+        "searchPostsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchPostsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.searchPostsSkeleton">>;
+        "searchStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.searchStarterPacksSkeleton">>;
+      };
+      "video": {
+        "getJobStatus"(params?: QueryParams<"app.bsky.video.getJobStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.video.getJobStatus">>;
+        "getUploadLimits"(params?: QueryParams<"app.bsky.video.getUploadLimits">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.video.getUploadLimits">>;
+        "uploadVideo"(input?: ProcedureInput<"app.bsky.video.uploadVideo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>;
+      };
+    };
+  };
+  "chat": {
+    "bsky": {
+      "actor": {
+        "deleteAccount"(input?: ProcedureInput<"chat.bsky.actor.deleteAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.actor.deleteAccount">>;
+        "exportAccountData"(params?: QueryParams<"chat.bsky.actor.exportAccountData">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.actor.exportAccountData">>;
+      };
+      "convo": {
+        "acceptConvo"(input?: ProcedureInput<"chat.bsky.convo.acceptConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.acceptConvo">>;
+        "addReaction"(input?: ProcedureInput<"chat.bsky.convo.addReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.addReaction">>;
+        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.convo.deleteMessageForSelf">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.deleteMessageForSelf">>;
+        "getConvo"(params?: QueryParams<"chat.bsky.convo.getConvo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getConvo">>;
+        "getConvoAvailability"(params?: QueryParams<"chat.bsky.convo.getConvoAvailability">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getConvoAvailability">>;
+        "getConvoForMembers"(params?: QueryParams<"chat.bsky.convo.getConvoForMembers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">>;
+        "getLog"(params?: QueryParams<"chat.bsky.convo.getLog">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getLog">>;
+        "getMessages"(params?: QueryParams<"chat.bsky.convo.getMessages">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getMessages">>;
+        "leaveConvo"(input?: ProcedureInput<"chat.bsky.convo.leaveConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.leaveConvo">>;
+        "listConvoRequests"(params?: QueryParams<"chat.bsky.convo.listConvoRequests">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.listConvoRequests">>;
+        "listConvos"(params?: QueryParams<"chat.bsky.convo.listConvos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.listConvos">>;
+        "lockConvo"(input?: ProcedureInput<"chat.bsky.convo.lockConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.lockConvo">>;
+        "muteConvo"(input?: ProcedureInput<"chat.bsky.convo.muteConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.muteConvo">>;
+        "removeReaction"(input?: ProcedureInput<"chat.bsky.convo.removeReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.removeReaction">>;
+        "sendMessage"(input?: ProcedureInput<"chat.bsky.convo.sendMessage">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">>;
+        "sendMessageBatch"(input?: ProcedureInput<"chat.bsky.convo.sendMessageBatch">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.sendMessageBatch">>;
+        "unlockConvo"(input?: ProcedureInput<"chat.bsky.convo.unlockConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.unlockConvo">>;
+        "unmuteConvo"(input?: ProcedureInput<"chat.bsky.convo.unmuteConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.unmuteConvo">>;
+        "updateAllRead"(input?: ProcedureInput<"chat.bsky.convo.updateAllRead">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.updateAllRead">>;
+        "updateRead"(input?: ProcedureInput<"chat.bsky.convo.updateRead">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.updateRead">>;
+      };
+      "group": {
+        "addMembers"(input?: ProcedureInput<"chat.bsky.group.addMembers">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.addMembers">>;
+        "addReaction"(input?: ProcedureInput<"chat.bsky.group.addReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.addReaction">>;
+        "approveJoinRequest"(input?: ProcedureInput<"chat.bsky.group.approveJoinRequest">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.approveJoinRequest">>;
+        "createGroup"(input?: ProcedureInput<"chat.bsky.group.createGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.createGroup">>;
+        "createJoinLink"(input?: ProcedureInput<"chat.bsky.group.createJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.createJoinLink">>;
+        "deleteGroup"(input?: ProcedureInput<"chat.bsky.group.deleteGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.deleteGroup">>;
+        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.group.deleteMessageForSelf">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.deleteMessageForSelf">>;
+        "disableJoinLink"(input?: ProcedureInput<"chat.bsky.group.disableJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.disableJoinLink">>;
+        "editGroup"(input?: ProcedureInput<"chat.bsky.group.editGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.editGroup">>;
+        "editJoinLink"(input?: ProcedureInput<"chat.bsky.group.editJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.editJoinLink">>;
+        "enableJoinLink"(input?: ProcedureInput<"chat.bsky.group.enableJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.enableJoinLink">>;
+        "getGroupPublicInfo"(params?: QueryParams<"chat.bsky.group.getGroupPublicInfo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.getGroupPublicInfo">>;
+        "getMessages"(params?: QueryParams<"chat.bsky.group.getMessages">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.getMessages">>;
+        "leaveGroup"(input?: ProcedureInput<"chat.bsky.group.leaveGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.leaveGroup">>;
+        "listGroups"(params?: QueryParams<"chat.bsky.group.listGroups">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listGroups">>;
+        "listInviteLinks"(params?: QueryParams<"chat.bsky.group.listInviteLinks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listInviteLinks">>;
+        "listJoinRequests"(params?: QueryParams<"chat.bsky.group.listJoinRequests">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listJoinRequests">>;
+        "listMembers"(params?: QueryParams<"chat.bsky.group.listMembers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listMembers">>;
+        "rejectJoinRequest"(input?: ProcedureInput<"chat.bsky.group.rejectJoinRequest">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.rejectJoinRequest">>;
+        "removeMembers"(input?: ProcedureInput<"chat.bsky.group.removeMembers">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.removeMembers">>;
+        "removeReaction"(input?: ProcedureInput<"chat.bsky.group.removeReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.removeReaction">>;
+        "requestJoin"(input?: ProcedureInput<"chat.bsky.group.requestJoin">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.requestJoin">>;
+        "sendMessage"(input?: ProcedureInput<"chat.bsky.group.sendMessage">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.sendMessage">>;
+      };
+      "moderation": {
+        "getActorMetadata"(params?: QueryParams<"chat.bsky.moderation.getActorMetadata">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.moderation.getActorMetadata">>;
+        "getMessageContext"(params?: QueryParams<"chat.bsky.moderation.getMessageContext">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.moderation.getMessageContext">>;
+        "updateActorAccess"(input?: ProcedureInput<"chat.bsky.moderation.updateActorAccess">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.moderation.updateActorAccess">>;
+      };
+    };
+  };
+  "com": {
+    "atproto": {
+      "admin": {
+        "deleteAccount"(input?: ProcedureInput<"com.atproto.admin.deleteAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.deleteAccount">>;
+        "disableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.disableAccountInvites">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.disableAccountInvites">>;
+        "disableInviteCodes"(input?: ProcedureInput<"com.atproto.admin.disableInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.disableInviteCodes">>;
+        "enableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.enableAccountInvites">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.enableAccountInvites">>;
+        "getAccountInfo"(params?: QueryParams<"com.atproto.admin.getAccountInfo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getAccountInfo">>;
+        "getAccountInfos"(params?: QueryParams<"com.atproto.admin.getAccountInfos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getAccountInfos">>;
+        "getAccountTakedown"(input?: ProcedureInput<"com.atproto.admin.getAccountTakedown">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.getAccountTakedown">>;
+        "getAccountUsage"(params?: QueryParams<"com.atproto.admin.getAccountUsage">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getAccountUsage">>;
+        "getBlobAuditStatus"(params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>;
+        "getInviteCodes"(params?: QueryParams<"com.atproto.admin.getInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>;
+        "getModerationReports"(params?: QueryParams<"com.atproto.admin.getModerationReports">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getModerationReports">>;
+        "getServerStats"(params?: QueryParams<"com.atproto.admin.getServerStats">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getServerStats">>;
+        "getSubjectStatus"(params?: QueryParams<"com.atproto.admin.getSubjectStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>;
+        "moderateAccount"(input?: ProcedureInput<"com.atproto.admin.moderateAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>;
+        "moderateRecord"(input?: ProcedureInput<"com.atproto.admin.moderateRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.moderateRecord">>;
+        "queryAuditLog"(params?: QueryParams<"com.atproto.admin.queryAuditLog">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.queryAuditLog">>;
+        "repairRepo"(input?: ProcedureInput<"com.atproto.admin.repairRepo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.repairRepo">>;
+        "resolveReport"(input?: ProcedureInput<"com.atproto.admin.resolveReport">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.resolveReport">>;
+        "runBlobAudit"(input?: ProcedureInput<"com.atproto.admin.runBlobAudit">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.runBlobAudit">>;
+        "searchAccounts"(params?: QueryParams<"com.atproto.admin.searchAccounts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.searchAccounts">>;
+        "sendEmail"(input?: ProcedureInput<"com.atproto.admin.sendEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.sendEmail">>;
+        "takeDownAccount"(input?: ProcedureInput<"com.atproto.admin.takeDownAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.takeDownAccount">>;
+        "updateAccountEmail"(input?: ProcedureInput<"com.atproto.admin.updateAccountEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountEmail">>;
+        "updateAccountHandle"(input?: ProcedureInput<"com.atproto.admin.updateAccountHandle">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountHandle">>;
+        "updateAccountPassword"(input?: ProcedureInput<"com.atproto.admin.updateAccountPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountPassword">>;
+        "updateAccountSigningKey"(input?: ProcedureInput<"com.atproto.admin.updateAccountSigningKey">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountSigningKey">>;
+        "updateSubjectStatus"(input?: ProcedureInput<"com.atproto.admin.updateSubjectStatus">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateSubjectStatus">>;
+      };
+      "identity": {
+        "getRecommendedDidCredentials"(params?: QueryParams<"com.atproto.identity.getRecommendedDidCredentials">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.getRecommendedDidCredentials">>;
+        "refreshIdentity"(input?: ProcedureInput<"com.atproto.identity.refreshIdentity">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.refreshIdentity">>;
+        "requestPlcOperationSignature"(input?: ProcedureInput<"com.atproto.identity.requestPlcOperationSignature">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.requestPlcOperationSignature">>;
+        "resolveDid"(params?: QueryParams<"com.atproto.identity.resolveDid">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.resolveDid">>;
+        "resolveHandle"(params?: QueryParams<"com.atproto.identity.resolveHandle">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.resolveHandle">>;
+        "resolveIdentity"(params?: QueryParams<"com.atproto.identity.resolveIdentity">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.resolveIdentity">>;
+        "signPlcOperation"(input?: ProcedureInput<"com.atproto.identity.signPlcOperation">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.signPlcOperation">>;
+        "submitPlcOperation"(input?: ProcedureInput<"com.atproto.identity.submitPlcOperation">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.submitPlcOperation">>;
+        "updateHandle"(input?: ProcedureInput<"com.atproto.identity.updateHandle">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.updateHandle">>;
+      };
+      "label": {
+        "createLabel"(input?: ProcedureInput<"com.atproto.label.createLabel">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.label.createLabel">>;
+        "getLabels"(params?: QueryParams<"com.atproto.label.getLabels">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.label.getLabels">>;
+        "queryLabels"(params?: QueryParams<"com.atproto.label.queryLabels">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.label.queryLabels">>;
+      };
+      "lexicon": {
+        "resolveLexicon"(params?: QueryParams<"com.atproto.lexicon.resolveLexicon">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.lexicon.resolveLexicon">>;
+      };
+      "moderation": {
+        "createReport"(input?: ProcedureInput<"com.atproto.moderation.createReport">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.moderation.createReport">>;
+      };
+      "repo": {
+        "applyWrites"(input?: ProcedureInput<"com.atproto.repo.applyWrites">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.applyWrites">>;
+        "createRecord"(input?: ProcedureInput<"com.atproto.repo.createRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.createRecord">>;
+        "deleteBlob"(input?: ProcedureInput<"com.atproto.repo.deleteBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.deleteBlob">>;
+        "deleteRecord"(input?: ProcedureInput<"com.atproto.repo.deleteRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">>;
+        "describeRepo"(params?: QueryParams<"com.atproto.repo.describeRepo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.describeRepo">>;
+        "getBlob"(params?: QueryParams<"com.atproto.repo.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.getBlob">>;
+        "getRecord"(params?: QueryParams<"com.atproto.repo.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.getRecord">>;
+        "importRepo"(input?: ProcedureInput<"com.atproto.repo.importRepo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.importRepo">>;
+        "listMissingBlobs"(params?: QueryParams<"com.atproto.repo.listMissingBlobs">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.listMissingBlobs">>;
+        "listRecords"(params?: QueryParams<"com.atproto.repo.listRecords">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.listRecords">>;
+        "putRecord"(input?: ProcedureInput<"com.atproto.repo.putRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.putRecord">>;
+        "updateRecord"(input?: ProcedureInput<"com.atproto.repo.updateRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.updateRecord">>;
+        "uploadBlob"(input?: ProcedureInput<"com.atproto.repo.uploadBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.uploadBlob">>;
+      };
+      "server": {
+        "activateAccount"(input?: ProcedureInput<"com.atproto.server.activateAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.activateAccount">>;
+        "checkAccountStatus"(params?: QueryParams<"com.atproto.server.checkAccountStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.checkAccountStatus">>;
+        "confirmEmail"(input?: ProcedureInput<"com.atproto.server.confirmEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.confirmEmail">>;
+        "createAccount"(input?: ProcedureInput<"com.atproto.server.createAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createAccount">>;
+        "createAppPassword"(input?: ProcedureInput<"com.atproto.server.createAppPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createAppPassword">>;
+        "createInviteCode"(input?: ProcedureInput<"com.atproto.server.createInviteCode">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createInviteCode">>;
+        "createInviteCodes"(input?: ProcedureInput<"com.atproto.server.createInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createInviteCodes">>;
+        "createSession"(input?: ProcedureInput<"com.atproto.server.createSession">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createSession">>;
+        "deactivateAccount"(input?: ProcedureInput<"com.atproto.server.deactivateAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.deactivateAccount">>;
+        "deleteAccount"(input?: ProcedureInput<"com.atproto.server.deleteAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.deleteAccount">>;
+        "deleteSession"(input?: ProcedureInput<"com.atproto.server.deleteSession">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.deleteSession">>;
+        "describeServer"(params?: QueryParams<"com.atproto.server.describeServer">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.describeServer">>;
+        "getAccount"(params?: QueryParams<"com.atproto.server.getAccount">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getAccount">>;
+        "getAccountInviteCodes"(params?: QueryParams<"com.atproto.server.getAccountInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getAccountInviteCodes">>;
+        "getServiceAuth"(params?: QueryParams<"com.atproto.server.getServiceAuth">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getServiceAuth">>;
+        "getSession"(params?: QueryParams<"com.atproto.server.getSession">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getSession">>;
+        "listAppPasswords"(params?: QueryParams<"com.atproto.server.listAppPasswords">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.listAppPasswords">>;
+        "refreshSession"(input?: ProcedureInput<"com.atproto.server.refreshSession">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.refreshSession">>;
+        "requestAccountDelete"(input?: ProcedureInput<"com.atproto.server.requestAccountDelete">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestAccountDelete">>;
+        "requestEmailConfirmation"(input?: ProcedureInput<"com.atproto.server.requestEmailConfirmation">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestEmailConfirmation">>;
+        "requestEmailUpdate"(input?: ProcedureInput<"com.atproto.server.requestEmailUpdate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestEmailUpdate">>;
+        "requestPasswordReset"(input?: ProcedureInput<"com.atproto.server.requestPasswordReset">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestPasswordReset">>;
+        "reserveSigningKey"(input?: ProcedureInput<"com.atproto.server.reserveSigningKey">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.reserveSigningKey">>;
+        "resetPassword"(input?: ProcedureInput<"com.atproto.server.resetPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.resetPassword">>;
+        "revokeAppPassword"(input?: ProcedureInput<"com.atproto.server.revokeAppPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>;
+        "updateEmail"(input?: ProcedureInput<"com.atproto.server.updateEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.updateEmail">>;
+      };
+      "sync": {
+        "getBlob"(params?: QueryParams<"com.atproto.sync.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getBlob">>;
+        "getBlocks"(params?: QueryParams<"com.atproto.sync.getBlocks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getBlocks">>;
+        "getCheckout"(params?: QueryParams<"com.atproto.sync.getCheckout">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getCheckout">>;
+        "getHead"(params?: QueryParams<"com.atproto.sync.getHead">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getHead">>;
+        "getHostStatus"(params?: QueryParams<"com.atproto.sync.getHostStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getHostStatus">>;
+        "getLatestCommit"(params?: QueryParams<"com.atproto.sync.getLatestCommit">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getLatestCommit">>;
+        "getRecord"(params?: QueryParams<"com.atproto.sync.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getRecord">>;
+        "getRepo"(params?: QueryParams<"com.atproto.sync.getRepo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getRepo">>;
+        "getRepoStatus"(params?: QueryParams<"com.atproto.sync.getRepoStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getRepoStatus">>;
+        "listBlobs"(params?: QueryParams<"com.atproto.sync.listBlobs">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listBlobs">>;
+        "listHosts"(params?: QueryParams<"com.atproto.sync.listHosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listHosts">>;
+        "listRepos"(params?: QueryParams<"com.atproto.sync.listRepos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listRepos">>;
+        "listReposByCollection"(params?: QueryParams<"com.atproto.sync.listReposByCollection">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listReposByCollection">>;
+        "notifyOfUpdate"(input?: ProcedureInput<"com.atproto.sync.notifyOfUpdate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.sync.notifyOfUpdate">>;
+        "requestCrawl"(input?: ProcedureInput<"com.atproto.sync.requestCrawl">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.sync.requestCrawl">>;
+      };
+      "temp": {
+        "addReservedHandle"(input?: ProcedureInput<"com.atproto.temp.addReservedHandle">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.temp.addReservedHandle">>;
+        "checkHandleAvailability"(params?: QueryParams<"com.atproto.temp.checkHandleAvailability">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.checkHandleAvailability">>;
+        "checkSignupQueue"(params?: QueryParams<"com.atproto.temp.checkSignupQueue">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.checkSignupQueue">>;
+        "dereferenceScope"(params?: QueryParams<"com.atproto.temp.dereferenceScope">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.dereferenceScope">>;
+        "fetchLabels"(params?: QueryParams<"com.atproto.temp.fetchLabels">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.fetchLabels">>;
+        "requestPhoneVerification"(input?: ProcedureInput<"com.atproto.temp.requestPhoneVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.temp.requestPhoneVerification">>;
+        "revokeAccountCredentials"(input?: ProcedureInput<"com.atproto.temp.revokeAccountCredentials">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.temp.revokeAccountCredentials">>;
+      };
+    };
+    "germnetwork": {
+      "identity": {
+        "getAnchorKey"(params?: QueryParams<"com.germnetwork.identity.getAnchorKey">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.germnetwork.identity.getAnchorKey">>;
+      };
+      "mailbox": {
+        "claimAddresses"(input?: ProcedureInput<"com.germnetwork.mailbox.claimAddresses">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.mailbox.claimAddresses">>;
+        "deliver"(input?: ProcedureInput<"com.germnetwork.mailbox.deliver">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.mailbox.deliver">>;
+        "poll"(params?: QueryParams<"com.germnetwork.mailbox.poll">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.germnetwork.mailbox.poll">>;
+      };
+      "rendezvous": {
+        "deliver"(input?: ProcedureInput<"com.germnetwork.rendezvous.deliver">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.rendezvous.deliver">>;
+        "register"(input?: ProcedureInput<"com.germnetwork.rendezvous.register">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.rendezvous.register">>;
+      };
+    };
+    "shinolabs": {
+      "pinksea": {
+        "getAuthorFeed"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorFeed">>;
+        "getAuthorReplies"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorReplies">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorReplies">>;
+        "getHandleFromDid"(params?: QueryParams<"com.shinolabs.pinksea.getHandleFromDid">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getHandleFromDid">>;
+        "getIdentity"(params?: QueryParams<"com.shinolabs.pinksea.getIdentity">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getIdentity">>;
+        "getOekaki"(params?: QueryParams<"com.shinolabs.pinksea.getOekaki">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getOekaki">>;
+        "getParentForReply"(params?: QueryParams<"com.shinolabs.pinksea.getParentForReply">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getParentForReply">>;
+        "getRecent"(params?: QueryParams<"com.shinolabs.pinksea.getRecent">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getRecent">>;
+        "getTagFeed"(params?: QueryParams<"com.shinolabs.pinksea.getTagFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getTagFeed">>;
+      };
+    };
+    "whtwnd": {
+      "blog": {
+        "getAuthorPosts"(params?: QueryParams<"com.whtwnd.blog.getAuthorPosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.whtwnd.blog.getAuthorPosts">>;
+        "getEntryMetadataByName"(params?: QueryParams<"com.whtwnd.blog.getEntryMetadataByName">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.whtwnd.blog.getEntryMetadataByName">>;
+        "getMentionsByEntry"(params?: QueryParams<"com.whtwnd.blog.getMentionsByEntry">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.whtwnd.blog.getMentionsByEntry">>;
+        "notifyOfNewEntry"(input?: ProcedureInput<"com.whtwnd.blog.notifyOfNewEntry">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.whtwnd.blog.notifyOfNewEntry">>;
+      };
+    };
+  };
+  "place": {
+    "stream": {
+      "branding": {
+        "deleteBlob"(input?: ProcedureInput<"place.stream.branding.deleteBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.branding.deleteBlob">>;
+        "getBlob"(params?: QueryParams<"place.stream.branding.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.branding.getBlob">>;
+        "getBranding"(params?: QueryParams<"place.stream.branding.getBranding">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.branding.getBranding">>;
+        "updateBlob"(input?: ProcedureInput<"place.stream.branding.updateBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.branding.updateBlob">>;
+      };
+      "broadcast": {
+        "getBroadcaster"(params?: QueryParams<"place.stream.broadcast.getBroadcaster">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.broadcast.getBroadcaster">>;
+      };
+      "graph": {
+        "getFollowingUser"(params?: QueryParams<"place.stream.graph.getFollowingUser">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.graph.getFollowingUser">>;
+      };
+      "live": {
+        "getLiveUsers"(params?: QueryParams<"place.stream.live.getLiveUsers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getLiveUsers">>;
+        "getProfileCard"(params?: QueryParams<"place.stream.live.getProfileCard">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getProfileCard">>;
+        "getRecommendations"(params?: QueryParams<"place.stream.live.getRecommendations">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getRecommendations">>;
+        "getSegments"(params?: QueryParams<"place.stream.live.getSegments">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getSegments">>;
+        "searchActorsTypeahead"(params?: QueryParams<"place.stream.live.searchActorsTypeahead">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>;
+      };
+      "moderation": {
+        "createBlock"(input?: ProcedureInput<"place.stream.moderation.createBlock">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.createBlock">>;
+        "createGate"(input?: ProcedureInput<"place.stream.moderation.createGate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.createGate">>;
+        "deleteBlock"(input?: ProcedureInput<"place.stream.moderation.deleteBlock">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.deleteBlock">>;
+        "deleteGate"(input?: ProcedureInput<"place.stream.moderation.deleteGate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.deleteGate">>;
+        "updateLivestream"(input?: ProcedureInput<"place.stream.moderation.updateLivestream">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.updateLivestream">>;
+      };
+      "multistream": {
+        "createTarget"(input?: ProcedureInput<"place.stream.multistream.createTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.createTarget">>;
+        "deleteTarget"(input?: ProcedureInput<"place.stream.multistream.deleteTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>;
+        "listTargets"(params?: QueryParams<"place.stream.multistream.listTargets">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.multistream.listTargets">>;
+        "putTarget"(input?: ProcedureInput<"place.stream.multistream.putTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.putTarget">>;
+      };
+      "server": {
+        "createWebhook"(input?: ProcedureInput<"place.stream.server.createWebhook">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.server.createWebhook">>;
+        "deleteWebhook"(input?: ProcedureInput<"place.stream.server.deleteWebhook">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.server.deleteWebhook">>;
+        "getServerTime"(params?: QueryParams<"place.stream.server.getServerTime">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.server.getServerTime">>;
+        "getWebhook"(params?: QueryParams<"place.stream.server.getWebhook">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.server.getWebhook">>;
+        "listWebhooks"(params?: QueryParams<"place.stream.server.listWebhooks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.server.listWebhooks">>;
+        "updateWebhook"(input?: ProcedureInput<"place.stream.server.updateWebhook">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.server.updateWebhook">>;
+      };
+    };
+  };
+  "social": {
+    "grain": {
+      "actor": {
+        "getActorFavs"(params?: QueryParams<"social.grain.actor.getActorFavs">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.actor.getActorFavs">>;
+        "getProfile"(params?: QueryParams<"social.grain.actor.getProfile">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.actor.getProfile">>;
+        "searchActors"(params?: QueryParams<"social.grain.actor.searchActors">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.actor.searchActors">>;
+        "updateAvatar"(input?: ProcedureInput<"social.grain.actor.updateAvatar">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.actor.updateAvatar">>;
+        "updateProfile"(input?: ProcedureInput<"social.grain.actor.updateProfile">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.actor.updateProfile">>;
+      };
+      "comment": {
+        "createComment"(input?: ProcedureInput<"social.grain.comment.createComment">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.comment.createComment">>;
+        "deleteComment"(input?: ProcedureInput<"social.grain.comment.deleteComment">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.comment.deleteComment">>;
+      };
+      "darkroom": {
+        "getGalleryComposite"(params?: QueryParams<"social.grain.darkroom.getGalleryComposite">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.darkroom.getGalleryComposite">>;
+      };
+      "favorite": {
+        "createFavorite"(input?: ProcedureInput<"social.grain.favorite.createFavorite">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.favorite.createFavorite">>;
+        "deleteFavorite"(input?: ProcedureInput<"social.grain.favorite.deleteFavorite">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.favorite.deleteFavorite">>;
+      };
+      "feed": {
+        "getTimeline"(params?: QueryParams<"social.grain.feed.getTimeline">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.feed.getTimeline">>;
+      };
+      "gallery": {
+        "applySort"(input?: ProcedureInput<"social.grain.gallery.applySort">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.applySort">>;
+        "createGallery"(input?: ProcedureInput<"social.grain.gallery.createGallery">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.createGallery">>;
+        "createItem"(input?: ProcedureInput<"social.grain.gallery.createItem">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.createItem">>;
+        "deleteGallery"(input?: ProcedureInput<"social.grain.gallery.deleteGallery">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.deleteGallery">>;
+        "deleteItem"(input?: ProcedureInput<"social.grain.gallery.deleteItem">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.deleteItem">>;
+        "getActorGalleries"(params?: QueryParams<"social.grain.gallery.getActorGalleries">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.gallery.getActorGalleries">>;
+        "getGallery"(params?: QueryParams<"social.grain.gallery.getGallery">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.gallery.getGallery">>;
+        "getGalleryThread"(params?: QueryParams<"social.grain.gallery.getGalleryThread">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.gallery.getGalleryThread">>;
+        "updateGallery"(input?: ProcedureInput<"social.grain.gallery.updateGallery">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.updateGallery">>;
+      };
+      "graph": {
+        "createFollow"(input?: ProcedureInput<"social.grain.graph.createFollow">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.graph.createFollow">>;
+        "deleteFollow"(input?: ProcedureInput<"social.grain.graph.deleteFollow">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.graph.deleteFollow">>;
+        "getFollowers"(params?: QueryParams<"social.grain.graph.getFollowers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.graph.getFollowers">>;
+        "getFollows"(params?: QueryParams<"social.grain.graph.getFollows">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.graph.getFollows">>;
+      };
+      "notification": {
+        "getNotifications"(params?: QueryParams<"social.grain.notification.getNotifications">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.notification.getNotifications">>;
+        "updateSeen"(input?: ProcedureInput<"social.grain.notification.updateSeen">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.notification.updateSeen">>;
+      };
+      "photo": {
+        "applyAlts"(input?: ProcedureInput<"social.grain.photo.applyAlts">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.applyAlts">>;
+        "createExif"(input?: ProcedureInput<"social.grain.photo.createExif">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.createExif">>;
+        "deletePhoto"(input?: ProcedureInput<"social.grain.photo.deletePhoto">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.deletePhoto">>;
+        "getActorPhotos"(params?: QueryParams<"social.grain.photo.getActorPhotos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.photo.getActorPhotos">>;
+        "uploadPhoto"(input?: ProcedureInput<"social.grain.photo.uploadPhoto">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.uploadPhoto">>;
+      };
+    };
+  };
+  "tools": {
+    "garazyk": {
+      "account": {
+        "getUsage"(params?: QueryParams<"tools.garazyk.account.getUsage">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.garazyk.account.getUsage">>;
+      };
+      "sync": {
+        "getRepoFiltered"(params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>;
+      };
+    };
+    "ozone": {
+      "communication": {
+        "createTemplate"(input?: ProcedureInput<"tools.ozone.communication.createTemplate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.communication.createTemplate">>;
+        "deleteTemplate"(input?: ProcedureInput<"tools.ozone.communication.deleteTemplate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.communication.deleteTemplate">>;
+        "listTemplates"(params?: QueryParams<"tools.ozone.communication.listTemplates">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.communication.listTemplates">>;
+        "updateTemplate"(input?: ProcedureInput<"tools.ozone.communication.updateTemplate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.communication.updateTemplate">>;
+      };
+      "hosting": {
+        "getAccountHistory"(params?: QueryParams<"tools.ozone.hosting.getAccountHistory">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.hosting.getAccountHistory">>;
+      };
+      "moderation": {
+        "cancelScheduledAction"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledAction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledAction">>;
+        "cancelScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledActions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledActions">>;
+        "emitEvent"(input?: ProcedureInput<"tools.ozone.moderation.emitEvent">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.emitEvent">>;
+        "getAccountTimeline"(params?: QueryParams<"tools.ozone.moderation.getAccountTimeline">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getAccountTimeline">>;
+        "getEvent"(params?: QueryParams<"tools.ozone.moderation.getEvent">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getEvent">>;
+        "getRecord"(params?: QueryParams<"tools.ozone.moderation.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRecord">>;
+        "getRecords"(params?: QueryParams<"tools.ozone.moderation.getRecords">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRecords">>;
+        "getRepo"(params?: QueryParams<"tools.ozone.moderation.getRepo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRepo">>;
+        "getReporterStats"(params?: QueryParams<"tools.ozone.moderation.getReporterStats">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getReporterStats">>;
+        "getRepos"(params?: QueryParams<"tools.ozone.moderation.getRepos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRepos">>;
+        "getSubjects"(params?: QueryParams<"tools.ozone.moderation.getSubjects">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getSubjects">>;
+        "getSubjectStatus"(params?: QueryParams<"tools.ozone.moderation.getSubjectStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getSubjectStatus">>;
+        "listScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.listScheduledActions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.listScheduledActions">>;
+        "queryEvents"(params?: QueryParams<"tools.ozone.moderation.queryEvents">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.queryEvents">>;
+        "queryStatuses"(params?: QueryParams<"tools.ozone.moderation.queryStatuses">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.queryStatuses">>;
+        "scheduleAction"(input?: ProcedureInput<"tools.ozone.moderation.scheduleAction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.scheduleAction">>;
+        "searchRepos"(params?: QueryParams<"tools.ozone.moderation.searchRepos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.searchRepos">>;
+      };
+      "safelink": {
+        "addRule"(input?: ProcedureInput<"tools.ozone.safelink.addRule">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.addRule">>;
+        "queryEvents"(input?: ProcedureInput<"tools.ozone.safelink.queryEvents">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.queryEvents">>;
+        "queryRules"(input?: ProcedureInput<"tools.ozone.safelink.queryRules">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.queryRules">>;
+        "removeRule"(input?: ProcedureInput<"tools.ozone.safelink.removeRule">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.removeRule">>;
+        "updateRule"(input?: ProcedureInput<"tools.ozone.safelink.updateRule">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.updateRule">>;
+      };
+      "server": {
+        "getConfig"(params?: QueryParams<"tools.ozone.server.getConfig">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.server.getConfig">>;
+        "updateConfig"(input?: ProcedureInput<"tools.ozone.server.updateConfig">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.server.updateConfig">>;
+      };
+      "set": {
+        "addValues"(input?: ProcedureInput<"tools.ozone.set.addValues">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.addValues">>;
+        "deleteSet"(input?: ProcedureInput<"tools.ozone.set.deleteSet">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.deleteSet">>;
+        "deleteValues"(input?: ProcedureInput<"tools.ozone.set.deleteValues">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.deleteValues">>;
+        "getValues"(params?: QueryParams<"tools.ozone.set.getValues">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.set.getValues">>;
+        "querySets"(params?: QueryParams<"tools.ozone.set.querySets">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.set.querySets">>;
+        "upsertSet"(input?: ProcedureInput<"tools.ozone.set.upsertSet">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.upsertSet">>;
+      };
+      "setting": {
+        "listOptions"(params?: QueryParams<"tools.ozone.setting.listOptions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.setting.listOptions">>;
+        "removeOptions"(input?: ProcedureInput<"tools.ozone.setting.removeOptions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.setting.removeOptions">>;
+        "upsertOption"(input?: ProcedureInput<"tools.ozone.setting.upsertOption">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.setting.upsertOption">>;
+      };
+      "signature": {
+        "findCorrelation"(params?: QueryParams<"tools.ozone.signature.findCorrelation">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.signature.findCorrelation">>;
+        "findRelatedAccounts"(params?: QueryParams<"tools.ozone.signature.findRelatedAccounts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.signature.findRelatedAccounts">>;
+        "searchAccounts"(params?: QueryParams<"tools.ozone.signature.searchAccounts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.signature.searchAccounts">>;
+      };
+      "team": {
+        "addMember"(input?: ProcedureInput<"tools.ozone.team.addMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.team.addMember">>;
+        "deleteMember"(input?: ProcedureInput<"tools.ozone.team.deleteMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.team.deleteMember">>;
+        "listMembers"(params?: QueryParams<"tools.ozone.team.listMembers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.team.listMembers">>;
+        "updateMember"(input?: ProcedureInput<"tools.ozone.team.updateMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.team.updateMember">>;
+      };
+      "verification": {
+        "grantVerifications"(input?: ProcedureInput<"tools.ozone.verification.grantVerifications">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.verification.grantVerifications">>;
+        "listVerifications"(params?: QueryParams<"tools.ozone.verification.listVerifications">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.verification.listVerifications">>;
+        "revokeVerifications"(input?: ProcedureInput<"tools.ozone.verification.revokeVerifications">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.verification.revokeVerifications">>;
+      };
+    };
+  };
   [method: string]: any;
 }
 
-/** Create a dynamically-dispatched nested client that routes property
- *  chains to XRPC method calls.
- *
- *  Usage:
- *    const client = createGeneratedClient(caller);
- *    await client.com.atproto.server.createAccount({ handle: "alice" });
- *    await client.app.bsky.actor.getProfile({ actor: "alice.test" });
- */
 export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {
   function buildProxy(path: string[]): any {
     const nsid = path.join(".");
-
     const target = function (...args: unknown[]): Promise<unknown> {
       if (!nsid) {
-        throw new TypeError(
-          "GeneratedClient root cannot be called directly; use namespace chains like client.com.atproto...",
-        );
+        throw new TypeError("GeneratedClient root cannot be called directly; use a namespace chain");
       }
-      return caller.call(
-        nsid,
-        args[0],
-        args[1] as string | CallOptions | undefined,
-      );
+      return caller.call(nsid, args[0], args[1] as string | CallOptions | undefined);
     };
 
     return new Proxy(target, {
-      get(_t, prop: string | symbol) {
-        // Handle special properties that shouldn't trigger proxy chaining
-        if (typeof prop === "symbol") return undefined;
-        if (prop === "then") return undefined;
-        if (prop === "toJSON") return () => nsid;
-        if (prop === "toString") {
-          return () => `[GeneratedClient ${nsid || "root"}]`;
-        }
-
-        return buildProxy([...path, prop]);
+      get(_target, property: string | symbol) {
+        if (typeof property === "symbol" || property === "then") return undefined;
+        if (property === "toJSON") return () => nsid;
+        if (property === "toString") return () => "[GeneratedClient " + (nsid || "root") + "]";
+        return buildProxy([...path, property]);
       },
-      has(_t, prop: string | symbol) {
-        if (typeof prop === "symbol") return false;
-        // Always report as having the property so TypeScript doesn't complain
-        return true;
+      has(_target, property: string | symbol) {
+        return typeof property !== "symbol";
       },
     });
   }
