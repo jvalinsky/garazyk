@@ -1677,6 +1677,9 @@ export interface LexiconDefs {
   "com.atproto.admin.getModerationReports": {
     "main": never;
   };
+  "com.atproto.admin.getRecord": {
+    "main": never;
+  };
   "com.atproto.admin.getServerStats": {
     "main": never;
   };
@@ -6078,6 +6081,19 @@ export interface Lexicons {
       "reports": Array<unknown>;
     };
   };
+  "com.atproto.admin.getRecord": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uri": string;
+    };
+    input: never;
+    output: {
+      "cid"?: string;
+      "uri": string;
+      "value": unknown;
+    };
+  };
   "com.atproto.admin.getServerStats": {
     type: "query";
     outputEncoding: "application/json";
@@ -9167,6 +9183,7 @@ export const LEXICON_DEFINITION_KINDS = {
   "com.atproto.admin.getBlobAuditStatus": "query",
   "com.atproto.admin.getInviteCodes": "query",
   "com.atproto.admin.getModerationReports": "query",
+  "com.atproto.admin.getRecord": "query",
   "com.atproto.admin.getServerStats": "query",
   "com.atproto.admin.getSubjectStatus": "query",
   "com.atproto.admin.moderateAccount": "procedure",
@@ -9640,6 +9657,7 @@ export const LEXICON_METHOD_TYPES = {
   "com.atproto.admin.getBlobAuditStatus": "query",
   "com.atproto.admin.getInviteCodes": "query",
   "com.atproto.admin.getModerationReports": "query",
+  "com.atproto.admin.getRecord": "query",
   "com.atproto.admin.getServerStats": "query",
   "com.atproto.admin.getSubjectStatus": "query",
   "com.atproto.admin.moderateAccount": "procedure",
@@ -10217,6 +10235,7 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "com.atproto.admin.getBlobAuditStatus": "application/json",
   "com.atproto.admin.getInviteCodes": "application/json",
   "com.atproto.admin.getModerationReports": "application/json",
+  "com.atproto.admin.getRecord": "application/json",
   "com.atproto.admin.getServerStats": "application/json",
   "com.atproto.admin.getSubjectStatus": "application/json",
   "com.atproto.admin.moderateAccount": "application/json",
@@ -10695,6 +10714,7 @@ export interface GeneratedClient {
         "getBlobAuditStatus"(params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>;
         "getInviteCodes"(params?: QueryParams<"com.atproto.admin.getInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>;
         "getModerationReports"(params?: QueryParams<"com.atproto.admin.getModerationReports">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getModerationReports">>;
+        "getRecord"(params?: QueryParams<"com.atproto.admin.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getRecord">>;
         "getServerStats"(params?: QueryParams<"com.atproto.admin.getServerStats">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getServerStats">>;
         "getSubjectStatus"(params?: QueryParams<"com.atproto.admin.getSubjectStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>;
         "moderateAccount"(input?: ProcedureInput<"com.atproto.admin.moderateAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>;
