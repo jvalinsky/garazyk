@@ -390,6 +390,23 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return [NSDateFormatter atproto_dateFromString:str];
 }
 
+static const NSInteger kAppViewCurrentSchemaVersion = 2;
+
+static NSInteger AppViewMigrationStatementCount(NSString *sql) {
+    const char *cursor = sql.UTF8String;
+    NSInteger count = 0;
+    BOOL hasContent = NO;
+    for (; *cursor != '\0'; cursor++) {
+        if (*cursor == ';') {
+            if (hasContent) count++;
+            hasContent = NO;
+        } else if (*cursor != ' ' && *cursor != '\t' && *cursor != '\n' && *cursor != '\r') {
+            hasContent = YES;
+        }
+    }
+    return count;
+}
+
 // ---------------------------------------------------------------------------
 // Implementation
 // ---------------------------------------------------------------------------
@@ -399,6 +416,8 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     dispatch_queue_t _queue;
     NSMutableSet<NSString *> *_relevanceCache; // in-memory set for fast isDIDRelevant
     NSMutableDictionary<NSString *, NSNumber *> *_durableCursorByRelayURL;
+    NSInteger _migrationFailureVersionForTesting;
+    NSInteger _migrationFailureStatementForTesting;
 }
 
 - (void)safeExecuteSync:(void(^)(void))block {
@@ -485,82 +504,285 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 // Migrations
 // ---------------------------------------------------------------------------
 
+- (void)appView_setMigrationFailureForTestingVersion:(NSInteger)version
+                                            statement:(NSInteger)statement {
+    [self safeExecuteSync:^{
+        self->_migrationFailureVersionForTesting = version;
+        self->_migrationFailureStatementForTesting = statement;
+    }];
+}
+
+- (BOOL)appView_executeMigrationSQL:(NSString *)sql
+                             version:(NSInteger)version
+                           statement:(NSInteger *)statement
+                               error:(NSError **)error {
+    const char *cursor = sql.UTF8String;
+    while (cursor && *cursor != '\0') {
+        sqlite3_stmt *stmt = NULL;
+        const char *tail = NULL;
+        int rc = sqlite3_prepare_v2(_db, cursor, -1, &stmt, &tail);
+        if (rc != SQLITE_OK) {
+            if (error) {
+                *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+            }
+            if (stmt) sqlite3_finalize(stmt);
+            return NO;
+        }
+
+        if (!stmt) {
+            if (!tail || tail == cursor) break;
+            cursor = tail;
+            continue;
+        }
+
+        (*statement)++;
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+        if (rc != SQLITE_DONE) {
+            if (error) {
+                *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+            }
+            return NO;
+        }
+
+        if (_migrationFailureVersionForTesting == version &&
+            _migrationFailureStatementForTesting == *statement) {
+            if (error) {
+                *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                             code:SQLITE_ERROR
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:
+                                                            @"Injected migration failure after version %ld statement %ld",
+                                                            (long)version, (long)*statement]}];
+            }
+            return NO;
+        }
+
+        if (!tail || tail == cursor) break;
+        cursor = tail;
+    }
+    return YES;
+}
+
+- (BOOL)appView_currentMigrationVersion:(NSInteger *)version error:(NSError **)error {
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db,
+                                "SELECT COUNT(*) FROM sqlite_master "
+                                "WHERE type = 'table' AND name = 'appview_schema_version'",
+                                -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+        }
+        return NO;
+    }
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_ROW) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    @"Failed to read AppView migration version"}];
+        }
+        return NO;
+    }
+
+    if (sqlite3_column_int(stmt, 0) == 0) {
+        *version = 0;
+        return YES;
+    }
+
+    sqlite3_finalize(stmt);
+    stmt = NULL;
+    rc = sqlite3_prepare_v2(_db,
+                            "SELECT COALESCE(MAX(version), 0) FROM appview_schema_version",
+                            -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+        }
+        return NO;
+    }
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_ROW) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    @"Failed to read AppView migration version"}];
+        }
+        return NO;
+    }
+
+    *version = sqlite3_column_int(stmt, 0);
+    return YES;
+}
+
+- (BOOL)appView_threadgatesHaveURIColumn:(BOOL *)hasURI error:(NSError **)error {
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, "PRAGMA table_info(bsky_feed_threadgates)", -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+        }
+        return NO;
+    }
+
+    BOOL foundURI = NO;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        const unsigned char *name = sqlite3_column_text(stmt, 1);
+        if (name && strcmp((const char *)name, "uri") == 0) {
+            foundURI = YES;
+            break;
+        }
+    }
+    if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    @"Failed to inspect bsky_feed_threadgates columns"}];
+        }
+        return NO;
+    }
+    *hasURI = foundURI;
+    return YES;
+}
+
+- (BOOL)appView_recordMigrationVersion:(NSInteger)version
+                              statement:(NSInteger *)statement
+                                  error:(NSError **)error {
+    NSString *sql = [NSString stringWithFormat:
+        @"INSERT INTO appview_schema_version(version) VALUES(%ld)", (long)version];
+    return [self appView_executeMigrationSQL:sql
+                                     version:version
+                                   statement:statement
+                                       error:error];
+}
+
+- (NSInteger)appView_migrationStatementCountForTestingVersion:(NSInteger)version {
+    switch (version) {
+        case 1:
+            return AppViewMigrationStatementCount(kSchemaV1) + 1;
+        case 2:
+            // The legacy fixture needs ALTER TABLE, CREATE INDEX, and version insert.
+            return 3;
+        default:
+            return 0;
+    }
+}
+
+- (BOOL)appView_applyMigrationVersion:(NSInteger)version error:(NSError **)error {
+    NSInteger statement = 0;
+    switch (version) {
+        case 1:
+            if (![self appView_executeMigrationSQL:kSchemaV1
+                                            version:1
+                                          statement:&statement
+                                              error:error]) {
+                return NO;
+            }
+            return [self appView_recordMigrationVersion:1 statement:&statement error:error];
+
+        case 2: {
+            BOOL hasURI = NO;
+            if (![self appView_threadgatesHaveURIColumn:&hasURI error:error]) return NO;
+            if (!hasURI && ![self appView_executeMigrationSQL:
+                            @"ALTER TABLE bsky_feed_threadgates ADD COLUMN uri TEXT;"
+                                                   version:2
+                                                 statement:&statement
+                                                     error:error]) {
+                return NO;
+            }
+            if (![self appView_executeMigrationSQL:
+                  @"CREATE UNIQUE INDEX IF NOT EXISTS idx_bsky_feed_threadgates_uri "
+                  "ON bsky_feed_threadgates(uri);"
+                                         version:2
+                                       statement:&statement
+                                           error:error]) {
+                return NO;
+            }
+            return [self appView_recordMigrationVersion:2 statement:&statement error:error];
+        }
+
+        default:
+            if (error) {
+                *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                             code:SQLITE_ERROR
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:
+                                                            @"Unknown AppView migration version %ld",
+                                                            (long)version]}];
+            }
+            return NO;
+    }
+}
+
+- (BOOL)appView_applyPendingMigrations:(NSError **)error {
+    NSInteger appliedVersion = 0;
+    if (![self appView_currentMigrationVersion:&appliedVersion error:error]) return NO;
+    if (appliedVersion > kAppViewCurrentSchemaVersion) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:SQLITE_ERROR
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithFormat:
+                                                        @"Database schema version %ld is newer than supported version %ld",
+                                                        (long)appliedVersion,
+                                                        (long)kAppViewCurrentSchemaVersion]}];
+        }
+        return NO;
+    }
+
+    for (NSInteger version = appliedVersion + 1;
+         version <= kAppViewCurrentSchemaVersion;
+         version++) {
+        if (![self appView_applyMigrationVersion:version error:error]) return NO;
+    }
+    return YES;
+}
+
+- (void)appView_reloadRelevanceCache {
+    [self->_relevanceCache removeAllObjects];
+    NSString *sql = @"SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
+    NSArray *rows = [self executeParameterizedQuery:sql params:@[iso8601Now()] error:nil];
+    for (NSDictionary *row in rows) {
+        NSString *did = row[@"did"];
+        if (did) [self->_relevanceCache addObject:did];
+    }
+}
+
 - (BOOL)runMigrations:(NSError **)error {
-    __block BOOL ok = YES;
-    __block NSError *innerError = nil;
+    NSError *innerError = nil;
+    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
+        return [database appView_applyPendingMigrations:transactionError];
+    } error:&innerError];
+    if (!ok) {
+        if (error) *error = innerError;
+        return NO;
+    }
 
     [self safeExecuteSync:^{
-        char *errmsg = NULL;
-        int rc = sqlite3_exec(self->_db, kSchemaV1.UTF8String, NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain
-                                             code:rc
-                                         userInfo:@{NSLocalizedDescriptionKey:
-                                                        errmsg ? [NSString stringWithUTF8String:errmsg]
-                                                               : @"Migration failed"}];
-            if (errmsg) sqlite3_free(errmsg);
-            ok = NO;
-            return;
-        }
-
-        rc = sqlite3_exec(self->_db,
-                          "ALTER TABLE bsky_feed_threadgates ADD COLUMN uri TEXT;",
-                          NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            BOOL duplicateColumn = errmsg && strstr(errmsg, "duplicate column name") != NULL;
-            if (errmsg) {
-                sqlite3_free(errmsg);
-                errmsg = NULL;
-            }
-            if (!duplicateColumn) {
-                innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain
-                                                 code:rc
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to add bsky_feed_threadgates.uri"}];
-                ok = NO;
-                return;
-            }
-        }
-
-        rc = sqlite3_exec(self->_db,
-                          "CREATE UNIQUE INDEX IF NOT EXISTS idx_bsky_feed_threadgates_uri ON bsky_feed_threadgates(uri);",
-                          NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain
-                                             code:rc
-                                         userInfo:@{NSLocalizedDescriptionKey:
-                                                        errmsg ? [NSString stringWithUTF8String:errmsg]
-                                                               : @"Failed to create threadgate uri index"}];
-            if (errmsg) sqlite3_free(errmsg);
-            ok = NO;
-            return;
-        }
-
-        sqlite3_exec(self->_db,
-                     "CREATE TABLE IF NOT EXISTS appview_cursor_events ("
-                     "  cursor INTEGER PRIMARY KEY AUTOINCREMENT,"
-                     "  event_type TEXT NOT NULL,"
-                     "  seq INTEGER NOT NULL,"
-                     "  did TEXT,"
-                     "  rev TEXT,"
-                     "  cid TEXT,"
-                     "  raw_envelope BLOB NOT NULL,"
-                     "  created_at TEXT NOT NULL"
-                     ");"
-                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_cursor_events_dedup ON appview_cursor_events(did, rev, cid, event_type);"
-                     "CREATE INDEX IF NOT EXISTS idx_cursor_events_seq ON appview_cursor_events(seq);",
-                     NULL, NULL, NULL);
-
-        // Populate in-memory relevance cache
-        NSString *sql = @"SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
-        NSArray *rows = [self executeParameterizedQuery:sql params:@[iso8601Now()] error:nil];
-        for (NSDictionary *row in rows) {
-            NSString *did = row[@"did"];
-            if (did) [self->_relevanceCache addObject:did];
-        }
+        [self appView_reloadRelevanceCache];
     }];
-
-    if (!ok && error) *error = innerError;
-    return ok;
+    return YES;
 }
 
 // ---------------------------------------------------------------------------

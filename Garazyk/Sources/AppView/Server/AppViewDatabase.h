@@ -124,7 +124,12 @@ extern NSString * const AppViewDatabaseErrorDomain;
 /*!
  @method runMigrations:
 
- @abstract Apply all pending schema migrations.
+ @abstract Apply all pending numbered schema migrations atomically.
+
+ @discussion Each successfully applied migration is recorded in
+ appview_schema_version. All pending migrations and their version records run
+ inside one transaction, so a failure leaves both the schema and applied
+ version unchanged.
 
  @param error  Describes the first migration that failed.
  @return YES if all migrations succeeded (or no-op), NO on failure.
