@@ -3,6 +3,7 @@
 // This file is automatically updated during development when running `dev.ts`.
 
 import * as $_app from "./routes/_app.tsx";
+import * as $_middleware from "./routes/_middleware.ts";
 import * as $api_config from "./routes/api/config.ts";
 import * as $api_network_health from "./routes/api/network/health.ts";
 import * as $api_network_index from "./routes/api/network/index.ts";
@@ -47,6 +48,7 @@ import type { Manifest } from "$fresh/server.ts";
 const manifest = {
   routes: {
     "./routes/_app.tsx": $_app,
+    "./routes/_middleware.ts": $_middleware,
     "./routes/api/config.ts": $api_config,
     "./routes/api/network/health.ts": $api_network_health,
     "./routes/api/network/index.ts": $api_network_index,
