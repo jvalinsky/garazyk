@@ -163,14 +163,17 @@ static NSString * const kSelectAllDIDsSQL =
         return NO;
     }
 
-    // Schema creation and legacy upgrades run raw on the managed connection in one
-    // serialized block; createSchemaOnConnection: threads the same handle through
-    // ensureSchemaUpgradesOnConnection: to keep the table -> ALTER -> index ordering.
+    // Schema creation and legacy upgrades run atomically inside one transaction on the
+    // managed connection: createSchemaOnConnection: threads the same handle through
+    // ensureSchemaUpgradesOnConnection: (table -> ALTER -> index ordering), and any
+    // failure rolls the whole thing back, so a half-migrated database is never left on
+    // disk. (SQLite DDL and ALTER TABLE ADD COLUMN are transactional.)
     __block BOOL schemaOK = NO;
     __block NSError *schemaError = nil;
-    [self.connectionManager execute:^(sqlite3 *db) {
+    [self.connectionManager transact:^(sqlite3 *db, BOOL *rollback) {
         schemaOK = [self createSchemaOnConnection:db error:&schemaError];
-    } error:&schemaError];
+        *rollback = !schemaOK;
+    } error:NULL];
     if (!schemaOK) {
         [self.connectionManager close];
         if (error) *error = schemaError;

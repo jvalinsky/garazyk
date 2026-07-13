@@ -9,6 +9,7 @@
 #import "../../Sources/PLC/PLCOperation.h"
 #import "../../Sources/PLC/PLCMockStore.h"
 #import "../../Sources/PLC/PLCPersistentStore.h"
+#import <sqlite3.h>
 
 @interface PLCStoreTests : XCTestCase
 @property (nonatomic, copy) NSString *testDbPath;
@@ -291,6 +292,103 @@
     NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" includeNullified:NO error:nil];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 0);
+}
+
+#pragma mark - Schema migration atomicity
+
+// Seeds a pre-migration plc_operations table (no cid/nullified/seq columns) with one row.
+- (BOOL)seedLegacyDatabaseWithDID:(NSString *)did {
+    sqlite3 *db = NULL;
+    if (sqlite3_open(self.testDbPath.UTF8String, &db) != SQLITE_OK) {
+        sqlite3_close(db);
+        return NO;
+    }
+    const char *schema =
+        "CREATE TABLE plc_operations ("
+        "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "  did TEXT NOT NULL,"
+        "  prev TEXT,"
+        "  sig TEXT NOT NULL,"
+        "  data BLOB NOT NULL,"
+        "  created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ");";
+    BOOL ok = sqlite3_exec(db, schema, NULL, NULL, NULL) == SQLITE_OK;
+    if (ok) {
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(db, "INSERT INTO plc_operations (did, sig, data) VALUES (?, ?, ?);", -1, &stmt, NULL) == SQLITE_OK) {
+            const char *json = "{\"legacy\":true}";
+            sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 2, "legacy-sig", -1, SQLITE_TRANSIENT);
+            sqlite3_bind_blob(stmt, 3, json, (int)strlen(json), SQLITE_TRANSIENT);
+            ok = sqlite3_step(stmt) == SQLITE_DONE;
+        } else {
+            ok = NO;
+        }
+        sqlite3_finalize(stmt);
+    }
+    sqlite3_close(db);
+    return ok;
+}
+
+- (BOOL)databaseHasTable:(NSString *)name {
+    sqlite3 *db = NULL;
+    if (sqlite3_open(self.testDbPath.UTF8String, &db) != SQLITE_OK) {
+        sqlite3_close(db);
+        return NO;
+    }
+    BOOL exists = NO;
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?;", -1, &stmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, name.UTF8String, -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            exists = sqlite3_column_int(stmt, 0) > 0;
+        }
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return exists;
+}
+
+- (void)testLegacySchemaUpgradeAddsColumnsAndBackfillsSeq {
+    XCTAssertTrue([self seedLegacyDatabaseWithDID:@"did:plc:legacy"], @"seed legacy database");
+
+    // Opening the store upgrades the legacy schema (adds cid/nullified/seq atomically) and
+    // backfills seq = id, leaving the pre-existing operation readable.
+    NSError *error = nil;
+    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    XCTAssertNotNil(store, @"store should open and upgrade a legacy database: %@", error);
+
+    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:legacy" includeNullified:NO error:&error];
+    XCTAssertEqual(history.count, 1u, @"legacy op should be readable after upgrade: %@", error);
+    XCTAssertEqualObjects(history.firstObject.sig, @"legacy-sig");
+    XCTAssertEqualObjects(history.firstObject.sequence, @1, @"seq backfilled to id (1)");
+
+    // Reopen: the upgrade is idempotent and converges.
+    [store close];
+    PLCPersistentStore *reopened = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    XCTAssertNotNil(reopened, @"reopen converges: %@", error);
+    XCTAssertEqual([reopened getHistoryForDID:@"did:plc:legacy" includeNullified:NO error:nil].count, 1u);
+    [reopened close];
+}
+
+- (void)testSchemaSetupRollsBackOnInjectedIndexFailure {
+    // Pre-create an object whose name collides with a schema index so CREATE INDEX fails
+    // partway through setup, after CREATE TABLE plc_operations has run in the same
+    // transaction. The whole setup must roll back rather than leave a half-migrated table.
+    sqlite3 *db = NULL;
+    XCTAssertEqual(sqlite3_open(self.testDbPath.UTF8String, &db), SQLITE_OK);
+    XCTAssertEqual(sqlite3_exec(db, "CREATE TABLE idx_plc_operations_did (x INTEGER);", NULL, NULL, NULL), SQLITE_OK);
+    sqlite3_close(db);
+
+    NSError *error = nil;
+    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    XCTAssertNil(store, @"open must fail when a schema statement conflicts");
+    XCTAssertNotNil(error);
+
+    // Atomicity: the CREATE TABLE plc_operations run earlier in the same transaction is
+    // rolled back, so no half-migrated table remains; the colliding table is untouched.
+    XCTAssertFalse([self databaseHasTable:@"plc_operations"], @"schema setup must roll back on failure");
+    XCTAssertTrue([self databaseHasTable:@"idx_plc_operations_did"], @"pre-existing object untouched");
 }
 
 @end
