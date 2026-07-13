@@ -9,10 +9,10 @@ if ! command -v rg >/dev/null 2>&1; then
   exit 1
 fi
 
-services_path="$root_dir/Garazyk/Sources/App/Services"
+services_path="$root_dir/Garazyk/Sources/Services"
 security_path="$root_dir/Garazyk/Sources/Security"
 if [[ ! -d "$services_path" ]]; then
-  services_path="$root_dir/Sources/App/Services"
+  services_path="$root_dir/Sources/Services"
 fi
 if [[ ! -d "$security_path" ]]; then
   security_path="$root_dir/Sources/Security"
