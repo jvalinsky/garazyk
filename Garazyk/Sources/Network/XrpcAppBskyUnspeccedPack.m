@@ -54,14 +54,6 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
     SearchIndexService *searchIndexService = services.searchIndexService;
     FeedService *feedService = services.feedService;
 
-#pragma mark - Labeler
-
-  [dispatcher registerMethod:@"app.bsky.labeler.getServices"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-                       response.statusCode = HttpStatusOK;
-                       [response setJsonBody:@{@"views" : @[], @"cursor" : [NSNull null]}];
-                     }];
-
 #pragma mark - Configuration
 
   [dispatcher registerMethod:@"app.bsky.unspecced.getConfig"

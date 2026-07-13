@@ -12,6 +12,8 @@
 @property (nonatomic, copy) void (^receiveCompletion)(NSData *data, BOOL isComplete, NSError *error);
 @property (nonatomic, strong) NSMutableArray<NSData *> *pendingData;
 @property (nonatomic, assign) BOOL isEOF;
+@property (nonatomic, assign) BOOL isCancelled;
+@property (nonatomic, assign) NSUInteger cancelCount;
 - (void)injectReceiveData:(NSData *)data;
 - (void)injectReceiveComplete;
 @end
@@ -24,6 +26,8 @@
         self.sentData = [NSMutableData data];
         self.pendingData = [NSMutableArray array];
         self.isEOF = NO;
+        self.isCancelled = NO;
+        self.cancelCount = 0;
     }
     return self;
 }
@@ -51,6 +55,16 @@
     } else {
         self.receiveCompletion = completion;
     }
+}
+
+- (void)cancel {
+    self.isCancelled = YES;
+    self.cancelCount += 1;
+    self.receiveCompletion = nil;
+    [self.pendingData removeAllObjects];
+}
+
+- (void)startWithQueue:(dispatch_queue_t)queue {
 }
 
 - (void)injectReceiveData:(NSData *)data {
@@ -192,6 +206,134 @@
     [self.mockConnection injectReceiveData:reqData];
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
+}
+
+- (void)testIdleHeaderDeadlineTerminatesStalledReceiveExactlyOnce {
+    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+        initWithConnection:self.mockConnection
+                   protocol:self.driver
+             responseSender:self.sender
+          idleHeaderTimeout:0.05
+     aggregateHeaderTimeout:0.25];
+
+    XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"idle header timeout"];
+    __block NSUInteger errorCount = 0;
+    self.coordinator.errorHandler = ^(NSError *error) {
+        errorCount += 1;
+        XCTAssertEqual(error.code, 1);
+        XCTAssertEqualObjects(error.domain, @"HttpConnectionIOCoordinator");
+        [timeoutExpectation fulfill];
+    };
+
+    [self.coordinator start];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    XCTestExpectation *settledExpectation = [self expectationWithDescription:@"timeout settles"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(100 * NSEC_PER_MSEC)),
+                   dispatch_get_main_queue(), ^{
+        [settledExpectation fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    XCTAssertEqual(errorCount, (NSUInteger)1);
+    XCTAssertTrue(self.mockConnection.isCancelled);
+    XCTAssertEqual(self.mockConnection.cancelCount, (NSUInteger)1);
+    XCTAssertNil(self.mockConnection.receiveCompletion);
+}
+
+- (void)testAggregateHeaderDeadlineDoesNotResetForTrickleInput {
+    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+        initWithConnection:self.mockConnection
+                   protocol:self.driver
+             responseSender:self.sender
+          idleHeaderTimeout:0.08
+     aggregateHeaderTimeout:0.14];
+
+    XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"aggregate header timeout"];
+    __block NSUInteger errorCount = 0;
+    self.coordinator.errorHandler = ^(NSError *error) {
+        errorCount += 1;
+        XCTAssertEqual(error.code, 1);
+        [timeoutExpectation fulfill];
+    };
+
+    [self.coordinator start];
+    NSArray<NSNumber *> *delays = @[@0.0, @0.03, @0.06, @0.09];
+    for (NSNumber *delay in delays) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                     (int64_t)(delay.doubleValue * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            [self.mockConnection injectReceiveData:[@"G" dataUsingEncoding:NSUTF8StringEncoding]];
+        });
+    }
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(errorCount, (NSUInteger)1);
+    XCTAssertTrue(self.mockConnection.isCancelled);
+    XCTAssertEqual(self.mockConnection.cancelCount, (NSUInteger)1);
+}
+
+- (void)testRequestWithinConfiguredHeaderDeadlinesRemainsAccepted {
+    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+        initWithConnection:self.mockConnection
+                   protocol:self.driver
+             responseSender:self.sender
+          idleHeaderTimeout:0.20
+     aggregateHeaderTimeout:0.20];
+
+    XCTestExpectation *requestExpectation = [self expectationWithDescription:@"request accepted"];
+    XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"no timeout"];
+    timeoutExpectation.inverted = YES;
+    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+        XCTAssertEqualObjects(request.path, @"/within-limits");
+        [requestExpectation fulfill];
+    };
+    self.coordinator.errorHandler = ^(NSError *error) {
+        [timeoutExpectation fulfill];
+    };
+
+    [self.coordinator start];
+    [self.mockConnection injectReceiveData:[@"GET /within-limits HTTP/1.1\r\nHost: h\r\n\r\n"
+                                      dataUsingEncoding:NSUTF8StringEncoding]];
+
+    [self waitForExpectationsWithTimeout:0.15 handler:nil];
+    XCTAssertFalse(self.mockConnection.isCancelled);
+}
+
+- (void)testCompletedSplitHeaderDoesNotApplyAggregateDeadlineToBody {
+    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+        initWithConnection:self.mockConnection
+                   protocol:self.driver
+             responseSender:self.sender
+          idleHeaderTimeout:0.20
+     aggregateHeaderTimeout:0.08];
+
+    XCTestExpectation *requestExpectation = [self expectationWithDescription:@"body request accepted"];
+    XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"no header timeout after terminator"];
+    timeoutExpectation.inverted = YES;
+    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+        XCTAssertEqualObjects(request.path, @"/body");
+        XCTAssertEqualObjects(request.body, [@"body" dataUsingEncoding:NSUTF8StringEncoding]);
+        [requestExpectation fulfill];
+    };
+    self.coordinator.errorHandler = ^(NSError *error) {
+        [timeoutExpectation fulfill];
+    };
+
+    [self.coordinator start];
+    [self.mockConnection injectReceiveData:[@"POST /body HTTP/1.1\r\nHost: h\r\nContent-Length: 4\r\n\r"
+                                      dataUsingEncoding:NSUTF8StringEncoding]];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(20 * NSEC_PER_MSEC)),
+                   dispatch_get_main_queue(), ^{
+        [self.mockConnection injectReceiveData:[@"\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    });
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(130 * NSEC_PER_MSEC)),
+                   dispatch_get_main_queue(), ^{
+        [self.mockConnection injectReceiveData:[@"body" dataUsingEncoding:NSUTF8StringEncoding]];
+    });
+
+    [self waitForExpectationsWithTimeout:0.18 handler:nil];
+    XCTAssertFalse(self.mockConnection.isCancelled);
 }
 
 @end

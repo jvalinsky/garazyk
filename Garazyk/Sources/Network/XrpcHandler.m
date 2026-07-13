@@ -97,11 +97,13 @@ static XrpcDispatcher *_sharedInstance = nil;
 }
 
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler {
-    if ([methodId hasPrefix:@"_"]) {
-        self.internalHandlers[methodId] = [handler copy];
-        return;
+    NSMutableDictionary<NSString *, XrpcMethodHandler> *handlers =
+        [methodId hasPrefix:@"_"] ? self.internalHandlers : self.methodHandlers;
+    if (handlers[methodId] != nil) {
+        [NSException raise:NSInternalInconsistencyException
+                    format:@"Duplicate XRPC handler registration for %@", methodId];
     }
-    self.methodHandlers[methodId] = [handler copy];
+    handlers[methodId] = [handler copy];
 }
 
 - (BOOL)hasRegisteredMethod:(NSString *)methodId {
@@ -109,6 +111,11 @@ static XrpcDispatcher *_sharedInstance = nil;
         return NO;
     }
     return self.methodHandlers[methodId] != nil || self.internalHandlers[methodId] != nil;
+}
+
+- (void)resetRegisteredMethods {
+    [self.methodHandlers removeAllObjects];
+    [self.internalHandlers removeAllObjects];
 }
 
 - (void)registerMethod:(NSString *)methodId

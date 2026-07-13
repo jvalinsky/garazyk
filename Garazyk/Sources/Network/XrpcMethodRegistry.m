@@ -36,6 +36,11 @@ static void registerMethodsWithDispatcherUsingServices(
     id<PDSEmailProvider> emailProvider,
     SubscribeReposHandler *subscribeReposHandler) {
 
+  // A dispatcher can outlive a PDSApplication in tests and controlled restarts.
+  // This registry owns the complete handler set, so rebuild it rather than
+  // treating a prior application's handlers as a second route owner.
+  [dispatcher resetRegisteredMethods];
+
   [XrpcLexiconResolver registerResolveLexiconMethodOnDispatcher:dispatcher
                                                    configuration:config];
 

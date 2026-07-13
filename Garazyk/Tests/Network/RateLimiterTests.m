@@ -12,16 +12,23 @@
 
 @implementation RateLimiterTests
 
+- (void)removeDbFiles {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    [fm removeItemAtPath:self.testDbPath error:nil];
+    [fm removeItemAtPath:[self.testDbPath stringByAppendingString:@"-wal"] error:nil];
+    [fm removeItemAtPath:[self.testDbPath stringByAppendingString:@"-shm"] error:nil];
+}
+
 - (void)setUp {
     [super setUp];
     RateLimiterSetDisabledGlobally(NO);
     self.testDbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"ratelimit_test.db"];
-    [[NSFileManager defaultManager] removeItemAtPath:self.testDbPath error:nil];
+    [self removeDbFiles];
     self.limiter = [[RateLimiter alloc] initWithDatabasePath:self.testDbPath];
 }
 
 - (void)tearDown {
-    [[NSFileManager defaultManager] removeItemAtPath:self.testDbPath error:nil];
+    [self removeDbFiles];
     RateLimiterSetDisabledGlobally(YES);
     [super tearDown];
 }
@@ -152,4 +159,73 @@
     XCTAssertEqualObjects(customBlobHeaders[@"X-RateLimit-Limit"], @"25", @"Custom Blob limit should be 25");
 }
 
+- (void)testRateLimitExceededReturnsNotAllowed {
+    self.limiter.didLimit = 2;
+    NSString *did = @"did:test:exceed";
+    
+    RateLimitResult *r1 = [self.limiter checkRateLimitForDid:did];
+    XCTAssertTrue(r1.allowed, @"First request allowed");
+    RateLimitResult *r2 = [self.limiter checkRateLimitForDid:did];
+    XCTAssertTrue(r2.allowed, @"Second request allowed");
+    RateLimitResult *r3 = [self.limiter checkRateLimitForDid:did];
+    XCTAssertFalse(r3.allowed, @"Third request should be rejected when limit is 2");
+    XCTAssertEqual(r3.remaining, 0, @"Remaining should be 0 when rejected");
+    XCTAssertGreaterThan(r3.retryAfter, 0, @"Retry-After should be positive");
+    
+    NSDictionary *headers = [self.limiter rateLimitHeadersForDid:did];
+    XCTAssertEqualObjects(headers[@"X-RateLimit-Remaining"], @"0");
+}
+
+- (void)testCheckRateLimitForKey {
+    NSString *key = @"custom:endpoint:/xrpc/app.bsky.feed.getTimeline";
+    RateLimitResult *r1 = [self.limiter checkRateLimitForKey:key limit:5 windowSeconds:60];
+    XCTAssertTrue(r1.allowed);
+    XCTAssertEqual(r1.limit, 5);
+    XCTAssertEqual(r1.remaining, 4);
+}
+
+- (void)testGetTopLimitedIdentifiers {
+    [self.limiter checkRateLimitForDid:@"did:test:top1"];
+    [self.limiter checkRateLimitForDid:@"did:test:top1"];
+    [self.limiter checkRateLimitForDid:@"did:test:top2"];
+    
+    NSArray<NSDictionary *> *top = [self.limiter getTopLimitedIdentifiers:10];
+    XCTAssertGreaterThanOrEqual(top.count, 2, @"Should return at least 2 tracked identifiers");
+    BOOL foundTop1 = NO;
+    for (NSDictionary *entry in top) {
+        if ([entry[@"identifier"] isEqualToString:@"did:test:top1"]) {
+            foundTop1 = YES;
+            XCTAssertEqual([entry[@"requestCount"] integerValue], 2);
+        }
+    }
+    XCTAssertTrue(foundTop1, @"Should find did:test:top1 in top limited identifiers");
+}
+
+- (void)testClearRateLimitForIdentifier {
+    NSString *did = @"did:test:clear";
+    self.limiter.didLimit = 3;
+    [self.limiter checkRateLimitForDid:did];
+    [self.limiter checkRateLimitForDid:did];
+    
+    RateLimitResult *beforeClear = [self.limiter checkRateLimitForDid:did];
+    XCTAssertEqual(beforeClear.remaining, 0);
+    
+    NSInteger cleared = [self.limiter clearRateLimitForIdentifier:did type:@"0"]; // RateLimitTypeDID is 0
+    XCTAssertGreaterThanOrEqual(cleared, 1, @"Should clear at least 1 row");
+    
+    RateLimitResult *afterClear = [self.limiter checkRateLimitForDid:did];
+    XCTAssertTrue(afterClear.allowed);
+    XCTAssertEqual(afterClear.remaining, 2, @"Remaining should be reset after clearing");
+}
+
+- (void)testClearBlobRateLimitForIdentifier {
+    NSString *did = @"did:test:blobclear";
+    self.limiter.blobLimit = 3;
+    [self.limiter checkBlobUploadRateLimitForDid:did];
+    
+    NSInteger cleared = [self.limiter clearRateLimitForIdentifier:did type:@"blob"];
+    XCTAssertGreaterThanOrEqual(cleared, 1, @"Should clear blob rate limit row");
+}
+
 @end
+

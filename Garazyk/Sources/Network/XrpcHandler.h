@@ -125,11 +125,17 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
  
  @param methodId The method NSID (e.g., com.atproto.server.createSession).
  @param handler The handler to invoke for this method.
+
+ @throws NSInternalInconsistencyException if a handler is already registered
+ for the method ID. A method has one owner for the lifetime of a dispatcher.
  */
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler;
 
 /*! Returns YES when a handler has already been registered for methodId. */
 - (BOOL)hasRegisteredMethod:(NSString *)methodId;
+
+/*! Clears all registered XRPC method handlers before a complete registry rebuild. */
+- (void)resetRegisteredMethods;
 
 /*!
  @method handleRequest:response:

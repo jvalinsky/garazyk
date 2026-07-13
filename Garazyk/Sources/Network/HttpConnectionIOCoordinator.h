@@ -106,7 +106,25 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
  */
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
                            protocol:(HttpProtocolDriver *)driver
-                       responseSender:(HttpResponseSender *)sender NS_DESIGNATED_INITIALIZER;
+                    responseSender:(HttpResponseSender *)sender;
+
+/*!
+ @method initWithConnection:protocol:responseSender:idleHeaderTimeout:aggregateHeaderTimeout:
+
+ @abstract Initializes the coordinator with explicit HTTP header deadlines.
+
+ @param idleHeaderTimeout Maximum time to wait for the next header byte while a receive is pending.
+ @param aggregateHeaderTimeout Maximum time from the first byte of a header until that header completes.
+
+ @discussion The ordinary initializer uses the production defaults (30 seconds for each deadline).
+ This initializer exists so tests and callers with an explicit policy can inject different positive
+ limits. The aggregate deadline does not reset as individual header bytes arrive.
+ */
+- (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
+                           protocol:(HttpProtocolDriver *)driver
+                    responseSender:(HttpResponseSender *)sender
+                 idleHeaderTimeout:(NSTimeInterval)idleHeaderTimeout
+            aggregateHeaderTimeout:(NSTimeInterval)aggregateHeaderTimeout NS_DESIGNATED_INITIALIZER;
 
 /**
  * @abstract Returns the operation result.

@@ -14,9 +14,9 @@
 #import "Core/ATProtoDataPaths.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
-#import "Database/Utils/PDSSQLiteUtils.h"
+#import "Database/Connection/ATProtoConnectionManagerSerial.h"
+#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 #import "Metrics/GZMetrics.h"
-#import <sqlite3.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -55,8 +55,8 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 @interface RateLimiter ()
 
 @property (nonatomic, copy, nullable) NSString *databasePath;
-@property (nonatomic, assign) sqlite3 *db;
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
+@property (nonatomic, strong, nullable) ATProtoConnectionManagerSerial *connectionManager;
+@property (nonatomic, strong, nullable) ATProtoDatabaseQueryRunner *queryRunner;
 
 @end
 
@@ -98,8 +98,6 @@ BOOL RateLimiterIsDisabledGlobally(void) {
                            @(_rateLimiterDisabledGlobally),
                            @(config.rateLimitEnabled));
         
-        _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);
-        
         if (path) {
             _databasePath = [path copy];
         } else {
@@ -111,48 +109,60 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 
 - (void)reconfigureDatabasePath:(nullable NSString *)path {
     NSString *normalizedPath = path.length > 0 ? [path copy] : nil;
-    dispatch_sync(self.dbQueue, ^{
-        if (_db) {
-            sqlite3_close(_db);
-            _db = NULL;
+    @synchronized(self) {
+        if (_connectionManager) {
+            [_connectionManager close];
+            _connectionManager = nil;
         }
+        _queryRunner = nil;
         _databasePath = normalizedPath;
-    });
+    }
 }
 
 - (BOOL)ensureDatabaseOpened {
-    if (_db) return YES;
-    
-    if (!_databasePath) {
-        ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-        NSString *baseDir = config ? config.dataPaths.serviceDirectory
-                                   : [ATProtoDataPaths pathsForBaseDirectory:[ATProtoServiceConfiguration defaultDataDirectory]].serviceDirectory;
-        [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
-        _databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
-    }
+    @synchronized(self) {
+        if (self.connectionManager && self.connectionManager.isOpen) {
+            return YES;
+        }
 
-    NSString *dbDirectory = [_databasePath stringByDeletingLastPathComponent];
-    if (dbDirectory.length > 0) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:dbDirectory
-                                  withIntermediateDirectories:YES
-                                                   attributes:nil
-                                                        error:nil];
+        if (!self.databasePath) {
+            ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+            NSString *baseDir = config ? config.dataPaths.serviceDirectory
+                                       : [ATProtoDataPaths pathsForBaseDirectory:[ATProtoServiceConfiguration defaultDataDirectory]].serviceDirectory;
+            [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
+            self.databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
+        }
+
+        NSString *dbDirectory = [self.databasePath stringByDeletingLastPathComponent];
+        if (dbDirectory.length > 0) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:dbDirectory
+                                      withIntermediateDirectories:YES
+                                                       attributes:nil
+                                                            error:nil];
+        }
+
+        if (!self.connectionManager) {
+            self.connectionManager = [[ATProtoConnectionManagerSerial alloc] initWithLabel:@"com.atproto.ratelimiter.db"];
+        }
+
+        ATProtoDBConfig dbConfig = ATProtoDBConfigDefault;
+        NSError *openError = nil;
+        if (![self.connectionManager openWithPath:self.databasePath config:dbConfig error:&openError]) {
+            GZ_LOG_DB_ERROR(@"Failed to open rate limit database at path %@: %@", self.databasePath, openError);
+            return NO;
+        }
+
+        if (!self.queryRunner) {
+            self.queryRunner = [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:self.connectionManager
+                                                                                 errorDomain:@"RateLimiterErrorDomain"];
+        }
+
+        [self initializeDatabase];
+        return self.connectionManager.isOpen;
     }
-    
-    [self initializeDatabase];
-    return _db != NULL;
 }
 
-// Called from ensureDatabaseOpened which is always invoked inside a dbQueue block.
-// Must NOT dispatch_sync to dbQueue here — that would deadlock.
 - (void)initializeDatabase {
-    int result = sqlite3_open(self.databasePath.UTF8String, &_db);
-    if (result != SQLITE_OK) {
-        GZ_LOG_DB_ERROR(@"Failed to open rate limit database: %s (SQLite code: %d)",
-                         sqlite3_errmsg(_db), result);
-        return;
-    }
-
     NSString *createTableSQL = @"CREATE TABLE IF NOT EXISTS rate_limits ("
         @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
         @"identifier TEXT NOT NULL, "
@@ -161,17 +171,10 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         @"window_start INTEGER NOT NULL, "
         @"UNIQUE(identifier, type)"
         @")";
-
-    char *errMsg = NULL;
-    result = sqlite3_exec(_db, createTableSQL.UTF8String, NULL, NULL, &errMsg);
-    if (result != SQLITE_OK) {
-        GZ_LOG_DB_ERROR(@"Failed to create rate limit table: %s (SQLite code: %d)",
-                         errMsg, result);
-        sqlite3_free(errMsg);
-    }
+    [self.queryRunner executeUpdate:createTableSQL params:nil error:nil];
 
     NSString *createIndexSQL = @"CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier)";
-    sqlite3_exec(_db, createIndexSQL.UTF8String, NULL, NULL, NULL);
+    [self.queryRunner executeUpdate:createIndexSQL params:nil error:nil];
 
     NSString *createBlobTableSQL = @"CREATE TABLE IF NOT EXISTS blob_rate_limits ("
         @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -180,13 +183,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         @"window_start INTEGER NOT NULL, "
         @"UNIQUE(did)"
         @")";
-
-    result = sqlite3_exec(_db, createBlobTableSQL.UTF8String, NULL, NULL, &errMsg);
-    if (result != SQLITE_OK) {
-        GZ_LOG_DB_ERROR(@"Failed to create blob rate limit table: %s (SQLite code: %d)",
-                         errMsg, result);
-        sqlite3_free(errMsg);
-    }
+    [self.queryRunner executeUpdate:createBlobTableSQL params:nil error:nil];
 }
 
 - (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
@@ -196,12 +193,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (!did || did.length == 0) {
         return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
     }
-    
-    __block RateLimitResult *result;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self checkRateLimitInternalForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
-    });
-    return result;
+    return [self checkRateLimitInternalForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
 }
 
 - (RateLimitResult *)checkRateLimitForIP:(NSString *)ip {
@@ -211,12 +203,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (!ip || ip.length == 0) {
         return [RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
     }
-    
-    __block RateLimitResult *result;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self checkRateLimitInternalForIdentifier:ip type:RateLimitTypeIP limit:self.ipLimit windowSeconds:self.ipWindowSeconds];
-    });
-    return result;
+    return [self checkRateLimitInternalForIdentifier:ip type:RateLimitTypeIP limit:self.ipLimit windowSeconds:self.ipWindowSeconds];
 }
 
 - (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did {
@@ -226,12 +213,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (!did || did.length == 0) {
         return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
     }
-    
-    __block RateLimitResult *result;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self checkBlobRateLimitInternalForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
-    });
-    return result;
+    return [self checkBlobRateLimitInternalForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
 }
 
 - (RateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds {
@@ -241,108 +223,77 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (!key || key.length == 0) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
     }
-    
-    __block RateLimitResult *result;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self checkRateLimitInternalForIdentifier:key type:RateLimitTypeCustom limit:limit windowSeconds:windowSeconds];
-    });
-    return result;
+    return [self checkRateLimitInternalForIdentifier:key type:RateLimitTypeCustom limit:limit windowSeconds:windowSeconds];
 }
 
 - (RateLimitResult *)checkRateLimitInternalForIdentifier:(NSString *)identifier
-                                                     type:(RateLimitType)type
-                                                    limit:(NSInteger)limit
-                                              windowSeconds:(NSTimeInterval)windowSeconds {
+                                                    type:(RateLimitType)type
+                                                   limit:(NSInteger)limit
+                                             windowSeconds:(NSTimeInterval)windowSeconds {
     if (![self ensureDatabaseOpened]) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
     }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
-    
-    NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
 
-    // Begin immediate transaction to prevent concurrent SELECT/INSERT race condition
-    int txResult = sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION", NULL, NULL, NULL);
-    if (txResult != SQLITE_OK) {
-        // Transaction failed, default to allow
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    __block RateLimitResult *outResult = nil;
+    __block NSInteger requestCount = 0;
+
+    [self.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
+        NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
+        NSArray *rows = [tx executeQuery:selectSQL params:@[identifier, @(type), @(windowStart)] error:error];
+        NSTimeInterval existingWindowStart = 0;
+        if (rows.count > 0) {
+            NSDictionary *row = rows.firstObject;
+            requestCount = [row[@"request_count"] integerValue];
+            existingWindowStart = [row[@"window_start"] doubleValue];
+        }
+
+        if (requestCount >= limit) {
+            NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+            if (resetSeconds < 0) resetSeconds = 0;
+            [[GZMetrics sharedMetrics] incrementRateLimitRejection:
+                (type == RateLimitTypeDID ? @"did" :
+                 type == RateLimitTypeIP ? @"ip" : @"custom")];
+            outResult = [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
+            return NO;
+        }
+
+        NSString *upsertSQL = @"INSERT INTO rate_limits (identifier, type, request_count, window_start) "
+                              @"VALUES (?, ?, ?, ?) "
+                              @"ON CONFLICT(identifier, type) DO UPDATE SET "
+                              @"request_count = CASE WHEN window_start > ? THEN request_count + 1 ELSE 1 END, "
+                              @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
+
+        BOOL success = [tx executeUpdate:upsertSQL
+                                  params:@[identifier, @(type), @(1), @(now), @(windowStart), @(windowStart), @(now)]
+                                   error:error];
+        if (!success) {
+            return NO;
+        }
+
+        outResult = [RateLimitResult resultAllowed:YES
+                                             limit:limit
+                                         remaining:(limit - requestCount - 1)
+                                       resetSeconds:windowSeconds
+                                        retryAfter:0];
+        return YES;
+    } error:nil];
+
+    if (outResult) {
+        return outResult;
     }
-
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
-    if (result != SQLITE_OK) {
-        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
-    }
-
-    sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, type);
-    sqlite3_bind_double(stmt, 3, windowStart);
-
-    NSInteger requestCount = 0;
-    NSTimeInterval existingWindowStart = 0;
-
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        requestCount = sqlite3_column_int(stmt, 0);
-        existingWindowStart = sqlite3_column_double(stmt, 1);
-    }
-
-    if (requestCount >= limit) {
-        NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
-        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
-        [[GZMetrics sharedMetrics] incrementRateLimitRejection:
-            (type == RateLimitTypeDID ? @"did" :
-             type == RateLimitTypeIP ? @"ip" : @"custom")];
-        return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
-    }
-
-    NSString *upsertSQL = @"INSERT INTO rate_limits (identifier, type, request_count, window_start) "
-                          @"VALUES (?, ?, ?, ?) "
-                          @"ON CONFLICT(identifier, type) DO UPDATE SET "
-                          @"request_count = CASE WHEN window_start > ? THEN request_count + 1 ELSE 1 END, "
-                          @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
-
-    // We need a new statement variable since the previous one is autoreleased only at scope exit
-    // However, declaring another PDS_SQLITE_AUTORELEASE_STMT in the same scope with same name is tricky.
-    // It's better to wrap this in a block or use a different name.
-    // Let's use a different name "upsertStmt".
-
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *upsertStmt;
-    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
-    if (result != SQLITE_OK) {
-        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - requestCount - 1) resetSeconds:0 retryAfter:0];
-    }
-
-    sqlite3_bind_text(upsertStmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(upsertStmt, 2, type);
-    sqlite3_bind_int(upsertStmt, 3, 1);
-    sqlite3_bind_double(upsertStmt, 4, now);
-    sqlite3_bind_double(upsertStmt, 5, windowStart);
-    sqlite3_bind_double(upsertStmt, 6, windowStart);
-    sqlite3_bind_double(upsertStmt, 7, now);
-
-    result = sqlite3_step(upsertStmt);
-
-    if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
-        GZ_LOG_DB_ERROR(@"Failed to update rate limit: %s (SQLite code: %d)",
-                         sqlite3_errmsg(_db), result);
-        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - requestCount - 1) resetSeconds:0 retryAfter:0];
-    }
-
-    sqlite3_exec(_db, "COMMIT TRANSACTION", NULL, NULL, NULL);
     return [RateLimitResult resultAllowed:YES
                                     limit:limit
                                 remaining:(limit - requestCount - 1)
-                              resetSeconds:windowSeconds
+                              resetSeconds:0
                                retryAfter:0];
 }
 
 - (RateLimitResult *)currentRateLimitForIdentifier:(NSString *)identifier
                                               type:(RateLimitType)type
                                              limit:(NSInteger)limit
-                                      windowSeconds:(NSTimeInterval)windowSeconds {
+                                     windowSeconds:(NSTimeInterval)windowSeconds {
     if (![self ensureDatabaseOpened]) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
     }
@@ -350,21 +301,13 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     NSTimeInterval windowStart = now - windowSeconds;
     NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
 
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
-    if (result != SQLITE_OK) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
-    }
-
-    sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, type);
-    sqlite3_bind_double(stmt, 3, windowStart);
-
+    NSArray *rows = [self.queryRunner executeQuery:selectSQL params:@[identifier, @(type), @(windowStart)] error:nil];
     NSInteger requestCount = 0;
     NSTimeInterval existingWindowStart = 0;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        requestCount = sqlite3_column_int(stmt, 0);
-        existingWindowStart = sqlite3_column_double(stmt, 1);
+    if (rows.count > 0) {
+        NSDictionary *row = rows.firstObject;
+        requestCount = [row[@"request_count"] integerValue];
+        existingWindowStart = [row[@"window_start"] doubleValue];
     }
 
     BOOL allowed = requestCount < limit;
@@ -387,69 +330,63 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 }
 
 - (RateLimitResult *)checkBlobRateLimitInternalForDid:(NSString *)did
-                                                 limit:(NSInteger)limit
-                                           windowSeconds:(NSTimeInterval)windowSeconds {
+                                                limit:(NSInteger)limit
+                                          windowSeconds:(NSTimeInterval)windowSeconds {
     if (![self ensureDatabaseOpened]) {
         return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
     }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
-    
-    NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
-    
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
-    if (result != SQLITE_OK) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
-    }
-    
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 2, windowStart);
-    
-    NSInteger uploadCount = 0;
-    NSTimeInterval existingWindowStart = 0;
-    
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        uploadCount = sqlite3_column_int(stmt, 0);
-        existingWindowStart = sqlite3_column_double(stmt, 1);
-    }
-    
-    if (uploadCount >= limit) {
-        NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
-        [[GZMetrics sharedMetrics] incrementRateLimitRejection:@"blob"];
-        return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
-    }
-    
-    NSString *upsertSQL = @"INSERT INTO blob_rate_limits (did, upload_count, window_start) "
-                          @"VALUES (?, ?, ?) "
-                          @"ON CONFLICT(did) DO UPDATE SET "
-                          @"upload_count = CASE WHEN window_start > ? THEN upload_count + 1 ELSE 1 END, "
-                          @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
-    
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *upsertStmt;
-    result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
-    if (result != SQLITE_OK) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - uploadCount - 1) resetSeconds:0 retryAfter:0];
-    }
-    
-    sqlite3_bind_text(upsertStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(upsertStmt, 2, 1);
-    sqlite3_bind_double(upsertStmt, 3, now);
-    sqlite3_bind_double(upsertStmt, 4, windowStart);
-    sqlite3_bind_double(upsertStmt, 5, windowStart);
-    sqlite3_bind_double(upsertStmt, 6, now);
 
-    result = sqlite3_step(upsertStmt);
+    __block RateLimitResult *outResult = nil;
+    __block NSInteger uploadCount = 0;
 
-    if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
-        GZ_LOG_DB_ERROR(@"Failed to update blob rate limit: %s (SQLite code: %d)",
-                         sqlite3_errmsg(_db), result);
+    [self.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
+        NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
+        NSArray *rows = [tx executeQuery:selectSQL params:@[did, @(windowStart)] error:error];
+        NSTimeInterval existingWindowStart = 0;
+        if (rows.count > 0) {
+            NSDictionary *row = rows.firstObject;
+            uploadCount = [row[@"upload_count"] integerValue];
+            existingWindowStart = [row[@"window_start"] doubleValue];
+        }
+
+        if (uploadCount >= limit) {
+            NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+            if (resetSeconds < 0) resetSeconds = 0;
+            [[GZMetrics sharedMetrics] incrementRateLimitRejection:@"blob"];
+            outResult = [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
+            return NO;
+        }
+
+        NSString *upsertSQL = @"INSERT INTO blob_rate_limits (did, upload_count, window_start) "
+                              @"VALUES (?, ?, ?) "
+                              @"ON CONFLICT(did) DO UPDATE SET "
+                              @"upload_count = CASE WHEN window_start > ? THEN upload_count + 1 ELSE 1 END, "
+                              @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
+
+        BOOL success = [tx executeUpdate:upsertSQL
+                                  params:@[did, @(1), @(now), @(windowStart), @(windowStart), @(now)]
+                                   error:error];
+        if (!success) {
+            return NO;
+        }
+
+        outResult = [RateLimitResult resultAllowed:YES
+                                             limit:limit
+                                         remaining:(limit - uploadCount - 1)
+                                       resetSeconds:windowSeconds
+                                        retryAfter:0];
+        return YES;
+    } error:nil];
+
+    if (outResult) {
+        return outResult;
     }
-
     return [RateLimitResult resultAllowed:YES
                                     limit:limit
                                 remaining:(limit - uploadCount - 1)
-                              resetSeconds:windowSeconds
+                              resetSeconds:0
                                retryAfter:0];
 }
 
@@ -463,20 +400,13 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     NSTimeInterval windowStart = now - windowSeconds;
     NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
 
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
-    if (result != SQLITE_OK) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
-    }
-
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 2, windowStart);
-
+    NSArray *rows = [self.queryRunner executeQuery:selectSQL params:@[did, @(windowStart)] error:nil];
     NSInteger uploadCount = 0;
     NSTimeInterval existingWindowStart = 0;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        uploadCount = sqlite3_column_int(stmt, 0);
-        existingWindowStart = sqlite3_column_double(stmt, 1);
+    if (rows.count > 0) {
+        NSDictionary *row = rows.firstObject;
+        uploadCount = [row[@"upload_count"] integerValue];
+        existingWindowStart = [row[@"window_start"] doubleValue];
     }
 
     BOOL allowed = uploadCount < limit;
@@ -503,10 +433,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         return [self headersFromResult:[RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:self.didWindowSeconds retryAfter:0]];
     }
 
-    __block RateLimitResult *result = nil;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self currentRateLimitForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
-    });
+    RateLimitResult *result = [self currentRateLimitForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
     return [self headersFromResult:result];
 }
 
@@ -515,10 +442,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         return [self headersFromResult:[RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:self.ipWindowSeconds retryAfter:0]];
     }
 
-    __block RateLimitResult *result = nil;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self currentRateLimitForIdentifier:ip type:RateLimitTypeIP limit:self.ipLimit windowSeconds:self.ipWindowSeconds];
-    });
+    RateLimitResult *result = [self currentRateLimitForIdentifier:ip type:RateLimitTypeIP limit:self.ipLimit windowSeconds:self.ipWindowSeconds];
     return [self headersFromResult:result];
 }
 
@@ -527,10 +451,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         return [self headersFromResult:[RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:self.blobWindowSeconds retryAfter:0]];
     }
 
-    __block RateLimitResult *result = nil;
-    dispatch_sync(self.dbQueue, ^{
-        result = [self currentBlobRateLimitForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
-    });
+    RateLimitResult *result = [self currentBlobRateLimitForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
     return [self headersFromResult:result];
 }
 
@@ -567,13 +488,11 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 }
 
 - (void)dealloc {
-    if (_db) {
-        sqlite3_close(_db);
-    }
+    [_connectionManager close];
 }
 
 - (NSArray<NSDictionary *> *)getTopLimitedIdentifiers:(NSInteger)limit {
-    if (!_db) return @[];
+    if (![self ensureDatabaseOpened]) return @[];
     if (limit <= 0) limit = 20;
 
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
@@ -583,50 +502,37 @@ BOOL RateLimiterIsDisabledGlobally(void) {
                      @"MAX(window_start) as last_window "
                      @"FROM rate_limits WHERE window_start > ? "
                      @"GROUP BY identifier, type ORDER BY total_count DESC LIMIT ?";
-    sqlite3_stmt *stmt = NULL;
-    int result = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
-    if (result != SQLITE_OK) return @[];
 
-    sqlite3_bind_double(stmt, 1, windowStart);
-    sqlite3_bind_int64(stmt, 2, limit);
+    NSArray *rows = [self.queryRunner executeQuery:sql params:@[@(windowStart), @(limit)] error:nil];
+    if (!rows) return @[];
 
-    NSMutableArray *entries = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        NSDictionary *entry = @{
-            @"identifier": [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)],
-            @"type": [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)],
-            @"requestCount": @(sqlite3_column_int64(stmt, 2)),
-            @"windowStart": @(sqlite3_column_double(stmt, 3))
-        };
-        [entries addObject:entry];
+    NSMutableArray *entries = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        [entries addObject:@{
+            @"identifier": row[@"identifier"] ?: @"",
+            @"type": [NSString stringWithFormat:@"%@", row[@"type"] ?: @""],
+            @"requestCount": row[@"total_count"] ?: @0,
+            @"windowStart": row[@"last_window"] ?: @0
+        }];
     }
-    sqlite3_finalize(stmt);
     return [entries copy];
 }
 
 - (NSInteger)clearRateLimitForIdentifier:(NSString *)identifier type:(NSString *)type {
-    if (!_db || !identifier) return 0;
+    if (!identifier || ![self ensureDatabaseOpened]) return 0;
 
     NSString *sql;
+    NSArray *params;
     if ([type isEqualToString:@"blob"]) {
         sql = @"DELETE FROM blob_rate_limits WHERE did = ?";
+        params = @[identifier];
     } else {
         sql = @"DELETE FROM rate_limits WHERE identifier = ? AND type = ?";
+        params = @[identifier, type];
     }
 
-    sqlite3_stmt *stmt = NULL;
-    int result = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
-    if (result != SQLITE_OK) return 0;
-
-    sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
-    if (![type isEqualToString:@"blob"]) {
-        sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
-    }
-
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
-
-    return (NSInteger)sqlite3_changes(_db);
+    NSInteger changes = [self.queryRunner executeUpdate:sql params:params error:nil];
+    return changes < 0 ? 0 : changes;
 }
 
 @end
