@@ -42,6 +42,28 @@ type ResolveDnsMock = (
 ) => Promise<string[][]>;
 
 /**
+ * A promise that never settles on its own but rejects when the abort signal
+ * passed by the resolver fires. This models a hung DNS/fetch request without
+ * leaking a pending promise: the resolver aborts on timeout, which rejects it.
+ */
+function pendingUntilAbort(opts?: unknown): Promise<never> {
+  const signal = (opts as { signal?: AbortSignal | null } | undefined)?.signal ??
+    undefined;
+  return new Promise<never>((_, reject) => {
+    if (!signal) return;
+    if (signal.aborted) {
+      reject(new Error("Timeout"));
+      return;
+    }
+    signal.addEventListener(
+      "abort",
+      () => reject(new Error("Timeout")),
+      { once: true },
+    );
+  });
+}
+
+/**
  * Mock a function on an object, restoring the original after the test.
  *
  * @param target - The object whose property to replace.
@@ -248,7 +270,8 @@ Deno.test("DenoDnsResolver: resolveTxt rejects on timeout", async () => {
   const restore = mockFn(
     Deno as unknown as Record<string, unknown>,
     "resolveDns",
-    () => new Promise(() => {}) // Never resolves
+    ((_domain: string, _record: string, opts?: { signal?: AbortSignal }) =>
+      pendingUntilAbort(opts)) as (...args: unknown[]) => unknown,
   );
 
   try {
@@ -471,7 +494,7 @@ Deno.test("HttpDidResolver: falls back to PLC directory for unknown DID methods"
 });
 
 Deno.test("HttpDidResolver: rejects on timeout", async () => {
-  const restore = mockFetch(() => new Promise(() => {})); // Never resolves
+  const restore = mockFetch((_input, init) => pendingUntilAbort(init)); // Rejects on abort
 
   try {
     const resolver = new HttpDidResolver({ timeoutMs: 10 });
@@ -694,7 +717,7 @@ Deno.test("HttpRecordFetcher: error message includes the endpoint URL", async ()
 });
 
 Deno.test("HttpRecordFetcher: rejects on timeout", async () => {
-  const restore = mockFetch(() => new Promise(() => {})); // Never resolves
+  const restore = mockFetch((_input, init) => pendingUntilAbort(init)); // Rejects on abort
 
   try {
     const fetcher = new HttpRecordFetcher({ timeoutMs: 10 });

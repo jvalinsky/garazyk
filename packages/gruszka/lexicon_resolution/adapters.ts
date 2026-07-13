@@ -59,14 +59,20 @@ export class DenoDnsResolver implements DnsResolver {
     const fqdn = `${this.prefix}.${domain}`;
     try {
       let timeoutId: number | undefined;
+      const controller = new AbortController();
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error("Timeout")), this.timeoutMs);
+        timeoutId = setTimeout(() => {
+          controller.abort(new Error("Timeout"));
+          reject(new Error("Timeout"));
+        }, this.timeoutMs);
       });
-      
-      const resolvePromise = Deno.resolveDns(fqdn, "TXT").finally(() => {
+
+      const resolvePromise = Deno.resolveDns(fqdn, "TXT", {
+        signal: controller.signal,
+      }).finally(() => {
         if (timeoutId !== undefined) clearTimeout(timeoutId);
       });
-      
+
       const records = await Promise.race([resolvePromise, timeoutPromise]);
       return { ok: true, value: records };
     } catch (err) {
