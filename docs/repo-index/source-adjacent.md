@@ -5,7 +5,7 @@ title: Source Adjacent
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **32**
+Total documents in this view: **30**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -29,8 +29,6 @@ Total documents in this view: **32**
 | [Garazyk/docs/guides/objective_c_tips.md](../../Garazyk/docs/guides/objective_c_tips.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Frameworks/README.md](../../Garazyk/Frameworks/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md](../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
-| [Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md](../../Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
-| [Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md](../../Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md](../../Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/Diagnostics/README.md](../../Garazyk/Sources/Admin/Diagnostics/README.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |

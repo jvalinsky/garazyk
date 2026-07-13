@@ -1,16 +1,23 @@
 # Objective-C 2.0 Runtime Gap Report — objc-jupyter-wasm Kernel
 
-**Date:** 2026-05-07 (updated) **Kernel version:** HEAD (phases A–H complete per PARSER_STATUS.md)
-**Test commands:**
+> **Historical probe report (2026-07-12):** Later sections in this file conflict
+> with `kernel/PARSER_STATUS.md`, and no built kernel artifact was present
+> during the plan consolidation. Do not use this table as current backlog.
+> Rebuilding a generated capability baseline is tracked in
+> `docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md`.
+
+**Date:** 2026-05-07 (updated) **Kernel version:** HEAD (phases A–H complete per
+PARSER_STATUS.md) **Test commands:**
 
 - `node tests/test-runtime-v2.mjs result/wasm/kernel.wasm` — ALL PASSED
 - `node tests/kernel-smoke.mjs result/wasm/kernel.wasm` — ALL PASSED
-- `node tests/test-runtime-gap-probes.mjs result/wasm/kernel.wasm` — **84/84 passed**
+- `node tests/test-runtime-gap-probes.mjs result/wasm/kernel.wasm` — **84/84
+  passed**
 
 ## Methodology
 
-1. Read all kernel source files (dispatch, messages, class parsing, state, types, context, format,
-   lexer, primary, AST, runtime bridge)
+1. Read all kernel source files (dispatch, messages, class parsing, state,
+   types, context, format, lexer, primary, AST, runtime bridge)
 2. Read PARSER_STATUS.md (current reference) and runtime.h (public C ABI)
 3. Run existing test suites (test-runtime-v2, kernel-smoke) — both pass
 4. Write 84 targeted probe snippets covering 20+ feature categories
@@ -119,18 +126,20 @@
 
 ### P0 — Blocks real-world code patterns
 
-1. **for-loop break/continue** — C-style for, do/while, and break/continue all throw uncaught
-   exceptions. This is the most impactful bug since loops are fundamental.
-2. **isKindOfClass: / isMemberOfClass:** — Missing entirely. Polymorphic code depends on these.
-3. **NSMutableString** — Not registered as a Foundation class. Any code using mutable strings will
-   fail.
-4. **Super dispatch returning 0** — `[super method]` exists but doesn't return correct values.
-   Inheritance chains break.
+1. **for-loop break/continue** — C-style for, do/while, and break/continue all
+   throw uncaught exceptions. This is the most impactful bug since loops are
+   fundamental.
+2. **isKindOfClass: / isMemberOfClass:** — Missing entirely. Polymorphic code
+   depends on these.
+3. **NSMutableString** — Not registered as a Foundation class. Any code using
+   mutable strings will fail.
+4. **Super dispatch returning 0** — `[super method]` exists but doesn't return
+   correct values. Inheritance chains break.
 
 ### P1 — Important for completeness
 
-6. **Protocol conformance check returns 0** — `conformsToProtocol:` doesn't work despite
-   implementation existing.
+6. **Protocol conformance check returns 0** — `conformsToProtocol:` doesn't work
+   despite implementation existing.
 7. **[NSArray copy] returns mutable marker** — Should return immutable copy.
 8. **static local variables** — Parse error prevents use.
 9. **Associated objects** — `objc_setAssociatedObject` not in runtime bridge.
@@ -143,27 +152,32 @@
 14. **+initialize auto-dispatch** — Never called.
 15. **NSNull** — Not implemented.
 16. **NSStringFromSelector** — Not implemented.
-17. **C struct member access** — NSRange etc. use marker strings, not real structs.
+17. **C struct member access** — NSRange etc. use marker strings, not real
+    structs.
 
 ## Recommended Implementation Sequence
 
-1. **Fix for-loop break/continue** — Investigate `g_ctx.break_pending` / `g_ctx.continue_pending`
-   handling in `objc_interp_ast.c`. The smoke test passes C-style for without break/continue, so the
-   bug is specifically in the break/continue path.
-2. **Add isKindOfClass: / isMemberOfClass:** — Implement in `objc_interp_messages.c` by walking the
-   class hierarchy table (`g_ctx.class_hierarchy_class[]`).
-3. **Register NSMutableString** — Add to Foundation class list in `objc_interpreter.c` and add
-   `stringWithString:` dispatch.
-4. **Fix super dispatch** — Debug `find_interpreter_method_super` — the class pointer resolution for
-   FDObj: markers may not match the method table entries.
-5. **Fix protocol conformance** — Debug `@protocol(Drawable)` expression — it may not produce a
-   valid `FDProt:` marker that `conformsToProtocol:` can match.
-6. **Fix [NSArray copy]** — Return immutable marker (NSArr:) instead of self when receiver is
-   NSMutArr:.
-7. **Add static local variables** — Extend parser to accept `static` keyword in local variable
-   declarations.
-8. **Add associated objects** — Implement `objc_setAssociatedObject` / `objc_getAssociatedObject`
-   using the `Association` table already defined in types.h.
+1. **Fix for-loop break/continue** — Investigate `g_ctx.break_pending` /
+   `g_ctx.continue_pending` handling in `objc_interp_ast.c`. The smoke test
+   passes C-style for without break/continue, so the bug is specifically in the
+   break/continue path.
+2. **Add isKindOfClass: / isMemberOfClass:** — Implement in
+   `objc_interp_messages.c` by walking the class hierarchy table
+   (`g_ctx.class_hierarchy_class[]`).
+3. **Register NSMutableString** — Add to Foundation class list in
+   `objc_interpreter.c` and add `stringWithString:` dispatch.
+4. **Fix super dispatch** — Debug `find_interpreter_method_super` — the class
+   pointer resolution for FDObj: markers may not match the method table entries.
+5. **Fix protocol conformance** — Debug `@protocol(Drawable)` expression — it
+   may not produce a valid `FDProt:` marker that `conformsToProtocol:` can
+   match.
+6. **Fix [NSArray copy]** — Return immutable marker (NSArr:) instead of self
+   when receiver is NSMutArr:.
+7. **Add static local variables** — Extend parser to accept `static` keyword in
+   local variable declarations.
+8. **Add associated objects** — Implement `objc_setAssociatedObject` /
+   `objc_getAssociatedObject` using the `Association` table already defined in
+   types.h.
 
 ## Recently Fixed (Phase H, 2026-05-06)
 
@@ -203,6 +217,6 @@
 
 ## Stale Documentation Note
 
-`docs/plans/runtime-feature-review.md` has been rewritten (2026-05-06) to reflect current
-implementation state. Previously it listed exceptions, autoreleasepool, protocols, `__block`,
-forwarding, and KVC as missing, but all are implemented and passing per PARSER_STATUS.md phases D–H.
+The conflicting runtime phase plans and feature review were retired on
+2026-07-12. Rebuild the kernel and regenerate the capability matrix before
+turning any item in this report into backlog.

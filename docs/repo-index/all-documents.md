@@ -5,13 +5,14 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **111**
+Total documents in this view: **115**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
-| [.impeccable.md](../../.impeccable.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [AGENTS_QUICKREF.md](../../AGENTS_QUICKREF.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
 | [AGENTS.md](../../AGENTS.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
+| [CONTEXT.md](../../CONTEXT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [DESIGN.md](../../DESIGN.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `canonical` | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `docs` | `active` |
 | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `canonical` | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `docs` | `active` |
 | [docs/10-tutorials/germ-mailbox-setup.md](../10-tutorials/germ-mailbox-setup.md) | `canonical` | [docs/10-tutorials/germ-mailbox-setup.md](../10-tutorials/germ-mailbox-setup.md) | `docs` | `active` |
@@ -26,35 +27,21 @@ Total documents in this view: **111**
 | [docs/20-explanation/architecture/atproto_pds_architecture.md](../20-explanation/architecture/atproto_pds_architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/architecture/media_core_framework.md](../20-explanation/architecture/media_core_framework.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/DEPLOYMENT.md](../20-explanation/guides/DEPLOYMENT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/archive/core_subsystem_subplans.md](../archive/core_subsystem_subplans.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
-| [docs/archive/planning/deno-packages-next-steps.md](../archive/planning/deno-packages-next-steps.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
-| [docs/archive/planning/documentation_remediation_plan.md](../archive/planning/documentation_remediation_plan.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/adr/0001-compat-shims-must-not-depend-on-database.md](../adr/0001-compat-shims-must-not-depend-on-database.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/adr/0002-defer-appview-database-queryrunner-migration.md](../adr/0002-defer-appview-database-queryrunner-migration.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/adr/0003-xrpc-registration-uses-plain-nsid-constants.md](../adr/0003-xrpc-registration-uses-plain-nsid-constants.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/archive/planning/README.md](../archive/planning/README.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
-| [docs/archive/planning/tsdoc-revision-plan.md](../archive/planning/tsdoc-revision-plan.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/audits/2026-05-23-deciduous-and-memory-audit.md](../audits/2026-05-23-deciduous-and-memory-audit.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/documentation_roadmap.md](../documentation_roadmap.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/index.md](../index.md) | `canonical` | [docs/index.md](../index.md) | `docs` | `active` |
-| [docs/plans/2026-05-22-adversarial-protocol-testing-design.md](../plans/2026-05-22-adversarial-protocol-testing-design.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/2026-05-22-adversarial-protocol-testing-plan.md](../plans/2026-05-22-adversarial-protocol-testing-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/2026-05-23-agent-scenario-testing-plan.md](../plans/2026-05-23-agent-scenario-testing-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-006-chat-allow-incoming.md](../plans/e2e-006-chat-allow-incoming.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-026-appview-ingest-load.md](../plans/e2e-026-appview-ingest-load.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-030-temporal-distortion.md](../plans/e2e-030-temporal-distortion.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-033-firehose-backpressure.md](../plans/e2e-033-firehose-backpressure.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-039-list-management-handlers.md](../plans/e2e-039-list-management-handlers.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-043-multi-device-sessions.md](../plans/e2e-043-multi-device-sessions.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-045-labeler-subscription.md](../plans/e2e-045-labeler-subscription.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-051-blob-gc-keepalive.md](../plans/e2e-051-blob-gc-keepalive.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-053-twilio-path-fix.md](../plans/e2e-053-twilio-path-fix.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-054-suspension-enforcement.md](../plans/e2e-054-suspension-enforcement.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-055-takedown-enforcement.md](../plans/e2e-055-takedown-enforcement.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-058-account-delete-cascade.md](../plans/e2e-058-account-delete-cascade.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-060-mikrus-service.md](../plans/e2e-060-mikrus-service.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-061-graph-read-verification.md](../plans/e2e-061-graph-read-verification.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/e2e-failure-remediation.md](../plans/e2e-failure-remediation.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/mikrus-code-review-remediation.md](../plans/mikrus-code-review-remediation.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/next-steps.md](../plans/next-steps.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/remaining-scenario-failures.md](../plans/remaining-scenario-failures.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/mega-plan.md](../plans/mega-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/00-baseline-and-governance.md](../plans/workstreams/00-baseline-and-governance.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/02-core-architecture-and-reliability.md](../plans/workstreams/02-core-architecture-and-reliability.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/03-repository-boundaries.md](../plans/workstreams/03-repository-boundaries.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/04-web-and-admin-ui.md](../plans/workstreams/04-web-and-admin-ui.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md](../plans/workstreams/05-embedded-runtime-and-deferred-products.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/repo-index/all-documents.md](all-documents.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/backlinks.md](backlinks.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
@@ -68,12 +55,17 @@ Total documents in this view: **111**
 | [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/pds-deep-code-review-2026-05-22.md](../reports/pds-deep-code-review-2026-05-22.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/agent-protocol.md](../tui/agent-protocol.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/architecture.md](../tui/architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/components.md](../tui/components.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/core-primitives.md](../tui/core-primitives.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/extraction-pipeline.md](../tui/extraction-pipeline.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/overlay-alignment.md](../tui/overlay-alignment.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/README.md](../tui/README.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/runtime.md](../tui/runtime.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/semantic-extraction.md](../tui/semantic-extraction.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/theme-architecture.md](../tui/theme-architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/tui/unicode-ui-elements.md](../tui/unicode-ui-elements.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [Garazyk/docs-site/README.md](../../Garazyk/docs-site/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/docs-site/src/content/docs/advanced-parsing/db-pool-concurrency.md](../../Garazyk/docs-site/src/content/docs/advanced-parsing/db-pool-concurrency.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/docs-site/src/content/docs/advanced-parsing/fast-parsing.md](../../Garazyk/docs-site/src/content/docs/advanced-parsing/fast-parsing.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
@@ -94,8 +86,6 @@ Total documents in this view: **111**
 | [Garazyk/docs/guides/objective_c_tips.md](../../Garazyk/docs/guides/objective_c_tips.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Frameworks/README.md](../../Garazyk/Frameworks/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md](../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
-| [Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md](../../Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
-| [Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md](../../Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md](../../Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
 | [Garazyk/Sources/Admin/Diagnostics/README.md](../../Garazyk/Sources/Admin/Diagnostics/README.md) | `internal-reference` | [docs/11-reference/admin-ui-documentation.md](../11-reference/admin-ui-documentation.md) | `admin` | `reference` |
@@ -106,7 +96,10 @@ Total documents in this view: **111**
 | [Garazyk/Sources/Database/README.md](../../Garazyk/Sources/Database/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Tests/fixtures/atproto-interop-tests/README.md](../../Garazyk/Tests/fixtures/atproto-interop-tests/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Tests/plc_e2e/README.md](../../Garazyk/Tests/plc_e2e/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [PRODUCT.md](../../PRODUCT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [queryrunner_deepening_pilot_plan.md](../../queryrunner_deepening_pilot_plan.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [README.md](../../README.md) | `entrypoint` | [docs/index.md](../index.md) | `docs` | `active` |
+| [refactor_opportunity_audit_report.md](../../refactor_opportunity_audit_report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [scripts/API_README.md](../../scripts/API_README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/docs/configs/README.md](../../scripts/docs/configs/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/docs/lib/README-content-updater.md](../../scripts/docs/lib/README-content-updater.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
@@ -115,8 +108,19 @@ Total documents in this view: **111**
 | [scripts/docs/lib/README-migration-mapping.md](../../scripts/docs/lib/README-migration-mapping.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/docs/lib/README-path-resolver.md](../../scripts/docs/lib/README-path-resolver.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/docs/README.md](../../scripts/docs/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty-rs/README.md](../../scripts/mcp-pty-rs/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/corpus/edge_cases/fixtures/cjk_fullwidth.md](../../scripts/mcp-pty/corpus/edge_cases/fixtures/cjk_fullwidth.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/corpus/edge_cases/fixtures/combining_marks.md](../../scripts/mcp-pty/corpus/edge_cases/fixtures/combining_marks.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/corpus/edge_cases/fixtures/emoji_zwj.md](../../scripts/mcp-pty/corpus/edge_cases/fixtures/emoji_zwj.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/corpus/edge_cases/fixtures/long_lines.md](../../scripts/mcp-pty/corpus/edge_cases/fixtures/long_lines.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/corpus/edge_cases/fixtures/rtl_text.md](../../scripts/mcp-pty/corpus/edge_cases/fixtures/rtl_text.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/corpus/edge_cases/fixtures/zero_width.md](../../scripts/mcp-pty/corpus/edge_cases/fixtures/zero_width.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/corpus/edge_cases/README.md](../../scripts/mcp-pty/corpus/edge_cases/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/mcp-pty/README.md](../../scripts/mcp-pty/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/plc/README.md](../../scripts/plc/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/REVIEW-e2e-harness.md](../../scripts/REVIEW-e2e-harness.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/scenario-dashboard/DESIGN.md](../../scripts/scenario-dashboard/DESIGN.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
+| [scripts/scenario-dashboard/PRODUCT.md](../../scripts/scenario-dashboard/PRODUCT.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/scenarios/README.md](../../scripts/scenarios/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/scenarios/SCENARIO_STANDARDS.md](../../scripts/scenarios/SCENARIO_STANDARDS.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
 | [scripts/scenarios/topologies/README.md](../../scripts/scenarios/topologies/README.md) | `internal-reference` | [docs/11-reference/tooling-and-skills-documentation.md](../11-reference/tooling-and-skills-documentation.md) | `tooling` | `reference` |
