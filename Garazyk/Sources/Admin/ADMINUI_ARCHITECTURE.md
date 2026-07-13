@@ -1,9 +1,15 @@
 # AdminUI Architecture
 
+> **Historical architecture input (2026-07-12):** This document describes the
+> pre-`AdminUIServer` layout and is not an implementation map for the current
+> service. The rewrite is tracked in
+> `docs/plans/workstreams/04-web-and-admin-ui.md`. Use
+> `Garazyk/Sources/AdminUIServer/` and its tests as source truth until then.
+
 ## System Overview
 
-The AdminUI is an admin panel for the AT Protocol PDS (Personal Data Server). It provides a unified
-interface for managing multiple services:
+The AdminUI is an admin panel for the AT Protocol PDS (Personal Data Server). It
+provides a unified interface for managing multiple services:
 
 - **PDS** (Personal Data Server)
 - **PLC** (DID Registry)
@@ -287,7 +293,8 @@ Auto-switches via @media (prefers-color-scheme: dark)
 
 ## Security Considerations
 
-1. **Authentication**: All `/admin/partials/*` routes require auth via PDSAdminAuth
+1. **Authentication**: All `/admin/partials/*` routes require auth via
+   PDSAdminAuth
 2. **CSRF Protection**: HTMX requests use POST, which is CSRF-safe by default
 3. **XSS Prevention**: Template engine auto-escapes all variables
 4. **SQL Injection**: Backend uses parameterized queries (not shown here)

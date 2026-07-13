@@ -64,6 +64,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         csp = [NSString stringWithFormat:
             @"default-src 'self'; "
             "script-src 'self' 'nonce-%@' https://unpkg.com; "
+            "script-src-attr 'none'; "
             "style-src 'self' 'nonce-%@'; "
             "img-src 'self' data:; "
             "connect-src 'self' %@;",
@@ -72,6 +73,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         csp = [NSString stringWithFormat:
             @"default-src 'self'; "
             "script-src 'self' 'nonce-%@' https://unpkg.com; "
+            "script-src-attr 'none'; "
             "style-src 'self' 'nonce-%@'; "
             "img-src 'self' data:;",
             nonce, nonce];
@@ -233,6 +235,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/logout" handler:^(HttpRequest *request, HttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
         NSString *token = [weakSelf.authManager extractTokenFromRequest:request];
         [weakSelf.authManager invalidateSessionToken:token];
         [response setHeader:@"ui_admin_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" forKey:@"Set-Cookie"];
@@ -243,10 +246,13 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     [self.httpServer addRoute:@"GET" path:@"/admin" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *nonce = UIGenerateNonce();
+        NSString *csrfNonce, *csrfCookie;
+        [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:NO];
+        [response setHeader:csrfCookie forKey:@"Set-Cookie"];
         UIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf adminShellHTML:nonce]];
+        [response setBodyString:[weakSelf adminShellHTML:nonce csrfNonce:csrfNonce]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/overview" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -1200,21 +1206,39 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 }
 
 - (BOOL)ensureAuthorized:(HttpRequest *)request response:(HttpResponse *)response {
-    if ([self.authManager isAuthorizedRequest:request]) {
-        return YES;
-    }
-    NSString *htmxRequest = [request headerForKey:@"HX-Request"];
-    if ([htmxRequest isEqualToString:@"true"]) {
-        response.statusCode = 401;
-        response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:@"<div class=\"alert alert-destructive\">Session expired. <a href=\"/admin/login\">Sign in</a></div>"];
+    if (![self.authManager isAuthorizedRequest:request]) {
+        NSString *htmxRequest = [request headerForKey:@"HX-Request"];
+        if ([htmxRequest isEqualToString:@"true"]) {
+            response.statusCode = 401;
+            response.contentType = @"text/html; charset=utf-8";
+            [response setBodyString:@"<div class=\"alert alert-destructive\">Session expired. <a href=\"/admin/login\">Sign in</a></div>"];
+            return NO;
+        }
+        response.statusCode = 302;
+        [response setHeader:@"/admin/login" forKey:@"Location"];
+        response.contentType = @"text/plain; charset=utf-8";
+        [response setBodyString:@"Authentication required\n"];
         return NO;
     }
-    response.statusCode = 302;
-    [response setHeader:@"/admin/login" forKey:@"Location"];
-    response.contentType = @"text/plain; charset=utf-8";
-    [response setBodyString:@"Authentication required\n"];
-    return NO;
+
+    NSString *method = request.methodString.uppercaseString;
+    BOOL isMutation = ![method isEqualToString:@"GET"] && ![method isEqualToString:@"HEAD"] && ![method isEqualToString:@"OPTIONS"];
+    if (!isMutation) {
+        return YES;
+    }
+    if (![self.authManager validateCSRFForRequest:request]) {
+        response.statusCode = HttpStatusForbidden;
+        [response setJsonBody:@{@"ok": @NO, @"error": @"invalid_csrf_token"}];
+        return NO;
+    }
+
+    // CSRF nonces are one-time values. Rotate after every accepted mutation so
+    // the external browser module can safely send the next request.
+    NSString *nextNonce, *nextNonceCookie;
+    [self.authManager createCSRFNonce:&nextNonce cookie:&nextNonceCookie secure:NO];
+    [response setHeader:nextNonceCookie forKey:@"Set-Cookie"];
+    [response setHeader:nextNonce forKey:@"X-UI-Admin-Nonce"];
+    return YES;
 }
 
 - (NSString *)loginPageHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
@@ -1229,40 +1253,37 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     ".login-error{color:var(--color-destructive);margin-top:var(--space-sm);font-size:var(--font-size-sm)}</style>"
     "</head><body><div class=\"login-shell\"><div class=\"login-card\">"
     "<h2>Admin UI Service</h2><p>Sign in to continue.</p>"
-    "<form id=\"login-form\"><input id=\"password\" type=\"password\" placeholder=\"Admin password\" required/>"
+    "<form id=\"login-form\" data-ui-form=\"login\"><input id=\"password\" type=\"password\" placeholder=\"Admin password\" required/>"
     "<button type=\"submit\" class=\"btn btn-primary\">Sign in</button></form>"
     "<p id=\"error\" class=\"login-error\"></p></div></div>"
-    "<script nonce=\"%@\">document.getElementById('login-form').addEventListener('submit',async(e)=>{e.preventDefault();"
-    "const password=document.getElementById('password').value;"
-    "const csrfNonce=document.querySelector('meta[name=\"csrf-nonce\"]').content;"
-    "const resp=await fetch('/admin/login',{method:'POST',headers:{'Content-Type':'application/json','X-UI-Admin-Nonce':csrfNonce},body:JSON.stringify({password})});"
-    "if(resp.ok){window.location='/admin';return;}document.getElementById('error').textContent='Invalid credentials';});</script>"
-    "</body></html>", csrfNonce, nonce, nonce];
+    "<script type=\"module\" src=\"/js/admin-ui.js\"></script>"
+    "</body></html>", csrfNonce, nonce];
 }
 
-- (NSString *)adminShellHTML:(NSString *)nonce {
+- (NSString *)adminShellHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
     return [NSString stringWithFormat:@"<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     "<title>Garazyk UI Service</title>"
     "<link rel=\"stylesheet\" href=\"/css/system.css\">"
+    "<meta name=\"csrf-nonce\" content=\"%@\">"
     "<script nonce=\"%@\" src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script>"
     "</head><body><div class=\"admin-shell\">"
     "<header class=\"admin-header\"><div class=\"admin-header-title\">Garazyk UI Service</div>"
     "<nav class=\"service-segments\" id=\"nav-tabs\">"
-    "<button class=\"service-segment active\" data-tab=\"overview\" onclick=\"switchTab('overview')\">Overview</button>"
-    "<button class=\"service-segment\" data-tab=\"connections\" onclick=\"switchTab('connections')\">Connections</button>"
-    "<button class=\"service-segment\" data-tab=\"pds\" onclick=\"switchTab('pds')\">PDS</button>"
-    "<button class=\"service-segment\" data-tab=\"appview\" onclick=\"switchTab('appview')\">AppView</button>"
-    "<button class=\"service-segment\" data-tab=\"relay\" onclick=\"switchTab('relay')\">Relay</button>"
-    "<button class=\"service-segment\" data-tab=\"plc\" onclick=\"switchTab('plc')\">PLC</button>"
-    "<button class=\"service-segment\" data-tab=\"explorer\" onclick=\"switchTab('explorer')\">Explorer</button>"
-    "<button class=\"service-segment\" data-tab=\"ozone\" onclick=\"switchTab('ozone')\">Ozone</button>"
-    "<button class=\"service-segment\" data-tab=\"security\" onclick=\"switchTab('security')\">Security</button>"
-    "<button class=\"service-segment\" data-tab=\"mst\" onclick=\"switchTab('mst')\">MST</button>"
-    "<button class=\"service-segment\" data-tab=\"chat\" onclick=\"switchTab('chat')\">Chat</button>"
-    "<button class=\"service-segment\" data-tab=\"video\" onclick=\"switchTab('video')\">Video</button>"
+    "<button class=\"service-segment active\" data-tab=\"overview\" data-ui-action=\"switch-tab\">Overview</button>"
+    "<button class=\"service-segment\" data-tab=\"connections\" data-ui-action=\"switch-tab\">Connections</button>"
+    "<button class=\"service-segment\" data-tab=\"pds\" data-ui-action=\"switch-tab\">PDS</button>"
+    "<button class=\"service-segment\" data-tab=\"appview\" data-ui-action=\"switch-tab\">AppView</button>"
+    "<button class=\"service-segment\" data-tab=\"relay\" data-ui-action=\"switch-tab\">Relay</button>"
+    "<button class=\"service-segment\" data-tab=\"plc\" data-ui-action=\"switch-tab\">PLC</button>"
+    "<button class=\"service-segment\" data-tab=\"explorer\" data-ui-action=\"switch-tab\">Explorer</button>"
+    "<button class=\"service-segment\" data-tab=\"ozone\" data-ui-action=\"switch-tab\">Ozone</button>"
+    "<button class=\"service-segment\" data-tab=\"security\" data-ui-action=\"switch-tab\">Security</button>"
+    "<button class=\"service-segment\" data-tab=\"mst\" data-ui-action=\"switch-tab\">MST</button>"
+    "<button class=\"service-segment\" data-tab=\"chat\" data-ui-action=\"switch-tab\">Chat</button>"
+    "<button class=\"service-segment\" data-tab=\"video\" data-ui-action=\"switch-tab\">Video</button>"
     "</nav>"
     "<div class=\"admin-header-right\">"
-    "<form method=\"post\" action=\"/admin/logout\" onsubmit=\"fetch('/admin/logout',{method:'POST'}).then(()=>location='/admin/login');return false;\">"
+    "<form method=\"post\" action=\"/admin/logout\" data-ui-form=\"logout\">"
     "<button type=\"submit\" class=\"btn btn-secondary btn-sm\">Logout</button></form></div></header>"
     "<main class=\"admin-content\">"
     /* Overview tab */
@@ -1270,12 +1291,12 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Status</h3>"
     "<div id=\"overview\" hx-get=\"/admin/partials/overview\" hx-trigger=\"load, every 20s\"></div></section></div>"
     /* Connections tab */
-    "<div id=\"tab-connections\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-connections\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Connections</h3>\""
     "<p class=\"text-secondary text-sm mb-lg\">Configure URLs and admin tokens for each AT Protocol service. Changes apply immediately but are not persisted across restarts.</p>\""
     "<div id=\"connections-form\" hx-get=\"/admin/partials/connections\" hx-trigger=\"load\"></div></section></div>"
     /* PDS tab */
-    "<div id=\"tab-pds\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-pds\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Accounts</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/accounts\" hx-target=\"#accounts\">"
     "<input type=\"text\" name=\"q\" placeholder=\"Search email or DID\" class=\"form-input flex-1\"/>"
@@ -1284,9 +1305,9 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Invite Codes</h3>"
     "<div id=\"invites\" hx-get=\"/admin/partials/invites\" hx-trigger=\"load\"></div>"
     "<div class=\"action-row\"><input id=\"disable-account\" type=\"text\" placeholder=\"DID to disable invites\" class=\"form-input flex-1\"/>"
-    "<button class=\"btn btn-destructive btn-sm\" onclick=\"disableInvites()\">Disable Invites</button></div>"
+    "<button class=\"btn btn-destructive btn-sm\" data-ui-action=\"disable-invites\">Disable Invites</button></div>"
     "<div class=\"action-row mt-sm\"><input id=\"enable-account\" type=\"text\" placeholder=\"DID to enable invites\" class=\"form-input flex-1\"/>"
-    "<button class=\"btn btn-primary btn-sm\" onclick=\"enableInvites()\">Enable Invites</button></div>"
+    "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"enable-invites\">Enable Invites</button></div>"
     "<div id=\"invite-action-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Server Stats</h3>"
     "<div id=\"pds-stats\" hx-get=\"/admin/partials/pds-stats\" hx-trigger=\"load, every 30s\"></div></section>"
@@ -1296,7 +1317,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<div id=\"blobs-content\" hx-get=\"/admin/partials/blobs\" hx-trigger=\"load\"></div></section>"
     "</div>"
     /* AppView tab */
-    "<div id=\"tab-appview\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-appview\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Metrics</h3>"
     "<div id=\"appview-metrics\" hx-get=\"/admin/partials/appview-metrics\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Ingest Health</h3>"
@@ -1304,7 +1325,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Backfill Queue</h3>"
     "<div id=\"appview-queue\" hx-get=\"/admin/partials/appview-queue\" hx-trigger=\"load, every 10s\"></div></section></div>"
     /* Relay tab */
-    "<div id=\"tab-relay\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-relay\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Relay Metrics</h3>"
     "<div id=\"relay-metrics\" hx-get=\"/admin/partials/relay-metrics\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Health</h3>"
@@ -1313,10 +1334,10 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<div id=\"relay-upstreams\" hx-get=\"/admin/partials/relay-upstreams\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Request Crawl</h3>"
     "<div class=\"action-row\"><input id=\"crawl-hostname\" type=\"text\" placeholder=\"Hostname to crawl\" class=\"form-input flex-1\"/>"
-    "<button class=\"btn btn-primary btn-sm\" onclick=\"requestCrawl()\">Request Crawl</button></div>"
+    "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"request-crawl\">Request Crawl</button></div>"
     "<div id=\"crawl-result\"></div></section></div>"
     /* PLC tab */
-    "<div id=\"tab-plc\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-plc\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Health</h3>"
     "<div id=\"plc-health\" hx-get=\"/admin/partials/plc-health\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Metrics</h3>"
@@ -1334,7 +1355,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">View Log</button></form></div>"
     "<div id=\"plc-log-result\"></div></section></div>"
     /* Explorer tab */
-    "<div id=\"tab-explorer\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-explorer\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Repo Explorer</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/describe-repo\" hx-target=\"#repo-detail\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:... or handle\" class=\"form-input flex-1\"/>"
@@ -1354,7 +1375,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Get</button></form></div>"
     "<div id=\"record-detail\"></div></section></div>"
     /* Ozone tab */
-    "<div id=\"tab-ozone\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-ozone\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Statuses</h3>"
     "<div id=\"ozone-statuses\" hx-get=\"/admin/partials/ozone-statuses\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Events</h3>"
@@ -1387,7 +1408,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Configuration</h3>"
     "<div id=\"ozone-config\" hx-get=\"/admin/partials/ozone-config\" hx-trigger=\"load\"></div></section></div>"
     /* Security tab */
-    "<div id=\"tab-security\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-security\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Active Sessions</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/sessions\" hx-target=\"#sessions-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
@@ -1399,7 +1420,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
     "<div id=\"app-passwords-result\"></div></section></div>"
     /* MST Viewer tab */
-    "<div id=\"tab-mst\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-mst\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">MST Accounts</h3>"
     "<div id=\"mst-accounts\" hx-get=\"/admin/partials/mst-accounts\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">MST Tree</h3>"
@@ -1415,200 +1436,42 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Export MST</h3>"
     "<div class=\"action-row\"><input id=\"mst-export-did\" type=\"text\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<select id=\"mst-export-format\" class=\"form-input flex-none\"><option value=\"json\">JSON</option><option value=\"dot\">DOT</option><option value=\"svg\">SVG</option></select>"
-    "<button class=\"btn btn-primary btn-sm\" onclick=\"exportMST()\">Export</button></div>"
+    "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"export-mst\">Export</button></div>"
     "<div id=\"mst-export-result\"></div></section></div>"
     /* Chat tab */
-    "<div id=\"tab-chat\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-chat\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Conversations</h3>"
     "<div id=\"chat-convos\" hx-get=\"/admin/partials/chat-convos\" hx-trigger=\"load, every 20s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Messages</h3>"
     "<div class=\"action-row\"><input id=\"chat-convo-id\" type=\"text\" placeholder=\"Conversation ID\" class=\"form-input flex-1\"/>"
-    "<button class=\"btn btn-primary btn-sm\" onclick=\"loadChatMessages()\">Load Messages</button></div>"
+    "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"load-chat-messages\">Load Messages</button></div>"
     "<div id=\"chat-messages\" hx-trigger=\"load\"></div>"
     "<div id=\"chat-action-result\"></div></section></div>"
     /* Video tab */
-    "<div id=\"tab-video\" class=\"tab-pane\" style=\"display:none\">"
+    "<div id=\"tab-video\" class=\"tab-pane\" hidden>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Health</h3>"
     "<div id=\"video-health\" hx-get=\"/admin/partials/video-health\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Job Queue</h3>"
     "<div class=\"action-row\">"
-    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('')\">All</button>"
-    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('PENDING')\">Pending</button>"
-    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('PROCESSING')\">Processing</button>"
-    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('COMPLETED')\">Completed</button>"
-    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('FAILED')\">Failed</button>"
+    "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"\">All</button>"
+    "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"PENDING\">Pending</button>"
+    "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"PROCESSING\">Processing</button>"
+    "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"COMPLETED\">Completed</button>"
+    "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"FAILED\">Failed</button>"
     "</div>"
     "<div id=\"video-jobs\" hx-get=\"/admin/partials/video-jobs\" hx-trigger=\"load, every 10s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Upload Quotas</h3>"
     "<div id=\"video-quotas\" hx-get=\"/admin/partials/video-quotas\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Job Lookup</h3>"
     "<div class=\"action-row\"><input id=\"video-job-id\" type=\"text\" placeholder=\"Job ID\" class=\"form-input flex-1\"/>"
-    "<button class=\"btn btn-primary btn-sm\" onclick=\"loadVideoJobDetail()\">Look Up</button></div>"
+    "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"load-video-job-detail\">Look Up</button></div>"
     "<div id=\"video-job-detail\"></div></section></div>"
     "</main>"
     "<footer class=\"admin-footer\"><span class=\"version-info\"></span>"
     "<span id=\"footer-status\"></span></footer>"
     "</div>"
-    "<script nonce=\"%@\">"
-    "function switchTab(name){"
-    "document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');"
-    "document.querySelectorAll('.service-segment').forEach(s=>s.classList.remove('active'));"
-    "var pane=document.getElementById('tab-'+name);if(pane)pane.style.display='block';"
-    "var btn=document.querySelector('[data-tab=\"'+name+'\"]');if(btn)btn.classList.add('active');"
-    "}"
-    "function activeTabPane(){return Array.from(document.querySelectorAll('.tab-pane')).find(p=>getComputedStyle(p).display!=='none')||document;}"
-    "function didFromText(text){const m=(text||'').match(/\\bdid:[a-z0-9]+:[A-Za-z0-9._:%%-]+/);return m?m[0]:'';}"
-    "function didFieldHint(el){let hint=[el.id,el.name,el.placeholder,el.getAttribute('aria-label')].filter(Boolean).join(' ');"
-    "const group=el.closest('.form-group');if(group){const label=group.querySelector('label');if(label)hint+=' '+label.textContent;}"
-    "return hint.toLowerCase();}"
-    "function inputExpectsDID(el){if(!el||el.disabled||el.readOnly)return false;"
-    "if(el.tagName==='INPUT'){const type=(el.type||'text').toLowerCase();if(['hidden','checkbox','radio','button','submit','reset','password'].includes(type))return false;}"
-    "else if(el.tagName!=='TEXTAREA'){return false;}return didFieldHint(el).includes('did');}"
-    "function fillVisibleDIDInputs(did){if(!did)return false;const scope=activeTabPane();let filled=false;"
-    "scope.querySelectorAll('input,textarea').forEach(el=>{if(inputExpectsDID(el)){el.value=did;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));filled=true;}});return filled;}"
-    "document.addEventListener('click',function(e){if(e.target.closest('button,a,input,select,textarea,label'))return;"
-    "const node=e.target.closest('td,span,li,code,pre,div');if(!node)return;const did=didFromText(node.textContent);if(did)fillVisibleDIDInputs(did);});"
-    "async function disableInvites(){const account=document.getElementById('disable-account').value;"
-    "const resp=await fetch('/admin/actions/disable-invites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account})});"
-    "document.getElementById('invite-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/invites','#invites');}"
-    "async function enableInvites(){const account=document.getElementById('enable-account').value;"
-    "const resp=await fetch('/admin/actions/enable-invites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account})});"
-    "document.getElementById('invite-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/invites','#invites');}"
-    "async function requestCrawl(){const hostname=document.getElementById('crawl-hostname').value;"
-    "const resp=await fetch('/admin/actions/request-crawl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hostname})});"
-    "document.getElementById('crawl-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/relay-upstreams','#relay-upstreams');}"
-    "async function removeTeamMember(did){const resp=await fetch('/admin/actions/remove-team-member',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did})});"
-    "document.getElementById('ozone-team').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/ozone-team','#ozone-team');}"
-    "async function deleteOzoneSet(name){const resp=await fetch('/admin/actions/delete-ozone-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});"
-    "document.getElementById('ozone-sets').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/ozone-sets','#ozone-sets');}"
-    "async function deleteOzoneTemplate(name){const resp=await fetch('/admin/actions/delete-ozone-template',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});"
-    "document.getElementById('ozone-templates').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/ozone-templates','#ozone-templates');}"
-    "async function revokeSession(did,id){const resp=await fetch('/admin/actions/revoke-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did,id})});"
-    "document.getElementById('sessions-result').innerHTML=await resp.text();}"
-    "async function deleteAppPassword(did,name){const resp=await fetch('/admin/actions/delete-app-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did,name})});"
-    "document.getElementById('app-passwords-result').innerHTML=await resp.text();}"
-    "async function exportMST(){const did=document.getElementById('mst-export-did').value;"
-    "const format=document.getElementById('mst-export-format').value;"
-    "window.open('/admin/actions/mst-export?did='+encodeURIComponent(did)+'&format='+format);}"
-    "function toggleSelectAll(el){document.querySelectorAll('.account-checkbox').forEach(cb=>cb.checked=el.checked);}"
-    "async function bulkAction(type){"
-    "const selected=Array.from(document.querySelectorAll('.account-checkbox:checked')).map(cb=>cb.value);"
-    "if(selected.length===0){alert('No accounts selected');return;}"
-    "if(!confirm('Are you sure you want to '+type+' '+selected.length+' accounts?'))return;"
-    "const resp=await fetch('/admin/actions/bulk-'+type,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dids:selected})});"
-    "const result=await resp.json(); alert(result.message || (result.success ? 'Success' : 'Failed'));"
-    "htmx.ajax('GET','/admin/partials/accounts','#accounts');}"
-    "async function deleteAccount(did){if(!confirm('Are you sure you want to delete this account?'))return;"
-    "const resp=await fetch('/admin/actions/delete-account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did})});"
-    "document.getElementById('account-detail-result').innerHTML=await resp.text();}"
-    "async function rebuildAppViewScope(){if(!confirm('Rebuild the entire AppView relevance set?'))return;"
-    "const resp=await fetch('/admin/actions/appview-rebuild-scope',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});"
-    "document.getElementById('appview-result').innerHTML=await resp.text();}"
-    "async function enqueueBackfillDIDs(){const input=document.getElementById('enqueue-dids-input').value;"
-    "const dids=input.split('\\n').map(d=>d.trim()).filter(d=>d.length>0);"
-    "if(dids.length===0){alert('No DIDs provided');return;}"
-    "const resp=await fetch('/admin/actions/appview-enqueue-dids',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dids})});"
-    "document.getElementById('appview-result').innerHTML=await resp.text();}"
-    "async function createAppPassword(){const did=document.getElementById('create-pwd-did').value;"
-    "const name=document.getElementById('create-pwd-name').value;"
-    "if(!did||!name){alert('DID and name required');return;}"
-    "const resp=await fetch('/admin/actions/create-app-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did,name})});"
-    "document.getElementById('app-passwords-result').innerHTML=await resp.text();document.getElementById('create-pwd-did').value='';document.getElementById('create-pwd-name').value='';}"
-    "async function addOzoneTeamMember(){const did=document.getElementById('add-member-did').value;"
-    "const role=document.getElementById('add-member-role').value;"
-    "if(!did){alert('DID required');return;}"
-    "const resp=await fetch('/admin/actions/add-ozone-team-member',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({member:{did,role}})});"
-    "document.getElementById('ozone-team').innerHTML=await resp.text();document.getElementById('add-member-did').value='';htmx.ajax('GET','/admin/partials/ozone-team','#ozone-team');}"
-    "async function upsertOzoneSet(){const name=document.getElementById('create-set-name').value;"
-    "const description=document.getElementById('create-set-desc').value;"
-    "if(!name){alert('Set name required');return;}"
-    "const resp=await fetch('/admin/actions/upsert-ozone-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({setSpec:{name,description}})});"
-    "document.getElementById('ozone-sets').innerHTML=await resp.text();document.getElementById('create-set-name').value='';document.getElementById('create-set-desc').value='';htmx.ajax('GET','/admin/partials/ozone-sets','#ozone-sets');}"
-    "async function createOzoneTemplate(){const name=document.getElementById('create-template-name').value;"
-    "const subject=document.getElementById('create-template-subject').value;"
-    "const content=document.getElementById('create-template-content').value;"
-    "if(!name||!subject){alert('Name and subject required');return;}"
-    "const resp=await fetch('/admin/actions/create-ozone-template',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({template:{name,subject,contentMarkdown:content}})});"
-    "document.getElementById('ozone-templates').innerHTML=await resp.text();document.getElementById('create-template-name').value='';htmx.ajax('GET','/admin/partials/ozone-templates','#ozone-templates');}"
-    "async function updateOzoneConfig(){const configJson=document.getElementById('config-json').value;"
-    "try{const config=JSON.parse(configJson);const resp=await fetch('/admin/actions/update-ozone-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config})});"
-    "document.getElementById('ozone-config-result').innerHTML=await resp.text();}catch(e){alert('Invalid JSON: '+e.message);}}"
-    "async function resolvePDSReport(){const reportID=document.getElementById('report-id').value;"
-    "const action=document.getElementById('report-action').value;"
-    "if(!reportID||!action){alert('Report ID and action required');return;}"
-    "const resp=await fetch('/admin/actions/resolve-pds-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reportID,action})});"
-    "document.getElementById('pds-reports-result').innerHTML=await resp.text();}"
-    "async function scheduleOzoneAction(){const did=document.getElementById('schedule-subject-did').value;"
-    "const actionType=document.getElementById('schedule-action-type').value;"
-    "if(!did){alert('Subject DID required');return;}"
-    "const actionSpec={subject:did,action:actionType};"
-    "const resp=await fetch('/admin/actions/ozone-schedule-action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(actionSpec)});"
-    "document.getElementById('schedule-subject-did').value='';htmx.ajax('GET','/admin/partials/ozone-scheduled','#ozone-scheduled');}"
-    "async function cancelScheduledAction(subject){if(!confirm('Cancel this scheduled action?'))return;"
-    "const resp=await fetch('/admin/actions/ozone-cancel-scheduled',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjects:[subject]})});"
-    "htmx.ajax('GET','/admin/partials/ozone-scheduled','#ozone-scheduled');}"
-    "async function grantOzoneVerification(){const did=document.getElementById('grant-verification-did').value;"
-    "const displayName=document.getElementById('grant-verification-name').value;"
-    "if(!did){alert('DID required');return;}"
-    "const resp=await fetch('/admin/actions/ozone-grant-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did,displayName})});"
-    "document.getElementById('grant-verification-did').value='';document.getElementById('grant-verification-name').value='';htmx.ajax('GET','/admin/partials/ozone-verification','#ozone-verification');}"
-    "async function revokeOzoneVerification(did){if(!confirm('Revoke verification for this account?'))return;"
-    "const resp=await fetch('/admin/actions/ozone-revoke-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dids:[did]})});"
-    "htmx.ajax('GET','/admin/partials/ozone-verification','#ozone-verification');}"
-    "async function addSafelinkRule(){const url=document.getElementById('add-safelink-url').value;"
-    "const pattern=document.getElementById('add-safelink-pattern').value;"
-    "const action=document.getElementById('add-safelink-action').value;"
-    "const reason=document.getElementById('add-safelink-reason').value;"
-    "const comment=document.getElementById('add-safelink-comment').value;"
-    "if(!url){alert('URL required');return;}"
-    "const resp=await fetch('/admin/actions/add-safelink-rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,pattern,action,reason,comment})});"
-    "document.getElementById('add-safelink-url').value='';document.getElementById('add-safelink-comment').value='';htmx.ajax('GET','/admin/partials/ozone-safelinks','#ozone-safelinks');}"
-    "async function removeSafelinkRule(url,pattern){if(!confirm('Remove this safelink rule?'))return;"
-    "const resp=await fetch('/admin/actions/remove-safelink-rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,pattern})});"
-    "htmx.ajax('GET','/admin/partials/ozone-safelinks','#ozone-safelinks');}"
-    "async function findOzoneRelatedAccounts(){const did=document.getElementById('ozone-find-did').value;"
-    "if(!did){alert('DID required');return;}"
-    "const resp=await fetch('/admin/actions/ozone-find-related',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did})});"
-    "document.getElementById('ozone-signature-results').innerHTML=await resp.text();}"
-    "function loadHostingHistory(){const did=document.getElementById('hosting-did-input').value;"
-    "if(!did){alert('DID required');return;}"
-    "htmx.ajax('GET','/admin/partials/ozone-hosting?did='+encodeURIComponent(did),'#ozone-hosting');}"
-    "function loadBlobs(){const did=document.getElementById('blob-did-input').value;"
-    "if(!did){alert('DID required');return;}"
-    "htmx.ajax('GET','/admin/partials/blobs?did='+encodeURIComponent(did),'#blobs-content');}"
-    "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
-    "if(!convoID){alert('Conversation ID required');return;}"
-    "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
-    "async function lockChatConvo(convoID){if(!confirm('Lock this conversation?'))return;"
-    "const resp=await fetch('/admin/actions/lock-chat-convo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({convoID})});"
-    "document.getElementById('chat-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/chat-convos','#chat-convos');}"
-    "function filterVideoJobs(state){"
-    "var url='/admin/partials/video-jobs';if(state)url+='?state='+encodeURIComponent(state);"
-    "htmx.ajax('GET',url,'#video-jobs');}"
-    "function loadVideoJobDetail(){const jobId=document.getElementById('video-job-id').value;"
-    "if(!jobId){alert('Job ID required');return;}"
-    "htmx.ajax('GET','/admin/partials/video-job-detail?jobId='+encodeURIComponent(jobId),'#video-job-detail');}"
-    "async function retryVideoJob(jobId){if(!confirm('Retry this job?'))return;"
-    "const resp=await fetch('/admin/actions/video-retry-job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jobId})});"
-    "document.getElementById('video-job-detail').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/video-jobs','#video-jobs');}"
-    "async function saveConnections(){"
-    "const services=[['pds','pds'],['plc','plc'],['relay','relay'],['appview','appView'],['chat','chat'],['video','video']];"
-    "const body={};"
-    "services.forEach(([id,key])=>{const urlEl=document.getElementById('conn-'+id+'-url');const tokenEl=document.getElementById('conn-'+id+'-token');body[key+'URL']=urlEl.value;body[key+'Token']=tokenEl.value||tokenEl.dataset.originalToken;});"
-    "const resp=await fetch('/admin/actions/update-connections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});"
-    "document.getElementById('connections-form').innerHTML=await resp.text();}"
-    "async function testConnection(service){"
-"const url=document.getElementById('conn-'+service+'-url').value;"
-     "const tokenEl=document.getElementById('conn-'+service+'-token');const token=tokenEl.value||tokenEl.dataset.originalToken;"
-    "const resultEl=document.getElementById('conn-'+service+'-test-result');"
-    "resultEl.textContent='Testing...';"
-    "try{const resp=await fetch('/admin/actions/test-connection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service,url,token})});"
-    "const result=await resp.json();"
-    "if(result.status==='online'){resultEl.innerHTML='<span class=\"badge badge-success\">Connected</span>';}"
-    "else{resultEl.innerHTML='<span class=\"badge badge-destructive\">'+(result.error||result.status||'Failed')+'</span>';}}"
-    "catch(e){resultEl.innerHTML='<span class=\"badge badge-destructive\">Failed</span>';}}"
-    "</script>"
-    "</body></html>", nonce, nonce];
+    "<script type=\"module\" src=\"/js/admin-ui.js\"></script>"
+    "</body></html>", csrfNonce, nonce];
 }
 
 - (NSString *)renderAccountsPartial:(NSDictionary *)result {
@@ -1617,12 +1480,12 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     
     if (accounts.count > 0) {
         [html appendString:@"<div class=\"bulk-actions mb-sm d-flex gap-sm\">"
-         "<button class=\"btn btn-secondary btn-sm\" onclick=\"bulkAction('takedown')\">Bulk Takedown</button>"
-         "<button class=\"btn btn-destructive btn-sm\" onclick=\"bulkAction('delete')\">Bulk Delete</button>"
+         "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"bulk-action\" data-ui-action-kind=\"takedown\">Bulk Takedown</button>"
+         "<button class=\"btn btn-destructive btn-sm\" data-ui-action=\"bulk-action\" data-ui-action-kind=\"delete\">Bulk Delete</button>"
          "</div>"];
     }
 
-    [html appendString:@"<table class=\"table\"><thead><tr><th><input type=\"checkbox\" id=\"select-all-accounts\" onclick=\"toggleSelectAll(this)\"></th><th>DID</th><th>Handle</th><th>Email</th></tr></thead><tbody>"];
+    [html appendString:@"<table class=\"table\"><thead><tr><th><input type=\"checkbox\" id=\"select-all-accounts\" data-ui-action=\"toggle-select-all\"></th><th>DID</th><th>Handle</th><th>Email</th></tr></thead><tbody>"];
     if (result[@"error"]) {
         NSString *message = UIEscaped(result[@"message"] ?: result[@"error"]);
         [html appendFormat:@"<tr><td colspan=\"4\" class=\"text-destructive\">%@</td></tr>", message];
@@ -1702,7 +1565,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"appview-result\"></div><div class=\"mb-lg\"><button class=\"btn btn-secondary btn-sm\" onclick=\"rebuildAppViewScope()\">Rebuild Relevance Set</button></div><form class=\"form mb-lg\" onsubmit=\"enqueueBackfillDIDs();return false;\"><div class=\"form-group\"><label>Enqueue DIDs (one per line):</label><textarea id=\"enqueue-dids-input\" class=\"form-input\" placeholder=\"did:plc:...\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Enqueue</button></form><table class=\"table\" id=\"queue-table\"><thead><tr><th>DID</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"appview-result\"></div><div class=\"mb-lg\"><button class=\"btn btn-secondary btn-sm\" data-ui-action=\"rebuild-appview-scope\">Rebuild Relevance Set</button></div><form class=\"form mb-lg\" data-ui-form=\"enqueue-backfill\"><div class=\"form-group\"><label>Enqueue DIDs (one per line):</label><textarea id=\"enqueue-dids-input\" class=\"form-input\" placeholder=\"did:plc:...\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Enqueue</button></form><table class=\"table\" id=\"queue-table\"><thead><tr><th>DID</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *entries = [result[@"entries"] isKindOfClass:[NSArray class]] ? result[@"entries"] : @[];
     for (NSDictionary *entry in entries) {
         NSString *did = UIEscaped(entry[@"did"] ?: @"");
@@ -1710,8 +1573,8 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         NSString *statusBadge = [status isEqualToString:@"running"] ? @"badge badge-success" :
                                 [status isEqualToString:@"failed"] ? @"badge badge-destructive" : @"badge badge-secondary";
         [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td><span class=\"%@\">%@</span></td><td>", did, statusBadge, status];
-        [html appendFormat:@"<button class=\"btn btn-sm btn-primary\" onclick=\"fetch('/admin/actions/appview-retry-repo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did:'%@'})}).then(()=>htmx.ajax('GET','/admin/partials/appview-queue','#appview-queue'))\">Retry</button> ", did];
-        [html appendFormat:@"<button class=\"btn btn-secondary btn-sm\" onclick=\"fetch('/admin/actions/appview-cancel-repo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did:'%@'})}).then(()=>htmx.ajax('GET','/admin/partials/appview-queue','#appview-queue'))\">Cancel</button>", did];
+        [html appendFormat:@"<button class=\"btn btn-sm btn-primary\" data-ui-action=\"appview-retry-repo\" data-ui-did=\"%@\">Retry</button> ", did];
+        [html appendFormat:@"<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"appview-cancel-repo\" data-ui-did=\"%@\">Cancel</button>", did];
         [html appendString:@"</td></tr>"];
     }
     if (entries.count == 0) {
@@ -1753,12 +1616,12 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         NSString *display = [val isKindOfClass:[NSString class]] ? UIEscaped(val) : UIEscaped([val description]);
         [html appendFormat:@"<div class=\"detail-field\"><span class=\"detail-label\">%@</span><span class=\"detail-value\">%@</span></div>", key, display];
     }
-    [html appendFormat:@"</div><div class=\"mt-lg\"><button class=\"btn btn-destructive btn-sm\" onclick=\"deleteAccount('%@')\">Delete Account</button></div>", UIEscaped(did)];
+    [html appendFormat:@"</div><div class=\"mt-lg\"><button class=\"btn btn-destructive btn-sm\" data-ui-action=\"delete-account\" data-ui-did=\"%@\">Delete Account</button></div>", UIEscaped(did)];
     return html;
 }
 
 - (NSString *)renderBlobsPartial:(NSDictionary *)result did:(nullable NSString *)did {
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"d-flex gap-sm\" onsubmit=\"loadBlobs();return false;\"><input type=\"text\" id=\"blob-did-input\" class=\"form-input flex-1\" placeholder=\"did:plc:...\" value=\""];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"d-flex gap-sm\" data-ui-form=\"load-blobs\"><input type=\"text\" id=\"blob-did-input\" class=\"form-input flex-1\" placeholder=\"did:plc:...\" value=\""];
     if (did && did.length > 0) {
         [html appendFormat:@"%@", UIEscaped(did)];
     }
@@ -1835,7 +1698,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         NSString *reportID = UIEscaped(report[@"id"] ?: @"");
         NSString *createdAt = UIEscaped(report[@"createdAt"] ?: @"");
         NSString *status = UIEscaped(report[@"status"] ?: @"unknown");
-        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td class=\"text-xs\">%@</td><td>%@</td><td><select class=\"form-input\" onchange=\"if(this.value)resolvePDSReport('%@')\"><option value=\"\">Resolve as...</option><option value=\"escalate\">Escalate</option><option value=\"mute\">Mute</option><option value=\"markResolved\">Mark Resolved</option></select></td></tr>", reportID, createdAt, status, UIEscaped(reportID)];
+        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td class=\"text-xs\">%@</td><td>%@</td><td><select class=\"form-input\" data-ui-action=\"resolve-pds-report\" data-ui-report-id=\"%@\"><option value=\"\">Resolve as...</option><option value=\"escalate\">Escalate</option><option value=\"mute\">Mute</option><option value=\"markResolved\">Mark Resolved</option></select></td></tr>", reportID, createdAt, status, reportID];
     }
     if (reports.count == 0) {
         [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No reports found.</td></tr>"];
@@ -2116,11 +1979,11 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *members = [result[@"members"] isKindOfClass:[NSArray class]] ? result[@"members"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" onsubmit=\"addOzoneTeamMember();return false;\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"add-member-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label>Role:</label><select id=\"add-member-role\" class=\"form-input\"><option value=\"moderator\">Moderator</option><option value=\"admin\">Admin</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Member</button></form><table class=\"table\"><thead><tr><th>DID</th><th>Role</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"add-ozone-team-member\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"add-member-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label>Role:</label><select id=\"add-member-role\" class=\"form-input\"><option value=\"moderator\">Moderator</option><option value=\"admin\">Admin</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Member</button></form><table class=\"table\"><thead><tr><th>DID</th><th>Role</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *m in members) {
         NSString *did = m[@"did"] ?: @"";
         [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td>"
-            "<td><button class=\"btn btn-destructive btn-sm\" onclick=\"removeTeamMember('%@')\">Remove</button></td></tr>",
+            "<td><button class=\"btn btn-destructive btn-sm\" data-ui-action=\"remove-team-member\" data-ui-did=\"%@\">Remove</button></td></tr>",
             UIEscaped(did), UIEscaped(m[@"role"] ?: @""), UIEscaped(did)];
     }
     [html appendString:@"</tbody></table>"];
@@ -2132,11 +1995,11 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *sets = [result[@"sets"] isKindOfClass:[NSArray class]] ? result[@"sets"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" onsubmit=\"upsertOzoneSet();return false;\"><div class=\"form-group\"><label>Set Name:</label><input type=\"text\" id=\"create-set-name\" class=\"form-input\" placeholder=\"Enter set name\"></div><div class=\"form-group\"><label>Description:</label><input type=\"text\" id=\"create-set-desc\" class=\"form-input\" placeholder=\"Enter description\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Set</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Description</th><th>Size</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"upsert-ozone-set\"><div class=\"form-group\"><label>Set Name:</label><input type=\"text\" id=\"create-set-name\" class=\"form-input\" placeholder=\"Enter set name\"></div><div class=\"form-group\"><label>Description:</label><input type=\"text\" id=\"create-set-desc\" class=\"form-input\" placeholder=\"Enter description\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Set</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Description</th><th>Size</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *s in sets) {
         NSString *name = s[@"name"] ?: @"";
         [html appendFormat:@"<tr><td>%@</td><td>%@</td><td>%@</td>"
-            "<td><button class=\"btn btn-destructive btn-sm\" onclick=\"deleteOzoneSet('%@')\">Delete</button></td></tr>",
+            "<td><button class=\"btn btn-destructive btn-sm\" data-ui-action=\"delete-ozone-set\" data-ui-name=\"%@\">Delete</button></td></tr>",
             UIEscaped(name), UIEscaped(s[@"description"] ?: @""), UIEscaped(s[@"size"] ?: @""), UIEscaped(name)];
     }
     [html appendString:@"</tbody></table>"];
@@ -2148,13 +2011,13 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *templates = [result[@"templates"] isKindOfClass:[NSArray class]] ? result[@"templates"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" onsubmit=\"createOzoneTemplate();return false;\"><div class=\"form-group\"><label>Template Name:</label><input type=\"text\" id=\"create-template-name\" class=\"form-input\" placeholder=\"Enter template name\"></div><div class=\"form-group\"><label>Subject:</label><input type=\"text\" id=\"create-template-subject\" class=\"form-input\" placeholder=\"Enter subject\"></div><div class=\"form-group\"><label>Content (Markdown):</label><textarea id=\"create-template-content\" class=\"form-input\" placeholder=\"Enter template content\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Template</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Subject</th><th>Content</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"create-ozone-template\"><div class=\"form-group\"><label>Template Name:</label><input type=\"text\" id=\"create-template-name\" class=\"form-input\" placeholder=\"Enter template name\"></div><div class=\"form-group\"><label>Subject:</label><input type=\"text\" id=\"create-template-subject\" class=\"form-input\" placeholder=\"Enter subject\"></div><div class=\"form-group\"><label>Content (Markdown):</label><textarea id=\"create-template-content\" class=\"form-input\" placeholder=\"Enter template content\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Template</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Subject</th><th>Content</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *t in templates) {
         NSString *name = t[@"name"] ?: @"";
         NSString *content = t[@"contentMarkdown"] ?: @"";
         if (content.length > 80) content = [[content substringToIndex:80] stringByAppendingString:@"..."];
         [html appendFormat:@"<tr><td>%@</td><td>%@</td><td class=\"text-sm\">%@</td>"
-            "<td><button class=\"btn btn-destructive btn-sm\" onclick=\"deleteOzoneTemplate('%@')\">Delete</button></td></tr>",
+            "<td><button class=\"btn btn-destructive btn-sm\" data-ui-action=\"delete-ozone-template\" data-ui-name=\"%@\">Delete</button></td></tr>",
             UIEscaped(name), UIEscaped(t[@"subject"] ?: @""), UIEscaped(content), UIEscaped(name)];
     }
     [html appendString:@"</tbody></table>"];
@@ -2168,7 +2031,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     NSError *jsonError = nil;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&jsonError];
     NSString *jsonStr = jsonError ? @"" : [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"ozone-config-result\"></div><form class=\"form mb-lg\" onsubmit=\"updateOzoneConfig();return false;\"><div class=\"form-group\"><label>Config (JSON):</label><textarea id=\"config-json\" class=\"form-input\" placeholder=\"Enter config as JSON\">"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"ozone-config-result\"></div><form class=\"form mb-lg\" data-ui-form=\"update-ozone-config\"><div class=\"form-group\"><label>Config (JSON):</label><textarea id=\"config-json\" class=\"form-input\" placeholder=\"Enter config as JSON\">"];
     [html appendString:UIEscaped(jsonStr)];
     [html appendString:@"</textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Update Config</button></form><div class=\"detail-card\">"];
     [result enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
@@ -2191,7 +2054,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         NSString *sessionID = s[@"id"] ?: @"";
         NSString *did = s[@"did"] ?: @"";
         [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td>"
-            "<td><button class=\"btn btn-destructive btn-sm\" onclick=\"revokeSession('%@','%@')\">Revoke</button></td></tr>",
+            "<td><button class=\"btn btn-destructive btn-sm\" data-ui-action=\"revoke-session\" data-ui-did=\"%@\" data-ui-session-id=\"%@\">Revoke</button></td></tr>",
             UIEscaped(sessionID), UIEscaped(s[@"deviceInfo"] ?: @""), UIEscaped(s[@"createdAt"] ?: @""), UIEscaped(did), UIEscaped(sessionID)];
     }
     [html appendString:@"</tbody></table>"];
@@ -2203,12 +2066,12 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *passwords = [result[@"passwords"] isKindOfClass:[NSArray class]] ? result[@"passwords"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"app-passwords-result\"></div><form class=\"form mb-lg\" onsubmit=\"createAppPassword();return false;\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"create-pwd-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label>Password Name:</label><input type=\"text\" id=\"create-pwd-name\" class=\"form-input\" placeholder=\"Enter password name\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"app-passwords-result\"></div><form class=\"form mb-lg\" data-ui-form=\"create-app-password\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"create-pwd-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label>Password Name:</label><input type=\"text\" id=\"create-pwd-name\" class=\"form-input\" placeholder=\"Enter password name\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *p in passwords) {
         NSString *name = p[@"name"] ?: @"";
         NSString *did = p[@"did"] ?: @"";
         [html appendFormat:@"<tr><td>%@</td><td class=\"text-sm\">%@</td>"
-            "<td><button class=\"btn btn-destructive btn-sm\" onclick=\"deleteAppPassword('%@','%@')\">Delete</button></td></tr>",
+            "<td><button class=\"btn btn-destructive btn-sm\" data-ui-action=\"delete-app-password\" data-ui-did=\"%@\" data-ui-name=\"%@\">Delete</button></td></tr>",
             UIEscaped(name), UIEscaped(p[@"createdAt"] ?: @""), UIEscaped(did), UIEscaped(name)];
     }
     [html appendString:@"</tbody></table>"];
@@ -2255,7 +2118,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
             lastMsg = lastMsgObj;
             if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
         }
-        [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-secondary btn-sm\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
+        [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-secondary btn-sm\" data-ui-action=\"lock-chat-convo\" data-ui-convo-id=\"%@\">Lock</button></td></tr>",
             UIEscaped(convoID), modeDisplay, UIEscaped(memberCount), lastMsg, UIEscaped(convoID)];
     }
     if (convos.count == 0) {
@@ -2319,7 +2182,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 #pragma mark - Render Methods
 
 - (NSString *)renderConnectionsPartial {
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form\" onsubmit=\"saveConnections();return false;\">"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form\" data-ui-form=\"save-connections\">"];
     
     NSDictionary *fields = @{
         @"pdsURL": UISafe([self.configuration.pdsBaseURL absoluteString], @""),
@@ -2365,7 +2228,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         [html appendFormat:@"<input id=\"conn-%@-token\" type=\"password\" name=\"%@\" value=\"\" data-original-token=\"%@\" class=\"form-input\" placeholder=\"Current token set, type to change\"/>", inputID, tokenKey, UIEscaped(fields[tokenKey])];
         [html appendString:@"</div>"];
 
-        [html appendFormat:@"<div class=\"d-flex align-center gap-sm\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" onclick=\"testConnection('%@')\">Test</button><span id=\"conn-%@-test-result\" class=\"text-sm text-secondary\"></span></div>", inputID, inputID];
+        [html appendFormat:@"<div class=\"d-flex align-center gap-sm\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" data-ui-action=\"test-connection\" data-ui-service=\"%@\">Test</button><span id=\"conn-%@-test-result\" class=\"text-sm text-secondary\"></span></div>", inputID, inputID];
         
         [html appendString:@"</div>"];
     }
@@ -2594,7 +2457,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"scheduleOzoneAction();return false;\"><div class=\"form-group\"><label>Subject DID(s):</label><input type=\"text\" id=\"schedule-subject-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Action Type:</label><select id=\"schedule-action-type\" class=\"form-input\"><option value=\"takedown\">Takedown</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Schedule Action</button></form></div>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"schedule-ozone-action\"><div class=\"form-group\"><label>Subject DID(s):</label><input type=\"text\" id=\"schedule-subject-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Action Type:</label><select id=\"schedule-action-type\" class=\"form-input\"><option value=\"takedown\">Takedown</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Schedule Action</button></form></div>"];
 
     [html appendString:@"<table class=\"table\"><thead><tr><th>Subject</th><th>Action</th><th>Status</th><th>Execute At</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *actions = [result[@"actions"] isKindOfClass:[NSArray class]] ? result[@"actions"] : @[];
@@ -2604,7 +2467,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         NSString *status = UIEscaped(action[@"status"] ?: @"pending");
         NSString *executeAt = UIEscaped(action[@"executeAt"] ?: @"");
         [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td><span class=\"badge\">%@</span></td><td>%@</td><td>", subject, actionType, status, executeAt];
-        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" onclick=\"cancelScheduledAction('%@')\">Cancel</button>", UIEscaped(subject)];
+        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" data-ui-action=\"cancel-scheduled-action\" data-ui-subject=\"%@\">Cancel</button>", subject];
         [html appendString:@"</td></tr>"];
     }
     if (actions.count == 0) {
@@ -2622,7 +2485,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"grantOzoneVerification();return false;\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"grant-verification-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Display Name:</label><input type=\"text\" id=\"grant-verification-name\" class=\"form-input\" placeholder=\"Account display name\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Grant Verification</button></form></div>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"grant-ozone-verification\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"grant-verification-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Display Name:</label><input type=\"text\" id=\"grant-verification-name\" class=\"form-input\" placeholder=\"Account display name\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Grant Verification</button></form></div>"];
 
     [html appendString:@"<table class=\"table\"><thead><tr><th>DID</th><th>Display Name</th><th>Issuer</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *verifications = [result[@"verifications"] isKindOfClass:[NSArray class]] ? result[@"verifications"] : @[];
@@ -2632,7 +2495,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         NSString *issuer = UIEscaped(verification[@"issuer"] ?: @"");
         NSString *createdAt = UIEscaped(verification[@"createdAt"] ?: @"");
         [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td class=\"text-xs\">%@</td><td class=\"text-xs\">%@</td><td>", did, displayName, issuer, createdAt];
-        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" onclick=\"revokeOzoneVerification('%@')\">Revoke</button>", UIEscaped(did)];
+        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" data-ui-action=\"revoke-ozone-verification\" data-ui-did=\"%@\">Revoke</button>", did];
         [html appendString:@"</td></tr>"];
     }
     if (verifications.count == 0) {
@@ -2646,7 +2509,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"addSafelinkRule();return false;\"><div class=\"form-group\"><label>URL:</label><input type=\"text\" id=\"add-safelink-url\" class=\"form-input\" placeholder=\"https://example.com\"/></div><div class=\"form-group\"><label>Pattern Type:</label><select id=\"add-safelink-pattern\" class=\"form-input\"><option value=\"domain\">Domain</option><option value=\"url\">URL</option></select></div><div class=\"form-group\"><label>Action:</label><select id=\"add-safelink-action\" class=\"form-input\"><option value=\"block\">Block</option><option value=\"warn\">Warn</option><option value=\"whitelist\">Whitelist</option></select></div><div class=\"form-group\"><label>Reason:</label><select id=\"add-safelink-reason\" class=\"form-input\"><option value=\"csam\">CSAM</option><option value=\"spam\">Spam</option><option value=\"phishing\">Phishing</option><option value=\"none\">None</option></select></div><div class=\"form-group\"><label>Comment (optional):</label><input type=\"text\" id=\"add-safelink-comment\" class=\"form-input\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Rule</button></form></div>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"add-safelink-rule\"><div class=\"form-group\"><label>URL:</label><input type=\"text\" id=\"add-safelink-url\" class=\"form-input\" placeholder=\"https://example.com\"/></div><div class=\"form-group\"><label>Pattern Type:</label><select id=\"add-safelink-pattern\" class=\"form-input\"><option value=\"domain\">Domain</option><option value=\"url\">URL</option></select></div><div class=\"form-group\"><label>Action:</label><select id=\"add-safelink-action\" class=\"form-input\"><option value=\"block\">Block</option><option value=\"warn\">Warn</option><option value=\"whitelist\">Whitelist</option></select></div><div class=\"form-group\"><label>Reason:</label><select id=\"add-safelink-reason\" class=\"form-input\"><option value=\"csam\">CSAM</option><option value=\"spam\">Spam</option><option value=\"phishing\">Phishing</option><option value=\"none\">None</option></select></div><div class=\"form-group\"><label>Comment (optional):</label><input type=\"text\" id=\"add-safelink-comment\" class=\"form-input\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Rule</button></form></div>"];
 
     [html appendString:@"<table class=\"table\"><thead><tr><th>URL</th><th>Pattern</th><th>Action</th><th>Reason</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *rules = [result[@"rules"] isKindOfClass:[NSArray class]] ? result[@"rules"] : @[];
@@ -2656,7 +2519,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         NSString *action = UIEscaped(rule[@"action"] ?: @"block");
         NSString *reason = UIEscaped(rule[@"reason"] ?: @"none");
         [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td>%@</td><td>%@</td><td>", url, pattern, action, reason];
-        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" onclick=\"removeSafelinkRule('%@','%@')\">Remove</button>", UIEscaped(url), UIEscaped(pattern)];
+        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" data-ui-action=\"remove-safelink-rule\" data-ui-url=\"%@\" data-ui-pattern=\"%@\">Remove</button>", url, pattern];
         [html appendString:@"</td></tr>"];
     }
     if (rules.count == 0) {
@@ -2687,7 +2550,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 }
 
 - (NSString *)renderOzoneSignaturesPartial:(NSDictionary *)result {
-    return @"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"findOzoneRelatedAccounts();return false;\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"ozone-find-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Find Related Accounts</button></form></div><div id=\"ozone-signature-results\"></div>";
+    return @"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"find-ozone-related\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"ozone-find-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Find Related Accounts</button></form></div><div id=\"ozone-signature-results\"></div>";
 }
 
 - (NSString *)renderOzoneSignatureResultsPartial:(NSDictionary *)result {
@@ -2705,7 +2568,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 }
 
 - (NSString *)renderOzoneHostingPartial:(NSDictionary *)result did:(nullable NSString *)did {
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"d-flex gap-sm\" onsubmit=\"loadHostingHistory();return false;\"><input type=\"text\" id=\"hosting-did-input\" class=\"form-input flex-1\" placeholder=\"did:plc:...\" value=\""];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"d-flex gap-sm\" data-ui-form=\"load-hosting-history\"><input type=\"text\" id=\"hosting-did-input\" class=\"form-input flex-1\" placeholder=\"did:plc:...\" value=\""];
     if (did && did.length > 0) {
         [html appendFormat:@"%@", UIEscaped(did)];
     }
@@ -2744,6 +2607,9 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     @"<title>Garazyk Lab - AT Protocol</title>"
     @"<link rel=\"stylesheet\" href=\"/css/system.css\">"
     @"<link rel=\"stylesheet\" href=\"/css/components.css\">"
+    @"<meta name=\"lab-pds-url\" content=\"%@\">"
+    @"<meta name=\"lab-client-id\" content=\"%@\">"
+    @"<meta name=\"lab-redirect-uri\" content=\"%@\">"
     @"<style nonce=\"%@\">"
     @".lab-shell { max-width: 800px; margin: 0 auto; padding: var(--space-lg); }"
     @".lab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--separator-color); }"
@@ -2770,7 +2636,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     @"<section class=\"lab-section active\" id=\"lab-login-section\">"
     @"<h2>Sign in with AT Protocol</h2>"
     @"<p class=\"text-secondary\">Enter your handle or DID to sign in to your account.</p>"
-    @"<form class=\"login-form\" onsubmit=\"startOAuthFlow();return false;\">"
+    @"<form class=\"login-form\" data-lab-form=\"start-oauth\">"
     @"<div class=\"form-group\">"
     @"<label for=\"lab-handle-input\">Handle or DID</label>"
     @"<input type=\"text\" id=\"lab-handle-input\" class=\"form-input\" placeholder=\"alice.example.com\" />"
@@ -2794,7 +2660,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     @"<span class=\"account-value\" id=\"lab-email-display\">—</span>"
     @"</div>"
     @"</div>"
-    @"<form class=\"handle-update-form\" onsubmit=\"updateHandleFlow();return false;\">"
+    @"<form class=\"handle-update-form\" data-lab-form=\"update-handle\">"
     @"<h3>Update Handle</h3>"
     @"<p class=\"text-secondary text-sm\">Change your handle to a new one.</p>"
     @"<div class=\"form-group\">"
@@ -2805,16 +2671,13 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     @"<div id=\"lab-update-result\"></div>"
     @"</form>"
     @"<div style=\"margin-top:var(--space-xl);padding-top:var(--space-lg);border-top:1px solid var(--separator-color);\">"
-    @"<button onclick=\"signOutOAuth()\" class=\"btn btn-secondary btn-sm\">Sign Out</button>"
+    @"<button data-lab-action=\"sign-out\" class=\"btn btn-secondary btn-sm\">Sign Out</button>"
     @"</div>"
     @"</section>"
     @"</main>"
-    @"<script nonce=\"%@\">"
-    @"const LAB_CONFIG = { pdsUrl: '%@', clientId: '%@', redirectUri: '%@' };"
-    @"</script>"
-    @"<script nonce=\"%@\" src=\"/js/lab.js\"></script>"
+    @"<script src=\"/js/lab.js\"></script>"
     @"</body></html>",
-    nonce, nonce, nonce, pdsBaseURL, clientId, redirectUri];
+    UIEscaped(pdsBaseURL), UIEscaped(clientId), UIEscaped(redirectUri), nonce];
 }
 
 - (NSString *)labClientMetadataJSON {
@@ -2909,7 +2772,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 
         NSString *actions = @"";
         if ([state isEqualToString:@"FAILED"]) {
-            actions = [NSString stringWithFormat:@"<button class=\"btn btn-secondary btn-sm\" onclick=\"retryVideoJob('%@')\">Retry</button>", UIEscaped(jobId)];
+            actions = [NSString stringWithFormat:@"<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"retry-video-job\" data-ui-job-id=\"%@\">Retry</button>", UIEscaped(jobId)];
         }
 
         [html appendFormat:@"<tr><td class=\"text-mono text-sm\" title=\"%@\">%@</td><td class=\"text-mono text-sm\" title=\"%@\">%@</td><td><span class=\"badge %@\">%@</span></td><td>%@</td><td class=\"text-sm\">%@</td><td class=\"text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td>%@</td></tr>",
@@ -2989,7 +2852,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     NSString *state = UISafe(jobStatus[@"state"], @"");
     if ([state isEqualToString:@"FAILED"]) {
         NSString *jobId = UISafe(jobStatus[@"jobId"], @"");
-        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" onclick=\"retryVideoJob('%@')\">Retry Job</button></div>", UIEscaped(jobId)];
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" data-ui-action=\"retry-video-job\" data-ui-job-id=\"%@\">Retry Job</button></div>", UIEscaped(jobId)];
     }
 
     [html appendString:@"</div>"];
