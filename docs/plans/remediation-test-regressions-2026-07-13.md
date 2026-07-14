@@ -15,6 +15,17 @@
 > artifact of that stale binary; **WS1 is resolved in HEAD.** `reports_out/test_report.html` is
 > therefore stale and must be regenerated from `reports_out/objc_alltests_HEAD_2026-07-13.log`.
 
+> **Landed since v3 (2026-07-14):** WS2 (`0a32d9fcc` adds the
+> `com.atproto.admin.getRecord` lexicon doc), WS3 (`6b7bcf788` aligns
+> `UILabAuthTests` to the meta-tag + `data-lab-action="sign-out"` contract), and WS4
+> (`7b665c840` aborts hung DNS/fetch and stops the firehose pending-promise leak)
+> are committed. WS1 is fully closed — the three debug `NSLog` lines were **removed**
+> (not just downgraded) by rewriting the introducing commit, so no `RateLimiter
+> DEBUG` remains in `main`. A full `AllTests` run this session exited `TEST_RC=0`.
+> Remaining: WS5 (wire the 28 gated classes into CI) and regenerating
+> `reports_out/test_report.html`. Per the plan-lifecycle rule, fold anything still
+> open into the mega plan and retire this standalone remediation doc once closed.
+
 ## Findings (root-caused from fresh HEAD build + source)
 
 | # | Issue | Suite / test | Root cause | Commit |
