@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-12
+last_verified: 2026-07-14
 ---
 
 # Garazyk Mega Plan
@@ -64,8 +64,12 @@ change while the repository boundaries settle. This roadmap replaces the May
   AllTests. `PLCPersistentStore` and its `PLCReplicaStore` subclass are now
   migrated too — off their hand-rolled queue + statement cache onto the manager +
   QueryRunner with the tuned pragma config preserved (59 PLC tests green) — so the
-  arc now covers all stranded stores. RateLimiter and the QueryRunner diary remain
-  user-owned; this plan does not retire them.
+  arc covers all stranded stores. `PLCPersistentStore` schema creation and its
+  legacy ALTER upgrades are now atomic (single `transact:`, rollback-tested), and
+  `RateLimiter` is likewise migrated onto the manager + QueryRunner. The transient
+  debug logging that briefly shipped with the network rework has been removed
+  (history rewritten so it never lands in the shipped commit). The QueryRunner
+  deepening arc and its implementation diary are complete and can retire.
 
 ## Priority model
 
@@ -117,8 +121,12 @@ Complete [workstream 00](workstreams/00-baseline-and-governance.md).
    before deleting their in-tree copies.
 4. Rebase or cherry-pick the Objective-C hygiene commits without importing the
    stale Deno deletion diff.
-5. Replace security tests that assert empty inputs or `XCTAssertTrue(YES)` with
-   fixtures that exercise the claimed boundary.
+5. **In progress:** replace security tests that assert empty inputs or
+   `XCTAssertTrue(YES)` with fixtures that exercise the claimed boundary.
+   Deterministic DPoP/SQL-allowlist/refresh-token/import/CAR coverage has landed
+   in `SecurityHardeningTests`; remaining fixture and negative-path work is active
+   (see deciduous node 1199 and the uncommitted `SecurityHardeningTests` /
+   `OAuth2HandlerTests` working set).
 
 Exit gate: clean generated reports, current scenario run metadata, passing
 package checks, and a documented branch disposition.
@@ -154,11 +162,12 @@ deterministic generator tests.
    migrations with legacy file fixtures, rollback injection after every
    statement, and reopen tests. Verify a production database backup before the
    schema bump is deployed.
-2. Finish PLC schema-migration atomicity and legacy upgrade tests. The
+2. **Complete:** PLC schema-migration atomicity and legacy upgrade tests. The
    `PLCPersistentStore` + `PLCReplicaStore` migration onto ConnectionManagerSerial +
-   QueryRunner has landed (59 PLC tests green); the remaining piece is making schema
-   creation and the legacy ALTER upgrades atomic — they still run as independent
-   statements that can leave a partial database — with the fixtures below.
+   QueryRunner landed, and schema creation plus the legacy ALTER upgrades now run
+   inside a single `transact:` that rolls back on any failed statement. Proven by a
+   legacy-schema upgrade fixture and an injected index-collision rollback test; the
+   61-test PLC regression net stays green.
 3. Separate registered, schema-covered, and behavior-verified XRPC metrics. Fix
    labeler semantics, remove or rename record-as-query routes, and define an
    explicit extension registry.
