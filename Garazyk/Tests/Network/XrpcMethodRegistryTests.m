@@ -84,7 +84,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         }
 
         NSString *path = @"/xrpc/com.atproto.server.getSession";
-        NSString *dpopURLString = [NSString stringWithFormat:@"%@/xrpc/com.atproto.server.getSession", kPDSTestDPoPBaseURL];
+        NSString *dpopURLString = [kPDSTestDPoPBaseURL stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
         NSURL *dpopURL = [NSURL URLWithString:dpopURLString];
 
         DPoPToken *initialProof = [DPoPUtil createDPoPForMethod:@"GET"
@@ -131,7 +131,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                                  version:@"1.1"
                                                                  headers:@{
                                                                      @"authorization": authorization,
-                                                                     @"host": @"localhost:2583",
+                                                                     @"host": kPDSTestPDSHostHeader,
                                                                      @"dpop": initialProof.jwt
                                                                  }
                                                                     body:[NSData data]
@@ -165,7 +165,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                                   version:@"1.1"
                                                                   headers:@{
                                                                       @"authorization": authorization,
-                                                                      @"host": @"localhost:2583",
+                                                                      @"host": kPDSTestPDSHostHeader,
                                                                       @"dpop": retryProof.jwt,
                                                                       @"dpop-nonce": challengeNonce
                                                                   }
@@ -188,7 +188,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                                    version:@"1.1"
                                                                    headers:@{
                                                                        @"authorization": authorization,
-                                                                       @"host": @"localhost:2583",
+                                                                       @"host": kPDSTestPDSHostHeader,
                                                                        @"dpop": retryProof.jwt,
                                                                        @"dpop-nonce": challengeNonce
                                                                    }
@@ -274,7 +274,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         ];
 
         for (NSString *path in paths) {
-            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": @"localhost:2583"});
+            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
             XCTAssertNotEqual(response.statusCode, HttpStatusNotFound, @"Expected registered route for %@", path);
             XCTAssertNotEqual(response.statusCode, HttpStatusMethodNotAllowed, @"Expected callable route for %@", path);
         }
@@ -295,7 +295,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
 
         HttpResponse *response = xrpcDispatchRequest(dispatcher,
                                                      @"/xrpc/com.atproto.thisEndpointDoesNotExist",
-                                                     @{@"host": @"localhost:2583"});
+                                                     @{@"host": kPDSTestPDSHostHeader});
         XCTAssertEqual(response.statusCode, HttpStatusNotFound);
     } @finally {
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
@@ -317,7 +317,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
 
         HttpResponse *response = xrpcDispatchRequest(dispatcher,
                                                      @"/xrpc/com.atproto.server.describeServer",
-                                                     @{@"host": @"localhost:2583"});
+                                                     @{@"host": kPDSTestPDSHostHeader});
         XCTAssertEqual(response.statusCode, HttpStatusOK);
         XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
         XCTAssertNotNil(response.jsonBody[@"did"]);

@@ -287,7 +287,7 @@
         }
 
         NSString *path = @"/xrpc/com.atproto.server.getSession";
-        NSString *dpopURLString = [NSString stringWithFormat:@"%@/xrpc/com.atproto.server.getSession", kPDSTestDPoPBaseURL];
+        NSString *dpopURLString = [kPDSTestDPoPBaseURL stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
         NSURL *dpopURL = [NSURL URLWithString:dpopURLString];
 
         // Real signed DPoP proof — without a nonce — so the verifier
@@ -332,7 +332,7 @@
                                                              version:@"1.1"
                                                              headers:@{
                                                                  @"authorization": authorization,
-                                                                 @"host": @"localhost:2583",
+                                                                 @"host": kPDSTestPDSHostHeader,
                                                                  @"dpop": proof.jwt
                                                              }
                                                                 body:emptyBody
@@ -414,7 +414,7 @@
         }
 
         NSString *path = @"/xrpc/com.atproto.server.getSession";
-        NSString *dpopURLString = [NSString stringWithFormat:@"%@/xrpc/com.atproto.server.getSession", kPDSTestDPoPBaseURL];
+        NSString *dpopURLString = [kPDSTestDPoPBaseURL stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
         NSURL *dpopURL = [NSURL URLWithString:dpopURLString];
 
         // Initial proof carries no nonce — the verifier trips the
@@ -458,7 +458,7 @@
                                                                  version:@"1.1"
                                                                  headers:@{
                                                                      @"authorization": authorization,
-                                                                     @"host": @"localhost:2583",
+                                                                     @"host": kPDSTestPDSHostHeader,
                                                                      @"dpop": initialProof.jwt
                                                                  }
                                                                     body:emptyBody
@@ -498,7 +498,7 @@
                                                                   version:@"1.1"
                                                                   headers:@{
                                                                       @"authorization": authorization,
-                                                                      @"host": @"localhost:2583",
+                                                                      @"host": kPDSTestPDSHostHeader,
                                                                       @"dpop": retryProof.jwt,
                                                                       @"dpop-nonce": challengeNonce
                                                                   }
