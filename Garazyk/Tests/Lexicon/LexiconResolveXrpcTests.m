@@ -7,6 +7,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcHandler.h"
+#import "Auth/TestKeyFixtures.h"
 
 @interface LexiconResolveXrpcTests : XCTestCase
 @end
@@ -65,7 +66,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                              [methodId stringByAddingPercentEncodingWithAllowedCharacters:
                               [NSCharacterSet URLQueryAllowedCharacterSet]]];
 
-            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": @"localhost:2583"});
+            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
 
             // Verify HTTP 200 OK (not 404 or 501)
             if (response.statusCode == HttpStatusNotFound) {
@@ -143,7 +144,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSString *path = @"/xrpc/com.atproto.lexicon.resolveLexicon?def=com.atproto.server.describeServer";
-        HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": @"localhost:2583"});
+        HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
 
         XCTAssertEqual(response.statusCode, HttpStatusOK,
                       @"resolveLexicon should return 200 OK");
@@ -197,7 +198,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                              [methodId stringByAddingPercentEncodingWithAllowedCharacters:
                               [NSCharacterSet URLQueryAllowedCharacterSet]]];
 
-            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": @"localhost:2583"});
+            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
 
             XCTAssertEqual(response.statusCode, HttpStatusOK,
                           @"Method %@ should resolve with 200 OK", methodId);
@@ -230,7 +231,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSString *path = @"/xrpc/com.atproto.lexicon.resolveLexicon?def=com.atproto.nonexistent.method";
-        HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": @"localhost:2583"});
+        HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
 
         // Unknown methods should not resolve
         XCTAssertNotEqual(response.statusCode, HttpStatusOK,

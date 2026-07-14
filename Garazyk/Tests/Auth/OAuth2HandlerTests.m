@@ -259,7 +259,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            version:@"1.1"
                                                            headers:@{
                                                                @"content-type": @"application/x-www-form-urlencoded",
-                                                               @"host": @"localhost:2583",
+                                                               @"host": kPDSTestPDSHostHeader,
                                                                @"dpop": proof.jwt
                                                            }
                                                               body:[body dataUsingEncoding:NSUTF8StringEncoding]
@@ -288,7 +288,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        version:@"1.1"
                                                        headers:@{
                                                            @"content-type": @"application/x-www-form-urlencoded",
-                                                           @"host": @"localhost:2583",
+                                                           @"host": kPDSTestPDSHostHeader,
                                                            @"dpop": @"not-a-jwt"
                                                        }
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
@@ -330,7 +330,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            version:@"1.1"
                                                            headers:@{
                                                                @"content-type": @"application/x-www-form-urlencoded",
-                                                               @"host": @"localhost:2583",
+                                                               @"host": kPDSTestPDSHostHeader,
                                                                @"dpop": proof.jwt,
                                                                @"dpop-nonce": incomingNonce
                                                            }
@@ -377,7 +377,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            version:@"1.1"
                                                            headers:@{
                                                                @"content-type": @"application/x-www-form-urlencoded",
-                                                               @"host": @"localhost:2583",
+                                                               @"host": kPDSTestPDSHostHeader,
                                                                @"dpop": proof.jwt
                                                            }
                                                               body:[body dataUsingEncoding:NSUTF8StringEncoding]
