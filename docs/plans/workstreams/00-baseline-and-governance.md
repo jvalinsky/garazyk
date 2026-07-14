@@ -1,7 +1,7 @@
 ---
 title: Baseline and Plan Governance
 status: active
-last_verified: 2026-07-12
+last_verified: 2026-07-14
 ---
 
 # Baseline and Plan Governance
@@ -64,15 +64,17 @@ Cherry-pick or rebase only the three hygiene commits after checking them against
 current files. Keep the plan findings as audit input; the mega plan owns the
 remaining schedule.
 
-### QueryRunner/PLC work (user lane)
+### QueryRunner/PLC work (complete)
 
-The QueryRunner store migrations have all landed on `main`, including the final
-`PLCPersistentStore` + `PLCReplicaStore` atomic migration (see the mega plan
-current state and deciduous goal 1187, now completed, with its commit-linked
-actions). Still user-owned: the RateLimiter changes and the QueryRunner
-implementation diary (`queryrunner_deepening_pilot_plan.md`). Finish or commit the
-RateLimiter lane before plan cleanup edits those files. The diary can retire only
-after its remaining outcomes are recorded.
+The QueryRunner store migrations have all landed on `main`, including the
+`PLCPersistentStore` + `PLCReplicaStore` migration, its schema-atomicity
+closeout, and the `RateLimiter` migration (see the mega plan current state and
+deciduous goal 1187, completed, with its commit-linked actions). The transient
+debug logging that shipped with the network rework was removed by rewriting the
+introducing commit, so `main` history carries no `RateLimiter DEBUG` lines. The
+arc is finished; the implementation diary
+(`queryrunner_deepening_pilot_plan.md`) has no outstanding outcomes and can be
+deleted per the plan-lifecycle rule (Git retains its text).
 
 ## B0.4 Replace false-confidence tests
 
@@ -80,6 +82,13 @@ after its remaining outcomes are recorded.
 unconditional success assertion for SQL allowlisting. Replace them with tampered
 CAR, bounded export, blob header, and rejected identifier fixtures. Preserve the
 current production safeguards while making regression claims executable.
+
+**Status (2026-07-14):** in progress. Deterministic DPoP, SQL-allowlist,
+refresh-token, import, and CAR coverage has landed (`6d8ebe97b`, plus the
+`NetworkSecurityHardeningTests` registration in `6cf9ed1c8`). Remaining
+negative-path and fixture work is active in the uncommitted `SecurityHardeningTests`
+/ `OAuth2HandlerTests` / `TestKeyFixtures` / `LexiconResolveXrpcTests` working set
+(deciduous node 1199).
 
 ## B0.5 Govern plan state
 

@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-12
+last_verified: 2026-07-14
 ---
 
 # Core Architecture and Reliability
@@ -24,18 +24,19 @@ Back up the database before a production schema bump. Binary rollback requires
 restoring that backup. ADR 0002 continues to defer QueryRunner/pooling until
 this migration work is safe and contention is measured.
 
-## A2. PLC schema closeout
+## A2. PLC schema closeout (complete)
 
-`PLCPersistentStore` and its `PLCReplicaStore` subclass are now migrated onto
+`PLCPersistentStore` and its `PLCReplicaStore` subclass are migrated onto
 `ATProtoConnectionManagerSerial` + `ATProtoDatabaseQueryRunner` (hand-rolled queue,
-raw `sqlite3 *`, and statement cache gone; tuned pragma config preserved; 59 PLC
-tests green). Schema creation and the legacy ALTER upgrades still run as independent
-statements that can leave a partial database — closing that out on the migrated base
-is the remaining work.
+raw `sqlite3 *`, and statement cache gone; tuned pragma config preserved). Schema
+creation and the legacy ALTER upgrades now run inside a single `transact:` that
+rolls back on any failed statement, so a partial database is no longer possible
+(`4b3324a09`).
 
-Tests need a legacy schema file, duplicate/null sequence fixtures, injected
-index failure, and either full rollback or deterministic rerun convergence. Keep
-the existing 61-test PLC regression net.
+Covered by a legacy-schema upgrade fixture (columns added, `seq` backfilled, row
+readable, reopen converges) and an injected index-collision rollback test
+(`plc_operations` rolled back, the colliding table untouched). The 61-test PLC
+regression net stays green. No remaining work on this item.
 
 ## A3. Objective-C modernization recovery
 
