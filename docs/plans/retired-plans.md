@@ -22,6 +22,7 @@ own active work and where unresolved acceptance criteria moved.
 | `objc-jupyter-wasm/docs/plans/*` and autoreleasepool plan                             | Historical phases completed and status tables conflict. Baseline regeneration moved to workstream 05.                                                 |
 | Admin UI implementation-status and integration guides                                 | Describe the pre-AdminUIServer architecture. Replacement architecture/runbook work moved to workstream 04.                                            |
 | XRPC NSID registration plan                                                           | Useful pilot and rollback logic moved to workstreams 01 and 02. Generator claims and counts were stale.                                               |
+| 2026-07-13 test-regression remediation plan                                           | WS1 (RateLimiter) closed in HEAD; WS2/WS3/WS4 landed (`0a32d9fcc`, `6b7bcf788`, `7b665c840`) and verified green on a fresh build. WS5 (gated-class CI wiring) moved to workstream 01 (S5). |
 
 ## Preserved noncanonical records
 
