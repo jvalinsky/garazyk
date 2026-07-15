@@ -31,8 +31,15 @@ change while the repository boundaries settle. This roadmap replaces the May
 - The scenario dashboard now defaults to `127.0.0.1` and protects mutations
   with a per-launch capability, Host/Origin validation, and remote bearer
   authentication. AdminUIServer now rejects inline script attributes and
-  enforces session-plus-CSRF checks on its POST mutations. Targeted tests pass;
-  a real Admin browser smoke remains blocked by a missing local OpenSSL dylib.
+  enforces session-plus-CSRF checks on its POST mutations. Targeted tests pass.
+  The "missing local OpenSSL dylib" that blocked a real Admin browser smoke was
+  a stale `build/` CMake cache from before Homebrew's `openssl@3` was
+  discoverable; a reconfigure on 2026-07-13 already fixed it
+  (`testNonKeychainFactoryPersistenceWhenOpenSSLAvailable` passes, not
+  skipped), the docs just never caught up. Playwright's Chromium binary was
+  separately never installed (`deno run -A npm:playwright install chromium`,
+  done 2026-07-15). Both blockers are cleared; no browser smoke test has been
+  written yet — that write-and-run work is still open (item 1 below).
 - `HttpConnectionIOCoordinator` now has independent 30-second idle and
   aggregate header deadlines. The aggregate deadline starts with the first
   header byte, cannot be extended by trickle input, cancels a stalled receive,
@@ -120,6 +127,11 @@ Complete [workstream 00](workstreams/00-baseline-and-governance.md).
 1. **Partial:** fix audit scanner roots and establish current Objective-C,
    Deno, browser, XRPC, and scenario baselines. The scanner and current
    scenario discovery/run are proven; the browser baseline remains incomplete.
+   Both environment blockers that previously stopped this (stale OpenSSL
+   detection in `build/`, missing Playwright Chromium binary) are cleared as
+   of 2026-07-15 — see the current-state note above. What's left is writing
+   and running the actual browser smoke (dashboard controls, Admin CSP/CSRF,
+   OAuth consent, keyboard workflows per workstream 00 B0.2 item 5).
 2. **Complete:** resolve duplicate XRPC ownership so the existing strict CI
    check is green.
 3. **Complete:** synchronize the two external Deno repositories with newer
