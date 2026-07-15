@@ -1,7 +1,7 @@
 ---
 title: Security and Protocol Correctness
 status: active
-last_verified: 2026-07-12
+last_verified: 2026-07-14
 ---
 
 # Security and Protocol Correctness
@@ -100,6 +100,15 @@ Account lifecycle tests must follow the current specifications:
 - event sequences increase monotonically and persisted cursors resume without
   gaps;
 - suspension and takedown behavior is tested at both write and read boundaries.
+
+### Gated Objective-C coverage into CI
+
+Twenty-eight `AllTests` classes are gated behind `PDS_RUN_INTEGRATION_TESTS=1`
+and `PDS_RUN_SOCKET_TESTS=1` and are silently skipped in the default run. They
+are not failures, but a coverage blind spot. Before merge, run both with
+services available, then fold both invocations into the quality-gate workflow
+and CI so the gated classes are measured, not skipped. (Folded here from the
+retired 2026-07-13 remediation plan, WS5.)
 
 Primary sources:
 
