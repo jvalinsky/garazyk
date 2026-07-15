@@ -83,12 +83,16 @@ unconditional success assertion for SQL allowlisting. Replace them with tampered
 CAR, bounded export, blob header, and rejected identifier fixtures. Preserve the
 current production safeguards while making regression claims executable.
 
-**Status (2026-07-14):** in progress. Deterministic DPoP, SQL-allowlist,
-refresh-token, import, and CAR coverage has landed (`6d8ebe97b`, plus the
-`NetworkSecurityHardeningTests` registration in `6cf9ed1c8`). Remaining
-negative-path and fixture work is active in the uncommitted `SecurityHardeningTests`
-/ `OAuth2HandlerTests` / `TestKeyFixtures` / `LexiconResolveXrpcTests` working set
-(deciduous node 1199).
+**Status (2026-07-14):** complete. Deterministic DPoP, SQL-allowlist,
+refresh-token, import, and CAR coverage landed (`6d8ebe97b`, plus the
+`NetworkSecurityHardeningTests` registration in `6cf9ed1c8` and the
+`TestKeyFixtures` dedupe in `50624140f`). A fresh build from HEAD runs all 9
+`NetworkSecurityHardeningTests` with 0 failures: `testImportTamperRejection`
+sends real corrupted CAR bytes and asserts a CAR-parse 400 (not the empty-body
+guard); `testSyncExportBound` asserts 404 RepoNotFound for a valid-but-unknown DID;
+`testBlobHeaderMIME` asserts the stored MIME plus `X-Content-Type-Options: nosniff`;
+`testSQLAllowlist` rejects injection/path-traversal DIDs. No placeholder
+`XCTAssertTrue(YES)` or empty-input assertions remain (deciduous node 1199 closed).
 
 ## B0.5 Govern plan state
 

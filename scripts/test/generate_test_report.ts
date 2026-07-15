@@ -244,7 +244,6 @@ function render(suites: SuiteResult[], generated: string): string {
     Source logs: <code>reports_out/objc_alltests_HEAD_2026-07-13.log</code>,
     <code>reports_out/deno_packages_2026-07-13.log</code>,
     <code>reports_out/dashboard_2026-07-13.log</code>.
-    Plan: <code>docs/plans/remediation-test-regressions-2026-07-13.md</code>.
   </footer>
 </div>
 </body>
