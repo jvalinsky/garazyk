@@ -416,7 +416,8 @@ NSString * const GZLogComponentCLI = @"CLI";
         [self->_logFileHandle seekToEndOfFile];
     }
 
-    // Log rotation event via simple NSLog to avoid recursion
+    // Rotation notice must use raw NSLog: GZ_LOG_* routes through this logger
+    // and would re-enter mid-rotation (the file handle we just replaced).
     NSLog(@"[INFO] [Core] Log rotated (max size: %lu bytes, keeping %lu files)",
           (unsigned long)self.maxLogFileSize, (unsigned long)self.maxLogFiles);
 }

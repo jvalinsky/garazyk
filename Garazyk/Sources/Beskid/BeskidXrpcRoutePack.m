@@ -16,6 +16,7 @@
 #import "Network/HttpServer.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Debug/GZLogger.h"
 
 @implementation BeskidXrpcRoutePack {
     BeskidDatabase *_database;
@@ -632,12 +633,12 @@
         NSError *saveError = nil;
         BOOL saved = [_database saveRecord:recValue did:did collection:collection rkey:rkey cid:recCid ttl:ttl error:&saveError];
         if (!saved) {
-            NSLog(@"[Beskid ERROR] Failed to save record to cache: %@", saveError);
+            GZ_LOG_ERROR(@"[Beskid] Failed to save record to cache: %@", saveError);
         } else {
-            NSLog(@"[Beskid] Saved record to cache: at://%@/%@/%@", did, collection, rkey);
+            GZ_LOG_INFO(@"[Beskid] Saved record to cache: at://%@/%@/%@", did, collection, rkey);
         }
     } else {
-        NSLog(@"[Beskid ERROR] Missing recValue or recCid! recCid = %@", recCid);
+        GZ_LOG_ERROR(@"[Beskid] Missing recValue or recCid! recCid = %@", recCid);
     }
 
     return json;
