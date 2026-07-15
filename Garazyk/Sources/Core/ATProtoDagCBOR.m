@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
+#import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
@@ -183,7 +184,7 @@ static const NSUInteger kMaxDecodeDepth = 64;
         return [self _encodeCIDLink:(CID *)value toData:data error:error];
         
     } else {
-        NSLog(@"ATProtoDagCBOR: Unsupported type: %@", NSStringFromClass([value class]));
+        GZ_LOG_ERROR(@"ATProtoDagCBOR: Unsupported type: %@", NSStringFromClass([value class]));
         if (error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                          code:ATProtoDagCBORErrorCodeInvalidType
