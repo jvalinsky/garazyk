@@ -146,7 +146,11 @@ Complete [workstream 00](workstreams/00-baseline-and-governance.md).
    remain (deciduous node 1199 closed).
 
 Exit gate: clean generated reports, current scenario run metadata, passing
-package checks, and a documented branch disposition.
+package checks, and a documented branch disposition. Branch disposition is
+now documented (workstream 00, B0.3): `codex/split-deno-testing-repos`
+inactive pending Phase 3, `refactor/plan01-hygiene-quick-wins` superseded for
+code and kept for its remaining docs, `backup-pre-rewrite` archival-only. Item
+1 (browser baseline) is the only open gap.
 
 ### Phase 1: containment
 
