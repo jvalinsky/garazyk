@@ -48,21 +48,42 @@ summary and command line in source control.
 
 ## B0.3 Reconcile branches
 
-### Deno split branch
+### Deno split branch (sync complete, deletion still pending)
 
-`codex/split-deno-testing-repos` removes more than 100,000 lines after copying
-them to two clean local repositories. Since June, in-tree Gruszka, Hamownia,
-Laweta, Schemat, and TUI files changed. Synchronize those changes into the
-external repositories first, then regenerate the deletion diff from current
-`main`. Do not merge the old deletion commit as-is.
+`codex/split-deno-testing-repos` (tip `307e8764b`) removes more than 100,000
+lines after copying them to two clean local repositories. As of 2026-07-15,
+both `garazyk-atproto-testing` and `garazyk-tui` are synchronized with
+`main`'s in-tree copies (see mega-plan Phase 0 item 3). The branch itself is
+still a stale June 7 snapshot two commits ahead of nothing useful past that
+point — it has not been rebased onto current `main` and still deletes files
+`main` has since kept changing. Do not merge the old deletion commit as-is;
+regenerating the deletion diff from current `main` is Phase 3 item 1 work,
+gated on the released-package-version boundary the mega plan describes there.
+Until then this branch is inactive, not abandoned.
 
-### Objective-C modernization branch
+### Objective-C modernization branch (code superseded, docs retained)
 
-`refactor/plan01-hygiene-quick-wins` contains commits for raw logging,
-`@synthesize`, and `#pragma mark` cleanup, but inherits the Deno split branch.
-Cherry-pick or rebase only the three hygiene commits after checking them against
-current files. Keep the plan findings as audit input; the mega plan owns the
-remaining schedule.
+`refactor/plan01-hygiene-quick-wins` (tip `fdbd2dd42`) contained three hygiene
+commits (raw logging, `@synthesize`, `#pragma mark` cleanup) stacked on the
+Deno split branch. Those three are now cherry-picked onto `main` as
+`5d048eb53`, `2f88fad66`, and `6511b4502` (code only). The branch is superseded
+for that code and should not be merged as-is. Its remaining unique content —
+`plan/objc-modernization-2026-07/*` and `docs/tui/asciinema-overlay/*` — was
+deliberately left off `main` during the cherry-pick (unrelated to hygiene, and
+`plan/` duplicates the governed `docs/plans/` structure). Keep the branch
+around as reference input for Phase 4 item 3 (Objective-C god-file
+decomposition); do not delete it without folding anything still useful into
+`docs/plans/` first.
+
+### Pre-rewrite backup branch (archival, do not merge)
+
+`backup-pre-rewrite` (tip `fe63ac13a`) is the safety snapshot taken before the
+network-rework history rewrite that stripped the transient `RateLimiter DEBUG`
+logging commit (see QueryRunner/PLC entry below). All 12 of its other commits
+have since landed on `main` in reworked form, and `main` has progressed 22
+commits past this branch's tip. It has no unique content worth recovering —
+keep it only as an archival record of the pre-rewrite state, not as a merge
+candidate.
 
 ### QueryRunner/PLC work (complete)
 
