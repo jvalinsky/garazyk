@@ -121,12 +121,13 @@ Complete [workstream 00](workstreams/00-baseline-and-governance.md).
    before deleting their in-tree copies.
 4. Rebase or cherry-pick the Objective-C hygiene commits without importing the
    stale Deno deletion diff.
-5. **In progress:** replace security tests that assert empty inputs or
+5. **Complete:** replace security tests that assert empty inputs or
    `XCTAssertTrue(YES)` with fixtures that exercise the claimed boundary.
-   Deterministic DPoP/SQL-allowlist/refresh-token/import/CAR coverage has landed
-   in `SecurityHardeningTests`; remaining fixture and negative-path work is active
-   (see deciduous node 1199 and the uncommitted `SecurityHardeningTests` /
-   `OAuth2HandlerTests` working set).
+   Deterministic DPoP/SQL-allowlist/refresh-token/import/CAR coverage landed in
+   `SecurityHardeningTests` (`6d8ebe97b` + `6cf9ed1c8` registration +
+   `50624140f` fixture dedupe). A fresh HEAD build runs all 9
+   `NetworkSecurityHardeningTests` with 0 failures; no placeholder assertions
+   remain (deciduous node 1199 closed).
 
 Exit gate: clean generated reports, current scenario run metadata, passing
 package checks, and a documented branch disposition.
