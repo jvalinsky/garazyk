@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-14
+last_verified: 2026-07-15
 ---
 
 # Garazyk Mega Plan
@@ -50,11 +50,16 @@ change while the repository boundaries settle. This roadmap replaces the May
 - The Deno split exists in clean local repositories at
   `/Users/jack/Software/garazyk-atproto-testing` and
   `/Users/jack/Software/garazyk-tui`, plus branch
-  `codex/split-deno-testing-repos`. The external copies have diverged from
-  `main`, so the old deletion branch cannot be merged without synchronization.
-- Objective-C modernization plans and three completed hygiene commits exist on
-  `refactor/plan01-hygiene-quick-wins`. That branch is based on the Deno split,
-  not current `main`.
+  `codex/split-deno-testing-repos`. Both external repos are now synchronized
+  with `main`'s in-tree copies as of 2026-07-15; the old deletion branch is
+  still based on a stale June 7 snapshot and needs its own rebase (Phase 3
+  item 1) before it can merge.
+- The three Objective-C hygiene commits from `refactor/plan01-hygiene-quick-wins`
+  are cherry-picked onto `main` (`5d048eb53`, `2f88fad66`, `6511b4502`),
+  code-only. `refactor/plan01-hygiene-quick-wins` itself is still based on the
+  Deno split and superseded for these three commits; its remaining content is
+  the modernization plan docs, which were deliberately left off `main` (see
+  Phase 0 item 4).
 - The QueryRunner deepening arc has landed on `main`: `ATProtoMediaSQLiteStore`
   (pilot), Mikrus, Beskid, `JelczDatabase`, `PDSReplayCache`, and
   `PDSSQLiteSessionStorage` are migrated onto `ATProtoConnectionManagerSerial` +
@@ -117,10 +122,21 @@ Complete [workstream 00](workstreams/00-baseline-and-governance.md).
    scenario discovery/run are proven; the browser baseline remains incomplete.
 2. **Complete:** resolve duplicate XRPC ownership so the existing strict CI
    check is green.
-3. Synchronize the two external Deno repositories with newer in-tree changes
-   before deleting their in-tree copies.
-4. Rebase or cherry-pick the Objective-C hygiene commits without importing the
-   stale Deno deletion diff.
+3. **Complete:** synchronize the two external Deno repositories with newer
+   in-tree changes. `garazyk-atproto-testing` picked up the real drift on
+   `main` since the June 7 split (gruszka lexicon/DNS-timeout fixes, hamownia
+   test quieting) and dropped `packages/gruszka/scripts/generate.ts` +
+   `generate_test.ts`, which can no longer regenerate standalone now that
+   lexicon generation is rooted at the monorepo-only `Garazyk/Resources/lexicons`;
+   the repo is a pure vendored consumer of `lexicons.ts` going forward, verified
+   clean (`check`/`lint`/`fmt`, 3790 tests). `garazyk-tui` needed no changes —
+   zero real commits touched `packages/tui` since the split base.
+4. **Complete:** rebase the Objective-C hygiene commits onto current `main`
+   without the stale Deno deletion diff (`5d048eb53`, `2f88fad66`,
+   `6511b4502`). Cherry-picked code-only from the three
+   `refactor/plan01-hygiene-quick-wins` commits, dropping an unrelated
+   `plan/objc-modernization-2026-07/` tree and `docs/tui/asciinema-overlay/`
+   docs bundled into one of them. `AllTests` is green: 3198 passed, 0 failed.
 5. **Complete:** replace security tests that assert empty inputs or
    `XCTAssertTrue(YES)` with fixtures that exercise the claimed boundary.
    Deterministic DPoP/SQL-allowlist/refresh-token/import/CAR coverage landed in
