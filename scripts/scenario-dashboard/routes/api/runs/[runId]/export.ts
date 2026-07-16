@@ -1,6 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
-import { db } from "../../../../../db/index.ts";
-import { exportRunBundle } from "../../../../../lib/export_run_lib.ts";
+import { db } from "../../../../db/index.ts";
+import { exportRunBundle } from "../../../../lib/export_run_lib.ts";
 
 /** Generate or refresh run replay export and return index.html. */
 export const handler: Handlers = {
