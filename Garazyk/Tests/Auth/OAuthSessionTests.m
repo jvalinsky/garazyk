@@ -67,6 +67,10 @@
     // Invalid scope
     req.scope = @"email";
     XCTAssertFalse([req validateWithError:&error]);
+    req.scope = @"notatproto";
+    XCTAssertFalse([req validateWithError:&error]);
+    req.scope = @"atproto space:not-a-valid-nsid?authority=not-a-did";
+    XCTAssertFalse([req validateWithError:&error]);
     req.scope = @"atproto";
     
     // Success

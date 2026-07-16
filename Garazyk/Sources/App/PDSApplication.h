@@ -15,6 +15,8 @@
 @class SubscribeReposHandler;
 @class PDSRecordService;
 @class PDSBlobAuditManager;
+@class PDSSpaceStore;
+@class PDSSpaceReconciler;
 @class HttpServer;
 /**
  * @abstract Defines the PDSAccountService protocol contract.
@@ -91,6 +93,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! User database pool. */
 @property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
+
+/** Experimental isolated permissioned-space store; nil unless explicitly enabled. */
+@property (nonatomic, strong, readonly, nullable) PDSSpaceStore *spaceStore;
+
+/** Durable best-effort replay of permissioned write notifications; nil when disabled. */
+@property (nonatomic, strong, readonly, nullable) PDSSpaceReconciler *spaceReconciler;
 
 /*! Blob management service. */
 @property (nonatomic, strong, readonly) PDSBlobService *blobService;

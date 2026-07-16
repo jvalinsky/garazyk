@@ -87,7 +87,13 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface CARReader : NSObject
 
-/*! The root CID of the CAR archive (the first block). */
+/*! All root CIDs declared in the CAR header. For a standard single-root CAR
+ *  this array contains exactly one element; for a space CAR it contains two
+ *  (signed commit + DRISL index). */
+@property (nonatomic, copy, readonly, nullable) NSArray<CID *> *roots;
+
+/*! The first root CID, equivalent to @c roots.firstObject.  Preserved for
+ *  backward compatibility with callers that expect a single root. */
 @property (nonatomic, strong, readonly, nullable) CID *rootCID;
 
 /*! All blocks contained in the archive. */

@@ -11,6 +11,7 @@
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSBlobService.h"
+#import "Services/PDS/PDSSpaceStore.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"
@@ -33,7 +34,10 @@
 #import "Repository/CBOR.h"
 #import "Repository/RepoCommit.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATProtoValidator.h"
 #import "Core/CID.h"
+#import "Security/Space/PDSSpaceScope.h"
+#import "Security/Space/PDSSpaceURI.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Auth/Secp256k1.h"
@@ -75,6 +79,9 @@ static BOOL rejectUnavailableRepoDidIfKnown(NSString *did,
 static BOOL rejectRecordTakedown(NSString *uri,
                                  PDSServiceDatabases *serviceDatabases,
                                  HttpResponse *response);
+static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *response,
+                                     NSString *did, PDSSpaceURI *space,
+                                     NSString *collection, NSString *action);
 
 #pragma mark - Helpers
 
@@ -240,6 +247,34 @@ static BOOL isActiveUploadMimeType(NSString *contentType) {
         ]];
     });
     return [activeTypes containsObject:normalizedMimeType(contentType)];
+}
+
+/* A space blob is uploaded through the standard binary endpoint with explicit
+ * experimental binding headers.  The space lexicon has no upload procedure,
+ * so require the target collection and action here and prove the caller holds
+ * the same OAuth capability that will be required to reference the blob. */
+static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *response,
+                                     NSString *did, PDSSpaceURI *space,
+                                     NSString *collection, NSString *action) {
+    NSString *authorization = [request headerForKey:@"Authorization"];
+    NSString *token = [authorization hasPrefix:@"Bearer "] ? [authorization substringFromIndex:7] :
+                       [authorization hasPrefix:@"DPoP "] ? [authorization substringFromIndex:5] : nil;
+    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    BOOL sawSpaceScope = NO;
+    for (NSString *candidate in [jwt.payload.scope componentsSeparatedByCharactersInSet:
+                                  [NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
+        if (![candidate hasPrefix:@"space:"]) continue;
+        sawSpaceScope = YES;
+        PDSSpaceScope *scope = [[PDSSpaceScope scopeWithString:candidate error:nil]
+            scopeByResolvingSelfAuthorityForDID:did];
+        if ([scope matchesSpace:space action:action collection:collection]) return YES;
+    }
+    response.statusCode = HttpStatusForbidden;
+    [response setJsonBody:@{ @"error" : @"InsufficientScope",
+                             @"message" : sawSpaceScope
+                                 ? @"OAuth scope does not permit this space blob upload"
+                                 : @"A matching OAuth space: scope is required" }];
+    return NO;
 }
 
 static BOOL repoBlobMimeTypeShouldAttach(NSString *mimeType) {
@@ -1000,6 +1035,52 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
             [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.retryAfter] forKey:@"Retry-After"];
             [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Blob upload rate limit exceeded"}];
+            return;
+        }
+
+        NSString *spaceHeader = [request headerForKey:@"X-Atproto-Space"];
+        NSString *collectionHeader = [request headerForKey:@"X-Atproto-Space-Collection"];
+        NSString *actionHeader = [request headerForKey:@"X-Atproto-Space-Action"];
+        if (spaceHeader.length > 0 || collectionHeader.length > 0 || actionHeader.length > 0) {
+            PDSSpaceURI *space = [PDSSpaceURI URIWithString:spaceHeader error:nil];
+            if (!space || space.recordURI ||
+                ![ATProtoValidator validateNSID:collectionHeader error:nil] ||
+                !([actionHeader isEqualToString:PDSSpaceActionCreate] ||
+                  [actionHeader isEqualToString:PDSSpaceActionUpdate])) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{ @"error" : @"InvalidRequest",
+                                         @"message" : @"Space uploads require valid X-Atproto-Space, X-Atproto-Space-Collection, and X-Atproto-Space-Action headers" }];
+                return;
+            }
+            PDSSpaceStore *spaceStore = services.spaceStore;
+            if (!spaceStore) {
+                response.statusCode = HttpStatusNotFound;
+                [response setJsonBody:@{ @"error" : @"SpaceFeatureDisabled",
+                                         @"message" : @"Permissioned spaces are disabled on this PDS" }];
+                return;
+            }
+            if (!authorizeSpaceBlobUpload(request, response, did, space, collectionHeader, actionHeader)) {
+                return;
+            }
+            NSError *spaceBlobError = nil;
+            NSDictionary *spaceBlob = [spaceStore storeBlobData:blobData
+                                                        mimeType:normalizedMimeType(contentType) ?: @"application/octet-stream"
+                                                         toSpace:space.spaceURI
+                                                          author:did
+                                                           error:&spaceBlobError];
+            if (!spaceBlob) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{ @"error" : @"BlobUploadFailed",
+                                         @"message" : spaceBlobError.localizedDescription ?: @"Unable to store private space blob" }];
+                return;
+            }
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{ @"blob" : @{
+                @"$type" : @"blob",
+                @"ref" : @{ @"$link" : spaceBlob[@"cid"] },
+                @"mimeType" : spaceBlob[@"mimeType"],
+                @"size" : spaceBlob[@"size"],
+            } }];
             return;
         }
 

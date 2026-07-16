@@ -51,6 +51,53 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     return diff == 0;
 }
 
+/**
+ * Proposal 0016 permits the space authority entries to explicitly reuse an
+ * account's regular signing key and PDS endpoint.  Keep the optional
+ * container-network endpoint separate from the public issuer: DID resolution
+ * by another PDS must not turn `localhost` into that other PDS.
+ */
+static NSString *PDSSpaceHostEndpoint(ATProtoServiceConfiguration *configuration,
+                                      NSString *fallbackEndpoint) {
+    NSString *configured = [configuration stringForKey:@"permissionedSpacesHostEndpoint"];
+    if (configured.length == 0) return fallbackEndpoint;
+
+    NSURLComponents *components = [NSURLComponents componentsWithString:configured];
+    BOOL valid = components != nil &&
+        ([components.scheme isEqualToString:@"https"] || [components.scheme isEqualToString:@"http"]) &&
+        components.host.length > 0 && components.user.length == 0 &&
+        components.password.length == 0 && components.query.length == 0 &&
+        components.fragment.length == 0;
+    return valid ? configured : fallbackEndpoint;
+}
+
+static NSDictionary<NSString *, NSString *> *PDSVerificationMethodsForAccount(
+    ATProtoServiceConfiguration *configuration, NSString *signingKeyMultibase) {
+    NSMutableDictionary<NSString *, NSString *> *methods =
+        [@{ @"atproto" : signingKeyMultibase } mutableCopy];
+    if ([configuration boolForKey:@"permissionedSpacesEnabled"]) {
+        methods[@"atproto_space"] = signingKeyMultibase;
+    }
+    return methods;
+}
+
+static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
+    ATProtoServiceConfiguration *configuration, NSString *pdsEndpoint) {
+    NSMutableDictionary<NSString *, NSDictionary *> *services = [@{
+        @"atproto_pds" : @{
+            @"type" : @"AtprotoPersonalDataServer",
+            @"endpoint" : pdsEndpoint
+        }
+    } mutableCopy];
+    if ([configuration boolForKey:@"permissionedSpacesEnabled"]) {
+        services[@"atproto_space_host"] = @{
+            @"type" : @"AtprotoPersonalDataServer",
+            @"endpoint" : PDSSpaceHostEndpoint(configuration, pdsEndpoint)
+        };
+    }
+    return services;
+}
+
 @interface PDSAccountService ()
 @property (nonatomic, strong, nullable) PDSSecondFactorService *secondFactorService;
 - (nullable NSString *)mintAccessTokenForDID:(NSString *)did
@@ -765,16 +812,9 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSDictionary *unsignedData = @{
         @"type": @"plc_operation",
         @"rotationKeys": rotationKeys,
-        @"verificationMethods": @{
-            @"atproto": signingKeyMultibase
-        },
+        @"verificationMethods": PDSVerificationMethodsForAccount(config, signingKeyMultibase),
         @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
-        @"services": @{
-            @"atproto_pds": @{
-                @"type": @"AtprotoPersonalDataServer",
-                @"endpoint": pdsURL
-            }
-        },
+        @"services": PDSServicesForAccount(config, pdsURL),
         @"prev": [NSNull null]
     };
     
@@ -840,16 +880,9 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSDictionary *unsignedData = @{
         @"type": @"plc_operation",
         @"rotationKeys": rotationKeys,
-        @"verificationMethods": @{
-            @"atproto": signingKeyMultibase
-        },
+        @"verificationMethods": PDSVerificationMethodsForAccount(config, signingKeyMultibase),
         @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
-        @"services": @{
-            @"atproto_pds": @{
-                @"type": @"AtprotoPersonalDataServer",
-                @"endpoint": pdsURL
-            }
-        },
+        @"services": PDSServicesForAccount(config, pdsURL),
         @"prev": [NSNull null]
     };
     

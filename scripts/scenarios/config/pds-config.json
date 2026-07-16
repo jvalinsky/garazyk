@@ -1,4 +1,6 @@
 {
+  "permissionedSpacesEnabled": true,
+  "permissionedSpacesHostEndpoint": "http://kaszlak:2583",
   "server": {
     "host": "127.0.0.1",
     "port": 2583,

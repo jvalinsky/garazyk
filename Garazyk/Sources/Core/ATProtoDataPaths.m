@@ -14,6 +14,7 @@
     if (self) {
         _baseDirectory = [baseDirectory copy];
         _serviceDirectory = [baseDirectory stringByAppendingPathComponent:@"service"];
+        _permissionedSpacesDirectory = [baseDirectory stringByAppendingPathComponent:@"permissioned_spaces"];
         _didCacheDirectory = [baseDirectory stringByAppendingPathComponent:@"did_cache"];
         _sequencerDirectory = [baseDirectory stringByAppendingPathComponent:@"sequencer"];
         _blobsDirectory = [baseDirectory stringByAppendingPathComponent:@"blobs"];
@@ -30,6 +31,7 @@
     NSArray<NSString *> *dirs = @[
         self.baseDirectory,
         self.serviceDirectory,
+        self.permissionedSpacesDirectory,
         self.didCacheDirectory,
         self.sequencerDirectory,
         self.blobsDirectory,
@@ -85,6 +87,10 @@
         return nil;
     }
     return [self.keysDirectory stringByAppendingPathComponent:did];
+}
+
+- (NSString *)permissionedSpacesDatabasePath {
+    return [self.permissionedSpacesDirectory stringByAppendingPathComponent:@"spaces.sqlite"];
 }
 
 @end
