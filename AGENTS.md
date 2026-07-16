@@ -67,6 +67,7 @@ task matches their description.
 | `slop-detector`               | Low-effort LLM code patterns, boilerplate, fragile code                  |
 | `sqlite-sql-best-practices`   | SQLite correctness, query perf, index design, migrations                 |
 | `using-deciduous`             | Track goals/decisions in the deciduous decision graph                    |
+| `deciduous-viz`               | Generate interactive HTML from the deciduous decision graph              |
 | `web-ui-audit`                | Accessibility (WCAG), JS patterns, frontend security                     |
 | `expand_md_topic`             | Expand markdown outlines into documentation                              |
 
