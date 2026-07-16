@@ -114,7 +114,8 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Get default PDS service configuration for a given configuration.
  *
- * Returns a dictionary with atproto_pds service endpoint.
+ * Returns `atproto_pds` and, when the experimental feature is enabled, an
+ * explicit `atproto_space_host` endpoint.
  *
  * @param configuration PDS configuration
  * @return Service dictionary

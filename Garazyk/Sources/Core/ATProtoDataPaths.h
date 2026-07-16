@@ -42,6 +42,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, readonly) NSString *baseDirectory;
 
 @property (nonatomic, copy, readonly) NSString *serviceDirectory;
+/** Separate database root for experimental permissioned-space state. */
+@property (nonatomic, copy, readonly) NSString *permissionedSpacesDirectory;
 @property (nonatomic, copy, readonly) NSString *didCacheDirectory;
 @property (nonatomic, copy, readonly) NSString *sequencerDirectory;
 
@@ -73,6 +75,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSString *)actorStorePathForDid:(NSString *)did;
 
 - (nullable NSString *)keyPathForDid:(NSString *)did;
+
+/** Dedicated SQLite database path; never used for public actor repositories. */
+- (NSString *)permissionedSpacesDatabasePath;
 
 @end
 

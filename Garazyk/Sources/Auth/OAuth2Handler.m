@@ -22,6 +22,7 @@
 
 #import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
+#import "Security/Space/PDSSpaceScope.h"
 #import "Debug/GZLogger.h"
 
 @interface OAuth2Handler ()
@@ -109,6 +110,20 @@ static NSCache *sClientMetadataCache = nil;
 static dispatch_once_t sClientCacheOnceToken;
 static dispatch_once_t sPasskeyChallengeOnceToken;
 static dispatch_once_t sAuthGlobalsQueueOnceToken;
+
+static BOOL OAuthHandlerScopeIsValid(NSString *scope) {
+  BOOL containsAtproto = NO;
+  for (NSString *item in [scope componentsSeparatedByCharactersInSet:
+          [NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
+    if (item.length == 0) continue;
+    if ([item isEqualToString:@"atproto"]) {
+      containsAtproto = YES;
+    } else if ([item hasPrefix:@"space:"] && ![PDSSpaceScope scopeWithString:item error:nil]) {
+      return NO;
+    }
+  }
+  return containsAtproto;
+}
 
 @interface OAuth2Handler ()
 - (void)setCorsHeaders:(HttpResponse *)response
@@ -3249,12 +3264,12 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   // AT Protocol spec: scope must include 'atproto'
   NSString *scope = params[@"scope"];
-  if (![scope containsString:@"atproto"]) {
+  if (!OAuthHandlerScopeIsValid(scope)) {
     response.statusCode = 400;
     [response setJsonBody:@{
       @"error" : @"invalid_scope",
       @"error_description" :
-          @"The 'atproto' scope is required for AT Protocol OAuth sessions"
+          @"A valid 'atproto' scope is required for AT Protocol OAuth sessions"
     }];
     return;
   }

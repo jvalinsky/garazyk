@@ -17,6 +17,10 @@
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
+#import "Services/PDS/PDSSpaceStore.h"
+#import "Services/PDS/PDSSpaceReconciler.h"
+#import "Services/PDS/PDSSpaceOplogPruner.h"
+#import "Core/ATProtoDataPaths.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Admin/Diagnostics/PDSBlobAuditHandler.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -57,6 +61,9 @@
 @property (nonatomic, copy, readwrite) NSString *dataDirectory;
 @property (nonatomic, strong, readwrite) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong, readwrite) PDSDatabasePool *userDatabasePool;
+@property (nonatomic, strong, readwrite, nullable) PDSSpaceStore *spaceStore;
+@property (nonatomic, strong, readwrite, nullable) PDSSpaceReconciler *spaceReconciler;
+@property (nonatomic, strong, readwrite, nullable) PDSSpaceOplogPruner *spaceOplogPruner;
 @property (nonatomic, strong, readwrite) JWTMinter *jwtMinter;
 @property (nonatomic, strong, readwrite) HttpServer *httpServer;
 @property (nonatomic, strong, readwrite) PDSRelayService *relayService;
@@ -323,6 +330,20 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
     _userDatabasePool.masterSecret = _configuration.masterSecret;
+
+    // Permissioned spaces are intentionally opt-in while proposal 0016 remains
+    // experimental. The isolated file is never created in the default mode.
+    if ([_configuration boolForKey:@"permissionedSpacesEnabled"]) {
+        NSError *spaceStoreError = nil;
+        NSString *spaceStorePath = [[ATProtoDataPaths pathsForBaseDirectory:_dataDirectory]
+            permissionedSpacesDatabasePath];
+        _spaceStore = [[PDSSpaceStore alloc] initWithDatabasePath:spaceStorePath error:&spaceStoreError];
+        if (!_spaceStore) {
+            GZ_LOG_ERROR(@"Core", @"Permissioned spaces requested but store initialization failed: %@", spaceStoreError);
+        } else {
+            GZ_LOG_INFO_C(GZLogComponentCore, @"Experimental permissioned spaces enabled with isolated store");
+        }
+    }
      
     _jwtMinter = [[JWTMinter alloc] init];
     NSDictionary *pdsEnv = [[NSProcessInfo processInfo] environment];
@@ -398,6 +419,18 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // Initialize Relay Service
     _relayService = [[PDSRelayService alloc] initWithRelays:_configuration.crawlRelays
                                                    hostname:_jwtMinter.issuer];
+    if (_spaceStore) {
+        NSInteger configuredInterval = [_configuration integerForKey:@"permissionedSpacesReconcileIntervalSeconds"];
+        _spaceReconciler = [[PDSSpaceReconciler alloc] initWithSpaceStore:_spaceStore
+                                                            userDatabasePool:_userDatabasePool
+                                                                  jwtMinter:_jwtMinter
+                                                         intervalInSeconds:configuredInterval > 0 ? configuredInterval : 300];
+        NSInteger pruneRetentions = [_configuration integerForKey:@"permissionedSpacesOplogRetentionCount"];
+        NSInteger pruneInterval = [_configuration integerForKey:@"permissionedSpacesOplogPruneInterval"];
+        _spaceOplogPruner = [[PDSSpaceOplogPruner alloc] initWithSpaceStore:_spaceStore
+                                                          retentionRevisions:pruneRetentions > 0 ? (NSUInteger)pruneRetentions : 100
+                                                          intervalInSeconds:pruneInterval > 0 ? pruneInterval : 3600];
+    }
 }
 
 - (void)initializeServices {
@@ -555,6 +588,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
     _running = YES;
     [_relayService start];
+    [_spaceReconciler start];
+    [_spaceOplogPruner start];
 
     // Video worker
     if ([_configuration.videoMode isEqualToString:@"internal"]) {
@@ -597,6 +632,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _subscribeReposHandler = nil;
     
     [_relayService stop];
+    [_spaceReconciler stop];
+    _spaceReconciler = nil;
 
     // Analytics
     [_analyticsCollector stopCollecting];
@@ -604,6 +641,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
     // Databases
     [_userDatabasePool closeAll];
+    [_spaceStore close];
     [_serviceDatabases closeAll];
     
     // Logger
