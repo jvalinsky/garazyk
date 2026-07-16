@@ -40,7 +40,7 @@
 
 @interface CARReader ()
 
-@property (nonatomic, strong, readwrite) CID *rootCID;
+@property (nonatomic, copy, readwrite) NSArray<CID *> *roots;
 @property (nonatomic, strong, readwrite) NSArray<CARBlock *> *blocks;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CARBlock *> *blockIndex;
 
@@ -126,6 +126,10 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     return YES;
 }
 
+- (CID *)rootCID {
+  return self.roots.firstObject;
+}
+
 + (instancetype)readFromData:(NSData *)data error:(NSError **)error {
     CARReader *reader = [[CARReader alloc] init];
     if (![reader parseData:data error:error]) {
@@ -206,13 +210,23 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         return NO;
     }
 
-    NSError *rootError = nil;
-    CID *rootCID = CIDFromTaggedCBOR(rootsValue.array.firstObject, &rootError);
-    if (!rootCID) {
-        if (error) {
-            *error = rootError;
-        }
+    NSMutableArray<CID *> *parsedRoots = [NSMutableArray arrayWithCapacity:rootsValue.array.count];
+    for (CBORValue *rootEntry in rootsValue.array) {
+      NSError *rootError = nil;
+      CID *rootCID = CIDFromTaggedCBOR(rootEntry, &rootError);
+      if (!rootCID) {
+        if (error) *error = rootError;
         return NO;
+      }
+      [parsedRoots addObject:rootCID];
+    }
+    if (parsedRoots.count == 0) {
+      if (error) {
+        *error = [NSError errorWithDomain:@"com.atproto.car"
+                                     code:-2
+                                 userInfo:@{NSLocalizedDescriptionKey: @"CAR header missing roots"}];
+      }
+      return NO;
     }
 
     CBORValue *versionValue = header.map[[CBORValue textString:@"version"]];
@@ -270,7 +284,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         index[blockCID.stringValue] = block;
     }
 
-    _rootCID = rootCID;
+    _roots = [parsedRoots copy];
     _blocks = [blocks copy];
     _blockIndex = [index copy];
     return YES;
@@ -329,7 +343,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         }
         return NO;
     }
-    _rootCID = rootCID;
+    _roots = @[rootCID];
 
     NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
     NSMutableDictionary<NSString *, CARBlock *> *index = [NSMutableDictionary dictionary];
