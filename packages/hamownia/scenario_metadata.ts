@@ -339,6 +339,11 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
       requireCapability(Role.mikrus, Cap.mikrus.getRecordByUri),
     ],
   },
+  "93": {
+    needsPds2: true,
+    timeout: 300,
+    requires: [requireCapability(Role.plc, Cap.plc.didResolution)],
+  },
 };
 
 /**
