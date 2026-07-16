@@ -365,6 +365,20 @@
             @"serviceEndpoint" : serviceEndpoint
           }];
           ATProtoServiceConfiguration *svgConfig = [ATProtoServiceConfiguration sharedConfiguration];
+          if ([svgConfig boolForKey:@"permissionedSpacesEnabled"]) {
+            NSString *spaceEndpoint = [svgConfig stringForKey:@"permissionedSpacesHostEndpoint"];
+            NSURLComponents *spaceComponents = [NSURLComponents componentsWithString:spaceEndpoint];
+            BOOL validSpaceEndpoint = spaceComponents != nil &&
+              ([spaceComponents.scheme isEqualToString:@"https"] || [spaceComponents.scheme isEqualToString:@"http"]) &&
+              spaceComponents.host.length > 0 && spaceComponents.user.length == 0 &&
+              spaceComponents.password.length == 0 && spaceComponents.query.length == 0 &&
+              spaceComponents.fragment.length == 0;
+            [services addObject:@{
+              @"id" : @"#atproto_space_host",
+              @"type" : @"AtprotoPersonalDataServer",
+              @"serviceEndpoint" : validSpaceEndpoint ? spaceEndpoint : serviceEndpoint
+            }];
+          }
           if (svgConfig.chatServiceURL.length > 0) {
             NSString *chatEndpoint = svgConfig.chatServiceURL;
             [services addObject:@{
@@ -381,7 +395,17 @@
              @"controller" : did,
              @"publicKeyMultibase" : publicKeyMultibase
            };
-           doc[@"verificationMethod"] = @[ verificationMethod ];
+           if ([svgConfig boolForKey:@"permissionedSpacesEnabled"]) {
+             NSDictionary *spaceVerificationMethod = @{
+               @"id" : [NSString stringWithFormat:@"%@#atproto_space", did],
+               @"type" : @"Multikey",
+               @"controller" : did,
+               @"publicKeyMultibase" : publicKeyMultibase
+             };
+             doc[@"verificationMethod"] = @[ verificationMethod, spaceVerificationMethod ];
+           } else {
+             doc[@"verificationMethod"] = @[ verificationMethod ];
+           }
            doc[@"authentication"] = @[ verificationMethod[@"id"] ];
          } else {
            doc[@"verificationMethod"] = @[];

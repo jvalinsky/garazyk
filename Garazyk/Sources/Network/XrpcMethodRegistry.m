@@ -21,6 +21,7 @@
 #import "Network/XrpcRoutePackRegistrar.h"
 #import "Network/XrpcServerPack.h"
 #import "Network/XrpcSyncPack.h"
+#import "Network/XrpcSpacePack.h"
 #import "Registration/PDSRegistrationGate.h"
 
 @implementation XrpcMethodRegistry
@@ -34,7 +35,7 @@ static void registerMethodsWithDispatcherUsingServices(
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
     JWTMinter *jwtMinter, RateLimiter *rateLimiter, ATProtoServiceConfiguration *config,
     id<PDSEmailProvider> emailProvider,
-    SubscribeReposHandler *subscribeReposHandler) {
+    SubscribeReposHandler *subscribeReposHandler, PDSSpaceStore *spaceStore) {
 
   // A dispatcher can outlive a PDSApplication in tests and controlled restarts.
   // This registry owns the complete handler set, so rebuild it rather than
@@ -68,12 +69,15 @@ static void registerMethodsWithDispatcherUsingServices(
   routePackServices.emailProvider = emailProvider;
   routePackServices.subscribeReposHandler = subscribeReposHandler;
   routePackServices.blobAuditManager = blobAuditManager;
+  routePackServices.spaceStore = spaceStore;
 
   // Register domain modules in order
   [XrpcServerPack registerWithDispatcher:dispatcher services:routePackServices];
   [XrpcIdentityPack registerWithDispatcher:dispatcher services:routePackServices];
   [XrpcRepoPack registerWithDispatcher:dispatcher services:routePackServices];
   [XrpcSyncPack registerWithDispatcher:dispatcher services:routePackServices];
+
+  [XrpcSpacePack registerWithDispatcher:dispatcher services:routePackServices];
 
   [XrpcAppBskyPack registerWithDispatcher:dispatcher services:routePackServices];
 
@@ -99,7 +103,7 @@ static void registerMethodsWithDispatcherUsingServices(
       controller.application.blobAuditManager,
       controller.serviceDatabases, controller.userDatabasePool,
       controller.jwtMinter, controller.rateLimiter, config, nil,
-      controller.subscribeReposHandler);
+      controller.subscribeReposHandler, controller.application.spaceStore);
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -115,7 +119,7 @@ static void registerMethodsWithDispatcherUsingServices(
       application.serviceDatabases, application.userDatabasePool,
       application.jwtMinter, application.rateLimiter, application.configuration,
       application.emailProvider,
-      application.subscribeReposHandler);
+      application.subscribeReposHandler, application.spaceStore);
 }
 
 @end
