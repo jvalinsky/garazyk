@@ -53,6 +53,36 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
     return docHandle.length > 0 && [docHandle isEqualToString:normalizedHandle];
 }
 
+static NSString *spaceHostEndpointForConfiguration(ATProtoServiceConfiguration *configuration,
+                                                    NSString *fallbackEndpoint) {
+    NSString *configured = [configuration stringForKey:@"permissionedSpacesHostEndpoint"];
+    if (configured.length == 0) return fallbackEndpoint;
+    NSURLComponents *components = [NSURLComponents componentsWithString:configured];
+    BOOL valid = components != nil &&
+        ([components.scheme isEqualToString:@"https"] || [components.scheme isEqualToString:@"http"]) &&
+        components.host.length > 0 && components.user.length == 0 &&
+        components.password.length == 0 && components.query.length == 0 &&
+        components.fragment.length == 0;
+    return valid ? configured : fallbackEndpoint;
+}
+
+static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfiguration *configuration,
+                                                          NSString *pdsEndpoint) {
+    NSMutableArray<NSDictionary *> *services = [NSMutableArray arrayWithObject:@{
+        @"id" : @"#atproto_pds",
+        @"type" : @"AtprotoPersonalDataServer",
+        @"serviceEndpoint" : pdsEndpoint
+    }];
+    if ([configuration boolForKey:@"permissionedSpacesEnabled"]) {
+        [services addObject:@{
+            @"id" : @"#atproto_space_host",
+            @"type" : @"AtprotoPersonalDataServer",
+            @"serviceEndpoint" : spaceHostEndpointForConfiguration(configuration, pdsEndpoint)
+        }];
+    }
+    return services;
+}
+
 @implementation XrpcIdentityHelper
 
 #pragma mark - Public Methods
@@ -242,13 +272,7 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
             @"@context": @[@"https://www.w3.org/ns/did/v1"],
             @"id": did,
             @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", account.handle]],
-            @"service": @[
-                @{
-                    @"id": @"#atproto_pds",
-                    @"type": @"AtprotoPersonalDataServer",
-                    @"serviceEndpoint": serviceEndpoint
-                }
-            ]
+            @"service": servicesForConfiguration(configuration, serviceEndpoint)
         };
 
         // For did:plc, prefer fresh data from PLC directory
@@ -302,12 +326,19 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
 
 + (NSDictionary *)defaultPdsServiceForConfig:(ATProtoServiceConfiguration *)configuration {
     NSString *serviceEndpoint = [configuration canonicalIssuerWithPortHint:0];
-    return @{
+    NSMutableDictionary *services = [@{
         @"atproto_pds": @{
             @"type": @"AtprotoPersonalDataServer",
             @"endpoint": serviceEndpoint
         }
-    };
+    } mutableCopy];
+    if ([configuration boolForKey:@"permissionedSpacesEnabled"]) {
+        services[@"atproto_space_host"] = @{
+            @"type" : @"AtprotoPersonalDataServer",
+            @"endpoint" : spaceHostEndpointForConfiguration(configuration, serviceEndpoint)
+        };
+    }
+    return services;
 }
 
 + (NSDictionary *)resolveIdentityInfoForIdentifier:(NSString *)identifier

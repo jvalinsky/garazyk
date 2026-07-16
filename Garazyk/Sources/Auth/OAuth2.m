@@ -36,6 +36,7 @@
 #import "Core/DID.h"
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSKeyManagerFactory.h"
+#import "Security/Space/PDSSpaceScope.h"
 #import "Identity/HandleResolver.h"
 #if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonDigest.h>
@@ -54,6 +55,19 @@ NSString * const OAuth2ScopeRepoRead = @"atproto:repo_read";
 NSString * const OAuth2ScopeAtprotoProfile = @"atproto:profile";
 
 NSString * const OAuth2ErrorDomain = @"com.atproto.pds.oauth2";
+
+static BOOL OAuth2ScopeIsValid(NSString *scope) {
+    BOOL containsAtproto = NO;
+    for (NSString *item in [scope componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
+        if (item.length == 0) continue;
+        if ([item isEqualToString:@"atproto"]) {
+            containsAtproto = YES;
+        } else if ([item hasPrefix:@"space:"] && ![PDSSpaceScope scopeWithString:item error:nil]) {
+            return NO;
+        }
+    }
+    return containsAtproto;
+}
 
 static NSString * const kAuthorizationCodeKey = @"authorization_code";
 static NSString * const kRefreshTokenKey = @"refresh_token";
@@ -879,10 +893,10 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     NSString *scope = codeData[@"scope"] ?: OAuth2ScopeAtproto;
 
     // AT Protocol spec: atproto scope is required for all sessions
-    if (![scope containsString:@"atproto"]) {
+    if (!OAuth2ScopeIsValid(scope)) {
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidScope
-                                         userInfo:@{NSLocalizedDescriptionKey: @"The 'atproto' scope is required"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"A valid 'atproto' scope is required"}];
         completion(nil, error);
         return;
     }

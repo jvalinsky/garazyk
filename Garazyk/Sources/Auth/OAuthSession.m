@@ -5,8 +5,22 @@
 #import "Auth/DPoPUtil.h"
 #import "Compat/PDSTypes.h"
 #import "Security/PDSSecurityCompare.h"
+#import "Security/Space/PDSSpaceScope.h"
 
 NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
+
+static BOOL OAuthScopeIsValid(NSString *scope) {
+    BOOL containsAtproto = NO;
+    for (NSString *item in [scope componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
+        if (item.length == 0) continue;
+        if ([item isEqualToString:@"atproto"]) {
+            containsAtproto = YES;
+        } else if ([item hasPrefix:@"space:"] && ![PDSSpaceScope scopeWithString:item error:nil]) {
+            return NO;
+        }
+    }
+    return containsAtproto;
+}
 
 @implementation OAuthSession
 
@@ -91,11 +105,11 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
         return NO;
     }
 
-    if (![self.scope containsString:@"atproto"]) {
+    if (!OAuthScopeIsValid(self.scope)) {
         if (error) {
             *error = [NSError errorWithDomain:OAuthErrorDomain
                                          code:OAuthErrorInvalidScope
-                                     userInfo:@{NSLocalizedDescriptionKey: @"atproto scope is required"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"A valid atproto scope is required"}];
         }
         return NO;
     }
