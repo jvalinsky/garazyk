@@ -101,7 +101,7 @@ async function main() {
 }
 
 if (import.meta.main) {
-  main().catch((err) => {
+  await main().catch((err) => {
     console.error(`\n❌ TEST FAILED: ${err.message}`);
     Deno.exit(1);
   });
