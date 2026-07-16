@@ -39,8 +39,17 @@ const pds1 = normalizeHostLoopback(
 const pds2 = normalizeHostLoopback(
   Deno.env.get("PDS2_URL") ?? Deno.env.get("ATPROTO_PDS2_URL") ?? config.pds2,
 );
+const configuredPds3 = Deno.env.get("PDS3_URL") ??
+  Deno.env.get("ATPROTO_PDS3_URL");
 export const PDS1 = pds1;
 export const PDS2 = pds2;
+/**
+ * Optional third, independently operated PDS used by cross-PDS acceptance
+ * scenarios. It is intentionally not aliased to PDS1 or PDS2.
+ */
+export const PDS3 = configuredPds3
+  ? normalizeHostLoopback(configuredPds3)
+  : undefined;
 
 export const SERVICE_URLS: Record<string, string> = {
   ...Object.fromEntries(
@@ -51,6 +60,7 @@ export const SERVICE_URLS: Record<string, string> = {
   ),
   pds: pds1,
   pds2: pds2,
+  ...(PDS3 ? { pds3: PDS3 } : {}),
 };
 
 export const APPVIEW_ADMIN_SECRET = config.appviewAdminSecret;
