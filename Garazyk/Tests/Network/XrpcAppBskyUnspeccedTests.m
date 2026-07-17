@@ -17,12 +17,21 @@
 
 - (void)testLabelerGetServices {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.labeler.getServices"
-                                             queryString:@""
-                                             queryParams:@{}
+                                             queryString:@"dids=did:plc:test123"
+                                             queryParams:@{@"dids": @[@"did:plc:test123"]}
                                                  headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertNotNil(response.jsonBody[@"views"]);
     XCTAssertIsInstance(response.jsonBody[@"views"], [NSArray class]);
+}
+
+- (void)testLabelerGetServicesRequiresDids {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.labeler.getServices"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
 #pragma mark - Config Tests

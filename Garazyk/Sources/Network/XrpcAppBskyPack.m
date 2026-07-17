@@ -109,8 +109,17 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [dispatcher registerMethod:@"app.bsky.labeler.getServices"
                      handler:^(HttpRequest *request, HttpResponse *response) {
+                       NSString *didsParam = request.queryParams[@"dids"];
+                       if (didsParam.length == 0) {
+                         response.statusCode = HttpStatusBadRequest;
+                         [response setJsonBody:@{
+                           @"error": @"InvalidRequest",
+                           @"message": @"Missing or empty required parameter: dids"
+                         }];
+                         return;
+                       }
                        response.statusCode = HttpStatusOK;
-                       [response setJsonBody:@{@"views" : @[], @"cursor" : [NSNull null]}];
+                       [response setJsonBody:@{@"views" : @[]}];
                      }];
 
   // Bookmarks, chat, and Ozone are PDS-side concerns
