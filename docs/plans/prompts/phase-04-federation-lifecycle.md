@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: Federation, backpressure, and account lifecycle correctness
-status: blocked
+status: in-progress
 agent: claude
 depends_on: []
 ---
@@ -63,18 +63,29 @@ Out of scope: Relay assembly (phase 7), incremental sync (phase 7).
 - CI runs the previously gated classes; counts recorded.
 - Global gates pass.
 
-## Blocked on
+## Status note
 
 Scope item 4 (gated CI) is complete (`9bdf54195`, 2026-07-17). The
 remaining three items — deterministic backpressure (1), adversarial
 ingress (2), and account lifecycle (3) — all require a Docker-backed
-topology with live PDS, Relay, and AppView services:
+topology with live PDS, Relay, and AppView services. This phase was
+previously marked `blocked` on Docker being unavailable; as of 2026-07-17
+`docker info` succeeds on this machine (Docker version 29.4.0), so that
+specific blocker no longer holds — reopened to `in-progress`. The next
+slice should verify this holds (Docker state can change between sessions)
+and then:
 
-1. **Start Docker** on this machine (or a remote host with `DOCKER_HOST`).
-2. **Build the PDS Docker image** from the current source tree.
-3. **Stand up the default scenario topology** (`scripts/scenarios/` compose
-   config). At minimum: PDS1, a Relay/AppView pair.
-4. **Confirm health** by hitting `/xrpc/_health` on each service.
+1. **Build the PDS Docker image** from the current source tree
+   (`docker/Dockerfile.gnustep` per `docker/pds/docker-compose.yml`, or
+   `scripts/manage_local_network.ts` which can drive this — see phase-01's
+   evidence for its `--binary` non-Docker mode, which is a separate path
+   from this Docker one).
+2. **Stand up the default scenario topology** (`scripts/scenarios/` compose
+   config, or `scripts/manage_local_network.ts` without `--binary`). At
+   minimum: PDS1, a Relay/AppView pair.
+3. **Confirm health** by hitting `/xrpc/_health` (or
+   `/xrpc/com.atproto.server.describeServer` per `binary_services.ts`'s
+   health paths) on each service.
 
 The backpressure scenarios need tunable `maxPendingSendBytes` /
 `maxPendingSendCount` on the firehose handler; adversarial ingress sends
@@ -82,7 +93,8 @@ malformed data through the real Objective-C boundary (not Deno parsers);
 account lifecycle tests verify downstream propagation of suspension,
 takedown, and deletion across service boundaries.
 
-This shares the same Docker prerequisite as phase 2's three-PDS topology.
+This shares the same Docker prerequisite as phase 2's three-PDS topology;
+if Docker holds up here, phase 2 likely deserves the same re-check.
 
 ## On completion
 

@@ -172,6 +172,18 @@ before). `--gated=run` is now the default in `CMakeLists.txt`'s `add_test`
 (so `ctest` runs it), `scripts/test/run-tests.sh`, and
 `scripts/test/run-asan-tests.sh`.
 
+**Known flake (pre-existing, not one of the 11 above):**
+`ATProtoVideoTranscoderIntegrationTests/testTranscodeInvalidURLError`
+SIGSEGV'd once under `ctest -R '^AllTests$'` on 2026-07-17
+(`EXC_BAD_ACCESS`/`objc_storeStrong` inside the test's own frame — a
+use-after-free, not a hang or OOM). Crash reports from three earlier runs
+this same day (21:47, 22:12, 22:15), all before this session's changes,
+show the same signature, so it predates and is unrelated to the S5 repair.
+Two direct-binary and one ctest retry ran clean immediately after, so it
+reproduces intermittently rather than reliably. Filed as a follow-up
+(memory-safety bug in `ATProtoVideoTranscoder`'s synchronous transcode
+error path); investigating it needs ASan, which is beyond this slice.
+
 ## S6. Published-spec conformance matrix
 
 **Status: complete (report-only).** Matrix built at
