@@ -59,8 +59,11 @@ those — file them as evidence), any dashboard/Admin feature work.
 - Dashboard smoke: `deno run -A scripts/scenario-dashboard/browser_smoke_test.ts` passed.
 - Admin UI smoke: `deno run -A scripts/admin_ui_browser_smoke_test.ts` passed.
 - Evidence recorded in workstream 00 B0.2 item 5 and mega-plan Phase 0 item 1.
-- Pre-existing `deno task lint` / `deno task test` failures in `packages/` are
-  unrelated to this baseline and were not introduced by this phase.
+- Pre-existing `deno task lint` issues in `packages/` are unrelated to this
+  baseline. The `deno task test` failures observed at the time (gruszka
+  `generate_test.ts`) were `lexicons.ts` artifact drift, fixed by the
+  `ad2bd39f1` regeneration; the full suite passes clean as of 2026-07-16
+  (workstream 00 B0.2 item 5).
 
 ## On completion
 
