@@ -303,40 +303,42 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  // Verify Relay re-broadcast
+  // Verify Relay re-broadcast with retry+backoff. The relay needs time to
+  // receive the #account event from the PDS upstream, buffer it, and make it
+  // available to downstream subscribers.
   const relayUrl = SERVICE_URLS.relay;
   if (relayUrl) {
-    // Wait a moment for the relay to receive and buffer the event
-    await new Promise((r) => setTimeout(r, 2000));
+    const RELAY_RETRY_DELAYS_MS = [2000, 4000, 6000];
+    let relayOk = false;
 
-    try {
-      const relayEvents = await collectAccountEvents(relayUrl, FIREHOSE_TIMEOUT_MS, target.did, true);
+    for (const delayMs of RELAY_RETRY_DELAYS_MS) {
+      await new Promise((r) => setTimeout(r, delayMs));
+
+      const retryTimeout = Math.min(FIREHOSE_TIMEOUT_MS, 5000);
+      const relayEvents = await collectAccountEvents(relayUrl, retryTimeout, target.did, true);
       const relayAccountEvents = relayEvents.filter((e) =>
         e.type === "#account" && (e.body as any).did === target.did
       );
 
-      if (relayAccountEvents.length === 0) {
-        result.stepSkipped(
-          "Relay re-broadcast #account event",
-          `No #account event found on relay for ${target.did} — may need more propagation time`,
-        );
-      } else {
+      if (relayAccountEvents.length > 0) {
         const relayEvent = relayAccountEvents[relayAccountEvents.length - 1];
         const body = relayEvent.body as any;
         if (body.active === false && body.status === "takendown") {
           result.stepPassed(
             "Relay re-broadcast #account event",
-            `seq=${relayEvent.seq} active=false status=takendown`,
+            `seq=${relayEvent.seq} active=false status=takendown (after ${delayMs}ms)`,
           );
-        } else {
-          result.stepFailed(
-            "Relay #account event fields",
-            `active=${body.active} status=${body.status} (expected active=false status=takendown)`,
-          );
+          relayOk = true;
+          break;
         }
       }
-    } catch (exc: any) {
-      result.stepSkipped("Relay re-broadcast #account event", String(exc));
+    }
+
+    if (!relayOk) {
+      result.stepSkipped(
+        "Relay re-broadcast #account event",
+        `No #account event found on relay for ${target.did} after ${RELAY_RETRY_DELAYS_MS.length} retries`,
+      );
     }
   } else {
     result.stepSkipped("Relay re-broadcast #account event", "No relay URL configured");

@@ -260,6 +260,14 @@
     }
 }
 
+- (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event {
+    NSString *url = [self urlForClient:client];
+    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+    if (url && delegate) {
+        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
+    }
+}
+
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
