@@ -659,4 +659,36 @@
     XCTAssertEqual(response.statusCode, 403);
 }
 
+- (void)testAdminGetRecordMissingUriReturnsBadRequest {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
+                                              queryString:@""
+                                              queryParams:@{}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testAdminGetRecordMalformedUriReturnsBadRequest {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    NSString *malformed = @"at://did:plc:test/app.bsky.feed.post/";
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
+                                              queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2F"
+                                              queryParams:@{@"uri": malformed}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testAdminGetRecordUnknownRecordReturnsNotFound {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    NSString *uri = @"at://did:plc:test/app.bsky.feed.post/nonexistent";
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
+                                              queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fnonexistent"
+                                              queryParams:@{@"uri": uri}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 404);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"RecordNotFound");
+}
+
 @end
