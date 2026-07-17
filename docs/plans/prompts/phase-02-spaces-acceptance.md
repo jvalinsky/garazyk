@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: Permissioned spaces multi-PDS acceptance
-status: blocked
+status: in-progress
 agent: claude
 depends_on: []
 ---
