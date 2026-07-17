@@ -5,6 +5,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Admin/PDSAdminController.h"
@@ -23,7 +24,7 @@
     JWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
 
-    [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_moderation_createReport handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) return;

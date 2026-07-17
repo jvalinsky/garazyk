@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: Generated NSID constants and CLI/lifecycle adoption
-status: pending
+status: in-progress
 agent: claude
 depends_on: [3]
 ---
