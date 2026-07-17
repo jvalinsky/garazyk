@@ -1521,6 +1521,7 @@
     }
   },
   "redirects": {
+    "https://deno.land/std/path/mod.ts": "https://deno.land/std@0.224.0/path/mod.ts",
     "https://esm.sh/@types/babel__helper-validator-identifier@~7.15.2/index.d.ts": "https://esm.sh/@types/babel__helper-validator-identifier@7.15.2/index.d.ts"
   },
   "remote": {

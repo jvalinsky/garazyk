@@ -153,6 +153,8 @@ tests_*.txt
 simulation_data/
 test_data/
 tmp_atproto/
+scripts/test-results/
+scripts/scenario-dashboard/test-results/
 tmp_social_app/
 source.tar.gz
 
