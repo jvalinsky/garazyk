@@ -63,6 +63,10 @@ export async function run(): Promise<ScenarioResult> {
     }
   });
 
+  await timedCall(result, "Post-attack health check", async () => {
+    await client.waitForHealthy(10);
+  });
+
   result.finish();
   return result;
 }
