@@ -7,11 +7,6 @@
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 
-// Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
-// by the completion block is written before dispatch_semaphore_signal,
-// and the caller waits on the semaphore, so the autorelease pool is valid.
-#pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
-
 NSString * const ATProtoVideoTranscoderErrorDomain = @"com.atproto.video.transcoder";
 
 @interface ATProtoVideoTranscoder ()
@@ -54,6 +49,7 @@ NSString * const ATProtoVideoTranscoderErrorDomain = @"com.atproto.video.transco
                               toQuality:(ATProtoVideoTranscoderQuality)quality
                                    error:(NSError **)error {
     __block NSData *result = nil;
+    __block NSError * __strong capturedError = nil;
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
 
     [self transcodeVideoAtURL:inputURL
@@ -64,11 +60,12 @@ NSString * const ATProtoVideoTranscoderErrorDomain = @"com.atproto.video.transco
         if (outputURL) {
             result = [NSData dataWithContentsOfURL:outputURL];
         }
-        if (error) *error = err;
+        capturedError = err;
         dispatch_semaphore_signal(sema);
     }];
 
     dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_SEC));
+    if (error) *error = capturedError;
     return result;
 }
 

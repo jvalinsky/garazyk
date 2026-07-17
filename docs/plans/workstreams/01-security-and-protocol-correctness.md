@@ -262,17 +262,35 @@ before). `--gated=run` is now the default in `CMakeLists.txt`'s `add_test`
 (so `ctest` runs it), `scripts/test/run-tests.sh`, and
 `scripts/test/run-asan-tests.sh`.
 
-**Known flake (pre-existing, not one of the 11 above):**
+**Known flake (pre-existing, not one of the 11 above) — fixed:**
 `ATProtoVideoTranscoderIntegrationTests/testTranscodeInvalidURLError`
 SIGSEGV'd once under `ctest -R '^AllTests$'` on 2026-07-17
 (`EXC_BAD_ACCESS`/`objc_storeStrong` inside the test's own frame — a
-use-after-free, not a hang or OOM). Crash reports from three earlier runs
-this same day (21:47, 22:12, 22:15), all before this session's changes,
-show the same signature, so it predates and is unrelated to the S5 repair.
-Two direct-binary and one ctest retry ran clean immediately after, so it
-reproduces intermittently rather than reliably. Filed as a follow-up
-(memory-safety bug in `ATProtoVideoTranscoder`'s synchronous transcode
-error path); investigating it needs ASan, which is beyond this slice.
+use-after-free, not a hang or OOM). Root cause: the synchronous
+`transcodeVideoAtURL:toQuality:error:` wrapper in
+`Garazyk/Sources/Video/VideoTranscoder.m` wrote into the caller's
+`NSError **` out-parameter directly from inside the background-queue
+completion block, racing that queue's autorelease pool drain against the
+caller reading `*error` after `dispatch_semaphore_wait` returned. Fixed
+by capturing the error into a `__block __strong` local inside the block
+and writing `*error` only after the wait returns, on the caller's thread;
+this also let us drop the `-Wblock-capture-autoreleasing` suppression
+that had been papering over the same spot.
+
+Two direct-binary and one ctest retry ran clean immediately after the
+original crash was reported, so it reproduced intermittently rather than
+reliably — consistent with a race.
+
+**Separate, still-open flake:** three other crash reports from the same
+day (2026-07-16, 21:47, 22:12, 22:15), previously misattributed to this
+same signature, are actually a distinct bug: a null-pointer SIGSEGV
+(`EXC_BAD_ACCESS`/`KERN_INVALID_ADDRESS` at `0x0`) inside
+`-[PDSDatabase(Private) safeExecuteSync:]` (`PDSDatabase.m:48`), called
+from `-[PDSDatabase openWithError:]` (`PDSDatabase.m:122`) — seen once
+from `PDSDatabaseBlobsTests/testGetBlobsForDidWithPagination` (21:47) and
+twice from `PDSDatabaseLRUTests setUp` (22:12, 22:15). Undiagnosed;
+tracked as a follow-up. Possibly related to disk pressure given
+`PDSDatabase`'s use of SQLite, but not yet confirmed.
 
 ## S6. Published-spec conformance matrix
 
