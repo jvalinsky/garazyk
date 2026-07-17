@@ -2022,6 +2022,155 @@ export interface LexiconDefs {
   "com.atproto.server.updateEmail": {
     "main": never;
   };
+  "com.atproto.simplespace.addMember": {
+    "main": never;
+  };
+  "com.atproto.simplespace.checkUserAccess": {
+    "main": never;
+  };
+  "com.atproto.simplespace.createSpace": {
+    "main": never;
+  };
+  "com.atproto.simplespace.defs": {
+    "allowList": {
+      "allowed": Array<string>;
+    };
+    "open": {
+    };
+    "spaceConfig": {
+      "appAccess": LexiconDefs["com.atproto.simplespace.defs"]["open"] | LexiconDefs["com.atproto.simplespace.defs"]["allowList"] | Record<string, any>;
+      "managingApp"?: string;
+      "policy": string;
+    };
+  };
+  "com.atproto.simplespace.deleteSpace": {
+    "main": never;
+  };
+  "com.atproto.simplespace.listMembers": {
+    "main": never;
+    "member": {
+      "did": string;
+    };
+  };
+  "com.atproto.simplespace.removeMember": {
+    "main": never;
+  };
+  "com.atproto.simplespace.updateSpace": {
+    "main": never;
+  };
+  "com.atproto.space.applyWrites": {
+    "create": {
+      "collection": string;
+      "rkey"?: string;
+      "value": unknown;
+    };
+    "createResult": {
+      "cid": string;
+      "uri": string;
+      "validationStatus"?: string;
+    };
+    "delete": {
+      "collection": string;
+      "rkey": string;
+    };
+    "deleteResult": {
+    };
+    "main": never;
+    "update": {
+      "collection": string;
+      "rkey": string;
+      "value": unknown;
+    };
+    "updateResult": {
+      "cid": string;
+      "uri": string;
+      "validationStatus"?: string;
+    };
+  };
+  "com.atproto.space.createRecord": {
+    "main": never;
+  };
+  "com.atproto.space.defs": {
+    "signedCommit": {
+      "hash": { $bytes: string } | string;
+      "ikm": { $bytes: string } | string;
+      "mac": { $bytes: string } | string;
+      "rev": string;
+      "sig": { $bytes: string } | string;
+      "ver": number;
+    };
+  };
+  "com.atproto.space.deleteRecord": {
+    "main": never;
+  };
+  "com.atproto.space.getBlob": {
+    "main": never;
+  };
+  "com.atproto.space.getDelegationToken": {
+    "main": never;
+  };
+  "com.atproto.space.getLatestCommit": {
+    "main": never;
+  };
+  "com.atproto.space.getRecord": {
+    "main": never;
+  };
+  "com.atproto.space.getRepo": {
+    "main": never;
+  };
+  "com.atproto.space.getSpace": {
+    "main": never;
+  };
+  "com.atproto.space.getSpaceCredential": {
+    "main": never;
+  };
+  "com.atproto.space.listRecords": {
+    "main": never;
+    "record": {
+      "cid": string;
+      "collection": string;
+      "rkey": string;
+      "value"?: unknown;
+    };
+  };
+  "com.atproto.space.listRepoOps": {
+    "main": never;
+    "opEntry": {
+      "cid": string;
+      "collection": string;
+      "prev": string;
+      "rev": string;
+      "rkey": string;
+      "value"?: unknown;
+    };
+  };
+  "com.atproto.space.listRepos": {
+    "main": never;
+    "repo": {
+      "did": string;
+      "hash"?: { $bytes: string } | string;
+      "rev"?: string;
+    };
+  };
+  "com.atproto.space.listSpaces": {
+    "main": never;
+    "spaceView": {
+      "isOwner": boolean;
+      "uri": string;
+    };
+  };
+  "com.atproto.space.notifySpaceDeleted": {
+    "main": never;
+  };
+  "com.atproto.space.notifyWrite": {
+    "main": never;
+  };
+  "com.atproto.space.putRecord": {
+    "main": never;
+  };
+  "com.atproto.space.registerNotify": {
+    "main": never;
+  };
   "com.atproto.sync.defs": {
     "hostStatus": string;
   };
@@ -6962,6 +7111,333 @@ export interface Lexicons {
     };
     output: never;
   };
+  "com.atproto.simplespace.addMember": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "space": string;
+    };
+    output: never;
+  };
+  "com.atproto.simplespace.checkUserAccess": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "clientId"?: string;
+      "space": string;
+      "user": string;
+    };
+    input: never;
+    output: {
+      "authorized": boolean;
+    };
+  };
+  "com.atproto.simplespace.createSpace": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "config"?: LexiconDefs["com.atproto.simplespace.defs"]["spaceConfig"];
+      "did": string;
+      "skey"?: string;
+      "type": string;
+    };
+    output: {
+      "uri": string;
+    };
+  };
+  "com.atproto.simplespace.deleteSpace": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "space": string;
+    };
+    output: never;
+  };
+  "com.atproto.simplespace.listMembers": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "space": string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "members": Array<LexiconDefs["com.atproto.simplespace.listMembers"]["member"]>;
+    };
+  };
+  "com.atproto.simplespace.removeMember": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "did": string;
+      "space": string;
+    };
+    output: never;
+  };
+  "com.atproto.simplespace.updateSpace": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "appAccess"?: LexiconDefs["com.atproto.simplespace.defs"]["open"] | LexiconDefs["com.atproto.simplespace.defs"]["allowList"] | Record<string, any>;
+      "managingApp"?: string;
+      "policy"?: string;
+      "space": string;
+    };
+    output: never;
+  };
+  "com.atproto.space.applyWrites": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "repo": string;
+      "space": string;
+      "validate"?: boolean;
+      "writes": Array<LexiconDefs["com.atproto.space.applyWrites"]["create"] | LexiconDefs["com.atproto.space.applyWrites"]["update"] | LexiconDefs["com.atproto.space.applyWrites"]["delete"]>;
+    };
+    output: {
+      "results"?: Array<LexiconDefs["com.atproto.space.applyWrites"]["createResult"] | LexiconDefs["com.atproto.space.applyWrites"]["updateResult"] | LexiconDefs["com.atproto.space.applyWrites"]["deleteResult"]>;
+    };
+  };
+  "com.atproto.space.createRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "collection": string;
+      "record": unknown;
+      "repo": string;
+      "rkey"?: string;
+      "space": string;
+      "validate"?: boolean;
+    };
+    output: {
+      "cid": string;
+      "uri": string;
+      "validationStatus"?: string;
+    };
+  };
+  "com.atproto.space.deleteRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "collection": string;
+      "repo": string;
+      "rkey": string;
+      "space": string;
+    };
+    output: {
+    };
+  };
+  "com.atproto.space.getBlob": {
+    type: "query";
+    outputEncoding: "*/*";
+    params: {
+      "cid": string;
+      "repo": string;
+      "space": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "com.atproto.space.getDelegationToken": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "space": string;
+    };
+    input: never;
+    output: {
+      "token": string;
+    };
+  };
+  "com.atproto.space.getLatestCommit": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "repo": string;
+      "space": string;
+    };
+    input: never;
+    output: {
+      "commit"?: LexiconDefs["com.atproto.space.defs"]["signedCommit"];
+    };
+  };
+  "com.atproto.space.getRecord": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "collection": string;
+      "repo": string;
+      "rkey": string;
+      "space": string;
+    };
+    input: never;
+    output: {
+      "cid": string;
+      "uri": string;
+      "value": unknown;
+    };
+  };
+  "com.atproto.space.getRepo": {
+    type: "query";
+    outputEncoding: "application/vnd.ipld.car";
+    params: {
+      "repo": string;
+      "space": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "com.atproto.space.getSpace": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "space": string;
+    };
+    input: never;
+    output: {
+      "config": LexiconDefs["com.atproto.simplespace.defs"]["spaceConfig"] | Record<string, any>;
+      "uri": string;
+    };
+  };
+  "com.atproto.space.getSpaceCredential": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "clientAttestation"?: string;
+      "space": string;
+    };
+    output: {
+      "credential": string;
+    };
+  };
+  "com.atproto.space.listRecords": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "collection"?: string;
+      "cursor"?: string;
+      "excludeValues"?: boolean;
+      "limit"?: number;
+      "repo": string;
+      "reverse"?: boolean;
+      "space": string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "records": Array<LexiconDefs["com.atproto.space.listRecords"]["record"]>;
+    };
+  };
+  "com.atproto.space.listRepoOps": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "excludeValues"?: boolean;
+      "limit"?: number;
+      "repo": string;
+      "since"?: string;
+      "space": string;
+    };
+    input: never;
+    output: {
+      "commit"?: LexiconDefs["com.atproto.space.defs"]["signedCommit"];
+      "cursor"?: string;
+      "ops": Array<LexiconDefs["com.atproto.space.listRepoOps"]["opEntry"]>;
+    };
+  };
+  "com.atproto.space.listRepos": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "limit"?: number;
+      "space": string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "repos": Array<LexiconDefs["com.atproto.space.listRepos"]["repo"]>;
+    };
+  };
+  "com.atproto.space.listSpaces": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "cursor"?: string;
+      "did"?: string;
+      "limit"?: number;
+      "type"?: string;
+    };
+    input: never;
+    output: {
+      "cursor"?: string;
+      "spaces": Array<LexiconDefs["com.atproto.space.listSpaces"]["spaceView"]>;
+    };
+  };
+  "com.atproto.space.notifySpaceDeleted": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "space": string;
+    };
+    output: never;
+  };
+  "com.atproto.space.notifyWrite": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "hash": { $bytes: string } | string;
+      "repo": string;
+      "rev": string;
+      "space": string;
+    };
+    output: never;
+  };
+  "com.atproto.space.putRecord": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "collection": string;
+      "record": unknown;
+      "repo": string;
+      "rkey": string;
+      "space": string;
+      "validate"?: boolean;
+    };
+    output: {
+      "cid": string;
+      "uri": string;
+      "validationStatus"?: string;
+    };
+  };
+  "com.atproto.space.registerNotify": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "endpoint": string;
+      "repo"?: string;
+      "space": string;
+    };
+    output: {
+      "expiresAt": string;
+    };
+  };
   "com.atproto.sync.getBlob": {
     type: "query";
     outputEncoding: "*/*";
@@ -9261,6 +9737,33 @@ export const LEXICON_DEFINITION_KINDS = {
   "com.atproto.server.resetPassword": "procedure",
   "com.atproto.server.revokeAppPassword": "procedure",
   "com.atproto.server.updateEmail": "procedure",
+  "com.atproto.simplespace.addMember": "procedure",
+  "com.atproto.simplespace.checkUserAccess": "query",
+  "com.atproto.simplespace.createSpace": "procedure",
+  "com.atproto.simplespace.defs": "other",
+  "com.atproto.simplespace.deleteSpace": "procedure",
+  "com.atproto.simplespace.listMembers": "query",
+  "com.atproto.simplespace.removeMember": "procedure",
+  "com.atproto.simplespace.updateSpace": "procedure",
+  "com.atproto.space.applyWrites": "procedure",
+  "com.atproto.space.createRecord": "procedure",
+  "com.atproto.space.defs": "other",
+  "com.atproto.space.deleteRecord": "procedure",
+  "com.atproto.space.getBlob": "query",
+  "com.atproto.space.getDelegationToken": "query",
+  "com.atproto.space.getLatestCommit": "query",
+  "com.atproto.space.getRecord": "query",
+  "com.atproto.space.getRepo": "query",
+  "com.atproto.space.getSpace": "query",
+  "com.atproto.space.getSpaceCredential": "procedure",
+  "com.atproto.space.listRecords": "query",
+  "com.atproto.space.listRepoOps": "query",
+  "com.atproto.space.listRepos": "query",
+  "com.atproto.space.listSpaces": "query",
+  "com.atproto.space.notifySpaceDeleted": "procedure",
+  "com.atproto.space.notifyWrite": "procedure",
+  "com.atproto.space.putRecord": "procedure",
+  "com.atproto.space.registerNotify": "procedure",
   "com.atproto.sync.defs": "other",
   "com.atproto.sync.getBlob": "query",
   "com.atproto.sync.getBlocks": "query",
@@ -9727,6 +10230,31 @@ export const LEXICON_METHOD_TYPES = {
   "com.atproto.server.resetPassword": "procedure",
   "com.atproto.server.revokeAppPassword": "procedure",
   "com.atproto.server.updateEmail": "procedure",
+  "com.atproto.simplespace.addMember": "procedure",
+  "com.atproto.simplespace.checkUserAccess": "query",
+  "com.atproto.simplespace.createSpace": "procedure",
+  "com.atproto.simplespace.deleteSpace": "procedure",
+  "com.atproto.simplespace.listMembers": "query",
+  "com.atproto.simplespace.removeMember": "procedure",
+  "com.atproto.simplespace.updateSpace": "procedure",
+  "com.atproto.space.applyWrites": "procedure",
+  "com.atproto.space.createRecord": "procedure",
+  "com.atproto.space.deleteRecord": "procedure",
+  "com.atproto.space.getBlob": "query",
+  "com.atproto.space.getDelegationToken": "query",
+  "com.atproto.space.getLatestCommit": "query",
+  "com.atproto.space.getRecord": "query",
+  "com.atproto.space.getRepo": "query",
+  "com.atproto.space.getSpace": "query",
+  "com.atproto.space.getSpaceCredential": "procedure",
+  "com.atproto.space.listRecords": "query",
+  "com.atproto.space.listRepoOps": "query",
+  "com.atproto.space.listRepos": "query",
+  "com.atproto.space.listSpaces": "query",
+  "com.atproto.space.notifySpaceDeleted": "procedure",
+  "com.atproto.space.notifyWrite": "procedure",
+  "com.atproto.space.putRecord": "procedure",
+  "com.atproto.space.registerNotify": "procedure",
   "com.atproto.sync.getBlob": "query",
   "com.atproto.sync.getBlocks": "query",
   "com.atproto.sync.getCheckout": "query",
@@ -9992,6 +10520,19 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "com.atproto.server.resetPassword": "application/json",
   "com.atproto.server.revokeAppPassword": "application/json",
   "com.atproto.server.updateEmail": "application/json",
+  "com.atproto.simplespace.addMember": "application/json",
+  "com.atproto.simplespace.createSpace": "application/json",
+  "com.atproto.simplespace.deleteSpace": "application/json",
+  "com.atproto.simplespace.removeMember": "application/json",
+  "com.atproto.simplespace.updateSpace": "application/json",
+  "com.atproto.space.applyWrites": "application/json",
+  "com.atproto.space.createRecord": "application/json",
+  "com.atproto.space.deleteRecord": "application/json",
+  "com.atproto.space.getSpaceCredential": "application/json",
+  "com.atproto.space.notifySpaceDeleted": "application/json",
+  "com.atproto.space.notifyWrite": "application/json",
+  "com.atproto.space.putRecord": "application/json",
+  "com.atproto.space.registerNotify": "application/json",
   "com.atproto.sync.notifyOfUpdate": "application/json",
   "com.atproto.sync.requestCrawl": "application/json",
   "com.atproto.temp.addReservedHandle": "application/json",
@@ -10305,6 +10846,31 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "com.atproto.server.resetPassword": "application/json",
   "com.atproto.server.revokeAppPassword": "application/json",
   "com.atproto.server.updateEmail": "application/json",
+  "com.atproto.simplespace.addMember": "application/json",
+  "com.atproto.simplespace.checkUserAccess": "application/json",
+  "com.atproto.simplespace.createSpace": "application/json",
+  "com.atproto.simplespace.deleteSpace": "application/json",
+  "com.atproto.simplespace.listMembers": "application/json",
+  "com.atproto.simplespace.removeMember": "application/json",
+  "com.atproto.simplespace.updateSpace": "application/json",
+  "com.atproto.space.applyWrites": "application/json",
+  "com.atproto.space.createRecord": "application/json",
+  "com.atproto.space.deleteRecord": "application/json",
+  "com.atproto.space.getBlob": "*/*",
+  "com.atproto.space.getDelegationToken": "application/json",
+  "com.atproto.space.getLatestCommit": "application/json",
+  "com.atproto.space.getRecord": "application/json",
+  "com.atproto.space.getRepo": "application/vnd.ipld.car",
+  "com.atproto.space.getSpace": "application/json",
+  "com.atproto.space.getSpaceCredential": "application/json",
+  "com.atproto.space.listRecords": "application/json",
+  "com.atproto.space.listRepoOps": "application/json",
+  "com.atproto.space.listRepos": "application/json",
+  "com.atproto.space.listSpaces": "application/json",
+  "com.atproto.space.notifySpaceDeleted": "application/json",
+  "com.atproto.space.notifyWrite": "application/json",
+  "com.atproto.space.putRecord": "application/json",
+  "com.atproto.space.registerNotify": "application/json",
   "com.atproto.sync.getBlob": "*/*",
   "com.atproto.sync.getBlocks": "application/vnd.ipld.car",
   "com.atproto.sync.getCheckout": "application/vnd.ipld.car",
@@ -10796,6 +11362,35 @@ export interface GeneratedClient {
         "resetPassword"(input?: ProcedureInput<"com.atproto.server.resetPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.resetPassword">>;
         "revokeAppPassword"(input?: ProcedureInput<"com.atproto.server.revokeAppPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>;
         "updateEmail"(input?: ProcedureInput<"com.atproto.server.updateEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.updateEmail">>;
+      };
+      "simplespace": {
+        "addMember"(input?: ProcedureInput<"com.atproto.simplespace.addMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.simplespace.addMember">>;
+        "checkUserAccess"(params?: QueryParams<"com.atproto.simplespace.checkUserAccess">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.simplespace.checkUserAccess">>;
+        "createSpace"(input?: ProcedureInput<"com.atproto.simplespace.createSpace">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.simplespace.createSpace">>;
+        "deleteSpace"(input?: ProcedureInput<"com.atproto.simplespace.deleteSpace">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.simplespace.deleteSpace">>;
+        "listMembers"(params?: QueryParams<"com.atproto.simplespace.listMembers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.simplespace.listMembers">>;
+        "removeMember"(input?: ProcedureInput<"com.atproto.simplespace.removeMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.simplespace.removeMember">>;
+        "updateSpace"(input?: ProcedureInput<"com.atproto.simplespace.updateSpace">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.simplespace.updateSpace">>;
+      };
+      "space": {
+        "applyWrites"(input?: ProcedureInput<"com.atproto.space.applyWrites">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.applyWrites">>;
+        "createRecord"(input?: ProcedureInput<"com.atproto.space.createRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.createRecord">>;
+        "deleteRecord"(input?: ProcedureInput<"com.atproto.space.deleteRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.deleteRecord">>;
+        "getBlob"(params?: QueryParams<"com.atproto.space.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.getBlob">>;
+        "getDelegationToken"(params?: QueryParams<"com.atproto.space.getDelegationToken">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.getDelegationToken">>;
+        "getLatestCommit"(params?: QueryParams<"com.atproto.space.getLatestCommit">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.getLatestCommit">>;
+        "getRecord"(params?: QueryParams<"com.atproto.space.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.getRecord">>;
+        "getRepo"(params?: QueryParams<"com.atproto.space.getRepo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.getRepo">>;
+        "getSpace"(params?: QueryParams<"com.atproto.space.getSpace">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.getSpace">>;
+        "getSpaceCredential"(input?: ProcedureInput<"com.atproto.space.getSpaceCredential">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.getSpaceCredential">>;
+        "listRecords"(params?: QueryParams<"com.atproto.space.listRecords">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.listRecords">>;
+        "listRepoOps"(params?: QueryParams<"com.atproto.space.listRepoOps">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.listRepoOps">>;
+        "listRepos"(params?: QueryParams<"com.atproto.space.listRepos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.listRepos">>;
+        "listSpaces"(params?: QueryParams<"com.atproto.space.listSpaces">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.space.listSpaces">>;
+        "notifySpaceDeleted"(input?: ProcedureInput<"com.atproto.space.notifySpaceDeleted">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.notifySpaceDeleted">>;
+        "notifyWrite"(input?: ProcedureInput<"com.atproto.space.notifyWrite">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.notifyWrite">>;
+        "putRecord"(input?: ProcedureInput<"com.atproto.space.putRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.putRecord">>;
+        "registerNotify"(input?: ProcedureInput<"com.atproto.space.registerNotify">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.space.registerNotify">>;
       };
       "sync": {
         "getBlob"(params?: QueryParams<"com.atproto.sync.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getBlob">>;

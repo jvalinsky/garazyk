@@ -236,11 +236,15 @@ async function startOAuthFlow() {
     }
 
     const parUrl = new URL("/oauth/par", LAB_CONFIG.pdsUrl);
-    const parResponse = await fetch(parUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: parParams.toString(),
-    });
+    const parResponse = await fetchWithDPoPRetry(
+      parUrl,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: parParams.toString(),
+      },
+      dpopKeyPair,
+    );
 
     if (!parResponse.ok) {
       throw new Error(`PAR request failed: ${parResponse.statusText}`);
@@ -249,9 +253,10 @@ async function startOAuthFlow() {
     const parData = await parResponse.json();
     const requestUri = parData.request_uri;
 
-    // Redirect to PDS authorize page
+    // Redirect to PDS authorize page. Only client_id and request_uri may
+    // accompany a PAR request_uri — the PDS rejects any other direct
+    // authorization parameter (e.g. response_type) alongside it.
     const authUrl = new URL("/oauth/authorize", LAB_CONFIG.pdsUrl);
-    authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("client_id", LAB_CONFIG.clientId);
     authUrl.searchParams.set("request_uri", requestUri);
 
