@@ -56,7 +56,7 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
         if (error) *error = [NSError errorWithDomain:ATURIErrorDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"AT URI has empty path segment"}];
         return nil;
     }
-    if (collection && collection.length > 0 && ![self isValidCollection:collection]) {
+    if (collection && ![self isValidCollection:collection]) {
         if (error) *error = [NSError errorWithDomain:ATURIErrorDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT URI collection name"}];
         return nil;
     }
@@ -66,11 +66,11 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
         if (error) *error = [NSError errorWithDomain:ATURIErrorDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"AT URI has empty path segment"}];
         return nil;
     }
-    if (rkey && rkey.length > 0 && rkey.length > 512) {
+    if (rkey.length > 512) {
         if (error) *error = [NSError errorWithDomain:ATURIErrorDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"AT URI record key too long"}];
         return nil;
     }
-    if (rkey && rkey.length > 0 && ![self isValidRkey:rkey]) {
+    if (rkey && ![self isValidRkey:rkey]) {
         if (error) *error = [NSError errorWithDomain:ATURIErrorDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT URI record key"}];
         return nil;
     }
@@ -86,20 +86,16 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
 + (BOOL)isValidAuthority:(NSString *)authority {
     if (authority.length == 0) return NO;
     if ([authority hasPrefix:@"did:"]) {
-        NSArray *parts = [authority componentsSeparatedByString:@":"];
-        if (parts.count < 3) return NO;
-        if ([parts[1] length] == 0 || [parts[2] length] == 0) return NO;
-        NSString *method = parts[1];
-        for (NSUInteger i = 0; i < method.length; i++) {
-            unichar c = [method characterAtIndex:i];
-            if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))) return NO;
-        }
-        NSString *identifier = [[parts subarrayWithRange:NSMakeRange(2, parts.count - 2)] componentsJoinedByString:@":"];
-        for (NSUInteger i = 0; i < identifier.length; i++) {
-            unichar c = [identifier characterAtIndex:i];
-            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.')) return NO;
-        }
-        return YES;
+        // Generic DID syntax from the AT Protocol spec:
+        // ^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$
+        // Method-specific rules (e.g. did:plc shape) are validateDID:'s job,
+        // not the URI parser's; AT-URI fixtures accept short plc identifiers.
+        static NSRegularExpression *didRegex = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            didRegex = [NSRegularExpression regularExpressionWithPattern:@"^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$" options:0 error:nil];
+        });
+        return [didRegex numberOfMatchesInString:authority options:0 range:NSMakeRange(0, authority.length)] > 0;
     }
     // Handle validation: must have at least 2 labels, TLD must start with a letter
     NSArray<NSString *> *labels = [authority componentsSeparatedByString:@"."];
@@ -120,7 +116,7 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
         if (first == '-' || first == '_') return NO;
         for (NSUInteger i = 0; i < part.length; i++) {
             unichar c = [part characterAtIndex:i];
-            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.')) return NO;
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-')) return NO;
         }
     }
     return YES;
