@@ -1049,6 +1049,13 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 - (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
                                                 params:(NSArray *)params
                                                  error:(NSError **)error {
+    // A long-lived caller (e.g. OAuth2Handler) may hold this instance across
+    // a pool eviction that closed the underlying connection. Reopening here
+    // is idempotent (openWithError: is a no-op when already open) and reuses
+    // the same on-disk database, so it is safe to attempt unconditionally.
+    if (!self.isOpen) {
+        [self openWithError:nil];
+    }
     __block id result = nil;
     [self safeExecuteSync:^{
 
@@ -1113,6 +1120,10 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
                             params:(NSArray *)params
                              error:(NSError **)error {
+    // See executeParameterizedQuery:params:error: above.
+    if (!self.isOpen) {
+        [self openWithError:nil];
+    }
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
