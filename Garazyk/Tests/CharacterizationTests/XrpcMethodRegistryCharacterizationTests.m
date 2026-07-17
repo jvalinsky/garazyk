@@ -203,8 +203,8 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 
     HttpResponse *response =
         XrpcCharacterizationDispatchRequest(dispatcher, @"app.bsky.labeler.getServices");
-    XCTAssertEqual(response.statusCode, HttpStatusOK);
-    XCTAssertEqualObjects(response.jsonBody[@"views"], @[]);
+    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
 - (void)testCharacterization_RepeatedRoutePackInitializationReplacesFullRegistry {
