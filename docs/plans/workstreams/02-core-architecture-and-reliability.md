@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-14
+last_verified: 2026-07-16
 ---
 
 # Core Architecture and Reliability
@@ -102,6 +102,10 @@ opens actor stores per account.
 Build byte-for-byte CAR/STAR fixtures, then introduce an incremental producer
 behind a bounded fallback. Track peak memory in tests. Replace N+1 account
 summary reads with indexed materialized metadata where measurements justify it.
+
+When the Sync 1.1 remainder (export block ordering, collection-based
+repository subsets) reaches published spec text, implement it in this lane;
+workstream 01 S6 tracks the spec status.
 
 ## A7. Low-priority interface cleanup
 
