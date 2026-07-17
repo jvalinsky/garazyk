@@ -97,12 +97,28 @@ Account lifecycle tests must follow the current specifications:
 
 ### Gated Objective-C coverage into CI
 
-Twenty-eight `AllTests` classes are gated behind `PDS_RUN_INTEGRATION_TESTS=1`
-and `PDS_RUN_SOCKET_TESTS=1` and are silently skipped in the default run. They
-are not failures, but a coverage blind spot. Before merge, run both with
-services available, then fold both invocations into the quality-gate workflow
-and CI so the gated classes are measured, not skipped. (Folded here from the
-retired 2026-07-13 remediation plan, WS5.)
+Twenty-nine `AllTests` classes are gated (now via the test binary's
+`--gated=run` flag; the old `PDS_RUN_INTEGRATION_TESTS`/`PDS_RUN_SOCKET_TESTS`
+env vars were replaced) and are skipped in the default run. Before folding
+them into CI, they must pass. (Folded here from the retired 2026-07-13
+remediation plan, WS5.)
+
+*Measured baseline (2026-07-16, full `AllTests --gated=run`, 3454 tests):*
+76 assertion failures across 11 gated classes, each reproducible when the
+class is run in isolation, so this is suite rot rather than cross-suite
+interference: XrpcIntegrationTests (18), UILabIntegrationTests (14),
+FirehoseIntegrationTests (13), ATProtoMediaServiceRuntimeTests (7, all
+"Duplicate XRPC handler registration for app.bsky.video.getJobStatus"),
+OAuth2EndpointTests (6), EmailIntegrationTests (6), OAuthIntegrationTests
+(5), CommitChainTests (3), PDSApplicationTests (2), PDSWebSocketServerTests
+(1), FollowersCountIntegrationTests (1). All non-gated tests pass in the
+same run. `E2EDockerTests` self-skips without a reachable docker stack.
+
+The premature `--gated=run` enablement from `54869a1c6` (and its ctest
+alignment) is reverted until this baseline is repaired; enabling it before
+then would leave CI permanently red. Repair class-by-class, then flip the
+`add_test` invocation in `CMakeLists.txt` (see the comment there) plus the
+`scripts/test/run-tests.sh`/`run-asan-tests.sh` invocations.
 
 ## S6. Published-spec conformance matrix
 
