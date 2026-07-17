@@ -110,6 +110,20 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
     });
 }
 
+- (void)closeForUpgrade {
+    dispatch_async(self.coordinationQueue, ^{
+        if (self.isClosed) {
+            return;
+        }
+        self.isClosed = YES;
+        self.readScheduled = NO;
+        [self invalidateIdleHeaderDeadline];
+        [self completeCurrentHeader];
+        // Do NOT cancel the connection — it is being handed off
+        // to the WebSocket handler.
+    });
+}
+
 - (void)scheduleRead {
     if (self.readScheduled || self.isPaused || self.isClosed) {
         return;
