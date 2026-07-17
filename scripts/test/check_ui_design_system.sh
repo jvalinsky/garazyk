@@ -4,6 +4,14 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "${script_dir}/../.." && pwd))"
 
+# Every check below shells out to ripgrep. Without this guard a missing rg
+# makes each check silently report a false violation ("command not found"
+# reads as "pattern not found") and the script fails for the wrong reason.
+if ! command -v rg >/dev/null 2>&1; then
+  echo "[check-ui-design-system] ERROR: ripgrep (rg) is required. Install it (brew install ripgrep) and re-run." >&2
+  exit 1
+fi
+
 html_files=(
   "${repo_root}/Garazyk/Sources/App/MSTViewer/Assets/index.html"
   "${repo_root}/Garazyk/Sources/App/OAuthDemo/Assets/index.html"
