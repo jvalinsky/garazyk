@@ -149,7 +149,11 @@
     self.client = [[XrpcTestClient alloc] init];
     self.plcServer = [[MockExternalServer alloc] initWithPort:0];
     self.handleServer = [[MockExternalServer alloc] initWithPort:0];
-    self.dispatcher = [XrpcDispatcher sharedDispatcher];
+    // A private instance, not the process-wide shared singleton: setUp
+    // re-registers these mock routes before every test method, and the
+    // singleton doesn't forget a prior test's registrations, so the
+    // second method onward hit "Duplicate XRPC handler registration".
+    self.dispatcher = [[XrpcDispatcher alloc] init];
 
     [self setupMockHandlers];
 
