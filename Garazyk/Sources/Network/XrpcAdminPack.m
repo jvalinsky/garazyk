@@ -27,6 +27,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Core/ATProtoValidator.h"
+#import "Core/ATURI.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
@@ -934,6 +935,11 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
         [response setJsonBody:@{@"success": @YES}];
     }];
 
+    // Compatibility policy: This endpoint tracks the upstream com.atproto.admin.getRecord
+    // lexicon exactly. Output shape matches {uri, cid?, value}. If the upstream lexicon
+    // adds new required fields, this handler must be updated to provide them. Custom
+    // extensions (e.g., additional output fields) should use the tools.garazyk.* namespace
+    // rather than extending this endpoint.
     [dispatcher registerComAtprotoAdminGetRecord:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
@@ -949,22 +955,24 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
             return;
         }
 
-        NSString *uri = [request queryParamForKey:@"uri"];
-        if (uri.length == 0 || ![uri hasPrefix:@"at://"]) {
+        NSString *uriString = [request queryParamForKey:@"uri"];
+        if (uriString.length == 0) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid uri parameter"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing required parameter: uri"}];
             return;
         }
 
-        NSArray<NSString *> *parts = [[uri substringFromIndex:5] componentsSeparatedByString:@"/"];
-        if (parts.count < 3) {
+        NSError *uriError = nil;
+        ATURI *parsedUri = [ATURI uriWithString:uriString error:&uriError];
+        if (!parsedUri) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid AT-URI"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid AT-URI format"}];
             return;
         }
-        NSString *did = parts[0];
+
+        NSString *did = parsedUri.did;
         NSError *error = nil;
-        NSDictionary *record = [recordService getRecord:uri forDid:did error:&error];
+        NSDictionary *record = [recordService getRecord:uriString forDid:did error:&error];
         if (!record) {
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RecordNotFound", @"message": error.localizedDescription ?: @"Record not found"}];
