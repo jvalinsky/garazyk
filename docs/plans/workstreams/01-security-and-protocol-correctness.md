@@ -1,7 +1,7 @@
 ---
 title: Security and Protocol Correctness
 status: active
-last_verified: 2026-07-14
+last_verified: 2026-07-17
 ---
 
 # Security and Protocol Correctness
@@ -38,30 +38,24 @@ Generated NSID constants depend on this task. Do not start that migration first.
 
 ## S3. Truthful XRPC coverage
 
-The current report checks only whether an endpoint NSID string is registered. It
-does not compare verbs, parameters, input/output schemas, encoding, or errors.
-Dynamic AppView routes are also invisible to the static registry scan.
+**Status: complete (report-only).** Split metrics report built at
+`reports/xrpc_split_metrics.md` (2026-07-17). Six separate metrics published:
+registered (213), schema-covered (207), behavior-verified (124), static routes
+(213), dynamic AppView routes (0), Garazyk extensions (0). 89 endpoints
+without behavior verification identified. Script:
+`scripts/docs/generate_xrpc_split_metrics.cjs`.
 
-Publish separate metrics:
+Semantic fixes applied (2026-07-17):
 
-- registered endpoints;
-- schema-covered endpoints;
-- behavior-verified endpoints;
-- static dispatcher routes;
-- dynamic AppView routes;
-- explicit Garazyk compatibility extensions.
-
-Start schema validation in report-only mode. Enforce after the baseline
-mismatches are classified.
-
-Required semantic fixes:
-
-- `chat.bsky.actor.declaration` is a record, not a query. Remove the phantom
-  query or assign a Garazyk-owned extension NSID.
-- `app.bsky.labeler.getServices` must validate required `dids` and return
-  indexed services instead of constant empty views.
-- `com.atproto.admin.getRecord` needs an explicit compatibility policy and local
-  schema under a namespace Garazyk owns, or removal.
+- `chat.bsky.actor.declaration` phantom query removed from
+  `XrpcChatBskyActorPack.m` — lexicon declares type "record", not "query".
+- `app.bsky.labeler.getServices` now validates required `dids` parameter and
+  returns 400 on missing/empty; spurious `cursor` field removed from response.
+  Both registration sites fixed (`XrpcAppBskyPack.m`, `AppViewXRpcRoutePack.m`).
+  Tests updated.
+- `com.atproto.admin.getRecord` uses `ATURI` class for proper AT-URI parsing
+  instead of naive string splitting; explicit compatibility policy documented
+  in code comment.
 
 ## S4. Absolute HTTP deadlines
 
@@ -110,10 +104,41 @@ services available, then fold both invocations into the quality-gate workflow
 and CI so the gated classes are measured, not skipped. (Folded here from the
 retired 2026-07-13 remediation plan, WS5.)
 
+## S6. Published-spec conformance matrix
+
+**Status: complete (report-only).** Matrix built at
+`docs/reports/spec-conformance-matrix.md` (commit `703723c4c`,
+2026-07-17). 20 spec rows + Proposal 0016 = 21 rows total. 16 supported,
+4 partial, 0 gap. Every "supported" row names at least one executable
+proof (unit test, scenario, or CI gate).
+
+Known gaps verified against codebase and seeded as backlog leads:
+
+- **G1: Permissions — granular scope evaluation.** `PDSSpaceScope.h/.m`
+  implements `space:` scope parsing; no `repo:`/`rpc:`/`blob:`/`account:`/
+  `include:` resource-type scope evaluation found. Required for production
+  readiness. Own lane.
+- **G2: Sync 1.1 remainder.** Export block ordering and collection-based
+  repo subsets still in-progress upstream. Track alongside workstream 02 A6.
+- **G3: Account management surfaces.** S5 covers propagation; confirm
+  deactivation/deletion/export UX endpoints against accounts spec.
+- **G4: Labels — self-signing key.** Label distribution and query endpoints
+  implemented (`XrpcLabelPack.m`, 671 lines); no `#atproto_label` key
+  generation or label signature verification found.
+
+The matrix builds on S3's truthful XRPC metrics but is broader: spec pages,
+not endpoints, are the unit. Report-only; a red row is a lead, not a release
+blocker, until triaged into a workstream.
+
+Rollback: documentation-only until a gap lane starts; each gap lane carries
+its own rollback notes.
+
 Primary sources:
 
+- [Specification index](https://atproto.com/specs/atp)
 - [Account lifecycle](https://atproto.com/specs/account)
 - [Event streams](https://atproto.com/specs/event-stream)
 - [Synchronization](https://atproto.com/specs/sync)
 - [OAuth profile](https://atproto.com/specs/oauth)
+- [Permissions](https://atproto.com/specs/permissions)
 - [did:plc v0.3](https://web.plc.directory/spec/v0.1/did-plc)
