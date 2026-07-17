@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminAuthXrpcTestBase.h"
+#import "Admin/PDSAdminController.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "PDSHttpTestUtilities.h"
@@ -717,6 +718,28 @@
   XCTAssertNotNil(responseWithRev.jsonBody[@"rev"]);
   XCTAssertTrue(
       [responseWithRev.jsonBody[@"rev"] isKindOfClass:[NSString class]]);
+}
+
+- (void)testApplicationSyncGetRepoStatusReturnsInactiveAfterTakedown {
+  NSError *takedownError = nil;
+  BOOL takenDown = [self.application.adminController takeDownAccount:self.userDid
+                                                               reason:@"test takedown"
+                                                                error:&takedownError];
+  XCTAssertTrue(takenDown, @"takeDownAccount failed: %@", takedownError);
+
+  NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
+  HttpResponse *response =
+      [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
+                       queryString:query
+                       queryParams:@{@"did" : self.userDid}
+                           headers:@{}];
+  XCTAssertEqual(response.statusCode, 200);
+  NSDictionary *body = response.jsonBody;
+  XCTAssertNotNil(body);
+  XCTAssertEqualObjects(body[@"active"], @NO,
+                        @"getRepoStatus must not report active:true for a "
+                        @"taken-down account");
+  XCTAssertEqualObjects(body[@"status"], @"takendown");
 }
 
 - (void)testApplicationSyncGetRepoStatusReturnsNotFoundForInvalidDid {
