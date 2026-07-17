@@ -336,4 +336,42 @@
     XCTAssertFalse(self.mockConnection.isCancelled);
 }
 
+- (void)testCloseForUpgradeDoesNotCancelConnection {
+    [self.coordinator start];
+    [self.coordinator closeForUpgrade];
+
+    // Allow the async dispatch to settle
+    XCTestExpectation *settledExpectation = [self expectationWithDescription:@"closeForUpgrade settled"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(100 * NSEC_PER_MSEC)),
+                   dispatch_get_main_queue(), ^{
+        [settledExpectation fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    XCTAssertFalse(self.mockConnection.isCancelled);
+    XCTAssertEqual(self.mockConnection.cancelCount, (NSUInteger)0);
+}
+
+- (void)testCloseForUpgradeStopsReadScheduling {
+    XCTestExpectation *noHandlerExp = [self expectationWithDescription:@"handler not called after closeForUpgrade"];
+    noHandlerExp.inverted = YES;
+
+    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+        [noHandlerExp fulfill];
+    };
+
+    [self.coordinator start];
+    [self.coordinator closeForUpgrade];
+
+    // Inject data after closeForUpgrade — should not produce a request
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(50 * NSEC_PER_MSEC)),
+                   dispatch_get_main_queue(), ^{
+        [self.mockConnection injectReceiveData:[@"GET /x HTTP/1.1\r\nHost: h\r\n\r\n"
+                                          dataUsingEncoding:NSUTF8StringEncoding]];
+    });
+
+    [self waitForExpectationsWithTimeout:0.3 handler:nil];
+    XCTAssertFalse(self.mockConnection.isCancelled);
+}
+
 @end
