@@ -65,6 +65,9 @@ NSString * const ATProtoVideoTranscoderErrorDomain = @"com.atproto.video.transco
     }];
 
     dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_SEC));
+    // Write *error here on the caller's thread, not inside the completion
+    // block: an __autoreleasing store from the background queue races that
+    // queue's autorelease pool drain and can hand back a dangling pointer.
     if (error) *error = capturedError;
     return result;
 }
