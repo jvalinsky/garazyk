@@ -95,6 +95,96 @@ Account lifecycle tests must follow the current specifications:
   gaps;
 - suspension and takedown behavior is tested at both write and read boundaries.
 
+### Backpressure and adversarial ingress (2026-07-17)
+
+**Complete.** `SubscribeReposHandler`'s pending-send/byte limits
+(`maxPendingSendsPerConnection`/`maxPendingBytesPerConnection`) were already
+configurable via `PDS_FIREHOSE_MAX_PENDING_SENDS`/`_BYTES` env vars, and
+`docker/local-network/docker-compose.yml` already set them low
+(1 / 10000) for its topology — the gap was that the topology-compiler preset
+(`scripts/scenarios/topologies/garazyk-default.json`) and `--binary` mode
+(`packages/hamownia/binary_services.ts`) did not, and that scenario
+33 (`33_tortoise_consumer.ts`) slept a blind 90 seconds hoping OS-level TCP
+buffering would eventually trip `ConsumerTooSlow`, rather than checking
+early. Added the same two env vars to the topology JSON and to
+`binary_services.ts`'s `"pds"` case (as a default, overridable via the
+existing `options.env` extension point), and rewrote scenario 33 to poll
+for the connection closing instead of sleeping — it now passes in ~1-2s
+instead of ~95s, deterministically, verified over multiple runs via
+`deno run -A packages/hamownia/cli.ts run --binary --setup --teardown 33`.
+(Note: `WebSocketConnection.closeWithCode:` clears the outbound message
+queue before writing the close frame, so the server's `#error` frame
+naming `ConsumerTooSlow` is not reliably flushed before the abrupt close —
+the scenario checks for it as a soft/informational signal, not a hard
+assertion; the functionally-important behavior, the connection actually
+being dropped, is the hard assertion and is now reliable.)
+
+New scenario 95 (`95_adversarial_ingress.ts`) closes the gap the existing
+adversarial scenarios left: 65 (firehose fuzzing) and 66 (CBOR bombs) only
+ever exercise the Deno-side firehose *client* parser, never the live PDS;
+64 (MST poisoning) hits a live endpoint but with well-formed, merely
+numerous/colliding JSON. Scenario 95 sends genuinely malformed
+(truncated-JSON), oversized (10MB record body), and junk-binary
+(`uploadBlob`) payloads directly at the live `com.atproto.repo.*`
+endpoints and asserts a 4xx (not 5xx/crash) plus a passing health check
+after each. Verified green via
+`deno run -A packages/hamownia/cli.ts run --binary --setup --teardown 95`.
+
+### Account lifecycle (2026-07-17) — partially verified, real gaps found
+
+A focused code audit (not just testing) found the write/read enforcement
+boundary on the PDS itself works correctly and is already proven by
+scenario 55 (`rejectUnavailableRepoDid`/`rejectUnavailableSyncDid` in
+`XrpcRepoPack.m`/`XrpcSyncPack.m`, gated on `account.status` and
+`admin_takedowns.applied`). One concrete bug was found and fixed:
+`com.atproto.sync.getRepoStatus` (`XrpcSyncPack.m`) hardcoded
+`active: true` unconditionally, ignoring both `account.status` and
+takedown state — a takendown/deactivated account's own status endpoint
+lied about being active. Fixed to compute `active`/`status` from both
+signals, matching the `#account` lexicon's `knownValues`; covered by a new
+test, `AdminAuthSyncTests testApplicationSyncGetRepoStatusReturnsInactiveAfterTakedown`.
+
+Two items from workstream 01 S5's list are **not implemented**, not just
+untested — closing them is real feature work, out of scope for a test-writing
+slice, and is filed as a follow-up rather than rushed here:
+
+- **"Downstream services stop redistributing inactive accounts" — not
+  wired at all.** User-initiated deactivate/activate does post
+  `PDSAccountActivatedNotification`/`PDSAccountDeactivatedNotification`,
+  which `SubscribeReposHandler` observes and turns into a real `#account`
+  firehose event. Admin-initiated takedown
+  (`PDSAdminService.takeDownAccount:reason:error:`) posts no notification
+  at all — `SubscribeReposHandler`'s `-broadcastAccountTakedown:` exists
+  but has zero production callers anywhere in the codebase. Even when an
+  `#account` event *is* emitted, `RelayClient`'s
+  `-firehoseSubscription:didReceiveAccountEvent:` only updates
+  `currentSeq` and never forwards it — `RelayClientDelegate` doesn't even
+  declare an account-event method, so `AppViewIngestEngine` has no hook to
+  implement one. `RelayRepoStateManager` has the right model
+  (`RelayRepoStatus`: Active/Desynchronized/InProgress/Throttled/Tombstoned)
+  and the right methods (`-handleAccountEventForRepo:status:` etc.) but
+  zero callers anywhere — dead code. `RelayDownstreamHandler` does
+  passively re-broadcast an incoming `#account` event to its own
+  subscribers, so simple passthrough works; there is no enforcement layer
+  anywhere that stops indexing/redistributing an inactive account's
+  records.
+- **Gap-free cursor resume across a real disconnect/reconnect — untested.**
+  `FirehoseProtocolSession` monotonically increments one sequence counter
+  shared across all event types and correctly seeds from the persisted max
+  on restart (`SubscribeReposHandler.m:1179-1200`); `RelayUpstreamManager`
+  tracks per-upstream sequence and reconnect backoff. But no test (ObjC or
+  Deno) proves a live consumer reconnecting with `?cursor=N` mid-stream
+  resumes with no gap and no duplicate — `09_firehose_streaming.ts` has no
+  cursor/resume/reconnect references at all.
+
+Implementing the downstream-propagation wiring (admin takedown →
+notification → firehose event; `RelayClientDelegate` account-event method;
+`AppViewIngestEngine` and `RelayRepoStateManager` actually enforcing it) is
+a moderation-relevant, multi-file feature change that deserves its own
+scoped, reviewed implementation — not something to fold into a
+verification slice. Filed as a follow-up. The cursor-resume test is
+smaller and more self-contained; left as the next actionable item here.
+
 ### Gated Objective-C coverage into CI
 
 Twenty-nine `AllTests` classes are gated (now via the test binary's

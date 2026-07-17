@@ -427,6 +427,17 @@ export async function resolveBinaryServiceStartPlan(
       env.PDS_ALLOW_HTTP = "1";
       env.PDS_PLC_KEYS_DIR = join(dataDir, "keys");
       env.PDS_PLC_URL = urls.plc ?? serviceUrl("plc");
+      // Matches docker/local-network/docker-compose.yml and
+      // scripts/scenarios/topologies/garazyk-default.json: keeps firehose
+      // backpressure (ConsumerTooSlow) deterministic in tests instead of
+      // depending on OS TCP buffering. Production defaults (512 sends /
+      // 16MB) are untouched — this only applies to the test topology.
+      if (env.PDS_FIREHOSE_MAX_PENDING_SENDS === undefined) {
+        env.PDS_FIREHOSE_MAX_PENDING_SENDS = "1";
+      }
+      if (env.PDS_FIREHOSE_MAX_PENDING_BYTES === undefined) {
+        env.PDS_FIREHOSE_MAX_PENDING_BYTES = "10000";
+      }
       break;
     }
     case "relay":

@@ -1140,7 +1140,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     NSError *error = nil;
-    id account = [serviceDatabases getAccountByDid:did error:&error];
+    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&error];
     if (!account) {
       GZ_LOG_DEBUG_C(@"Sync", @"Account not registered globally for DID: %@",
                       did);
@@ -1183,9 +1183,24 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
+    NSError *takedownError = nil;
+    BOOL takedownActive = [adminController isAccountTakedownActive:did error:&takedownError];
+    NSString *accountStatus = [account.status lowercaseString];
+    BOOL statusActive = accountStatus.length == 0 || [accountStatus isEqualToString:@"active"];
+
     NSMutableDictionary *jsonBody = [NSMutableDictionary dictionary];
     jsonBody[@"did"] = did;
-    jsonBody[@"active"] = @YES;
+    jsonBody[@"active"] = @(statusActive && !takedownActive);
+    // subscribeRepos.json's #account knownValues: takendown, suspended,
+    // deleted, deactivated, desynchronized, throttled. Only takedown and
+    // deactivated are currently distinguishable from this account's stored
+    // state; omit "status" entirely while active, matching the lexicon's
+    // optional field.
+    if (takedownActive) {
+      jsonBody[@"status"] = @"takendown";
+    } else if (!statusActive) {
+      jsonBody[@"status"] = @"deactivated";
+    }
 
     if (latestRev) {
       jsonBody[@"rev"] = latestRev;

@@ -95,11 +95,17 @@ documentation, TUI, package, and refactor plans.
   first slice of Phase 4/workstream 01 S5): the 2026-07-16 baseline of 76
   failures across 11 classes is repaired (per-class root causes in
   workstream 01 S5), a full `AllTests --gated=run` pass on 2026-07-17 is
-  green (3454 tests, 0 failures), and `ctest`/`scripts/test/run-tests.sh`/
-  `run-asan-tests.sh` all run with `--gated=run` again. Phase 4's remaining
-  scope — deterministic firehose backpressure, adversarial ingress through
-  live PDS/Relay/AppView boundaries, and account lifecycle correctness
-  (Phase 2 items 4-5) — is still open.
+  green (3455 tests, 0 failures, re-confirmed 2026-07-17), and
+  `ctest`/`scripts/test/run-tests.sh`/`run-asan-tests.sh` all run with
+  `--gated=run` again. Phase 4's remaining scope has since progressed:
+  deterministic firehose backpressure and adversarial ingress (Phase 2
+  item 4) are complete — see current-state note above this one for the
+  gated-CI item and workstream 01 S5 for backpressure/adversarial
+  evidence. Account lifecycle (Phase 2 item 5) is partial: the write/read
+  boundary already worked and is tested; a real `getRepoStatus` bug is
+  fixed; downstream account-status propagation to Relay/AppView is a
+  genuine, unimplemented gap (not just untested) and is filed as its own
+  follow-up rather than folded into this phase.
 
 ## Priority model
 
@@ -232,10 +238,26 @@ deterministic generator tests.
    `app.bsky.labeler.getServices` validates required `dids`,
    `com.atproto.admin.getRecord` uses `ATURI` with documented compatibility
    policy. Schema validation in report-only mode.
-4. Make firehose backpressure tests deterministic with test-only low limits.
-   Inject adversarial data through real PDS/Relay/AppView boundaries.
-5. Verify account state propagation, deletion, suspension, and takedown using
-   current AT Protocol account and sync semantics.
+4. **Complete (2026-07-17).** Firehose backpressure is deterministic:
+   `PDS_FIREHOSE_MAX_PENDING_SENDS`/`_BYTES` now plumbed through `--binary`
+   mode and the topology-compiler preset (docker-compose already had it);
+   scenario 33 rewritten to poll for the drop instead of sleeping 90s.
+   Adversarial data now hits the real PDS boundary too: new scenario 95
+   sends malformed/oversized/junk payloads at live repo/blob endpoints and
+   asserts rejection plus continued health (scenarios 65/66 previously
+   only exercised the Deno-side parser). Evidence in workstream 01 S5.
+5. **Partial (2026-07-17).** The write/read enforcement boundary for
+   suspended/takendown accounts already worked and is tested (scenario
+   55). Fixed one real bug: `com.atproto.sync.getRepoStatus` hardcoded
+   `active: true` unconditionally regardless of account status or
+   takedown state. Found, but did not implement: downstream services
+   (Relay, AppView) do not actually react to account status at all —
+   admin takedown never posts a notification, `RelayClientDelegate` has
+   no account-event method, and `RelayRepoStateManager`'s status-tracking
+   methods have zero callers. This is a real multi-file feature gap, not
+   a test gap; filed as a follow-up rather than implemented here (see
+   workstream 01 S5 for exact call sites). Gap-free firehose cursor resume
+   across a live reconnect is also still untested.
 6. Run the permissioned-spaces multi-PDS acceptance scenarios (93 and 94)
    against an independently operated PDS3, including the private-blob and
    pruned-oplog recovery cases, and move the compatibility-gate rows on

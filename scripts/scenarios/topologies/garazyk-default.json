@@ -60,7 +60,9 @@
         "GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS": "1",
         "PDS_RUNNING_TESTS": "1",
         "PDS_USE_KEYCHAIN": "false",
-        "PDS_ADMIN_PASSWORD": "admin-localdev"
+        "PDS_ADMIN_PASSWORD": "admin-localdev",
+        "PDS_FIREHOSE_MAX_PENDING_SENDS": "1",
+        "PDS_FIREHOSE_MAX_PENDING_BYTES": "10000"
       },
       "ports": ["2583:2583"],
       "volumes": [
@@ -125,7 +127,9 @@
         "GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS": "1",
         "PDS_RUNNING_TESTS": "1",
         "PDS_USE_KEYCHAIN": "false",
-        "PDS_ADMIN_PASSWORD": "admin-localdev"
+        "PDS_ADMIN_PASSWORD": "admin-localdev",
+        "PDS_FIREHOSE_MAX_PENDING_SENDS": "1",
+        "PDS_FIREHOSE_MAX_PENDING_BYTES": "10000"
       },
       "ports": ["2587:2587"],
       "volumes": [
