@@ -608,6 +608,8 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
         id subject = value[@"subject"];
         if ([subject isKindOfClass:[NSString class]]) {
             record.subjectDid = subject;
+        } else if ([subject isKindOfClass:[NSDictionary class]] && subject[@"did"]) {
+            record.subjectDid = subject[@"did"];
         }
     }
 
