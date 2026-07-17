@@ -14,4 +14,4 @@ make AllTests -j$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
 echo "Running tests with ASan..."
 # ASAN_OPTIONS can be used to tune behavior
 export ASAN_OPTIONS="detect_leaks=1:color=always"
-./tests/AllTests
+./tests/AllTests --gated=run

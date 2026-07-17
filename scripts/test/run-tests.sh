@@ -12,5 +12,5 @@ fi
 
 echo "Running all tests..."
 "${script_dir}/check_ui_design_system.sh"
-"${test_binary}"
+"${test_binary}" --gated=run
 echo "Tests complete."
