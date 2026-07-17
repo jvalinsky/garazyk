@@ -80,6 +80,7 @@
                [arg isEqualToString:@"-d"]) {
       if (i + 1 < args.count) {
         context.dataDir = args[++i];
+        context.dataDirExplicitlySet = YES;
       }
     } else if ([arg isEqualToString:@"--config"] ||
                [arg isEqualToString:@"-c"]) {
