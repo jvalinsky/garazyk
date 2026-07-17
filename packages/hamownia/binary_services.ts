@@ -379,7 +379,13 @@ export async function resolveBinaryServiceStartPlan(
   let args: string[];
   switch (name) {
     case "plc":
-      args = ["serve", "--port", String(port), "--data-dir", dataDir];
+      args = [
+        "serve",
+        "--port",
+        String(port),
+        "--database",
+        join(dataDir, "plc.db"),
+      ];
       env.PLC_HOURLY_LIMIT = "5";
       env.PLC_DAILY_LIMIT = "15";
       env.PLC_WEEKLY_LIMIT = "50";
