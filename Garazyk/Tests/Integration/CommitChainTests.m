@@ -18,6 +18,7 @@
 @interface SubscribeReposHandler (CommitChainTesting)
 @property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *attachedConnections;
 - (void)ensureSequenceInitialized;
+- (void)startObservingNotifications;
 @end
 
 // Mock Connection
@@ -177,6 +178,11 @@
     // Attach mock connection
     CommitChainMockConnection *mockConn = [[CommitChainMockConnection alloc] init];
     [handler ensureSequenceInitialized];
+    // Normally registered by -startOnPort:error:, which this test skips
+    // since it drives commits through a mock connection instead of a real
+    // WebSocket server; without it, -handleRecordChange: never fires and
+    // no commit is ever broadcast.
+    [handler startObservingNotifications];
 
     @synchronized (handler.attachedConnections) {
         [(NSMutableSet *)handler.attachedConnections addObject:mockConn];
