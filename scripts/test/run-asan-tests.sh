@@ -9,9 +9,16 @@ mkdir -p "${repo_root}/build-asan"
 cd "${repo_root}/build-asan"
 
 cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
-make AllTests -j$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
+# Bounded parallelism: ASan objects are large and unbounded builds have
+# exhausted memory on 16 GB dev machines.
+make AllTests -j4
 
 echo "Running tests with ASan..."
-# ASAN_OPTIONS can be used to tune behavior
-export ASAN_OPTIONS="detect_leaks=1:color=always"
-./tests/AllTests --gated=run
+# LeakSanitizer is not supported by Apple's ASan runtime; enabling it on
+# macOS aborts the binary at startup before any test runs.
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  export ASAN_OPTIONS="color=always"
+else
+  export ASAN_OPTIONS="detect_leaks=1:color=always"
+fi
+./tests/AllTests --gated=run "$@"
