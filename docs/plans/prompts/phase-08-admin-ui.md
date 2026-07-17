@@ -20,7 +20,12 @@ browser-smoke infrastructure from phase 1.
 - `docs/plans/workstreams/04-web-and-admin-ui.md` (U4-U6 authoritative;
   U1-U3 first slices are complete — do not redo them)
 - Phase 1's browser smoke and its findings (accessibility evidence was
-  explicitly deferred to this phase)
+  explicitly deferred to this phase):
+  `scripts/admin_ui_browser_smoke_test.ts` and
+  `scripts/scenario-dashboard/browser_smoke_test.ts`, both passing as of
+  2026-07-17. The Admin smoke recorded two leads: an intermittent PDS DPoP
+  verification warning (workstream 01 follow-up) and the consent-step
+  focus-move gap (U4 owns it).
 - https://www.w3.org/TR/WCAG22/
 
 ## Scope
