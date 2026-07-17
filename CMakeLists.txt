@@ -393,6 +393,7 @@ file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m"
   "Garazyk/Sources/Network/RelayXrpcRoutePack.m"
   "Garazyk/Sources/Network/AppViewXRpcRoutePack.m"
+  "Garazyk/Sources/Network/Generated/GZXrpcNSID.m"
 )
 # XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
 list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Network/XRPCError\\.m$")
