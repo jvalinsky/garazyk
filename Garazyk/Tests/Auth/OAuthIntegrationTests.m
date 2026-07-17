@@ -167,7 +167,7 @@
     NSDictionary *codeData = @{
         @"client_id": @"test-client",
         @"redirect_uri": @"http://127.0.0.1:3000/callback",
-        @"scope": @"atproto:identify",
+        @"scope": OAuth2ScopeAtproto,
         @"state": @"test123",
         @"code_challenge": challenge,
         @"code_challenge_method": @"S256",
@@ -219,7 +219,7 @@
     NSDictionary *codeData2 = @{
         @"client_id": @"test-client",
         @"redirect_uri": @"http://127.0.0.1:3000/callback",
-        @"scope": @"atproto:identify",
+        @"scope": OAuth2ScopeAtproto,
         @"state": @"test123",
         @"code_challenge": challenge,
         @"code_challenge_method": @"S256",

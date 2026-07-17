@@ -118,6 +118,35 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
     return [cookiePair stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 }
 
+/*!
+ @abstract GETs `path` and returns headers carrying the CSRF nonce it issues.
+
+ @discussion validateCSRFForRequest: (UIAuthManager) requires the same
+ one-time nonce in both the `ui_admin_nonce` cookie and the
+ `X-UI-Admin-Nonce` header on the next state-changing request. Any
+ unauthenticated GET to /admin/login, or an authenticated GET to /admin,
+ issues a fresh nonce this way.
+ */
+- (NSDictionary<NSString *, NSString *> *)csrfHeadersFromPath:(NSString *)path
+                                                 extraHeaders:(NSDictionary<NSString *, NSString *> *)extraHeaders {
+    NSURLResponse *response = nil;
+    NSError *error = nil;
+    [self sendRequestToPath:path method:@"GET" headers:extraHeaders ?: @{} body:nil response:&response error:&error];
+
+    NSString *setCookie = [self headerValueForName:@"Set-Cookie" response:(NSHTTPURLResponse *)response];
+    NSString *cookiePair = [self cookiePairFromSetCookieHeader:setCookie];
+    NSRange equalsRange = [cookiePair rangeOfString:@"="];
+    if (!cookiePair || equalsRange.location == NSNotFound) {
+        return @{};
+    }
+    NSString *nonceValue = [cookiePair substringFromIndex:equalsRange.location + 1];
+
+    NSMutableDictionary<NSString *, NSString *> *headers = [extraHeaders mutableCopy] ?: [NSMutableDictionary dictionary];
+    headers[@"Cookie"] = extraHeaders[@"Cookie"] ? [NSString stringWithFormat:@"%@; %@", extraHeaders[@"Cookie"], cookiePair] : cookiePair;
+    headers[@"X-UI-Admin-Nonce"] = nonceValue;
+    return headers;
+}
+
 - (NSData *)sendRequestToPath:(NSString *)path
                        method:(NSString *)method
                       headers:(NSDictionary<NSString *, NSString *> *)headers
@@ -266,7 +295,12 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 /*!
  @test testGetLabContainsLabConfig
 
- @abstract Verify that GET /lab includes the LAB_CONFIG bootstrap script.
+ @abstract Verify that GET /lab includes the LAB_CONFIG bootstrap data.
+
+ @discussion The CSP hardening in workstream 04 U2 moved this from an
+ inline `LAB_CONFIG` object literal into `<meta>` tags read by the external
+ /js/lab.js (see labConfigValue() there), so the literal symbol no longer
+ appears in the page body; assert on the meta tag + script include instead.
  */
 - (void)testGetLabContainsLabConfig {
     NSURLResponse *response = nil;
@@ -281,7 +315,8 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
     XCTAssertNil(error);
     XCTAssertNotNil(response);
     NSString *body = [self responseStringFromData:data];
-    XCTAssertTrue([body containsString:@"LAB_CONFIG"]);
+    XCTAssertTrue([body containsString:@"meta name=\"lab-pds-url\""]);
+    XCTAssertTrue([body containsString:@"/js/lab.js"]);
 }
 
 /*!
@@ -476,11 +511,13 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
  @abstract Verify that POST /admin/login with the correct password succeeds and sets a session cookie.
  */
 - (void)testPostAdminLoginCorrectPassword {
+    NSDictionary<NSString *, NSString *> *csrfHeaders = [self csrfHeadersFromPath:@"/admin/login" extraHeaders:@{}];
+
     NSURLResponse *response = nil;
     NSError *error = nil;
     NSDictionary *json = [self sendJSONRequestToPath:@"/admin/login"
                                               method:@"POST"
-                                             headers:@{}
+                                             headers:csrfHeaders
                                            jsonObject:@{@"password": @"test-admin-password"}
                                             response:&response
                                                error:&error];
@@ -502,11 +539,13 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
  @abstract Verify that POST /admin/login with the wrong password is rejected.
  */
 - (void)testPostAdminLoginWrongPassword {
+    NSDictionary<NSString *, NSString *> *csrfHeaders = [self csrfHeadersFromPath:@"/admin/login" extraHeaders:@{}];
+
     NSURLResponse *response = nil;
     NSError *error = nil;
     NSDictionary *json = [self sendJSONRequestToPath:@"/admin/login"
                                               method:@"POST"
-                                             headers:@{}
+                                             headers:csrfHeaders
                                            jsonObject:@{@"password": @"wrong"}
                                             response:&response
                                                error:&error];
@@ -526,11 +565,13 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
  @abstract Verify that a login cookie grants access to /admin.
  */
 - (void)testAdminLoginFlowFull {
+    NSDictionary<NSString *, NSString *> *csrfHeaders = [self csrfHeadersFromPath:@"/admin/login" extraHeaders:@{}];
+
     NSURLResponse *loginResponse = nil;
     NSError *loginError = nil;
     NSDictionary *loginJSON = [self sendJSONRequestToPath:@"/admin/login"
                                                    method:@"POST"
-                                                  headers:@{}
+                                                  headers:csrfHeaders
                                                 jsonObject:@{@"password": @"test-admin-password"}
                                                  response:&loginResponse
                                                     error:&loginError];
@@ -569,11 +610,13 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
  @abstract Verify that logout invalidates the session and restores the redirect behavior.
  */
 - (void)testAdminLogoutFlow {
+    NSDictionary<NSString *, NSString *> *loginCSRFHeaders = [self csrfHeadersFromPath:@"/admin/login" extraHeaders:@{}];
+
     NSURLResponse *loginResponse = nil;
     NSError *loginError = nil;
     NSDictionary *loginJSON = [self sendJSONRequestToPath:@"/admin/login"
                                                    method:@"POST"
-                                                  headers:@{}
+                                                  headers:loginCSRFHeaders
                                                 jsonObject:@{@"password": @"test-admin-password"}
                                                  response:&loginResponse
                                                     error:&loginError];
@@ -600,11 +643,15 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
     XCTAssertNotNil(adminBeforeLogoutData);
     XCTAssertEqual([(NSHTTPURLResponse *)adminResponseBeforeLogout statusCode], 200);
 
+    // GET /admin (above) rotated in a fresh CSRF nonce for this session;
+    // logout is itself a mutation and needs it.
+    NSDictionary<NSString *, NSString *> *logoutCSRFHeaders = [self csrfHeadersFromPath:@"/admin" extraHeaders:@{@"Cookie": cookiePair}];
+
     NSURLResponse *logoutResponse = nil;
     NSError *logoutError = nil;
     NSDictionary *logoutJSON = [self sendJSONRequestToPath:@"/admin/logout"
                                                     method:@"POST"
-                                                   headers:@{@"Cookie": cookiePair}
+                                                   headers:logoutCSRFHeaders
                                                  jsonObject:@{}
                                                   response:&logoutResponse
                                                      error:&logoutError];
@@ -641,11 +688,13 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
  @abstract Verify that the login cookie is marked HttpOnly and SameSite=Strict.
  */
 - (void)testAdminLoginCookieAttributes {
+    NSDictionary<NSString *, NSString *> *csrfHeaders = [self csrfHeadersFromPath:@"/admin/login" extraHeaders:@{}];
+
     NSURLResponse *response = nil;
     NSError *error = nil;
     NSDictionary *json = [self sendJSONRequestToPath:@"/admin/login"
                                               method:@"POST"
-                                             headers:@{}
+                                             headers:csrfHeaders
                                            jsonObject:@{@"password": @"test-admin-password"}
                                             response:&response
                                                error:&error];

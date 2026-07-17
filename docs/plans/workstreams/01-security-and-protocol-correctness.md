@@ -103,22 +103,74 @@ env vars were replaced) and are skipped in the default run. Before folding
 them into CI, they must pass. (Folded here from the retired 2026-07-13
 remediation plan, WS5.)
 
-*Measured baseline (2026-07-16, full `AllTests --gated=run`, 3454 tests):*
-76 assertion failures across 11 gated classes, each reproducible when the
-class is run in isolation, so this is suite rot rather than cross-suite
-interference: XrpcIntegrationTests (18), UILabIntegrationTests (14),
-FirehoseIntegrationTests (13), ATProtoMediaServiceRuntimeTests (7, all
-"Duplicate XRPC handler registration for app.bsky.video.getJobStatus"),
-OAuth2EndpointTests (6), EmailIntegrationTests (6), OAuthIntegrationTests
-(5), CommitChainTests (3), PDSApplicationTests (2), PDSWebSocketServerTests
-(1), FollowersCountIntegrationTests (1). All non-gated tests pass in the
-same run. `E2EDockerTests` self-skips without a reachable docker stack.
+**Repaired (2026-07-17).** The 2026-07-16 baseline (full `AllTests
+--gated=run`, 3454 tests) measured 76 assertion failures across 11 gated
+classes, each reproducible when the class is run in isolation — suite rot,
+not cross-suite interference. All 11 are now fixed, each with an isolated
+root cause:
 
-The premature `--gated=run` enablement from `54869a1c6` (and its ctest
-alignment) is reverted until this baseline is repaired; enabling it before
-then would leave CI permanently red. Repair class-by-class, then flip the
-`add_test` invocation in `CMakeLists.txt` (see the comment there) plus the
-`scripts/test/run-tests.sh`/`run-asan-tests.sh` invocations.
+- `ATProtoMediaServiceRuntimeTests` (7) and `XrpcIntegrationTests` (18) both
+  registered routes onto the process-wide `[XrpcDispatcher sharedDispatcher]`
+  singleton from a `start`/`setUp` that XCTest calls more than once per
+  process, hitting "Duplicate XRPC handler registration"; switched both to a
+  private `[[XrpcDispatcher alloc] init]` instance (a no-op behavior change
+  for `jelcz`, the only production caller, which only ever starts one
+  runtime per process).
+- `FollowersCountIntegrationTests` (1): `PDSRecordService`'s single-record
+  `putRecord:` path only extracted `subject_did` when a follow/block
+  record's `subject` was a plain string, unlike the batch and read-side
+  paths, which already handled the `{"did": ...}` object form too — added
+  the missing case so follower counts see both.
+- `PDSWebSocketServerTests` (1): the test's mock `ATProtoNetworkListener`
+  never set a nonzero `port` on start, unlike the real listener it stands
+  in for; `testServerStartsAndPortIsNonzero` could never observe the port
+  becoming available. Fixed the mock, not the server.
+- `PDSApplicationTests` (2): `testDefaultPortValues` read `httpPort`/`wsPort`
+  before calling `startWithError:`, but ports are intentionally ephemeral
+  (0) under test config until the HTTP server actually binds; added the
+  missing `start` call to match this file's other port-assertion tests.
+- `CommitChainTests` (3) and `FirehoseIntegrationTests` (13): both construct
+  a standalone `SubscribeReposHandler` and drive it through a mock
+  connection instead of a real WebSocket server, but only `-startOnPort:`
+  (which they skip) calls `-startObservingNotifications`; without it,
+  `-handleRecordChange:` never fires and no commit is ever broadcast. Added
+  the missing call in both tests.
+- `OAuthIntegrationTests` (5): seeded authorization codes with scope
+  `"atproto:identify"`, a literal string matching an `OAuth2ScopeIdentify`
+  constant that's declared in `OAuth2.h` but wired up nowhere — the granular
+  OAuth-scopes feature these constants anticipate is still the "Decision
+  needed" P1 item in the priority table, not implemented. `OAuth2ScopeIsValid`
+  correctly requires the bare `atproto` scope token; fixed the test to
+  request `OAuth2ScopeAtproto` instead of inventing a feature.
+- `OAuth2EndpointTests` (6): `setUp` never registered `test-client` as a
+  known OAuth client or seeded a matching account, so every request that
+  expected success (revoke, token exchange) hit `invalid_client`/"Account
+  handle is nil" before reaching the behavior under test — the requests
+  that expected rejection happened to still get rejected, masking the gap.
+  Added client + account fixtures and a real PKCE/DPoP-bound authorization
+  code, mirroring `OAuthIntegrationTests`.
+- `UILabIntegrationTests` (14): every login/logout test predates the U3
+  CSRF hardening (double-submit `ui_admin_nonce` cookie + `X-UI-Admin-Nonce`
+  header) and never sent a nonce, so `POST /admin/login` and
+  `/admin/logout` uniformly hit `invalid_csrf_token`. Added a
+  `csrfHeadersFromPath:` test helper that fetches a fresh nonce from a GET
+  first. Separately, `testGetLabContainsLabConfig` checked for a literal
+  `LAB_CONFIG` string that the U2 CSP hardening moved out of the inline
+  page into `<meta>` tags read by the external `/js/lab.js`; updated the
+  assertion to match.
+- `EmailIntegrationTests` (6): `setenv("PDS_EMAIL_PROVIDER", "mock", 1)` in
+  `setUp` had no effect because `ATProtoServiceConfiguration.sharedConfiguration`
+  is a `dispatch_once` singleton realized once per process and never
+  re-reads env vars afterward; by the time this test ran, an earlier test
+  class had already forced its creation with the provider defaulted to
+  `"none"`. Built a standalone `ATProtoServiceConfiguration` + `PDSApplication`
+  instead of going through the stale shared instance.
+
+A full `AllTests --gated=run` pass (2026-07-17) is green: 3454 tests, 0
+failures. `E2EDockerTests` self-skips without a reachable docker stack (as
+before). `--gated=run` is now the default in `CMakeLists.txt`'s `add_test`
+(so `ctest` runs it), `scripts/test/run-tests.sh`, and
+`scripts/test/run-asan-tests.sh`.
 
 ## S6. Published-spec conformance matrix
 

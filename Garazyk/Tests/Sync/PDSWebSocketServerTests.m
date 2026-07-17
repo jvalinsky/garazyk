@@ -73,6 +73,9 @@
 }
 - (void)startWithQueue:(dispatch_queue_t)queue {
     dispatch_async(queue, ^{
+        // Simulate the OS assigning a real ephemeral port at bind time, as
+        // the production ATProtoNetworkTransportFactory listener does.
+        self.port = 41414;
         if (self.stateChangedHandler) {
             self.stateChangedHandler(ATProtoNetworkListenerStateReady, nil);
         }

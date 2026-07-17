@@ -1632,11 +1632,12 @@ if(BUILD_TESTS)
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
   )
 
-  # Gated integration/socket classes are excluded until they pass again:
-  # a 2026-07-16 --gated=run baseline measured 76 failures across 11 of the
-  # 29 gated classes, reproducible in isolation (workstream 01 S5 owns the
-  # repair). Flip this to `AllTests --gated=run` once S5 lands.
-  add_test(NAME AllTests COMMAND AllTests)
+  # --gated=run folds the gated integration/socket test classes into every
+  # ctest invocation (CI runs ctest, not scripts/test/run-tests.sh). The
+  # 2026-07-16 76-failure baseline across 11 of the 29 gated classes
+  # (workstream 01 S5) is repaired; a full --gated=run pass is green
+  # (3454 tests, 0 failures).
+  add_test(NAME AllTests COMMAND AllTests --gated=run)
 endif()
 
 #=============================

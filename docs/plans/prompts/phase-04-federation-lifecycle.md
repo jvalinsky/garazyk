@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: Federation, backpressure, and account lifecycle correctness
-status: pending
+status: in-progress
 agent: claude
 depends_on: []
 ---
@@ -33,20 +33,13 @@ into CI so they are measured instead of silently skipped.
 3. **Account lifecycle**: downstream services stop redistributing inactive
    accounts; `active` vs `status` semantics; monotonic event sequences with
    gap-free cursor resume; suspension/takedown at write and read boundaries.
-4. **Gated coverage into CI**: repair the gated classes, then enable them.
-   The gate mechanism is now the test binary's `--gated=run` flag (29
-   classes; the old `PDS_RUN_INTEGRATION_TESTS`/`PDS_RUN_SOCKET_TESTS` env
-   vars are gone). A measured baseline exists (2026-07-16, workstream 01 S5
-   has the per-class table): 76 assertion failures across 11 gated classes,
-   each reproducible in isolation — suite rot, not interference. A premature
-   enablement (`54869a1c6`) was reverted (`8174747ec`); once the classes are
-   green, flip `add_test` in `CMakeLists.txt` to `AllTests --gated=run` and
-   restore the flag in `scripts/test/run-tests.sh` / `run-asan-tests.sh`
-   (comments mark all three spots). Suggested start:
-   `ATProtoMediaServiceRuntimeTests` — all 7 failures share one root cause
-   ("Duplicate XRPC handler registration for app.bsky.video.getJobStatus").
-   `E2EDockerTests` self-skips without a reachable docker stack; the other
-   failures need no external services to reproduce.
+4. **Complete (2026-07-17): Gated coverage into CI**. All 11 previously
+   failing gated classes are repaired (root causes and fixes recorded in
+   workstream 01 S5); a full `AllTests --gated=run` pass is green (3454
+   tests, 0 failures). `add_test` in `CMakeLists.txt` now runs
+   `AllTests --gated=run` (verified via a fresh `cmake` reconfigure +
+   `ctest -R '^AllTests$'`), and `scripts/test/run-tests.sh` /
+   `run-asan-tests.sh` both pass `--gated=run` by default again.
 
 Out of scope: Relay assembly (phase 7), incremental sync (phase 7).
 

@@ -79,6 +79,12 @@
 }
 
 - (void)testDefaultPortValues {
+    // Ports are ephemeral (0) under test config until the HTTP server binds
+    // (see PDSApplication's ATProtoServiceConfigRunningUnderTests() check),
+    // so start the app first to observe the assigned values.
+    NSError *error = nil;
+    [self.application startWithError:&error];
+
     // Ports should be set to reasonable values (may vary based on configuration)
     XCTAssertGreaterThan(self.application.httpPort, 0);
     XCTAssertGreaterThan(self.application.wsPort, 0);

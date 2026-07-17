@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
+#import "App/PDSApplication.h"
 #import "App/PDSController.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Core/ATProtoServiceContainer.h"
@@ -26,18 +27,23 @@
                                              attributes:nil 
                                                   error:nil];
 
-    // Configure the PDS for mock email
-    // Since ATProtoServiceConfiguration.sharedConfiguration is a singleton, 
-    // we set environment variables to influence it during tests if needed, 
-    // but here we can just initialize the controller directly.
+    // Configure the PDS for mock email. ATProtoServiceConfiguration.sharedConfiguration
+    // is a process-wide singleton created once (dispatch_once) and never re-reads
+    // env vars afterward, so by the time this test runs — after any earlier test
+    // in the same AllTests process has already realized the singleton — setenv
+    // here would have no effect on it. Build a standalone configuration instance
+    // instead: its plain -init re-resolves PDS_EMAIL_PROVIDER fresh, and passing
+    // it into PDSApplication explicitly bypasses the stale shared instance.
     setenv("PDS_EMAIL_PROVIDER", "mock", 1);
-    
-    // Reset the shared configuration to pick up the env var
-    // In a real system, we might need a way to reset the singleton or pass a config object.
-    
-    self.controller = [[PDSController alloc] initWithDirectory:self.dataDirectory 
-                                                 serviceMaxSize:10 
-                                               userDatabaseSize:100];
+
+    ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
+    PDSApplication *application = [[PDSApplication alloc] initWithConfiguration:config
+                                                                  dataDirectory:self.dataDirectory
+                                                                 serviceMaxSize:10
+                                                            userDatabaseMaxSize:100
+                                                                didCacheMaxSize:1000
+                                                              sequencerMaxSize:100];
+    self.controller = application.legacyController ?: [[PDSController alloc] initWithApplication:application];
 }
 
 - (void)tearDown {
