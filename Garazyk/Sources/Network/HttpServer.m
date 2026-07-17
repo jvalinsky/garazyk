@@ -458,7 +458,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                   [connection cancel];
                   return;
                 }
-                [priorCoordinator close];
+                [priorCoordinator closeForUpgrade];
                 webSocketHandler(request, upgradeResponse, connection);
               }];
   }
