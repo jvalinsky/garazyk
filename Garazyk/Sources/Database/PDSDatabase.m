@@ -166,8 +166,10 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 
         // Run pending migrations via PDSMigrationManager
         PDSMigrationManager *migrationManager = [PDSMigrationManager pdsDatabaseMigrationManager];
-        if (![migrationManager migrateDatabase:_db error:error]) {
-            GZ_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
+        NSError *migrationError = nil;
+        if (![migrationManager migrateDatabase:_db error:&migrationError]) {
+            GZ_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", migrationError);
+            if (error) *error = migrationError;
             [self close];
             result = NO;
             return;
