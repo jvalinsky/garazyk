@@ -41,8 +41,10 @@ documentation, TUI, package, and refactor plans.
   (`testNonKeychainFactoryPersistenceWhenOpenSSLAvailable` passes, not
   skipped), the docs just never caught up. Playwright's Chromium binary was
   separately never installed (`deno run -A npm:playwright install chromium`,
-  done 2026-07-15). Both blockers are cleared; no browser smoke test has been
-  written yet — that write-and-run work is still open (item 1 below).
+  done 2026-07-15). Both blockers are cleared, and the browser smoke tests
+  are now written and passing (`scripts/admin_ui_browser_smoke_test.ts`,
+  `scripts/scenario-dashboard/browser_smoke_test.ts`; run 2026-07-17, see
+  workstream 00 B0.2 item 5).
 - `HttpConnectionIOCoordinator` now has independent 30-second idle and
   aggregate header deadlines. The aggregate deadline starts with the first
   header byte, cannot be extended by trickle input, cancels a stalled receive,
@@ -175,8 +177,8 @@ Exit gate: clean generated reports, current scenario run metadata, passing
 package checks, and a documented branch disposition. Branch disposition is
 now documented (workstream 00, B0.3): `codex/split-deno-testing-repos`
 inactive pending Phase 3, `refactor/plan01-hygiene-quick-wins` superseded for
-code and kept for its remaining docs, `backup-pre-rewrite` archival-only. Item
-1 (browser baseline) is the only open gap.
+code and kept for its remaining docs, `backup-pre-rewrite` archival-only. All
+five items are complete; the Phase 0 exit gate is met.
 
 ### Phase 1: containment
 
