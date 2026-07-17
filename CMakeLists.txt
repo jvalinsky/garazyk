@@ -1632,7 +1632,9 @@ if(BUILD_TESTS)
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
   )
 
-  add_test(NAME AllTests COMMAND AllTests)
+  # --gated=run folds the gated integration/socket test classes into every
+  # ctest invocation (CI runs ctest, not scripts/test/run-tests.sh).
+  add_test(NAME AllTests COMMAND AllTests --gated=run)
 endif()
 
 #=============================
