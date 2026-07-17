@@ -1,7 +1,7 @@
 ---
 title: Baseline and Plan Governance
 status: active
-last_verified: 2026-07-15
+last_verified: 2026-07-17
 ---
 
 # Baseline and Plan Governance
@@ -40,6 +40,25 @@ Capture these results with commit and date:
    May 2026 failure counts into backlog.
 5. Browser smoke for dashboard controls, Admin CSP/CSRF, OAuth consent, and
    keyboard workflows.
+   *Evidence (2026-07-17, commit 703723c4cc36033cb02887981982c457a878b39c):*
+   - `deno run -A scripts/scenario-dashboard/browser_smoke_test.ts` — passed.
+     Dashboard controls, mutation-capability enforcement, security headers,
+     scenario navigation, and keyboard tab order verified.
+   - `deno run -A scripts/admin_ui_browser_smoke_test.ts` — passed.
+     Admin CSP (`script-src-attr 'none'`), hostile-identifier inertness,
+     session/CSRF mutation guard, keyboard tab order, and OAuth consent
+     rendering verified. A known intermittent PDS DPoP verification issue
+     was observed and recorded as a warning; it does not regress the
+     baseline and is tracked for workstream 01 follow-up.
+   - Global gate triage (2026-07-17):
+     - `deno task check` — passed.
+     - `deno task lint` — 2043 pre-existing lint issues across `packages/`;
+       unrelated to this baseline.
+     - `deno task test` — 6 failures in
+       `packages/gruszka/scripts/generate_test.ts` when run as part of the
+       full suite. The same test passes when run individually or within the
+       `gruszka` package alone, indicating a test-isolation/flakiness issue
+       rather than a generator regression. Tracked for a separate fix lane.
 6. WASM smoke, notebook, and runtime-gap probes if a current kernel artifact can
    be built reproducibly.
 
@@ -94,8 +113,8 @@ deciduous goal 1187, completed, with its commit-linked actions). The transient
 debug logging that shipped with the network rework was removed by rewriting the
 introducing commit, so `main` history carries no `RateLimiter DEBUG` lines. The
 arc is finished; the implementation diary
-(`queryrunner_deepening_pilot_plan.md`) has no outstanding outcomes and can be
-deleted per the plan-lifecycle rule (Git retains its text).
+(`queryrunner_deepening_pilot_plan.md`) was deleted on 2026-07-16 per the
+plan-lifecycle rule (Git retains its text at `6f8921ab6`).
 
 ## B0.4 Replace false-confidence tests
 
@@ -126,7 +145,6 @@ guard); `testSyncExportBound` asserts 404 RepoNotFound for a valid-but-unknown D
 
 Exit criteria:
 
-- no active plan outside `docs/plans/` except the explicitly preserved dirty
-  QueryRunner diary;
+- no active plan outside `docs/plans/`;
 - documentation indexes and links pass;
 - decisuous node 1153 links this plan and its completion outcome.
