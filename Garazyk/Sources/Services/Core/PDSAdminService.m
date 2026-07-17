@@ -14,6 +14,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/ATProtoValidator.h"
+#import "Core/PDSAccountEvents.h"
 #import "Services/PDS/PDSAccountService.h"
 
 static NSArray<NSString *> *deduplicatedNonEmptyStringArray(id value) {
@@ -159,7 +160,17 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     }
 
     GZ_LOG_INFO(@"Taking down account: %@ reason: %@", did, reason);
-    return [_database takeDownAccount:did reason:reason takedownRef:nil error:error];
+    BOOL success = [_database takeDownAccount:did reason:reason takedownRef:nil error:error];
+    if (success) {
+        [[NSNotificationCenter defaultCenter]
+            postNotificationName:PDSAccountDeactivatedNotification
+                          object:nil
+                        userInfo:@{
+                            PDSAccountEventDidKey: did,
+                            PDSAccountEventStatusKey: @"takendown"
+                        }];
+    }
+    return success;
 }
 
 - (BOOL)deactivateAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
@@ -187,7 +198,16 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     }
 
     GZ_LOG_INFO(@"Reinstating account: %@", did);
-    return [_database reinstateAccount:did error:error];
+    BOOL success = [_database reinstateAccount:did error:error];
+    if (success) {
+        [[NSNotificationCenter defaultCenter]
+            postNotificationName:PDSAccountActivatedNotification
+                          object:nil
+                        userInfo:@{
+                            PDSAccountEventDidKey: did
+                        }];
+    }
+    return success;
 }
 
 - (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error {

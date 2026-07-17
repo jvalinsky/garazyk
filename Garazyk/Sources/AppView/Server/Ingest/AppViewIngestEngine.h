@@ -26,6 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class FirehoseCommitEvent;
 @class FirehoseIdentityEvent;
+@class FirehoseAccountEvent;
 @class AppViewDatabase;
 @class AppViewIngestEngine;
 @class AppViewIngestEvent;
@@ -58,6 +59,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)ingestEngine:(AppViewIngestEngine *)engine
 didReceiveIdentityChange:(AppViewIngestEvent *)event;
+
+/*!
+ @method ingestEngine:didReceiveAccountEvent:
+
+ @abstract Called for account events (#account type, including takedowns).
+ */
+- (void)ingestEngine:(AppViewIngestEngine *)engine
+didReceiveAccountEvent:(AppViewIngestEvent *)event;
 
 /*!
  @method ingestEngine:didReconnectToRelay:atSeq:
@@ -188,6 +197,10 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event;
  * @abstract Performs the _handleIdentityEvent operation.
  */
 - (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL;
+/**
+ * @abstract Handles an account event from the relay firehose.
+ */
+- (void)_handleAccountEvent:(FirehoseAccountEvent *)event fromRelay:(NSString *)relayURL;
 /**
  * @abstract Performs the _relayConnection operation.
  */

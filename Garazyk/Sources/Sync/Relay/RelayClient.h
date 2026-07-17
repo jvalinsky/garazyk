@@ -17,6 +17,7 @@
 @class Firehose;
 @class FirehoseCommitEvent;
 @class FirehoseIdentityEvent;
+@class FirehoseAccountEvent;
 @class FirehoseErrorEvent;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -39,6 +40,7 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 @optional
 - (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event;
 - (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
+- (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event;
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event;
 - (void)relayClientDidConnect:(RelayClient *)client;
 /**

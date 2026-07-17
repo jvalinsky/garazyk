@@ -153,6 +153,13 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     self.currentSeq = event.seq;
 }
 
+- (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event {
+    AppViewIngestEngine *engine = self.owner;
+    if (!engine) return;
+    [engine _handleAccountEvent:event fromRelay:self.relayURL];
+    self.currentSeq = event.seq;
+}
+
 - (void)relayClientDidConnect:(RelayClient *)client {
     AppViewIngestEngine *engine = self.owner;
     if (!engine) return;
@@ -783,6 +790,44 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     if (delegate && [delegate respondsToSelector:@selector(ingestEngine:didReceiveIdentityChange:)]) {
         dispatch_async(_eventQueue, ^{
             [delegate ingestEngine:self didReceiveIdentityChange:ingestEvent];
+        });
+    }
+    [_database markDurableCursor:event.seq forRelayURL:relayURL];
+    } // @autoreleasepool
+}
+
+- (void)_handleAccountEvent:(FirehoseAccountEvent *)event fromRelay:(NSString *)relayURL {
+    @autoreleasepool {
+    NSData *dummy = [NSData data];
+    NSError *storeError = nil;
+    if (![_database appendStoredEventWithType:@"account"
+                                          seq:event.seq
+                                          did:event.did
+                                          rev:nil
+                                          cid:nil
+                                  rawEnvelope:dummy
+                                        error:&storeError]) {
+        GZ_LOG_WARN(@"[AppView Ingest] Failed to durably append account seq=%lld: %@",
+                     (long long)event.seq, storeError.localizedDescription);
+        return;
+    }
+    [_database logEvent:event.seq did:event.did rev:nil cid:nil rawEnvelope:dummy error:nil];
+
+    GZ_LOG_INFO(@"[AppView Ingest] Account event: did=%@ active=%d status=%@ seq=%lld",
+                 event.did, event.active, event.status ?: @"(none)", (long long)event.seq);
+
+    AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
+    ingestEvent.seq        = event.seq;
+    ingestEvent.relayURL   = relayURL;
+    ingestEvent.did        = event.did;
+    ingestEvent.eventType  = @"#account";
+    ingestEvent.rawEnvelope = dummy;
+    ingestEvent.receivedAt  = [NSDate date];
+
+    id<AppViewIngestEngineDelegate> delegate = self.delegate;
+    if (delegate && [delegate respondsToSelector:@selector(ingestEngine:didReceiveAccountEvent:)]) {
+        dispatch_async(_eventQueue, ^{
+            [delegate ingestEngine:self didReceiveAccountEvent:ingestEvent];
         });
     }
     [_database markDurableCursor:event.seq forRelayURL:relayURL];
