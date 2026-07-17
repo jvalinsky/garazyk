@@ -91,6 +91,15 @@ documentation, TUI, package, and refactor plans.
   topology config exist (`cc063779a`) but are type-checked only: no runtime
   pass is recorded, so every compatibility-gate row that needs multi-PDS
   acceptance is still pending (workstream 06).
+- The 29 gated `AllTests` classes are folded back into CI (Phase 2 item 4,
+  first slice of Phase 4/workstream 01 S5): the 2026-07-16 baseline of 76
+  failures across 11 classes is repaired (per-class root causes in
+  workstream 01 S5), a full `AllTests --gated=run` pass on 2026-07-17 is
+  green (3454 tests, 0 failures), and `ctest`/`scripts/test/run-tests.sh`/
+  `run-asan-tests.sh` all run with `--gated=run` again. Phase 4's remaining
+  scope — deterministic firehose backpressure, adversarial ingress through
+  live PDS/Relay/AppView boundaries, and account lifecycle correctness
+  (Phase 2 items 4-5) — is still open.
 
 ## Priority model
 

@@ -73,7 +73,14 @@
     [self.worker start];
 
     // ── XRPC Dispatcher ──────────────────────────────────────
-    XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
+    // A private instance, not the process-wide shared singleton: this
+    // runtime owns its own HTTP server and routes requests to this
+    // dispatcher directly (see the xrpcHandler block below), and jelcz is
+    // the only production consumer, starting exactly one runtime per
+    // process. Using the singleton meant a second start (or a second
+    // runtime) in the same process — as XCTest does — hit "Duplicate XRPC
+    // handler registration".
+    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
     XrpcRoutePackServiceBag *routeServices = [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                                                        jwtMinter:nil
                                                                                  adminController:nil
