@@ -246,7 +246,7 @@
     static NSRegularExpression *rkeyRegex = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        rkeyRegex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9._~-]+$" options:0 error:nil];
+        rkeyRegex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9._~:-]+$" options:0 error:nil];
     });
 
     if ([rkeyRegex numberOfMatchesInString:rkey options:0 range:NSMakeRange(0, rkey.length)] == 0) {
