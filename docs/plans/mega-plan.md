@@ -1,16 +1,19 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-15
+last_verified: 2026-07-17
 ---
 
 # Garazyk Mega Plan
 
 ## Objective
 
-Keep Garazyk secure, protocol-correct, portable to GNUstep/Linux, and easier to
-change while the repository boundaries settle. This roadmap replaces the May
-2026 scenario, documentation, TUI, package, and refactor plans.
+Deliver a production-ready AT Protocol stack in Objective-C: conformant with
+every published specification (workstream 01 S6 owns the conformance matrix),
+supporting experimental Proposal 0016 permissioned spaces behind its operator
+flag, secure, portable to GNUstep/Linux, and easier to change while the
+repository boundaries settle. This roadmap replaces the May 2026 scenario,
+documentation, TUI, package, and refactor plans.
 
 ## Current state
 
@@ -67,21 +70,25 @@ change while the repository boundaries settle. This roadmap replaces the May
   Deno split and superseded for these three commits; its remaining content is
   the modernization plan docs, which were deliberately left off `main` (see
   Phase 0 item 4).
-- The QueryRunner deepening arc has landed on `main`: `ATProtoMediaSQLiteStore`
-  (pilot), Mikrus, Beskid, `JelczDatabase`, `PDSReplayCache`, and
-  `PDSSQLiteSessionStorage` are migrated onto `ATProtoConnectionManagerSerial` +
-  `ATProtoDatabaseQueryRunner` (two stranded pilots to eight adopters), the write
-  path is reshaped to an `id<ATProtoDatabaseTransactor>`, and the raw `sqlite3 *`
-  leak is closed on that seam. Every slice is characterization-guarded and passes
-  AllTests. `PLCPersistentStore` and its `PLCReplicaStore` subclass are now
-  migrated too — off their hand-rolled queue + statement cache onto the manager +
-  QueryRunner with the tuned pragma config preserved (59 PLC tests green) — so the
-  arc covers all stranded stores. `PLCPersistentStore` schema creation and its
-  legacy ALTER upgrades are now atomic (single `transact:`, rollback-tested), and
-  `RateLimiter` is likewise migrated onto the manager + QueryRunner. The transient
-  debug logging that briefly shipped with the network rework has been removed
-  (history rewritten so it never lands in the shipped commit). The QueryRunner
-  deepening arc and its implementation diary are complete and can retire.
+- The QueryRunner deepening arc is complete and retired: all stranded stores
+  (`ATProtoMediaSQLiteStore`, Mikrus, Beskid, `JelczDatabase`, `PDSReplayCache`,
+  `PDSSQLiteSessionStorage`, `PLCPersistentStore`/`PLCReplicaStore`,
+  `RateLimiter`) run on `ATProtoConnectionManagerSerial` +
+  `ATProtoDatabaseQueryRunner`, schema paths are atomic and rollback-tested,
+  and every slice passed AllTests. The implementation diary
+  (`queryrunner_deepening_pilot_plan.md`) is deleted per the plan-lifecycle
+  rule; Git history and deciduous goal 1187 retain the record.
+- Proposal 0016 permissioned spaces landed (`da296909f`, ADR 0004): isolated
+  SQLite storage, fail-closed URI/scope/credential parsing, delegation,
+  membership policy, private blobs, and notification fan-out, all behind
+  `permissionedSpacesEnabled` (off by default). The ADR 0005 reconciliation
+  protocol is fully implemented in source — CAR multi-root reading, full-CAR
+  import, lightweight record-diff recovery, incremental ops, oplog pruning
+  with a background timer, and `listRecords`/`listRepoOps` cursor fixes —
+  with space test suites registered and green. Scenarios 93 and 94 plus PDS3
+  topology config exist (`cc063779a`) but are type-checked only: no runtime
+  pass is recorded, so every compatibility-gate row that needs multi-PDS
+  acceptance is still pending (workstream 06).
 
 ## Priority model
 
@@ -95,17 +102,23 @@ better-isolated steps.
 | XRPC ownership and truthful contract coverage |             5 |               4 |             5 |             4 |      5 | P0              |
 | Absolute HTTP header/read deadlines           |             5 |               3 |             5 |             4 |      5 | P0              |
 | Lexicon generator consolidation               |             5 |               4 |             5 |             4 |      5 | P0              |
+| Permissioned spaces multi-PDS acceptance      |             5 |               2 |             5 |             5 |      5 | P1              |
 | AppView numbered, atomic migrations           |             5 |               5 |             5 |             3 |      5 | P1              |
+| OAuth Permissions spec (granular scopes)      |             4 |               3 |             4 |             3 |      4 | P1              |
 | Replace false-confidence security tests       |             4 |               3 |             5 |             5 |      5 | P1              |
 | PLC schema-upgrade atomicity                  |             4 |               4 |             5 |             3 |      4 | P1              |
 | Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | P1              |
 | Relay product decision and assembly           |             4 |               5 |             4 |             2 |      5 | P1              |
 | Admin UI structural and accessibility work    |             4 |               5 |             4 |             3 |      4 | P1              |
+| Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | P2              |
 | Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | P2              |
+| Dedicated space signing key rotation          |             4 |               2 |             3 |             3 |      4 | P2              |
+| Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | P2              |
 | Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
 | SMTP, cloud blob, and STAR completion         |             3 |               3 |             3 |             2 |      3 | Decision needed |
+| Space app attestation (managing-app)          |             4 |               2 |             3 |             2 |      3 | Decision needed |
 
 ## Dependency order
 
@@ -124,14 +137,15 @@ flowchart TD
 
 Complete [workstream 00](workstreams/00-baseline-and-governance.md).
 
-1. **Partial:** fix audit scanner roots and establish current Objective-C,
+1. **Complete:** fix audit scanner roots and establish current Objective-C,
    Deno, browser, XRPC, and scenario baselines. The scanner and current
-   scenario discovery/run are proven; the browser baseline remains incomplete.
+   scenario discovery/run are proven; the browser baseline is now complete.
    Both environment blockers that previously stopped this (stale OpenSSL
    detection in `build/`, missing Playwright Chromium binary) are cleared as
-   of 2026-07-15 — see the current-state note above. What's left is writing
-   and running the actual browser smoke (dashboard controls, Admin CSP/CSRF,
-   OAuth consent, keyboard workflows per workstream 00 B0.2 item 5).
+   of 2026-07-15 — see the current-state note above. Browser smoke tests for
+   dashboard controls, Admin CSP/CSRF, OAuth consent, and keyboard workflows
+   passed on 2026-07-17 (commit 703723c4cc36033cb02887981982c457a878b39c);
+   see workstream 00 B0.2 item 5 for commands and evidence.
 2. **Complete:** resolve duplicate XRPC ownership so the existing strict CI
    check is green.
 3. **Complete:** synchronize the two external Deno repositories with newer
@@ -201,16 +215,30 @@ deterministic generator tests.
    inside a single `transact:` that rolls back on any failed statement. Proven by a
    legacy-schema upgrade fixture and an injected index-collision rollback test; the
    61-test PLC regression net stays green.
-3. Separate registered, schema-covered, and behavior-verified XRPC metrics. Fix
-   labeler semantics, remove or rename record-as-query routes, and define an
-   explicit extension registry.
+3. **Complete (report-only).** Split XRPC metrics published at
+   `reports/xrpc_split_metrics.md`. Three semantic fixes applied:
+   `chat.bsky.actor.declaration` phantom query removed,
+   `app.bsky.labeler.getServices` validates required `dids`,
+   `com.atproto.admin.getRecord` uses `ATURI` with documented compatibility
+   policy. Schema validation in report-only mode.
 4. Make firehose backpressure tests deterministic with test-only low limits.
    Inject adversarial data through real PDS/Relay/AppView boundaries.
 5. Verify account state propagation, deletion, suspension, and takedown using
    current AT Protocol account and sync semantics.
+6. Run the permissioned-spaces multi-PDS acceptance scenarios (93 and 94)
+   against an independently operated PDS3, including the private-blob and
+   pruned-oplog recovery cases, and move the compatibility-gate rows on
+   dated structured-run evidence ([workstream 06](workstreams/06-permissioned-spaces.md),
+   P6.1).
+7. **Complete (report-only).** Conformance matrix at
+   `docs/reports/spec-conformance-matrix.md`: 21 rows, 16 supported, 4 partial,
+   0 gap. Permissions-spec gap assessment at
+   `docs/reports/permissions-spec-gap-assessment.md` with 4-phase implementation
+   proposal. Known gaps G1-G4 seeded as backlog leads.
 
-Exit gate: migration rollback proof, schema-aware coverage, and current
-structured scenario results for the affected endpoints.
+Exit gate: migration rollback proof, schema-aware coverage, current
+structured scenario results for the affected endpoints, and recorded
+scenario 93/94 runtime passes.
 
 ### Phase 3: boundaries
 
@@ -236,6 +264,14 @@ uses released dependencies and retains a launcher smoke test.
 3. Decompose Objective-C god files after the branch recovery and
    characterization gates. Start with route ownership, then OAuth and Admin UI.
 4. Complete Admin UI accessibility, CSS generation, and browser-module splits.
+5. Design and ship the dedicated `#atproto_space` signing-key rotation and
+   the existing-DID migration path (workstream 06, P6.2), after Phase 2's
+   acceptance scenarios prove the current fallback end-to-end.
+6. Space operational readiness: backup/restore drill for the space database,
+   downgrade-retention verification, and reconciler/pruner observability
+   (workstream 06, P6.5).
+7. Implement the Sync 1.1 remainder (export block ordering, collection
+   subsets) once published spec text exists (workstream 02, A6).
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
@@ -248,6 +284,14 @@ removals without caller proof.
    supported products. Remove configuration promises for rejected features.
 3. Keep AppView QueryRunner/pooling deferred until migration safety is fixed and
    measured contention justifies a concurrency change.
+4. Decide whether to implement full end-to-end app attestation for the
+   permissioned-spaces `managing-app` policy or keep it rejected until
+   upstream standardizes it (workstream 06, P6.3). A structural-only check
+   is not an option.
+5. Track Proposal 0016 upstream drift on a monthly cadence (workstream 06,
+   P6.4); re-pin, re-diff, and record impact before adopting any upstream
+   change. `permissionedSpacesEnabled` stays off by default until the
+   proposal stabilizes.
 
 ## Global gates
 
@@ -267,11 +311,16 @@ output for scenario evidence.
 
 ## Primary external contracts
 
+- [AT Protocol specification index](https://atproto.com/specs/atp) — the
+  conformance target is every published spec page (workstream 01, S6)
 - [AT Protocol account lifecycle](https://atproto.com/specs/account)
 - [AT Protocol event streams](https://atproto.com/specs/event-stream)
 - [AT Protocol synchronization](https://atproto.com/specs/sync)
 - [AT Protocol OAuth profile](https://atproto.com/specs/oauth)
+- [AT Protocol Permissions](https://atproto.com/specs/permissions)
 - [AT Protocol Lexicon](https://atproto.com/specs/lexicon)
+- Proposal 0016 permissioned data, pinned
+  `3f6c96d5d2d25438bd40fa89d6ecc37865f8e354` (experimental; ADR 0004)
 - [did:plc v0.3](https://web.plc.directory/spec/v0.1/did-plc)
 - [CSP Level 3](https://www.w3.org/TR/CSP/)
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/)
