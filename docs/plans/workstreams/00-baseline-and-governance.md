@@ -56,9 +56,11 @@ Capture these results with commit and date:
        unrelated to this baseline.
      - `deno task test` — 6 failures in
        `packages/gruszka/scripts/generate_test.ts` when run as part of the
-       full suite. The same test passes when run individually or within the
-       `gruszka` package alone, indicating a test-isolation/flakiness issue
-       rather than a generator regression. Tracked for a separate fix lane.
+       full suite. *Resolved 2026-07-16:* the failures were checked-in
+       `lexicons.ts` artifact drift, not test isolation; the regeneration in
+       `ad2bd39f1` fixed them. A full `deno task test` run on 2026-07-16
+       passes clean (7284 passed, 0 failed, 6 ignored), and regenerating via
+       `deno task generate-client` produces zero diff.
 6. WASM smoke, notebook, and runtime-gap probes if a current kernel artifact can
    be built reproducibly.
 
