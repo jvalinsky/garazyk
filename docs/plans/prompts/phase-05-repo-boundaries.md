@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: Repository boundary completion
-status: pending
+status: in-progress
 agent: claude
 depends_on: []
 ---
