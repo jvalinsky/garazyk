@@ -21,4 +21,6 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
 else
   export ASAN_OPTIONS="detect_leaks=1:color=always"
 fi
-./tests/AllTests --gated=run "$@"
+# Gated classes stay off pending workstream 01 S5 (76-failure baseline,
+# 2026-07-16). Pass --gated=run explicitly to include them.
+./tests/AllTests "$@"
