@@ -1,9 +1,10 @@
 ---
 phase: 4
 title: Federation, backpressure, and account lifecycle correctness
-status: in-progress
+status: complete
 agent: claude
 depends_on: []
+completed_at: 2026-07-17T06:00:00Z
 ---
 
 # Phase 4: Federation, backpressure, and account lifecycle correctness
@@ -122,6 +123,40 @@ Remaining work for this phase, in priority order:
    `AppViewIngestEngine`/`RelayRepoStateManager` wiring) — filed as its
    own follow-up task rather than folded in here. Exact call sites are in
    workstream 01 S5's account-lifecycle section.
+
+## Completed — 2026-07-17
+
+The final remaining slice is done:
+
+**Cursor resume test (scenario 96).** New scenario
+`scripts/scenarios/scenarios/96_firehose_cursor_resume.ts` proves gap-free
+cursor resume across a disconnect/reconnect against the live PDS's
+`subscribeRepos` endpoint. Assertions: no gap (first resumed seq =
+cursor+1), no duplicates, monotonic ordering, and records created during
+the disconnect window are delivered (verified by matching `createRecord`
+URI paths against `#commit` event ops). 10/10 steps green in structured
+hamownia agent runs (`deno run -A packages/hamownia/cli.ts run --binary
+--setup --teardown 96`).
+
+The prerequisite fix — `HttpConnectionIOCoordinator.closeForUpgrade` —
+was already in the working tree: it stops the coordinator during WebSocket
+upgrade handoff without cancelling the underlying transport, which was the
+root cause of the "Connection cancelled during backlog replay" bug this
+scenario was originally written to document. `HttpConnectionIOCoordinatorTests`
+(11 tests, 0 failures) and `SubscribeReposHandlerTests` (14 tests, 0
+failures) both pass.
+
+Evidence:
+- Scenario 96: 10/10 passed, structured run dated 2026-07-17.
+- `closeForUpgrade` fix: HttpConnectionIOCoordinatorTests green (11/11).
+- `deno task check` passes.
+- `deno task lint` has pre-existing issues unrelated to this phase.
+
+Phase's remaining acceptance-gate item — account-status downstream
+propagation to Relay/AppView — is explicitly out of scope here and filed
+as a follow-up (see workstream 01 S5 for exact call sites).
+
+Phase 7 unblocks.
 
 ## On completion
 
