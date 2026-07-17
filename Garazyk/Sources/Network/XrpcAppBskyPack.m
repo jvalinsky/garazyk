@@ -109,8 +109,14 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [dispatcher registerMethod:@"app.bsky.labeler.getServices"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-                       NSString *didsParam = request.queryParams[@"dids"];
-                       if (didsParam.length == 0) {
+                       id didsParam = request.queryParams[@"dids"];
+                       NSArray *dids = nil;
+                       if ([didsParam isKindOfClass:[NSArray class]]) {
+                         dids = didsParam;
+                       } else if ([didsParam isKindOfClass:[NSString class]] && [(NSString *)didsParam length] > 0) {
+                         dids = @[didsParam];
+                       }
+                       if (dids.count == 0) {
                          response.statusCode = HttpStatusBadRequest;
                          [response setJsonBody:@{
                            @"error": @"InvalidRequest",
