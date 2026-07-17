@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Core/ATProtoValidator.h"
+#import "Core/ATURI.h"
 #import "Core/TID.h"
 #import "Core/CID.h"
 
@@ -97,26 +98,22 @@
     }
 }
 
-/*
 - (void)testInteropATURISyntaxValid {
-    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/aturi_syntax_valid.txt"];
     for (NSString *aturi in valid) {
         NSError *error = nil;
-        BOOL ok = [ATProtoValidator validateATURI:aturi error:&error];
-        XCTAssertTrue(ok, @"Expected valid AT-URI per fixtures: %@ (error=%@)", aturi, error);
+        ATURI *parsed = [ATURI uriWithString:aturi error:&error];
+        XCTAssertNotNil(parsed, @"Expected valid AT-URI per fixtures: %@ (error=%@)", aturi, error);
     }
 }
 
 - (void)testInteropATURISyntaxInvalid {
-    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/aturi_syntax_invalid.txt"];
     for (NSString *aturi in invalid) {
-        BOOL ok = [ATProtoValidator validateATURI:aturi error:nil];
-        XCTAssertFalse(ok, @"Expected invalid AT-URI per fixtures: %@", aturi);
+        ATURI *parsed = [ATURI uriWithString:aturi error:nil];
+        XCTAssertNil(parsed, @"Expected invalid AT-URI per fixtures: %@", aturi);
     }
 }
-*/
 
 - (void)testInteropCIDSyntaxValid {
     // XCTAssertEqual(actual, expected);
@@ -160,28 +157,24 @@
     }
 }
 
-/*
 - (void)testInteropRecordKeySyntaxValid {
-    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/recordkey_syntax_valid.txt"];
     for (NSString *key in valid) {
         NSError *error = nil;
-        BOOL ok = [ATProtoValidator validateRecordKey:key error:&error];
+        BOOL ok = [ATProtoValidator validateRkey:key error:&error];
         XCTAssertTrue(ok, @"Expected valid record key per fixtures: %@ (error=%@)", key, error);
     }
 }
 
 - (void)testInteropRecordKeySyntaxInvalid {
-    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/recordkey_syntax_invalid.txt"];
     for (NSString *key in invalid) {
-        BOOL ok = [ATProtoValidator validateRecordKey:key error:nil];
+        BOOL ok = [ATProtoValidator validateRkey:key error:nil];
         XCTAssertFalse(ok, @"Expected invalid record key per fixtures: %@", key);
     }
 }
 
 - (void)testInteropDatetimeSyntaxValid {
-    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/datetime_syntax_valid.txt"];
     for (NSString *datetime in valid) {
         NSError *error = nil;
@@ -191,32 +184,11 @@
 }
 
 - (void)testInteropDatetimeSyntaxInvalid {
-    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/datetime_syntax_invalid.txt"];
     for (NSString *datetime in invalid) {
         BOOL ok = [ATProtoValidator validateDatetime:datetime error:nil];
         XCTAssertFalse(ok, @"Expected invalid datetime per fixtures: %@", datetime);
     }
 }
-
-- (void)testInteropLanguageSyntaxValid {
-    // XCTAssertEqual(actual, expected);
-    NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/language_syntax_valid.txt"];
-    for (NSString *lang in valid) {
-        NSError *error = nil;
-        BOOL ok = [ATProtoValidator validateLanguageTag:lang error:&error];
-        XCTAssertTrue(ok, @"Expected valid language tag per fixtures: %@ (error=%@)", lang, error);
-    }
-}
-
-- (void)testInteropLanguageSyntaxInvalid {
-    // XCTAssertEqual(actual, expected);
-    NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/language_syntax_invalid.txt"];
-    for (NSString *lang in invalid) {
-        BOOL ok = [ATProtoValidator validateLanguageTag:lang error:nil];
-        XCTAssertFalse(ok, @"Expected invalid language tag per fixtures: %@", lang);
-    }
-}
-*/
 
 @end
