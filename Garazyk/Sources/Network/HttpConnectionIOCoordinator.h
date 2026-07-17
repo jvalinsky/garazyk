@@ -168,6 +168,18 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
  */
 - (void)close;
 
+/*!
+ @method closeForUpgrade
+
+ @abstract Stops the coordinator without cancelling the underlying connection.
+
+ @discussion Used during WebSocket upgrade handoff: the coordinator is
+ shut down (no more reads, deadlines invalidated) but the transport is
+ left open for the WebSocket handler to take over. Calling close instead
+ would cancel the transport out from under the new WebSocket session.
+ */
+- (void)closeForUpgrade;
+
 @end
 
 NS_ASSUME_NONNULL_END
