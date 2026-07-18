@@ -14,7 +14,7 @@
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"INSERT OR REPLACE INTO admin_takedowns (id, subjectType, subjectId, reason, takedownRef, applied, createdBy, createdAt) VALUES (?, ?, ?, ?, ?, 1, 'admin', ?)";
+    NSString *sql = @"INSERT INTO admin_takedowns (id, subjectType, subjectId, reason, takedownRef, applied, createdBy, createdAt) VALUES (?, ?, ?, ?, ?, 1, 'admin', ?) ON CONFLICT(id) DO UPDATE SET subjectType=excluded.subjectType, subjectId=excluded.subjectId, reason=excluded.reason, takedownRef=excluded.takedownRef, applied=1, createdBy='admin', createdAt=excluded.createdAt";
 
     NSString *takedownId = [[NSUUID UUID] UUIDString];
     NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
