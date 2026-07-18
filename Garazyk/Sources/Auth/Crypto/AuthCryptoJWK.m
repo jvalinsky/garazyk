@@ -218,11 +218,16 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
-    // ATProto requires low-S signatures
-    if (![AuthCryptoECDSA isLowS:signature error:error]) {
-        return NO;
-    }
-
+    // Do NOT enforce low-S here. This adapter handles P-256 (ES256) keys only,
+    // serving JOSE (DPoP proofs, service/JWKS JWTs), WebAuthn, and PLC
+    // signatures — none of which require low-S. WebCrypto and WebAuthn
+    // authenticators emit high-S roughly half the time; the previous low-S
+    // rejection dropped those non-deterministically. Apple's
+    // SecKeyVerifySignature accepts both S forms, so the signature is verified
+    // as presented. Signature malleability is a non-issue for these callers:
+    // none use the signature bytes as an identifier. Repository/commit
+    // signatures, which the ATProto data spec requires to be low-S, are
+    // verified through the secp256k1 key path, not this adapter.
     NSError *derError = nil;
     NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
     if (!derSig) {
@@ -244,10 +249,6 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
-    // Try verifying with the low-S DER form first.
-    // Apple's SecKeyVerifySignature may have produced a high-S signature that was
-    // then normalized to low-S. Since (r, s) and (r, N-s) are both valid ECDSA
-    // signatures for the same message, we try both forms.
     CFErrorRef cfError = NULL;
     BOOL valid = SecKeyVerifySignature(pubKey,
                                        kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
@@ -255,23 +256,6 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
                                        (__bridge CFDataRef)derSig,
                                        &cfError);
     if (cfError) CFRelease(cfError);
-
-    // If low-S form fails, try the high-S form (denormalize s → N-s)
-    if (!valid) {
-        NSData *highS = [AuthCryptoECDSA denormalizeLowS:signature error:nil];
-        if (highS) {
-            NSData *derHighS = [AuthCryptoECDSA derSignatureFromRaw:highS error:nil];
-            if (derHighS) {
-                cfError = NULL;
-                valid = SecKeyVerifySignature(pubKey,
-                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
-                                             (__bridge CFDataRef)hashData,
-                                             (__bridge CFDataRef)derHighS,
-                                             &cfError);
-                if (cfError) CFRelease(cfError);
-            }
-        }
-    }
 
     if (_isPrivateKey && pubKey != _secKey) {
         CFRelease(pubKey);
@@ -316,11 +300,9 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
-    // ATProto requires low-S signatures
-    if (![AuthCryptoECDSA isLowS:signature error:error]) {
-        return NO;
-    }
-
+    // Do NOT enforce low-S here — see verifySignature:forData: for the full
+    // rationale. Apple's SecKeyVerifySignature accepts both S forms, so the
+    // signature is verified as presented.
     NSError *derError = nil;
     NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
     if (!derSig) {
@@ -350,24 +332,6 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
                                        (__bridge CFDataRef)derSig,
                                        &cfError);
     if (cfError) CFRelease(cfError);
-
-    // If low-S form fails, try the high-S form (denormalize s → N-s)
-    // Apple's SecKeyVerifySignature may only accept the original form
-    if (!valid) {
-        NSData *highS = [AuthCryptoECDSA denormalizeLowS:signature error:nil];
-        if (highS) {
-            NSData *derHighS = [AuthCryptoECDSA derSignatureFromRaw:highS error:nil];
-            if (derHighS) {
-                cfError = NULL;
-                valid = SecKeyVerifySignature(pubKey,
-                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
-                                             (__bridge CFDataRef)digest,
-                                             (__bridge CFDataRef)derHighS,
-                                             &cfError);
-                if (cfError) CFRelease(cfError);
-            }
-        }
-    }
 
     if (_isPrivateKey && pubKey != _secKey) {
         CFRelease(pubKey);
