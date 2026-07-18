@@ -251,7 +251,8 @@
            @"    set_id TEXT NOT NULL,"
            @"    did TEXT NOT NULL,"
            @"    added_at REAL NOT NULL,"
-           @"    PRIMARY KEY (set_id, did)"
+           @"    PRIMARY KEY (set_id, did),"
+           @"    FOREIGN KEY (set_id) REFERENCES moderation_sets(id) ON DELETE CASCADE"
            @") WITHOUT ROWID";
 }
 
