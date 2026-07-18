@@ -164,6 +164,13 @@ The structured run `2026-07-18t2153z-87263`
 but stopped before scenario execution because `APPVIEW failed to start`.
 It provides no current OAuth counterevidence.
 
+### Current slice (2026-07-18)
+
+Diagnose the AppView failure in the binary three-PDS topology. This slice is
+limited to collecting the startup diagnostics and determining whether the
+runner/configuration can be corrected without changing unrelated AppView
+product behavior; it does not begin private-blob or oplog acceptance work.
+
 ### Next steps
 
 1. Diagnose the AppView binary-topology startup failure and obtain a dated
