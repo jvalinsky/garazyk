@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: Permissioned spaces multi-PDS acceptance
-status: in-progress
+status: blocked
 agent: worker
 depends_on: []
 ---
@@ -193,12 +193,31 @@ and full CAR import after a pruned cursor with a large delta. This slice owns
 only reconciliation-path evidence and any narrowly characterized defect it
 reveals.
 
+### Recovery-path investigation (2026-07-18)
+
+Structured run `2026-07-18t2214z-49690` passes scenario 94 **25/25** and
+`PDSSpaceStoreTests` passes **6/6**, but this does not establish recovery-path
+selection. Scenario 94 reads the authority with a credential; it does not
+seed a PDS3 replica. The binary runner cannot configure retention/intervals,
+and no public or admin XRPC can prune a known cursor, trigger one reconciler
+pass, or report the chosen path. Treating its authority reads as recovery
+would create false acceptance evidence.
+
+## Blocked on
+
+Authorize a narrowly scoped, test-only control plane that is absent from
+production route registration and can: (1) seed or identify a replica
+revision, (2) prune the authority oplog past that cursor, (3) trigger exactly
+one reconciler pass, and (4) return deterministic selector telemetry
+(`incremental`, `lightweight`, or `fullCAR`) with request counts. This is
+required to prove all three recovery selections without inventing a scenario
+claim that the deployed topology cannot observe.
+
 ### Next steps
 
-1. Exercise and observe the three pruned-oplog recovery paths: incremental
-   operations, lightweight record diff, and full CAR import.
-2. Move the remaining recovery compatibility row to Implemented only with
-   dated structured-run evidence.
+After the blocked-on decision, exercise and observe the three pruned-oplog
+recovery paths, then move the remaining recovery compatibility row to
+Implemented only with dated structured-run evidence.
 
 ## Acceptance gate
 
