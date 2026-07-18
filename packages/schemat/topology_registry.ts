@@ -5,6 +5,7 @@ export const KNOWN_SERVICE_ROLES = [
   "plc",
   "pds",
   "pds2",
+  "pds3",
   "relay",
   "appview",
   "mikrus",
@@ -27,6 +28,7 @@ export const Role: {
   readonly plc: "plc";
   readonly pds: "pds";
   readonly pds2: "pds2";
+  readonly pds3: "pds3";
   readonly relay: "relay";
   readonly appview: "appview";
   readonly mikrus: "mikrus";
@@ -39,6 +41,7 @@ export const Role: {
   plc: "plc",
   pds: "pds",
   pds2: "pds2",
+  pds3: "pds3",
   relay: "relay",
   appview: "appview",
   mikrus: "mikrus",
@@ -63,6 +66,7 @@ export interface ExperimentalRoleMetadata {
 export const DEFAULT_SERVICE_NAMES: Record<KnownServiceRole, string> = {
   pds: "local-pds",
   pds2: "local-pds2",
+  pds3: "local-pds3",
   relay: "local-relay",
   plc: "local-plc",
   appview: "local-appview",
@@ -78,6 +82,7 @@ export const DEFAULT_SERVICE_NAMES: Record<KnownServiceRole, string> = {
 export const DEFAULT_PORTS: Record<KnownServiceRole, string> = {
   pds: "2583",
   pds2: "2587",
+  pds3: "2588",
   relay: "2584",
   plc: "2582",
   appview: "3200",
@@ -93,6 +98,7 @@ export const DEFAULT_PORTS: Record<KnownServiceRole, string> = {
 export const ROLE_ENV_REGISTRY: Record<KnownServiceRole, string> = {
   pds: "PDS_URL",
   pds2: "PDS2_URL",
+  pds3: "PDS3_URL",
   plc: "PLC_URL",
   relay: "RELAY_URL",
   appview: "APPVIEW_URL",
@@ -142,6 +148,34 @@ export const CAPABILITY_REGISTRY: {
     "uploadBlob",
   ];
   readonly pds2: readonly [
+    "admin",
+    "blob",
+    "createAccount",
+    "createRecord",
+    "createSession",
+    "deleteRecord",
+    "describeServer",
+    "getBlob",
+    "getHead",
+    "getRecord",
+    "getRepo",
+    "getSession",
+    "identity",
+    "labeling",
+    "listBlobs",
+    "listRecords",
+    "moderation",
+    "repo",
+    "requestCrawl",
+    "requestPlcOperationSignature",
+    "resolveHandle",
+    "signPlcOperation",
+    "subscribeRepos",
+    "sync",
+    "updateHandle",
+    "uploadBlob",
+  ];
+  readonly pds3: readonly [
     "admin",
     "blob",
     "createAccount",
@@ -327,6 +361,34 @@ export const CAPABILITY_REGISTRY: {
     "updateHandle",
     "uploadBlob",
   ],
+  pds3: [
+    "admin",
+    "blob",
+    "createAccount",
+    "createRecord",
+    "createSession",
+    "deleteRecord",
+    "describeServer",
+    "getBlob",
+    "getHead",
+    "getRecord",
+    "getRepo",
+    "getSession",
+    "identity",
+    "labeling",
+    "listBlobs",
+    "listRecords",
+    "moderation",
+    "repo",
+    "requestCrawl",
+    "requestPlcOperationSignature",
+    "resolveHandle",
+    "signPlcOperation",
+    "subscribeRepos",
+    "sync",
+    "updateHandle",
+    "uploadBlob",
+  ],
   relay: [
     "healthCheck",
     "listHosts",
@@ -445,6 +507,7 @@ export const Cap: {
   plc: capabilityConstants(CAPABILITY_REGISTRY.plc),
   pds: capabilityConstants(CAPABILITY_REGISTRY.pds),
   pds2: capabilityConstants(CAPABILITY_REGISTRY.pds2),
+  pds3: capabilityConstants(CAPABILITY_REGISTRY.pds3),
   relay: capabilityConstants(CAPABILITY_REGISTRY.relay),
   appview: capabilityConstants(CAPABILITY_REGISTRY.appview),
   mikrus: capabilityConstants(CAPABILITY_REGISTRY.mikrus),

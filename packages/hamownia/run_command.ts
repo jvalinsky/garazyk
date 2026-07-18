@@ -507,6 +507,7 @@ export async function executeRunnerArgs(
   let selected: ScenarioInfo[] = [];
   let topology!: Topology;
   let withPds2 = false;
+  let withPds3 = false;
 
   try {
     const resolvedTopologyName = args.topology ?? DEFAULT_LOCAL_TOPOLOGY;
@@ -557,6 +558,9 @@ export async function executeRunnerArgs(
 
     selected = selectScenarios(scenarios, args, topology);
     withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
+    withPds3 = selected.some((scenario) =>
+      scenario.needsPds3 || scenario.requires.some((r) => r.role === "pds3")
+    );
 
     await tryRecordRunStartInDatabase(
       options.repoRoot,
@@ -576,6 +580,7 @@ export async function executeRunnerArgs(
       clientFlow: args.clientFlow,
       selectedScenarios: selected,
       withPds2: args.pds2 || selected.some((s) => s.needsPds2),
+      withPds3,
       noSetup: args.noSetup,
       isolation: args.isolation,
     });
@@ -583,6 +588,7 @@ export async function executeRunnerArgs(
     if (args.setupOnly) {
       await startLocalNetwork({
         withPds2,
+        withPds3,
         useBinary: args.binary,
         keepRunning: args.keepRunning,
         runId: context.runId,
@@ -612,6 +618,7 @@ export async function executeRunnerArgs(
     if (!args.noSetup || args.setup) {
       await startLocalNetwork({
         withPds2,
+        withPds3,
         useBinary: args.binary,
         runId: context.runId,
         diagnosticsDir: context.diagnosticsDir,

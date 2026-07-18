@@ -7,8 +7,8 @@ import {
 } from "@garazyk/schemat";
 import type { Topology } from "@garazyk/schemat";
 export type { ScenarioContext } from "./scenario_context.ts";
-import { Actor, ActorTemplate, ActorFactory } from "./actor.ts";
-export { Actor, type ActorTemplate, ActorFactory } from "./actor.ts";
+import { Actor, ActorFactory, ActorTemplate } from "./actor.ts";
+export { Actor, ActorFactory, type ActorTemplate } from "./actor.ts";
 
 /** Browser client topology exposed through scenario configuration. */
 export interface WebClientConfig {
@@ -58,6 +58,8 @@ export interface ScenarioConfig {
   pds1: string;
   /** Secondary PDS URL used by federation scenarios. */
   pds2: string;
+  /** Optional third PDS URL used by permissioned spaces scenarios. */
+  pds3?: string;
   /** Local AppView admin secret used by test services. */
   appviewAdminSecret: string;
   /** Local PDS admin password used by test services. */
@@ -84,6 +86,8 @@ export interface ScenarioConfigOptions {
   pds1?: string;
   /** Secondary PDS URL override. */
   pds2?: string;
+  /** Third PDS URL override. */
+  pds3?: string;
   /** AppView admin secret override. */
   appviewAdminSecret?: string;
   /** PDS admin password override. */
@@ -119,10 +123,14 @@ export function createScenarioConfig(
     resourceUrls.pds2 ??
     resolvedTopology.serviceUrls.pds2 ??
     "http://localhost:2587";
+  const pds3 = options.pds3 ?? Deno.env.get("PDS3_URL") ??
+    resourceUrls.pds3 ??
+    resolvedTopology.serviceUrls.pds3;
   return {
     topology: resolvedTopology,
     pds1,
     pds2,
+    ...(pds3 ? { pds3 } : {}),
     appviewAdminSecret: options.appviewAdminSecret ??
       Deno.env.get("APPVIEW_ADMIN_SECRET") ??
       "localdevadmin",
@@ -139,6 +147,7 @@ export function createScenarioConfig(
       ...options.serviceUrls,
       pds: pds1,
       pds2,
+      ...(pds3 ? { pds3 } : {}),
     },
     topologyCapabilities: resolvedTopology.capabilities,
     topologyCapabilitiesByRole: resolvedTopology.capabilitiesByRole,
