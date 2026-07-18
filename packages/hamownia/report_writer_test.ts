@@ -26,6 +26,7 @@ function makeScenarioInfo(id: string): ScenarioInfo {
     requires: [],
     optional: [],
     needsPds2: false,
+    needsPds3: false,
     browserFlows: [],
     parameters: {},
   };

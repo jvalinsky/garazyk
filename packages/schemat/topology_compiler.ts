@@ -103,6 +103,8 @@ export interface CompilerOptions {
   manifestFile?: string;
   /** Include the default second PDS when the selected scenarios need one */
   includePds2?: boolean;
+  /** Include the default third PDS when the selected scenarios need one */
+  includePds3?: boolean;
   /** Enable OpenTelemetry: inject OTel env vars into services and add SigNoz to compose */
   otel?: boolean;
   /** OpenTelemetry / SigNoz configuration overrides (only used when otel is true) */
@@ -552,6 +554,7 @@ export async function compileTopology(
   const preset: TopologyPreset = typeof options.preset === "string"
     ? resolvePreset(options.preset as string, {
       includePds2: options.includePds2,
+      includePds3: options.includePds3,
     })
     : options.preset;
 

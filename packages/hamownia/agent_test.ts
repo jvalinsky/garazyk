@@ -156,6 +156,7 @@ Deno.test("toSummary: produces correct AgentScenarioSummary shape", () => {
     requires: [{ role: "plc", capability: "didResolution" }],
     optional: [],
     needsPds2: false,
+    needsPds3: false,
     browserFlows: [],
     parameters: {},
   };
@@ -168,6 +169,7 @@ Deno.test("toSummary: produces correct AgentScenarioSummary shape", () => {
   assertEquals(summary.requires, ["plc:didResolution"]);
   assertEquals(summary.optional, []);
   assertEquals(summary.needsPds2, false);
+  assertEquals(summary.needsPds3, false);
   assertEquals(summary.browserFlows, []);
   assertEquals(summary.parameters, {});
 });
@@ -180,6 +182,7 @@ Deno.test("toSummary: handles optional requirements and browser flows", () => {
     requires: [{ role: "chat", capability: "dm" }],
     optional: [{ role: "appview", capability: "backfill" }],
     needsPds2: true,
+    needsPds3: false,
     browserFlows: ["smoke", "login"],
     parameters: {},
   };
@@ -190,6 +193,7 @@ Deno.test("toSummary: handles optional requirements and browser flows", () => {
   assertEquals(summary.requires, ["chat:dm"]);
   assertEquals(summary.optional, ["appview:backfill"]);
   assertEquals(summary.needsPds2, true);
+  assertEquals(summary.needsPds3, false);
   assertEquals(summary.browserFlows, ["smoke", "login"]);
 });
 
@@ -201,6 +205,7 @@ Deno.test("toSummary: unknown scenario ID gets empty parameters", () => {
     requires: [],
     optional: [],
     needsPds2: false,
+    needsPds3: false,
     browserFlows: [],
     parameters: {},
   };
@@ -1194,6 +1199,7 @@ Deno.test("CLI: agent list output matches AgentScenarioSummary contract", async 
     "requires",
     "optional",
     "needsPds2",
+    "needsPds3",
     "browserFlows",
     "parameters",
   ];
@@ -1215,7 +1221,7 @@ Deno.test("CLI: agent list output matches AgentScenarioSummary contract", async 
     for (const req of [...s.requires, ...s.optional]) {
       assertMatch(
         req,
-        /^[a-z]+:[a-zA-Z]+$/,
+        /^[a-z0-9]+:[a-zA-Z]+$/,
         `Invalid requirement format: "${req}" in ${s.id}`,
       );
     }

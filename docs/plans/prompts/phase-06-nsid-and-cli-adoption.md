@@ -2,7 +2,7 @@
 phase: 6
 title: Generated NSID constants and CLI/lifecycle adoption
 status: in-progress
-agent: claude
+agent: worker
 depends_on: [3]
 ---
 
@@ -21,6 +21,19 @@ depends_on: [3]
   for the loop-protocol rule this hazard produced.
 - Remaining: raw-literal lint against new endpoint literals, then the
   untouched CLI/lifecycle adoption arc (scope item 2).
+
+## Progress (2026-07-18)
+
+- The CLI seam this phase will work in has fresh characterization
+  coverage (`65abe6e6f`): `PDSCLIRegisterAll.m` is refactored to a
+  dispatcher-injected `PDSCLIRegisterAllCommandsForDispatcher()` (called
+  from `-[PDSCLIDispatcher registerDefaultCommands]`), and new CLI test
+  suites landed (`PDSCLIDispatcherTests`, `PDSCLIRegisterAllTests`,
+  `PDSCLIAdminCommandTests`, `PDSCLIOAuthCommandTests`), registered in
+  `test_main.m`. That testability work is not the
+  `GZCommandLineOptions`/`GZServiceLifecycle` arc itself, but it gives
+  scope item 2 a ready-made characterization net for the CLI dispatch
+  path.
 
 ## Mission
 

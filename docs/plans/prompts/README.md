@@ -1,6 +1,6 @@
 ---
 title: Phase Execution Prompts
-last_verified: 2026-07-16
+last_verified: 2026-07-18
 ---
 
 # Phase Execution Prompts
@@ -17,11 +17,11 @@ Each phase file has frontmatter:
 ```yaml
 phase: 3                # ordering
 status: pending         # pending | in-progress | complete | blocked
-agent: claude           # recommended agent type (claude | Plan | Explore)
+agent: worker           # recommended Codex built-in role (default | worker | explorer)
 depends_on: []          # phase numbers that must be complete first
 ```
 
-A driver (human, `/loop`, or a spawned agent) repeats:
+A driver (human, the primary Codex agent, or a delegated worker) repeats:
 
 1. Pick the lowest-numbered phase whose `status` is not `complete` and whose
    `depends_on` phases are all `complete`.
@@ -55,6 +55,11 @@ Rules:
   plan-governance rules in [../README.md](../README.md).
 - When all phases are complete, delete this directory; the ledger and Git
   history retain it.
+
+Use `worker` for implementation-heavy phases, `explorer` for read-only
+investigation, and `default` for mixed planning, decisions, and execution.
+These are Codex built-in agent types; project audit roles live under
+`.codex/agents/` and are delegated separately when a phase needs them.
 
 ## Phase index
 
