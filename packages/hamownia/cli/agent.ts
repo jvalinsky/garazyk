@@ -44,6 +44,8 @@ export interface AgentScenarioSummary {
   optional: string[];
   /** Whether the scenario needs a second PDS instance. */
   needsPds2: boolean;
+  /** Whether the scenario needs a third PDS instance. */
+  needsPds3: boolean;
   /** Browser automation flows this scenario supports. */
   browserFlows: string[];
   /** Per-scenario timeout override in seconds, if any. */
@@ -101,6 +103,7 @@ export function toSummary(scenario: ScenarioInfo): AgentScenarioSummary {
     requires: scenario.requires.map(formatRequirement),
     optional: scenario.optional.map(formatRequirement),
     needsPds2: scenario.needsPds2,
+    needsPds3: scenario.needsPds3,
     browserFlows: scenario.browserFlows,
     timeout: manifest.timeout,
     parameters: Object.fromEntries(

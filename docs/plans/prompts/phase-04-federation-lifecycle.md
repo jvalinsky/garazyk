@@ -2,7 +2,7 @@
 phase: 4
 title: Federation, backpressure, and account lifecycle correctness
 status: complete
-agent: claude
+agent: worker
 depends_on: []
 completed_at: 2026-07-17T06:00:00Z
 ---

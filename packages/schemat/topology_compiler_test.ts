@@ -21,6 +21,7 @@ import {
 import {
   createTopologyManifest,
   loadTopologyManifest,
+  resolvePreset,
   resolveTopology,
   ServiceAdapter,
   Topology,
@@ -49,6 +50,14 @@ const VALID_PRESET: TopologyPreset = {
 Deno.test("validatePreset: valid preset returns no errors", () => {
   const errors = validatePreset(VALID_PRESET);
   assertEquals(errors.length, 0);
+});
+
+Deno.test("resolvePreset: includes PDS3 only when requested", () => {
+  const withoutPds3 = resolvePreset("garazyk-default");
+  assertEquals(withoutPds3.roles.pds3, undefined);
+
+  const withPds3 = resolvePreset("garazyk-default", { includePds3: true });
+  assertEquals(withPds3.roles.pds3?.name, "kaszlak-pds3");
 });
 
 Deno.test("validatePreset: missing name", () => {

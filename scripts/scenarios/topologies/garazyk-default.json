@@ -170,6 +170,73 @@
       ],
       "dependsOn": ["local-plc"]
     },
+    "pds3": {
+      "name": "kaszlak-pds3",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "command": [
+        "serve",
+        "--config",
+        "/var/lib/atprotopds/config.json",
+        "--foreground"
+      ],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons",
+        "HOME": "/var/lib/atprotopds",
+        "PDS_RATELIMIT_ENABLED": "false",
+        "PDS_HANDLE_RESOLVE_LIMIT": "10000",
+        "PDS_DATA_DIR": "/var/lib/atprotopds",
+        "PDS_PLC_KEYS_DIR": "/var/lib/atprotopds/keys",
+        "PDS_MASTER_SECRET": "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
+        "GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS": "1",
+        "PDS_RUNNING_TESTS": "1",
+        "PDS_USE_KEYCHAIN": "false",
+        "PDS_ADMIN_PASSWORD": "admin-localdev",
+        "PDS_FIREHOSE_MAX_PENDING_SENDS": "1",
+        "PDS_FIREHOSE_MAX_PENDING_BYTES": "10000"
+      },
+      "ports": ["2588:2585"],
+      "volumes": [
+        "local_pds3_data:/var/lib/atprotopds",
+        "./pds3-config.json:/var/lib/atprotopds/config.json:ro",
+        "local_pds3_keys:/var/lib/atprotopds/keys"
+      ],
+      "healthCheck": {
+        "path": "/xrpc/com.atproto.server.describeServer"
+      },
+      "capabilities": [
+        "describeServer",
+        "createAccount",
+        "createSession",
+        "getSession",
+        "createRecord",
+        "getRecord",
+        "deleteRecord",
+        "listRecords",
+        "uploadBlob",
+        "getBlob",
+        "listBlobs",
+        "resolveHandle",
+        "updateHandle",
+        "requestPlcOperationSignature",
+        "signPlcOperation",
+        "subscribeRepos",
+        "getHead",
+        "getRepo",
+        "requestCrawl",
+        "admin",
+        "moderation",
+        "labeling",
+        "repo",
+        "identity",
+        "blob",
+        "sync"
+      ],
+      "dependsOn": ["local-plc"]
+    },
     "relay": {
       "name": "zuk",
       "buildContext": "docker/local-network",

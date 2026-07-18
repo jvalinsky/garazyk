@@ -262,6 +262,28 @@ const pds2CoreCaps = [
   Cap.pds2.sync,
 ] as const;
 
+const pds3CoreCaps = [
+  Cap.pds3.describeServer,
+  Cap.pds3.createAccount,
+  Cap.pds3.createSession,
+  Cap.pds3.getSession,
+  Cap.pds3.createRecord,
+  Cap.pds3.getRecord,
+  Cap.pds3.deleteRecord,
+  Cap.pds3.listRecords,
+  Cap.pds3.uploadBlob,
+  Cap.pds3.getBlob,
+  Cap.pds3.listBlobs,
+  Cap.pds3.resolveHandle,
+  Cap.pds3.updateHandle,
+  Cap.pds3.subscribeRepos,
+  Cap.pds3.getHead,
+  Cap.pds3.getRepo,
+  Cap.pds3.requestCrawl,
+  Cap.pds3.admin,
+  Cap.pds3.sync,
+] as const;
+
 const relayBasicCaps = [
   Cap.relay.subscribeRepos,
   Cap.relay.requestCrawl,
@@ -454,6 +476,22 @@ const GARAZYK_DEFAULT = defineTopology({
       volumes: pdsVolumes("local_pds2", "./pds2-config.json"),
       health: topologyHealth.http("/xrpc/com.atproto.server.describeServer"),
       capabilities: pds2CoreCaps,
+      dependsOnRoles: [Role.plc],
+    }),
+    [Role.pds3]: role.pds3({
+      name: "kaszlak-pds3",
+      source: localBuild,
+      command: [
+        "serve",
+        "--config",
+        "/var/lib/atprotopds/config.json",
+        "--foreground",
+      ],
+      env: localPdsEnv(),
+      ports: [port({ host: 2588, container: 2585 })],
+      volumes: pdsVolumes("local_pds3", "./pds3-config.json"),
+      health: topologyHealth.http("/xrpc/com.atproto.server.describeServer"),
+      capabilities: pds3CoreCaps,
       dependsOnRoles: [Role.plc],
     }),
     [Role.relay]: role.relay({
