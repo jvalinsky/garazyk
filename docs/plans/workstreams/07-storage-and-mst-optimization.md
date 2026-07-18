@@ -7,6 +7,32 @@ last_verified: 2026-07-18
 # Storage and MST Optimization
 
 Research report: `docs/reports/2026-07-17-optimization-research.md`
+Working skill: `.agents/skills/sqlite-performance-optimization` (query-plan
+analysis, indexing, PRAGMA tuning) — load it before touching any lane here.
+
+## Status (2026-07-18)
+
+- **O1 complete** (`3be4ee1ab`, merged `2c45c6814`). `ipld_blocks` now uses
+  `INSERT OR IGNORE` (`ActorStore.m:448`). The commit went beyond the planned
+  scope: 15 other `INSERT OR REPLACE` sites converted to
+  `ON CONFLICT DO UPDATE` (preventing blob-trigger double-firing and silent
+  column wipes on `records`), six missing indexes added, PRAGMA configs
+  standardized (`temp_store=MEMORY`, `mmap_size`, `busy_timeout`,
+  `PRAGMA optimize` on close), and one unparameterized SQL site fixed.
+  The added indexes are plain filter indexes — O4's covering-index lane is
+  still open.
+- **O2 Phase A complete** (`fc1705696`, merged `8386727de`): actor store V3
+  `record_tombstones` WITHOUT ROWID migration + fresh-DB schema, with
+  apply/rollback/re-apply round-trip tests.
+- **O2 Phase B complete** (`50f2482c2` + fix `2f7ba5bdb`): service DB **V14**
+  (not V13 as originally planned — V13 was already taken)
+  `moderation_set_members` + `moderation_subjects` WITHOUT ROWID. The fix
+  commit restored the `FOREIGN KEY (set_id) ... ON DELETE CASCADE` the
+  rewrite had dropped — `deleteSet:` relies entirely on that cascade.
+  **Lesson for Phases C/D: a WITHOUT ROWID table rewrite must carry over
+  every constraint (FKs, CHECKs, DEFAULTs) from the original DDL, not just
+  the columns and PK.**
+- **O2 Phases C (chat) and D (space store) pending.** O3-O6 not started.
 
 ## Scope
 
@@ -17,16 +43,18 @@ transaction discipline) are already done and excluded from this plan.
 
 ## Priority model
 
-| Item                                     | Boundary risk | Structural drag | Test leverage | Change safety | Payoff | Priority |
-| ---------------------------------------- | ------------- | ---------------- | ------------- | -------------- | ------ | -------- |
-| O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       |
-| O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       |
-| O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       |
-| O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       |
-| O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       |
-| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       |
+| Item                                     | Boundary risk | Structural drag | Test leverage | Change safety | Payoff | Priority | Status |
+| ---------------------------------------- | ------------- | ---------------- | ------------- | -------------- | ------ | -------- | ------ |
+| O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       | Done (`3be4ee1ab`) |
+| O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | A+B done; C/D pending |
+| O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Open   |
+| O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Open   |
+| O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Open   |
+| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Open   |
 
-## O1: `INSERT OR IGNORE` for `ipld_blocks`
+## O1: `INSERT OR IGNORE` for `ipld_blocks` — COMPLETE
+
+Landed in `3be4ee1ab` (see Status above). Steps retained for the record.
 
 **Problem:** `ActorStore.m` uses `INSERT OR REPLACE INTO ipld_blocks (...)`.
 For immutable content-addressed blocks, `REPLACE` deletes and re-inserts the
@@ -81,7 +109,11 @@ None. Can ship independently.
 
 ---
 
-## O2: `WITHOUT ROWID` for composite-PK tables
+## O2: `WITHOUT ROWID` for composite-PK tables — Phases A/B COMPLETE, C/D PENDING
+
+Phase A landed in `fc1705696`; Phase B in `50f2482c2` + `2f7ba5bdb` (FK
+restoration — see the Status lesson). Phases C and D below are the
+remaining work.
 
 **Problem:** Zero tables in the codebase use `WITHOUT ROWID`. Tables with
 composite primary keys maintain a redundant rowid B-tree plus a secondary
@@ -101,8 +133,8 @@ index, wasting ~20-30% storage and doubling B-tree lookups for PK queries.
 
 | Table | PK | Migration target |
 |------|----|------------------|
-| `moderation_set_members` | `(set_id, did)` | V13 service migration |
-| `moderation_subjects` | `(subject_did, subject_type)` | V13 service migration |
+| `moderation_set_members` | `(set_id, did)` | V14 service migration (done) |
+| `moderation_subjects` | `(subject_did, subject_type)` | V14 service migration (done) |
 
 **Chat schema** (`Schema.m`):
 
@@ -133,7 +165,7 @@ they are the hottest tables. Defer to a later phase.
 
 ### Steps
 
-#### Phase A: Actor store — `record_tombstones` (lowest risk)
+#### Phase A: Actor store — `record_tombstones` (lowest risk) — COMPLETE (`fc1705696`)
 
 1. **Create V3 actor store migration.** Add a `V3RecordTombstonesWithoutRowid`
    class to `PDSMigrationManager.m` that:
@@ -156,10 +188,12 @@ they are the hottest tables. Defer to a later phase.
 
 5. **Run existing tests.** `AllTests --gated=run` must stay green.
 
-#### Phase B: Service DB — `moderation_set_members`, `moderation_subjects`
+#### Phase B: Service DB — `moderation_set_members`, `moderation_subjects` — COMPLETE (`50f2482c2` + `2f7ba5bdb`)
 
-6. **Create V13 service migration.** Same pattern as Phase A but for
-   both tables. Run within a single transaction.
+6. **Create V14 service migration.** Same pattern as Phase A but for
+   both tables. Run within a single transaction. (Landed as
+   `V14ModerationWithoutRowid`; the follow-up `2f7ba5bdb` restored the
+   `set_id` FK cascade the rewrite dropped.)
 
 7. **Update `PDSSchemaManager.m`.** Change `serviceSchemaSQL` to create
    both tables with `WITHOUT ROWID` for fresh databases.
@@ -176,6 +210,8 @@ they are the hottest tables. Defer to a later phase.
 11. **Create a chat schema migration.** Convert all 5 tables in one
     migration. The chat schema is in `Schema.m`, so the migration
     may need a separate migration manager or registration path.
+    Carry over every FK/CHECK/DEFAULT constraint from the original DDL
+    (the Phase B rewrite dropped an FK — `2f7ba5bdb`).
 
 12. **Update `Schema.m`.** Change `CREATE TABLE` statements to include
     `WITHOUT ROWID` for fresh databases.
@@ -330,8 +366,13 @@ table row after finding the index entry.
    which columns are filtered on and which are selected. A covering
    index includes all selected columns.
 
-3. **Add indexes.** Create a migration (V14 service, V4 actor store)
-   that adds the covering indexes. Example:
+3. **Add indexes.** Create a migration (V15 service — V14 is taken by
+   O2 Phase B — and V4 actor store) that adds the covering indexes.
+   Note `3be4ee1ab` already added six plain filter indexes
+   (`idx_records_collection`, `idx_blocks_repo_did_created`,
+   `idx_blobs_did_created`, `idx_labels_val`, `idx_labels_src_val`,
+   `idx_takedowns_applied`); check query plans against those before
+   adding covering variants. Example:
    ```sql
    CREATE INDEX IF NOT EXISTS idx_records_collection_rkey_value
      ON records(collection, rkey, value);
