@@ -20,6 +20,7 @@ competing roadmaps.
 | [Web and Admin UI](workstreams/04-web-and-admin-ui.md)                                             | Browser security, accessibility, and UI structure                           |
 | [Embedded runtime and deferred products](workstreams/05-embedded-runtime-and-deferred-products.md) | WASM kernel and product-level incomplete features                           |
 | [Permissioned spaces productionization](workstreams/06-permissioned-spaces.md)                     | Proposal 0016 acceptance scenarios, key rotation, attestation, upstream drift |
+| [Storage and MST optimization](workstreams/07-storage-and-mst-optimization.md)                     | `INSERT OR IGNORE`, `WITHOUT ROWID`, lazy MST hydration, covering indexes, DID caching, ingest decoupling |
 | [Phase execution prompts](prompts/README.md)                                                       | Derived agent prompts that execute the remaining phases; not a roadmap      |
 | [Retired plans](retired-plans.md)                                                                  | Disposition and recovery references for removed plans                       |
 
