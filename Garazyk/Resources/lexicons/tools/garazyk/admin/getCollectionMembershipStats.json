@@ -1,0 +1,37 @@
+{
+  "lexicon": 1,
+  "id": "tools.garazyk.admin.getCollectionMembershipStats",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Query collection_membership index size and optionally trigger a stale-entry prune.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "stats to query row count, prune to run stale-entry cleanup.",
+            "enum": ["stats", "prune"]
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["count"],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "description": "Number of entries currently in the collection_membership table."
+            },
+            "pruned": {
+              "type": "integer",
+              "description": "Number of stale entries removed (only present when action=prune)."
+            }
+          }
+        }
+      }
+    }
+  }
+}

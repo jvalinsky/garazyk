@@ -20,6 +20,7 @@
 #import "Services/PDS/PDSSpaceStore.h"
 #import "Services/PDS/PDSSpaceReconciler.h"
 #import "Services/PDS/PDSSpaceOplogPruner.h"
+#import "Services/PDS/PDSCollectionMembershipPruner.h"
 #import "Core/ATProtoDataPaths.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Admin/Diagnostics/PDSBlobAuditHandler.h"
@@ -64,6 +65,7 @@
 @property (nonatomic, strong, readwrite, nullable) PDSSpaceStore *spaceStore;
 @property (nonatomic, strong, readwrite, nullable) PDSSpaceReconciler *spaceReconciler;
 @property (nonatomic, strong, readwrite, nullable) PDSSpaceOplogPruner *spaceOplogPruner;
+@property (nonatomic, strong, readwrite, nullable) PDSCollectionMembershipPruner *collectionMembershipPruner;
 @property (nonatomic, strong, readwrite) JWTMinter *jwtMinter;
 @property (nonatomic, strong, readwrite) HttpServer *httpServer;
 @property (nonatomic, strong, readwrite) PDSRelayService *relayService;
@@ -431,6 +433,15 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                                                           retentionRevisions:pruneRetentions > 0 ? (NSUInteger)pruneRetentions : 100
                                                           intervalInSeconds:pruneInterval > 0 ? pruneInterval : 3600];
     }
+
+    // Collection membership pruner — periodic safety net that verifies
+    // every index entry against its actor store and removes stale entries.
+    // Runs every hour by default; the immediate prune-on-delete path in
+    // PDSRecordService handles most staleness inline.
+    _collectionMembershipPruner = [[PDSCollectionMembershipPruner alloc]
+        initWithServiceDatabases:_serviceDatabases
+                userDatabasePool:_userDatabasePool
+               intervalInSeconds:3600];
 }
 
 - (void)initializeServices {
@@ -472,6 +483,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     id<PDSRecordRepository> recordRepo = [PDSRepositoryFactory recordRepositoryWithDatabasePool:_userDatabasePool];
     _recordService = [[PDSRecordService alloc] initWithDatabasePool:_userDatabasePool];
     _recordService.recordRepository = recordRepo;
+    _recordService.serviceDatabases = _serviceDatabases;
     
     // Initialize Blob Storage and Service
     NSString *blobDir = [_dataDirectory stringByAppendingPathComponent:@"blobs"];
@@ -590,6 +602,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     [_relayService start];
     [_spaceReconciler start];
     [_spaceOplogPruner start];
+    [_collectionMembershipPruner start];
 
     // Video worker
     if ([_configuration.videoMode isEqualToString:@"internal"]) {
@@ -634,6 +647,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     [_relayService stop];
     [_spaceReconciler stop];
     _spaceReconciler = nil;
+    [_collectionMembershipPruner stop];
+    _collectionMembershipPruner = nil;
 
     // Analytics
     [_analyticsCollector stopCollecting];

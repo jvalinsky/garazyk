@@ -466,6 +466,14 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return [results.firstObject[@"count"] integerValue];
 }
 
+- (BOOL)hasRecordsForCollection:(NSString *)collection error:(NSError **)error {
+    if (collection.length == 0) return NO;
+    NSArray *results = [self.database executeParameterizedQuery:@"SELECT 1 FROM records WHERE collection = ? LIMIT 1"
+                                                         params:@[collection]
+                                                          error:error];
+    return results.count > 0;
+}
+
 - (NSInteger)getBlockCountForDid:(NSString *)did error:(NSError **)error {
     NSArray *results = [self.database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM ipld_blocks" params:@[] error:error];
     return [results.firstObject[@"count"] integerValue];
