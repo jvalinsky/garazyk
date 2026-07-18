@@ -416,11 +416,18 @@ async function recoveryTestControl(
   base: string,
   input: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
+  const token = Deno.env.get("PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN");
+  if (!token) {
+    throw new Error("recovery test control token is unavailable");
+  }
   const response = await fetch(
     new URL("/xrpc/tools.garazyk.test.spaceRecovery", base),
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(input),
     },
   );
@@ -1009,7 +1016,7 @@ export async function run(): Promise<ScenarioResult> {
       operation: "seed",
       space: recoverySpace,
       repo: writer.did,
-      rkey: `${label}-seed`,
+      rkey: `recovery-${label}-seed`,
     });
     if (typeof seeded.revision !== "string" || !seeded.revision) {
       throw new Error(

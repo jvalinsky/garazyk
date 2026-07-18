@@ -174,11 +174,18 @@ export async function startBinaryServices(
     );
   }
 
+  // The recovery fixture is a destructive, unlexiconed local-test route. Give
+  // each run an unguessable bearer token and make it available only to these
+  // child services and the scenario process that drives them.
+  const recoveryControlToken = crypto.randomUUID() + crypto.randomUUID();
+  Deno.env.set("PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN", recoveryControlToken);
+
   const commonEnv: Record<string, string> = {
     PDS_RUNNING_TESTS: "true",
-    // Enables only the unlexiconed recovery-path fixture control. Production
-    // route registration additionally rejects PDS_ENV=production.
+    // Enables only the authenticated, unlexiconed recovery-path fixture
+    // control. Production/issuer-required route registration rejects it.
     PDS_SPACE_RECOVERY_TEST_CONTROL: "true",
+    PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN: recoveryControlToken,
     PDS_USE_BIOMETRIC_PROTECTION: "false",
     PDS_USE_KEYCHAIN: "false",
     PDS_MASTER_SECRET: "test-master-secret-123",
