@@ -1456,6 +1456,101 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V3 Record Tombstones Without Rowid (Actor Store)
+
+@interface V3RecordTombstonesWithoutRowid : NSObject <PDSMigration>
+@end
+
+@implementation V3RecordTombstonesWithoutRowid
+
+- (NSInteger)version { return 3; }
+
+- (NSString *)name { return @"record_tombstones_without_rowid"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE record_tombstones_new ("
+        "    uri TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    collection TEXT NOT NULL,"
+        "    rkey TEXT NOT NULL,"
+        "    rev TEXT NOT NULL,"
+        "    indexed_at DATETIME NOT NULL,"
+        "    PRIMARY KEY (uri, rev)"
+        ") WITHOUT ROWID",
+
+        "INSERT INTO record_tombstones_new (uri, did, collection, rkey, rev, indexed_at) "
+        "SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones",
+
+        "DROP TABLE record_tombstones",
+
+        "ALTER TABLE record_tombstones_new RENAME TO record_tombstones",
+
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev)",
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V3 step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE record_tombstones_new ("
+        "    uri TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    collection TEXT NOT NULL,"
+        "    rkey TEXT NOT NULL,"
+        "    rev TEXT NOT NULL,"
+        "    indexed_at DATETIME NOT NULL,"
+        "    PRIMARY KEY (uri, rev)"
+        ")",
+
+        "INSERT INTO record_tombstones_new (uri, did, collection, rkey, rev, indexed_at) "
+        "SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones",
+
+        "DROP TABLE record_tombstones",
+
+        "ALTER TABLE record_tombstones_new RENAME TO record_tombstones",
+
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev)",
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V3 down step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+@end
+
 #pragma mark - V13 Collection Membership Index
 
 @interface V13CollectionMembershipSchema : NSObject <PDSMigration>
@@ -1499,6 +1594,133 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error {
     sqlite3_exec(db, "DROP TABLE IF EXISTS collection_membership", NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
+#pragma mark - V14 Moderation Tables Without Rowid (Service DB)
+
+@interface V14ModerationWithoutRowid : NSObject <PDSMigration>
+@end
+
+@implementation V14ModerationWithoutRowid
+
+- (NSInteger)version { return 14; }
+
+- (NSString *)name { return @"moderation_without_rowid"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE moderation_set_members_new ("
+        "    set_id TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    added_at REAL NOT NULL,"
+        "    PRIMARY KEY (set_id, did),"
+        "    FOREIGN KEY (set_id) REFERENCES moderation_sets(id) ON DELETE CASCADE"
+        ") WITHOUT ROWID",
+
+        "INSERT INTO moderation_set_members_new (set_id, did, added_at) "
+        "SELECT set_id, did, added_at FROM moderation_set_members",
+
+        "DROP TABLE moderation_set_members",
+
+        "ALTER TABLE moderation_set_members_new RENAME TO moderation_set_members",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did)",
+
+        "CREATE TABLE moderation_subjects_new ("
+        "    subject_did TEXT NOT NULL,"
+        "    subject_type TEXT NOT NULL,"
+        "    review_state TEXT NOT NULL DEFAULT 'tools.ozone.moderation.defs#reviewOpen',"
+        "    last_event_id TEXT,"
+        "    updated_at REAL NOT NULL,"
+        "    PRIMARY KEY(subject_did, subject_type)"
+        ") WITHOUT ROWID",
+
+        "INSERT INTO moderation_subjects_new (subject_did, subject_type, review_state, last_event_id, updated_at) "
+        "SELECT subject_did, subject_type, review_state, last_event_id, updated_at FROM moderation_subjects",
+
+        "DROP TABLE moderation_subjects",
+
+        "ALTER TABLE moderation_subjects_new RENAME TO moderation_subjects",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_state ON moderation_subjects(review_state)",
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_did ON moderation_subjects(subject_did)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V14 step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE moderation_set_members_new ("
+        "    set_id TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    added_at REAL NOT NULL,"
+        "    PRIMARY KEY (set_id, did),"
+        "    FOREIGN KEY (set_id) REFERENCES moderation_sets(id) ON DELETE CASCADE"
+        ")",
+
+        "INSERT INTO moderation_set_members_new (set_id, did, added_at) "
+        "SELECT set_id, did, added_at FROM moderation_set_members",
+
+        "DROP TABLE moderation_set_members",
+
+        "ALTER TABLE moderation_set_members_new RENAME TO moderation_set_members",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did)",
+
+        "CREATE TABLE moderation_subjects_new ("
+        "    subject_did TEXT NOT NULL,"
+        "    subject_type TEXT NOT NULL,"
+        "    review_state TEXT NOT NULL DEFAULT 'tools.ozone.moderation.defs#reviewOpen',"
+        "    last_event_id TEXT,"
+        "    updated_at REAL NOT NULL,"
+        "    PRIMARY KEY(subject_did, subject_type)"
+        ")",
+
+        "INSERT INTO moderation_subjects_new (subject_did, subject_type, review_state, last_event_id, updated_at) "
+        "SELECT subject_did, subject_type, review_state, last_event_id, updated_at FROM moderation_subjects",
+
+        "DROP TABLE moderation_subjects",
+
+        "ALTER TABLE moderation_subjects_new RENAME TO moderation_subjects",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_state ON moderation_subjects(review_state)",
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_did ON moderation_subjects(subject_did)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V14 down step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
     return YES;
 }
 
@@ -1780,6 +2002,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V10PendingFactorTokensSchema alloc] init]];
     [manager registerMigration:[[V13CollectionMembershipSchema alloc] init]];
     [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
+    [manager registerMigration:[[V14ModerationWithoutRowid alloc] init]];
     return manager;
 }
 
@@ -1787,6 +2010,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
     [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"actor"]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
+    [manager registerMigration:[[V3RecordTombstonesWithoutRowid alloc] init]];
     return manager;
 }
 

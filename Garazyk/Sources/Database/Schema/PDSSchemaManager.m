@@ -253,7 +253,7 @@
            @"    added_at REAL NOT NULL,"
            @"    PRIMARY KEY (set_id, did),"
            @"    FOREIGN KEY (set_id) REFERENCES moderation_sets(id) ON DELETE CASCADE"
-           @")";
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)ozoneTemplatesTableSchema {
@@ -307,7 +307,7 @@
            @"    last_event_id TEXT,"
            @"    updated_at REAL NOT NULL,"
            @"    PRIMARY KEY(subject_did, subject_type)"
-           @")";
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)ozoneSafelinksTableSchema {
@@ -505,7 +505,7 @@
            @"    rev TEXT NOT NULL,"
            @"    indexed_at DATETIME NOT NULL,"
            @"    PRIMARY KEY (uri, rev)"
-           @")";
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)actorStoreBlobsTableSchema {
