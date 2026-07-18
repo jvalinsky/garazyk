@@ -82,8 +82,8 @@
 
     // Verify version
     NSInteger version = [manager currentVersion:db];
-    if (version != 1) {
-        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 1, got %ld", (long)version]];
+    if (version != 2) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 2, got %ld", (long)version]];
         sqlite3_close(db);
         return NO;
     }
@@ -210,10 +210,10 @@
         return NO;
     }
 
-    // Verify version is 1
+    // Verify version is 2
     NSInteger version = [manager currentVersion:db];
-    if (version != 1) {
-        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 1 after re-apply, got %ld", (long)version]];
+    if (version != 2) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 2 after re-apply, got %ld", (long)version]];
         sqlite3_close(db);
         return NO;
     }

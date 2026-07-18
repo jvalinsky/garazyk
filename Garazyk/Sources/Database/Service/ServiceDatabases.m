@@ -133,7 +133,8 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
         @"PRAGMA journal_mode=WAL;"
         @"PRAGMA synchronous=NORMAL;"
         @"PRAGMA cache_size=-32000;"
-        @"PRAGMA temp_store=MEMORY;";
+        @"PRAGMA temp_store=MEMORY;"
+        @"PRAGMA busy_timeout=5000;";
     [self executeSQL:pragmaSQL onPool:pool error:nil];
 }
 
@@ -579,7 +580,7 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     [self.didCachePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSData *jsonData = [NSJSONSerialization dataWithJSONObject:document options:0 error:nil];
-        [store.database executeParameterizedUpdate:@"INSERT OR REPLACE INTO did_cache (did, document, expires_at) VALUES (?, ?, ?)" params:@[did, jsonData ?: [NSNull null], @(expiresAt.timeIntervalSince1970)] error:nil];
+        [store.database executeParameterizedUpdate:@"INSERT INTO did_cache (did, document, expires_at) VALUES (?, ?, ?) ON CONFLICT(did) DO UPDATE SET document=excluded.document, expires_at=excluded.expires_at" params:@[did, jsonData ?: [NSNull null], @(expiresAt.timeIntervalSince1970)] error:nil];
     } error:nil];
 }
 
@@ -708,7 +709,7 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         success = [store.database executeParameterizedUpdate:
-            @"INSERT OR REPLACE INTO collection_membership (did, collection) VALUES (?, ?)"
+            @"INSERT OR IGNORE INTO collection_membership (did, collection) VALUES (?, ?)"
             params:@[did, collection]
             error:innerError];
     } error:error];
