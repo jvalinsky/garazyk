@@ -184,6 +184,15 @@ on the three-PDS binary topology. `deno fmt --check` and `deno check` pass;
 repository-wide lint remains blocked by 2,043 pre-existing unrelated package
 findings.
 
+### Current slice (2026-07-18)
+
+Extend scenario 94 (or a focused acceptance helper) so current three-PDS
+runtime evidence observes each recovery selection once: normal incremental
+operations, lightweight record-diff after a pruned cursor with a small delta,
+and full CAR import after a pruned cursor with a large delta. This slice owns
+only reconciliation-path evidence and any narrowly characterized defect it
+reveals.
+
 ### Next steps
 
 1. Exercise and observe the three pruned-oplog recovery paths: incremental
