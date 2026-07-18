@@ -25,6 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class SearchIndexService;
 @class FeedService;
 @class PDSSpaceStore;
+@class PDSSpaceReconciler;
 @class JWTMinter;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
@@ -56,6 +57,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, readonly, nullable) PDSDatabasePool *userDatabasePool;
 @property (nonatomic, readonly, nullable) PDSSpaceStore *spaceStore;
+@property (nonatomic, readonly, nullable) PDSSpaceReconciler *spaceReconciler;
 @property (nonatomic, readonly, nullable) RateLimiter *rateLimiter;
 
 /*! Pack-specific services populated before registration when needed. */
@@ -114,6 +116,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) SearchIndexService *searchIndexService;
 @property (nonatomic, strong, nullable) FeedService *feedService;
 @property (nonatomic, strong, nullable) PDSSpaceStore *spaceStore;
+@property (nonatomic, strong, nullable) PDSSpaceReconciler *spaceReconciler;
 
 @property (nonatomic, strong, nullable) id<VideoJobStore> videoJobStore;
 @property (nonatomic, strong, nullable) id<VideoAuthProvider> videoAuthProvider;
