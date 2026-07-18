@@ -24,7 +24,11 @@ import {
 import type { BrowserFlow, Topology } from "@garazyk/schemat";
 import { formatRequirement } from "./mod.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
-import { discoverScenarios, selectScenarios } from "./scenario_selector.ts";
+import {
+  discoverScenarios,
+  normalizeScenarioId,
+  selectScenarios,
+} from "./scenario_selector.ts";
 import { runScenarioLoop } from "./run_loop.ts";
 import type { ScenarioExecutionResult } from "./run_loop.ts";
 import type { ScenarioRunEventSink } from "./events.ts";
@@ -435,6 +439,12 @@ export async function executeRunnerArgs(
 
   const { repoRoot, scenarioDir } = options;
   const scenarios = await discoverScenarios(scenarioDir);
+  const requestedScenarioIds = new Set(
+    args.scenarioIds.map(normalizeScenarioId),
+  );
+  const explicitlyRequestedScenarios = scenarios.filter((scenario) =>
+    requestedScenarioIds.has(scenario.id)
+  );
 
   if (args.list) {
     console.log(bold("\nAvailable Scenarios:\n"));
@@ -513,6 +523,12 @@ export async function executeRunnerArgs(
     const resolvedTopologyName = args.topology ?? DEFAULT_LOCAL_TOPOLOGY;
     topology = resolveTopology(args.webClient, resolvedTopologyName, {
       manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
+      includePds2: args.pds2 ||
+        explicitlyRequestedScenarios.some((scenario) => scenario.needsPds2),
+      includePds3: explicitlyRequestedScenarios.some((scenario) =>
+        scenario.needsPds3 ||
+        scenario.requires.some((requirement) => requirement.role === "pds3")
+      ),
     });
 
     if (args.topology) {
