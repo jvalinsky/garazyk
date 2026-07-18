@@ -28,8 +28,8 @@
 @interface PDSCLIInitCommand : PDSBaseCommand @end
 @interface PDSCLIInviteCommand : PDSBaseCommand @end
 
-void PDSCLIRegisterAllCommands(void) {
-    PDSCLIDispatcher *dispatcher = [PDSCLIDispatcher sharedDispatcher];
+void PDSCLIRegisterAllCommandsForDispatcher(PDSCLIDispatcher *dispatcher) {
+    if (!dispatcher) return;
 
     NSArray<Class> *commandClasses = @[
         [PDSCLIServeCommand class],
@@ -52,4 +52,8 @@ void PDSCLIRegisterAllCommands(void) {
             }
         }
     }
+}
+
+void PDSCLIRegisterAllCommands(void) {
+    PDSCLIRegisterAllCommandsForDispatcher([PDSCLIDispatcher sharedDispatcher]);
 }
