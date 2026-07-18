@@ -144,9 +144,16 @@ static NSArray<NSString *> *PDSOAuthClientDelimitedArray(id value) {
     for (NSUInteger i = 0; i < columns.count; i++) {
         [placeholders addObject:@"?"];
     }
-    NSString *sql = [NSString stringWithFormat:@"INSERT OR REPLACE INTO oauth_clients (%@) VALUES (%@)",
+    NSMutableArray<NSString *> *setClauses = [NSMutableArray arrayWithCapacity:columns.count];
+    for (NSString *col in columns) {
+        if (![col isEqualToString:@"client_id"]) {
+            [setClauses addObject:[NSString stringWithFormat:@"%@=excluded.%@", col, col]];
+        }
+    }
+    NSString *sql = [NSString stringWithFormat:@"INSERT INTO oauth_clients (%@) VALUES (%@) ON CONFLICT(client_id) DO UPDATE SET %@",
                      [columns componentsJoinedByString:@", "],
-                     [placeholders componentsJoinedByString:@", "]];
+                     [placeholders componentsJoinedByString:@", "],
+                     [setClauses componentsJoinedByString:@", "]];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);

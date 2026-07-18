@@ -22,7 +22,9 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
 }
 
 - (BOOL)saveRecord:(PDSDatabaseRecord *)record error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO records (uri, did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, ?) "
+                     @"ON CONFLICT(uri) DO UPDATE SET did=excluded.did, collection=excluded.collection, "
+                     @"rkey=excluded.rkey, cid=excluded.cid, created_at=excluded.created_at";
     NSArray *params = @[
         record.uri ?: [NSNull null],
         record.did ?: [NSNull null],

@@ -27,7 +27,7 @@
     [self safeExecuteSync:^{
 
     NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
-    NSString *sql = @"INSERT OR REPLACE INTO admin_config (key, value, updated_at) VALUES (?, ?, ?)";
+    NSString *sql = @"INSERT INTO admin_config (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at";
     result = [self executeParameterizedUpdate:sql params:@[key, value, dateStr] error:error];
     return;
     }];

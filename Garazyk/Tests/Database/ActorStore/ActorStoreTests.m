@@ -492,4 +492,39 @@
     XCTAssertNil(afterDelete, @"Blob should not exist after deletion");
 }
 
+- (void)testBlockDeduplication {
+    __autoreleasing NSError *error = nil;
+
+    NSData *blockData = [@"original block data" dataUsingEncoding:NSUTF8StringEncoding];
+    NSMutableData *cidData = [NSMutableData dataWithLength:32];
+    memset(cidData.mutableBytes, 0xCD, 32);
+
+    PDSDatabaseBlock *block1 = [[PDSDatabaseBlock alloc] init];
+    block1.cid = cidData;
+    block1.repoDid = self.testDID;
+    block1.blockData = blockData;
+    block1.size = blockData.length;
+    block1.rev = @"rev1";
+    block1.createdAt = [NSDate date];
+
+    XCTAssertTrue([self.store putBlock:block1 forDid:self.testDID error:&error], @"First put failed: %@", error);
+
+    NSData *differentData = [@"updated block data" dataUsingEncoding:NSUTF8StringEncoding];
+    PDSDatabaseBlock *block2 = [[PDSDatabaseBlock alloc] init];
+    block2.cid = cidData;
+    block2.repoDid = self.testDID;
+    block2.blockData = differentData;
+    block2.size = differentData.length;
+    block2.rev = @"rev2";
+    block2.createdAt = [NSDate date];
+
+    XCTAssertTrue([self.store putBlock:block2 forDid:self.testDID error:&error], @"Second put failed: %@", error);
+
+    NSInteger count = [self.store getBlockCountForDid:self.testDID error:&error];
+    XCTAssertEqual(count, 1, @"INSERT OR IGNORE should not create a duplicate row");
+
+    NSData *fetched = [self.store getBlockForCID:cidData forDid:self.testDID error:&error];
+    XCTAssertEqualObjects(fetched, blockData, @"Original block data should be preserved");
+}
+
 @end
