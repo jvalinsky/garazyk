@@ -150,16 +150,28 @@ The full path is exercised: OAuth PAR/PKCE/DPoP → delegation → credential �
 remote write → signed authority notification → remote reader credential read →
 public-repo isolation → membership-revocation credential denial.
 
+### OAuth confirmation regression coverage (2026-07-18)
+
+The apparent missing-`code` redirect was historical form encoding behavior:
+`0a7925f9a` corrects GNUstep `+` form-space parsing and `3b6a4f5cb` makes
+scenario 94 submit `%20`-encoded forms. Commit `9000097ba` adds a
+characterization test for the exact `atproto+space:` consent form and proves
+that `/oauth/authorize/confirm` returns a 302 whose Location includes both
+`code` and `state` (31 `OAuth2HandlerTests`, 0 failures).
+
+The structured run `2026-07-18t2153z-87263`
+(`deno task hamownia agent run 94 --binary --pds2`) reached topology startup
+but stopped before scenario execution because `APPVIEW failed to start`.
+It provides no current OAuth counterevidence.
+
 ### Next steps
 
-1. **Scenario 94** still fails at "Owner obtains OAuth grant on authority PDS —
-   authorization redirect did not contain a code." This is a **separate** OAuth
-   consent/redirect issue (not the DPoP bug, which is fixed), surfacing at the
-   `/oauth/authorize/confirm` step. Its own slice.
+1. Diagnose the AppView binary-topology startup failure and obtain a dated
+   structured scenario-94 run before changing scenario or product behavior.
 2. Private-blob acceptance and pruned-oplog recovery paths (P6.1 items 2–3)
    remain.
-3. Move compatibility-gate rows to Implemented with the dated scenario-93 run
-   reference once 94 and the blob/oplog cases are also green.
+3. Move compatibility-gate rows to Implemented with dated structured runs only
+   once 94 and the blob/oplog cases are green.
 
 ## Acceptance gate
 

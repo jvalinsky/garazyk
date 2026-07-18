@@ -91,9 +91,12 @@ documentation, TUI, package, and refactor plans.
   import, lightweight record-diff recovery, incremental ops, oplog pruning
   with a background timer, and `listRecords`/`listRepoOps` cursor fixes —
   with space test suites registered and green. Scenarios 93 and 94 plus PDS3
-  topology config exist (`cc063779a`) but are type-checked only: no runtime
-  pass is recorded, so every compatibility-gate row that needs multi-PDS
-  acceptance is still pending (workstream 06).
+  topology config exist (`cc063779a`). Scenario 93 now passes 19/19; the two
+  OAuth defects are fixed and Scenario 94's exact consent form is
+  regression-covered (`9000097ba`). A fresh Scenario 94 run is pending because
+  `2026-07-18t2153z-87263` stopped at AppView startup before executing a
+  scenario step; the remaining compatibility-gate rows stay pending
+  (workstream 06).
 - The 29 gated `AllTests` classes are folded back into CI (Phase 2 item 4,
   first slice of Phase 4/workstream 01 S5): the 2026-07-16 baseline of 76
   failures across 11 classes is repaired (per-class root causes in
@@ -273,10 +276,10 @@ deterministic generator tests.
    including the private-blob and pruned-oplog recovery cases, and move the
    compatibility-gate rows on dated structured-run evidence
    ([workstream 06](workstreams/06-permissioned-spaces.md), P6.1). PDS3
-   topology support across the scenario runner landed (`b807b3357`); first
-   structured runs on 2026-07-18 reached 6/7 (scenario 93) and 3/4
-   (scenario 94), failing only on two OAuth product-code issues — see the
-   phase-02 prompt's progress notes.
+   topology support across the scenario runner landed (`b807b3357`); scenario
+   93 passes 19/19 and the OAuth fixes are characterization-guarded
+   (`9000097ba`). Scenario 94 still needs a current run after resolving the
+   AppView startup failure in `2026-07-18t2153z-87263`.
 7. **Complete (report-only).** Conformance matrix at
    `docs/reports/spec-conformance-matrix.md`: 21 rows, 16 supported, 4 partial,
    0 gap. Permissions-spec gap assessment at
