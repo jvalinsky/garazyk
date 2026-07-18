@@ -12,7 +12,9 @@
 @implementation PDSDatabase (Blocks)
 
 - (BOOL)saveBlock:(PDSDatabaseBlock *)block error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+        NSString *sql = @"INSERT INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?) "
+                         @"ON CONFLICT(cid) DO UPDATE SET repo_did=excluded.repo_did, block_data=excluded.block_data, "
+                         @"content_type=excluded.content_type, size=excluded.size, created_at=excluded.created_at";
     NSArray *params = @[
         block.cid ?: [NSNull null],
         block.repoDid ?: [NSNull null],
@@ -28,7 +30,9 @@
     if (blocks.count == 0) return YES;
     __block BOOL result = NO;
     [self safeExecuteSync:^{
-        NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?) "
+                     @"ON CONFLICT(cid) DO UPDATE SET repo_did=excluded.repo_did, block_data=excluded.block_data, "
+                     @"content_type=excluded.content_type, size=excluded.size, created_at=excluded.created_at";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
             if (error) *error = [self errorWithMessage:sqlite3_errmsg(self.db) code:PDSDatabaseErrorQueryFailed];
