@@ -24,6 +24,8 @@ export interface ScenarioManifest {
   optional?: ScenarioRequirement[];
   /** Whether this scenario needs a second PDS instance */
   needsPds2?: boolean;
+  /** Whether this scenario needs a third PDS instance */
+  needsPds3?: boolean;
   /** Browser automation flows this scenario supports */
   browserFlows?: BrowserFlow[];
   /** Per-scenario timeout override in seconds */
@@ -48,6 +50,8 @@ export interface ScenarioInfo {
   path: string;
   /** Whether this scenario requires PDS2 */
   needsPds2: boolean;
+  /** Whether this scenario requires PDS3 */
+  needsPds3: boolean;
   /** Browser flows this scenario supports */
   browserFlows: BrowserFlow[];
   /** Required capabilities for this scenario */
@@ -341,8 +345,18 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
   },
   "93": {
     needsPds2: true,
+    needsPds3: true,
     timeout: 300,
     requires: [requireCapability(Role.plc, Cap.plc.didResolution)],
+  },
+  "94": {
+    needsPds2: true,
+    needsPds3: true,
+    timeout: 300,
+    requires: [
+      requireCapability(Role.plc, Cap.plc.didResolution),
+      requireCapability(Role.pds3, Cap.pds3.getRecord),
+    ],
   },
 };
 
@@ -351,6 +365,13 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
  */
 export function needsPds2(scenarioId: string): boolean {
   return SCENARIO_MANIFESTS[scenarioId]?.needsPds2 === true;
+}
+
+/**
+ * Check if a scenario requires PDS3.
+ */
+export function needsPds3(scenarioId: string): boolean {
+  return SCENARIO_MANIFESTS[scenarioId]?.needsPds3 === true;
 }
 
 /**
@@ -468,6 +489,10 @@ export function isScenarioCompatible(
 ): boolean {
   // Check PDS2 requirement
   if (scenario.needsPds2 && !topology.capabilitiesByRole.pds2) {
+    return false;
+  }
+  // Check PDS3 requirement
+  if (scenario.needsPds3 && !topology.capabilitiesByRole.pds3) {
     return false;
   }
   // Check all required capabilities
