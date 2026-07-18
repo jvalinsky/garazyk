@@ -348,6 +348,43 @@ async function credentialXrpc(
   return await readJSON(response);
 }
 
+async function uploadSpaceBlob(
+  base: string,
+  grant: OAuthGrant,
+  space: string,
+  data: Uint8Array,
+): Promise<string> {
+  const url = new URL("/xrpc/com.atproto.repo.uploadBlob", base);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": `DPoP ${grant.accessToken}`,
+      "DPoP": await dpopProof(grant.dpopKey, "POST", url),
+      "Content-Type": "text/plain",
+      "X-Atproto-Space": space,
+      "X-Atproto-Space-Collection": COLLECTION,
+      "X-Atproto-Space-Action": "create",
+    },
+    body: data,
+  });
+  const body = await readJSON(response);
+  const blob = body.blob as Record<string, unknown> | undefined;
+  const ref = blob?.ref as Record<string, unknown> | undefined;
+  const cid = typeof ref?.$link === "string" ? ref.$link : "";
+  if (!cid) throw new Error("space blob upload did not return a CID");
+  return cid;
+}
+
+async function expectPublicBlobRejected(
+  url: URL,
+  headers: HeadersInit = {},
+): Promise<void> {
+  const response = await fetch(url, { headers, redirect: "manual" });
+  if (response.ok) {
+    throw new Error(`public blob endpoint exposed ${url.pathname}`);
+  }
+}
+
 async function expectRejected(
   operation: () => Promise<unknown>,
   message: string,
@@ -646,9 +683,41 @@ export async function run(): Promise<ScenarioResult> {
     },
   );
 
+  const privateBlobText = `permissioned-blob-93-${crypto.randomUUID()}`;
+  const privateBlobData = new TextEncoder().encode(privateBlobText);
+  const privateBlobCID = await timedCall(
+    result,
+    "Writer uploads a private blob with scoped OAuth and space bindings",
+    () => uploadSpaceBlob(PDS1, writerGrant, space, privateBlobData),
+    (cid) => `cid=${cid}`,
+  );
+  if (!privateBlobCID) {
+    result.finish();
+    return result;
+  }
+
   await timedCall(
     result,
-    "Public repository APIs do not reveal permissioned content",
+    "Reader retrieves the remote private blob through a space credential",
+    async () => {
+      const url = new URL("/xrpc/com.atproto.space.getBlob", PDS1);
+      url.searchParams.set("space", space);
+      url.searchParams.set("repo", writer.did);
+      url.searchParams.set("cid", privateBlobCID);
+      const response = await fetch(url, {
+        headers: { "Authorization": `Bearer ${readerCredential}` },
+      });
+      if (!response.ok) throw await responseError(response);
+      const blobText = new TextDecoder().decode(await response.arrayBuffer());
+      if (blobText !== privateBlobText) {
+        throw new Error("space credential did not return the private blob");
+      }
+    },
+  );
+
+  await timedCall(
+    result,
+    "Public repository, sync, and blob APIs reject permissioned data",
     async () => {
       const url = new URL("/xrpc/com.atproto.repo.getRecord", PDS1);
       url.searchParams.set("repo", writer.did);
@@ -670,8 +739,37 @@ export async function run(): Promise<ScenarioResult> {
       const exported = new TextDecoder().decode(
         await exportResponse.arrayBuffer(),
       );
-      if (exported.includes(privateText) || exported.includes(space)) {
+      if (
+        exported.includes(privateText) || exported.includes(privateBlobText) ||
+        exported.includes(space)
+      ) {
         throw new Error("public CAR export contained permissioned data");
+      }
+
+      const repoBlobURL = new URL("/xrpc/com.atproto.repo.getBlob", PDS1);
+      repoBlobURL.searchParams.set("did", writer.did);
+      repoBlobURL.searchParams.set("cid", privateBlobCID);
+      await expectPublicBlobRejected(repoBlobURL, {
+        "Authorization": `DPoP ${writerGrant.accessToken}`,
+        "DPoP": await dpopProof(writerGrant.dpopKey, "GET", repoBlobURL),
+      });
+
+      const syncBlobURL = new URL("/xrpc/com.atproto.sync.getBlob", PDS1);
+      syncBlobURL.searchParams.set("did", writer.did);
+      syncBlobURL.searchParams.set("cid", privateBlobCID);
+      await expectPublicBlobRejected(syncBlobURL);
+
+      const listBlobsURL = new URL("/xrpc/com.atproto.sync.listBlobs", PDS1);
+      listBlobsURL.searchParams.set("did", writer.did);
+      const listBlobsResponse = await fetch(listBlobsURL, {
+        headers: {
+          "Authorization": `DPoP ${writerGrant.accessToken}`,
+          "DPoP": await dpopProof(writerGrant.dpopKey, "GET", listBlobsURL),
+        },
+      });
+      const listBlobs = await readJSON(listBlobsResponse);
+      if (JSON.stringify(listBlobs.blobs).includes(privateBlobCID)) {
+        throw new Error("public sync blob listing exposed a private blob");
       }
     },
   );
