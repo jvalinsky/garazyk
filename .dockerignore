@@ -29,6 +29,7 @@ data
 demo_data
 pds.pid
 plc.pid
+plc/
 config.json
 config.yaml
 :memory:*
@@ -41,6 +42,7 @@ tmp_social_app
 # Documentation & reports (not needed for build)
 docs
 reports
+scripts/scenarios/reports/
 tasks
 skills
 

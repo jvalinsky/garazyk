@@ -385,6 +385,7 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpXrpcR
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/RelayXrpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpServerBuilder\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Generated/GZXrpcNSID\\.m$")
 # UI route packs migrated to garazyk-ui — exclude from service binaries
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES

@@ -55,6 +55,11 @@ function base64Url(bytes: Uint8Array): string {
   );
 }
 
+/** Encode form data with `%20` for spaces, accepted by the local GNUstep PDS. */
+function formBody(fields: Record<string, string>): string {
+  return new URLSearchParams(fields).toString().replaceAll("+", "%20");
+}
+
 function randomBase64Url(length = 32): string {
   const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
@@ -169,7 +174,10 @@ async function postFormWithDPoP(
     const response = await fetch(url, {
       method: "POST",
       headers,
-      body: new URLSearchParams(fields),
+      // OAuth form bodies may encode spaces as either '+' or '%20'. The
+      // local GNUstep server accepts percent-encoded spaces consistently,
+      // including inside JSON client metadata.
+      body: formBody(fields),
     });
     const responseNonce = response.headers.get("DPoP-Nonce") ?? undefined;
     const body = await response.json().catch(() => ({})) as Record<
@@ -269,7 +277,7 @@ async function obtainOAuthGrant(
     method: "POST",
     redirect: "manual",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    body: formBody({
       decision: "allow",
       client_id: CLIENT_ID,
       state,
@@ -304,7 +312,9 @@ async function obtainOAuthGrant(
     ? token.body.access_token
     : "";
   const did = typeof token.body.sub === "string" ? token.body.sub : actor.did;
-  if (!accessToken) throw new Error("token exchange did not return an access token");
+  if (!accessToken) {
+    throw new Error("token exchange did not return an access token");
+  }
   return { accessToken, dpopKey, did };
 }
 
@@ -481,7 +491,11 @@ export async function run(): Promise<ScenarioResult> {
       obtainOAuthGrant(
         PDS1,
         owner,
-        spaceScope("self", skey, ["read", "create", "update", "delete"], ["create", "update", "delete"]),
+        spaceScope("self", skey, ["read", "create", "update", "delete"], [
+          "create",
+          "update",
+          "delete",
+        ]),
       ),
   );
   if (!ownerGrant) {
@@ -631,7 +645,9 @@ export async function run(): Promise<ScenarioResult> {
         const value = record.value as Record<string, unknown> | undefined;
         if (value?.text !== text) {
           throw new Error(
-            `reader did not get expected record for ${text}: got ${JSON.stringify(value)}`,
+            `reader did not get expected record for ${text}: got ${
+              JSON.stringify(value)
+            }`,
           );
         }
       }
@@ -669,7 +685,10 @@ export async function run(): Promise<ScenarioResult> {
   //    The reader PDS reconciler runs on a bounded interval. After writer
   //    notifies the authority, the reader PDS picks up the new state on
   //    its next reconciliation cycle. We wait long enough for two cycles.
-  const reconcileIntervalMs = 300_000;
+  // Local-network PDS fixtures run their reconciler once per second. Wait for
+  // several cycles so the scenario verifies propagation without a 15-minute
+  // test runtime.
+  const reconcileIntervalMs = 3_000;
   await timedCall(
     result,
     `Wait ${reconcileIntervalMs / 1000}s for reader reconciliation cycle`,
@@ -697,7 +716,9 @@ export async function run(): Promise<ScenarioResult> {
         const value = record.value as Record<string, unknown> | undefined;
         if (value?.text !== text) {
           throw new Error(
-            `reader did not get reconciled record for ${text}: got ${JSON.stringify(value)}`,
+            `reader did not get reconciled record for ${text}: got ${
+              JSON.stringify(value)
+            }`,
           );
         }
       }
@@ -722,11 +743,21 @@ export async function run(): Promise<ScenarioResult> {
           excludeValues: "true",
         },
       );
-      const records = listed.records as Array<Record<string, unknown>> | undefined;
+      const records = listed.records as
+        | Array<Record<string, unknown>>
+        | undefined;
       if (!Array.isArray(records)) {
         throw new Error("listRecords did not return an array");
       }
-      const rkeys = records.map((r) => r.rkey as string).sort();
+      const rkeys = records
+        .map((r) => {
+          const uri = r.uri as string | undefined;
+          if (!uri) {
+            throw new Error("listRecords returned a record without a uri");
+          }
+          return uri.slice(uri.lastIndexOf("/") + 1);
+        })
+        .sort();
       const expectedRkeys = allTexts.map((t) => `scenario-94-${t}`).sort();
       if (JSON.stringify(rkeys) !== JSON.stringify(expectedRkeys)) {
         throw new Error(
@@ -743,7 +774,7 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       await credentialXrpc(
         PDS1,
-        "com.atproto.space.updateRecord",
+        "com.atproto.space.putRecord",
         writerCredential,
         {
           space,

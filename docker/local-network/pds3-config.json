@@ -21,5 +21,6 @@
   },
   "permissionedSpacesEnabled": true,
   "permissionedSpacesHostEndpoint": "http://127.0.0.1:2588",
+  "permissionedSpacesReconcileIntervalSeconds": 1,
   "hostname": "third.test"
 }
