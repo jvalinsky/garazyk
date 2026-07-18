@@ -90,7 +90,8 @@ NSString * const kPDSRecordTableCreateSQL =
     @"CREATE INDEX IF NOT EXISTS idx_records_did_collection ON records(did, collection);"
     @"CREATE INDEX IF NOT EXISTS idx_records_did_collection_rkey ON records(did, collection, rkey);"
     @"CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);"
-    @"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);";
+    @"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);"
+    @"CREATE INDEX IF NOT EXISTS idx_records_collection ON records(collection);";
 
 NSString * const kPDSBlockTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS blocks ("
@@ -193,8 +194,14 @@ NSString * const kPDSAccountUsageTriggerRecordDeleteSQL =
 NSString * const kPDSIndexBlocksRepoDidSQL =
     @"CREATE INDEX IF NOT EXISTS idx_blocks_repo_did ON blocks(repo_did)";
 
+NSString * const kPDSIndexBlocksRepoDidCreatedSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_blocks_repo_did_created ON blocks(repo_did, created_at)";
+
 NSString * const kPDSIndexBlobsDidSQL =
     @"CREATE INDEX IF NOT EXISTS idx_blobs_did ON blobs(did)";
+
+NSString * const kPDSIndexBlobsDidCreatedSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_blobs_did_created ON blobs(did, created_at)";
 
 NSString * const kPDSIndexAccountsHandleSQL = 
     @"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle)";
@@ -282,6 +289,9 @@ NSString * const kPDSIndexInviteCodesAccountDidSQL =
 NSString * const kPDSIndexTakedownsSubjectIdSQL =
     @"CREATE INDEX IF NOT EXISTS idx_admin_takedowns_subject_id ON admin_takedowns(subjectId)";
 
+NSString * const kPDSIndexTakedownsAppliedSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_takedowns_applied ON admin_takedowns(applied, subjectType)";
+
 NSString * const kPDSIndexAuditLogAdminSQL =
     @"CREATE INDEX IF NOT EXISTS idx_audit_log_admin ON admin_audit_log(admin_did)";
 
@@ -308,6 +318,12 @@ NSString * const kPDSIndexLabelsUriSQL =
 
 NSString * const kPDSIndexLabelsSourceSQL =
     @"CREATE INDEX IF NOT EXISTS idx_labels_source ON labels(src)";
+
+NSString * const kPDSIndexLabelsValSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_labels_val ON labels(val)";
+
+NSString * const kPDSIndexLabelsSrcValSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_labels_src_val ON labels(src, val)";
 
 NSString * const kPDSIndexReservedHandlesHandleSQL =
     @"CREATE INDEX IF NOT EXISTS idx_reserved_handles_handle ON reserved_handles(handle)";

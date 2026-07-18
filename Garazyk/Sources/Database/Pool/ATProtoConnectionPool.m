@@ -192,6 +192,7 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
         [self.connectionLastUsed removeObjectForKey:connValue];
 
         // Close the connection
+        sqlite3_exec(connection, "PRAGMA optimize", NULL, NULL, NULL);
         sqlite3_close(connection);
 
         // Signal that connection is no longer in use
