@@ -1,7 +1,7 @@
 ---
 title: Permissioned Spaces Productionization
 status: active
-last_verified: 2026-07-16
+last_verified: 2026-07-18
 ---
 
 # Permissioned Spaces Productionization
@@ -32,6 +32,13 @@ behavior.
   [ADR 0007](../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md).
   This was a general OAuth/auth correctness bug, not spaces-specific; it was
   the prerequisite blocker for the P6.1 acceptance runs below.
+- Scenario 94's earlier missing-authorization-code report was caused by the
+  GNUstep form parser's historical `+`-for-space handling. `0a7925f9a` fixes
+  that parser, `3b6a4f5cb` uses `%20` encoding in the scenario, and
+  `9000097ba` characterizes the exact `atproto+space:` consent form (31
+  `OAuth2HandlerTests`, 0 failures). Its fresh structured run
+  `2026-07-18t2153z-87263` stopped before scenario execution because AppView
+  failed to start; a green runtime result is still required.
 - The reconciliation protocol from ADR 0005 is fully implemented in source:
   `CARReader.roots`, `PDSSpaceStore` import/prune/index methods,
   `PDSSpaceReconciler` inbound sync, `PDSSpaceOplogPruner`, and the
@@ -52,7 +59,9 @@ behavior.
 Scenario 93 (three-PDS OAuth, delegation, remote write, notification,
 public-boundary isolation, membership revocation) and scenario 94
 (inbound reconciliation convergence after delayed or pruned notifications)
-exist but have never passed at runtime. `PDS3_URL` must name an
+exist, and scenario 93 passed at runtime on 2026-07-18. Scenario 94 still
+needs a green runtime result: its current binary-topology run was stopped by
+an AppView startup failure before its first step. `PDS3_URL` must name an
 independently operated, permissioned-spaces-enabled PDS.
 
 1. Stand up the three-PDS topology (the PDS3 config and manifest from
