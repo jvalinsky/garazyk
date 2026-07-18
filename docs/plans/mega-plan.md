@@ -96,11 +96,10 @@ documentation, TUI, package, and refactor plans.
   regression-covered (`9000097ba`). Scenario 94 now passes 25/25 in structured
   run `2026-07-18t2204z-20523`; the prior AppView failure was a transient
   external port collision. Private-blob acceptance now passes in scenario 93
-  (21/21, `21eeb5719`); the remaining compatibility-gate row is pruned-oplog
-  recovery (workstream 06). That final proof is blocked on an authorized,
-  production-excluded test control plane: the current runner cannot seed a
-  replica, prune a known cursor, trigger a single pass, or observe the
-  selector without falsely treating authority reads as recovery.
+  (21/21, `21eeb5719`). Phase 2 is now complete: scenario 94 passes 28/28
+  (`2026-07-18t2238z-90828`) and observes incremental, lightweight, and full
+  CAR recovery through a triple-gated, production-excluded test pack
+  (`43b3ad9c3`; workstream 06).
 - The 29 gated `AllTests` classes are folded back into CI (Phase 2 item 4,
   first slice of Phase 4/workstream 01 S5): the 2026-07-16 baseline of 76
   failures across 11 classes is repaired (per-class root causes in
@@ -275,18 +274,16 @@ deterministic generator tests.
    remains recorded in workstream 01 S5, not backlog: enforcement beyond
    passthrough (`RelayRepoStateManager` still has no callers; AppView
    does not yet un-index takendown accounts).
-6. **In progress (2026-07-18):** run the permissioned-spaces multi-PDS
+6. **Complete (2026-07-18):** permissioned-spaces multi-PDS
    acceptance scenarios (93 and 94) against an independently operated PDS3,
    including the private-blob and pruned-oplog recovery cases, and move the
    compatibility-gate rows on dated structured-run evidence
    ([workstream 06](workstreams/06-permissioned-spaces.md), P6.1). PDS3
    topology support across the scenario runner landed (`b807b3357`); scenario
    93 passes 19/19 and the OAuth fixes are characterization-guarded
-   (`9000097ba`). Scenario 94 now passes 25/25 in structured run
-   `2026-07-18t2204z-20523`. Private-blob acceptance now passes in scenario 93
-   (21/21, `21eeb5719`). Pruned-oplog recovery is blocked on the narrowly
-   scoped, production-excluded test control-plane decision recorded in the
-   phase-02 prompt.
+   (`9000097ba`). Scenario 93's private-blob acceptance passes 21/21
+   (`21eeb5719`), and Scenario 94 passes 28/28 with all three recovery
+   selectors observed (`43b3ad9c3`, `2026-07-18t2238z-90828).
 7. **Complete (report-only).** Conformance matrix at
    `docs/reports/spec-conformance-matrix.md`: 21 rows, 16 supported, 4 partial,
    0 gap. Permissions-spec gap assessment at

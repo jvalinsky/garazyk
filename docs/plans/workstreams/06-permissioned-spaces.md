@@ -63,28 +63,26 @@ behavior.
 Scenario 93 (three-PDS OAuth, delegation, remote write, notification,
 public-boundary isolation, membership revocation) and scenario 94
 (inbound reconciliation convergence after delayed or pruned notifications)
-exist and both passed at runtime on 2026-07-18 (scenario 93: 19/19; scenario
-94: 25/25, structured run `2026-07-18t2204z-20523`). The latter proves normal
-incremental reconciliation; the explicit pruned-oplog recovery cases remain.
+exist and both passed at runtime on 2026-07-18 (scenario 93: 21/21; scenario
+94: 28/28, structured run `2026-07-18t2238z-90828`). Scenario 94 proves normal
+incremental reconciliation plus pruned-cursor lightweight-diff and full-CAR
+recovery with selector/request-count evidence.
 `PDS3_URL` must name an independently operated, permissioned-spaces-enabled
 PDS.
 
 1. Stand up the three-PDS topology (the PDS3 config and manifest from
    `cc063779a`; Docker where possible) and record structured
    `hamownia agent` runs of scenarios 93 and 94.
-2. Exercise the pruned-oplog paths explicitly: incremental ops, lightweight
-   record diff, and full CAR import must each be observed at least once
-   (scenario 94 step assertions or a dedicated debug/test helper for
-   `pruneOplogForSpace:author:keepingRevisions:`). **Blocked on the Phase 2
-   test-only control-plane decision:** the runner currently cannot seed a
-   replica, prune a known cursor, trigger reconciliation, or observe the
-   selector. See `phase-02-spaces-acceptance.md` for the required safe,
-   production-excluded interface.
+2. **Complete (2026-07-18):** scenario 94 uses a production-excluded,
+   triple-gated test pack to seed a replica, prune a known cursor, run one real
+   reconciliation pass, and observe `incremental`, `lightweight`, and
+   `fullCAR` selectors with request counts (`43b3ad9c3`; 28/28 structured run
+   `2026-07-18t2238z-90828`).
 3. **Complete (2026-07-18):** private-blob acceptance is scenario 93's
    bound upload, credential-gated remote read, and public endpoint isolation
    path (`21eeb5719`; 21/21 in `2026-07-18t2209z-29983`).
-4. Update the remaining compatibility-gate row ("Multi-PDS recovery") to
-   Implemented only with dated evidence for all three recovery paths.
+4. **Complete (2026-07-18):** all compatibility-gate rows have dated
+   structured-run evidence.
 
 Owner boundary: `scripts/scenarios/scenarios/93_*.ts`, `94_*.ts`, scenario
 topology/config, `docs/permissioned-spaces-compatibility.md`. No product
