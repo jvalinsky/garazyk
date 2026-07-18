@@ -1100,6 +1100,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoHttpXrpcRoutePackTests",
       @"XrpcRoutePackTests",
       @"XrpcSpacePackTests",
+      @"XrpcSpaceRecoveryTestPackTests",
       @"GZLoggerPerformanceTests",
       @"RelayXrpcRoutePackTests",
       @"RelayAPIHandlerTests",

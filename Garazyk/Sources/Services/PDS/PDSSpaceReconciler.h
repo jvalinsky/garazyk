@@ -34,6 +34,15 @@ NS_ASSUME_NONNULL_BEGIN
 /** Schedules an immediate best-effort reconciliation pass. */
 - (void)reconcileNow;
 
+/**
+ * Runs one inbound reconciliation for a stored head and reports the selected
+ * path with outbound request counts.  Only the binary scenario fixture's
+ * test control plane calls this; production routes never expose it.
+ */
+- (void)reconcileOnceForSpace:(NSString *)space
+                       author:(NSString *)author
+                   completion:(void (^)(NSDictionary<NSString *, id> *result))completion;
+
 @end
 
 NS_ASSUME_NONNULL_END

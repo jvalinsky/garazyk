@@ -176,6 +176,9 @@ export async function startBinaryServices(
 
   const commonEnv: Record<string, string> = {
     PDS_RUNNING_TESTS: "true",
+    // Enables only the unlexiconed recovery-path fixture control. Production
+    // route registration additionally rejects PDS_ENV=production.
+    PDS_SPACE_RECOVERY_TEST_CONTROL: "true",
     PDS_USE_BIOMETRIC_PROTECTION: "false",
     PDS_USE_KEYCHAIN: "false",
     PDS_MASTER_SECRET: "test-master-secret-123",
