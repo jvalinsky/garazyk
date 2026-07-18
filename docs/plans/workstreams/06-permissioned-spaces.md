@@ -75,7 +75,11 @@ PDS.
 2. Exercise the pruned-oplog paths explicitly: incremental ops, lightweight
    record diff, and full CAR import must each be observed at least once
    (scenario 94 step assertions or a dedicated debug/test helper for
-   `pruneOplogForSpace:author:keepingRevisions:`).
+   `pruneOplogForSpace:author:keepingRevisions:`). **Blocked on the Phase 2
+   test-only control-plane decision:** the runner currently cannot seed a
+   replica, prune a known cursor, trigger reconciliation, or observe the
+   selector. See `phase-02-spaces-acceptance.md` for the required safe,
+   production-excluded interface.
 3. **Complete (2026-07-18):** private-blob acceptance is scenario 93's
    bound upload, credential-gated remote read, and public endpoint isolation
    path (`21eeb5719`; 21/21 in `2026-07-18t2209z-29983`).
