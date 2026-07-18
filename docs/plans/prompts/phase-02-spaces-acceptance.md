@@ -173,6 +173,14 @@ healthy, and scenario 94 passed **25/25** in structured run
 `2026-07-18t2204z-20523`. This was a transient external `EADDRINUSE` collision,
 not a topology/runner defect, so no code change is warranted.
 
+### Current slice (2026-07-18)
+
+Extend the existing three-PDS acceptance evidence with one private-blob path:
+upload through `com.atproto.repo.uploadBlob` using all three experimental
+space-binding headers, read it from the remote reader through
+`com.atproto.space.getBlob`, and prove every ordinary public repo/sync/blob
+endpoint rejects it. This slice excludes pruned-oplog recovery.
+
 ### Next steps
 
 1. Private-blob acceptance and pruned-oplog recovery paths (P6.1 items 2–3)
