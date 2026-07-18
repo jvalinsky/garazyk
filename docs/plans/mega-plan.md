@@ -288,8 +288,11 @@ uses released dependencies and retains a launcher smoke test.
 ### Phase 4: structure and scale
 
 1. **Complete (2026-07-17):** `kaszlak relay serve` removed (Operator decision: Option 3). `PDSCLIRelayCommand` deleted; `zuk` is the canonical relay binary. Underlying relay components (RelayClient, UpstreamManager, DownstreamHandler, Firehose, etc.) are untouched and continue to serve zuk, PDSRelayService, and AppViewIngestEngine.
-2. Stream repository export preparation and replace per-account summary scans
-   with indexed metadata.
+2. **In progress (2026-07-17):** stream repository export preparation and
+   replace per-account summary scans with indexed metadata. The N+1 fix
+   and byte-identical golden-fixture net are done (uncommitted, phase 7);
+   the incremental producer is still pending. Relay removal is recorded in
+   ADR 0006.
 3. Decompose Objective-C god files after the branch recovery and
    characterization gates. Start with route ownership, then OAuth and Admin UI.
 4. Complete Admin UI accessibility, CSS generation, and browser-module splits.

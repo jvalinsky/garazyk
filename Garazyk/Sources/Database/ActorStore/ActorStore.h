@@ -133,6 +133,13 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
  * @return Result produced by the operation.
  */
 - (NSInteger)getRecordCountForDid:(NSString *)did collection:(nullable NSString *)collection error:(NSError **)error;
+/**
+ * @abstract Check if did has any records in collection using a fast LIMIT 1 probe.
+ * @param collection Repository collection NSID.
+ * @param error Receives details when the operation fails.
+ * @return YES when at least one record exists for the collection.
+ */
+- (BOOL)hasRecordsForCollection:(NSString *)collection error:(NSError **)error;
 - (NSInteger)getBlockCountForDid:(NSString *)did error:(NSError **)error;
 
 #pragma mark - Blob Operations

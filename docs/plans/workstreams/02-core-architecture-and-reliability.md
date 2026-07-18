@@ -97,6 +97,14 @@ Build byte-for-byte CAR/STAR fixtures, then introduce an incremental producer
 behind a bounded fallback. Track peak memory in tests. Replace N+1 account
 summary reads with indexed materialized metadata where measurements justify it.
 
+**Progress (2026-07-17, uncommitted in phase 7's worktree):** the N+1
+account-summary fix (`headInfoForDid` + updated `listRepos`, 2 unit tests)
+and the golden-fixture net (structural CAR/STAR goldens, byte-identical
+re-export, peak memory/size bounds; 32/32 `PDSRepositoryServiceTests`)
+are done. The incremental producer itself is still pending, and a new
+`PDSCollectionMembershipPruner` plus schema/migration edits are in flight
+without tests — phase 7 owns committing and finishing these.
+
 When the Sync 1.1 remainder (export block ordering, collection-based
 repository subsets) reaches published spec text, implement it in this lane;
 workstream 01 S6 tracks the spec status.

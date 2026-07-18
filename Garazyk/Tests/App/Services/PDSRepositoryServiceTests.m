@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
+#if !defined(GNUSTEP)
+#import <mach/mach.h>
+#endif
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Database/ActorStore/ActorStore.h"
@@ -670,6 +673,32 @@
     XCTAssertNil(commit);
 }
 
+#pragma mark - Head Info (Lightweight)
+
+- (void)testHeadInfoForDidReturnsCidAndRev {
+    [self.recordService putRecord:@"app.bsky.feed.post"
+                            rkey:@"headinfo-test"
+                           value:[self postRecordWithText:@"head info data"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+
+    NSError *headInfoError = nil;
+    NSDictionary *headInfo = [self.repositoryService headInfoForDid:self.testDID error:&headInfoError];
+    XCTAssertNotNil(headInfo, @"headInfoForDid should return data for a repo with records");
+    XCTAssertNil(headInfoError);
+    XCTAssertNotNil(headInfo[@"cid"], @"headInfo should contain a cid");
+    XCTAssertNotNil(headInfo[@"rev"], @"headInfo should contain a rev");
+    XCTAssertTrue([headInfo[@"cid"] length] > 0);
+    XCTAssertTrue([headInfo[@"rev"] length] > 0);
+}
+
+- (void)testHeadInfoForDidReturnsNilForNonexistentDid {
+    NSError *headInfoError = nil;
+    NSDictionary *headInfo = [self.repositoryService headInfoForDid:@"did:web:nonexistent.headinfo.example.com" error:&headInfoError];
+    XCTAssertNil(headInfo, @"headInfoForDid should return nil for nonexistent repo");
+}
+
 #pragma mark - Initialize Repo
 
 - (void)testInitializeRepoForDidSucceeds {
@@ -784,5 +813,364 @@
     XCTAssertGreaterThan(chunkCount, 0U);
     XCTAssertGreaterThan(totalBytes, 0U);
 }
+
+#pragma mark - Golden Fixtures (Structural)
+
+// Fixed 32-byte secp256k1 private key for deterministic signing in golden tests.
+// All bytes set to 0xAB — produces the same commit signature every test run.
+static NSData * _Nonnull PDSTestFixedSigningKey(void) {
+    static NSData *key = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        uint8_t bytes[32];
+        memset(bytes, 0xAB, 32);
+        key = [NSData dataWithBytes:bytes length:32];
+    });
+    return key;
+}
+
+/// Helper: create a post record with a fixed ISO timestamp for deterministic CID generation.
+- (NSDictionary *)goldenPostRecordWithText:(NSString *)text {
+    return @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": text,
+        @"createdAt": @"2024-01-01T00:00:00.000Z"
+    };
+}
+
+/// Helper: set up a golden test repo with fixed signing key and 3 deterministic records.
+- (void)setupGoldenRepoWithDID:(NSString *)did {
+    PDSActorStore *store = [self.pool storeForDid:did error:nil];
+    XCTAssertNotNil(store);
+    NSError *importError = nil;
+    XCTAssertTrue([store importSigningKey:PDSTestFixedSigningKey() error:&importError],
+                  @"Failed to import fixed signing key: %@", importError);
+
+    NSArray<NSDictionary *> *writes = @[
+        @{@"action": @"create", @"collection": @"app.bsky.feed.post", @"rkey": @"golden-post-a",
+          @"value": [self goldenPostRecordWithText:@"Golden record A"]},
+        @{@"action": @"create", @"collection": @"app.bsky.feed.post", @"rkey": @"golden-post-b",
+          @"value": [self goldenPostRecordWithText:@"Golden record B"]},
+        @{@"action": @"create", @"collection": @"app.bsky.feed.post", @"rkey": @"golden-post-c",
+          @"value": [self goldenPostRecordWithText:@"Golden record C"]},
+    ];
+
+    NSError *writeError = nil;
+    NSDictionary *result = [self.recordService applyWrites:writes
+                                                    forDid:did
+                                            validationMode:PDSValidationModeOff
+                                                swapCommit:nil
+                                                     error:&writeError];
+    XCTAssertNil(writeError, @"Golden repo setup failed: %@", writeError);
+    XCTAssertNotNil(result[@"results"]);
+    XCTAssertEqual([result[@"results"] count], 3U, @"Should have 3 write results");
+}
+
+/// Helper: parse CAR data and return the reader for structural assertions.
+- (nullable CARReader *)parseCARData:(NSData *)carData label:(NSString *)label {
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    XCTAssertNil(parseError, @"%@: CAR parse error: %@", label, parseError);
+    XCTAssertNotNil(reader, @"%@: CAR reader is nil", label);
+    return reader;
+}
+
+- (void)testGoldenCARExportStructuralFixture {
+    NSString *goldenDID = @"did:web:golden-car.example.com";
+    [self setupGoldenRepoWithDID:goldenDID];
+
+    // Export the repo
+    NSError *exportError = nil;
+    NSData *carData = [self.repositoryService getRepoContents:goldenDID since:nil error:&exportError];
+    XCTAssertNotNil(carData, @"Golden CAR export failed: %@", exportError);
+    XCTAssertNil(exportError);
+    XCTAssertTrue(carData.length > 0, @"Golden CAR should not be empty");
+
+    // Parse and assert structure
+    CARReader *reader = [self parseCARData:carData label:@"Golden CAR"];
+    if (!reader) return;
+
+    // Root CID must be set
+    XCTAssertNotNil(reader.rootCID, @"Golden CAR must have a root CID");
+    XCTAssertTrue(reader.rootCID.stringValue.length > 0, @"Root CID must be non-empty");
+
+    // Must contain at least: commit block + 3 record blocks + MST nodes
+    XCTAssertTrue(reader.blocks.count >= 4, @"Golden CAR should have >=4 blocks (commit + 3 records + MST), got %lu",
+                  (unsigned long)reader.blocks.count);
+
+    // The commit block must be present
+    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    XCTAssertNotNil(commitBlock, @"Commit block must be present");
+    XCTAssertTrue(commitBlock.data.length > 0, @"Commit block must have data");
+
+    // Parse commit to verify structure
+    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+    XCTAssertNotNil(commitValue);
+    XCTAssertEqual(commitValue.type, CBORTypeMap, @"Commit must be a CBOR map");
+
+    // Commit must have required fields: did, version, data, rev, sig
+    CBORValue *didVal = commitValue.map[[CBORValue textString:@"did"]];
+    XCTAssertNotNil(didVal);
+    XCTAssertEqualObjects(didVal.textString, goldenDID, @"Commit did must match");
+
+    CBORValue *versionVal = commitValue.map[[CBORValue textString:@"version"]];
+    XCTAssertNotNil(versionVal);
+    XCTAssertEqual([versionVal.unsignedInteger integerValue], 3, @"Commit version must be 3");
+
+    CBORValue *dataVal = commitValue.map[[CBORValue textString:@"data"]];
+    XCTAssertNotNil(dataVal, @"Commit must have a data field (MST root CID)");
+    XCTAssertEqual(dataVal.type, CBORTypeTag, @"Commit data must be a CID tag");
+
+    CBORValue *revVal = commitValue.map[[CBORValue textString:@"rev"]];
+    XCTAssertNotNil(revVal, @"Commit must have a rev field");
+    XCTAssertEqual(revVal.type, CBORTypeTextString, @"Commit rev must be a string");
+    XCTAssertTrue(revVal.textString.length > 0, @"Commit rev must be non-empty");
+
+    CBORValue *sigVal = commitValue.map[[CBORValue textString:@"sig"]];
+    XCTAssertNotNil(sigVal, @"Commit must have a sig field");
+    XCTAssertEqual(sigVal.type, CBORTypeByteString, @"Commit sig must be bytes");
+    XCTAssertTrue(sigVal.byteString.length > 0, @"Commit sig must be non-empty");
+
+    // CID determinism: with a fixed signing key and fixed record timestamps,
+    // the commit data CID (MST root) and record CIDs are deterministic.
+    // Two exports of the same repo must produce identical CIDs.
+    CID *commitDataCID = [self commitDataCIDFromCARData:carData];
+    XCTAssertNotNil(commitDataCID, @"Commit must have a data CID");
+    XCTAssertTrue(commitDataCID.stringValue.length > 0, @"MST root CID must be non-empty");
+
+    // Every block must have a valid CID matching its data
+    for (CARBlock *block in reader.blocks) {
+        CID *expectedCID = [CID cidWithDigest:[CID sha256Digest:block.data] codec:0x71]; // dag-cbor codec
+        XCTAssertTrue([block.cid isEqual:expectedCID] ||
+                      [block.cid.stringValue isEqualToString:expectedCID.stringValue],
+                      @"Block CID mismatch: %@ != %@", block.cid.stringValue, expectedCID.stringValue);
+    }
+
+    // Non-commit block count: 3 records + MST nodes (at least 1 root node)
+    NSUInteger nonCommitCount = 0;
+    for (CARBlock *block in reader.blocks) {
+        if (![block.cid isEqual:reader.rootCID]) {
+            nonCommitCount++;
+        }
+    }
+    XCTAssertTrue(nonCommitCount >= 4, @"Should have at least 4 non-commit blocks (3 records + root MST), got %lu",
+                  (unsigned long)nonCommitCount);
+}
+
+- (void)testGoldenCARExportByteIdenticalForUnchangedRepo {
+    NSString *goldenDID = @"did:web:golden-byteid.example.com";
+    [self setupGoldenRepoWithDID:goldenDID];
+
+    // First export
+    NSError *firstError = nil;
+    NSData *firstCAR = [self.repositoryService getRepoContents:goldenDID since:nil error:&firstError];
+    XCTAssertNotNil(firstCAR);
+    XCTAssertNil(firstError);
+
+    // Second export of unchanged repo — must be byte-identical
+    NSError *secondError = nil;
+    NSData *secondCAR = [self.repositoryService getRepoContents:goldenDID since:nil error:&secondError];
+    XCTAssertNotNil(secondCAR);
+    XCTAssertNil(secondError);
+
+    XCTAssertEqualObjects(firstCAR, secondCAR,
+                          @"Two exports of unchanged repo must produce byte-identical CAR output");
+
+    // Third export via chunk producer must produce identical bytes when reassembled
+    NSError *chunkError = nil;
+    PDSRepoChunkProducer producer = [self.repositoryService repoContentsChunkProducer:goldenDID
+                                                                                 since:nil
+                                                                                 error:&chunkError];
+    XCTAssertNotNil(producer);
+    XCTAssertNil(chunkError);
+
+    NSMutableData *chunkedCAR = [NSMutableData data];
+    while (YES) {
+        NSError *chunkReadError = nil;
+        NSData *chunk = producer(&chunkReadError);
+        XCTAssertNil(chunkReadError);
+        if (!chunk) break;
+        [chunkedCAR appendData:chunk];
+    }
+
+    XCTAssertEqualObjects(chunkedCAR, firstCAR,
+                          @"Chunk-producer CAR must match direct export byte-for-byte");
+
+    // Verify both exports parse identically
+    CARReader *reader1 = [self parseCARData:firstCAR label:@"first export"];
+    CARReader *reader2 = [self parseCARData:secondCAR label:@"second export"];
+    if (reader1 && reader2) {
+        XCTAssertEqualObjects(reader1.rootCID.stringValue, reader2.rootCID.stringValue,
+                              @"Root CID must match across exports");
+        XCTAssertEqual(reader1.blocks.count, reader2.blocks.count,
+                       @"Block count must match across exports");
+    }
+}
+
+- (void)testGoldenSTARL0ExportStructuralFixture {
+    NSString *goldenDID = @"did:web:golden-starl0.example.com";
+    [self setupGoldenRepoWithDID:goldenDID];
+
+    NSError *exportError = nil;
+    NSData *starData = [self.repositoryService getRepoContentsSTARL0:goldenDID since:nil error:&exportError];
+    XCTAssertNotNil(starData, @"Golden STAR-L0 export failed: %@", exportError);
+    XCTAssertNil(exportError);
+    XCTAssertTrue(starData.length > 0, @"Golden STAR-L0 should not be empty");
+
+    // STAR-L0 starts with magic bytes 0x2A
+    if (starData.length >= 1) {
+        uint8_t firstByte = 0;
+        [starData getBytes:&firstByte length:1];
+        XCTAssertEqual(firstByte, 0x2A, @"STAR-L0 must start with 0x2A magic byte");
+    }
+
+    // STAR-L0 should be smaller than equivalent CAR (STAR deduplicates MST nodes)
+    NSData *carData = [self.repositoryService getRepoContents:goldenDID since:nil error:nil];
+    if (carData.length > 0) {
+        XCTAssertLessThanOrEqual(starData.length, carData.length,
+                                 @"STAR-L0 should be <= CAR in size for small repos");
+    }
+
+    // Repeated STAR-L0 exports must be byte-identical (stored head commit reuse)
+    NSData *starData2 = [self.repositoryService getRepoContentsSTARL0:goldenDID since:nil error:nil];
+    XCTAssertNotNil(starData2);
+    XCTAssertEqualObjects(starData, starData2,
+                          @"Repeated STAR-L0 exports must be byte-identical");
+}
+
+- (void)testGoldenSTARLiteExportStructuralFixture {
+    NSString *goldenDID = @"did:web:golden-starlite.example.com";
+    [self setupGoldenRepoWithDID:goldenDID];
+
+    NSError *exportError = nil;
+    NSData *starData = [self.repositoryService getRepoContentsSTARLite:goldenDID since:nil error:&exportError];
+    XCTAssertNotNil(starData, @"Golden STAR-Lite export failed: %@", exportError);
+    XCTAssertNil(exportError);
+    XCTAssertTrue(starData.length > 0, @"Golden STAR-Lite should not be empty");
+
+    // STAR-Lite starts with magic bytes 0x2A
+    if (starData.length >= 1) {
+        uint8_t firstByte = 0;
+        [starData getBytes:&firstByte length:1];
+        XCTAssertEqual(firstByte, 0x2A, @"STAR-Lite must start with 0x2A magic byte");
+    }
+
+    // Repeated STAR-Lite exports must be byte-identical (stored head commit reuse)
+    NSData *starData2 = [self.repositoryService getRepoContentsSTARLite:goldenDID since:nil error:nil];
+    XCTAssertNotNil(starData2);
+    XCTAssertEqualObjects(starData, starData2,
+                          @"Repeated STAR-Lite exports must be byte-identical");
+
+    // STAR-Lite should be compact (flat key-record encoding)
+    XCTAssertTrue(starData.length > 0, @"STAR-Lite output must be non-empty");
+
+    // CAR and STAR-Lite should have different byte representations for the same repo
+    NSData *carData = [self.repositoryService getRepoContents:goldenDID since:nil error:nil];
+    if (carData.length > 0) {
+        XCTAssertNotEqualObjects(starData, carData,
+                                 @"STAR-Lite and CAR must differ in byte representation");
+    }
+}
+
+#pragma mark - Peak Memory Tracking
+
+#if !defined(GNUSTEP)
+/// Returns the current resident memory size for this process in bytes (macOS only).
+- (uint64_t)currentResidentMemory {
+    struct mach_task_basic_info info;
+    mach_msg_type_number_t size = MACH_TASK_BASIC_INFO_COUNT;
+    kern_return_t kerr = task_info(mach_task_self(), MACH_TASK_BASIC_INFO,
+                                    (task_info_t)&info, &size);
+    return (kerr == KERN_SUCCESS) ? info.resident_size : 0;
+}
+
+- (void)testCARExportNetMemoryGrowthWithinBounds {
+    // Write 50 records to create a somewhat larger repo
+    for (NSUInteger i = 0; i < 50; i++) {
+        NSString *rkey = [NSString stringWithFormat:@"mem-test-%lu", (unsigned long)i];
+        NSString *text = [NSString stringWithFormat:@"Memory tracking record %lu", (unsigned long)i];
+        [self.recordService putRecord:@"app.bsky.feed.post"
+                                rkey:rkey
+                               value:[self postRecordWithText:text]
+                              forDid:self.testDID
+                      validationMode:PDSValidationModeOff
+                               error:nil];
+    }
+
+    // Measure baseline memory after all records are written
+    uint64_t beforeMem = [self currentResidentMemory];
+
+    // Export to CAR and measure peak memory net growth.
+    // The CAR is built in memory by getRepoContents:, so measuring before/after
+    // captures the net allocation. We run inside @autoreleasepool to ensure
+    // temporary allocations from getRepoContents: are released before measuring.
+    {
+        @autoreleasepool {
+            NSError *exportError = nil;
+            NSData *carData = [self.repositoryService getRepoContents:self.testDID
+                                                                since:nil
+                                                                error:&exportError];
+            XCTAssertNotNil(carData, @"CAR export failed: %@", exportError);
+            XCTAssertNil(exportError);
+
+            // Verify the CAR is valid (parse inside @autoreleasepool)
+            CARReader *reader = [CARReader readFromData:carData error:nil];
+            XCTAssertNotNil(reader, @"CAR must be parseable");
+            XCTAssertTrue(reader.blocks.count >= 50,
+                          @"Should have at least 50 record blocks (got %lu)",
+                          (unsigned long)reader.blocks.count);
+        }
+    }
+
+    uint64_t afterMem = [self currentResidentMemory];
+
+    // Memory growth from the export should be reasonable.
+    // 50 records with small text bodies should not grow resident memory
+    // by more than 15 MB above baseline after autoreleasepool drain.
+    int64_t memoryGrowth = (int64_t)afterMem - (int64_t)beforeMem;
+    NSUInteger growthMB = memoryGrowth > 0 ? (NSUInteger)(memoryGrowth / (1024 * 1024)) : 0;
+    XCTAssertLessThan(growthMB, 15U,
+                      @"Memory growth during CAR export should be under 15 MB "
+                      @"(before: %llu, after: %llu, growth: %lld bytes)",
+                      (unsigned long long)beforeMem,
+                      (unsigned long long)afterMem,
+                      (long long)memoryGrowth);
+
+    NSLog(@"Memory: before=%llu, after=%llu, growth=%lld bytes",
+          (unsigned long long)beforeMem, (unsigned long long)afterMem,
+          (long long)memoryGrowth);
+}
+
+- (void)testCARExportSizeWithinBounds {
+    // Write 50 records to create a somewhat larger repo
+    for (NSUInteger i = 0; i < 50; i++) {
+        NSString *rkey = [NSString stringWithFormat:@"mem-size-%lu", (unsigned long)i];
+        NSString *text = [NSString stringWithFormat:@"Size tracking record %lu", (unsigned long)i];
+        [self.recordService putRecord:@"app.bsky.feed.post"
+                                rkey:rkey
+                               value:[self postRecordWithText:text]
+                              forDid:self.testDID
+                      validationMode:PDSValidationModeOff
+                               error:nil];
+    }
+
+    NSError *exportError = nil;
+    NSData *carData = [self.repositoryService getRepoContents:self.testDID since:nil error:&exportError];
+    XCTAssertNotNil(carData);
+    XCTAssertNil(exportError);
+
+    // 50 records with small bodies should produce a CAR under 2 MB
+    NSUInteger carSizeMB = carData.length / (1024 * 1024);
+    XCTAssertLessThan(carSizeMB, 2U,
+                      @"CAR export of 50 small records should be under 2 MB (got %lu MB, %lu bytes)",
+                      (unsigned long)carSizeMB, (unsigned long)carData.length);
+
+    // Verify the CAR is valid
+    CARReader *reader = [CARReader readFromData:carData error:nil];
+    XCTAssertNotNil(reader);
+    XCTAssertTrue(reader.blocks.count >= 50);
+}
+
+#endif // !defined(GNUSTEP)
 
 @end

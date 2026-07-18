@@ -372,6 +372,7 @@ NSString * const kGZXrpcNSID_social_grain_photo_deletePhoto = @"social.grain.pho
 NSString * const kGZXrpcNSID_social_grain_photo_getActorPhotos = @"social.grain.photo.getActorPhotos";
 NSString * const kGZXrpcNSID_social_grain_photo_uploadPhoto = @"social.grain.photo.uploadPhoto";
 NSString * const kGZXrpcNSID_tools_garazyk_account_getUsage = @"tools.garazyk.account.getUsage";
+NSString * const kGZXrpcNSID_tools_garazyk_admin_getCollectionMembershipStats = @"tools.garazyk.admin.getCollectionMembershipStats";
 NSString * const kGZXrpcNSID_tools_garazyk_sync_getRepoFiltered = @"tools.garazyk.sync.getRepoFiltered";
 NSString * const kGZXrpcNSID_tools_ozone_communication_createTemplate = @"tools.ozone.communication.createTemplate";
 NSString * const kGZXrpcNSID_tools_ozone_communication_deleteTemplate = @"tools.ozone.communication.deleteTemplate";

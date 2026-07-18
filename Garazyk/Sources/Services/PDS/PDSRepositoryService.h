@@ -20,6 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 
 @class PDSDatabasePool;
+@class PDSActorStore;
 
 @class MST;
 @class CID;
@@ -89,6 +90,24 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  */
 /** Loads the Merkle Search Tree for a repository DID. */
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error;
+
+/*!
+ @method loadMSTForDid:store:error:
+
+ @abstract Load Merkle Search Tree for a DID's repository using an already-open actor store.
+
+ @discussion Same as loadMSTForDid:error: but reuses the caller's store handle
+ to avoid a redundant pool lookup and SQLite open. Callers that already have an
+ open PDSActorStore for the same DID (e.g. for commit block or record block
+ operations) should prefer this method to eliminate duplicate store opens.
+
+ @param did Decentralized identifier of repository owner.
+ @param store Already-open actor store for the same DID.
+ @param error Error pointer for loading failures.
+ @return MST instance or nil if loading fails.
+ */
+/** Loads the Merkle Search Tree for a repository DID, reusing an already-open store. */
+- (nullable MST *)loadMSTForDid:(NSString *)did store:(PDSActorStore *)store error:(NSError **)error;
 
 /*!
  @method updateMSTForDid:key:cid:error:
@@ -296,6 +315,25 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  */
 /** Returns CAR data containing the requested blocks. */
 - (nullable NSData *)getBlocksForDid:(NSString *)did cids:(NSArray<NSString *> *)cids error:(NSError **)error;
+
+/*!
+ @method headInfoForDid:error:
+
+ @abstract Get the latest commit CID and revision from stored head commit metadata.
+
+ @discussion Lightweight lookup: reads the stored signed head commit CID and rev
+ from the repo_root table without loading all records, rebuilding the MST, or
+ signing a new commit. Returns nil when no signed head commit exists, which is
+ distinct from getLatestCommitForDid's self-healing fallback.
+
+ Use this for listRepos/listReposByCollection where per-account throughput matters
+ and the full export preparation in getLatestCommitForDid is too expensive.
+
+ @param did Repository DID.
+ @param error Error pointer.
+ @return Dictionary with @"cid" (string) and @"rev" (string), or nil if no stored head exists.
+ */
+- (nullable NSDictionary *)headInfoForDid:(NSString *)did error:(NSError **)error;
 
 /*!
  @method getLatestCommitForDid:error:

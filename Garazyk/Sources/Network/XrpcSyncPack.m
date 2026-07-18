@@ -625,14 +625,17 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
         scanned += 1;
         nextCursor = account.did;
         if (account.did.length > 0) {
-          NSDictionary *latest =
-              [repositoryService getLatestCommitForDid:account.did error:nil];
-          if (latest) {
-            NSString *head = [latest[@"cid"] isKindOfClass:[NSString class]]
-                                 ? latest[@"cid"]
+          // Use lightweight headInfoForDid (reads stored head commit metadata
+          // without loading all records and rebuilding the MST) instead of
+          // the expensive getLatestCommitForDid which does full export prep.
+          NSDictionary *headInfo =
+              [repositoryService headInfoForDid:account.did error:nil];
+          if (headInfo) {
+            NSString *head = [headInfo[@"cid"] isKindOfClass:[NSString class]]
+                                 ? headInfo[@"cid"]
                                  : nil;
-            NSString *rev = [latest[@"rev"] isKindOfClass:[NSString class]]
-                                ? latest[@"rev"]
+            NSString *rev = [headInfo[@"rev"] isKindOfClass:[NSString class]]
+                                ? headInfo[@"rev"]
                                 : @"";
             if (head.length > 0) {
               [repos addObject:@{
@@ -716,55 +719,76 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     NSMutableArray<NSDictionary *> *repos = [NSMutableArray array];
-    NSInteger scanBudget = MAX(limit * 5, 1000);
-    NSString *accountCursor = cursorParam.length > 0 ? cursorParam : nil;
-    NSInteger scanned = 0;
     NSString *nextCursor = nil;
-    while (scanned < scanBudget && repos.count < (NSUInteger)limit) {
-      NSInteger batchLimit = MIN(1000, scanBudget - scanned);
-      NSError *accountsError = nil;
-      NSArray<PDSDatabaseAccount *> *accounts =
-          [serviceDatabases listAccountsWithLimit:batchLimit cursor:accountCursor error:&accountsError];
-      if (!accounts) {
-        response.statusCode = HttpStatusInternalServerError;
-        [response setJsonBody:@{
-          @"error" : @"DatabaseUnavailable",
-          @"message" : accountsError.localizedDescription ?: @"Failed to load accounts"
-        }];
-        return;
+
+    // Try the materialized collection_membership index first.
+    // Falls back to per-actor-store scan if the index query fails.
+    NSString *didCursor = cursorParam.length > 0 ? cursorParam : nil;
+    NSError *indexError = nil;
+    NSArray<NSString *> *indexedDIDs =
+        [serviceDatabases listDIDsByCollection:collection
+                                        cursor:didCursor
+                                         limit:limit
+                                         error:&indexError];
+    if (indexedDIDs) {
+      for (NSString *did in indexedDIDs) {
+        [repos addObject:@{@"did" : did}];
       }
-      if (accounts.count == 0) {
-        nextCursor = nil;
-        break;
+      if (indexedDIDs.count >= (NSUInteger)limit && indexedDIDs.count > 0) {
+        nextCursor = indexedDIDs.lastObject;
       }
-      for (PDSDatabaseAccount *account in accounts) {
-        scanned += 1;
-        nextCursor = account.did;
-        if (account.did.length > 0) {
-          NSError *storeError = nil;
-          PDSActorStore *store =
-              [userDatabasePool storeForDid:account.did error:&storeError];
-          if (store) {
-            NSArray<PDSDatabaseRecord *> *records =
-                [store listRecordsForDid:account.did
-                              collection:collection
-                                   limit:1
-                                  offset:0
-                                   error:nil];
-            if (records.count > 0) {
+    } else {
+      // Index query failed; fall back to per-account actor store scan.
+      // Each account's store is opened once via readWithDid:. The DatabasePool
+      // LRU cache (maxSize 30000, 60s eviction) keeps recently-used stores
+      // open, so the N+1 overhead is bounded by the cache miss rate rather
+      // than the total account count. This fallback is rarely triggered since
+      // the collection_membership index handles the primary path.
+      GZ_LOG_WARN_C(@"Sync", @"listReposByCollection index query failed: %@; falling back to actor store scan",
+                     indexError.localizedDescription);
+
+      NSInteger scanBudget = MAX(limit * 5, 1000);
+      NSString *accountCursor = cursorParam.length > 0 ? cursorParam : nil;
+      NSInteger scanned = 0;
+      while (scanned < scanBudget && repos.count < (NSUInteger)limit) {
+        NSInteger batchLimit = MIN(1000, scanBudget - scanned);
+        NSError *accountsError = nil;
+        NSArray<PDSDatabaseAccount *> *accounts =
+            [serviceDatabases listAccountsWithLimit:batchLimit cursor:accountCursor error:&accountsError];
+        if (!accounts) {
+          response.statusCode = HttpStatusInternalServerError;
+          [response setJsonBody:@{
+            @"error" : @"DatabaseUnavailable",
+            @"message" : accountsError.localizedDescription ?: @"Failed to load accounts"
+          }];
+          return;
+        }
+        if (accounts.count == 0) {
+          nextCursor = nil;
+          break;
+        }
+        for (PDSDatabaseAccount *account in accounts) {
+          scanned += 1;
+          nextCursor = account.did;
+          if (account.did.length > 0) {
+            __block BOOL hasRecords = NO;
+            [userDatabasePool readWithDid:account.did block:^(id<PDSActorStoreReader> reader, NSError **readError) {
+              hasRecords = [reader hasRecordsForCollection:collection error:readError];
+            } error:nil];
+            if (hasRecords) {
               [repos addObject:@{@"did" : account.did}];
             }
           }
+          if (repos.count >= (NSUInteger)limit || scanned >= scanBudget) {
+            break;
+          }
         }
-        if (repos.count >= (NSUInteger)limit || scanned >= scanBudget) {
+        if (accounts.count < (NSUInteger)batchLimit) {
+          nextCursor = nil;
           break;
         }
+        accountCursor = nextCursor;
       }
-      if (accounts.count < (NSUInteger)batchLimit) {
-        nextCursor = nil;
-        break;
-      }
-      accountCursor = nextCursor;
     }
 
     NSMutableDictionary *result =
@@ -960,10 +984,13 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     // Build a lightweight CAR with just the commit block + record block.
     // This matches the reference TS PDS behaviour where getRecord returns
     // a narrow slice of the repo containing only the requested record.
-    NSError *commitError = nil;
-    NSDictionary *latestCommit =
-        [repositoryService getLatestCommitForDid:did error:&commitError];
-    if (!latestCommit) {
+    //
+    // Open the actor store once and reuse it for the commit CID lookup,
+    // commit block fetch, record block fetch, and MST proof path — avoiding
+    // redundant store opens that would each hit the pool lock and open the
+    // SQLite database file again.
+    PDSActorStore *store = [userDatabasePool storeForDid:did error:nil];
+    if (!store) {
       response.statusCode = HttpStatusNotFound;
       [response setJsonBody:@{
         @"error" : @"RepoNotFound",
@@ -972,7 +999,19 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    CID *commitCID = [CID cidFromString:latestCommit[@"cid"]];
+    // Read the commit CID from the stored repo root (lightweight: single
+    // SQLite query on the already-open store) instead of calling
+    // getLatestCommitForDid: which opens the store again.
+    NSData *rootCIDData = [store getRepoRootForDid:did error:nil];
+    if (!rootCIDData) {
+      response.statusCode = HttpStatusNotFound;
+      [response setJsonBody:@{
+        @"error" : @"RepoNotFound",
+        @"message" : @"Repository has no stored head commit"
+      }];
+      return;
+    }
+    CID *commitCID = [CID cidFromBytes:rootCIDData];
     if (!commitCID) {
       response.statusCode = HttpStatusInternalServerError;
       [response setJsonBody:@{
@@ -984,14 +1023,11 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
 
-    // Add the commit block
-    PDSActorStore *store = [userDatabasePool storeForDid:did error:nil];
-    if (store) {
-      NSData *commitBlock =
-          [store getBlockForCID:[commitCID bytes] forDid:did error:nil];
-      if (commitBlock) {
-        [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
-      }
+    // Add the commit block (reuses the already-open store).
+    NSData *commitBlock =
+        [store getBlockForCID:[commitCID bytes] forDid:did error:nil];
+    if (commitBlock) {
+      [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
     }
 
     // Add the record block and MST proof path
@@ -1024,8 +1060,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
           [writer addBlock:[CARBlock blockWithCID:recordCID data:blockData]];
         }
 
-        // Add MST proof path
-        MST *mst = [repositoryService loadMSTForDid:did error:nil];
+        // Add MST proof path (reuses the already-open store)
+        MST *mst = [repositoryService loadMSTForDid:did store:store error:nil];
         if (mst && store) {
           NSString *mstKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
           

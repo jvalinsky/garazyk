@@ -74,12 +74,19 @@
 #pragma mark - Repo Operations
 
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error {
-    // Check shared cache first
     MST *cached = [[MSTCacheManager sharedManager] mstForDid:did];
     if (cached) return cached;
 
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return nil;
+
+    return [self loadMSTForDid:did store:store error:error];
+}
+
+- (nullable MST *)loadMSTForDid:(NSString *)did store:(PDSActorStore *)store error:(NSError **)error {
+    // Check shared cache first
+    MST *cached = [[MSTCacheManager sharedManager] mstForDid:did];
+    if (cached) return cached;
 
     // Try incremental loading from repo blocks
     MST *mst = [self loadMSTFromRepoBlocksForDid:did store:store error:nil];
@@ -178,6 +185,39 @@
     
     if (!success) return nil;
     return [writer serialize];
+}
+
+- (nullable NSDictionary *)headInfoForDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
+    if (!store) {
+        return nil;
+    }
+
+    // Read the stored signed head commit CID and rev from repo_root.
+    // This is the fast path from getLatestCommitForDid, without the
+    // self-healing fallback that loads all records and rebuilds the MST.
+    CID *storedCommitCID = nil;
+    NSData *unusedCommitBlock = nil;
+    CID *unusedDataCID = nil;
+    NSString *storedCommitRev = nil;
+    BOOL storedCommitIsSigned = NO;
+    BOOL hasStoredHead = [self loadStoredHeadCommitForDid:did
+                                                    store:store
+                                                commitCID:&storedCommitCID
+                                              commitBlock:&unusedCommitBlock
+                                                  dataCID:&unusedDataCID
+                                                      rev:&storedCommitRev
+                                                 isSigned:&storedCommitIsSigned];
+    if (hasStoredHead && storedCommitIsSigned && storedCommitCID.stringValue.length > 0) {
+        NSString *rev = [store getRepoRevisionForDid:did error:nil];
+        if (rev.length == 0) {
+            rev = storedCommitRev ?: @"";
+        }
+        return @{@"cid": storedCommitCID.stringValue, @"rev": rev ?: @""};
+    }
+
+    // No signed head commit exists — return nil (caller should skip).
+    return nil;
 }
 
 - (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error {
