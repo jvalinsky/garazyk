@@ -505,7 +505,7 @@
            @"    rev TEXT NOT NULL,"
            @"    indexed_at DATETIME NOT NULL,"
            @"    PRIMARY KEY (uri, rev)"
-           @")";
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)actorStoreBlobsTableSchema {
