@@ -19,6 +19,7 @@ Deno.test("ROLE_TO_SERVICE: maps every known role to a service name", () => {
     "ui",
     "backfill",
     "pds2",
+    "pds3",
   ];
   for (const role of roles) {
     const service = ROLE_TO_SERVICE[role];
@@ -43,6 +44,7 @@ Deno.test("ROLE_TO_PORT: maps every known role to a port string", () => {
     "ui",
     "backfill",
     "pds2",
+    "pds3",
   ];
   for (const role of roles) {
     const port = ROLE_TO_PORT[role];

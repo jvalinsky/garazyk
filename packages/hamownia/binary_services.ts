@@ -89,6 +89,14 @@ export const BINARY_SERVICES = {
     binary: "kaszlak",
     healthPath: "/xrpc/com.atproto.server.describeServer",
   },
+  pds2: {
+    binary: "kaszlak",
+    healthPath: "/xrpc/com.atproto.server.describeServer",
+  },
+  pds3: {
+    binary: "kaszlak",
+    healthPath: "/xrpc/com.atproto.server.describeServer",
+  },
   relay: {
     binary: "zuk",
     healthPath: "/api/relay/health",
@@ -134,7 +142,7 @@ export async function startBinaryServices(
 ): Promise<void> {
   const root = await repoRoot();
   const buildBin = Deno.env.get("BUILD_DIR") || join(root, "build/bin");
-  const services = defaultBinaryServices(options.services);
+  const services = defaultBinaryServices(options);
   const resources = await prepareBinaryResources(ctx, services, options);
   applyRunResourceEnvironment(resources.manifest);
 
@@ -235,7 +243,9 @@ export async function startBinaryServices(
     const healthy = await waitForHttp(
       `${plan.serviceUrl}${svc.healthPath}`,
       name.toUpperCase(),
-      name === "pds" || name === "appview" ? 60 : 30,
+      name === "pds" || name === "pds2" || name === "pds3" || name === "appview"
+        ? 60
+        : 30,
       headers,
     );
 
@@ -246,6 +256,25 @@ export async function startBinaryServices(
     // Call custom initializer if provided
     if (options.onServiceStarted) {
       await options.onServiceStarted(name, child);
+    }
+  }
+
+  if (services.includes("relay")) {
+    const relayUrl = resources.urls.relay ?? serviceUrl("relay");
+    const adminSecret = Deno.env.get("RELAY_ADMIN_SECRET") ?? "localdevadmin";
+    if (services.includes("pds2")) {
+      await addRelayUpstream(
+        relayUrl,
+        resources.urls.pds2 ?? serviceUrl("pds2"),
+        adminSecret,
+      );
+    }
+    if (services.includes("pds3")) {
+      await addRelayUpstream(
+        relayUrl,
+        resources.urls.pds3 ?? serviceUrl("pds3"),
+        adminSecret,
+      );
     }
   }
 
@@ -269,6 +298,10 @@ function pipeProcessLog(
 export interface StartBinaryOptions {
   /** List of services to start. */
   services?: BinaryServiceName[];
+  /** Include the PDS2 service set. */
+  withPds2?: boolean;
+  /** Include the PDS3 service set. */
+  withPds3?: boolean;
   /** Per-service environment variable overrides. */
   env?: Partial<Record<BinaryServiceName, Record<string, string>>>;
   /** Per-service argument overrides. */
@@ -328,10 +361,26 @@ interface ResolveBinaryServiceStartPlanOptions {
 }
 
 export function defaultBinaryServices(
-  services?: BinaryServiceName[],
+  servicesOrOptions?: BinaryServiceName[] | StartBinaryOptions,
 ): BinaryServiceName[] {
-  return services ??
-    ["plc", "pds", "relay", "appview", "germ", "mikrus", "beskid"];
+  if (Array.isArray(servicesOrOptions)) {
+    return servicesOrOptions;
+  }
+  if (servicesOrOptions?.services) {
+    return servicesOrOptions.services;
+  }
+  const services: BinaryServiceName[] = [
+    "plc",
+    "pds",
+    "relay",
+    "appview",
+    "germ",
+    "mikrus",
+    "beskid",
+  ];
+  if (servicesOrOptions?.withPds2) services.push("pds2");
+  if (servicesOrOptions?.withPds3) services.push("pds3");
+  return services;
 }
 
 /** @internal Exported for unit tests that must not launch real binaries. */
@@ -390,10 +439,15 @@ export async function resolveBinaryServiceStartPlan(
       env.PLC_DAILY_LIMIT = "15";
       env.PLC_WEEKLY_LIMIT = "50";
       break;
-    case "pds": {
-      const configPath = join(dataDir, "pds-config.json");
-      const pdsAuthMasterSecret = Deno.env.get("PDS_MASTER_SECRET") ??
-        crypto.randomUUID().replace(/-/g, "");
+    case "pds":
+    case "pds2":
+    case "pds3": {
+      const configName = `${name}-config.json`;
+      const configPath = join(dataDir, configName);
+      const pdsAuthMasterSecret =
+        Deno.env.get(`${name.toUpperCase()}_MASTER_SECRET`) ??
+          Deno.env.get("PDS_MASTER_SECRET") ??
+          crypto.randomUUID().replace(/-/g, "");
       const pdsConfig = {
         ...PDS_CONFIG,
         server: {
@@ -411,6 +465,8 @@ export async function resolveBinaryServiceStartPlan(
           url: urls.plc ?? PDS_CONFIG.plc.url,
         },
         auth: { master_secret: pdsAuthMasterSecret },
+        permissionedSpacesEnabled: true,
+        permissionedSpacesHostEndpoint: currentServiceUrl,
       };
       Deno.mkdirSync(dataDir, { recursive: true });
       await Deno.writeTextFile(configPath, JSON.stringify(pdsConfig, null, 2));

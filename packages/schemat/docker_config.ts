@@ -21,6 +21,7 @@ export const SERVICE_PORTS: Record<string, number> = {
   video: 2586,
   germ: 8082,
   pds2: 2587,
+  pds3: 2588,
   ui: 2590,
   mikrus: 3210,
   beskid: 8085,
@@ -127,7 +128,7 @@ export function serviceUrlFromManifest(
  * @returns The host ports that must be available.
  */
 export function neededPorts(
-  opts: { withPds2?: boolean; otel?: boolean },
+  opts: { withPds2?: boolean; withPds3?: boolean; otel?: boolean },
 ): number[] {
   const manifestPorts = portsFromManifest();
   if (manifestPorts.length > 0) {
@@ -145,6 +146,7 @@ export function neededPorts(
     DEFAULT_MOCK_TWILIO_PORT,
   ];
   if (opts.withPds2) ports.push(SERVICE_PORTS.pds2);
+  if (opts.withPds3) ports.push(SERVICE_PORTS.pds3);
   if (opts.otel) ports.push(4317, 4318, 3301);
   return ports;
 }

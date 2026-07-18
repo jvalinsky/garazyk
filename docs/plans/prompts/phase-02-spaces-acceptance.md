@@ -77,6 +77,53 @@ Coordinate with the shared worktree: phases 6 and 7 have uncommitted
 changes in the main checkout (including `XrpcSpacePack.m` in the NSID
 sweep). Run this phase from a clean worktree or after those commit.
 
+## Progress notes (2026-07-18)
+
+### Infrastructure gaps fixed (uncommitted, pending commit)
+
+- **docker_config.ts**: `SERVICE_PORTS.pds3 = 2588` added; `neededPorts()` now
+  accepts `withPds3` and includes the pds3 port.
+- **binary_services.ts**: `pds3` case added to `BINARY_SERVICES` and
+  `resolveBinaryServiceStartPlan`; pds2/pds3 relay upstreams wired;
+  `permissionedSpacesEnabled: true` and `permissionedSpacesHostEndpoint` set
+  for all PDS cases (pds, pds2, pds3 share the case block).
+- **scenario_metadata.ts**: `needsPds3` field added to `ScenarioManifest` and
+  `ScenarioInfo`; scenario 93 manifest updated with `needsPds3: true`;
+  scenario 94 manifest added with `needsPds3: true` and
+  `Cap.pds3.getRecord` requirement (replacing the invalid
+  `Cap.pds.didResolution`); `needsPds3()` helper and compatibility check
+  added.
+- **schemat/topology_registry.ts**: pds3 role, capabilities, port, env var,
+  and URL patterns registered.
+
+### Verification status
+
+- `deno task check` — **PASS** (all packages type-check cleanly).
+- Scenario 93 run (2026-07-18T0640Z, `--binary` mode): **6/7 passed, 1 failed**.
+  - Fail: "Owner completes OAuth PAR, PKCE, and DPoP grant — HTTP 401 (invalid_client)"
+  - All three PDS instances started and passed health checks.
+  - All three accounts created successfully on PDS1/PDS2/PDS3.
+  - OAuth PAR/PKCE/DPoP flow returns 401 invalid_client — product-code issue.
+- Scenario 94 run (2026-07-18T0640Z, `--binary` mode): **3/4 passed, 1 failed**.
+  - Fail: "Owner obtains OAuth grant on authority PDS — authorization redirect did not contain a code"
+  - All three accounts created on PDS1/PDS2/PDS3.
+  - OAuth authorization redirect missing `code` parameter — product-code issue.
+- Warning: scenario 94 topology advertises "missing requirements: pds3:getRecord"
+  (topology preset doesn't include pds3 capabilities; non-blocking — scenarios
+  still ran).
+
+### Next steps
+
+1. **OAuth 401 invalid_client (scenario 93)**: Investigate PDS OAuth client
+   registration and PAR endpoint. The PDS returns 401 when the scenario
+   attempts the PAR+PKCE+DPoP grant. Likely a client registration or
+   signature verification issue in the permissioned-spaces OAuth path.
+2. **OAuth authorization redirect missing code (scenario 94)**: The
+   authorization endpoint returns a redirect without a `code` parameter.
+   May be related to the same OAuth issue as scenario 93.
+3. Both OAuth failures are product-code issues, not scenario hacks. Each fix
+   is its own reviewed, characterization-guarded slice.
+
 ## Acceptance gate
 
 - Dated structured runs of 93 and 94, green, checked-in summary only.

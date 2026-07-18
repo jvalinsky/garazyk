@@ -24,6 +24,8 @@ deno add jsr:@garazyk/hamownia
 - **ATProto Network Control**: Docker and binary-mode local network startup via
   explicit subpaths such as `@garazyk/hamownia/atproto-network` and
   `@garazyk/hamownia/binary-services`.
+- **Type Contracts for Harnesses**: Author scenario code against the types in
+  `@garazyk/hamownia/scenario-context` and `@garazyk/hamownia/run-scenarios-types`.
 - **Docker Scenario Runner**: Scenario container execution is owned here, not by
   `@garazyk/laweta`.
 - **Assertion Library**: Domain-specific assertions for ATProto behavior.
@@ -35,6 +37,26 @@ deno add jsr:@garazyk/hamownia
   flows.
 - **OpenTelemetry Integration**: Built-in support for distributed tracing of
   test steps.
+
+## Other Public Subpaths
+
+The full surface area extends well beyond the examples above. Highlights:
+
+- `@garazyk/hamownia/run-command`, `@garazyk/hamownia/run-loop` — scenario
+  CLI and loop control.
+- `@garazyk/hamownia/scenario-runner`, `@garazyk/hamownia/scenario-selector` —
+  runner internals.
+- `@garazyk/hamownia/run-diagnostics`, `@garazyk/hamownia/docker-diagnostics`
+  — failed-run capture.
+- `@garazyk/hamownia/report-writer`, `@garazyk/hamownia/instrumentation`,
+  `@garazyk/hamownia/otel` — telemetry.
+- `@garazyk/hamownia/mock-twilio`, `@garazyk/hamownia/account-discovery`,
+  `@garazyk/hamownia/invite-code` — test fixture services.
+- `@garazyk/hamownia/process-lifecycle`, `@garazyk/hamownia/progress`,
+  `@garazyk/hamownia/format`, `@garazyk/hamownia/stale-cleanup`,
+  `@garazyk/hamownia/smoke-command`, `@garazyk/hamownia/config` — supporting
+  utilities. Also exposed: `@garazyk/hamownia/browser-flow`,
+  `@garazyk/hamownia/docker-runner`, `@garazyk/hamownia/pds-cli`.
 
 ## Usage
 

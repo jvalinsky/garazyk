@@ -106,7 +106,7 @@ export async function checkPlaywright(
 
 /** Kill host processes blocking ports needed by the local network. */
 export async function checkHostPorts(
-  opts: { withPds2?: boolean; otel?: boolean },
+  opts: { withPds2?: boolean; withPds3?: boolean; otel?: boolean },
 ): Promise<void> {
   const ports = neededPorts(opts);
   const knownBinaries = new Set([
@@ -185,6 +185,12 @@ const PDS2_PROBE: HealthProbe = {
   timeoutSeconds: 5,
 };
 
+const PDS3_PROBE: HealthProbe = {
+  key: "pds3",
+  path: "/xrpc/com.atproto.server.describeServer",
+  timeoutSeconds: 5,
+};
+
 const UI_PROBE: HealthProbe = {
   key: "ui",
   path: "/lab",
@@ -198,6 +204,7 @@ const UI_PROBE: HealthProbe = {
  */
 export async function verifyNetworkHealth(opts: {
   withPds2?: boolean;
+  withPds3?: boolean;
   withUi?: boolean;
 }): Promise<void> {
   const appviewAdminSecret = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
@@ -211,6 +218,7 @@ export async function verifyNetworkHealth(opts: {
       : probe
   );
   if (opts.withPds2) probes.push(PDS2_PROBE);
+  if (opts.withPds3) probes.push(PDS3_PROBE);
   if (opts.withUi) probes.push(UI_PROBE);
 
   console.log(yellow("\n[PREFLIGHT] Verifying network health..."));
@@ -249,18 +257,26 @@ export async function runPreflight(options: {
   clientFlow: string;
   selectedScenarios: ScenarioInfo[];
   withPds2?: boolean;
+  withPds3?: boolean;
   noSetup?: boolean;
   isolation?: ResourceIsolationMode;
 }): Promise<void> {
   if (options.isolation === "legacy-fixed") {
-    await checkHostPorts({ withPds2: options.withPds2 });
+    await checkHostPorts({
+      withPds2: options.withPds2,
+      withPds3: options.withPds3,
+    });
   }
   const withUi = options.selectedScenarios.some((scenario) =>
     scenario.requires.some((req) => req.role === "ui")
   );
 
   if (options.noSetup) {
-    await verifyNetworkHealth({ withPds2: options.withPds2, withUi });
+    await verifyNetworkHealth({
+      withPds2: options.withPds2,
+      withPds3: options.withPds3,
+      withUi,
+    });
   }
 
   if (!options.useBinary) {
