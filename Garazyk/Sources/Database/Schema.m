@@ -632,3 +632,16 @@ NSString * const kPDSVideoJobsIndexStateSQL =
 
 NSString * const kPDSVideoJobsIndexCreatedSQL =
     @"CREATE INDEX IF NOT EXISTS idx_video_jobs_created ON video_jobs(created_at)";
+
+#pragma mark - Collection Membership Index
+
+NSString * const kPDSCollectionMembershipTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS collection_membership ("
+    @"did TEXT NOT NULL,"
+    @"collection TEXT NOT NULL,"
+    @"indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+    @"PRIMARY KEY (did, collection)"
+    @")";
+
+NSString * const kPDSIndexCollectionMembershipCollectionSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_collection_membership_collection ON collection_membership(collection)";

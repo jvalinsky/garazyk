@@ -700,6 +700,137 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     return success;
 }
 
+#pragma mark - Collection Membership Index
+
+- (BOOL)upsertCollectionMembership:(NSString *)collection forDID:(NSString *)did error:(NSError **)error {
+    if (collection.length == 0 || did.length == 0) return NO;
+    __block BOOL success = NO;
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        success = [store.database executeParameterizedUpdate:
+            @"INSERT OR REPLACE INTO collection_membership (did, collection) VALUES (?, ?)"
+            params:@[did, collection]
+            error:innerError];
+    } error:error];
+    return success;
+}
+
+- (BOOL)removeCollectionMembership:(NSString *)collection forDID:(NSString *)did error:(NSError **)error {
+    if (collection.length == 0 || did.length == 0) return NO;
+    __block BOOL success = NO;
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        success = [store.database executeParameterizedUpdate:
+            @"DELETE FROM collection_membership WHERE did = ? AND collection = ?"
+            params:@[did, collection]
+            error:innerError];
+    } error:error];
+    return success;
+}
+
+- (nullable NSArray<NSString *> *)listDIDsByCollection:(NSString *)collection
+                                                cursor:(nullable NSString *)cursor
+                                                 limit:(NSInteger)limit
+                                                 error:(NSError **)error {
+    if (collection.length == 0) return nil;
+    __block NSMutableArray<NSString *> *dids = [NSMutableArray array];
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSString *sql;
+        NSArray *params;
+        if (cursor.length > 0) {
+            sql = @"SELECT did FROM collection_membership WHERE collection = ? AND did > ? ORDER BY did ASC LIMIT ?";
+            params = @[collection, cursor, @(limit)];
+        } else {
+            sql = @"SELECT did FROM collection_membership WHERE collection = ? ORDER BY did ASC LIMIT ?";
+            params = @[collection, @(limit)];
+        }
+        NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:sql params:params error:innerError];
+        for (NSDictionary *row in rows) {
+            NSString *did = row[@"did"];
+            if ([did isKindOfClass:[NSString class]] && did.length > 0) {
+                [dids addObject:did];
+            }
+        }
+    } error:error];
+    return dids;
+}
+
+- (NSInteger)collectionMembershipCountWithError:(NSError **)error {
+    __block NSInteger count = -1;
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:
+            @"SELECT COUNT(*) AS cnt FROM collection_membership"
+            params:@[]
+            error:innerError];
+        if (rows.count > 0) {
+            count = [rows.firstObject[@"cnt"] integerValue];
+        } else {
+            count = 0;
+        }
+    } error:error];
+    return count;
+}
+
+- (NSInteger)pruneStaleCollectionMembershipsWithUserDatabasePool:(PDSDatabasePool *)userDatabasePool
+                                                           error:(NSError **)error {
+    static const NSInteger kChunkSize = 500;
+    NSInteger totalRemoved = 0;
+    NSInteger offset = 0;
+
+    while (YES) {
+        // Snapshot one chunk of entries to avoid holding the service pool
+        // connection for the entire scan on large instances.
+        __block NSArray<NSDictionary *> *chunk = nil;
+        [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+            PDSActorStore *store = (PDSActorStore *)reader;
+            chunk = [store.database executeParameterizedQuery:
+                @"SELECT did, collection FROM collection_membership ORDER BY did LIMIT ? OFFSET ?"
+                params:@[@(kChunkSize), @(offset)]
+                error:innerError];
+        } error:error];
+
+        if (!chunk) return (totalRemoved > 0) ? totalRemoved : -1;
+        if (chunk.count == 0) break;
+
+        NSInteger chunkRemoved = 0;
+        for (NSDictionary *entry in chunk) {
+            NSString *did = entry[@"did"];
+            NSString *collection = entry[@"collection"];
+            if (did.length == 0 || collection.length == 0) {
+                [self removeCollectionMembership:collection forDID:did error:nil];
+                chunkRemoved++;
+                continue;
+            }
+
+            __block BOOL hasRecords = NO;
+            [userDatabasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **readError) {
+                hasRecords = [reader hasRecordsForCollection:collection error:readError];
+            } error:nil];
+
+            if (!hasRecords) {
+                [self removeCollectionMembership:collection forDID:did error:nil];
+                chunkRemoved++;
+            }
+        }
+
+        totalRemoved += chunkRemoved;
+        if (chunkRemoved > 0 || offset == 0) {
+            GZ_LOG_DEBUG_C(@"ServiceDB", @"Pruner chunk offset=%ld: removed %ld stale entries (total=%ld)",
+                           (long)offset, (long)chunkRemoved, (long)totalRemoved);
+        }
+
+        if (chunk.count < kChunkSize) break;
+        offset += kChunkSize;
+    }
+
+    if (totalRemoved > 0) {
+        GZ_LOG_INFO_C(@"ServiceDB", @"Pruned %ld stale collection_membership entries", (long)totalRemoved);
+    }
+    return totalRemoved;
+}
+
 #pragma mark - Lifecycle
 
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {

@@ -1129,6 +1129,9 @@ extern NSString * const kGZXrpcNSID_social_grain_photo_uploadPhoto;
 /*! NSID for tools.garazyk.account.getUsage. */
 extern NSString * const kGZXrpcNSID_tools_garazyk_account_getUsage;
 
+/*! NSID for tools.garazyk.admin.getCollectionMembershipStats. */
+extern NSString * const kGZXrpcNSID_tools_garazyk_admin_getCollectionMembershipStats;
+
 /*! NSID for tools.garazyk.sync.getRepoFiltered. */
 extern NSString * const kGZXrpcNSID_tools_garazyk_sync_getRepoFiltered;
 

@@ -35,6 +35,7 @@ typedef NS_ENUM(NSInteger, PDSRecordServiceError) {
 @protocol PDSRecordRepository;
 @class PDSDatabasePool;
 @class ATProtoLexiconValidator;
+@class PDSServiceDatabases;
 
 /*! Validation mode for record operations. */
 /**
@@ -58,6 +59,12 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
 
 /*! Database pool - owner (PDSController) must outlive this service. */
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
+
+/*! Optional service databases for collection membership index maintenance.
+    When set, the service automatically upserts collection_membership entries
+    on record create/update so listReposByCollection can query membership
+    without scanning per-user actor stores. May be nil in test contexts. */
+@property (nonatomic, strong, nullable) PDSServiceDatabases *serviceDatabases;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
