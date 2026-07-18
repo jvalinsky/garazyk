@@ -189,6 +189,7 @@ export async function startLocalNetwork(
         options.topology,
         {
           includePds2: options.withPds2,
+          includePds3: options.withPds3,
           isolation: options.isolation,
           portRange: options.portRange,
           otel: options.otel,
@@ -207,6 +208,7 @@ export async function startLocalNetwork(
         repoRoot: root,
         composeProject: ctx.composeProject,
         includePds2: options.withPds2,
+        includePds3: options.withPds3,
         otel: options.otel,
         manifestFile: topologyManifest,
         publishMode: options.isolation === "legacy-fixed"
@@ -412,6 +414,7 @@ async function allocateTopologyHostPorts(
   topology: string,
   options: {
     includePds2?: boolean;
+    includePds3?: boolean;
     isolation?: ResourceIsolationMode;
     portRange?: PortRange;
     otel?: boolean;
@@ -420,7 +423,10 @@ async function allocateTopologyHostPorts(
   if (options.isolation === "legacy-fixed") return {};
 
   await releaseRunPortLeases(ctx.runId);
-  const preset = resolvePreset(topology, { includePds2: options.includePds2 });
+  const preset = resolvePreset(topology, {
+    includePds2: options.includePds2,
+    includePds3: options.includePds3,
+  });
   const resources: string[] = [];
   for (const [role, adapter] of Object.entries(preset.roles)) {
     if ("inherit" in adapter) continue;

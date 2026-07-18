@@ -2,7 +2,7 @@
 phase: 3
 title: Truthful XRPC metrics and spec conformance matrix
 status: complete
-agent: claude
+agent: worker
 depends_on: []
 ---
 

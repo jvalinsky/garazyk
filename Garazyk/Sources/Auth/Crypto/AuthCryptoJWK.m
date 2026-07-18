@@ -300,11 +300,13 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
-    // Do NOT enforce low-S here — see verifySignature:forData: for the full
-    // rationale. Apple's SecKeyVerifySignature accepts both S forms, so the
-    // signature is verified as presented.
+    // Canonicalize to low-S before verifying. Apple's SecKeyVerifySignature
+    // accepts only the low-S form; normalizing prevents false rejections of
+    // valid high-S signatures from WebCrypto/WebAuthn.
+    NSData *canonicalSig = [AuthCryptoECDSA normalizeLowS:signature error:nil] ?: signature;
+
     NSError *derError = nil;
-    NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
+    NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:canonicalSig error:&derError];
     if (!derSig) {
         if (error) {
             *error = derError ?: [NSError errorWithDomain:AuthCryptoErrorDomain
