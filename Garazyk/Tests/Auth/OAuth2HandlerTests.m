@@ -543,6 +543,72 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertTrue([location containsString:expectedIssuerParam], @"Should append issuer parameter");
 }
 
+- (void)testAuthorizeConfirmRedirectsWithCodeForFormEncodedPermissionedScope {
+    NSString *redirectURI = @"http://localhost/cb";
+    NSString *scope = @"atproto space:com.garazyk.permissioned?authority=self&skey=recon-test&collection=app.bsky.feed.post&action=read&action=create";
+    NSDictionary *authorizeParams = @{
+        @"client_id": @"test-client",
+        @"redirect_uri": redirectURI,
+        @"response_type": @"code",
+        @"state": @"permissioned-scope-state",
+        @"scope": scope,
+        @"code_challenge": @"test_challenge",
+        @"code_challenge_method": @"S256"
+    };
+    HttpResponse *authorizeResponse =
+        [self authorizeViaPARWithParameters:authorizeParams clientID:@"test-client"];
+    XCTAssertEqual(authorizeResponse.statusCode, 200);
+
+    NSString *csrfToken = @"csrf-permissioned-scope";
+    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/oauth/authorize/sign-in"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{
+                                                                  @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                  @"X-CSRF-Token": csrfToken,
+                                                                  @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                              }
+                                                                 body:[@"handle=test-user.test&password=test-password" dataUsingEncoding:NSUTF8StringEncoding]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
+    XCTAssertEqual(signInResponse.statusCode, 200);
+    NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
+    XCTAssertTrue(sessionToken.length > 0);
+
+    NSString *encodedSessionToken =
+        [sessionToken stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *confirmBody = [NSString stringWithFormat:
+        @"decision=allow&client_id=test-client&state=permissioned-scope-state&scope=atproto+space%%3Acom.garazyk.permissioned%%3Fauthority%%3Dself%%26skey%%3Drecon-test%%26collection%%3Dapp.bsky.feed.post%%26action%%3Dread%%26action%%3Dcreate&redirect_uri=http%%3A%%2F%%2Flocalhost%%2Fcb&response_type=code&code_challenge=test_challenge&code_challenge_method=S256&session_token=%@",
+        encodedSessionToken];
+    HttpRequest *confirmRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                         methodString:@"POST"
+                                                                 path:@"/oauth/authorize/confirm"
+                                                          queryString:@""
+                                                          queryParams:@{}
+                                                              version:@"1.1"
+                                                              headers:@{ @"Content-Type": @"application/x-www-form-urlencoded" }
+                                                                 body:[confirmBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *confirmResponse = [[HttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:confirmRequest response:confirmResponse];
+
+    XCTAssertEqual(confirmResponse.statusCode, 302);
+    NSURLComponents *components = [NSURLComponents componentsWithString:[confirmResponse headerForKey:@"Location"]];
+    NSMutableDictionary<NSString *, NSString *> *query = [NSMutableDictionary dictionary];
+    for (NSURLQueryItem *item in components.queryItems) {
+        if (item.name) {
+            query[item.name] = item.value ?: @"";
+        }
+    }
+    XCTAssertEqualObjects(query[@"state"], @"permissioned-scope-state");
+    XCTAssertTrue(query[@"code"].length > 0,
+                  @"Authorization confirmation must redirect with a code");
+}
+
 - (void)testAuthorizeDenyRedirectIncludesIssuer {
     NSString *redirectURI = @"http://localhost:2583/cb";
     NSString *body = [NSString stringWithFormat:@"decision=deny&client_id=test-client&state=deny-state&redirect_uri=%@",
