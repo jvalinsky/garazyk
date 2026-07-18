@@ -12,7 +12,7 @@
 @implementation PDSDatabase (WebAuthn)
 
 - (BOOL)storeWebAuthnCredential:(NSDictionary *)credential forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO webauthn_credentials (id, account_did, credential_id, public_key_cose, sign_count, aaguid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO webauthn_credentials (id, account_did, credential_id, public_key_cose, sign_count, aaguid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET account_did=excluded.account_did, credential_id=excluded.credential_id, public_key_cose=excluded.public_key_cose, sign_count=excluded.sign_count, aaguid=excluded.aaguid, created_at=excluded.created_at";
     NSString *credentialId = [[NSUUID UUID] UUIDString];
     NSArray *params = @[
         credentialId,
