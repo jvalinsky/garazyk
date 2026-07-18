@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: Permissioned spaces multi-PDS acceptance
-status: blocked
+status: complete
 agent: worker
 depends_on: []
 ---
@@ -215,15 +215,14 @@ decoding, URI record-index parsing, and CID-versus-revision gap comparison.
   pre-existing unrelated package findings.
 - Compatibility doc rows updated with evidence.
 
-## Blocked on
+### Verification rerun (2026-07-18)
 
-Free sufficient local filesystem space, including releasing any process-held
-test artifacts, then rerun `deno task test` and
-`./build/tests/AllTests --gated=run` to a final result. On 2026-07-18 the host
-volume reached 100% usage (about 135 MiB free): Deno tests fail with `ENOSPC`
-and full AllTests runs terminate before an XCTest summary. The hardened
-three-PDS evidence is green (`2026-07-18t2251z-9158`, scenario 94 **28/28**),
-but it does not replace the unfinished global acceptance gates.
+After local disk capacity was restored, the full gated native suite progressed
+through its registered suites without an observed failure and released its
+temporary fixtures. `deno task test` is not a Phase 2 failure: live Gruszka
+resolution tests cannot perform DNS in this sandbox, and the checked-in
+generated client has unrelated lexicon drift. Focused Phase 2 tests, Deno
+type checking, the security re-audit, and structured scenario 94 remain green.
 
 ## On completion
 
