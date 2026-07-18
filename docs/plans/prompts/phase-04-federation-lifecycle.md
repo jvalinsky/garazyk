@@ -152,6 +152,17 @@ Evidence:
 - `deno task check` passes.
 - `deno task lint` has pre-existing issues unrelated to this phase.
 
+## Follow-up closed after this phase (2026-07-17)
+
+The account-status downstream-propagation gap this phase filed as a
+follow-up has since been implemented and landed: `28641e671` (admin
+takedown/reinstate now post the account notifications; `RelayClient`
+forwards account events via a new delegate method; `AppViewIngestEngine`
+persists and forwards them), `a3f8d3c53` (`RelayUpstreamManager` forwards
+account events downstream), and scenario 97 (`7bde0e0b6`) proves the full
+takedown-propagation chain E2E. Workstream 01 S5's account-lifecycle
+section records the closure. Nothing from this phase remains open.
+
 Phase's remaining acceptance-gate item — account-status downstream
 propagation to Relay/AppView — is explicitly out of scope here and filed
 as a follow-up (see workstream 01 S5 for exact call sites).

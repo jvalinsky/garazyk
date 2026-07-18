@@ -1,10 +1,14 @@
 ---
 phase: 5
 title: Repository boundary completion
-status: in-progress
+status: pending
 agent: claude
 depends_on: []
 ---
+
+<!-- Status reset 2026-07-17: this file was flipped to in-progress with no
+recorded progress — workstream 03 is untouched since 2026-07-12 and no
+R1-R4 commits exist. Reset to pending; nothing has started. -->
 
 # Phase 5: Repository boundary completion
 
