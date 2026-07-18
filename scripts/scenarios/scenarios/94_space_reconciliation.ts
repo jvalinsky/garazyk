@@ -410,6 +410,48 @@ async function delegationAndCredential(
   return value;
 }
 
+type RecoverySelector = "incremental" | "lightweight" | "fullCAR";
+
+async function recoveryTestControl(
+  base: string,
+  input: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const response = await fetch(
+    new URL("/xrpc/tools.garazyk.test.spaceRecovery", base),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+  return await readJSON(response);
+}
+
+function assertRecoveryResult(
+  response: Record<string, unknown>,
+  expected: RecoverySelector,
+  expectedRequests: Record<string, number>,
+): void {
+  if (response.selector !== expected) {
+    throw new Error(
+      `expected ${expected} recovery, got ${JSON.stringify(response.selector)}`,
+    );
+  }
+  const requests = response.requests as Record<string, unknown> | undefined;
+  if (!requests) {
+    throw new Error("recovery control did not return request counts");
+  }
+  for (const [method, count] of Object.entries(expectedRequests)) {
+    if (requests[method] !== count) {
+      throw new Error(
+        `${expected} recovery made ${
+          String(requests[method])
+        } ${method} requests, expected ${count}`,
+      );
+    }
+  }
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -883,6 +925,191 @@ export async function run(): Promise<ScenarioResult> {
       }
     },
   );
+
+  // ── 20. Drive each recovery selector through the binary-only control ──
+  // The control is unlexiconed, test-gated, and absent from production route
+  // registration. It creates a PDS2 replica head, prunes only fixture data on
+  // PDS1, and makes exactly one real inbound reconciliation pass.
+  const exerciseRecovery = async (
+    label: string,
+    expected: RecoverySelector,
+    deltaCount: number,
+    prune: boolean,
+  ): Promise<Record<string, unknown>> => {
+    const recoverySkey = `recovery-${label}-${Date.now().toString(36)}`;
+    const recoverySpace =
+      `at://${owner.did}/space/${SPACE_TYPE}/${recoverySkey}`;
+    const recoveryOwnerGrant = await obtainOAuthGrant(
+      PDS1,
+      owner,
+      spaceScope("self", recoverySkey, ["read", "create", "update", "delete"], [
+        "create",
+        "update",
+        "delete",
+      ]),
+    );
+    await oauthXrpc(
+      PDS1,
+      "com.atproto.simplespace.createSpace",
+      recoveryOwnerGrant,
+      {
+        did: owner.did,
+        type: SPACE_TYPE,
+        skey: recoverySkey,
+        config: {
+          policy: "member-list",
+          appAccess: { $type: "com.atproto.simplespace.defs#open" },
+        },
+      },
+    );
+    await oauthXrpc(
+      PDS1,
+      "com.atproto.simplespace.addMember",
+      recoveryOwnerGrant,
+      {
+        space: recoverySpace,
+        did: writer.did,
+      },
+    );
+    const recoveryWriterGrant = await obtainOAuthGrant(
+      PDS2,
+      writer,
+      spaceScope(owner.did, recoverySkey, [
+        "read",
+        "create",
+        "update",
+        "delete",
+      ]),
+    );
+    const recoveryWriterCredential = await delegationAndCredential(
+      PDS2,
+      PDS1,
+      recoveryWriterGrant,
+      recoverySpace,
+    );
+    for (let index = 0; index < 4; index++) {
+      await credentialXrpc(
+        PDS1,
+        "com.atproto.space.createRecord",
+        recoveryWriterCredential,
+        {
+          space: recoverySpace,
+          repo: writer.did,
+          collection: COLLECTION,
+          rkey: `${label}-initial-${index}`,
+          record: {
+            $type: COLLECTION,
+            text: `${label}-initial-${index}`,
+            createdAt: new Date().toISOString(),
+          },
+        },
+      );
+    }
+    const seeded = await recoveryTestControl(PDS2, {
+      operation: "seed",
+      space: recoverySpace,
+      repo: writer.did,
+      rkey: `${label}-seed`,
+    });
+    if (typeof seeded.revision !== "string" || !seeded.revision) {
+      throw new Error(
+        "recovery control did not identify the seeded replica revision",
+      );
+    }
+    const initialSync = await recoveryTestControl(PDS2, {
+      operation: "reconcile",
+      space: recoverySpace,
+      repo: writer.did,
+    });
+    assertRecoveryResult(initialSync, "fullCAR", {
+      "com.atproto.space.getLatestCommit": 1,
+      "com.atproto.space.listRepoOps": 1,
+      "com.atproto.space.listRecords": 1,
+      "com.atproto.space.getRepo": 1,
+    });
+    for (let index = 0; index < deltaCount; index++) {
+      await credentialXrpc(
+        PDS1,
+        "com.atproto.space.createRecord",
+        recoveryWriterCredential,
+        {
+          space: recoverySpace,
+          repo: writer.did,
+          collection: COLLECTION,
+          rkey: `${label}-delta-${index}`,
+          record: {
+            $type: COLLECTION,
+            text: `${label}-delta-${index}`,
+            createdAt: new Date().toISOString(),
+          },
+        },
+      );
+    }
+    if (prune) {
+      await recoveryTestControl(PDS1, {
+        operation: "prune",
+        space: recoverySpace,
+        repo: writer.did,
+        keepingRevisions: 0,
+      });
+    }
+    const recovered = await recoveryTestControl(PDS2, {
+      operation: "reconcile",
+      space: recoverySpace,
+      repo: writer.did,
+    });
+    const expectedRequests: Record<string, number> = expected === "incremental"
+      ? {
+        "com.atproto.space.getLatestCommit": 1,
+        "com.atproto.space.listRepoOps": 1,
+      }
+      : expected === "lightweight"
+      ? {
+        "com.atproto.space.getLatestCommit": 1,
+        "com.atproto.space.listRepoOps": 1,
+        "com.atproto.space.listRecords": 1,
+        "com.atproto.space.getRecord": deltaCount,
+      }
+      : {
+        "com.atproto.space.getLatestCommit": 1,
+        "com.atproto.space.listRepoOps": 1,
+        "com.atproto.space.listRecords": 1,
+        "com.atproto.space.getRepo": 1,
+      };
+    assertRecoveryResult(recovered, expected, expectedRequests);
+    return recovered;
+  };
+
+  const incrementalRecovery = await timedCall(
+    result,
+    "Observe incremental operations recovery",
+    () => exerciseRecovery("incremental", "incremental", 1, false),
+    (value) => `selector=${value.selector}`,
+  );
+  if (!incrementalRecovery) {
+    result.finish();
+    return result;
+  }
+  const lightweightRecovery = await timedCall(
+    result,
+    "Observe lightweight diff recovery after pruned cursor",
+    () => exerciseRecovery("lightweight", "lightweight", 1, true),
+    (value) => `selector=${value.selector}`,
+  );
+  if (!lightweightRecovery) {
+    result.finish();
+    return result;
+  }
+  const fullCARRecovery = await timedCall(
+    result,
+    "Observe full CAR recovery after pruned cursor and large delta",
+    () => exerciseRecovery("fullcar", "fullCAR", 2, true),
+    (value) => `selector=${value.selector}`,
+  );
+  if (!fullCARRecovery) {
+    result.finish();
+    return result;
+  }
 
   result.recordArtifact("space", space);
   result.recordArtifact("writer_did", writer.did);

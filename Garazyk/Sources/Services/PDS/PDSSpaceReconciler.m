@@ -5,7 +5,9 @@
 
 #import "Auth/JWT.h"
 #import "Compat/PDSTypes.h"
+#import "Debug/GZLogger.h"
 #import "Core/ATProtoDIDDocumentFields.h"
+#import "Core/CID.h"
 #import "Core/DID.h"
 #import "Core/NSDictionary+CID.h"
 #import "Database/ActorStore/ActorStore.h"
@@ -83,7 +85,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   NSArray<NSDictionary<NSString *, id> *> *heads = [self.spaceStore repositoriesForReconciliation:nil];
   for (NSDictionary<NSString *, id> *head in heads) {
     [self replayHead:head];
-    [self syncRemoteRepo:head];
+    [self syncRemoteRepo:head requestCounts:nil];
   }
 }
 
@@ -130,12 +132,34 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
 
 #pragma mark - Inbound: sync from authority
 
-- (void)syncRemoteRepo:(NSDictionary<NSString *, id> *)head {
+- (void)reconcileOnceForSpace:(NSString *)space
+                       author:(NSString *)author
+                   completion:(void (^)(NSDictionary<NSString *, id> *result))completion {
+  dispatch_async(self.queue, ^{
+    NSDictionary<NSString *, id> *head = nil;
+    for (NSDictionary<NSString *, id> *candidate in [self.spaceStore repositoriesForReconciliation:nil]) {
+      if ([candidate[@"space"] isEqualToString:space] && [candidate[@"author"] isEqualToString:author]) {
+        head = candidate;
+        break;
+      }
+    }
+    if (!head) {
+      if (completion) completion(@{ @"selector" : @"unavailable", @"requests" : @{} });
+      return;
+    }
+    NSMutableDictionary<NSString *, NSNumber *> *requestCounts = [NSMutableDictionary dictionary];
+    NSString *selector = [self syncRemoteRepo:head requestCounts:requestCounts];
+    if (completion) completion(@{ @"selector" : selector ?: @"unavailable", @"requests" : [requestCounts copy] });
+  });
+}
+
+- (nullable NSString *)syncRemoteRepo:(NSDictionary<NSString *, id> *)head
+                         requestCounts:(NSMutableDictionary<NSString *, NSNumber *> *)requestCounts {
   PDSSpaceURI *space = [PDSSpaceURI URIWithString:head[@"space"] error:nil];
   NSString *author = head[@"author"];
   NSString *localRev = head[@"rev"];
   if (!space || space.recordURI || author.length == 0 || localRev.length == 0 ||
-      [space.authorityDID isEqualToString:author]) return;
+      [space.authorityDID isEqualToString:author]) return nil;
 
   DIDDocument *authorityDocument = [[DIDResolver sharedResolver] resolveDIDSync:space.authorityDID error:nil];
   NSURL *endpoint = [NSURL URLWithString:[ATProtoDIDDocumentFields spaceHostEndpointFromDocument:authorityDocument] ?: @""];
@@ -145,38 +169,36 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                                                           lxm:@"com.atproto.space.getLatestCommit"
                                            actorKeyManager:actor.keyManager
                                                       error:nil];
-  if (!endpoint || endpoint.absoluteString.length == 0 || !token) return;
+  if (!endpoint || endpoint.absoluteString.length == 0 || !token) return nil;
 
-  NSDictionary *remoteCommit = [self xrpcGet:@"com.atproto.space.getLatestCommit"
+  NSDictionary *remoteCommitResponse = [self xrpcGet:@"com.atproto.space.getLatestCommit"
                                      endpoint:endpoint
                                         token:token
                                     parameters:@{ @"space" : space.spaceURI, @"repo" : author }
+                                 requestCounts:requestCounts
                                         error:nil];
-  if (![remoteCommit isKindOfClass:[NSDictionary class]]) return;
+  NSDictionary *remoteCommit = [remoteCommitResponse[@"commit"] isKindOfClass:[NSDictionary class]]
+      ? remoteCommitResponse[@"commit"] : remoteCommitResponse;
+  if (![remoteCommit isKindOfClass:[NSDictionary class]]) return nil;
   NSString *remoteRev = remoteCommit[@"rev"];
-  if (![remoteCommit isKindOfClass:[NSDictionary class]] || remoteRev.length == 0) return;
+  if (remoteRev.length == 0) return nil;
 
-  if ([remoteRev isEqualToString:localRev]) return;
+  if ([remoteRev isEqualToString:localRev]) return @"incremental";
 
-  NSArray *ops = [self xrpcGet:@"com.atproto.space.listRepoOps"
-                      endpoint:endpoint
-                         token:token
-                     parameters:@{ @"space" : space.spaceURI, @"repo" : author, @"since" : localRev, @"limit" : @(1000) }
-                         error:nil];
-  if (![ops isKindOfClass:[NSArray class]]) return;
+  id opsResponse = [self xrpcGet:@"com.atproto.space.listRepoOps"
+                         endpoint:endpoint
+                            token:token
+                        parameters:@{ @"space" : space.spaceURI, @"repo" : author, @"since" : localRev, @"limit" : @(1000) }
+                     requestCounts:requestCounts
+                             error:nil];
+  NSArray *ops = [opsResponse isKindOfClass:[NSArray class]] ? opsResponse :
+      ([opsResponse[@"ops"] isKindOfClass:[NSArray class]] ? opsResponse[@"ops"] : nil);
+  if (![ops isKindOfClass:[NSArray class]]) return nil;
 
-  BOOL gapDetected = NO;
-  if (ops.count > 0) {
-    NSDictionary *firstOp = ops.firstObject;
-    NSString *prev = [firstOp isKindOfClass:[NSDictionary class]] ? firstOp[@"prev"] : nil;
-    if ([prev isKindOfClass:[NSString class]] && prev.length > 0 && ![prev isEqualToString:localRev]) {
-      gapDetected = YES;
-    } else if (![prev isKindOfClass:[NSString class]] || prev.length == 0) {
-      gapDetected = YES;
-    }
-  } else {
-    gapDetected = YES;
-  }
+  /* listRepoOps already applies the `since` revision cursor. Its `prev`
+   * field is the prior record CID (not a repository revision), so comparing
+   * it to localRev would falsely turn every update into a recovery gap. */
+  BOOL gapDetected = ops.count == 0;
 
   if (!gapDetected) {
     NSMutableArray<PDSSpaceWrite *> *writes = [NSMutableArray array];
@@ -200,30 +222,31 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
     if (writes.count > 0) {
       [self.spaceStore applyWrites:writes toSpace:space.spaceURI author:author rev:nil error:nil];
     }
-    return;
+    return @"incremental";
   }
 
   NSDictionary *repoState = [self.spaceStore repositoryStateForSpace:space.spaceURI author:author error:nil];
   BOOL localEmpty = ![repoState isKindOfClass:[NSDictionary class]] || repoState[@"rev"] == [NSNull null];
   if (localEmpty) {
-    [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token];
-    return;
+    return [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token requestCounts:requestCounts]
+        ? @"fullCAR" : nil;
   }
 
   NSDictionary *localIndex = [self.spaceStore recordIndexForSpace:space.spaceURI author:author error:nil];
   if (!localIndex) {
-    [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token];
-    return;
+    return [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token requestCounts:requestCounts]
+        ? @"fullCAR" : nil;
   }
 
   NSDictionary *remoteIndex = [self fetchRemoteRecordIndexForSpace:space.spaceURI
                                                             author:author
                                                          endpoint:endpoint
                                                             token:token
+                                                     requestCounts:requestCounts
                                                              error:nil];
   if (!remoteIndex) {
-    [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token];
-    return;
+    return [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token requestCounts:requestCounts]
+        ? @"fullCAR" : nil;
   }
 
   NSMutableArray *toAdd = [NSMutableArray array], *toUpdate = [NSMutableArray array], *toDelete = [NSMutableArray array];
@@ -238,18 +261,23 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                                token:token
                                 toAdd:toAdd
                              toUpdate:toUpdate
-                              toDelete:toDelete];
+                              toDelete:toDelete
+                         requestCounts:requestCounts];
+    return @"lightweight";
   } else {
-    [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token];
+    return [self fullCARRecoveryForSpace:space author:author endpoint:endpoint token:token requestCounts:requestCounts]
+        ? @"fullCAR" : nil;
   }
 }
 
 #pragma mark - Full CAR recovery
 
-- (void)fullCARRecoveryForSpace:(PDSSpaceURI *)space
+- (BOOL)fullCARRecoveryForSpace:(PDSSpaceURI *)space
                          author:(NSString *)author
                       endpoint:(NSURL *)endpoint
-                          token:(NSString *)token {
+                          token:(NSString *)token
+                  requestCounts:(NSMutableDictionary<NSString *, NSNumber *> *)requestCounts {
+  if (requestCounts) requestCounts[@"com.atproto.space.getRepo"] = @([requestCounts[@"com.atproto.space.getRepo"] unsignedIntegerValue] + 1);
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:
       [NSURL URLWithString:[NSString stringWithFormat:@"xrpc/com.atproto.space.getRepo?space=%@&repo=%@",
                              space.spaceURI, author] relativeToURL:endpoint]];
@@ -259,18 +287,23 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                                                                         options:nil
                                                                        response:nil
                                                                           error:&fetchError];
-  if (!carData || carData.length == 0) return;
+  if (!carData || carData.length == 0) return NO;
 
-  NSDictionary *spaceInfo = [self.spaceStore spaceInfoForURI:space.spaceURI error:nil];
   NSString *authorityDID = space.authorityDID;
   NSData *publicKey = [self publicKeyForDID:authorityDID];
-  if (!publicKey) return;
+  if (!publicKey) return NO;
 
-  [self.spaceStore importRepoFromCAR:carData
-                               space:space.spaceURI
-                              author:author
-                     commitPublicKey:publicKey
-                               error:nil];
+  NSError *importError = nil;
+  BOOL imported = [self.spaceStore importRepoFromCAR:carData
+                                                space:space.spaceURI
+                                               author:author
+                                      commitPublicKey:publicKey
+                                                error:&importError];
+  if (!imported) {
+    GZ_LOG_WARN(@"Permissioned-space CAR recovery failed for %@/%@: %@", space.spaceURI, author,
+                importError.localizedDescription ?: @"unknown error");
+  }
+  return imported;
 }
 
 #pragma mark - Lightweight recovery
@@ -279,9 +312,10 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                               author:(NSString *)author
                            endpoint:(NSURL *)endpoint
                               token:(NSString *)token
-                               toAdd:(NSArray<NSString *> *)toAdd
-                            toUpdate:(NSArray<NSString *> *)toUpdate
-                             toDelete:(NSArray<NSString *> *)toDelete {
+                             toAdd:(NSArray<NSString *> *)toAdd
+                          toUpdate:(NSArray<NSString *> *)toUpdate
+                           toDelete:(NSArray<NSString *> *)toDelete
+                      requestCounts:(NSMutableDictionary<NSString *, NSNumber *> *)requestCounts {
   NSMutableArray<PDSSpaceWrite *> *writes = [NSMutableArray array];
   for (NSString *path in [toAdd arrayByAddingObjectsFromArray:toUpdate]) {
     NSArray *parts = [path componentsSeparatedByString:@"/"];
@@ -291,6 +325,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                                    token:token
                                parameters:@{ @"space" : space.spaceURI, @"repo" : author,
                                              @"collection" : parts[0], @"rkey" : parts[1] }
+                            requestCounts:requestCounts
                                    error:nil];
     if (![record isKindOfClass:[NSDictionary class]]) continue;
     NSString *cid = [record cidStringForKey:@"cid"];
@@ -323,24 +358,37 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
 
 - (NSDictionary<NSString *, NSString *> *)fetchRemoteRecordIndexForSpace:(NSString *)space
                                                                   author:(NSString *)author
-                                                               endpoint:(NSURL *)endpoint
-                                                                  token:(NSString *)token
-                                                                   error:(NSError **)error {
+                                                                  endpoint:(NSURL *)endpoint
+                                                                     token:(NSString *)token
+                                                             requestCounts:(NSMutableDictionary<NSString *, NSNumber *> *)requestCounts
+                                                                     error:(NSError **)error {
   NSMutableDictionary<NSString *, NSString *> *index = [NSMutableDictionary dictionary];
   NSString *cursor = nil;
   while (YES) {
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:
         @{ @"space" : space, @"repo" : author, @"excludeValues" : @"true", @"limit" : @"100" }];
     if (cursor) params[@"cursor"] = cursor;
-    NSArray *records = [self xrpcGet:@"com.atproto.space.listRecords"
-                            endpoint:endpoint
-                               token:token
-                           parameters:params
-                               error:error];
+    id recordsResponse = [self xrpcGet:@"com.atproto.space.listRecords"
+                               endpoint:endpoint
+                                  token:token
+                              parameters:params
+                           requestCounts:requestCounts
+                                   error:error];
+    NSArray *records = [recordsResponse isKindOfClass:[NSArray class]] ? recordsResponse :
+        ([recordsResponse[@"records"] isKindOfClass:[NSArray class]] ? recordsResponse[@"records"] : nil);
     if (![records isKindOfClass:[NSArray class]]) break;
     for (NSDictionary *record in records) {
       if (![record isKindOfClass:[NSDictionary class]]) continue;
       NSString *collection = record[@"collection"], *rkey = record[@"rkey"];
+      if (collection.length == 0 || rkey.length == 0) {
+        NSString *uri = record[@"uri"];
+        NSArray<NSString *> *components = [uri isKindOfClass:[NSString class]]
+            ? [uri componentsSeparatedByString:@"/"] : @[];
+        if (components.count >= 2) {
+          collection = components[components.count - 2];
+          rkey = components.lastObject;
+        }
+      }
       NSString *cid = [record cidStringForKey:@"cid"];
       if (collection && rkey && cid) {
         index[[NSString stringWithFormat:@"%@/%@", collection, rkey]] = cid;
@@ -384,8 +432,10 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
 - (nullable id)xrpcGet:(NSString *)method
               endpoint:(NSURL *)endpoint
                  token:(NSString *)token
-             parameters:(NSDictionary *)params
+            parameters:(NSDictionary *)params
+         requestCounts:(NSMutableDictionary<NSString *, NSNumber *> *)requestCounts
                  error:(NSError **)error {
+  if (requestCounts) requestCounts[method] = @([requestCounts[method] unsignedIntegerValue] + 1);
   NSURLComponents *components = [NSURLComponents componentsWithURL:
       [NSURL URLWithString:[NSString stringWithFormat:@"xrpc/%@", method] relativeToURL:endpoint]
                                 resolvingAgainstBaseURL:YES];
@@ -418,43 +468,14 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
 
 - (nullable NSData *)publicKeyForDID:(NSString *)did {
   DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did error:nil];
-  if (!document) return nil;
-  NSArray *methods = document.jsonDictionary[@"verificationMethod"];
-  if (![methods isKindOfClass:[NSArray class]]) return nil;
-  for (id method in methods) {
-    if (![method isKindOfClass:[NSDictionary class]]) continue;
-    NSString *type = method[@"type"];
-    if ([type isEqualToString:@"EcdsaSecp256k1VerificationKey2019"] ||
-        [type isEqualToString:@"EcdsaSecp256k1RecoveryMethod2020"]) {
-      NSString *publicKeyMultibase = method[@"publicKeyMultibase"];
-      if ([publicKeyMultibase isKindOfClass:[NSString class]] && publicKeyMultibase.length > 0) {
-        return [self multibaseToRawBytes:publicKeyMultibase];
-      }
-    }
-  }
-  return nil;
-}
-
-- (nullable NSData *)multibaseToRawBytes:(NSString *)multibase {
-  if (multibase.length < 2) return nil;
-  char prefix = [multibase characterAtIndex:0];
-  NSString *encoded;
-  int base;
-  if (prefix == 'z') { encoded = [multibase substringFromIndex:1]; base = 58; }
-  else if (prefix == 'm') { encoded = [multibase substringFromIndex:1]; base = 16; }
-  else { encoded = multibase; base = 16; }
-  if (base == 16) {
-    NSMutableData *data = [NSMutableData data];
-    for (NSUInteger i = 0; i + 1 < encoded.length; i += 2) {
-      unsigned int byte;
-      NSScanner *scanner = [NSScanner scannerWithString:[encoded substringWithRange:NSMakeRange(i, 2)]];
-      if (![scanner scanHexInt:&byte]) return nil;
-      uint8_t b = (uint8_t)byte;
-      [data appendBytes:&b length:1];
-    }
-    return [data copy];
-  }
-  return nil;
+  NSString *key = document ? [ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:document] : nil;
+  if ([key hasPrefix:@"did:key:"]) key = [key substringFromIndex:8];
+  if (![key hasPrefix:@"z"]) return nil;
+  NSData *decoded = [CID base58btcDecode:[key substringFromIndex:1]];
+  if (decoded.length != 35) return nil;
+  const uint8_t *bytes = decoded.bytes;
+  if (bytes[0] != 0xe7 || bytes[1] != 0x01) return nil;
+  return [decoded subdataWithRange:NSMakeRange(2, 33)];
 }
 
 @end
