@@ -43,7 +43,7 @@ static NSData *PDSActorStoreBlobCursorData(NSString *cursor, NSError **error) {
 }
 
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(cid) DO UPDATE SET did=excluded.did, mimeType=excluded.mimeType, size=excluded.size, created_at=excluded.created_at";
     NSArray *params = @[
         blob.cid ?: [NSNull null],
         blob.did ?: @"",
