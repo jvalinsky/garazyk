@@ -8,6 +8,20 @@ depends_on: [3]
 
 # Phase 6: Generated NSID constants and CLI/lifecycle adoption
 
+## Progress (2026-07-17)
+
+- Generator landed: `f46ab5fb8` generates ObjC NSID constants from the
+  canonical lexicons (`scripts/generate_nsid_constants.ts`).
+- The call-site adoption sweep is committed: every `Xrpc*Pack.m`,
+  `XrpcHandler.h/.m` (pass-through registration methods deleted),
+  Germ/Video packs, the CI drift-check job, and
+  `scripts/migrate_nsid_constants.ts`/`migrate_nsid_strings.ts`. This
+  landed separately from phase 7's relay-removal and sync-slice commits,
+  which shared the same worktree — see `docs/plans/prompts/README.md`
+  for the loop-protocol rule this hazard produced.
+- Remaining: raw-literal lint against new endpoint literals, then the
+  untouched CLI/lifecycle adoption arc (scope item 2).
+
 ## Mission
 
 Two mechanical-but-broad hygiene arcs, both explicitly gated until phase 3's

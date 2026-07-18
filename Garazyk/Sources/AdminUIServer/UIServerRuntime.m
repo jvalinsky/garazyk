@@ -9,6 +9,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/CryptoUtils.h"
 #import "Debug/GZLogger.h"
 
@@ -136,7 +137,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     }];
 
     // Register com.atproto.server.describeServer
-    [self.xrpcDispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *req, HttpResponse *res) {
+    [self.xrpcDispatcher registerMethod:kGZXrpcNSID_com_atproto_server_describeServer handler:^(HttpRequest *req, HttpResponse *res) {
         res.statusCode = 200;
         [res setJsonBody:@{
             @"availableUserDomains": @[],

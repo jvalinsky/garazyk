@@ -17,6 +17,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   return @{
@@ -135,7 +136,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerMethod:@"app.bsky.notification.putNotificationPreferences"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putNotificationPreferences
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -203,7 +204,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerMethod:@"app.bsky.notification.getPreferences"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_getPreferences
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -242,7 +243,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:@{@"preferences" : prefs}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.notification.putPreferences"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putPreferences
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -296,7 +297,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:@{}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.notification.listNotifications"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_listNotifications
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -327,7 +328,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:@{@"notifications" : notifications ?: @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.notification.getUnreadCount"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_getUnreadCount
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -348,7 +349,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:@{@"count" : @(count)}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.notification.updateSeen"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_updateSeen
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -366,7 +367,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:@{}];
                      }];
 
-  [dispatcher registerAppBskyNotificationRegisterPush:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_registerPush handler:^(HttpRequest *request, HttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
     NSString *actorDID = nil;
@@ -424,7 +425,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
     [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerAppBskyNotificationUnregisterPush:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_unregisterPush handler:^(HttpRequest *request, HttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
     NSString *actorDID = nil;
@@ -478,7 +479,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
     [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerMethod:@"app.bsky.notification.listActivitySubscriptions"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_listActivitySubscriptions
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -510,7 +511,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:result ?: @{@"subscriptions" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.notification.putPreferencesV2"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putPreferencesV2
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -576,7 +577,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:@{@"preferences" : body}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.notification.putActivitySubscription"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putActivitySubscription
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request

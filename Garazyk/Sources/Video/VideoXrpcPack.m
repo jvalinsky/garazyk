@@ -8,6 +8,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Core/CID.h"
@@ -25,7 +26,7 @@
   id<VideoAuthProvider> authProvider = services.videoAuthProvider;
   id<PDSBlobProvider> blobProvider = services.blobProvider;
 
-  [dispatcher registerMethod:@"app.bsky.video.getJobStatus"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_video_getJobStatus
                       handler:^(HttpRequest *request, HttpResponse *response) {
     NSString *jobId = [request queryParamForKey:@"jobId"];
     if (!jobId) {
@@ -44,7 +45,7 @@
     [response setJsonBody:@{@"jobStatus": [self formatJobResponse:job]}];
   }];
 
-  [dispatcher registerMethod:@"app.bsky.video.uploadVideo"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_video_uploadVideo
                        handler:^(HttpRequest *request, HttpResponse *response) {
     NSString *did = [authProvider authenticateRequest:request response:response];
     if (!did) {
@@ -139,7 +140,7 @@
     }];
   }];
 
-  [dispatcher registerMethod:@"app.bsky.video.getUploadLimits"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_video_getUploadLimits
                       handler:^(HttpRequest *request, HttpResponse *response) {
     NSString *did = [authProvider authenticateRequest:request response:response];
     if (!did) {

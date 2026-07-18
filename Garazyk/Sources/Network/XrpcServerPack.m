@@ -36,6 +36,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import "Network/Generated/GZXrpcNSID.h"
 
 static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
 
@@ -365,7 +366,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                configuration:(ATProtoServiceConfiguration *)config
                             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
 #pragma mark - com.atproto.server.describeServer
-    [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_describeServer handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *issuer = [config canonicalIssuerWithPortHint:0];
         NSString *hostname = [config canonicalHostname];
         NSString *serverDid = XrpcDidWebIdentifierFromIssuer(issuer, hostname);
@@ -435,7 +436,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     ATProtoServiceConfiguration *config = services.configuration;
     BOOL enforceDidWebServiceAuth = NO; // Default to NO as per registry
 #pragma mark - com.atproto.server.session.*
-    [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *email = body[@"email"];
         NSString *handle = body[@"handle"];
@@ -521,7 +522,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoServerCreateSession:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createSession handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *identifier = body[@"identifier"];
         NSString *password = body[@"password"];
@@ -571,7 +572,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:lexiconSession];
     }];
 
-    [dispatcher registerComAtprotoServerGetSession:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getSession handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -611,7 +612,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:lexiconSession];
     }];
 
-    [dispatcher registerComAtprotoServerRefreshSession:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_refreshSession handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *refreshToken = nil;
         
@@ -640,7 +641,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:session];
     }];
 
-    [dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteSession handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -679,7 +680,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     id<PDSAdminController> adminController = services.adminController;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 #pragma mark - com.atproto.server.inviteCodes.*
-    [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCode handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -714,7 +715,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{@"code": code ?: @""}];
     }];
 
-    [dispatcher registerComAtprotoServerCreateInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -771,7 +772,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{@"codes": codesByAccount}];
     }];
 
-    [dispatcher registerComAtprotoServerGetAccountInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccountInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -815,7 +816,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
 #pragma mark - com.atproto.server.appPasswords.*
-    [dispatcher registerComAtprotoServerCreateAppPassword:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAppPassword handler:^(HttpRequest *request, HttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"POST" forKey:@"Allow"];
@@ -859,7 +860,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoServerListAppPasswords:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_listAppPasswords handler:^(HttpRequest *request, HttpResponse *response) {
         if (request.method != HttpMethodGET) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"GET" forKey:@"Allow"];
@@ -889,7 +890,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{@"passwords": passwords ?: @[]}];
     }];
 
-    [dispatcher registerComAtprotoServerRevokeAppPassword:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_revokeAppPassword handler:^(HttpRequest *request, HttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"POST" forKey:@"Allow"];
@@ -937,7 +938,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     PDSDatabasePool *userDatabasePool = services.userDatabasePool;
 
 #pragma mark - com.atproto.server.accountManagement.*
-    [dispatcher registerComAtprotoServerRequestEmailConfirmation:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailConfirmation handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -952,7 +953,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoServerRequestEmailUpdate:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailUpdate handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -967,7 +968,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{@"tokenRequired": @NO}];
     }];
 
-    [dispatcher registerComAtprotoServerConfirmEmail:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_confirmEmail handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -1005,7 +1006,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoServerUpdateEmail:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_updateEmail handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -1035,7 +1036,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoServerRequestAccountDelete:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestAccountDelete handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -1050,7 +1051,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoServerRequestPasswordReset:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestPasswordReset handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *email = body[@"email"];
         if (email.length == 0 || !isLikelyEmail(email)) {
@@ -1063,7 +1064,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoServerResetPassword:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_resetPassword handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *token = body[@"token"];
         NSString *password = body[@"password"];
@@ -1116,7 +1117,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerComAtprotoServerReserveSigningKey:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_reserveSigningKey handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *did = body[@"did"];
         NSString *signingKey = nil;
@@ -1170,7 +1171,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{@"signingKey": signingKey}];
     }];
 
-    [dispatcher registerComAtprotoServerGetServiceAuth:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getServiceAuth handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *aud = [request queryParamForKey:@"aud"];
         if (!aud) {
             response.statusCode = HttpStatusBadRequest;
@@ -1280,7 +1281,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     id<PDSAdminController> adminController = services.adminController;
     id<PDSAccountService> accountService = services.accountService;
 #pragma mark - com.atproto.server.accountLifecycle.*
-    [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -1302,7 +1303,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:account];
     }];
 
-    [dispatcher registerComAtprotoServerDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *did = body[@"did"];
         NSString *password = body[@"password"];
@@ -1326,7 +1327,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:@{@"success": @YES}];
     }];
 
-    [dispatcher registerComAtprotoServerCheckAccountStatus:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_checkAccountStatus handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -1354,7 +1355,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerComAtprotoServerActivateAccount:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_activateAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -1383,7 +1384,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                         userInfo:@{PDSAccountEventDidKey: did}];
     }];
 
-    [dispatcher registerComAtprotoServerDeactivateAccount:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deactivateAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 

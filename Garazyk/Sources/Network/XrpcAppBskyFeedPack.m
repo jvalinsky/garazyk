@@ -16,6 +16,7 @@
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/GZLogger.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyFeedPack
 
@@ -31,7 +32,7 @@
     GraphService *graphService = [[GraphService alloc] initWithDatabase:services.appViewDatabase];
 
     // app.bsky.feed.getAuthorFeed
-    [dispatcher registerAppBskyFeedGetAuthorFeed:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getAuthorFeed handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -59,7 +60,7 @@
     }];
 
     // app.bsky.feed.getTimeline
-    [dispatcher registerAppBskyFeedGetTimeline:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getTimeline handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required for timeline"];
@@ -80,7 +81,7 @@
     }];
 
     // app.bsky.feed.getActorLikes
-    [dispatcher registerAppBskyFeedGetActorLikes:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getActorLikes handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -99,7 +100,7 @@
     }];
 
     // app.bsky.feed.getPostThread
-    [dispatcher registerAppBskyFeedGetPostThread:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getPostThread handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
             [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
@@ -125,7 +126,7 @@
     }];
 
     // app.bsky.feed.getFeed
-    [dispatcher registerAppBskyFeedGetFeed:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getFeed handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *feed = [request queryParamForKey:@"feed"];
         if (!feed) {
             [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
@@ -144,7 +145,7 @@
     }];
 
     // app.bsky.feed.getPosts
-    [dispatcher registerAppBskyFeedGetPosts:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getPosts handler:^(HttpRequest *request, HttpResponse *response) {
         id urisParam = request.queryParams[@"uris"];
         NSArray<NSString *> *uris = nil;
         if ([urisParam isKindOfClass:[NSArray class]]) {
@@ -166,7 +167,7 @@
     }];
 
     // app.bsky.feed.getFeedGenerators
-    [dispatcher registerAppBskyFeedGetFeedGenerators:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getFeedGenerators handler:^(HttpRequest *request, HttpResponse *response) {
         id feedsParam = request.queryParams[@"feeds"];
         NSArray<NSString *> *feedURIs = nil;
         if ([feedsParam isKindOfClass:[NSArray class]]) {
@@ -186,13 +187,13 @@
     }];
 
     // app.bsky.feed.getSuggestedFeeds - Get suggested feeds
-    [dispatcher registerMethod:@"app.bsky.feed.getSuggestedFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getSuggestedFeeds handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"feeds": @[]}];
     }];
 
     // app.bsky.feed.getLikes - Get likes for a post
-    [dispatcher registerMethod:@"app.bsky.feed.getLikes" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getLikes handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
             [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
@@ -207,7 +208,7 @@
     }];
 
     // app.bsky.feed.getRepostedBy - Get actors who reposted
-    [dispatcher registerMethod:@"app.bsky.feed.getRepostedBy" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getRepostedBy handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
             [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
@@ -222,7 +223,7 @@
     }];
 
     // app.bsky.feed.getActorFeeds - Get feed generators created by an actor
-    [dispatcher registerMethod:@"app.bsky.feed.getActorFeeds" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getActorFeeds handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -283,7 +284,7 @@
     }];
 
     // app.bsky.feed.getFeedGenerator - Get a single feed generator by URI
-    [dispatcher registerMethod:@"app.bsky.feed.getFeedGenerator" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getFeedGenerator handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *feed = [request queryParamForKey:@"feed"];
         if (!feed) {
             [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
@@ -336,7 +337,7 @@
     }];
 
     // app.bsky.feed.searchPosts - Search posts by text
-    [dispatcher registerMethod:@"app.bsky.feed.searchPosts" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_searchPosts handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *q = [request queryParamForKey:@"q"];
         if (!q || q.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"Missing q parameter"];
@@ -393,7 +394,7 @@
     }];
 
     // app.bsky.feed.getQuotes - Get posts that quote a given post
-    [dispatcher registerMethod:@"app.bsky.feed.getQuotes" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getQuotes handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
             [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
@@ -467,7 +468,7 @@
     }];
 
     // app.bsky.feed.describeFeedGenerator - Describe this server's feed generator
-    [dispatcher registerMethod:@"app.bsky.feed.describeFeedGenerator" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_describeFeedGenerator handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
             @"did": @"",
@@ -477,7 +478,7 @@
     }];
 
     // app.bsky.feed.getFeedSkeleton - Get skeleton of a feed from a feed generator
-    [dispatcher registerMethod:@"app.bsky.feed.getFeedSkeleton" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getFeedSkeleton handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *feed = [request queryParamForKey:@"feed"];
         if (!feed || feed.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
@@ -539,7 +540,7 @@
     }];
 
     // app.bsky.feed.sendInteractions - Log feed interactions
-    [dispatcher registerMethod:@"app.bsky.feed.sendInteractions" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_sendInteractions handler:^(HttpRequest *request, HttpResponse *response) {
         // Accept the interaction but don't process it yet.
         // This is a fire-and-forget endpoint — returning 200 is acceptable
         // per the lexicon spec (response body is empty).
@@ -548,7 +549,7 @@
     }];
 
     // app.bsky.feed.getListFeed - Get feed from a list
-    [dispatcher registerMethod:@"app.bsky.feed.getListFeed" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getListFeed handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *list = [request queryParamForKey:@"list"];
         if (!list) {
             [XrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
