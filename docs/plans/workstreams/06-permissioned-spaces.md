@@ -84,6 +84,14 @@ PDS.
 4. **Complete (2026-07-18):** all compatibility-gate rows have dated
    structured-run evidence.
 
+The recovery fixture was further hardened after review: issuer-required
+environments now veto registration, and requests require a per-run bearer
+capability from loopback and are limited to recovery fixture spaces. The
+follow-up security audit found no remaining issue. Structured run
+`2026-07-18t2251z-9158` passes scenario 94 **28/28**. Phase 2 is currently
+blocked on local disk capacity before its full Deno/native gates can finish;
+the phase prompt records the exact checkpoint.
+
 Owner boundary: `scripts/scenarios/scenarios/93_*.ts`, `94_*.ts`, scenario
 topology/config, `docs/permissioned-spaces-compatibility.md`. No product
 code should need to change; if a scenario failure requires one, that fix is

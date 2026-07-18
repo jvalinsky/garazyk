@@ -57,7 +57,11 @@ Deno.test("resolvePreset: includes PDS3 only when requested", () => {
   assertEquals(withoutPds3.roles.pds3, undefined);
 
   const withPds3 = resolvePreset("garazyk-default", { includePds3: true });
-  assertEquals(withPds3.roles.pds3?.name, "kaszlak-pds3");
+  const pds3 = withPds3.roles.pds3;
+  if (!pds3 || "inherit" in pds3) {
+    throw new Error("PDS3 should resolve to a concrete service adapter");
+  }
+  assertEquals(pds3.name, "kaszlak-pds3");
 });
 
 Deno.test("validatePreset: missing name", () => {

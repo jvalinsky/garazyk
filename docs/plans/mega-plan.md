@@ -283,7 +283,11 @@ deterministic generator tests.
    93 passes 19/19 and the OAuth fixes are characterization-guarded
    (`9000097ba`). Scenario 93's private-blob acceptance passes 21/21
    (`21eeb5719`), and Scenario 94 passes 28/28 with all three recovery
-   selectors observed (`43b3ad9c3`, `2026-07-18t2238z-90828).
+   selectors observed (`43b3ad9c3`, `2026-07-18t2251z-9158`). The Phase 2
+   fixture was hardened to veto issuer-required environments and require a
+   per-run local bearer capability, with no remaining security-audit findings.
+   Phase completion is blocked until local disk capacity permits the full Deno
+   and AllTests acceptance gates to finish.
 7. **Complete (report-only).** Conformance matrix at
    `docs/reports/spec-conformance-matrix.md`: 21 rows, 16 supported, 4 partial,
    0 gap. Permissions-spec gap assessment at
