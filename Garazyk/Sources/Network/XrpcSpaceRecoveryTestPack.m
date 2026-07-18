@@ -10,11 +10,40 @@
 #import "Services/PDS/PDSSpaceReconciler.h"
 #import "Services/PDS/PDSSpaceStore.h"
 
+#import <stdint.h>
+
 static NSString *const XrpcSpaceRecoveryTestNSID = @"tools.garazyk.test.spaceRecovery";
 
 static BOOL XrpcSpaceRecoveryTestEnabledValue(NSString *value) {
   return [value isKindOfClass:[NSString class]] &&
       ([value caseInsensitiveCompare:@"true"] == NSOrderedSame || [value isEqualToString:@"1"]);
+}
+
+static NSString *const XrpcSpaceRecoveryTestControlTokenEnvironment =
+    @"PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN";
+
+static BOOL XrpcSpaceRecoveryTestIsProductionEnvironment(NSDictionary<NSString *, NSString *> *environment) {
+  return [[environment[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
+      XrpcSpaceRecoveryTestEnabledValue(environment[@"PDS_REQUIRE_ISSUER"]);
+}
+
+static BOOL XrpcSpaceRecoveryTestTokensMatch(NSString *candidate, NSString *expected) {
+  NSData *candidateData = [candidate dataUsingEncoding:NSUTF8StringEncoding];
+  NSData *expectedData = [expected dataUsingEncoding:NSUTF8StringEncoding];
+  if (candidateData.length != expectedData.length || expectedData.length == 0) return NO;
+  const uint8_t *candidateBytes = candidateData.bytes;
+  const uint8_t *expectedBytes = expectedData.bytes;
+  uint8_t difference = 0;
+  for (NSUInteger index = 0; index < expectedData.length; index++) {
+    difference |= candidateBytes[index] ^ expectedBytes[index];
+  }
+  return difference == 0;
+}
+
+static BOOL XrpcSpaceRecoveryTestIsLoopbackAddress(NSString *address) {
+  NSString *normalized = [address lowercaseString];
+  return [normalized hasPrefix:@"127."] || [normalized isEqualToString:@"::1"] ||
+      [normalized isEqualToString:@"localhost"];
 }
 
 static void XrpcSpaceRecoveryTestError(HttpResponse *response, NSInteger status, NSString *message) {
@@ -26,10 +55,30 @@ static void XrpcSpaceRecoveryTestError(HttpResponse *response, NSInteger status,
 
 + (BOOL)isEnabledForEnvironment:(NSDictionary<NSString *, NSString *> *)environment {
   if (![environment isKindOfClass:[NSDictionary class]]) return NO;
-  NSString *environmentName = [environment[@"PDS_ENV"] lowercaseString];
-  return ![environmentName isEqualToString:@"production"] &&
+  NSString *token = environment[XrpcSpaceRecoveryTestControlTokenEnvironment];
+  return !XrpcSpaceRecoveryTestIsProductionEnvironment(environment) &&
       XrpcSpaceRecoveryTestEnabledValue(environment[@"PDS_RUNNING_TESTS"]) &&
-      XrpcSpaceRecoveryTestEnabledValue(environment[@"PDS_SPACE_RECOVERY_TEST_CONTROL"]);
+      XrpcSpaceRecoveryTestEnabledValue(environment[@"PDS_SPACE_RECOVERY_TEST_CONTROL"]) &&
+      [token isKindOfClass:[NSString class]] && token.length >= 32;
+}
+
++ (BOOL)isAuthorizedRequest:(HttpRequest *)request
+                environment:(NSDictionary<NSString *, NSString *> *)environment {
+  NSString *token = environment[XrpcSpaceRecoveryTestControlTokenEnvironment];
+  NSString *authorization = [request headerForKey:@"Authorization"];
+  if (![token isKindOfClass:[NSString class]] || token.length < 32 ||
+      ![authorization hasPrefix:@"Bearer "] ||
+      !XrpcSpaceRecoveryTestIsLoopbackAddress(request.remoteAddress)) {
+    return NO;
+  }
+  return XrpcSpaceRecoveryTestTokensMatch([authorization substringFromIndex:7], token);
+}
+
++ (BOOL)isFixtureSpaceURI:(NSString *)space {
+  if (![space isKindOfClass:[NSString class]]) return NO;
+  NSRange marker = [space rangeOfString:@"/space/com.garazyk.permissioned/recovery-"];
+  return [space hasPrefix:@"at://did:"] && marker.location != NSNotFound &&
+      marker.location + marker.length < space.length;
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -37,8 +86,13 @@ static void XrpcSpaceRecoveryTestError(HttpResponse *response, NSInteger status,
   PDSSpaceStore *spaceStore = services.spaceStore;
   PDSSpaceReconciler *reconciler = services.spaceReconciler;
   if (!spaceStore || !reconciler) return;
+  NSDictionary<NSString *, NSString *> *environment = NSProcessInfo.processInfo.environment;
 
   [dispatcher registerMethod:XrpcSpaceRecoveryTestNSID handler:^(HttpRequest *request, HttpResponse *response) {
+    if (![self isAuthorizedRequest:request environment:environment]) {
+      XrpcSpaceRecoveryTestError(response, 401, @"Recovery test control requires local bearer authorization");
+      return;
+    }
     if (request.method != HttpMethodPOST || ![request.jsonBody isKindOfClass:[NSDictionary class]]) {
       XrpcSpaceRecoveryTestError(response, 400, @"Expected a JSON POST body");
       return;
@@ -53,9 +107,17 @@ static void XrpcSpaceRecoveryTestError(HttpResponse *response, NSInteger status,
       XrpcSpaceRecoveryTestError(response, 400, @"operation, space, and repo are required");
       return;
     }
+    if (![self isFixtureSpaceURI:space]) {
+      XrpcSpaceRecoveryTestError(response, 403, @"Recovery test control is limited to recovery fixture spaces");
+      return;
+    }
 
     if ([operation isEqualToString:@"seed"]) {
       NSString *rkey = [body[@"rkey"] isKindOfClass:[NSString class]] ? body[@"rkey"] : @"recovery-seed";
+      if (![rkey hasPrefix:@"recovery-"]) {
+        XrpcSpaceRecoveryTestError(response, 403, @"Recovery test control seed must use a fixture record key");
+        return;
+      }
       NSDictionary *value = @{ @"$type" : @"app.bsky.feed.post", @"text" : @"recovery control seed" };
       NSData *valueData = [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
       PDSSpaceWrite *write = [PDSSpaceWrite writeWithAction:PDSSpaceWriteActionCreate
