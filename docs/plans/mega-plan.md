@@ -126,7 +126,7 @@ better-isolated steps.
 | Replace false-confidence security tests       |             4 |               3 |             5 |             5 |      5 | P1              |
 | PLC schema-upgrade atomicity                  |             4 |               4 |             5 |             3 |      4 | P1              |
 | Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | P1              |
-| Relay product decision and assembly           |             4 |               5 |             4 |             2 |      5 | P1              |
+| Relay product decision and assembly           |             4 |               5 |             4 |             2 |      5 | Decided (ADR 0006) |
 | Admin UI structural and accessibility work    |             4 |               5 |             4 |             3 |      4 | P1              |
 | Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | P2              |
 | Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | P2              |
@@ -287,9 +287,7 @@ uses released dependencies and retains a launcher smoke test.
 
 ### Phase 4: structure and scale
 
-1. Decide whether `kaszlak relay serve` becomes a real downstream Relay or is
-   removed/marked experimental. A real service needs listener assembly, durable
-   cursor state, and one retry owner.
+1. **Complete (2026-07-17):** `kaszlak relay serve` removed (Operator decision: Option 3). `PDSCLIRelayCommand` deleted; `zuk` is the canonical relay binary. Underlying relay components (RelayClient, UpstreamManager, DownstreamHandler, Firehose, etc.) are untouched and continue to serve zuk, PDSRelayService, and AppViewIngestEngine.
 2. Stream repository export preparation and replace per-account summary scans
    with indexed metadata.
 3. Decompose Objective-C god files after the branch recovery and

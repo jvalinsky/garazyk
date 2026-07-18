@@ -21,7 +21,6 @@
 @interface PDSCLIHealthCommand : PDSBaseCommand @end
 @interface PDSCLIAdminCommand : PDSBaseCommand @end
 @interface PDSCLINukeCommand : PDSBaseCommand @end
-@interface PDSCLIRelayCommand : PDSBaseCommand @end
 @interface PDSCLIAccountCommand : PDSBaseCommand @end
 @interface PDSCLIRepoCommand : PDSBaseCommand @end
 @interface PDSCLIDaemonCommand : PDSBaseCommand @end
@@ -37,7 +36,6 @@ void PDSCLIRegisterAllCommands(void) {
         [PDSCLIHealthCommand class],
         [PDSCLIAdminCommand class],
         [PDSCLINukeCommand class],
-        [PDSCLIRelayCommand class],
         [PDSCLIAccountCommand class],
         [PDSCLIRepoCommand class],
         [PDSCLIDaemonCommand class],

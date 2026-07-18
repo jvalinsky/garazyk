@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-16
+last_verified: 2026-07-17
 ---
 
 # Core Architecture and Reliability
@@ -75,23 +75,17 @@ For each binary:
 
 One binary per commit gives each port an independent rollback.
 
-## A5. Relay product decision
+## A5. Relay product decision (decided 2026-07-17 — remove)
 
-`kaszlak relay serve` currently constructs upstream components and sleeps. It
-does not assemble a listener, downstream handler, delegate chain, or durable
-cursor. Retry ownership is split across client and manager.
-
-Choose one option before refactoring:
-
-1. Build a real Relay with a listening server, one retry owner, persisted global
-   cursor, and restart E2E.
-2. Mark the command experimental, narrow its help text, and keep it out of
-   production manifests.
-3. Remove the command until the service is funded.
-
-Acceptance for option 1: an upstream event reaches a downstream subscriber,
-restart resumes from persisted state, duplicates are tolerated, gaps are not,
-and exactly one reconnect is scheduled.
+Operator chose option 3: `kaszlak relay serve` is removed
+(`PDSCLIRelayCommand` and its tests deleted; `zuk` is the canonical relay
+binary). The underlying relay components stay — they serve `zuk`,
+`PDSRelayService`, and `AppViewIngestEngine`, and now forward account
+events end to end (`28641e671`, `a3f8d3c53`; scenario 97). Recorded as
+ADR 0006. As of 2026-07-17 the removal itself is still an uncommitted
+working-tree change (phase 7); this item closes when that commit lands
+with ADR 0006. Reviving a hosted relay later requires a new command that
+meets the old option-1 acceptance (see ADR 0006).
 
 ## A6. Incremental public sync
 
