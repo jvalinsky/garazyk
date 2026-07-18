@@ -5,6 +5,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class HttpRequest;
+
 /**
  * Binary-fixture controls for exercising permissioned-space recovery paths.
  * This pack is deliberately unlexiconed and is registered only when all test
@@ -13,6 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcSpaceRecoveryTestPack : NSObject <XrpcRoutePack>
 
 + (BOOL)isEnabledForEnvironment:(NSDictionary<NSString *, NSString *> *)environment;
++ (BOOL)isAuthorizedRequest:(HttpRequest *)request
+                environment:(NSDictionary<NSString *, NSString *> *)environment;
++ (BOOL)isFixtureSpaceURI:(NSString *)space;
 
 @end
 
