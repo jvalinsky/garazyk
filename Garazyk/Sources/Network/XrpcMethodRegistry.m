@@ -22,6 +22,8 @@
 #import "Network/XrpcServerPack.h"
 #import "Network/XrpcSyncPack.h"
 #import "Network/XrpcSpacePack.h"
+#import "Network/XrpcSpaceRecoveryTestPack.h"
+#import "Services/PDS/PDSSpaceReconciler.h"
 #import "Registration/PDSRegistrationGate.h"
 
 @implementation XrpcMethodRegistry
@@ -35,7 +37,8 @@ static void registerMethodsWithDispatcherUsingServices(
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
     JWTMinter *jwtMinter, RateLimiter *rateLimiter, ATProtoServiceConfiguration *config,
     id<PDSEmailProvider> emailProvider,
-    SubscribeReposHandler *subscribeReposHandler, PDSSpaceStore *spaceStore) {
+    SubscribeReposHandler *subscribeReposHandler, PDSSpaceStore *spaceStore,
+    PDSSpaceReconciler *spaceReconciler) {
 
   // A dispatcher can outlive a PDSApplication in tests and controlled restarts.
   // This registry owns the complete handler set, so rebuild it rather than
@@ -70,6 +73,7 @@ static void registerMethodsWithDispatcherUsingServices(
   routePackServices.subscribeReposHandler = subscribeReposHandler;
   routePackServices.blobAuditManager = blobAuditManager;
   routePackServices.spaceStore = spaceStore;
+  routePackServices.spaceReconciler = spaceReconciler;
 
   // Register domain modules in order
   [XrpcServerPack registerWithDispatcher:dispatcher services:routePackServices];
@@ -78,6 +82,10 @@ static void registerMethodsWithDispatcherUsingServices(
   [XrpcSyncPack registerWithDispatcher:dispatcher services:routePackServices];
 
   [XrpcSpacePack registerWithDispatcher:dispatcher services:routePackServices];
+  NSDictionary<NSString *, NSString *> *environment = NSProcessInfo.processInfo.environment;
+  if ([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:environment]) {
+    [XrpcSpaceRecoveryTestPack registerWithDispatcher:dispatcher services:routePackServices];
+  }
 
   [XrpcAppBskyPack registerWithDispatcher:dispatcher services:routePackServices];
 
@@ -103,7 +111,8 @@ static void registerMethodsWithDispatcherUsingServices(
       controller.application.blobAuditManager,
       controller.serviceDatabases, controller.userDatabasePool,
       controller.jwtMinter, controller.rateLimiter, config, nil,
-      controller.subscribeReposHandler, controller.application.spaceStore);
+      controller.subscribeReposHandler, controller.application.spaceStore,
+      controller.application.spaceReconciler);
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -119,7 +128,8 @@ static void registerMethodsWithDispatcherUsingServices(
       application.serviceDatabases, application.userDatabasePool,
       application.jwtMinter, application.rateLimiter, application.configuration,
       application.emailProvider,
-      application.subscribeReposHandler, application.spaceStore);
+      application.subscribeReposHandler, application.spaceStore,
+      application.spaceReconciler);
 }
 
 @end

@@ -247,9 +247,27 @@ static NSDictionary *SpaceCredentialAuthentication(HttpRequest *request, HttpRes
   return claims;
 }
 
+static NSString *SpaceServiceAuthentication(HttpRequest *request, HttpResponse *response,
+                                            NSString *expectedAudience, NSString *expectedMethod);
+
 static NSDictionary *SpaceReadAuthentication(HttpRequest *request, HttpResponse *response,
                                              id<XrpcRoutePackServices> services, PDSSpaceURI *space,
                                              NSString *repo, NSString *collection) {
+  JWT *unverified = [JWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
+  if (unverified.payload.lxm.length > 0) {
+    /* The reconciler mints this single, writer-bound service capability once
+     * and uses it for its read-only recovery sequence.  Keep it bound to the
+     * authority host and to the same writer repo; it must not authorize an
+     * arbitrary service or a different repository. */
+    NSString *issuer = SpaceServiceAuthentication(request, response, space.authorityDID,
+                                                  @"com.atproto.space.getLatestCommit");
+    if (!issuer) return nil;
+    if (![issuer isEqualToString:repo]) {
+      SpaceError(response, HttpStatusForbidden, @"InvalidToken", @"Service token is not bound to this repo");
+      return nil;
+    }
+    return @{ @"service" : issuer };
+  }
   NSDictionary *credential = SpaceCredentialAuthentication(request, response, space);
   if (credential) return credential.count ? @{ @"credential" : credential } : nil;
   NSDictionary *auth = SpaceOAuthAuthentication(request, response, services); if (!auth) return nil;
@@ -273,7 +291,10 @@ static NSDictionary *SpaceSignedCommit(PDSSpaceStore *store, PDSDatabasePool *po
   NSDictionary *state = [store repositoryStateForSpace:space.spaceURI author:repo error:error];
   if (!state || ![state[@"rev"] isKindOfClass:[NSString class]]) return nil;
   PDSSpaceLtHash *setHash = [[PDSSpaceLtHash alloc] initWithState:state[@"state"] error:error];
-  PDSActorStore *actor = [pool storeForDid:repo error:error];
+  // The authority hosts the isolated repository and signs its exported
+  // reconciliation commit. Remote writers do not have actor key material on
+  // the authority PDS, and import verifies against this authority key.
+  PDSActorStore *actor = [pool storeForDid:space.authorityDID error:error];
   PDSSpaceCommit *commit = [PDSSpaceCommit commitForSetHash:setHash space:space.spaceURI author:repo
       rev:state[@"rev"] actorKeyManager:actor.keyManager error:error];
   if (!commit) return nil;
@@ -287,7 +308,7 @@ static PDSSpaceCommit *SpaceCommitObject(PDSSpaceStore *store, PDSDatabasePool *
   NSDictionary *state = [store repositoryStateForSpace:space.spaceURI author:repo error:error];
   if (!state || ![state[@"rev"] isKindOfClass:[NSString class]]) return nil;
   PDSSpaceLtHash *setHash = [[PDSSpaceLtHash alloc] initWithState:state[@"state"] error:error];
-  PDSActorStore *actor = [pool storeForDid:repo error:error];
+  PDSActorStore *actor = [pool storeForDid:space.authorityDID error:error];
   PDSSpaceCommit *commit = [PDSSpaceCommit commitForSetHash:setHash space:space.spaceURI author:repo
       rev:state[@"rev"] actorKeyManager:actor.keyManager error:error];
   return commit;
