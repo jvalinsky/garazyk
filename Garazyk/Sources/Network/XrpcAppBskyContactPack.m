@@ -15,6 +15,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyContactPack
 
@@ -48,7 +49,7 @@
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerMethod:@"app.bsky.contact.startPhoneVerification"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_startPhoneVerification
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -83,7 +84,7 @@
                        [response setJsonBody:@{@"verificationId" : verificationId}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.contact.verifyPhone"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_verifyPhone
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -121,7 +122,7 @@
                        [response setJsonBody:@{@"token" : token}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.contact.importContacts"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_importContacts
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -157,7 +158,7 @@
                        [response setJsonBody:result];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.contact.getMatches"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_getMatches
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -180,7 +181,7 @@
                        [response setJsonBody:@{@"matches" : matches ?: @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.contact.dismissMatch"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_dismissMatch
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -212,7 +213,7 @@
                        [response setJsonBody:@{}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.contact.getSyncStatus"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_getSyncStatus
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -236,7 +237,7 @@
                        [response setJsonBody:status ?: @{@"syncedAt" : @"", @"matchesCount" : @(0)}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.contact.removeData"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_removeData
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -259,7 +260,7 @@
                        [response setJsonBody:@{}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.contact.sendNotification"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_sendNotification
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request

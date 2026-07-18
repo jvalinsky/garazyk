@@ -10,6 +10,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyBookmarksPack
 
@@ -43,7 +44,7 @@
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerAppBskyBookmarkGetBookmarks:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_getBookmarks handler:^(HttpRequest *request,
                                                     HttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
@@ -74,7 +75,7 @@
     [response setJsonBody:result];
   }];
 
-  [dispatcher registerAppBskyBookmarkCreateBookmark:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_createBookmark handler:^(HttpRequest *request,
                                                       HttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
@@ -109,7 +110,7 @@
     [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerAppBskyBookmarkDeleteBookmark:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_deleteBookmark handler:^(HttpRequest *request,
                                                       HttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
