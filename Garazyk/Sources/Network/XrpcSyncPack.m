@@ -29,6 +29,7 @@
 #import "Repository/MST.h"
 #import "Repository/STAR.h"
 #import "Blob/BlobStorage.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 static NSString *trimmedNonEmptyString(NSString *value);
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
@@ -258,7 +259,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     ATProtoServiceConfiguration *config = services.configuration;
 
   // com.atproto.sync.getRepo
-  [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRepo handler:^(HttpRequest *request,
                                               HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSString *sinceRev = [request queryParamForKey:@"since"];
@@ -336,7 +337,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getCheckout
-  [dispatcher registerComAtprotoSyncGetCheckout:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getCheckout handler:^(HttpRequest *request,
                                                   HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (!validateSyncDIDParam(did, response)) {
@@ -389,7 +390,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   // com.atproto.sync.getHead
   // Public per AT Proto sync spec: relays must be able to read repo heads
   // without authentication. The DID comes from the query string, not auth.
-  [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getHead handler:^(HttpRequest *request,
                                               HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (!validateSyncDIDParam(did, response)) {
@@ -413,7 +414,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getLatestCommit
-  [dispatcher registerComAtprotoSyncGetLatestCommit:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getLatestCommit handler:^(HttpRequest *request,
                                                       HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (!validateSyncDIDParam(did, response)) {
@@ -441,7 +442,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getBlocks
-  [dispatcher registerComAtprotoSyncGetBlocks:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getBlocks handler:^(HttpRequest *request,
                                                 HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSArray<NSString *> *cids = [request queryParamsForKey:@"cids"];
@@ -491,7 +492,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getHostStatus
-  [dispatcher registerComAtprotoSyncGetHostStatus:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getHostStatus handler:^(HttpRequest *request,
                                                     HttpResponse *response) {
     NSString *hostnameParam = [request queryParamForKey:@"hostname"];
     if (hostnameParam.length == 0) {
@@ -520,7 +521,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.listHosts
-  [dispatcher registerComAtprotoSyncListHosts:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listHosts handler:^(HttpRequest *request,
                                                 HttpResponse *response) {
     NSString *limitParam = [request queryParamForKey:@"limit"];
     NSInteger limit = 200;
@@ -570,7 +571,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.listRepos
-  [dispatcher registerComAtprotoSyncListRepos:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listRepos handler:^(HttpRequest *request,
                                                 HttpResponse *response) {
     NSString *limitParam = [request queryParamForKey:@"limit"];
     NSInteger limit = 500;
@@ -669,7 +670,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.listReposByCollection
-  [dispatcher registerComAtprotoSyncListReposByCollection:^(
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listReposByCollection handler:^(
                   HttpRequest *request, HttpResponse *response) {
     NSString *collection = [request queryParamForKey:@"collection"];
     if (collection.length == 0) {
@@ -802,7 +803,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.listBlobs
-  [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listBlobs handler:^(HttpRequest *request,
                                                 HttpResponse *response) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
@@ -843,7 +844,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getBlob
-  [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getBlob handler:^(HttpRequest *request,
                                               HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSString *cid = [request queryParamForKey:@"cid"];
@@ -927,13 +928,13 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.subscribeRepos
-  [dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_subscribeRepos handler:^(HttpRequest *request,
                                                      HttpResponse *response) {
     setSubscribeReposUpgradeRequired(request, response);
   }];
 
   // com.atproto.sync.getRecord
-  [dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRecord handler:^(HttpRequest *request,
                                                 HttpResponse *response) {
     if (request.method != HttpMethodGET) {
       response.statusCode = HttpStatusMethodNotAllowed;
@@ -1099,7 +1100,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.requestCrawl
-  [dispatcher registerComAtprotoSyncRequestCrawl:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_requestCrawl handler:^(HttpRequest *request,
                                                    HttpResponse *response) {
     NSDictionary *body = request.jsonBody ?: @{};
     NSString *hostname = body[@"hostname"];
@@ -1138,7 +1139,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.notifyOfUpdate
-  [dispatcher registerComAtprotoSyncNotifyOfUpdate:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_notifyOfUpdate handler:^(HttpRequest *request,
                                                      HttpResponse *response) {
     NSDictionary *body = request.jsonBody ?: @{};
     NSString *hostname = body[@"hostname"];
@@ -1159,7 +1160,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getRepoStatus
-  [dispatcher registerComAtprotoSyncGetRepoStatus:^(HttpRequest *request,
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRepoStatus handler:^(HttpRequest *request,
                                                     HttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (did.length == 0) {

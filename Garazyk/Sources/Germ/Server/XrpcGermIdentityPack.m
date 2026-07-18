@@ -4,6 +4,7 @@
 #import "Germ/Server/Identity/GermIdentityService.h"
 #import "Chat/Server/ChatAuthManager.h"
 #import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
@@ -27,7 +28,7 @@
 
 - (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
     // com.germnetwork.identity.getAnchorKey
-    [dispatcher registerMethod:@"com.germnetwork.identity.getAnchorKey"
+    [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_identity_getAnchorKey
                        handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleGetAnchorKey:request response:response];
     }];

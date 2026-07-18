@@ -16,6 +16,25 @@ env:
   CMAKE_VERSION: '3.28'
 
 jobs:
+  nsid-constants-drift-check:
+    name: NSID Constants Drift Check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check NSID Constants Drift
+        run: deno run -A scripts/generate_nsid_constants.ts --check
+
   macos-build-and-test:
     name: macOS Build & Test
     runs-on: macos-14
