@@ -34,6 +34,7 @@
 #import "Network/HttpResponse.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Network/RateLimiter.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) {
     NSString *plcUrl = configuration.plcURL;
@@ -60,7 +61,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     SubscribeReposHandler *subscribeReposHandler = services.subscribeReposHandler;
     
     // com.atproto.identity.refreshIdentity
-    [dispatcher registerComAtprotoIdentityRefreshIdentity:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_refreshIdentity handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *identifier = body[@"identifier"] ?: [request queryParamForKey:@"identifier"];
         if (identifier.length == 0) {
@@ -89,7 +90,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.resolveHandle
-    [dispatcher registerComAtprotoIdentityResolveHandle:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveHandle handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *handle = [request queryParamForKey:@"handle"];
         if (handle.length == 0) {
             response.statusCode = HttpStatusBadRequest;
@@ -177,7 +178,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.resolveIdentity
-    [dispatcher registerComAtprotoIdentityResolveIdentity:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveIdentity handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *identifier = [request queryParamForKey:@"identifier"];
         if (identifier.length == 0) {
             response.statusCode = HttpStatusBadRequest;
@@ -205,7 +206,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.resolveDid
-    [dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveDid handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         if (did.length == 0) {
             response.statusCode = HttpStatusBadRequest;
@@ -232,7 +233,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.getRecommendedDidCredentials
-    [dispatcher registerComAtprotoIdentityGetRecommendedDidCredentials:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_getRecommendedDidCredentials handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *issuer = [configuration canonicalIssuerWithPortHint:0];
         
         NSMutableDictionary *result = [NSMutableDictionary dictionary];
@@ -251,7 +252,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.requestPlcOperationSignature
-    [dispatcher registerComAtprotoIdentityRequestPlcOperationSignature:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_requestPlcOperationSignature handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -298,7 +299,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.signPlcOperation
-    [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_signPlcOperation handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -483,7 +484,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.submitPlcOperation
-    [dispatcher registerComAtprotoIdentitySubmitPlcOperation:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_submitPlcOperation handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -655,7 +656,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     }];
 
     // com.atproto.identity.updateHandle
-    [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_updateHandle handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {

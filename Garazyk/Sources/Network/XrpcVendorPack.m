@@ -41,7 +41,7 @@
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
     // Register tools.garazyk.sync.getRepoFiltered
-    [dispatcher registerMethod:@"tools.garazyk.sync.getRepoFiltered"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_sync_getRepoFiltered
                        handler:^(HttpRequest *request, HttpResponse *response) {
         if (request.method != HttpMethodGET) {
             [XrpcErrorHelper setMethodNotAllowedError:response
@@ -175,7 +175,7 @@
     }];
 
     // Register tools.garazyk.account.getUsage
-    [dispatcher registerMethod:@"tools.garazyk.account.getUsage"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_account_getUsage
                        handler:^(HttpRequest *request, HttpResponse *response) {
         // Require authenticated user
         NSString *authHeader = [request headerForKey:@"Authorization"];

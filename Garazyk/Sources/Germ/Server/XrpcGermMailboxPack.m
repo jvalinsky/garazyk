@@ -4,6 +4,7 @@
 #import "Germ/Server/Services/GermMailboxService.h"
 #import "Chat/Server/ChatAuthManager.h"
 #import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
@@ -27,31 +28,31 @@
 
 - (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
     // com.germnetwork.mailbox.claimAddresses
-    [dispatcher registerMethod:@"com.germnetwork.mailbox.claimAddresses"
+    [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_mailbox_claimAddresses
                        handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleClaimAddresses:request response:response];
     }];
 
     // com.germnetwork.mailbox.deliver
-    [dispatcher registerMethod:@"com.germnetwork.mailbox.deliver"
+    [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_mailbox_deliver
                        handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleMailboxDeliver:request response:response];
     }];
 
     // com.germnetwork.mailbox.poll
-    [dispatcher registerMethod:@"com.germnetwork.mailbox.poll"
+    [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_mailbox_poll
                        handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleMailboxPoll:request response:response];
     }];
 
     // com.germnetwork.rendezvous.register
-    [dispatcher registerMethod:@"com.germnetwork.rendezvous.register"
+    [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_rendezvous_register
                        handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleRendezvousRegister:request response:response];
     }];
 
     // com.germnetwork.rendezvous.deliver
-    [dispatcher registerMethod:@"com.germnetwork.rendezvous.deliver"
+    [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_rendezvous_deliver
                        handler:^(HttpRequest *request, HttpResponse *response) {
         [self handleRendezvousDeliver:request response:response];
     }];

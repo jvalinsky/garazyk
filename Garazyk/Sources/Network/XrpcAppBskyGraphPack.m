@@ -18,6 +18,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/GZLogger.h"
 #import "Services/PDS/PDSRecordService.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyGraphPack
 
@@ -32,7 +33,7 @@
     ActorService *actorService = [[ActorService alloc] initWithDatabase:services.appViewDatabase];
 
     // app.bsky.graph.getMutes - Get muted actors
-    [dispatcher registerAppBskyGraphGetMutes:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getMutes handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -52,7 +53,7 @@
     }];
 
     // app.bsky.graph.getBlocks - Get blocked actors
-    [dispatcher registerAppBskyGraphGetBlocks:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getBlocks handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -72,7 +73,7 @@
     }];
 
     // app.bsky.graph.getListMutes - Get muted lists
-    [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getListMutes handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -121,7 +122,7 @@
     }];
 
     // app.bsky.graph.getListBlocks - Get blocked lists
-    [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getListBlocks handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -189,7 +190,7 @@
     }];
 
     // app.bsky.graph.getFollowers - Get followers list
-    [dispatcher registerMethod:@"app.bsky.graph.getFollowers" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getFollowers handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -211,7 +212,7 @@
     }];
 
     // app.bsky.graph.getFollows - Get follows list
-    [dispatcher registerMethod:@"app.bsky.graph.getFollows" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getFollows handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -233,7 +234,7 @@
     }];
 
     // app.bsky.graph.muteActor - Mute an actor
-    [dispatcher registerMethod:@"app.bsky.graph.muteActor" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_muteActor handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -258,7 +259,7 @@
     }];
 
     // app.bsky.graph.unmuteActor - Unmute an actor
-    [dispatcher registerMethod:@"app.bsky.graph.unmuteActor" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_unmuteActor handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -283,7 +284,7 @@
     }];
 
     // app.bsky.graph.getRelationships - Get relationships between actors
-    [dispatcher registerMethod:@"app.bsky.graph.getRelationships" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getRelationships handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         id othersParam = request.queryParams[@"others"];
         NSArray<NSString *> *others = nil;
@@ -313,7 +314,7 @@
     }];
 
     // app.bsky.graph.getLists - Get lists created by an actor
-    [dispatcher registerMethod:@"app.bsky.graph.getLists" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getLists handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -350,7 +351,7 @@
     }];
 
     // app.bsky.graph.getList - Get a single list by URI
-    [dispatcher registerMethod:@"app.bsky.graph.getList" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getList handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *list = [request queryParamForKey:@"list"];
         if (!list) {
             [XrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
@@ -398,7 +399,7 @@
     }];
 
     // app.bsky.graph.getKnownFollowers - Get followers known to the viewer
-    [dispatcher registerMethod:@"app.bsky.graph.getKnownFollowers" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getKnownFollowers handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -410,13 +411,13 @@
     }];
 
     // app.bsky.graph.getSuggestedFollowsByActor - Suggest follows
-    [dispatcher registerMethod:@"app.bsky.graph.getSuggestedFollowsByActor" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getSuggestedFollowsByActor handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"suggestions": @[]}];
     }];
 
     // app.bsky.graph.muteActorList - Mute a list
-    [dispatcher registerMethod:@"app.bsky.graph.muteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_muteActorList handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -454,7 +455,7 @@
     }];
 
     // app.bsky.graph.unmuteActorList - Unmute a list
-    [dispatcher registerMethod:@"app.bsky.graph.unmuteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_unmuteActorList handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -490,7 +491,7 @@
     }];
 
     // app.bsky.graph.muteThread - Mute a thread
-    [dispatcher registerMethod:@"app.bsky.graph.muteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_muteThread handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -528,7 +529,7 @@
     }];
 
     // app.bsky.graph.unmuteThread - Unmute a thread
-    [dispatcher registerMethod:@"app.bsky.graph.unmuteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_unmuteThread handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -564,7 +565,7 @@
     }];
 
     // app.bsky.graph.searchStarterPacks - Search starter packs
-    [dispatcher registerMethod:@"app.bsky.graph.searchStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_searchStarterPacks handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *q = [request queryParamForKey:@"q"] ?: @"";
 
         NSInteger limit = 10;
@@ -583,7 +584,7 @@
     }];
 
     // app.bsky.graph.getStarterPack - Get a starter pack
-    [dispatcher registerAppBskyGraphGetStarterPack:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getStarterPack handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
             [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
@@ -601,7 +602,7 @@
     }];
 
     // app.bsky.graph.getActorStarterPacks - Get actor's starter packs
-    [dispatcher registerAppBskyGraphGetActorStarterPacks:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getActorStarterPacks handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -634,7 +635,7 @@
     }];
 
     // app.bsky.graph.getStarterPacks - Get multiple starter packs
-    [dispatcher registerAppBskyGraphGetStarterPacks:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getStarterPacks handler:^(HttpRequest *request, HttpResponse *response) {
         id urisParam = request.queryParams[@"uris"];
         NSArray *uris = [urisParam isKindOfClass:[NSArray class]] ? urisParam : (urisParam ? @[urisParam] : @[]);
 
@@ -652,7 +653,7 @@
     }];
 
     // app.bsky.graph.getStarterPacksWithMembership - List starter packs and viewer membership
-    [dispatcher registerMethod:@"app.bsky.graph.getStarterPacksWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getStarterPacksWithMembership handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *viewerDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!viewerDid) {
@@ -710,7 +711,7 @@
     }];
 
     // app.bsky.graph.getListsWithMembership - Get lists containing an actor
-    [dispatcher registerMethod:@"app.bsky.graph.getListsWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getListsWithMembership handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -780,7 +781,7 @@
     }];
 
     // app.bsky.graph.verification.createVerification
-    [dispatcher registerAppBskyGraphVerificationCreateVerification:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_verification_createVerification handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
@@ -818,7 +819,7 @@
     }];
 
     // app.bsky.graph.verification.deleteVerification
-    [dispatcher registerAppBskyGraphVerificationDeleteVerification:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_verification_deleteVerification handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {

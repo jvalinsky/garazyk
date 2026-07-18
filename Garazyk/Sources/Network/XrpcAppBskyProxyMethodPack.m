@@ -8,6 +8,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcProxyHandler.h"
 #import "Network/XrpcRoutePackServices.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyProxyMethodPack
 

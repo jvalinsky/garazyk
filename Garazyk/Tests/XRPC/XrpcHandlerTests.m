@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
@@ -101,7 +102,7 @@
 - (void)testRegisterComAtprotoSyncSubscribeReposMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"subscribeRepos handler called"];
 
-    [self.dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_subscribeRepos handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"ok": @YES}];
         [expectation fulfill];
@@ -130,7 +131,7 @@
 - (void)testRegisterComAtprotoServerDeleteSessionMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"deleteSession handler called"];
 
-    [self.dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteSession handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"ok": @YES}];
         [expectation fulfill];
@@ -159,7 +160,7 @@
 - (void)testRegisterComAtprotoSyncGetRecordMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"getRecord handler called"];
 
-    [self.dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRecord handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"ok": @YES}];
         [expectation fulfill];

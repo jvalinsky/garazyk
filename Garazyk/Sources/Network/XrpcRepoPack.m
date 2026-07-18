@@ -42,6 +42,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Auth/Secp256k1.h"
 #import <CommonCrypto/CommonDigest.h>
+#import "Network/Generated/GZXrpcNSID.h"
 
 static const NSUInteger kPDSUploadBlobDefaultMaxBytes = 1024 * 1024;
 static const NSUInteger kPDSUploadBlobVideoMaxBytes = 50 * 1024 * 1024;
@@ -724,7 +725,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     
 #pragma mark - com.atproto.repo.* Route Registration
     // com.atproto.repo.listRecords
-    [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listRecords handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *repo = [request queryParamForKey:@"repo"];
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -789,7 +790,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.getRecord
-    [dispatcher registerComAtprotoRepoGetRecord:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_getRecord handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *repo = [request queryParamForKey:@"repo"];
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *rkey = [request queryParamForKey:@"rkey"];
@@ -856,7 +857,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.createRecord
-    [dispatcher registerComAtprotoRepoCreateRecord:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_createRecord handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -929,7 +930,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.deleteRecord
-    [dispatcher registerComAtprotoRepoDeleteRecord:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteRecord handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -990,7 +991,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.uploadBlob
-    [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_uploadBlob handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -1100,7 +1101,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.listMissingBlobs
-    [dispatcher registerComAtprotoRepoListMissingBlobs:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listMissingBlobs handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -1131,7 +1132,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.getBlob - Auth-gated wrapper that delegates to sync.getBlob
-    [dispatcher registerComAtprotoRepoGetBlob:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_getBlob handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -1216,7 +1217,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.importRepo
-    [dispatcher registerComAtprotoRepoImportRepo:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_importRepo handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -1444,7 +1445,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.describeRepo
-    [dispatcher registerComAtprotoRepoDescribeRepo:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_describeRepo handler:^(HttpRequest *request, HttpResponse *response) {
         // Per lexicon: does not require auth.
         NSString *identifier = [request queryParamForKey:@"repo"] ?: @"";
         if (identifier.length == 0) {
@@ -1628,13 +1629,13 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     };
 
     // com.atproto.repo.putRecord
-    [dispatcher registerComAtprotoRepoPutRecord:upsertRecordHandler];
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_putRecord handler:upsertRecordHandler];
 
     // com.atproto.repo.updateRecord
-    [dispatcher registerComAtprotoRepoUpdateRecord:upsertRecordHandler];
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_updateRecord handler:upsertRecordHandler];
 
     // com.atproto.repo.applyWrites
-    [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_applyWrites handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         if (!body) {
             response.statusCode = HttpStatusBadRequest;
@@ -1707,7 +1708,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
     }];
 
     // com.atproto.repo.deleteBlob
-    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteBlob handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {

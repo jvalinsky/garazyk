@@ -12,6 +12,7 @@
 #import "AppView/Services/AgeAssuranceService.h"
 #import "AppView/Services/SearchIndexService.h"
 #import "AppView/Services/FeedService.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 // Helper: flatten nested thread tree into V2 flat list format
 static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArray *outArray) {
@@ -56,7 +57,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - Configuration
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getConfig"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getConfig
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{
@@ -69,31 +70,31 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - Suggestions & Discovery
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getTaggedSuggestions"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getTaggedSuggestions
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"suggestions" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getPopularFeedGenerators"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getPopularFeedGenerators
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"feeds" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedFeeds"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedFeeds
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"feeds" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsers"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsers
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getTrendingTopics"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getTrendingTopics
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"topics" : @[], @"suggested" : @[]}];
@@ -101,25 +102,25 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - Skeleton Endpoints (Preview/Performance Optimized)
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedFeedsSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedFeedsSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"feeds" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsersSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestionsSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestionsSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"suggestions" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getTrendsSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getTrendsSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"posts" : @[], @"cursor" : @""}];
@@ -127,25 +128,25 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - Starter Packs
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedStarterPacks"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getOnboardingSuggestedStarterPacks
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"starterPacks" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getOnboardingSuggestedStarterPacksSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"starterPacks" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedStarterPacks"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedStarterPacks
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"starterPacks" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedStarterPacksSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedStarterPacksSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"starterPacks" : @[]}];
@@ -153,7 +154,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - Search Skeleton Endpoints
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.searchActorsSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_searchActorsSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSString *query = [request queryParamForKey:@"q"];
 
@@ -182,7 +183,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        }
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.searchPostsSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_searchPostsSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSString *query = [request queryParamForKey:@"q"];
 
@@ -211,7 +212,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        }
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.searchStarterPacksSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_searchStarterPacksSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSString *query = [request queryParamForKey:@"q"];
 
@@ -242,7 +243,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - Thread Endpoints
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getPostThreadV2"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getPostThreadV2
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSString *anchor = [request queryParamForKey:@"anchor"];
 
@@ -284,7 +285,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        }
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getPostThreadOtherV2"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getPostThreadOtherV2
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSString *anchor = [request queryParamForKey:@"anchor"];
 
@@ -301,7 +302,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - Age Assurance (Compliance)
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.initAgeAssurance"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_initAgeAssurance
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSDictionary *body = request.jsonBody;
                        NSString *assurance = body[@"assurance"];
@@ -328,7 +329,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        }];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getAgeAssuranceState"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getAgeAssuranceState
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{
@@ -337,7 +338,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        }];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.confirmAgeAssurance"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_confirmAgeAssurance
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSDictionary *body = request.jsonBody;
                        NSString *token = body[@"token"];
@@ -367,56 +368,56 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 #pragma mark - User Discovery (Onboarding & Discovery Pages)
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getOnboardingSuggestedUsersSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedOnboardingUsers"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedOnboardingUsers
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForDiscover"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsersForDiscover
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsersForDiscoverSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForExplore"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsersForExplore
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsersForExploreSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForSeeMore"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsersForSeeMore
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getSuggestedUsersForSeeMoreSkeleton
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
 
   // app.bsky.unspecced.getTrends
-  [dispatcher registerMethod:@"app.bsky.unspecced.getTrends"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_getTrends
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSString *limitParam = [request queryParamForKey:@"limit"];
                        NSInteger limit = 10;
