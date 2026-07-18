@@ -251,9 +251,8 @@
            @"    set_id TEXT NOT NULL,"
            @"    did TEXT NOT NULL,"
            @"    added_at REAL NOT NULL,"
-           @"    PRIMARY KEY (set_id, did),"
-           @"    FOREIGN KEY (set_id) REFERENCES moderation_sets(id) ON DELETE CASCADE"
-           @")";
+           @"    PRIMARY KEY (set_id, did)"
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)ozoneTemplatesTableSchema {
@@ -307,7 +306,7 @@
            @"    last_event_id TEXT,"
            @"    updated_at REAL NOT NULL,"
            @"    PRIMARY KEY(subject_did, subject_type)"
-           @")";
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)ozoneSafelinksTableSchema {
