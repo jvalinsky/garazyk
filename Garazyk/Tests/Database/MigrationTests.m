@@ -46,6 +46,10 @@
         if (![self testReApply]) return NO;
     }
 
+    @autoreleasepool {
+        if (![self testRecordTombstonesWithoutRowid]) return NO;
+    }
+
     NSLog(@"\n=== Test Results ===");
     NSLog(@"Passed: %ld", (long)passCount);
     NSLog(@"Failed: %ld", (long)failCount);
@@ -82,8 +86,8 @@
 
     // Verify version
     NSInteger version = [manager currentVersion:db];
-    if (version != 2) {
-        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 2, got %ld", (long)version]];
+    if (version != 3) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 3, got %ld", (long)version]];
         sqlite3_close(db);
         return NO;
     }
@@ -210,10 +214,10 @@
         return NO;
     }
 
-    // Verify version is 2
+    // Verify version is 3
     NSInteger version = [manager currentVersion:db];
-    if (version != 2) {
-        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 2 after re-apply, got %ld", (long)version]];
+    if (version != 3) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Expected version 3 after re-apply, got %ld", (long)version]];
         sqlite3_close(db);
         return NO;
     }
@@ -232,6 +236,105 @@
             }
         }
         sqlite3_finalize(stmt);
+    }
+
+    sqlite3_close(db);
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+
+    [self logPass:testName];
+    return YES;
+}
+
+- (BOOL)testRecordTombstonesWithoutRowid {
+    NSString *testName = @"testRecordTombstonesWithoutRowid";
+    NSLog(@"\nRunning %@...", testName);
+
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"test_without_rowid.db"];
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+
+    sqlite3 *db = NULL;
+    if (sqlite3_open(tempPath.UTF8String, &db) != SQLITE_OK) {
+        [self logFail:testName message:@"Failed to create database"];
+        return NO;
+    }
+
+    PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
+    NSError *error = nil;
+    if (![manager migrateDatabase:db error:&error]) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Migration failed: %@", error]];
+        sqlite3_close(db);
+        return NO;
+    }
+
+    // Verify record_tombstones is WITHOUT ROWID
+    const char *checkSQL = "SELECT sql FROM sqlite_master WHERE type='table' AND name='record_tombstones'";
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(db, checkSQL, -1, &stmt, NULL) != SQLITE_OK) {
+        [self logFail:testName message:@"Failed to query sqlite_master"];
+        sqlite3_close(db);
+        return NO;
+    }
+
+    BOOL hasWithoutRowid = NO;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *createSQL = (const char *)sqlite3_column_text(stmt, 0);
+        if (createSQL && strstr(createSQL, "WITHOUT ROWID")) {
+            hasWithoutRowid = YES;
+        }
+    }
+    sqlite3_finalize(stmt);
+
+    if (!hasWithoutRowid) {
+        [self logFail:testName message:@"record_tombstones does not have WITHOUT ROWID"];
+        sqlite3_close(db);
+        return NO;
+    }
+
+    // Verify data survives migration
+    const char *insertSQL = "INSERT INTO record_tombstones (uri, did, collection, rkey, rev, indexed_at) "
+                            "VALUES ('at://did:plc:test/app.bsky.feed.post/rkey1', 'did:plc:test', "
+                            "'app.bsky.feed.post', 'rkey1', 'rev1', datetime('now'))";
+    char *errMsg = NULL;
+    if (sqlite3_exec(db, insertSQL, NULL, NULL, &errMsg) != SQLITE_OK) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Insert failed: %s", errMsg ?: "unknown"]];
+        sqlite3_free(errMsg);
+        sqlite3_close(db);
+        return NO;
+    }
+
+    // Verify rollback restores ROWID
+    if (![manager rollbackToVersion:db version:0 error:&error]) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Rollback failed: %@", error]];
+        sqlite3_close(db);
+        return NO;
+    }
+
+    if (![manager migrateDatabase:db error:&error]) {
+        [self logFail:testName message:[NSString stringWithFormat:@"Re-migrate failed: %@", error]];
+        sqlite3_close(db);
+        return NO;
+    }
+
+    // Re-check WITHOUT ROWID after round-trip
+    if (sqlite3_prepare_v2(db, checkSQL, -1, &stmt, NULL) != SQLITE_OK) {
+        [self logFail:testName message:@"Failed to query sqlite_master after round-trip"];
+        sqlite3_close(db);
+        return NO;
+    }
+
+    hasWithoutRowid = NO;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *createSQL = (const char *)sqlite3_column_text(stmt, 0);
+        if (createSQL && strstr(createSQL, "WITHOUT ROWID")) {
+            hasWithoutRowid = YES;
+        }
+    }
+    sqlite3_finalize(stmt);
+
+    if (!hasWithoutRowid) {
+        [self logFail:testName message:@"record_tombstones lost WITHOUT ROWID after round-trip"];
+        sqlite3_close(db);
+        return NO;
     }
 
     sqlite3_close(db);
