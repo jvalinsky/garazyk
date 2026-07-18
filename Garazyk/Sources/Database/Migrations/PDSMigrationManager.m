@@ -1599,6 +1599,131 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V14 Moderation Tables Without Rowid (Service DB)
+
+@interface V14ModerationWithoutRowid : NSObject <PDSMigration>
+@end
+
+@implementation V14ModerationWithoutRowid
+
+- (NSInteger)version { return 14; }
+
+- (NSString *)name { return @"moderation_without_rowid"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE moderation_set_members_new ("
+        "    set_id TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    added_at REAL NOT NULL,"
+        "    PRIMARY KEY (set_id, did)"
+        ") WITHOUT ROWID",
+
+        "INSERT INTO moderation_set_members_new (set_id, did, added_at) "
+        "SELECT set_id, did, added_at FROM moderation_set_members",
+
+        "DROP TABLE moderation_set_members",
+
+        "ALTER TABLE moderation_set_members_new RENAME TO moderation_set_members",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did)",
+
+        "CREATE TABLE moderation_subjects_new ("
+        "    subject_did TEXT NOT NULL,"
+        "    subject_type TEXT NOT NULL,"
+        "    review_state TEXT NOT NULL DEFAULT 'tools.ozone.moderation.defs#reviewOpen',"
+        "    last_event_id TEXT,"
+        "    updated_at REAL NOT NULL,"
+        "    PRIMARY KEY(subject_did, subject_type)"
+        ") WITHOUT ROWID",
+
+        "INSERT INTO moderation_subjects_new (subject_did, subject_type, review_state, last_event_id, updated_at) "
+        "SELECT subject_did, subject_type, review_state, last_event_id, updated_at FROM moderation_subjects",
+
+        "DROP TABLE moderation_subjects",
+
+        "ALTER TABLE moderation_subjects_new RENAME TO moderation_subjects",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_state ON moderation_subjects(review_state)",
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_did ON moderation_subjects(subject_did)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V14 step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE moderation_set_members_new ("
+        "    set_id TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    added_at REAL NOT NULL,"
+        "    PRIMARY KEY (set_id, did)"
+        ")",
+
+        "INSERT INTO moderation_set_members_new (set_id, did, added_at) "
+        "SELECT set_id, did, added_at FROM moderation_set_members",
+
+        "DROP TABLE moderation_set_members",
+
+        "ALTER TABLE moderation_set_members_new RENAME TO moderation_set_members",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did)",
+
+        "CREATE TABLE moderation_subjects_new ("
+        "    subject_did TEXT NOT NULL,"
+        "    subject_type TEXT NOT NULL,"
+        "    review_state TEXT NOT NULL DEFAULT 'tools.ozone.moderation.defs#reviewOpen',"
+        "    last_event_id TEXT,"
+        "    updated_at REAL NOT NULL,"
+        "    PRIMARY KEY(subject_did, subject_type)"
+        ")",
+
+        "INSERT INTO moderation_subjects_new (subject_did, subject_type, review_state, last_event_id, updated_at) "
+        "SELECT subject_did, subject_type, review_state, last_event_id, updated_at FROM moderation_subjects",
+
+        "DROP TABLE moderation_subjects",
+
+        "ALTER TABLE moderation_subjects_new RENAME TO moderation_subjects",
+
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_state ON moderation_subjects(review_state)",
+        "CREATE INDEX IF NOT EXISTS idx_mod_subjects_did ON moderation_subjects(subject_did)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V14 down step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+@end
+
 #pragma mark - V10 Pending Factor Tokens
 
 @interface V10PendingFactorTokensSchema : NSObject <PDSMigration>
@@ -1875,6 +2000,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V10PendingFactorTokensSchema alloc] init]];
     [manager registerMigration:[[V13CollectionMembershipSchema alloc] init]];
     [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
+    [manager registerMigration:[[V14ModerationWithoutRowid alloc] init]];
     return manager;
 }
 
