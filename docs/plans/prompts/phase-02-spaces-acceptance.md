@@ -173,20 +173,23 @@ healthy, and scenario 94 passed **25/25** in structured run
 `2026-07-18t2204z-20523`. This was a transient external `EADDRINUSE` collision,
 not a topology/runner defect, so no code change is warranted.
 
-### Current slice (2026-07-18)
+### Private-blob acceptance result (2026-07-18)
 
-Extend the existing three-PDS acceptance evidence with one private-blob path:
-upload through `com.atproto.repo.uploadBlob` using all three experimental
-space-binding headers, read it from the remote reader through
-`com.atproto.space.getBlob`, and prove every ordinary public repo/sync/blob
-endpoint rejects it. This slice excludes pruned-oplog recovery.
+Commit `21eeb5719` extends scenario 93 with OAuth+DPoP upload through
+`com.atproto.repo.uploadBlob` using all three experimental binding headers,
+remote `com.atproto.space.getBlob` retrieval through the reader credential,
+and public `repo.getBlob`/`sync.getBlob` rejection plus `sync.listBlobs` and
+CAR-export isolation. Structured run `2026-07-18t2209z-29983` passed **21/21**
+on the three-PDS binary topology. `deno fmt --check` and `deno check` pass;
+repository-wide lint remains blocked by 2,043 pre-existing unrelated package
+findings.
 
 ### Next steps
 
-1. Private-blob acceptance and pruned-oplog recovery paths (P6.1 items 2–3)
-   remain.
-2. Move compatibility-gate rows to Implemented with dated structured runs only
-   once 94 and the blob/oplog cases are green.
+1. Exercise and observe the three pruned-oplog recovery paths: incremental
+   operations, lightweight record diff, and full CAR import.
+2. Move the remaining recovery compatibility row to Implemented only with
+   dated structured-run evidence.
 
 ## Acceptance gate
 
