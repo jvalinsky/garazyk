@@ -19,6 +19,7 @@ const expectedKnownRoles = [
   "plc",
   "pds",
   "pds2",
+  "pds3",
   "relay",
   "appview",
   "mikrus",
@@ -33,6 +34,7 @@ const expectedRole = {
   plc: "plc",
   pds: "pds",
   pds2: "pds2",
+  pds3: "pds3",
   relay: "relay",
   appview: "appview",
   mikrus: "mikrus",
@@ -46,6 +48,7 @@ const expectedRole = {
 const expectedDefaultServiceNames = {
   pds: "local-pds",
   pds2: "local-pds2",
+  pds3: "local-pds3",
   relay: "local-relay",
   plc: "local-plc",
   appview: "local-appview",
@@ -60,6 +63,7 @@ const expectedDefaultServiceNames = {
 const expectedDefaultPorts = {
   pds: "2583",
   pds2: "2587",
+  pds3: "2588",
   relay: "2584",
   plc: "2582",
   appview: "3200",
@@ -74,6 +78,7 @@ const expectedDefaultPorts = {
 const expectedRoleEnvRegistry = {
   pds: "PDS_URL",
   pds2: "PDS2_URL",
+  pds3: "PDS3_URL",
   plc: "PLC_URL",
   relay: "RELAY_URL",
   appview: "APPVIEW_URL",
@@ -115,7 +120,7 @@ Deno.test("Cap.plc: exposes the plc capability names", () => {
   });
 });
 
-Deno.test("Cap.pds and Cap.pds2: expose the same pds capability names", () => {
+Deno.test("Cap.pds, Cap.pds2, and Cap.pds3: expose the same pds capability names", () => {
   const expected = {
     admin: "admin",
     blob: "blob",
@@ -147,6 +152,7 @@ Deno.test("Cap.pds and Cap.pds2: expose the same pds capability names", () => {
 
   assertEquals(Cap.pds, expected);
   assertEquals(Cap.pds2, expected);
+  assertEquals(Cap.pds3, expected);
 });
 
 Deno.test("Cap.relay: exposes the relay capability names", () => {
