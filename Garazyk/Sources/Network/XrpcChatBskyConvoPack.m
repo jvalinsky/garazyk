@@ -24,6 +24,7 @@
 #import "Services/PDS/PDSRecordService.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcChatBskyConvoPack
 
@@ -194,7 +195,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     ChatService *chatService = [[ChatService alloc] initWithDatabase:appViewDatabase];
 
     // chat.bsky.convo.getConvoForMembers
-    [dispatcher registerMethod:@"chat.bsky.convo.getConvoForMembers"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getConvoForMembers
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -260,7 +261,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.acceptConvo
-    [dispatcher registerMethod:@"chat.bsky.convo.acceptConvo"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_acceptConvo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -289,7 +290,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.leaveConvo
-    [dispatcher registerMethod:@"chat.bsky.convo.leaveConvo"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_leaveConvo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -318,7 +319,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.listConvoRequests
-    [dispatcher registerMethod:@"chat.bsky.convo.listConvoRequests"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_listConvoRequests
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -335,7 +336,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.getConvoAvailability
-    [dispatcher registerMethod:@"chat.bsky.convo.getConvoAvailability"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getConvoAvailability
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         if (!did || did.length == 0) {
@@ -347,7 +348,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.addReaction
-    [dispatcher registerMethod:@"chat.bsky.convo.addReaction"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_addReaction
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -376,7 +377,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.removeReaction
-    [dispatcher registerMethod:@"chat.bsky.convo.removeReaction"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_removeReaction
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -405,7 +406,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.updateRead
-    [dispatcher registerMethod:@"chat.bsky.convo.updateRead"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_updateRead
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -438,7 +439,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.updateAllRead
-    [dispatcher registerMethod:@"chat.bsky.convo.updateAllRead"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_updateAllRead
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -470,7 +471,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.muteConvo
-    [dispatcher registerMethod:@"chat.bsky.convo.muteConvo"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_muteConvo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -499,7 +500,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.unmuteConvo
-    [dispatcher registerMethod:@"chat.bsky.convo.unmuteConvo"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_unmuteConvo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -528,7 +529,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.sendMessageBatch
-    [dispatcher registerMethod:@"chat.bsky.convo.sendMessageBatch"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_sendMessageBatch
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -575,7 +576,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.lockConvo
-    [dispatcher registerMethod:@"chat.bsky.convo.lockConvo"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_lockConvo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -604,7 +605,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.unlockConvo
-    [dispatcher registerMethod:@"chat.bsky.convo.unlockConvo"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_unlockConvo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -633,7 +634,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.deleteMessageForSelf
-    [dispatcher registerMethod:@"chat.bsky.convo.deleteMessageForSelf"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_deleteMessageForSelf
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -661,7 +662,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.listConvos
-    [dispatcher registerMethod:@"chat.bsky.convo.listConvos"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_listConvos
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -733,7 +734,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.getConvo
-    [dispatcher registerMethod:@"chat.bsky.convo.getConvo"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getConvo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -770,7 +771,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.getMessages
-    [dispatcher registerMethod:@"chat.bsky.convo.getMessages"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getMessages
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -859,7 +860,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.sendMessage
-    [dispatcher registerMethod:@"chat.bsky.convo.sendMessage"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_sendMessage
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -930,7 +931,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     }];
 
     // chat.bsky.convo.getLog
-    [dispatcher registerMethod:@"chat.bsky.convo.getLog"
+    [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getLog
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {

@@ -17,6 +17,7 @@
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Debug/GZLogger.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcChatBskyActorPack
 
@@ -52,7 +53,7 @@
                                                  rateLimiter:nil];
   }
 
-  [dispatcher registerMethod:@"chat.bsky.actor.deleteAccount"
+  [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_actor_deleteAccount
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -65,7 +66,7 @@
                        [response setJsonBody:@{}];
                      }];
 
-  [dispatcher registerMethod:@"chat.bsky.actor.exportAccountData"
+  [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_actor_exportAccountData
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -85,7 +86,7 @@
 
 #pragma mark - Moderation
 
-  [dispatcher registerMethod:@"chat.bsky.moderation.getActorMetadata"
+  [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_getActorMetadata
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -112,7 +113,7 @@
                        }];
                      }];
 
-  [dispatcher registerMethod:@"chat.bsky.moderation.getMessageContext"
+  [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_getMessageContext
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -136,7 +137,7 @@
                        }];
                      }];
 
-  [dispatcher registerMethod:@"chat.bsky.moderation.updateActorAccess"
+  [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_updateActorAccess
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request

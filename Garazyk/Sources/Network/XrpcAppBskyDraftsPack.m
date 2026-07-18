@@ -9,6 +9,7 @@
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "AppView/Services/DraftService.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyDraftsPack
 
@@ -42,7 +43,7 @@
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerMethod:@"app.bsky.draft.createDraft"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_createDraft
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -70,7 +71,7 @@
                        [response setJsonBody:result ?: @{}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.draft.updateDraft"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_updateDraft
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -105,7 +106,7 @@
                        [response setJsonBody:@{}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.draft.getDrafts"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_getDrafts
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -128,7 +129,7 @@
                        [response setJsonBody:@{@"drafts" : drafts ?: @[]}];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.draft.deleteDraft"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_deleteDraft
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request

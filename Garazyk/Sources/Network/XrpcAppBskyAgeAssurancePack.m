@@ -15,6 +15,7 @@
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "AppView/Services/AgeAssuranceService.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyAgeAssurancePack
 
@@ -57,7 +58,7 @@
                                                  rateLimiter:nil];
   }
 
-  [dispatcher registerMethod:@"app.bsky.ageassurance.begin"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_begin
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
@@ -109,7 +110,7 @@
                        }];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.ageassurance.getConfig"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_getConfig
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        (void)request;
                        if (ageAssuranceService) {
@@ -137,7 +138,7 @@
                        }];
                      }];
 
-  [dispatcher registerMethod:@"app.bsky.ageassurance.getState"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_getState
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request

@@ -10,7 +10,9 @@
  * Each endpoint (query, procedure, subscription) gets an NSString * const
  * in the form: kGZXrpcNSID_<nsid with dots replaced by underscores>.
  *
- * Usage: deno run -A scripts/generate_nsid_constants.ts
+ * Usage:
+ *   deno run -A scripts/generate_nsid_constants.ts          # regenerate files
+ *   deno run -A scripts/generate_nsid_constants.ts --check  # drift check (CI)
  */
 
 import { expandGlob } from "@std/fs/expand-glob";
@@ -33,7 +35,9 @@ function nsidToConstantName(nsid: string): string {
   return "kGZXrpcNSID_" + nsid.replace(/\./g, "_").replace(/-/g, "_");
 }
 
-async function main() {
+async function main(args: string[]) {
+  const checkMode = args.includes("--check");
+
   const endpointNsids: string[] = [];
 
   for await (const file of expandGlob(join(LEXICONS_DIR, "**/*.json"))) {
@@ -60,13 +64,43 @@ async function main() {
     Deno.exit(1);
   }
 
+  const newHeader = renderHeader(endpointNsids);
+  const newSource = renderSource(endpointNsids);
+
+  if (checkMode) {
+    const currentHeader = await tryReadFile(HEADER_PATH);
+    const currentSource = await tryReadFile(SOURCE_PATH);
+
+    if (currentHeader !== newHeader || currentSource !== newSource) {
+      if (currentHeader !== newHeader) {
+        console.error(`DRIFT DETECTED: ${HEADER_PATH} is out of sync with canonical lexicons.`);
+      }
+      if (currentSource !== newSource) {
+        console.error(`DRIFT DETECTED: ${SOURCE_PATH} is out of sync with canonical lexicons.`);
+      }
+      console.error(`\nRun 'deno run -A scripts/generate_nsid_constants.ts' to regenerate.`);
+      Deno.exit(1);
+    }
+
+    console.log(`NSID constants in sync: ${endpointNsids.length} endpoints.`);
+    return;
+  }
+
   await Deno.mkdir(OUT_DIR, { recursive: true });
-  await Deno.writeTextFile(HEADER_PATH, renderHeader(endpointNsids));
-  await Deno.writeTextFile(SOURCE_PATH, renderSource(endpointNsids));
+  await Deno.writeTextFile(HEADER_PATH, newHeader);
+  await Deno.writeTextFile(SOURCE_PATH, newSource);
 
   console.log(
     `Generated ${endpointNsids.length} NSID constants:\n  ${HEADER_PATH}\n  ${SOURCE_PATH}`,
   );
+}
+
+async function tryReadFile(path: string): Promise<string> {
+  try {
+    return await Deno.readTextFile(path);
+  } catch {
+    return "";
+  }
 }
 
 function renderHeader(nsids: string[]): string {
@@ -126,5 +160,5 @@ function renderSource(nsids: string[]): string {
 }
 
 if (import.meta.main) {
-  await main();
+  await main(Deno.args);
 }

@@ -42,6 +42,7 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcToolsOzonePack.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
@@ -107,7 +108,7 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
 
   [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
-  [dispatcher registerMethod:@"app.bsky.labeler.getServices"
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_labeler_getServices
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        id didsParam = request.queryParams[@"dids"];
                        NSArray *dids = nil;

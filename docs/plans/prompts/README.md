@@ -39,6 +39,18 @@ Rules:
 
 - Never run two mutating phases concurrently in one worktree. Parallel
   execution requires separate git worktrees (phases 1-5 are independent).
+  **Before starting any mutating phase, run `git status`; if another
+  phase's uncommitted changes are present, commit or coordinate first —
+  never fold two phases into one commit.** (Added 2026-07-17 after
+  phases 6 and 7 mixed in the main worktree.)
+- Frontmatter must stay one valid YAML block: only the declared keys
+  (`phase`, `title`, `status`, `agent`, `depends_on`, optionally
+  `last_updated`/`completed_at`/`commit`). Progress notes belong in a
+  `## Progress` body section, never in frontmatter. (Added 2026-07-17
+  after phase 7's frontmatter was corrupted by inline notes.)
+- Set `status: in-progress` only together with a body note saying what
+  started; a bare status flip with no recorded work gets reset to
+  `pending` on review.
 - A phase agent updates plan state in the same change as its code, per the
   plan-governance rules in [../README.md](../README.md).
 - When all phases are complete, delete this directory; the ledger and Git

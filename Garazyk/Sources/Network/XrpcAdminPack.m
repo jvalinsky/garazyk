@@ -32,6 +32,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import "Network/Generated/GZXrpcNSID.h"
 
 // Forward declarations of helper functions
 static NSDictionary *adminAccountViewFromAccount(PDSDatabaseAccount *account);
@@ -100,7 +101,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     #pragma mark - com.atproto.admin.* Account Lookup, Search & Email
 
     // Register com.atproto.admin.searchAccounts
-    [dispatcher registerComAtprotoAdminSearchAccounts:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_searchAccounts handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -168,7 +169,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.sendEmail
-    [dispatcher registerComAtprotoAdminSendEmail:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_sendEmail handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -221,7 +222,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.updateAccountEmail
-    [dispatcher registerComAtprotoAdminUpdateAccountEmail:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountEmail handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -283,7 +284,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.updateAccountHandle
-    [dispatcher registerComAtprotoAdminUpdateAccountHandle:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountHandle handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -345,7 +346,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.updateAccountPassword
-    [dispatcher registerComAtprotoAdminUpdateAccountPassword:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountPassword handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -385,7 +386,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     #pragma mark - com.atproto.admin.* Server Stats, Audit & Repair
 
     // com.atproto.admin.getServerStats
-    [dispatcher registerMethod:@"com.atproto.admin.getServerStats"
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getServerStats
                        handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
@@ -408,7 +409,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
     
     // com.atproto.admin.queryAuditLog
-    [dispatcher registerMethod:@"com.atproto.admin.queryAuditLog"
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_queryAuditLog
                        handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
@@ -440,7 +441,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // com.atproto.admin.repairRepo
-    [dispatcher registerMethod:@"com.atproto.admin.repairRepo"
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_repairRepo
                        handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
@@ -487,7 +488,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // com.atproto.admin.runBlobAudit
-    [dispatcher registerMethod:@"com.atproto.admin.runBlobAudit"
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_runBlobAudit
                        handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
@@ -520,7 +521,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // com.atproto.admin.getBlobAuditStatus
-    [dispatcher registerMethod:@"com.atproto.admin.getBlobAuditStatus"
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getBlobAuditStatus
                        handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
@@ -551,7 +552,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     #pragma mark - com.atproto.admin.* Account Info, Invites & Subject Status
 
     // Register com.atproto.admin.getAccountUsage
-    [dispatcher registerMethod:@"com.atproto.admin.getAccountUsage"
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountUsage
                        handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
@@ -643,7 +644,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.getAccountInfo
-    [dispatcher registerComAtprotoAdminGetAccountInfo:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfo handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -685,7 +686,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.getAccountInfos
-    [dispatcher registerComAtprotoAdminGetAccountInfos:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfos handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -727,7 +728,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.getInviteCodes
-    [dispatcher registerComAtprotoAdminGetInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -783,7 +784,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.disableAccountInvites
-    [dispatcher registerComAtprotoAdminDisableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableAccountInvites handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -830,7 +831,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.enableAccountInvites
-    [dispatcher registerComAtprotoAdminEnableAccountInvites:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_enableAccountInvites handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -879,7 +880,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     #pragma mark - com.atproto.admin.* Account Lifecycle, Records & Takedown
 
     // Register com.atproto.admin.updateSubjectStatus
-    [dispatcher registerComAtprotoAdminUpdateSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateSubjectStatus handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -940,7 +941,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     // adds new required fields, this handler must be updated to provide them. Custom
     // extensions (e.g., additional output fields) should use the tools.garazyk.* namespace
     // rather than extending this endpoint.
-    [dispatcher registerComAtprotoAdminGetRecord:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getRecord handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -984,7 +985,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.getSubjectStatus
-    [dispatcher registerComAtprotoAdminGetSubjectStatus:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getSubjectStatus handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -1024,7 +1025,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
     // Register com.atproto.admin.getAccountTakedown
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerComAtprotoAdminGetAccountTakedown:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountTakedown handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -1033,7 +1034,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.deleteAccount
-    [dispatcher registerComAtprotoAdminDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_deleteAccount handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -1080,7 +1081,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.disableInviteCodes
-    [dispatcher registerComAtprotoAdminDisableInviteCodes:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -1127,7 +1128,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.updateAccountSigningKey
-    [dispatcher registerComAtprotoAdminUpdateAccountSigningKey:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountSigningKey handler:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -1181,7 +1182,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
     // Register com.atproto.admin.moderateAccount
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_moderateAccount handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -1191,7 +1192,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
     // Register com.atproto.admin.moderateRecord
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_moderateRecord handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -1201,7 +1202,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
     // Register com.atproto.admin.takeDownAccount
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerMethod:@"com.atproto.admin.takeDownAccount" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_takeDownAccount handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -1211,7 +1212,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
     // Register com.atproto.admin.getModerationReports
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerComAtprotoAdminGetModerationReports:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getModerationReports handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -1221,7 +1222,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
     // Register com.atproto.admin.resolveReport
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerComAtprotoAdminResolveReport:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_resolveReport handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",

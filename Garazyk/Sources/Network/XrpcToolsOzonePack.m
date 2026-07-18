@@ -12,6 +12,7 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Ozone/Services/ModerationService.h"
 #import "Database/PDSDatabase.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcToolsOzonePack
 
@@ -45,7 +46,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Moderation Core Endpoints (15)
 
     // tools.ozone.moderation.emitEvent - Emit moderation event
-    [dispatcher registerMethod:@"tools.ozone.moderation.emitEvent"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_emitEvent
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -69,7 +70,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.queryStatuses - Query moderation statuses
-    [dispatcher registerMethod:@"tools.ozone.moderation.queryStatuses"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_queryStatuses
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -92,7 +93,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.queryEvents - Query moderation events
-    [dispatcher registerMethod:@"tools.ozone.moderation.queryEvents"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_queryEvents
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -114,7 +115,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getEvent - Get moderation event
-    [dispatcher registerMethod:@"tools.ozone.moderation.getEvent"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getEvent
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -137,7 +138,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getRecord - Get record
-    [dispatcher registerMethod:@"tools.ozone.moderation.getRecord"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getRecord
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -160,7 +161,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getRecords - Get multiple records
-    [dispatcher registerMethod:@"tools.ozone.moderation.getRecords"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getRecords
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -184,7 +185,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getRepo - Get repository
-    [dispatcher registerMethod:@"tools.ozone.moderation.getRepo"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getRepo
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -207,7 +208,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getRepos - Get multiple repositories
-    [dispatcher registerMethod:@"tools.ozone.moderation.getRepos"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getRepos
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -231,7 +232,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.searchRepos - Search repositories
-    [dispatcher registerMethod:@"tools.ozone.moderation.searchRepos"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_searchRepos
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -252,7 +253,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getSubjectStatus - Get subject status
-    [dispatcher registerMethod:@"tools.ozone.moderation.getSubjectStatus"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getSubjectStatus
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -278,7 +279,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getReporterStats - Get reporter statistics
-    [dispatcher registerMethod:@"tools.ozone.moderation.getReporterStats"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getReporterStats
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -301,7 +302,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getAccountTimeline - Get account event timeline
-    [dispatcher registerMethod:@"tools.ozone.moderation.getAccountTimeline"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getAccountTimeline
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -328,7 +329,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.scheduleAction - Schedule moderation action
-    [dispatcher registerMethod:@"tools.ozone.moderation.scheduleAction"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_scheduleAction
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -353,7 +354,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.listScheduledActions - List scheduled actions
-    [dispatcher registerMethod:@"tools.ozone.moderation.listScheduledActions"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_listScheduledActions
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -370,7 +371,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.cancelScheduledAction - Cancel scheduled action
-    [dispatcher registerMethod:@"tools.ozone.moderation.cancelScheduledAction"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_cancelScheduledAction
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -394,7 +395,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.cancelScheduledActions - Cancel all scheduled actions for subjects
-    [dispatcher registerMethod:@"tools.ozone.moderation.cancelScheduledActions"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_cancelScheduledActions
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -422,7 +423,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.moderation.getSubjects - Get subject details
-    [dispatcher registerMethod:@"tools.ozone.moderation.getSubjects"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_moderation_getSubjects
                        handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -451,7 +452,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Team Management (4)
 
     // tools.ozone.team.addMember
-    [dispatcher registerMethod:@"tools.ozone.team.addMember"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_team_addMember
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -474,7 +475,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.team.updateMember
-    [dispatcher registerMethod:@"tools.ozone.team.updateMember"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_team_updateMember
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -500,7 +501,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.team.deleteMember
-    [dispatcher registerMethod:@"tools.ozone.team.deleteMember"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_team_deleteMember
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -524,7 +525,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.team.listMembers
-    [dispatcher registerMethod:@"tools.ozone.team.listMembers"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_team_listMembers
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -543,7 +544,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Set Management (6)
 
     // tools.ozone.set.upsertSet (replaces create/update)
-    [dispatcher registerMethod:@"tools.ozone.set.upsertSet"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_set_upsertSet
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -583,7 +584,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.set.deleteSet
-    [dispatcher registerMethod:@"tools.ozone.set.deleteSet"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_set_deleteSet
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -607,7 +608,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.set.getValues
-    [dispatcher registerMethod:@"tools.ozone.set.getValues"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_set_getValues
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -637,7 +638,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.set.querySets
-    [dispatcher registerMethod:@"tools.ozone.set.querySets"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_set_querySets
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -662,7 +663,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.set.addValues
-    [dispatcher registerMethod:@"tools.ozone.set.addValues"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_set_addValues
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -687,7 +688,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.set.deleteValues
-    [dispatcher registerMethod:@"tools.ozone.set.deleteValues"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_set_deleteValues
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -714,7 +715,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Communication Templates (4)
 
     // tools.ozone.communication.createTemplate
-    [dispatcher registerMethod:@"tools.ozone.communication.createTemplate"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_communication_createTemplate
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -740,7 +741,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.communication.updateTemplate
-    [dispatcher registerMethod:@"tools.ozone.communication.updateTemplate"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_communication_updateTemplate
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -768,7 +769,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.communication.deleteTemplate
-    [dispatcher registerMethod:@"tools.ozone.communication.deleteTemplate"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_communication_deleteTemplate
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -792,7 +793,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.communication.listTemplates
-    [dispatcher registerMethod:@"tools.ozone.communication.listTemplates"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_communication_listTemplates
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -811,7 +812,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Verification (3)
 
     // tools.ozone.verification.grantVerifications
-    [dispatcher registerMethod:@"tools.ozone.verification.grantVerifications"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_verification_grantVerifications
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -835,7 +836,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.verification.revokeVerifications
-    [dispatcher registerMethod:@"tools.ozone.verification.revokeVerifications"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_verification_revokeVerifications
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -859,7 +860,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.verification.listVerifications
-    [dispatcher registerMethod:@"tools.ozone.verification.listVerifications"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_verification_listVerifications
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -878,7 +879,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Safelinks (5)
 
     // tools.ozone.safelink.queryRules
-    [dispatcher registerMethod:@"tools.ozone.safelink.queryRules"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_safelink_queryRules
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -901,7 +902,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.safelink.queryEvents
-    [dispatcher registerMethod:@"tools.ozone.safelink.queryEvents"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_safelink_queryEvents
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -917,7 +918,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.safelink.addRule
-    [dispatcher registerMethod:@"tools.ozone.safelink.addRule"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_safelink_addRule
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -948,7 +949,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.safelink.updateRule
-    [dispatcher registerMethod:@"tools.ozone.safelink.updateRule"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_safelink_updateRule
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -975,7 +976,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.safelink.removeRule
-    [dispatcher registerMethod:@"tools.ozone.safelink.removeRule"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_safelink_removeRule
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1002,7 +1003,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Settings Options (3)
 
     // tools.ozone.setting.upsertOption
-    [dispatcher registerMethod:@"tools.ozone.setting.upsertOption"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_setting_upsertOption
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1031,7 +1032,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.setting.listOptions
-    [dispatcher registerMethod:@"tools.ozone.setting.listOptions"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_setting_listOptions
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1051,7 +1052,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.setting.removeOptions
-    [dispatcher registerMethod:@"tools.ozone.setting.removeOptions"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_setting_removeOptions
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1071,7 +1072,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Signatures (3)
 
     // tools.ozone.signature.findRelatedAccounts
-    [dispatcher registerMethod:@"tools.ozone.signature.findRelatedAccounts"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_signature_findRelatedAccounts
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1098,7 +1099,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.signature.findCorrelation
-    [dispatcher registerMethod:@"tools.ozone.signature.findCorrelation"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_signature_findCorrelation
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1126,7 +1127,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.signature.searchAccounts
-    [dispatcher registerMethod:@"tools.ozone.signature.searchAccounts"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_signature_searchAccounts
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1154,7 +1155,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Hosting History (1)
 
     // tools.ozone.hosting.getAccountHistory
-    [dispatcher registerMethod:@"tools.ozone.hosting.getAccountHistory"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_hosting_getAccountHistory
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1189,7 +1190,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 #pragma mark - Server Settings (2)
 
     // tools.ozone.server.getConfig
-    [dispatcher registerMethod:@"tools.ozone.server.getConfig"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_server_getConfig
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
@@ -1206,7 +1207,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
     }];
 
     // tools.ozone.server.updateConfig
-    [dispatcher registerMethod:@"tools.ozone.server.updateConfig"
+    [dispatcher registerMethod:kGZXrpcNSID_tools_ozone_server_updateConfig
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;

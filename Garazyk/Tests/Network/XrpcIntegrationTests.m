@@ -5,6 +5,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Core/DID.h"
 #import "Identity/HandleResolver.h"
 
@@ -184,7 +185,7 @@
 }
 
 - (void)setupMockHandlers {
-    [self.dispatcher registerComAtprotoIdentityResolveDid:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveDid handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
 
         if (!did) {
@@ -229,7 +230,7 @@
         }
     }];
 
-    [self.dispatcher registerComAtprotoIdentityResolveIdentity:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveIdentity handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *identifier = [request queryParamForKey:@"identifier"];
 
         if (!identifier) {
@@ -279,7 +280,7 @@
         }
     }];
 
-    [self.dispatcher registerComAtprotoIdentityResolveHandle:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveHandle handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *handle = [request queryParamForKey:@"handle"];
 
         if (!handle) {

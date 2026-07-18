@@ -14,6 +14,7 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 #include <arpa/nameser.h>
 #include <resolv.h>
@@ -639,7 +640,7 @@ static BOOL PDSLexiconResolverRunningTests(void) {
 
 + (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
                                    configuration:(ATProtoServiceConfiguration *)configuration {
-  [dispatcher registerComAtprotoLexiconResolveLexicon:^(
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_lexicon_resolveLexicon handler:^(
                   HttpRequest *request, HttpResponse *response) {
     if (request.method != HttpMethodGET) {
       response.statusCode = HttpStatusMethodNotAllowed;
