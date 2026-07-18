@@ -1456,6 +1456,101 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V3 Record Tombstones Without Rowid (Actor Store)
+
+@interface V3RecordTombstonesWithoutRowid : NSObject <PDSMigration>
+@end
+
+@implementation V3RecordTombstonesWithoutRowid
+
+- (NSInteger)version { return 3; }
+
+- (NSString *)name { return @"record_tombstones_without_rowid"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE record_tombstones_new ("
+        "    uri TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    collection TEXT NOT NULL,"
+        "    rkey TEXT NOT NULL,"
+        "    rev TEXT NOT NULL,"
+        "    indexed_at DATETIME NOT NULL,"
+        "    PRIMARY KEY (uri, rev)"
+        ") WITHOUT ROWID",
+
+        "INSERT INTO record_tombstones_new (uri, did, collection, rkey, rev, indexed_at) "
+        "SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones",
+
+        "DROP TABLE record_tombstones",
+
+        "ALTER TABLE record_tombstones_new RENAME TO record_tombstones",
+
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev)",
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V3 step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        "CREATE TABLE record_tombstones_new ("
+        "    uri TEXT NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    collection TEXT NOT NULL,"
+        "    rkey TEXT NOT NULL,"
+        "    rev TEXT NOT NULL,"
+        "    indexed_at DATETIME NOT NULL,"
+        "    PRIMARY KEY (uri, rev)"
+        ")",
+
+        "INSERT INTO record_tombstones_new (uri, did, collection, rkey, rev, indexed_at) "
+        "SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones",
+
+        "DROP TABLE record_tombstones",
+
+        "ALTER TABLE record_tombstones_new RENAME TO record_tombstones",
+
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev)",
+        "CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V3 down step %zu failed: %@", i, msg]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+@end
+
 #pragma mark - V13 Collection Membership Index
 
 @interface V13CollectionMembershipSchema : NSObject <PDSMigration>
@@ -1787,6 +1882,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
     [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"actor"]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
+    [manager registerMigration:[[V3RecordTombstonesWithoutRowid alloc] init]];
     return manager;
 }
 
