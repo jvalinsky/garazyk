@@ -432,9 +432,11 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSString *repo = SpaceString(body[@"repo"]); NSArray *items = [body[@"writes"] isKindOfClass:[NSArray class]] ? body[@"writes"] : nil;
     if (!repo || !items || items.count == 0 || items.count > 200) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo and 1-200 writes are required"); return; }
-    NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
+    NSDictionary *credential = SpaceCredentialAuthentication(request, response, space);
+    NSDictionary *auth = credential ? nil : SpaceOAuthAuthentication(request, response, resolvedServices);
+    if (!credential && !auth) return;
     NSMutableArray *writes = [NSMutableArray array]; for (id item in items) { PDSSpaceWrite *write = [item isKindOfClass:[NSDictionary class]] ? SpaceWriteFromDictionary(item, YES, response) : nil; if (!write) return; [writes addObject:write]; }
-    if (!SpaceCanWrite(auth, space, repo, writes, response)) return;
+    if (!credential && !SpaceCanWrite(auth, space, repo, writes, response)) return;
     NSError *error = nil; NSDictionary *commit = [store applyWrites:writes toSpace:space.spaceURI author:repo rev:nil error:&error];
     if (!commit) { SpaceError(response, error.code == PDSSpaceStoreErrorSpaceNotFound ? HttpStatusNotFound : HttpStatusBadRequest, error.code == PDSSpaceStoreErrorSpaceNotFound ? @"SpaceNotFound" : @"InvalidRequest", error.localizedDescription ?: @"Write rejected"); return; }
     SpaceNotifyAuthority(resolvedServices, space, repo, commit);
@@ -447,9 +449,11 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSString *repo = SpaceString(body[@"repo"]); NSMutableDictionary *item = [body mutableCopy] ?: [NSMutableDictionary dictionary]; item[@"action"] = action == PDSSpaceWriteActionCreate ? @"create" : action == PDSSpaceWriteActionUpdate ? @"update" : @"delete"; item[@"value"] = body[@"record"];
     PDSSpaceWrite *write = SpaceWriteFromDictionary(item, action == PDSSpaceWriteActionCreate, response); if (!repo || !write) { if (!write && response.statusCode == HttpStatusOK) SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo is required"); return; }
-    NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
-    if (action == PDSSpaceWriteActionUpdate && !SpaceAllows(auth, space, PDSSpaceActionCreate, write.collection)) { SpaceError(response, HttpStatusForbidden, @"InsufficientScope", @"putRecord requires create and update scope"); return; }
-    if (!SpaceCanWrite(auth, space, repo, @[write], response)) return;
+    NSDictionary *credential = SpaceCredentialAuthentication(request, response, space);
+    NSDictionary *auth = credential ? nil : SpaceOAuthAuthentication(request, response, resolvedServices);
+    if (!credential && !auth) return;
+    if (!credential && action == PDSSpaceWriteActionUpdate && !SpaceAllows(auth, space, PDSSpaceActionCreate, write.collection)) { SpaceError(response, HttpStatusForbidden, @"InsufficientScope", @"putRecord requires create and update scope"); return; }
+    if (!credential && !SpaceCanWrite(auth, space, repo, @[write], response)) return;
     NSError *error = nil; NSDictionary *writeState = [store applyWrites:@[write] toSpace:space.spaceURI author:repo rev:nil error:&error]; if (!writeState) { SpaceError(response, error.code == PDSSpaceStoreErrorSpaceNotFound ? HttpStatusNotFound : HttpStatusBadRequest, error.code == PDSSpaceStoreErrorSpaceNotFound ? @"SpaceNotFound" : @"InvalidRequest", error.localizedDescription ?: @"Write rejected"); return; }
     SpaceNotifyAuthority(resolvedServices, space, repo, writeState);
     response.statusCode = HttpStatusOK; if (action == PDSSpaceWriteActionDelete) [response setJsonBody:@{}]; else [response setJsonBody:@{ @"uri" : SpaceRecordURI(space, repo, write.collection, write.rkey), @"cid" : write.cid, @"validationStatus" : @"unknown" }];
