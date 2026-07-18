@@ -39,6 +39,10 @@ behavior.
   `OAuth2HandlerTests`, 0 failures). The prior run's AppView process had an
   externally occupied port; a fresh structured run `2026-07-18t2204z-20523`
   allocated a healthy port and passed scenario 94 **25/25**.
+- Private blobs are now proven across the same three-PDS topology: commit
+  `21eeb5719` covers bound OAuth+DPoP upload, remote credential-gated read,
+  and ordinary repo/sync/blob isolation. Structured scenario-93 run
+  `2026-07-18t2209z-29983` passed **21/21**.
 - The reconciliation protocol from ADR 0005 is fully implemented in source:
   `CARReader.roots`, `PDSSpaceStore` import/prune/index methods,
   `PDSSpaceReconciler` inbound sync, `PDSSpaceOplogPruner`, and the
@@ -72,13 +76,11 @@ PDS.
    record diff, and full CAR import must each be observed at least once
    (scenario 94 step assertions or a dedicated debug/test helper for
    `pruneOplogForSpace:author:keepingRevisions:`).
-3. Add the private-blob acceptance case: upload through
-   `com.atproto.repo.uploadBlob` with the three binding headers, read via
-   `com.atproto.space.getBlob` from a remote reader, and prove rejection
-   through every public repo/sync/blob endpoint.
-4. Update the compatibility-gate rows ("Reads and writes," "Notifications,"
-   "Multi-PDS recovery," "Private blobs," "OAuth federation scenario") from
-   pending to Implemented only with a dated structured-run reference.
+3. **Complete (2026-07-18):** private-blob acceptance is scenario 93's
+   bound upload, credential-gated remote read, and public endpoint isolation
+   path (`21eeb5719`; 21/21 in `2026-07-18t2209z-29983`).
+4. Update the remaining compatibility-gate row ("Multi-PDS recovery") to
+   Implemented only with dated evidence for all three recovery paths.
 
 Owner boundary: `scripts/scenarios/scenarios/93_*.ts`, `94_*.ts`, scenario
 topology/config, `docs/permissioned-spaces-compatibility.md`. No product

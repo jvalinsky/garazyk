@@ -95,8 +95,9 @@ documentation, TUI, package, and refactor plans.
   OAuth defects are fixed and Scenario 94's exact consent form is
   regression-covered (`9000097ba`). Scenario 94 now passes 25/25 in structured
   run `2026-07-18t2204z-20523`; the prior AppView failure was a transient
-  external port collision. The remaining compatibility-gate rows stay pending
-  for pruned-oplog recovery and private-blob acceptance (workstream 06).
+  external port collision. Private-blob acceptance now passes in scenario 93
+  (21/21, `21eeb5719`); the remaining compatibility-gate row is pruned-oplog
+  recovery (workstream 06).
 - The 29 gated `AllTests` classes are folded back into CI (Phase 2 item 4,
   first slice of Phase 4/workstream 01 S5): the 2026-07-16 baseline of 76
   failures across 11 classes is repaired (per-class root causes in
@@ -279,8 +280,8 @@ deterministic generator tests.
    topology support across the scenario runner landed (`b807b3357`); scenario
    93 passes 19/19 and the OAuth fixes are characterization-guarded
    (`9000097ba`). Scenario 94 now passes 25/25 in structured run
-   `2026-07-18t2204z-20523`; pruned-oplog recovery and private-blob acceptance
-   remain.
+   `2026-07-18t2204z-20523`. Private-blob acceptance now passes in scenario 93
+   (21/21, `21eeb5719`); only pruned-oplog recovery remains.
 7. **Complete (report-only).** Conformance matrix at
    `docs/reports/spec-conformance-matrix.md`: 21 rows, 16 supported, 4 partial,
    0 gap. Permissions-spec gap assessment at
