@@ -1,5 +1,20 @@
 # Known Bad Baseline
 
+Crash signatures that have been triaged. New crashes matching any signature
+listed below are suppressed by the harness. Signatures stay in this file; do
+not move them to Git history comments or commit messages.
+
+## Format
+
+One signature per line, prefixed with `#` so naïve parsers can skip comments.
+Signature shape: `<first 128 hex chars of crash artifact>_<byte size>`.
+
+## File contents
+
+The block below is the canonical baseline. Edit it in place. Parsers must
+ignore `#`-prefixed lines.
+
+```text
 # This directory stores signatures of crashes that have been triaged.
 
 # New crashes matching these signatures will be suppressed.
@@ -15,3 +30,4 @@
 # Empty baseline - start with no known-bad crashes
 
 # As crashes are found and triaged, add their signatures here
+```

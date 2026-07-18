@@ -79,9 +79,10 @@ cmake --build build-linux -j
 
 ## Testing
 
-Garazyk includes a test suite with over 2,600 tests. The project features a **Deno Scenario
-Framework** (`scripts/scenarios/`) that orchestrates integration tests against the local Docker
-network to validate federation and OAuth flows.
+Garazyk includes a test suite of over 5,500 tests (Objective-C XCTest cases plus Deno scenario
+assertions). The project features a **Deno Scenario Framework** (`scripts/scenarios/`) that
+orchestrates integration tests against the local Docker network to validate federation and OAuth
+flows.
 
 ## Documentation Directory
 
