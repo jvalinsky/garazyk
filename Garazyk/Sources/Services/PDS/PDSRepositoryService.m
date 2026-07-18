@@ -56,7 +56,11 @@
 - (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
                                        includeAllMST:(BOOL)includeAllMST
                                            proofKeys:(NSArray<NSString *> *)proofKeys
+                                      recordProvider:(nullable MSTBlockProvider)recordProvider
                                                 error:(NSError **)error;
+- (MSTBlockProvider)recordProviderForDid:(NSString *)did
+                       materializedBlocks:(nullable NSDictionary<NSString *, NSData *> *)materializedBlocks
+                             recordByCID:(nullable NSDictionary<NSString *, PDSDatabaseRecord *> *)recordByCID;
 
 @end
 
@@ -359,9 +363,13 @@
 
         NSMutableSet<NSString *> *addedBlockCIDs = [NSMutableSet setWithObject:commitCID.stringValue];
 
+        MSTBlockProvider exportRecordProvider = [self recordProviderForDid:did
+                                                          materializedBlocks:materializedBlocks
+                                                                recordByCID:recordByCID];
         NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                     includeAllMST:includeFullMST
                                                         proofKeys:changedMSTKeys ?: @[]
+                                                 recordProvider:exportRecordProvider
                                                             error:error];
         if (!mstBlocks) {
             [fileHandle closeFile];
@@ -531,9 +539,12 @@
     }
 
     NSMutableArray<NSData *> *mstChunks = [NSMutableArray array];
+    // Proof-only MST nodes; sparse proofs intentionally exclude records
+    // (the relay/AKA flow consumes the MST proof, not the records themselves).
     NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                 includeAllMST:NO
                                                     proofKeys:proofKeys
+                                             recordProvider:nil
                                                         error:error];
     if (!mstBlocks) {
         return nil;
@@ -552,6 +563,11 @@
         [mstChunks addObject:encoded];
     }
 
+    // Defensive against walker provider-missed records: the new pre-order
+    // walker (gated by streamableCARBlockOrderingEnabled) emits records
+    // interleaved with MST nodes; missing records here did not get into the
+    // MST and need to be appended. With proof-only `includeAllMST=NO`,
+    // remainingRecordCIDs generally contains every changed record.
     NSMutableArray<NSString *> *remainingRecordCIDs = [NSMutableArray array];
     for (NSString *cidString in filteredRecordCIDs) {
         if (cidString.length == 0 || [seenCIDs containsObject:cidString]) {
@@ -693,9 +709,13 @@
 
     NSMutableArray<NSData *> *mstChunks = [NSMutableArray array];
 
+    MSTBlockProvider exportRecordProvider = [self recordProviderForDid:did
+                                                      materializedBlocks:materializedBlocks
+                                                            recordByCID:recordByCID];
     NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                 includeAllMST:includeFullMST
                                                     proofKeys:changedMSTKeys ?: @[]
+                                             recordProvider:exportRecordProvider
                                                         error:error];
     if (!mstBlocks) {
         return nil;
@@ -714,6 +734,12 @@
         [mstChunks addObject:encoded];
     }
 
+    // Defensive against walker provider-missed records: under Sync 1.1 the
+    // pre-order walker (gated by streamableCARBlockOrderingEnabled) emits
+    // every record interleaved with its MST node in the MST phase; here we
+    // only retain records the walker dropped (i.e. records whose CID the
+    // recordProvider could not resolve). In full-export mode this list is
+    // typically empty; under proof-only / delta sync it carries the changes.
     NSMutableArray<NSString *> *remainingRecordCIDs = [NSMutableArray array];
     for (NSString *cidString in recordCIDStrings) {
         if (cidString.length == 0 || [seenCIDs containsObject:cidString]) {
@@ -1527,9 +1553,13 @@
     [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
 
     NSMutableSet<NSString *> *addedBlockCIDs = [NSMutableSet setWithObject:commitCID.stringValue];
+    MSTBlockProvider exportRecordProvider = [self recordProviderForDid:did
+                                                      materializedBlocks:materializedBlocks
+                                                            recordByCID:recordByCID];
     NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                 includeAllMST:includeFullMST
                                                     proofKeys:changedMSTKeys ?: @[]
+                                             recordProvider:exportRecordProvider
                                                         error:error];
     if (!mstBlocks) {
         return nil;
@@ -1576,6 +1606,7 @@
 - (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
                                        includeAllMST:(BOOL)includeAllMST
                                            proofKeys:(NSArray<NSString *> *)proofKeys
+                                      recordProvider:(nullable MSTBlockProvider)recordProvider
                                                 error:(NSError **)error {
     if (!mst) {
         return @[];
@@ -1595,11 +1626,18 @@
     };
 
     if (includeAllMST) {
+        // Sync 1.1 streamable CAR block ordering: pre-order DFS with records
+        // interleaved at each entry. The BFS + post-MST-record-layout emit is
+        // deliberately replaced here so consumers receive the spec-required
+        // stream layout. The downstream recordCIDStrings loop remains as a
+        // defensive fallback: any CID the walker silently skipped (record
+        // provider returned nil) gets one more retry with the same 3-tier
+        // chain before dedup drops it.
         NSError *mstError = nil;
-        BOOL enumerated = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **blockError) {
+        BOOL enumerated = [mst enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **blockError) {
             (void)blockError;
             return appendNode(cid, data);
-        } error:&mstError];
+        } recordProvider:recordProvider error:&mstError];
         if (!enumerated) {
             if (error) {
                 *error = mstError ?: [NSError errorWithDomain:@"com.atproto.repo"
@@ -1738,6 +1776,39 @@
 }
 
 
+
+- (MSTBlockProvider)recordProviderForDid:(NSString *)did
+                       materializedBlocks:(nullable NSDictionary<NSString *, NSData *> *)materializedBlocks
+                             recordByCID:(nullable NSDictionary<NSString *, PDSDatabaseRecord *> *)recordByCID {
+    // Captures by copy so lifetime is independent of the caller's stack frame.
+    // The walker's record lookup is synchronous and self is alive during the
+    // call; weakSelf-strongSelf still applied for defense in depth and to match
+    // the convention used by the chunk-producer's phase 3 lookup chain.
+    NSDictionary<NSString *, NSData *> *capturedMatBlocks = materializedBlocks ? [materializedBlocks copy] : @{};
+    NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecByCID = recordByCID ? [recordByCID copy] : @{};
+    NSString *capturedDid = [did copy];
+    __weak typeof(self) weakSelf = self;
+    return ^NSData * _Nullable(CID *cid) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return nil;
+        NSString *cidString = cid.stringValue;
+        if (cidString.length == 0) return nil;
+        // Three-tier lookup matches the chunk producer's phase 3 chain:
+        //   1) just-materialized records (fastest, in-flight cache)
+        //   2) persisted blocks (database-backed blockRepository)
+        //   3) re-encode from the in-memory record (slowest fallback)
+        NSData *data = capturedMatBlocks[cidString];
+        if (!data) {
+            PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:cid.bytes repoDid:capturedDid error:nil];
+            data = block.blockData;
+        }
+        if (!data) {
+            PDSDatabaseRecord *record = capturedRecByCID[cidString];
+            data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+        }
+        return data;
+    };
+}
 
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record {
     if (!record.cid) {

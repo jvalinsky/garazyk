@@ -304,6 +304,79 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
                                                    NSError **error))block
                                    error:(NSError **)error;
 
+#pragma mark - Sync 1.1 Streamable CAR Block Ordering (Forward-compat)
+
+/**
+ * @abstract Sync 1.1 "Streamable CAR Block Ordering" feature flag.
+ *
+ * @discussion Defaults to NO. While NO, the new pre-order enumerator
+ * -enumerateStreamableCARBlocksUsingBlock:recordProvider:error: refuses
+ * to run and returns NO with a domain="com.atproto.mst" error. Set to
+ * YES for production use.
+ *
+ * C11 `<stdatomic.h>` acquire/release ordering: concurrent reads observe
+ * the latest published value; concurrent read-write pairs serialize
+ * correctly. Production callers may flip the flag from any thread.
+ *
+ * The legacy BFS enumerator `-enumerateNodeCARBlocksUsingBlock:error:`
+ * is unaffected by this flag — it remains available for callers that
+ * explicitly want node-only emission.
+ */
++ (BOOL)streamableCARBlockOrderingEnabled;
+
+/**
+ * @abstract Toggles the Sync 1.1 streamable-CAR ordering flag.
+ * @param enabled YES enables pre-order emission; NO restores the default.
+ * @discussion Uses C11 `<stdatomic.h>` release ordering. Thread-safe from
+ * any thread; pairs with the BOOL-typed getter.
+ */
++ (void)setStreamableCARBlockOrderingEnabled:(BOOL)enabled;
+
+/**
+ * @abstract Enumerates node and record blocks in ATProto Sync 1.1
+ * "Streamable CAR Block Ordering" — depth-first pre-order with
+ * interleaved record blocks under each entry.
+ *
+ * @param block           Called once per emitted block, in spec order.
+ * @param recordProvider  Optional. Resolves a record CID to its data;
+ *                        required for records to be interleaved. When
+ *                        nil, only MST node blocks are emitted.
+ * @param error           Out-parameter for error reporting.
+ *
+ * @discussion The relative order of yielded (cid, data) tuples is:
+ *   1. The root MST node block.
+ *   2. Pre-order recursion into the left subtree (keys < first entry).
+ *   3. For each entry in node.entries[] (left-to-right in the entries
+ *      array as serialized):
+ *      - the record block for entry.value (if a leaf entry);
+ *      - then pre-order recursion into entry.tree (if not a leaf).
+ *
+ *   Each MST node and record block is yielded at most once (CIDs are
+ *   tracked in a per-call dedup set); the block returning NO aborts
+ *   the walk and surfaces the callback's error.
+ *
+ *   Requires +streamableCARBlockOrderingEnabled to be YES. Until the
+ *   Sync 1.1 spec is promoted from draft to required, this remains an
+ *   explicit opt-in — callers can flip the flag without changing
+ *   existing production BFS paths — this method consumes the flag
+ *   but does not affect enumerateNodeCARBlocksUsingBlock:error:.
+ *
+ *   Records whose CID is unknown to `recordProvider` (provider returns
+ *   nil data) are silently skipped so a partially-populated record
+ *   store never aborts the walk. The dedup set tracks both node and
+ *   record CIDs; under a deterministic record provider, identical
+ *   record blocks shared across entries are emitted at most once. A
+ *   non-deterministic provider that returns nil then non-nil for the
+ *   same CID will re-query it on the second encounter, because the
+ *   dedup set is only updated after a successful emission.
+ *
+ * @return YES if all blocks were emitted; NO on failure (see `error`).
+ */
+- (BOOL)enumerateStreamableCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data,
+                                                        NSError **error))block
+                                recordProvider:(nullable MSTBlockProvider)recordProvider
+                                         error:(NSError **)error;
+
 /**
  * @abstract Exports the tree structure as a JSON dictionary for visualization.
  */
