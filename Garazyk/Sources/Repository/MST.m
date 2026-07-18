@@ -9,6 +9,15 @@
 #import <arpa/inet.h>
 #import <objc/runtime.h>
 #import <math.h>
+#import <stdatomic.h>
+
+// objc/runtime.h does not declare these ARC runtime entry points; the atomic
+// root publication path below (`-root`/`-setRoot:`) calls them directly to
+// manage retain counts across the lock-free `atomic_load_explicit`/
+// `atomic_exchange_explicit` boundary.
+extern id objc_retain(id);
+extern void objc_release(id);
+extern id objc_autorelease(id);
 
 #pragma mark - Internal Classes
 
@@ -410,9 +419,28 @@
 #pragma mark - MST implementation
 
 @interface MST ()
-@property (nonatomic, strong, readwrite) MSTNode *root;
-@property (nonatomic, strong, readwrite) NSData *emptyTreeHash;
+{
+    /// C11 atomic storage backing the `root` property. Updated only via
+    /// `atomic_store_explicit` (release) on the publish path (-put:/-delete:)
+    /// and read via `atomic_load_explicit` (acquire) on every walker entry.
+    /// Per-instance (every MST has its own cell); no global lock.
+    _Atomic(MSTNode *) _rootAtomic;
+}
+@property (strong, readwrite, nullable) MSTNode *root;
+@property (nonatomic, copy, readwrite) NSData *emptyTreeHash;
 @property (nonatomic, copy, nullable) MSTBlockProvider blockProvider;
+/// Per-instance cache of lazy-resolved MSTNode subtrees indexed by their CID.
+/// Populated by -collectProofNodes:on-the-fly during proof collection so
+/// repeated proofs for the same key skip redundant deserialize work.
+/// Invalidated by -put:/-delete: when the published tree changes; the cache
+/// only holds subtrees consistent with the **currently-published** root.
+///
+/// This side-table completes the atomic-publish copy-on-write invariant:
+/// lazy resolution no longer writes back into the published
+/// MSTNode._internalLeft / MSTNodeEntry.internalTree ivars. Read and
+/// written under @synchronized(self) for thread-safe publish-during-proof.
+@property (nonatomic, strong, nullable)
+    NSMutableDictionary<CID *, MSTNode *> *lazySubtreeCache;
 @end
 
 @implementation MST
@@ -420,10 +448,91 @@
 - (instancetype)initWithRootNode:(nullable MSTNode *)rootNode {
     self = [super init];
     if (self) {
-        _root = rootNode ?: [[MSTNode alloc] initWithLevel:0];
+        // `atomic_store_explicit` is a raw C11 primitive: it does not go
+        // through ARC's write barrier, so it never retains the value it
+        // stores. `_rootAtomic` must therefore be manually retained before
+        // publication (see `-root`/`-setRoot:`/`-dealloc` for the matching
+        // manual release sites) — otherwise the initial node can be
+        // deallocated out from under the cell as soon as this local's own
+        // strong reference goes out of scope, leaving a dangling pointer.
+        MSTNode *initialRoot = rootNode ?: [[MSTNode alloc] initWithLevel:0];
+        objc_retain(initialRoot);
+        // Initialize the atomic root cell with release ordering so any later
+        // acquire-load observes a fully published tree.
+        atomic_store_explicit(&_rootAtomic, initialRoot, memory_order_release);
         _emptyTreeHash = [self computeEmptyTreeHash];
     }
     return self;
+}
+
+/// Manually releases the final published root, mirroring the manual
+/// `objc_retain` calls in `-initWithRootNode:`/`-setRoot:`. `_rootAtomic`
+/// is opaque to ARC (see above), so ARC's synthesized `-dealloc` cannot
+/// see or release its contents on its own.
+- (void)dealloc {
+    MSTNode *finalRoot =
+        atomic_load_explicit(&_rootAtomic, memory_order_acquire);
+    objc_release(finalRoot);
+}
+
+#pragma mark - Atomic Root Publication (C11 stdatomic)
+
+/// Thread safety of root publication. The MST object's mutable state is
+/// the `root` pointer, published through a per-instance `_Atomic(MSTNode *)`
+/// cell. Writers (e.g., `-put:`, `-delete:`) construct a new immutable tree
+/// from the existing root via copy-on-write (`addRecursive:`/
+/// `deleteRecursive:` return newly allocated MSTNodes; existing nodes
+/// are never mutated in place) and atomically publish via
+/// `atomic_store_explicit` (release). Readers (every walker entry point
+/// in this file) load the root via `atomic_load_explicit` (acquire) once
+/// at the top and operate on the captured snapshot — a concurrent writer
+/// cannot disturb the walker's view because the OLD tree remains valid
+/// as long as the walker's autoreleased reference to it is in scope, and
+/// the NEW tree is produced from FRESHLY ALLOCATED nodes that share no
+/// mutable state with the OLD tree. ARC reclamation of intermediate
+/// trees is bounded by refcount: as soon as no walker holds a strong
+/// reference, ARC releases the old root and its immutable children.
+/// There is no global lock; the protocol is fully per-instance and
+/// lock-free. New walker entry points MUST capture `self.root` into a
+/// `__strong` local before traversing; the documented audit point is
+/// `enumerateStreamableCARBlocksUsingBlock:` and `enumerateNodeCARBlocksUsingBlock:`.
+
+/// C11 acquire-load on `_rootAtomic`, then autoreleased through
+/// `objc_retain`/`objc_autorelease` so callers receive the standard
+/// property-getter reference contract under ARC. Walking callers bind the
+/// return to a `MSTNode *` local, which ARC retains for the walker's
+/// duration; concurrent writer activity does not disturb the captured
+/// snapshot because the old tree remains valid as long as any caller
+/// holds a strong reference.
+- (nullable MSTNode *)root {
+    MSTNode *currentRoot =
+        atomic_load_explicit(&_rootAtomic, memory_order_acquire);
+    if (currentRoot) {
+        // Match Apple's synthesized-getter contract: retain + autorelease so
+        // the returned reference is consumed correctly under ARC without
+        // requiring callers to declare a `__strong` qualifier.
+        return objc_autorelease(objc_retain(currentRoot));
+    }
+    return nil;
+}
+
+/// C11 acq_rel exchange on `_rootAtomic`, manually retaining `newRoot`
+/// before publication and releasing the previous value after — raw
+/// `atomic_exchange_explicit` bypasses ARC's write barrier entirely, so
+/// neither side of this swap is retained/released automatically. A
+/// `__strong`-qualified parameter only guarantees `newRoot` is valid for
+/// the duration of this call, not that anything retains it on our behalf
+/// once it is copied into non-ARC-visible storage.
+/// Pairs with `-root`'s acquire-load so the synchronization is fully
+/// sequenced: stores that happened before the publish are visible to any
+/// load that observes the new pointer.
+- (void)setRoot:(nullable MSTNode *)newRoot {
+    objc_retain(newRoot);
+    MSTNode *oldRoot =
+        atomic_exchange_explicit(&_rootAtomic,
+                                 newRoot,
+                                 memory_order_acq_rel);
+    objc_release(oldRoot);
 }
 
 - (instancetype)initWithRootCID:(CID *)rootCID {
@@ -511,9 +620,21 @@
 }
 
 - (void)put:(NSString *)key valueCID:(CID *)valueCID subKey:(NSString *)subKey {
+    // Invalidate any cached lazy-resolved subtrees before publishing a new
+    // root. The cache holds subtrees consistent with the *previous* published
+    // root; without invalidation, future proof queries would walk OLD data.
+    // Synchronization is non-blocking — publish first, then invalidate —
+    // because the cache contents are immutable (deserialized MSTNodes never
+    // change), so a stale read after the publish is observable but never
+    // corrupting.
     NSString *fullKey = subKey ? [NSString stringWithFormat:@"%@/%@", key, subKey] : key;
     uint32_t depth = [MST keyDepth:fullKey];
     self.root = [self addRecursive:self.root key:fullKey value:valueCID depth:depth];
+    @synchronized(self) {
+        if (self.lazySubtreeCache) {
+            [self.lazySubtreeCache removeAllObjects];
+        }
+    }
 }
 
 - (MSTNode *)addRecursive:(MSTNode *)node key:(NSString *)key value:(CID *)value depth:(uint32_t)depth {
@@ -591,9 +712,15 @@
 }
 
 - (void)delete:(NSString *)key subKey:(NSString *)subKey {
+    // See -put:subKey: for the lazySubtreeCache invalidation rationale.
     NSString *fullKey = subKey ? [NSString stringWithFormat:@"%@/%@", key, subKey] : key;
     self.root = [self deleteRecursive:self.root key:fullKey];
     if (!self.root) self.root = [[MSTNode alloc] initWithLevel:0];
+    @synchronized(self) {
+        if (self.lazySubtreeCache) {
+            [self.lazySubtreeCache removeAllObjects];
+        }
+    }
 }
 
 - (MSTNode *)deleteRecursive:(MSTNode *)node key:(NSString *)key {
@@ -639,7 +766,9 @@
         return [newNode trim];
     }
     return node;
-}- (MSTNode *)merge:(MSTNode *)left and:(MSTNode *)right {
+}
+
+- (MSTNode *)merge:(MSTNode *)left and:(MSTNode *)right {
     if (!left) return right;
     if (!right) return left;
 
@@ -669,16 +798,29 @@
         return [[MSTNode alloc] initWithLevel:left.level left:left.internalLeft entries:newEntries];
     } else {
         NSMutableArray *newEntries = [left.internalEntries mutableCopy];
+        MSTNode *newLeftChild = nil;
         if (right.internalLeft) {
             if (lastInLeft) {
                 MSTNodeEntry *updatedLast = [[MSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:right.internalLeft];
                 newEntries[newEntries.count-1] = updatedLast;
             } else {
-                left.internalLeft = [self merge:left.internalLeft and:right.internalLeft];
+                // Empty-entries edge case: capture the recursive merge result
+                // into a local; do NOT mutate `left.internalLeft` here.
+                // `left` may be a published subtree of self.root during
+                // -delete: (this path is reached when the entry being deleted
+                // is in a node with zero sibling entries and the substitute
+                // subtree has a left pointer). A concurrent walker reading
+                // `left.internalLeft` would otherwise see a non-atomic
+                // in-place pointer write and observe a torn MST. The atomic
+                // publish protocol depends on copy-on-write — see MST.h
+                // documentation for the thread-safety invariant.
+                newLeftChild = [self merge:left.internalLeft and:right.internalLeft];
             }
         }
         [newEntries addObjectsFromArray:right.internalEntries];
-        return [[MSTNode alloc] initWithLevel:left.level left:left.internalLeft entries:newEntries];
+        return [[MSTNode alloc] initWithLevel:left.level
+                                         left:newLeftChild ?: left.internalLeft
+                                     entries:newEntries];
     }
 }
 
@@ -731,12 +873,20 @@
 
 - (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
                                    error:(NSError **)error {
-    if (!block || !self.root) {
+    if (!block) {
+        return YES;
+    }
+    // Capture the root atomically once. The autoreleased reference is bound
+    // to -rootSnapshot for the rest of the walk; ARC retains the published
+    // root so a concurrent -put:/-delete: cannot tear the tree this BFS is
+    // observing (copy-on-write invariant on addRecursive:/deleteRecursive:).
+    MSTNode * __strong rootSnapshot = self.root;
+    if (!rootSnapshot) {
         return YES;
     }
 
     NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
-    NSMutableArray<MSTNode *> *queue = [NSMutableArray arrayWithObject:self.root];
+    NSMutableArray<MSTNode *> *queue = [NSMutableArray arrayWithObject:rootSnapshot];
     NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
     NSUInteger queueHead = 0;
 
@@ -1171,9 +1321,13 @@
 #pragma mark - Depth-First Traversal
 
 - (void)enumerateNodesDepthFirstUsingBlock:(void (^)(MSTNode *node, NSUInteger depth, BOOL *stop))block {
-    if (!self.root || !block) return;
+    // Snapshot root atomically; do not re-read self.root (a writer could
+    // interleave between the guard and the recursive call and publish a
+    // new tree, leaving the two reads to observe different roots).
+    MSTNode * __strong rootSnapshot = self.root;
+    if (!rootSnapshot || !block) return;
     BOOL stop = NO;
-    [self enumerateNodesDepthFirst:self.root depth:0 block:block stop:&stop];
+    [self enumerateNodesDepthFirst:rootSnapshot depth:0 block:block stop:&stop];
 }
 
 - (void)enumerateNodesDepthFirst:(MSTNode *)node
@@ -1364,27 +1518,47 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
         subtreeCID = entry.treeCID;
     }
     
-    // Lazy-load subtree if needed
+    // Lazy-load subtree if needed. Read through the per-instance
+    // lazySubtreeCache side-table (thread-safe under @synchronized(self)).
+    // The published node's _internalLeft / MSTNodeEntry.internalTree ivars
+    // MUST NOT be written back here: doing so mutates a published subtree
+    // and races the atomic-publish copy-on-write invariant. The side-table
+    // cache is invalidated by -put:/-delete: so it stays consistent with
+    // the currently-published root; see the lazySubtreeCache doc block on
+    // the MST () class extension.
     if (!subtree && subtreeCID && blockProvider) {
+        @synchronized(self) {
+            subtree = [self.lazySubtreeCache objectForKey:subtreeCID];
+        }
+        if (subtree) {
+            return [self collectProofNodes:subtree forKey:key into:path blockProvider:blockProvider];
+        }
         NSData *data = blockProvider(subtreeCID);
-        if (data) {
-            subtree = [MST deserializeNodeFromCBOR:data];
-            if (subtree) {
-                // Cache it back for future use during this traversal
-                if (idx == 0) {
-                    node.internalLeft = subtree;
-                } else {
-                    node.internalEntries[idx - 1].internalTree = subtree;
-                }
+        if (!data) return NO;
+        MSTNode *resolved = [MST deserializeNodeFromCBOR:data];
+        if (!resolved) return NO;
+        // Write only if absent so contending walkers don't redundantly
+        // re-deserialize the same subtreeCID. The first inserter wins;
+        // semantically equivalent subtrees (same data → same CIDs) are
+        // interchangeable, so overwriting would only waste work.
+        @synchronized(self) {
+            if (!self.lazySubtreeCache) {
+                self.lazySubtreeCache = [NSMutableDictionary dictionary];
+            }
+            MSTNode *existing = self.lazySubtreeCache[subtreeCID];
+            if (!existing) {
+                self.lazySubtreeCache[subtreeCID] = resolved;
+                subtree = resolved;
+            } else {
+                subtree = existing;
             }
         }
     }
-    
+
     if (subtree) {
         return [self collectProofNodes:subtree forKey:key into:path blockProvider:blockProvider];
     }
-    
-    // Key not found - remove this node from path
+    // Key not found — remove this node from path.
     [path removeLastObject];
     return NO;
 }

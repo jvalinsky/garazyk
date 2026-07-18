@@ -10,6 +10,7 @@
 
 #import <Foundation/Foundation.h>
 #import <stdint.h>
+#import <stdatomic.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -176,11 +177,31 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 
 /**
  * @abstract The Merkle Search Tree data structure.
+ *
+ * @discussion Thread safety. The `root` property is backed by a per-instance
+ * `_Atomic(MSTNode *)` cell updated only via C11 acquire/release primitives,
+ * *not* via Apple's `@property(atomic)` OSSpinLock-style implementation.
+ * Concurrent readers and writers never tear the tree because the writer path
+ * (`-put:`, `-delete:`) reproduces the tree from the existing root via
+ * copy-on-write (each `addRecursive:`/`deleteRecursive:`/`split:`/`merge:`
+ * returns a freshly allocated `MSTNode`; existing nodes are never mutated in
+ * place). A walker captures `self.root` once at entry — the returned
+ * autoreleased reference retains the published tree until the walk completes,
+ * so a concurrent writer publishing a new root cannot disturb the walker's
+ * view of the tree. Posts of `sync11-preorder-fixture.car` rely on this
+ * guarantee end-to-end.
+ *
+ * Proof collection extends the atomic-publish invariant with a per-instance
+ * `lazySubtreeCache` side-table (declared on the MST () class extension in
+ * MST.m) that resolves `MSTNode` subtrees on demand rather than writing them
+ * back into the published tree. The cache is invalidated on every
+ * `-put:/-delete:` so it always tracks the currently-published root; callers
+ * MUST NOT assume a cached subtree is valid across publish cycles.
  */
 @interface MST : NSObject
 
 /** @abstract The root node of the tree. */
-@property(nonatomic, strong, readonly, nullable) MSTNode *root;
+@property(strong, readonly, nullable) MSTNode *root;
 /** @abstract The CID of the root node. */
 @property(nonatomic, strong, readonly, nullable) CID *rootCID;
 /** @abstract Hash of an empty tree. */
