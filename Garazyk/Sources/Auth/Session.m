@@ -461,7 +461,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 }
 
 - (BOOL)saveSession:(Session *)session error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO sessions (session_id, did, handle, scope, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, dpop_key_thumbprint, token_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO sessions (session_id, did, handle, scope, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, dpop_key_thumbprint, token_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(session_id) DO UPDATE SET did=excluded.did, handle=excluded.handle, scope=excluded.scope, access_token=excluded.access_token, refresh_token=excluded.refresh_token, access_token_expires_at=excluded.access_token_expires_at, refresh_token_expires_at=excluded.refresh_token_expires_at, dpop_key_thumbprint=excluded.dpop_key_thumbprint, token_type=excluded.token_type, created_at=excluded.created_at";
     NSArray *params = @[
         session.sessionID ?: [NSNull null],
         session.did ?: [NSNull null],

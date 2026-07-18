@@ -148,8 +148,8 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         schemaMarkerTable = @"ipld_blocks";
     }
 
-    NSString *checkMarkerSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type='table' AND name='%@'", schemaMarkerTable];
-    NSArray *markerResults = [self.database executeParameterizedQuery:checkMarkerSQL params:@[] error:nil];
+    NSString *checkMarkerSQL = @"SELECT name FROM sqlite_master WHERE type='table' AND name=?";
+    NSArray *markerResults = [self.database executeParameterizedQuery:checkMarkerSQL params:@[schemaMarkerTable] error:nil];
     if (markerResults.count == 0) {
         char *errMsg = NULL;
         int rc = sqlite3_exec((sqlite3 *)self.database.internalSQLiteHandle, schemaSQL.UTF8String, NULL, NULL, &errMsg);
@@ -312,7 +312,8 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid rev:(nullable NSString *)rev error:(NSError **)error {
     NSString *resolvedRev = rev ?: [self getRepoRevisionForDid:did error:nil] ?: @"";
-    NSString *sql = @"INSERT OR REPLACE INTO repo_root (cid, rev, updated_at) VALUES (?, ?, ?)";
+    NSString *sql = @"INSERT INTO repo_root (cid, rev, updated_at) VALUES (?, ?, ?) "
+                     @"ON CONFLICT(cid) DO UPDATE SET rev=excluded.rev, updated_at=excluded.updated_at";
     return [self.database executeParameterizedUpdate:sql params:@[rootCid ?: [NSNull null], resolvedRev, @([[NSDate date] timeIntervalSince1970])] error:error];
 }
 
@@ -374,7 +375,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
     GZ_LOG_INFO(@"ActorStore putRecord: saving uri=%@ for did=%@", record.uri, did);
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, created_at, rev, subject_did) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, rev, subject_did) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                     @"ON CONFLICT(uri) DO UPDATE SET did=excluded.did, collection=excluded.collection, "
+                     @"rkey=excluded.rkey, cid=excluded.cid, value=excluded.value, "
+                     @"created_at=excluded.created_at, rev=excluded.rev, subject_did=excluded.subject_did";
     NSArray *params = @[record.uri ?: @"", did ?: @"", record.collection ?: @"", record.rkey ?: @"", record.cid ?: [NSNull null], record.value ?: [NSNull null], @(record.createdAt.timeIntervalSince1970), record.rev ?: [NSNull null], record.subjectDid ?: [NSNull null]];
     return [self.database executeParameterizedUpdate:sql params:params error:error];
 }
@@ -441,7 +445,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO ipld_blocks (cid, block, size, rev) VALUES (?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR IGNORE INTO ipld_blocks (cid, block, size, rev) VALUES (?, ?, ?, ?)";
     return [self.database executeParameterizedUpdate:sql params:@[block.cid ?: [NSNull null], block.blockData ?: [NSNull null], @(block.size), block.rev ?: [NSNull null]] error:error];
 }
 
@@ -516,7 +520,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)storeSigningKey:(NSData *)privateKey publicKey:(NSData *)publicKey error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO signing_keys (did, private_key, public_key_compressed, created_at, updated_at) VALUES (?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO signing_keys (did, private_key, public_key_compressed, created_at, updated_at) VALUES (?, ?, ?, ?, ?) "
+                     @"ON CONFLICT(did) DO UPDATE SET private_key=excluded.private_key, "
+                     @"public_key_compressed=excluded.public_key_compressed, "
+                     @"created_at=excluded.created_at, updated_at=excluded.updated_at";
     double now = [[NSDate date] timeIntervalSince1970];
     return [self.database executeParameterizedUpdate:sql params:@[self.did ?: @"", privateKey ?: [NSNull null], publicKey ?: [NSNull null], @(now), @(now)] error:error];
 }
@@ -548,7 +555,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     NSData *encryptedKey = [PDSKeyEnvelope seal:privateKey withKey:encryptionKey error:error];
     if (!encryptedKey) return NO;
     double now = [[NSDate date] timeIntervalSince1970];
-    NSString *sql = @"INSERT OR REPLACE INTO rotation_keys (did, encrypted_private_key, public_key_compressed, encryption_salt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO rotation_keys (did, encrypted_private_key, public_key_compressed, encryption_salt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) "
+                     @"ON CONFLICT(did) DO UPDATE SET encrypted_private_key=excluded.encrypted_private_key, "
+                     @"public_key_compressed=excluded.public_key_compressed, encryption_salt=excluded.encryption_salt, "
+                     @"created_at=excluded.created_at, updated_at=excluded.updated_at";
     return [self.database executeParameterizedUpdate:sql params:@[self.did ?: @"", encryptedKey, compressedPublicKey, salt, @(now), @(now)] error:error];
 }
 
