@@ -441,7 +441,26 @@ extern id objc_autorelease(id);
 /// written under @synchronized(self) for thread-safe publish-during-proof.
 @property (nonatomic, strong, nullable)
     NSMutableDictionary<CID *, MSTNode *> *lazySubtreeCache;
+- (BOOL)enumerateStreamableNode:(MSTNode *)node
+                          cache:(NSMapTable<MSTNode *, CID *> *)cache
+                     addedCIDs:(NSMutableSet<NSString *> *)addedCIDs
+                          block:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+                recordProvider:(nullable MSTBlockProvider)recordProvider
+                          error:(NSError **)error;
 @end
+
+/// Sync 1.1 "Streamable CAR Block Ordering" feature flag. ON by default —
+/// Sync 1.1 has promoted from draft to required, so the PDS repo export
+/// paths now use the pre-order / depth-first enumerator with interleaved
+/// record blocks (`enumerateStreamableCARBlocksUsingBlock:recordProvider:`).
+/// MST block retrieval via `enumerateNodeCARBlocksUsingBlock:` is unchanged
+/// and unaffected by this flag — it is the legacy BFS walker retained for
+/// callers that explicitly want node-only emission.
+///
+/// C11 `<stdatomic.h>` acquire/release ordering: concurrent reads observe
+/// the latest published value; concurrent read-write pairs serialize
+/// correctly. Production callers may flip the flag from any thread.
+static atomic_bool gMSTStreamableCARBlockOrderingEnabled = true;
 
 @implementation MST
 
@@ -1561,6 +1580,170 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
     // Key not found — remove this node from path.
     [path removeLastObject];
     return NO;
+}
+
+#pragma mark - Sync 1.1 Streamable CAR Block Ordering
+
++ (BOOL)streamableCARBlockOrderingEnabled {
+    return atomic_load_explicit(&gMSTStreamableCARBlockOrderingEnabled,
+                                memory_order_acquire) ? YES : NO;
+}
+
++ (void)setStreamableCARBlockOrderingEnabled:(BOOL)enabled {
+    atomic_store_explicit(&gMSTStreamableCARBlockOrderingEnabled,
+                           (bool)(enabled != NO),
+                           memory_order_release);
+}
+
+- (BOOL)enumerateStreamableCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+                                recordProvider:(nullable MSTBlockProvider)recordProvider
+                                         error:(NSError **)error {
+    // Snapshot the C11 atomic-enabled flag exactly once at entry. Concurrent
+    // setter calls update the global, but this walk uses its captured
+    // snapshot and ignores subsequent writes; the legacy BFS enumerator
+    // (-enumerateNodeCARBlocksUsingBlock:) is a separate code path that does
+    // not consult this flag.
+    //
+    // Anti-regression: this local is the ONLY consult site for the duration
+    // of the walk — the recursive helper -enumerateStreamableNode: must NOT
+    // re-read gMSTStreamableCARBlockOrderingEnabled. Adding such a check would
+    // silently re-open the Time-Of-Check-To-Time-Of-Use (TOCTOU) window this
+    // snapshot closes.
+    //
+    // Thread-safety interaction: -root is also snapshotted here via the
+    // C11 acquire-load getter. The captured autoreleased reference is bound
+    // to -rootSnapshot for the rest of the walk; ARC retains the published
+    // root for the walker's duration, so a concurrent -put:/-delete: from
+    // another thread that publishes a new root cannot tear the tree this
+    // walker is observing (copy-on-write invariant on addRecursive:/
+    // deleteRecursive:/split:/merge:).
+    const bool orderingEnabled = atomic_load_explicit(
+        &gMSTStreamableCARBlockOrderingEnabled,
+        memory_order_acquire);
+    if (!orderingEnabled) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.mst"
+                                         code:100
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                @"Sync 1.1 'Streamable CAR Block Ordering' is not enabled. "
+                                                @"Call +[MST setStreamableCARBlockOrderingEnabled:YES] "
+                                                @"first to opt in (this feature targets a draft spec)."}];
+        }
+        return NO;
+    }
+
+    if (!block) {
+        return YES;
+    }
+    MSTNode * __strong rootSnapshot = self.root;
+    if (!rootSnapshot) {
+        return YES;
+    }
+
+    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
+
+    return [self enumerateStreamableNode:rootSnapshot
+                                    cache:cache
+                              addedCIDs:addedCIDs
+                                    block:block
+                          recordProvider:recordProvider
+                                    error:error];
+}
+
+- (BOOL)enumerateStreamableNode:(MSTNode *)node
+                          cache:(NSMapTable<MSTNode *, CID *> *)cache
+                     addedCIDs:(NSMutableSet<NSString *> *)addedCIDs
+                          block:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+                recordProvider:(nullable MSTBlockProvider)recordProvider
+                          error:(NSError **)error {
+    if (!node) {
+        return YES;
+    }
+
+    CID *nodeCID = [node getCID:cache];
+    NSString *nodeCIDString = nodeCID.stringValue ?: @"";
+    if (nodeCIDString.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.mst"
+                                         code:101
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                @"MST subtree node has no resolvable CID."}];
+        }
+        return NO;
+    }
+
+    if (![addedCIDs containsObject:nodeCIDString]) {
+        [addedCIDs addObject:nodeCIDString];
+        NSData *nodeData = [node serializeToCBOR:cache];
+        if (nodeData.length == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.mst"
+                                             code:102
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        @"Failed to serialize MST node to CBOR."}];
+            }
+            return NO;
+        }
+        NSError *cbErr = nil;
+        if (!block(nodeCID, nodeData, &cbErr)) {
+            if (error && cbErr) {
+                *error = cbErr;
+            }
+            return NO;
+        }
+    }
+
+    // Left subtree (keys < first entry) is walked first in pre-order.
+    if (node.internalLeft) {
+        if (![self enumerateStreamableNode:node.internalLeft
+                                       cache:cache
+                                  addedCIDs:addedCIDs
+                                       block:block
+                             recordProvider:recordProvider
+                                       error:error]) {
+            return NO;
+        }
+    }
+
+    // Per entry: every entry has a value (the CID of the record at this key);
+    // entries may additionally have an internalTree pointing to a subtree of
+    // keys >= entry.fullKey and < the next entry's key. Emit the record for
+    // entry.value (via recordProvider), then recurse into entry.internalTree
+    // only when one exists. This matches the draft spec's "ordered by node
+    // entries[]" rule and is by design — never coerce this into mutually
+    // exclusive "leaf vs subtree" branches.
+    for (MSTNodeEntry *entry in node.internalEntries) {
+        if (entry.value) {
+            NSString *recordCIDString = entry.value.stringValue ?: @"";
+            if (recordCIDString.length > 0 && ![addedCIDs containsObject:recordCIDString]) {
+                NSData *recordData = recordProvider ? recordProvider(entry.value) : nil;
+                if (recordData.length > 0) {
+                    [addedCIDs addObject:recordCIDString];
+                    NSError *cbErr = nil;
+                    if (!block(entry.value, recordData, &cbErr)) {
+                        if (error && cbErr) {
+                            *error = cbErr;
+                        }
+                        return NO;
+                    }
+                }
+            }
+        }
+
+        if (entry.internalTree) {
+            if (![self enumerateStreamableNode:entry.internalTree
+                                           cache:cache
+                                      addedCIDs:addedCIDs
+                                          block:block
+                                 recordProvider:recordProvider
+                                          error:error]) {
+                return NO;
+            }
+        }
+    }
+
+    return YES;
 }
 
 @end
