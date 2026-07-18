@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: Permissioned spaces multi-PDS acceptance
-status: blocked
+status: in-progress
 agent: worker
 depends_on: []
 ---
@@ -203,15 +203,18 @@ and no public or admin XRPC can prune a known cursor, trigger one reconciler
 pass, or report the chosen path. Treating its authority reads as recovery
 would create false acceptance evidence.
 
-## Blocked on
+### Decision received (2026-07-18)
 
-Authorize a narrowly scoped, test-only control plane that is absent from
-production route registration and can: (1) seed or identify a replica
-revision, (2) prune the authority oplog past that cursor, (3) trigger exactly
-one reconciler pass, and (4) return deterministic selector telemetry
-(`incremental`, `lightweight`, or `fullCAR`) with request counts. This is
-required to prove all three recovery selections without inventing a scenario
-claim that the deployed topology cannot observe.
+The requested narrowly scoped, test-only control plane is authorized. It must
+remain absent from production route registration and is limited to replica
+revision setup/identification, pruning past that revision, one reconciliation
+pass, and deterministic selector/request-count telemetry.
+
+### Resumed slice (2026-07-18)
+
+Implement and characterize that production-excluded control plane, then use it
+to obtain three-PDS evidence for the incremental, lightweight-diff, and full
+CAR recovery selections. Do not expose an equivalent public or admin route.
 
 ### Next steps
 
