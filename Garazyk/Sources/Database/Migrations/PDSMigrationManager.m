@@ -1456,6 +1456,54 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V13 Collection Membership Index
+
+@interface V13CollectionMembershipSchema : NSObject <PDSMigration>
+@end
+
+@implementation V13CollectionMembershipSchema
+
+- (NSInteger)version { return 13; }
+
+- (NSString *)name { return @"collection_membership_index"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    // Create the materialized index table
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db,
+        "CREATE TABLE IF NOT EXISTS collection_membership ("
+        "did TEXT NOT NULL, "
+        "collection TEXT NOT NULL, "
+        "indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), "
+        "PRIMARY KEY (did, collection)"
+        ")",
+        NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                        [NSString stringWithFormat:@"V13 collection_membership table: %s", errMsg ?: "unknown"]}];
+        }
+        if (errMsg) sqlite3_free(errMsg);
+        return NO;
+    }
+    if (errMsg) sqlite3_free(errMsg);
+
+    // Create index on collection for fast lookup
+    sqlite3_exec(db, "CREATE INDEX IF NOT EXISTS idx_collection_membership_collection ON collection_membership(collection)",
+                 NULL, NULL, NULL);
+
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    sqlite3_exec(db, "DROP TABLE IF EXISTS collection_membership", NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
 #pragma mark - V10 Pending Factor Tokens
 
 @interface V10PendingFactorTokensSchema : NSObject <PDSMigration>
@@ -1730,6 +1778,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V8OzoneSubjectsSchema alloc] init]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:9]];
     [manager registerMigration:[[V10PendingFactorTokensSchema alloc] init]];
+    [manager registerMigration:[[V13CollectionMembershipSchema alloc] init]];
     [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
     return manager;
 }

@@ -23,6 +23,7 @@
 #import "Repository/MST.h"
 #import "Repository/CBOR.h"
 #import "Core/MSTCacheManager.h"
+#import "Database/Service/ServiceDatabases.h"
 #import <CommonCrypto/CommonDigest.h>
 #import "Repository/RepoCommit.h"
 #include <math.h>
@@ -680,6 +681,10 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
             @"rev": newRev ?: [NSNull null],
             @"recordCBOR": cborData ?: [NSNull null]
         }];
+
+        // Update collection membership index so listReposByCollection
+        // can query without scanning per-user actor stores.
+        [self.serviceDatabases upsertCollectionMembership:collection forDID:did error:nil];
     }
 
     GZ_LOG_SERVICE_DEBUG(@"putRecord finishing with success: %d", success);
@@ -817,6 +822,20 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
         @"rev": newRev ?: [NSNull null],
         @"recordCBOR": [NSNull null]
     }];
+
+    // Prune collection membership entry if no records remain in this
+    // collection for this DID. Default to YES (conservative): if the
+    // actor store check fails, we keep the entry rather than risk a
+    // false negative in listReposByCollection.
+    if (self.serviceDatabases) {
+        __block BOOL hasRemaining = YES;
+        [self.databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **readError) {
+            hasRemaining = [reader hasRecordsForCollection:collection error:readError];
+        } error:nil];
+        if (!hasRemaining) {
+            [self.serviceDatabases removeCollectionMembership:collection forDID:did error:nil];
+        }
+    }
 
     return success;
 }
@@ -1456,6 +1475,9 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
         }
     }
 
+    // Track collections with deletes for membership index pruning.
+    NSMutableSet<NSString *> *deletedCollectionKeys = [NSMutableSet set];
+
     // Notify firehose of all writes in the batch
     for (NSUInteger idx = 0; idx < writes.count; idx++) {
         NSDictionary *write = writes[idx];
@@ -1497,6 +1519,35 @@ static BOOL rejectUnknownBuiltInCollection(NSString *collection,
             @"rev": commitRev ?: [NSNull null],
             @"recordCBOR": recordCBOR ?: [NSNull null]
         }];
+
+        // Update collection membership index for create/update writes.
+        if (![normalizedAction isEqualToString:@"delete"] && collection.length > 0) {
+            [self.serviceDatabases upsertCollectionMembership:collection forDID:did error:nil];
+        }
+
+        // Track deleted collections for post-batch pruning.
+        if ([normalizedAction isEqualToString:@"delete"] && collection.length > 0) {
+            NSString *key = [NSString stringWithFormat:@"%@|%@", did, collection];
+            [deletedCollectionKeys addObject:key];
+        }
+    }
+
+    // Prune membership entries for collections that had deletes, if no
+    // records remain.
+    if (self.serviceDatabases && deletedCollectionKeys.count > 0) {
+        for (NSString *key in deletedCollectionKeys) {
+            NSArray *parts = [key componentsSeparatedByString:@"|"];
+            if (parts.count != 2) continue;
+            NSString *deleteDid = parts[0];
+            NSString *deleteCollection = parts[1];
+            __block BOOL hasRemaining = YES;
+            [self.databasePool readWithDid:deleteDid block:^(id<PDSActorStoreReader> reader, NSError **readError) {
+                hasRemaining = [reader hasRecordsForCollection:deleteCollection error:readError];
+            } error:nil];
+            if (!hasRemaining) {
+                [self.serviceDatabases removeCollectionMembership:deleteCollection forDID:deleteDid error:nil];
+            }
+        }
     }
 
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:resultOps.count];
