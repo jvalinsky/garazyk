@@ -36,9 +36,9 @@ behavior.
   GNUstep form parser's historical `+`-for-space handling. `0a7925f9a` fixes
   that parser, `3b6a4f5cb` uses `%20` encoding in the scenario, and
   `9000097ba` characterizes the exact `atproto+space:` consent form (31
-  `OAuth2HandlerTests`, 0 failures). Its fresh structured run
-  `2026-07-18t2153z-87263` stopped before scenario execution because AppView
-  failed to start; a green runtime result is still required.
+  `OAuth2HandlerTests`, 0 failures). The prior run's AppView process had an
+  externally occupied port; a fresh structured run `2026-07-18t2204z-20523`
+  allocated a healthy port and passed scenario 94 **25/25**.
 - The reconciliation protocol from ADR 0005 is fully implemented in source:
   `CARReader.roots`, `PDSSpaceStore` import/prune/index methods,
   `PDSSpaceReconciler` inbound sync, `PDSSpaceOplogPruner`, and the
@@ -59,10 +59,11 @@ behavior.
 Scenario 93 (three-PDS OAuth, delegation, remote write, notification,
 public-boundary isolation, membership revocation) and scenario 94
 (inbound reconciliation convergence after delayed or pruned notifications)
-exist, and scenario 93 passed at runtime on 2026-07-18. Scenario 94 still
-needs a green runtime result: its current binary-topology run was stopped by
-an AppView startup failure before its first step. `PDS3_URL` must name an
-independently operated, permissioned-spaces-enabled PDS.
+exist and both passed at runtime on 2026-07-18 (scenario 93: 19/19; scenario
+94: 25/25, structured run `2026-07-18t2204z-20523`). The latter proves normal
+incremental reconciliation; the explicit pruned-oplog recovery cases remain.
+`PDS3_URL` must name an independently operated, permissioned-spaces-enabled
+PDS.
 
 1. Stand up the three-PDS topology (the PDS3 config and manifest from
    `cc063779a`; Docker where possible) and record structured

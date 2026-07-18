@@ -164,20 +164,20 @@ The structured run `2026-07-18t2153z-87263`
 but stopped before scenario execution because `APPVIEW failed to start`.
 It provides no current OAuth counterevidence.
 
-### Current slice (2026-07-18)
+### AppView diagnostic result (2026-07-18)
 
-Diagnose the AppView failure in the binary three-PDS topology. This slice is
-limited to collecting the startup diagnostics and determining whether the
-runner/configuration can be corrected without changing unrelated AppView
-product behavior; it does not begin private-blob or oplog acceptance work.
+The failed run used an externally occupied AppView port (`59500`): its log
+records `Address already in use`, although the generated manifest assigned
+that port only to AppView. A fresh binary rerun allocated `52649`, AppView was
+healthy, and scenario 94 passed **25/25** in structured run
+`2026-07-18t2204z-20523`. This was a transient external `EADDRINUSE` collision,
+not a topology/runner defect, so no code change is warranted.
 
 ### Next steps
 
-1. Diagnose the AppView binary-topology startup failure and obtain a dated
-   structured scenario-94 run before changing scenario or product behavior.
-2. Private-blob acceptance and pruned-oplog recovery paths (P6.1 items 2–3)
+1. Private-blob acceptance and pruned-oplog recovery paths (P6.1 items 2–3)
    remain.
-3. Move compatibility-gate rows to Implemented with dated structured runs only
+2. Move compatibility-gate rows to Implemented with dated structured runs only
    once 94 and the blob/oplog cases are green.
 
 ## Acceptance gate
