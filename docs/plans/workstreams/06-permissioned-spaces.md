@@ -24,6 +24,14 @@ behavior.
   URIs/scopes, delegation, credentials, policy, private blobs, notifications).
 - `cc063779a` adds scenarios 93 and 94 plus PDS3 topology config; both are
   type-checked but have no recorded runtime pass.
+- Scenario 93's OAuth PAR step was blocked by a non-deterministic (~50%)
+  DPoP signature-verification failure. Root cause: the P-256 verifier
+  enforced low-S (wrong for JOSE/DPoP/WebAuthn/PLC), and `AuthCryptoECDSA`
+  hardcoded the P-256 field prime `p` where it needed the group order `n`.
+  Fixed and characterization-guarded — see
+  [ADR 0007](../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md).
+  This was a general OAuth/auth correctness bug, not spaces-specific; it was
+  the prerequisite blocker for the P6.1 acceptance runs below.
 - The reconciliation protocol from ADR 0005 is fully implemented in source:
   `CARReader.roots`, `PDSSpaceStore` import/prune/index methods,
   `PDSSpaceReconciler` inbound sync, `PDSSpaceOplogPruner`, and the
