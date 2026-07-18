@@ -132,6 +132,7 @@ better-isolated steps.
 | Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | P2              |
 | Dedicated space signing key rotation          |             4 |               2 |             3 |             3 |      4 | P2              |
 | Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | P2              |
+| Storage and MST optimization (workstream 07)  |             3 |               3 |             4 |             4 |      4 | P1              |
 | Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
@@ -304,6 +305,11 @@ uses released dependencies and retains a launcher smoke test.
    (workstream 06, P6.5).
 7. Implement the Sync 1.1 remainder (export block ordering, collection
    subsets) once published spec text exists (workstream 02, A6).
+8. Storage and MST optimization: `INSERT OR IGNORE` for `ipld_blocks`,
+   `WITHOUT ROWID` for composite-PK tables, lazy MST subtree hydration,
+   covering indexes for hot read paths, DID/handle resolution caching
+   audit, and ingest/indexing decoupling
+   ([workstream 07](workstreams/07-storage-and-mst-optimization.md)).
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
