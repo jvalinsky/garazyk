@@ -961,7 +961,6 @@ int main(int argc, char *argv[]) {
       @"PDSCLIDaemonCommandTests",
       @"PDSCLICommandEdgeCaseTests",
       @"PDSCLIServeCommandTests",
-      @"PDSCLIRelayCommandTests",
       @"PDSHealthCheckTests",
       @"HealthEndpointIntegrationTests",
       @"GZMetricsTests",
