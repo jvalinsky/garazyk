@@ -205,6 +205,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         // internal statements (e.g., FTS5 content= sync tables).
         // Manual stray statement finalization via sqlite3_next_stmt
         // can corrupt virtual table internals and crash.
+        sqlite3_exec(_db, "PRAGMA optimize", NULL, NULL, NULL);
         sqlite3_close_v2(_db);
         _db = NULL;
     }];
@@ -416,7 +417,25 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         return;
     }
 
+    rc = sqlite3_exec(_db, [kPDSIndexBlocksRepoDidCreatedSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        result = NO;
+        return;
+    }
+
     rc = sqlite3_exec(_db, [kPDSIndexBlobsDidSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        result = NO;
+        return;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexBlobsDidCreatedSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
@@ -489,6 +508,15 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexTakedownsSubjectIdSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        result = NO;
+        return;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexTakedownsAppliedSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
@@ -606,6 +634,24 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexLabelsSourceSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        result = NO;
+        return;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexLabelsValSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        result = NO;
+        return;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexLabelsSrcValSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);

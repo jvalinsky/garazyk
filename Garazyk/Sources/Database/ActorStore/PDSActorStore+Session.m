@@ -39,7 +39,7 @@
 
 - (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error {
     if (!token || !sessionID || !accountDid || !expiresAt) return NO;
-    NSString *sql = @"INSERT OR REPLACE INTO refresh_tokens (token, session_id, account_did, created_at, expires_at) VALUES (?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO refresh_tokens (token, session_id, account_did, created_at, expires_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(token) DO UPDATE SET session_id=excluded.session_id, account_did=excluded.account_did, created_at=excluded.created_at, expires_at=excluded.expires_at";
     NSArray *params = @[
         token,
         sessionID,
@@ -52,7 +52,7 @@
 
 - (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error {
     if (!token || !accountDid) return NO;
-    NSString *sql = @"INSERT OR REPLACE INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?) ON CONFLICT(token) DO UPDATE SET account_did=excluded.account_did, created_at=excluded.created_at, expires_at=excluded.expires_at";
     NSArray *params = @[
         token ?: @"",
         accountDid ?: @"",

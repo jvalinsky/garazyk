@@ -6,7 +6,8 @@
 NSString * const ATProtoDBErrorDomain = @"com.garazyk.db";
 
 const ATProtoDBConfig ATProtoDBConfigDefault = {
-    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal | ATProtoDBConfigFlagForeignKeys,
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal | ATProtoDBConfigFlagForeignKeys
+             | ATProtoDBConfigFlagTempStoreMemory,
     .busyTimeout = 5000,
     .cacheSize = 0,
     .walAutocheckpoint = 0,
@@ -16,12 +17,13 @@ const ATProtoDBConfig ATProtoDBConfigDefault = {
 };
 
 const ATProtoDBConfig ATProtoDBConfigActorStore = {
-    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal | ATProtoDBConfigFlagForeignKeys,
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal | ATProtoDBConfigFlagForeignKeys
+             | ATProtoDBConfigFlagTempStoreMemory,
     .busyTimeout = 5000,
     .cacheSize = -64000,
     .walAutocheckpoint = 1000,
     .journalSizeLimit = 0,
-    .mmapSize = 0,
+    .mmapSize = 268435456,
     .pageSize = 0,
 };
 
@@ -37,7 +39,7 @@ const ATProtoDBConfig ATProtoDBConfigServiceDatabase = {
 };
 
 const ATProtoDBConfig ATProtoDBConfigBulkRead = {
-    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal,
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal | ATProtoDBConfigFlagForeignKeys,
     .busyTimeout = 10000,
     .cacheSize = -128000,
     .walAutocheckpoint = 0,
