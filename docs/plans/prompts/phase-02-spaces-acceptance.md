@@ -49,26 +49,33 @@ compatibility row.
 
 Out of scope: key rotation, attestation, ops drills (phase 9).
 
-## Blocked on
+## Next steps (unblocked 2026-07-17)
 
-Three-PDS Docker topology must be running before any scenario work begins.
-The scenarios hard-exit if `PDS3_URL` is not set. Specific items needed:
+This phase was briefly held for a Docker topology; **Docker is confirmed
+available on this machine** (`docker info` succeeds, version 29.4.0 — see
+phase 4's status note), so the topology work below is executable agent
+work, not a human checkpoint. Note that phase 4's research confirmed
+`--binary` mode has no `"pds3"` case — the three-PDS layout genuinely
+needs the Docker path (or a `"pds3"` case added to
+`packages/hamownia/binary_services.ts`, which may be the cheaper route;
+assess both before building images). The scenarios hard-exit if
+`PDS3_URL` is not set. In order:
 
-1. **Build the PDS Docker image** from the current source tree. The
-   Objective-C PDS binary must compile and run inside a container.
-2. **Stand up PDS1, PDS2, and PDS3** using the Docker compose / schemat
-   topology config landed in `cc063779a`. All three must have
-   `permissionedSpacesEnabled=true`; PDS3 must use an independent issuer
-   and signing key (it represents a separately operated PDS).
-3. **Set `permissionedSpacesHostEndpoint`** on each PDS if Docker network
-   aliases differ from the issuer URLs the scenarios use.
-4. **Confirm health** by hitting `/xrpc/_health` on all three before
-   running the scenarios.
-5. **Provide `PDS3_URL`** as an environment variable when invoking
-   `hamownia agent` or the Deno scenario runner.
+1. Either add a `"pds3"` case to `binary_services.ts` (independent issuer,
+   signing key, and data dir) **or** build the PDS Docker image from the
+   current source tree and use the compose/schemat topology from
+   `cc063779a`.
+2. Stand up PDS1, PDS2, and PDS3 with `permissionedSpacesEnabled=true` on
+   all three; PDS3 must use an independent issuer and signing key.
+3. Set `permissionedSpacesHostEndpoint` on each PDS if network aliases
+   differ from the issuer URLs the scenarios use.
+4. Confirm `/xrpc/_health` on all three; provide `PDS3_URL` to the runner.
+5. Run scenario 93, iterate on failures; then 94; then the private-blob
+   and pruned-oplog cases.
 
-Once the topology is healthy, unblock this phase and resume the loop.
-The first code slice will be: run scenario 93, iterate on any failures.
+Coordinate with the shared worktree: phases 6 and 7 have uncommitted
+changes in the main checkout (including `XrpcSpacePack.m` in the NSID
+sweep). Run this phase from a clean worktree or after those commit.
 
 ## Acceptance gate
 
