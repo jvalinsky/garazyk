@@ -95,7 +95,7 @@ delete+insert dance on every commit.
 ### Verification
 
 ```bash
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 ```
 
@@ -238,7 +238,7 @@ they are the hottest tables. Defer to a later phase.
 ### Verification
 
 ```bash
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 
 # Verify WITHOUT ROWID is active
@@ -324,7 +324,7 @@ but the persistence path doesn't use it.
 ### Verification
 
 ```bash
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 
 # Profile memory
@@ -397,7 +397,7 @@ table row after finding the index entry.
 ### Verification
 
 ```bash
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 
 # Verify covering index usage
@@ -465,7 +465,7 @@ PDS uses `cacheStaleTTL=1h`, `cacheMaxTTL=1d`.
 ### Verification
 
 ```bash
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 ```
 
@@ -525,7 +525,7 @@ limited by the slowest indexing operation.
 ### Verification
 
 ```bash
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 
 # Scenario: verify ingest continues when indexing is slow
@@ -570,7 +570,7 @@ Every implementation lane must pass:
 deno task check
 deno task lint
 deno task test
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 ```
 

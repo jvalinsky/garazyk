@@ -2,7 +2,7 @@
 phase: 5
 title: Repository boundary completion
 status: pending
-agent: claude
+agent: worker
 depends_on: []
 ---
 

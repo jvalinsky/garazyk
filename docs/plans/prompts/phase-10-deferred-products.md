@@ -2,7 +2,7 @@
 phase: 10
 title: Deferred products, WASM baseline, and drift cadence
 status: pending
-agent: Plan
+agent: default
 depends_on: []
 ---
 
@@ -25,20 +25,20 @@ implementation load depends on what the operator chooses.
 
 ## Scope
 
-1. **E1 WASM baseline** (claude agent): reproducible kernel build from a
+1. **E1 WASM baseline** (`worker` agent): reproducible kernel build from a
    clean checkout; one command running smoke/notebook/compat/runtime-gap
    probes; one generated capability matrix (supported / partial / stub /
    intentionally unsupported / missing); delete or redirect contradictory
    hand-maintained status tables. Only then propose the next supported
    subset — favor notebook + compatibility-corpus behavior over Foundation
    imitation. Subset choice is a human checkpoint.
-2. **E3 product surfaces** (Plan agent → human checkpoint): one brief
+2. **E3 product surfaces** (`default` agent → human checkpoint): one brief
    covering SMTP delivery, cloud blob copy/delete, STAR reconstruction
    from CAR blocks, Skylab repost/Germ E2EE, dashboard TODO metadata —
    support / experimental / remove for each, with the workstream's rule
    that config must not promise `NotImplemented`. Set `status: blocked`,
    present, then implement the chosen dispositions.
-3. **P6.4 drift cadence** (claude agent): a documented, repeatable
+3. **P6.4 drift cadence** (`worker` agent): a documented, repeatable
    monthly re-diff procedure of the pinned Proposal 0016 reference (script
    or runbook), recording deltas and impact into the compatibility doc.
    First run executed as part of this phase.

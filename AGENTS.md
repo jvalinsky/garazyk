@@ -6,40 +6,47 @@ This file defines the rules and workflows for AI assistants working in this repo
 
 The project uses the **WAT (Workflows, Agents, Tools)** framework:
 
-- **Workflows**: Procedures located in `.opencode/workflows/`.
-- **Agents**: Orchestrator and subagents defined in `.agents/agents/`. The orchestrator uses the
-  `Task` tool to delegate work.
+- **Workflows**: The plan-governance loop in `docs/plans/` (mega plan, workstreams, and
+  `docs/plans/prompts/` execution prompts). The former `.opencode/workflows/` procedures were
+  removed in `25e72b5a1`.
+- **Agents**: Codex custom agents are defined in `.codex/agents/`; compatibility manifests for
+  Claude Code and opencode remain in `.agents/agents/`.
 - **Tools**: Human-invoked runners in `scripts/` and AI-invoked wrappers in `.opencode/tools/`.
 - **Skills**: Domain knowledge in `.agents/skills/`.
 
 ### Tool Configuration
 
-The repository supports **Claude Code**, **opencode**, and **Codex CLI**. Configuration and skill
-files are located in `.agents/`. Do not edit the `.claude/` symlinks directly.
+The repository supports **Claude Code**, **opencode**, and **Codex CLI**. Shared skills live in
+`.agents/skills/`; Codex project configuration lives in `.codex/`. The `.claude/` directory holds
+only local settings and worktrees now (its old symlinks and commands were removed in `25e72b5a1`).
 
 ## Standard Workflows
 
-Follow these workflows for specific tasks (see `.opencode/workflows/`):
+The old `.opencode/workflows/` files are removed. Current sources of truth:
 
-- **Quality Gates**: Pre-push checks.
-- **Production Deployment**: Deployment to `pds.garazyk.xyz`.
-- **Session Completion**: Steps for ending a work session.
-- **Feature Implementation**: Implementation loop.
-- **Pull Request Review**: Diff review delegation.
+- **Quality Gates** (pre-push): `deno task check && deno task lint && deno task test`, then
+  `cmake --build build --target AllTests --parallel 4 && ./build/tests/AllTests --gated=run`.
+  Run `xcodegen generate` before macOS Xcode builds.
+- **Planned work**: pick up phases via `docs/plans/prompts/README.md` (loop protocol); the
+  mega plan and workstreams in `docs/plans/` stay authoritative.
+- **Pull Request Review**: delegate to the Codex `pr_reviewer` agent (or the compatibility
+  `pr-reviewer` role in another client; see below).
 
 ## Subagent Delegation
 
-The orchestrator delegates work to the subagents in `.agents/agents/`. Use one skill per subagent
-invocation.
+The primary agent delegates independent work through the client's built-in subagent tools. Codex
+loads the project roles from `.codex/agents/*.toml`; the Markdown manifests under
+`.agents/agents/` describe the equivalent roles for other supported clients. Use one skill per
+subagent invocation.
 
-| Subagent                   | Responsibility                                                 |
-| -------------------------- | -------------------------------------------------------------- |
-| `security-auditor`         | Auth, crypto, storage, secrets, and logging.                   |
-| `concurrency-auditor`      | Threading, queues, and locks.                                  |
-| `architecture-auditor`     | XRPC handlers, service boundaries, and platform compatibility. |
-| `web-ui-auditor`           | `AdminUI/` and web assets.                                     |
-| `atproto-coverage-auditor` | `Lexicons/` and XRPC registration.                             |
-| `pr-reviewer`              | Branch and pull request reviews.                               |
+| Codex agent                 | Compatibility manifest        | Responsibility                                                 |
+| --------------------------- | ----------------------------- | -------------------------------------------------------------- |
+| `security_auditor`          | `security-auditor`            | Auth, crypto, storage, secrets, and logging.                   |
+| `concurrency_auditor`       | `concurrency-auditor`         | Threading, queues, and locks.                                  |
+| `architecture_auditor`      | `architecture-auditor`        | XRPC handlers, service boundaries, and platform compatibility. |
+| `web_ui_auditor`            | `web-ui-auditor`              | `AdminUI/` and web assets.                                     |
+| `atproto_coverage_auditor`  | `atproto-coverage-auditor`    | `Lexicons/` and XRPC registration.                             |
+| `pr_reviewer`               | `pr-reviewer`                 | Branch and pull request reviews.                               |
 
 ## Project Skills
 
@@ -66,6 +73,7 @@ task matches their description.
 | `rewriting-code-comments`     | HeaderDoc standards, remove AI-isms                                      |
 | `slop-detector`               | Low-effort LLM code patterns, boilerplate, fragile code                  |
 | `sqlite-sql-best-practices`   | SQLite correctness, query perf, index design, migrations                 |
+| `sqlite-performance-optimization` | Query-plan analysis, indexing strategy, PRAGMA tuning, write batching |
 | `using-deciduous`             | Track goals/decisions in the deciduous decision graph                    |
 | `deciduous-viz`               | Generate interactive HTML from the deciduous decision graph              |
 | `web-ui-audit`                | Accessibility (WCAG), JS patterns, frontend security                     |
@@ -84,14 +92,9 @@ Log decisions in the `deciduous` graph during development.
 
 ### Commands
 
-| Command       | Purpose                                          |
-| ------------- | ------------------------------------------------ |
-| `/decision`   | Manage the decision graph.                       |
-| `/recover`    | Restore session context.                         |
-| `/work`       | Start a tracked work transaction.                |
-| `/document`   | Generate documentation for files or directories. |
-| `/build-test` | Run build and tests with tracking.               |
-| `/sync`       | Sync data across environments.                   |
+The old `/decision`, `/recover`, `/work`, `/document`, `/build-test`, and `/sync` slash commands
+were removed in `25e72b5a1`. Use the `deciduous` CLI directly; load
+`.agents/skills/using-deciduous` for the workflow.
 
 ### Decision Flow
 

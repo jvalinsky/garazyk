@@ -460,7 +460,7 @@ export interface TopologyManifestV2 {
 /** Options for resolving a topology preset
  *
  * @remarks
- * Paths are optional and fall back to repository conventions; `includePds2` expands the role set when requested
+ * Paths are optional and fall back to repository conventions; optional PDS roles expand the role set when requested
  */
 export interface TopologyResolveOptions {
   /** Repository root used to resolve relative paths */
@@ -473,6 +473,8 @@ export interface TopologyResolveOptions {
   manifestPath?: string;
   /** Include the PDS2 role set when resolving */
   includePds2?: boolean;
+  /** Include the PDS3 role set when resolving */
+  includePds3?: boolean;
 }
 
 /** Default compose service name for each known role */

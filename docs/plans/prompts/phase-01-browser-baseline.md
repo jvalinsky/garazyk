@@ -2,7 +2,7 @@
 phase: 1
 title: Browser smoke baseline
 status: complete
-agent: claude
+agent: worker
 depends_on: []
 completed_at: 2026-07-17T00:09:21Z
 commit: 703723c4cc36033cb02887981982c457a878b39c
