@@ -42,6 +42,10 @@
     return @[@"client"];
 }
 
+- (NSArray<NSString *> *)aliases {
+    return @[ @"oauth" ];
+}
+
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
     if (args.count == 0) {
         [context printInfo:[self helpText]];
