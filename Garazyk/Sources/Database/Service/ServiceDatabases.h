@@ -391,6 +391,79 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 
 - (NSArray<NSDictionary *> *)enumerateValidCachedDIDsWithError:(NSError **)error;
 
+#pragma mark - Collection Membership Index
+
+/*!
+ @method upsertCollectionMembership:forDID:error:
+
+ @abstract Record that a DID has records in a collection.
+
+ @param collection Collection NSID (e.g. "app.bsky.feed.post").
+ @param did Repository DID.
+ @param error Error pointer.
+ @return YES on success, NO on failure.
+ */
+- (BOOL)upsertCollectionMembership:(NSString *)collection forDID:(NSString *)did error:(NSError **)error;
+
+/*!
+ @method removeCollectionMembership:forDID:error:
+
+ @abstract Remove a DID from a collection's membership index.
+
+ @param collection Collection NSID.
+ @param did Repository DID.
+ @param error Error pointer.
+ @return YES on success, NO on failure.
+ */
+- (BOOL)removeCollectionMembership:(NSString *)collection forDID:(NSString *)did error:(NSError **)error;
+
+/*!
+ @method listDIDsByCollection:cursor:limit:error:
+
+ @abstract List DIDs that have records in a given collection.
+
+ @discussion Uses the materialized collection_membership index to
+ avoid opening per-user actor stores. Returns DIDs in insertion order.
+
+ @param collection Collection NSID.
+ @param cursor Optional cursor DID for pagination.
+ @param limit Maximum DIDs to return.
+ @param error Error pointer.
+ @return Array of DID strings, or nil on error.
+ */
+- (nullable NSArray<NSString *> *)listDIDsByCollection:(NSString *)collection
+                                                cursor:(nullable NSString *)cursor
+                                                 limit:(NSInteger)limit
+                                                 error:(NSError **)error;
+
+/*!
+ @method pruneStaleCollectionMembershipsWithUserDatabasePool:error:
+
+ @abstract Remove collection_membership entries for DIDs that no longer
+ have records in the corresponding collection.
+
+ @discussion This is a maintenance method intended for periodic execution.
+ It iterates all entries in the collection_membership table and verifies
+ each by checking the actor store. Entries where the DID has no remaining
+ records in the collection are deleted.
+
+ @param userDatabasePool Pool for accessing per-user actor stores.
+ @param error Error pointer for query failures.
+ @return Number of stale entries removed, or -1 on error.
+ */
+- (NSInteger)pruneStaleCollectionMembershipsWithUserDatabasePool:(PDSDatabasePool *)userDatabasePool
+                                                           error:(NSError **)error;
+
+/*!
+ @method collectionMembershipCountWithError:
+
+ @abstract Return the number of rows in the collection_membership table.
+
+ @param error Error pointer for query failures.
+ @return Row count, or -1 on error.
+ */
+- (NSInteger)collectionMembershipCountWithError:(NSError **)error;
+
 #pragma mark - Event Persistence
 
 /*!

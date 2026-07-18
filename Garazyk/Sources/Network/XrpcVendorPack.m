@@ -24,6 +24,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Metrics/GZMetrics.h"
 #import "Debug/GZLogger.h"
+#import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcVendorPack
 
@@ -107,6 +108,70 @@
         response.statusCode = HttpStatusOK;
         response.contentType = @"application/vnd.ipld.car";
         [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+    }];
+
+    // Register tools.garazyk.admin.getCollectionMembershipStats
+    // GET action=stats → returns collection_membership row count
+    // POST action=prune → triggers stale-entry cleanup
+    [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_admin_getCollectionMembershipStats
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![XrpcAuthHelper authorizeAdminRequest:request
+                                           response:response
+                                   serviceDatabases:serviceDatabases
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController]) {
+            return;
+        }
+
+        NSString *action = [request queryParamForKey:@"action"] ?: @"stats";
+
+        if ([action isEqualToString:@"stats"]) {
+            if (request.method != HttpMethodGET) {
+                [XrpcErrorHelper setMethodNotAllowedError:response
+                                           allowedMethod:@"GET"
+                                                 message:@"Expected GET for stats"];
+                return;
+            }
+
+            NSError *countError = nil;
+            NSInteger count = [serviceDatabases collectionMembershipCountWithError:&countError];
+            if (count < 0) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"QueryFailed",
+                                        @"message": countError.localizedDescription ?: @"Failed to query collection_membership size"}];
+                return;
+            }
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"count": @(count)}];
+        } else if ([action isEqualToString:@"prune"]) {
+            if (request.method != HttpMethodPOST) {
+                [XrpcErrorHelper setMethodNotAllowedError:response
+                                           allowedMethod:@"POST"
+                                                 message:@"Expected POST for prune"];
+                return;
+            }
+
+            PDSDatabasePool *userPool = services.userDatabasePool;
+            NSError *pruneError = nil;
+            NSInteger pruned = [serviceDatabases pruneStaleCollectionMembershipsWithUserDatabasePool:userPool
+                                                                                               error:&pruneError];
+            if (pruned < 0) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"PruneFailed",
+                                        @"message": pruneError.localizedDescription ?: @"Failed to prune stale entries"}];
+                return;
+            }
+
+            NSInteger count = [serviceDatabases collectionMembershipCountWithError:nil];
+            if (count < 0) count = 0;
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{@"count": @(count), @"pruned": @(pruned)}];
+        } else {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest",
+                                    @"message": @"action must be stats or prune"}];
+        }
     }];
 
     // Register tools.garazyk.account.getUsage

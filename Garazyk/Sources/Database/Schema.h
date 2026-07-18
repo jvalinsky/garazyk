@@ -136,4 +136,9 @@ extern NSString * const kPDSVideoJobsIndexDidSQL;
 extern NSString * const kPDSVideoJobsIndexStateSQL;
 extern NSString * const kPDSVideoJobsIndexCreatedSQL;
 
+#pragma mark - Collection Membership Index
+
+extern NSString * const kPDSCollectionMembershipTableCreateSQL;
+extern NSString * const kPDSIndexCollectionMembershipCollectionSQL;
+
 NS_ASSUME_NONNULL_END
