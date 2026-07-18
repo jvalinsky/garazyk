@@ -117,4 +117,10 @@
     return [self executeParameterizedQuery:sql params:params error:error];
 }
 
++ (void)parseLimit:(nullable NSString *)limit outLimit:(NSUInteger *)outLimit {
+    if (!outLimit) return;
+    NSInteger value = limit ? [limit integerValue] : 0;
+    *outLimit = value > 0 ? (NSUInteger)value : 0;
+}
+
 @end
