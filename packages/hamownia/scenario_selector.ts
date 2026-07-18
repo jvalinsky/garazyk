@@ -51,6 +51,7 @@ export async function discoverScenarios(
         name: match[2].replace(/_/g, " "),
         path: join(scenarioDir, entry.name),
         needsPds2: manifest.needsPds2 || false,
+        needsPds3: manifest.needsPds3 || false,
         browserFlows: manifest.browserFlows || [],
         requires,
         optional,
@@ -102,6 +103,7 @@ export function selectScenarios(
   if (args.scenarioIds.length === 0) {
     return all.filter((scenario) => {
       if (scenario.needsPds2 && !args.pds2) return false;
+      if (scenario.needsPds3) return false;
       if (scenario.requires.length > 0 && topology.capabilities.size > 0) {
         const missing = scenario.requires.filter((cap) =>
           !hasRequirement(topology, cap)

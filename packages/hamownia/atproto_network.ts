@@ -57,6 +57,8 @@ import { stopStaleDockerE2e, stopStaleHostProcesses } from "./stale_cleanup.ts";
 export interface LocalNetworkOptions {
   /** Include the PDS2 service set */
   withPds2?: boolean;
+  /** Include the PDS3 service set */
+  withPds3?: boolean;
   /** Use locally built binaries instead of Docker images */
   useBinary?: boolean;
   /** Leave the network running after the command completes */
@@ -165,6 +167,8 @@ export async function startLocalNetwork(
 
     if (options.useBinary) {
       await (dependencies.startBinaryServices ?? startBinaryServices)(ctx, {
+        withPds2: options.withPds2,
+        withPds3: options.withPds3,
         isolation: options.isolation,
         resourceManifestFile: options.resourceManifestFile,
         portRange: options.portRange,

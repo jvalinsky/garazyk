@@ -30,8 +30,17 @@ deno add jsr:@garazyk/schemat
   YAML.
 - **Service Registration**: Built-in registry of ATProto roles and their
   required ports/protocols.
-- **Web Client Compose**: Utilities for rendering browser-ready frontend
-  overlays.
+
+## Public Subpaths
+
+Beyond the root entry, the package exposes:
+
+- `@garazyk/schemat/runtime` — run-directory, service URL, and required-port
+  helpers used at scenario runtime.
+- `@garazyk/schemat/topology-authoring` — programmatic construction of custom
+  topologies; the schema-aware DSL used by scenario authors.
+- `@garazyk/schemat/web-client-compose` — Docker Compose overlays for the
+  Skylab browser front-end.
 
 ## Usage
 

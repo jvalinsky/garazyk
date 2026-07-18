@@ -32,6 +32,18 @@ deno add jsr:@garazyk/gruszka
 - **Account Operations**: High-level helpers for account creation and session
   management.
 
+## Public Subpaths
+
+In addition to the root entry, the package exposes these surfaces:
+
+- `@garazyk/gruszka/lexicons` — generated lexicon types.
+- `@garazyk/gruszka/lexicon-resolution` — runtime lexicon resolution.
+- `@garazyk/gruszka/legacy-clients` — stable client wrappers.
+- `@garazyk/gruszka/account-ops` — account and session helpers.
+- `@garazyk/gruszka/seed` — fixture generation.
+- `@garazyk/gruszka/format` — display formatters.
+- `@garazyk/gruszka/doc-links` — repo cross-reference helpers.
+
 ## Usage
 
 ```typescript
