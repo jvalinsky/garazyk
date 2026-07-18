@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: Permissioned spaces multi-PDS acceptance
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
 ---
@@ -184,15 +184,6 @@ on the three-PDS binary topology. `deno fmt --check` and `deno check` pass;
 repository-wide lint remains blocked by 2,043 pre-existing unrelated package
 findings.
 
-### Current slice (2026-07-18)
-
-Extend scenario 94 (or a focused acceptance helper) so current three-PDS
-runtime evidence observes each recovery selection once: normal incremental
-operations, lightweight record-diff after a pruned cursor with a small delta,
-and full CAR import after a pruned cursor with a large delta. This slice owns
-only reconciliation-path evidence and any narrowly characterized defect it
-reveals.
-
 ### Recovery-path investigation (2026-07-18)
 
 Structured run `2026-07-18t2214z-49690` passes scenario 94 **25/25** and
@@ -203,29 +194,25 @@ and no public or admin XRPC can prune a known cursor, trigger one reconciler
 pass, or report the chosen path. Treating its authority reads as recovery
 would create false acceptance evidence.
 
-### Decision received (2026-07-18)
+### Recovery-control decision and result (2026-07-18)
 
-The requested narrowly scoped, test-only control plane is authorized. It must
-remain absent from production route registration and is limited to replica
-revision setup/identification, pruning past that revision, one reconciliation
-pass, and deterministic selector/request-count telemetry.
-
-### Resumed slice (2026-07-18)
-
-Implement and characterize that production-excluded control plane, then use it
-to obtain three-PDS evidence for the incremental, lightweight-diff, and full
-CAR recovery selections. Do not expose an equivalent public or admin route.
-
-### Next steps
-
-After the blocked-on decision, exercise and observe the three pruned-oplog
-recovery paths, then move the remaining recovery compatibility row to
-Implemented only with dated structured-run evidence.
+The authorized production-excluded control plane is registered only when
+`PDS_RUNNING_TESTS`, `PDS_SPACE_RECOVERY_TEST_CONTROL`, and a non-production
+environment are all present. It is not an admin/public route, lexicon, or
+generated NSID. Commit `43b3ad9c3` uses it to seed a PDS2 replica, prune the
+PDS1 fixture oplog, run exactly one real reconciler pass, and report selector
+plus request counts. Structured run `2026-07-18t2238z-90828` passed **28/28**,
+observing `incremental`, `lightweight`, and `fullCAR`. It also fixed the real
+reconciler defects found while exercising those paths: service-auth read
+recognition, XRPC envelope parsing, authority-signed commits, base58 DID-key
+decoding, URI record-index parsing, and CID-versus-revision gap comparison.
 
 ## Acceptance gate
 
-- Dated structured runs of 93 and 94, green, checked-in summary only.
-- Space test suites and AllTests green; `deno task check/lint/test` pass.
+- Dated structured runs of 93 (21/21) and 94 (28/28), green.
+- Focused space/recovery suites and AllTests build green; `deno task check`
+  passes. Repository-wide `deno task lint` remains blocked by 2,043
+  pre-existing unrelated package findings.
 - Compatibility doc rows updated with evidence.
 
 ## On completion
