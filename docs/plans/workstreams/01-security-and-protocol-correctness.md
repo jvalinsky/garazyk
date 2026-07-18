@@ -185,6 +185,23 @@ scoped, reviewed implementation — not something to fold into a
 verification slice. Filed as a follow-up. The cursor-resume test is
 smaller and more self-contained; left as the next actionable item here.
 
+**Both gaps closed (2026-07-17).** Cursor resume: scenario 96
+(`96_firehose_cursor_resume.ts`, `6387245a8`) proves gap-free resume
+across a live disconnect/reconnect (no gap, no duplicates, monotonic,
+disconnect-window records delivered; 10/10 structured steps), enabled by
+the `closeForUpgrade` WebSocket-handoff fix (`80f5a56e6`). Downstream
+propagation: `28641e671` wires admin takedown/reinstate to the account
+notifications so `SubscribeReposHandler` emits real `#account` events,
+adds the `RelayClientDelegate` account-event method, and has
+`AppViewIngestEngine` durably persist and forward account events;
+`a3f8d3c53` closes the last hop (`RelayUpstreamManager` forwards account
+events downstream). Scenario 97 (`97_account_takedown_propagation.ts`,
+`7bde0e0b6`) proves the takedown chain E2E. Remaining lead, not backlog:
+`RelayRepoStateManager`'s status-tracking model still has no callers —
+enforcement beyond passthrough (e.g. AppView un-indexing on takedown)
+was not part of this closure and should be assessed when moderation
+work is next scheduled.
+
 ### Gated Objective-C coverage into CI
 
 Twenty-nine `AllTests` classes are gated (now via the test binary's

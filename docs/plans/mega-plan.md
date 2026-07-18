@@ -97,15 +97,16 @@ documentation, TUI, package, and refactor plans.
   workstream 01 S5), a full `AllTests --gated=run` pass on 2026-07-17 is
   green (3455 tests, 0 failures, re-confirmed 2026-07-17), and
   `ctest`/`scripts/test/run-tests.sh`/`run-asan-tests.sh` all run with
-  `--gated=run` again. Phase 4's remaining scope has since progressed:
-  deterministic firehose backpressure and adversarial ingress (Phase 2
-  item 4) are complete — see current-state note above this one for the
-  gated-CI item and workstream 01 S5 for backpressure/adversarial
-  evidence. Account lifecycle (Phase 2 item 5) is partial: the write/read
-  boundary already worked and is tested; a real `getRepoStatus` bug is
-  fixed; downstream account-status propagation to Relay/AppView is a
-  genuine, unimplemented gap (not just untested) and is filed as its own
-  follow-up rather than folded into this phase.
+  `--gated=run` again. Phase 4 has since fully closed: deterministic
+  firehose backpressure and adversarial ingress landed (scenarios 33/95),
+  gap-free cursor resume is proven live (scenario 96, `6387245a8`, with
+  the `closeForUpgrade` handoff fix `80f5a56e6`), and the once-missing
+  downstream account-status propagation is now implemented — admin
+  takedown/reinstate emit real `#account` events, RelayClient/
+  RelayUpstreamManager forward them, AppViewIngestEngine persists them
+  (`28641e671`, `a3f8d3c53`), proven E2E by scenario 97 (`7bde0e0b6`).
+  Scenarios 93-97 all exist beyond the original 92 discovered in May.
+  Evidence in workstream 01 S5.
 
 ## Priority model
 
@@ -206,8 +207,8 @@ Complete the P0 items in
    validation, and auth for non-loopback operation.
 2. **Complete first slice:** remove inline browser event-handler dependence
    from Admin UI, enforce CSRF on every POST mutation, and reject code-valued
-   rendering attributes. A real-browser CSP smoke remains pending local runtime
-   repair.
+   rendering attributes. The real-browser CSP smoke now exists and passes
+   (`scripts/admin_ui_browser_smoke_test.ts`, 2026-07-17).
 3. **Complete first slice:** enforce independent idle and aggregate HTTP header
    deadlines that trickled bytes cannot reset, cancel stalled receives, and
    stop header accounting at `CRLFCRLF` so a valid slow request body is not
@@ -246,18 +247,15 @@ deterministic generator tests.
    sends malformed/oversized/junk payloads at live repo/blob endpoints and
    asserts rejection plus continued health (scenarios 65/66 previously
    only exercised the Deno-side parser). Evidence in workstream 01 S5.
-5. **Partial (2026-07-17).** The write/read enforcement boundary for
-   suspended/takendown accounts already worked and is tested (scenario
-   55). Fixed one real bug: `com.atproto.sync.getRepoStatus` hardcoded
-   `active: true` unconditionally regardless of account status or
-   takedown state. Found, but did not implement: downstream services
-   (Relay, AppView) do not actually react to account status at all —
-   admin takedown never posts a notification, `RelayClientDelegate` has
-   no account-event method, and `RelayRepoStateManager`'s status-tracking
-   methods have zero callers. This is a real multi-file feature gap, not
-   a test gap; filed as a follow-up rather than implemented here (see
-   workstream 01 S5 for exact call sites). Gap-free firehose cursor resume
-   across a live reconnect is also still untested.
+5. **Complete (2026-07-17).** Write/read enforcement was already proven
+   (scenario 55); `getRepoStatus` no longer lies about `active`; the
+   downstream-propagation gap found by the audit is now implemented and
+   proven E2E (takedown/reinstate → `#account` firehose events →
+   Relay forwarding → AppView persistence; `28641e671`, `a3f8d3c53`,
+   scenario 97) and cursor resume is proven live (scenario 96). One lead
+   remains recorded in workstream 01 S5, not backlog: enforcement beyond
+   passthrough (`RelayRepoStateManager` still has no callers; AppView
+   does not yet un-index takendown accounts).
 6. Run the permissioned-spaces multi-PDS acceptance scenarios (93 and 94)
    against an independently operated PDS3, including the private-blob and
    pruned-oplog recovery cases, and move the compatibility-gate rows on
