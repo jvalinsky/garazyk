@@ -2,7 +2,7 @@
 phase: 2
 title: Permissioned spaces multi-PDS acceptance
 status: in-progress
-agent: claude
+agent: worker
 depends_on: []
 ---
 

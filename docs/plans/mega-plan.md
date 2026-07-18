@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-17
+last_verified: 2026-07-18
 ---
 
 # Garazyk Mega Plan
@@ -52,8 +52,11 @@ documentation, TUI, package, and refactor plans.
 - Lexicon generation now has one package-owned core rooted at
   `Garazyk/Resources/lexicons`. It fails before overwriting output when the
   inventory or endpoint set is empty; its checked-in TypeScript artifact covers
-  519 lexicons and 392 endpoints deterministically. Objective-C NSID constants
-  remain deliberately deferred to Phase 3.
+  519 lexicons and 392 endpoints deterministically. The Phase 3 Objective-C
+  NSID follow-up has since landed: the generator (`f46ab5fb8`,
+  `scripts/generate_nsid_constants.ts`) and the full call-site adoption sweep
+  with a CI drift check (`e212288bd`). Only the raw-literal lint remains
+  (phase-06 prompt).
 - `AppViewDatabase` now records ordered schema versions and applies pending
   migrations atomically. File-backed legacy fixtures prove reopen/data/index
   preservation, and all 68 injected statement-failure positions roll back
@@ -107,6 +110,14 @@ documentation, TUI, package, and refactor plans.
   (`28641e671`, `a3f8d3c53`), proven E2E by scenario 97 (`7bde0e0b6`).
   Scenarios 93-97 all exist beyond the original 92 discovered in May.
   Evidence in workstream 01 S5.
+- Workstream 07 (storage and MST optimization) is underway: O1 landed
+  (`3be4ee1ab` — `INSERT OR IGNORE` for `ipld_blocks`, plus 15 more
+  `INSERT OR REPLACE` → `ON CONFLICT DO UPDATE` conversions, six missing
+  indexes, and standardized PRAGMAs) and O2 phases A/B landed
+  (`fc1705696` actor store V3 `record_tombstones`; `50f2482c2` +
+  FK-restoration fix `2f7ba5bdb` service V14 moderation tables), both
+  merged to `main`. O2 phases C/D (chat, space store) and O3-O6 remain.
+  A dedicated skill exists at `.agents/skills/sqlite-performance-optimization`.
 
 ## Priority model
 
@@ -257,11 +268,15 @@ deterministic generator tests.
    remains recorded in workstream 01 S5, not backlog: enforcement beyond
    passthrough (`RelayRepoStateManager` still has no callers; AppView
    does not yet un-index takendown accounts).
-6. Run the permissioned-spaces multi-PDS acceptance scenarios (93 and 94)
-   against an independently operated PDS3, including the private-blob and
-   pruned-oplog recovery cases, and move the compatibility-gate rows on
-   dated structured-run evidence ([workstream 06](workstreams/06-permissioned-spaces.md),
-   P6.1).
+6. **In progress (2026-07-18):** run the permissioned-spaces multi-PDS
+   acceptance scenarios (93 and 94) against an independently operated PDS3,
+   including the private-blob and pruned-oplog recovery cases, and move the
+   compatibility-gate rows on dated structured-run evidence
+   ([workstream 06](workstreams/06-permissioned-spaces.md), P6.1). PDS3
+   topology support across the scenario runner landed (`b807b3357`); first
+   structured runs on 2026-07-18 reached 6/7 (scenario 93) and 3/4
+   (scenario 94), failing only on two OAuth product-code issues — see the
+   phase-02 prompt's progress notes.
 7. **Complete (report-only).** Conformance matrix at
    `docs/reports/spec-conformance-matrix.md`: 21 rows, 16 supported, 4 partial,
    0 gap. Permissions-spec gap assessment at
@@ -278,8 +293,10 @@ scenario 93/94 runtime passes.
    as the boundary. Keep thin compatibility launchers until consumers pass.
 2. Remove the 92 scenario imports through `scripts/lib/deno` and the package
    back-reference in `packages/hamownia/tasks.ts` before the split deletion.
-3. Generate plain Objective-C NSID constants only after generator ownership and
-   endpoint classification are correct.
+3. **Complete except lint (2026-07-17):** plain Objective-C NSID constants are
+   generated deterministically (`f46ab5fb8`) and adopted at every call site
+   with a CI drift check (`e212288bd`). Remaining: a lint against new raw
+   endpoint literals (tracked in the phase-06 prompt).
 4. Continue `GZCommandLineOptions` and `GZServiceLifecycle` adoption beyond
    Beskid, Mikrus, and Syrena, one binary at a time.
 
@@ -289,10 +306,12 @@ uses released dependencies and retains a launcher smoke test.
 ### Phase 4: structure and scale
 
 1. **Complete (2026-07-17):** `kaszlak relay serve` removed (Operator decision: Option 3). `PDSCLIRelayCommand` deleted; `zuk` is the canonical relay binary. Underlying relay components (RelayClient, UpstreamManager, DownstreamHandler, Firehose, etc.) are untouched and continue to serve zuk, PDSRelayService, and AppViewIngestEngine.
-2. **In progress (2026-07-17):** stream repository export preparation and
-   replace per-account summary scans with indexed metadata. The N+1 fix
-   and byte-identical golden-fixture net are done (uncommitted, phase 7);
-   the incremental producer is still pending. Relay removal is recorded in
+2. **In progress (2026-07-18):** stream repository export preparation and
+   replace per-account summary scans with indexed metadata. The N+1 fix,
+   byte-identical golden-fixture net, and materialized
+   `collection_membership` index are committed (`6de6ebc64`); the
+   incremental producer and `PDSCollectionMembershipPruner` test coverage
+   are still pending (phase-07 prompt). Relay removal is recorded in
    ADR 0006.
 3. Decompose Objective-C god files after the branch recovery and
    characterization gates. Start with route ownership, then OAuth and Admin UI.
@@ -303,13 +322,20 @@ uses released dependencies and retains a launcher smoke test.
 6. Space operational readiness: backup/restore drill for the space database,
    downgrade-retention verification, and reconciler/pruner observability
    (workstream 06, P6.5).
-7. Implement the Sync 1.1 remainder (export block ordering, collection
-   subsets) once published spec text exists (workstream 02, A6).
-8. Storage and MST optimization: `INSERT OR IGNORE` for `ipld_blocks`,
-   `WITHOUT ROWID` for composite-PK tables, lazy MST subtree hydration,
-   covering indexes for hot read paths, DID/handle resolution caching
-   audit, and ingest/indexing decoupling
+7. **In progress (2026-07-18):** implement the Sync 1.1 remainder (export
+   block ordering, collection subsets) once published spec text exists
+   (workstream 02, A6). A feature-flagged streamable-CAR pre-order
+   enumerator (`+[MST setStreamableCARBlockOrderingEnabled:]`, default
+   off) with preorder/fixture tests is committed (`ed01c8085`, on the
+   lock-free atomic-root refactor `34e2b94ae`) — see the phase-07 prompt
+   for what remains before the flag can default on.
+8. **In progress (2026-07-18):** storage and MST optimization
    ([workstream 07](workstreams/07-storage-and-mst-optimization.md)).
+   Done: `INSERT OR IGNORE` for `ipld_blocks` plus index/PRAGMA hardening
+   (`3be4ee1ab`), and `WITHOUT ROWID` phases A/B (`fc1705696`,
+   `50f2482c2`+`2f7ba5bdb`). Remaining: `WITHOUT ROWID` phases C/D (chat,
+   space store), lazy MST subtree hydration, covering indexes, DID/handle
+   resolution caching audit, and ingest/indexing decoupling.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
@@ -339,7 +365,7 @@ Every implementation lane must name targeted tests plus these applicable gates:
 deno task check
 deno task lint
 deno task test
-cmake --build build --target AllTests --parallel
+cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests
 ```
 

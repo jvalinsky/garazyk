@@ -174,7 +174,14 @@ async function postFormWithDPoP(
       continue;
     }
     const error = typeof body.error === "string" ? body.error : "";
-    throw new Error(`HTTP ${response.status}${error ? ` (${error})` : ""}`);
+    const description = typeof body.error_description === "string"
+      ? body.error_description
+      : "";
+    throw new Error(
+      `HTTP ${response.status}${error ? ` (${error})` : ""}${
+        description ? `: ${description}` : ""
+      }`,
+    );
   }
   throw new Error("OAuth server did not accept a DPoP nonce");
 }

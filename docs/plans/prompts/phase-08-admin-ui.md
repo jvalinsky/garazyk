@@ -2,7 +2,7 @@
 phase: 8
 title: Admin UI accessibility and structural cleanup
 status: pending
-agent: claude
+agent: worker
 depends_on: [1]
 ---
 

@@ -346,6 +346,12 @@ function pds2(
   return service(Role.pds2, input);
 }
 
+function pds3(
+  input: AuthoringServiceInput<typeof Role.pds3>,
+): AuthoringServiceSpec<"pds3"> {
+  return service(Role.pds3, input);
+}
+
 function relay(
   input: AuthoringServiceInput<typeof Role.relay>,
 ): AuthoringServiceSpec<"relay"> {
@@ -400,6 +406,7 @@ export const role = {
   plc,
   pds,
   pds2,
+  pds3,
   relay,
   appview,
   mikrus,

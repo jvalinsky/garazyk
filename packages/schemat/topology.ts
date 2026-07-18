@@ -324,14 +324,16 @@ function resolveInheritedAdapter(
  */
 export function resolvePreset(
   presetName: string,
-  options: { includePds2?: boolean } = {},
+  options: { includePds2?: boolean; includePds3?: boolean } = {},
 ): TopologyPreset {
   const preset = clonePreset(loadTopologyPreset(presetName));
   const resolvedRoles: Partial<Record<ServiceRole, ServiceAdapter>> = {};
   const includePds2 = options.includePds2 === true;
+  const includePds3 = options.includePds3 === true;
 
   for (const [role, adapter] of Object.entries(preset.roles)) {
     if (role === "pds2" && !includePds2) continue;
+    if (role === "pds3" && !includePds3) continue;
     resolvedRoles[role as ServiceRole] = resolveInheritedAdapter(
       role as ServiceRole,
       adapter,
@@ -345,6 +347,16 @@ export function resolvePreset(
     if (defaultPds2) {
       resolvedRoles.pds2 = resolveInheritedAdapter("pds2", defaultPds2, [
         "garazyk-default:pds2",
+      ]);
+    }
+  }
+
+  if (includePds3 && !resolvedRoles.pds3) {
+    const defaultPreset = loadTopologyPreset("garazyk-default");
+    const defaultPds3 = defaultPreset.roles.pds3;
+    if (defaultPds3) {
+      resolvedRoles.pds3 = resolveInheritedAdapter("pds3", defaultPds3, [
+        "garazyk-default:pds3",
       ]);
     }
   }
@@ -451,6 +463,7 @@ export function resolveTopology(
       preset: topologyName
         ? resolvePreset(topologyName, {
           includePds2: options.includePds2,
+          includePds3: options.includePds3,
         })
         : undefined,
       webClient,
@@ -475,6 +488,7 @@ export function resolveTopology(
   if (topologyName) {
     preset = resolvePreset(topologyName, {
       includePds2: options.includePds2,
+      includePds3: options.includePds3,
     });
     for (const [role, adapter] of Object.entries(preset.roles)) {
       if ("inherit" in adapter) continue;

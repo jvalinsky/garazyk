@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-17
+last_verified: 2026-07-18
 ---
 
 # Core Architecture and Reliability
@@ -82,9 +82,8 @@ Operator chose option 3: `kaszlak relay serve` is removed
 binary). The underlying relay components stay — they serve `zuk`,
 `PDSRelayService`, and `AppViewIngestEngine`, and now forward account
 events end to end (`28641e671`, `a3f8d3c53`; scenario 97). Recorded as
-ADR 0006. As of 2026-07-17 the removal itself is still an uncommitted
-working-tree change (phase 7); this item closes when that commit lands
-with ADR 0006. Reviving a hosted relay later requires a new command that
+ADR 0006. The removal is committed (`d9fa51a1d`) with ADR 0006 — this
+item is closed. Reviving a hosted relay later requires a new command that
 meets the old option-1 acceptance (see ADR 0006).
 
 ## A6. Incremental public sync
@@ -97,23 +96,29 @@ Build byte-for-byte CAR/STAR fixtures, then introduce an incremental producer
 behind a bounded fallback. Track peak memory in tests. Replace N+1 account
 summary reads with indexed materialized metadata where measurements justify it.
 
-**Progress (2026-07-17, uncommitted in phase 7's worktree):** the N+1
-account-summary fix (`headInfoForDid` + updated `listRepos`, 2 unit tests)
-and the golden-fixture net (structural CAR/STAR goldens, byte-identical
-re-export, peak memory/size bounds; 32/32 `PDSRepositoryServiceTests`)
-are done. The incremental producer itself is still pending, and a new
-`PDSCollectionMembershipPruner` plus schema/migration edits are in flight
-without tests — phase 7 owns committing and finishing these.
+**Progress (2026-07-18):** the N+1 account-summary fix (`headInfoForDid`
++ updated `listRepos`), the golden-fixture net (structural CAR/STAR
+goldens, byte-identical re-export, peak memory/size bounds), and the
+materialized `collection_membership` index with its admin stats/prune
+endpoint are committed (`6de6ebc64`). Still pending: the incremental
+producer itself, and test coverage for `PDSCollectionMembershipPruner` —
+phase 7 owns finishing these.
 
 When the Sync 1.1 remainder (export block ordering, collection-based
 repository subsets) reaches published spec text, implement it in this lane;
-workstream 01 S6 tracks the spec status.
+workstream 01 S6 tracks the spec status. A forward-compat, feature-flagged
+streamable-CAR pre-order enumerator
+(`+[MST setStreamableCARBlockOrderingEnabled:]`, default off) with
+preorder/fixture tests (`sync11-preorder-fixture.car`) is committed
+(`ed01c8085`, on the lock-free atomic-root refactor `34e2b94ae`,
+2026-07-18). Collection subsets and the flag-on decision remain open.
 
 ## A7. Low-priority interface cleanup
 
 After generator and coverage work:
 
-- generate plain `NSString * const` endpoint NSIDs;
-- delete XrpcHandler pass-through registration methods in stages;
-- lint new raw endpoint literals;
+- ~~generate plain `NSString * const` endpoint NSIDs~~ — done (`f46ab5fb8`);
+- ~~delete XrpcHandler pass-through registration methods in stages~~ — done
+  in the adoption sweep (`e212288bd`, with a CI drift check);
+- lint new raw endpoint literals (still open — phase-06 prompt);
 - keep AppView pooling deferred under ADR 0002.

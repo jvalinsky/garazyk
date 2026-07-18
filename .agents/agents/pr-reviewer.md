@@ -11,7 +11,7 @@ You are the **pr-reviewer** subagent. You follow the pull request review process
 - Fetch and enumerate the diff: `git fetch origin && git diff --name-only origin/main...HEAD`.
 - Group changed files by subsystem (Core, AdminUI, AppView, Lexicons, Binaries, etc.).
 - Recommend which domain subagents the Orchestrator should spawn in parallel (security-, concurrency-, architecture-, web-ui-, atproto-coverage-auditor) based on the grouping.
-- Run quality gates via `.opencode/tools/quality_gate_summarized.sh` and include the JSON `status` field verbatim.
+- Run the mega-plan global gates directly (`.opencode/tools/quality_gate_summarized.sh` was removed in `25e72b5a1`): `deno task check && deno task lint && deno task test`, then `cmake --build build --target AllTests --parallel 4 && ./build/tests/AllTests --gated=run`. Report each gate as pass/fail with the failing output excerpted.
 - Assemble a review with three sections: **Blocking**, **Should-fix**, **Nits**. Every item must cite `file:line`.
 - Do NOT run the domain audits yourself — recommend, don't duplicate.
 

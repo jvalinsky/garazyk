@@ -46,6 +46,7 @@ const options: CompilerOptions = {
   composeProject: "garazyk-topology",
   manifestFile: args["manifest-json"],
   includePds2: Boolean(args["include-pds2"]),
+  includePds3: Boolean(args["include-pds3"]),
 };
 
 const result = await compileTopology(options);

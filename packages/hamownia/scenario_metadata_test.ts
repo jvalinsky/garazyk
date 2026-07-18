@@ -215,6 +215,7 @@ function makeScenarioInfo(
     requires: reqs,
     optional: [],
     needsPds2: pds2,
+    needsPds3: false,
     browserFlows: [],
     parameters: {},
   };

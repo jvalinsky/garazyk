@@ -271,13 +271,15 @@ static BOOL OAuthHandlerScopeIsValid(NSString *scope) {
                                        : nil;
       if (metadataClientID.length == 0 ||
           ![CryptoUtils constantTimeCompare:metadataClientID to:clientID]) {
-        completion(nil, [NSError errorWithDomain:@"OAuth2"
-                                            code:400
-                                        userInfo:@{
-                                          NSLocalizedDescriptionKey :
-                                              @"client_id does not match "
-                                              @"client_metadata"
-                                        }]);
+        NSError *mismatchError = [NSError errorWithDomain:@"OAuth2"
+                                                     code:400
+                                                 userInfo:@{
+                                                   NSLocalizedDescriptionKey :
+                                                       @"client_id does not match "
+                                                       @"client_metadata"
+                                                 }];
+        GZ_LOG_AUTH_WARN(@"client_metadata client_id mismatch for request client_id: %@", clientID);
+        completion(nil, mismatchError);
         return;
       }
       GZ_LOG_AUTH_INFO(
@@ -286,6 +288,8 @@ static BOOL OAuthHandlerScopeIsValid(NSString *scope) {
       return;
     } else {
       // Metadata validation failed
+      GZ_LOG_AUTH_WARN(@"Client validation via client_metadata failed for client_id %@: %@",
+                       clientID, metadataError.localizedDescription ?: @"Unknown error");
       completion(nil, metadataError);
       return;
     }
@@ -426,6 +430,7 @@ static BOOL OAuthHandlerScopeIsValid(NSString *scope) {
                        status:(NSInteger)status
                         error:(NSString *)errorCode
              errorDescription:(NSString *)errorDescription {
+  GZ_LOG_AUTH_WARN(@"OAuth error response status %ld (%@): %@", (long)status, errorCode ?: @"server_error", errorDescription ?: @"Unknown OAuth error");
   response.statusCode = (HttpStatusCode)status;
   [response setJsonBody:@{
     @"error" : errorCode ?: @"server_error",
@@ -2613,10 +2618,16 @@ static BOOL OAuthHandlerScopeIsValid(NSString *scope) {
 
 #pragma mark - Form Parsing
 - (NSDictionary *)parseFormUrlEncodedString:(NSString *)input {
+  if (!input) {
+    return @{};
+  }
   NSMutableDictionary *params = [NSMutableDictionary dictionary];
-  // NSURLComponents parses percent-encoded query strings automatically
+  // In application/x-www-form-urlencoded format, '+' represents a space character.
+  // We replace '+' with '%20' so NSURLComponents percent-decodes it to space.
+  NSString *normalizedInput =
+      [input stringByReplacingOccurrencesOfString:@"+" withString:@"%20"];
   NSURLComponents *components = [[NSURLComponents alloc] init];
-  components.percentEncodedQuery = input;
+  components.percentEncodedQuery = normalizedInput;
 
   for (NSURLQueryItem *item in components.queryItems) {
     if (item.name) {

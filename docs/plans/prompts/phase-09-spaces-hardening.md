@@ -2,7 +2,7 @@
 phase: 9
 title: Permissioned spaces production hardening
 status: pending
-agent: claude
+agent: worker
 depends_on: [2]
 ---
 

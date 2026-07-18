@@ -16,6 +16,7 @@
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getActor, PDS1, PDS2, PDS3 } from "../../lib/deno/config.ts";
 import {
+  createAccountOrLogin,
   ScenarioResult,
   timedCall,
 } from "../../lib/deno/runner.ts";
@@ -181,7 +182,14 @@ async function postFormWithDPoP(
       continue;
     }
     const error = typeof body.error === "string" ? body.error : "";
-    throw new Error(`HTTP ${response.status}${error ? ` (${error})` : ""}`);
+    const description = typeof body.error_description === "string"
+      ? body.error_description
+      : "";
+    throw new Error(
+      `HTTP ${response.status}${error ? ` (${error})` : ""}${
+        description ? `: ${description}` : ""
+      }`,
+    );
   }
   throw new Error("OAuth server did not accept a DPoP nonce");
 }
@@ -204,55 +212,100 @@ async function obtainOAuthGrant(
     scope,
     dpop_bound_access_tokens: true,
     token_endpoint_auth_method: "none",
+    application_type: "web",
   };
-  const registerUrl = new URL("/oauth/register", base);
-  const registerRes = await fetch(registerUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(clientMetadata),
-  });
-  const regBody = await registerRes.json() as Record<string, unknown>;
 
-  const authUrl = new URL("/oauth/authorize", base);
-  authUrl.searchParams.set("client_id", CLIENT_ID);
-  authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
-  authUrl.searchParams.set("response_type", "code");
-  authUrl.searchParams.set("state", state);
-  authUrl.searchParams.set("code_challenge", codeChallenge);
-  authUrl.searchParams.set("code_challenge_method", "S256");
-  authUrl.searchParams.set("scope", scope);
+  const par = await postFormWithDPoP(new URL("/oauth/par", base), {
+    client_id: CLIENT_ID,
+    client_metadata: JSON.stringify(clientMetadata),
+    response_type: "code",
+    redirect_uri: REDIRECT_URI,
+    scope,
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
+  }, dpopKey);
+  const requestURI = typeof par.body.request_uri === "string"
+    ? par.body.request_uri
+    : "";
+  if (!requestURI) throw new Error("PAR response did not contain request_uri");
 
-  const authorizeRes = await fetch(authUrl, {
-    method: "GET",
-    headers: {
-      "Cookie": `auth_token=${actor.accessJwt}`,
-    },
-    redirect: "manual",
-  });
-  const location = authorizeRes.headers.get("location") ?? "";
-  const codeMatch = location.match(/[?&]code=([^&]+)/);
-  if (!codeMatch) {
-    throw new Error("authorization redirect did not contain a code");
+  const authorizeURL = new URL("/oauth/authorize", base);
+  authorizeURL.searchParams.set("client_id", CLIENT_ID);
+  authorizeURL.searchParams.set("request_uri", requestURI);
+  const authorizePage = await fetch(authorizeURL, { redirect: "manual" });
+  if (!authorizePage.ok) throw await responseError(authorizePage);
+  const cookie = authorizePage.headers.get("set-cookie")?.match(
+    /csrf_token=([^;]+)/,
+  )?.[1];
+  const html = await authorizePage.text();
+  const csrfToken = html.match(/<meta name="csrf-token" content="([^"]+)">/)
+    ?.[1];
+  if (!cookie || !csrfToken) {
+    throw new Error("authorization page did not establish a CSRF session");
   }
-  const code = codeMatch[1];
 
-  const tokenUrl = new URL("/oauth/token", base);
-  const { body: tokenBody } = await postFormWithDPoP(
-    tokenUrl,
+  const signIn = await fetch(new URL("/oauth/authorize/sign-in", base), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "X-CSRF-Token": csrfToken,
+      "Cookie": `csrf_token=${cookie}`,
+    },
+    body: new URLSearchParams({
+      handle: actor.handle,
+      password: actor.password,
+    }),
+  });
+  const signInBody = await readJSON(signIn);
+  const sessionToken = typeof signInBody.session_token === "string"
+    ? signInBody.session_token
+    : "";
+  if (!sessionToken) {
+    throw new Error("authorization sign-in did not return a consent session");
+  }
+
+  const confirmation = await fetch(new URL("/oauth/authorize/confirm", base), {
+    method: "POST",
+    redirect: "manual",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      decision: "allow",
+      client_id: CLIENT_ID,
+      state,
+      scope,
+      redirect_uri: REDIRECT_URI,
+      response_type: "code",
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+      session_token: sessionToken,
+    }),
+  });
+  if (confirmation.status !== 302) throw await responseError(confirmation);
+  const location = confirmation.headers.get("location");
+  const code = location ? new URL(location).searchParams.get("code") : null;
+  if (!code) {
+    throw new Error("authorization confirmation did not return a code");
+  }
+
+  const token = await postFormWithDPoP(
+    new URL("/oauth/token", base),
     {
       grant_type: "authorization_code",
-      code,
-      redirect_uri: REDIRECT_URI,
-      code_verifier: verifier,
       client_id: CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      code,
+      code_verifier: verifier,
     },
     dpopKey,
+    par.nonce,
   );
-  const accessToken = typeof tokenBody.access_token === "string"
-    ? tokenBody.access_token
+  const accessToken = typeof token.body.access_token === "string"
+    ? token.body.access_token
     : "";
+  const did = typeof token.body.sub === "string" ? token.body.sub : actor.did;
   if (!accessToken) throw new Error("token exchange did not return an access token");
-  return { accessToken, dpopKey, did: actor.did };
+  return { accessToken, dpopKey, did };
 }
 
 async function oauthXrpc(
@@ -305,12 +358,14 @@ function spaceScope(
   authority: string,
   skey: string,
   actions: string[],
+  manage: string[] = [],
 ): string {
   const parts = [
     `authority=${encodeURIComponent(authority)}`,
     `skey=${encodeURIComponent(skey)}`,
     `collection=${encodeURIComponent(COLLECTION)}`,
     ...actions.map((action) => `action=${action}`),
+    ...manage.map((operation) => `manage=${operation}`),
   ];
   return `atproto space:${SPACE_TYPE}?${parts.join("&")}`;
 }
@@ -369,77 +424,64 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  // ── 1. Create accounts ────────────────────────────────────────────────
-  await timedCall(
-    result,
-    `Create owner account on PDS1`,
-    async () => {
-      try {
-        await pds1.agent.createAccount({
-          handle: owner.handle,
-          email: owner.email,
-          password: owner.password,
-        });
-      } catch (e: unknown) {
-        if (!(e instanceof Error) || !e.message?.includes("already exists")) throw e;
-        await pds1.agent.login({
-          identifier: owner.handle,
-          password: owner.password,
-        });
-      }
-    },
-  );
-
-  await timedCall(
-    result,
-    `Create writer account on PDS2`,
-    async () => {
-      try {
-        await pds2.agent.createAccount({
-          handle: writer.handle,
-          email: writer.email,
-          password: writer.password,
-        });
-      } catch (e: unknown) {
-        if (!(e instanceof Error) || !e.message?.includes("already exists")) throw e;
-        await pds2.agent.login({
-          identifier: writer.handle,
-          password: writer.password,
-        });
-      }
-    },
-  );
-
   const pds3 = new XrpcClient(readerPDS);
-  await timedCall(
-    result,
-    `Create reader account on PDS3`,
-    async () => {
-      try {
-        await pds3.agent.createAccount({
-          handle: reader.handle,
-          email: reader.email,
-          password: reader.password,
-        });
-      } catch (e: unknown) {
-        if (!(e instanceof Error) || !e.message?.includes("already exists")) throw e;
-        await pds3.agent.login({
-          identifier: reader.handle,
-          password: reader.password,
-        });
-      }
-    },
-  );
+  for (
+    const [name, client] of [
+      ["PDS1", pds1],
+      ["PDS2", pds2],
+      ["PDS3", pds3],
+    ] as const
+  ) {
+    await timedCall(
+      result,
+      `${name} health check`,
+      () => client.waitForHealthy(30),
+    );
+  }
+  if (result.failed > 0) {
+    result.finish();
+    return result;
+  }
+
+  // ── 1. Create accounts ────────────────────────────────────────────────
+  for (
+    const [name, client, actor] of [
+      ["owner", pds1, owner],
+      ["writer", pds2, writer],
+      ["reader", pds3, reader],
+    ] as const
+  ) {
+    const session = await timedCall(
+      result,
+      `Create ${name} account`,
+      () => createAccountOrLogin(client, actor),
+      (value) => `did=${value.did}`,
+    );
+    if (session) {
+      actor.did = session.did;
+      actor.accessJwt = session.accessJwt;
+    }
+  }
+  if (!owner.did || !writer.did || !reader.did) {
+    result.stepFailed(
+      "Account setup",
+      "one or more accounts did not receive a DID",
+    );
+    result.finish();
+    return result;
+  }
 
   // ── 2. Owner obtains OAuth grant on PDS1 (authority) ─────────────────
+  const skey = `recon-${Date.now().toString(36)}`;
+  const space = `at://${owner.did}/space/${SPACE_TYPE}/${skey}`;
   const ownerGrant = await timedCall(
     result,
     "Owner obtains OAuth grant on authority PDS",
     () =>
       obtainOAuthGrant(
         PDS1,
-        getActor("nova"),
-        spaceScope(owner.did, "owner", ["manage"]),
+        owner,
+        spaceScope("self", skey, ["read", "create", "update", "delete"], ["create", "update", "delete"]),
       ),
   );
   if (!ownerGrant) {
@@ -447,29 +489,56 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  // ── 3. Create space ──────────────────────────────────────────────────
-  const skey = `recon-${Date.now().toString(36)}`;
-  const space = `${SPACE_TYPE}:${skey}`;
+  // ── 3. Create space and grant memberships ────────────────────────────
   await timedCall(
     result,
     "Owner creates space on authority PDS",
-    () =>
-      oauthXrpc(PDS1, "com.atproto.simplespace.createSpace", ownerGrant, {
-        skey,
-        type: SPACE_TYPE,
-        joinability: "member-list",
-      }),
+    async () => {
+      const response = await oauthXrpc(
+        PDS1,
+        "com.atproto.simplespace.createSpace",
+        ownerGrant,
+        {
+          did: owner.did,
+          type: SPACE_TYPE,
+          skey,
+          config: {
+            policy: "member-list",
+            appAccess: { $type: "com.atproto.simplespace.defs#open" },
+          },
+        },
+      );
+      if (response.uri !== space) {
+        throw new Error("space host returned a different space URI");
+      }
+    },
   );
 
-  // ── 4. Owner obtains writer and reader OAuth grants ───────────────────
+  // ── 4. Owner adds writer and reader as members ───────────────────────
+  await timedCall(
+    result,
+    "Grant writer and reader membership",
+    async () => {
+      await oauthXrpc(PDS1, "com.atproto.simplespace.addMember", ownerGrant, {
+        space,
+        did: writer.did,
+      });
+      await oauthXrpc(PDS1, "com.atproto.simplespace.addMember", ownerGrant, {
+        space,
+        did: reader.did,
+      });
+    },
+  );
+
+  // ── 5. Owner obtains writer and reader OAuth grants ───────────────────
   const writerGrant = await timedCall(
     result,
     "Writer obtains OAuth grant on PDS2",
     () =>
       obtainOAuthGrant(
         PDS2,
-        getActor("luna"),
-        spaceScope(owner.did, skey, ["create", "update", "delete"]),
+        writer,
+        spaceScope(owner.did, skey, ["read", "create", "update", "delete"]),
       ),
   );
   if (!writerGrant) {
@@ -483,37 +552,14 @@ export async function run(): Promise<ScenarioResult> {
     () =>
       obtainOAuthGrant(
         readerPDS,
-        getActor("marcus"),
-        spaceScope(owner.did, skey, []),
+        reader,
+        spaceScope(owner.did, skey, ["read"]),
       ),
   );
   if (!readerGrant) {
     result.finish();
     return result;
   }
-
-  // ── 5. Owner adds writer and reader as members ───────────────────────
-  await timedCall(
-    result,
-    "Owner adds writer as space member",
-    () =>
-      oauthXrpc(PDS1, "com.atproto.simplespace.addMember", ownerGrant, {
-        space,
-        did: writer.did,
-        role: "writer",
-      }),
-  );
-
-  await timedCall(
-    result,
-    "Owner adds reader as space member",
-    () =>
-      oauthXrpc(PDS1, "com.atproto.simplespace.addMember", ownerGrant, {
-        space,
-        did: reader.did,
-        role: "reader",
-      }),
-  );
 
   // ── 6. Writer obtains credential ─────────────────────────────────────
   const writerCredential = await timedCall(

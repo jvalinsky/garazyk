@@ -2,9 +2,9 @@
 phase: 7
 title: Relay product decision and incremental public sync
 status: in-progress
-agent: claude
+agent: worker
 depends_on: [4]
-last_updated: 2026-07-17
+last_updated: 2026-07-18
 ---
 
 # Phase 7: Relay product decision and incremental public sync
@@ -51,9 +51,19 @@ preparation incremental instead of materializing up to 100k records.
    safety net — exports must stay byte-identical).
 2. `PDSCollectionMembershipPruner` (committed in `6de6ebc64`) has no
    tests yet — give it its own test coverage and commit.
-3. Sync 1.1 remainder (export block ordering, collection subsets): still
-   no published spec text — tracked as S6 gap G2; recheck before closing
-   this phase.
+3. Sync 1.1 remainder (export block ordering, collection subsets):
+   tracked as S6 gap G2; recheck spec status before closing this phase.
+   **Update 2026-07-18:** a forward-compat streamable-CAR pre-order
+   enumerator is committed (`ed01c8085`, on the lock-free atomic-root
+   refactor `34e2b94ae`) — MST.h/MST.m
+   (`-enumerateStreamableCARBlocksUsingBlock:recordProvider:error:`
+   behind `+[MST setStreamableCARBlockOrderingEnabled:]`, default off),
+   `PDSRepositoryService.m` wiring, and `MSTPreorderTests`/
+   `MSTPreorderFixtureTests`/`STARPreorderTests` with
+   `Garazyk/Tests/fixtures/mst/sync11-preorder-fixture.car`. Remaining
+   here: collection subsets, the spec-text recheck, and the flag-on
+   decision (golden fixtures from slice 2 must stay byte-identical
+   while the flag is off).
 
 ## Read first
 

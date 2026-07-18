@@ -16,6 +16,7 @@ Deno.test("appendScenarioLoopResult preserves failed loop results for final summ
     requires: [],
     optional: [],
     needsPds2: false,
+    needsPds3: false,
     browserFlows: [],
     parameters: {},
   };

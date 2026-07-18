@@ -54,6 +54,7 @@ function scenario(path: string, name = "Test Scenario"): ScenarioInfo {
     requires: [],
     optional: [],
     needsPds2: false,
+    needsPds3: false,
     browserFlows: [],
     parameters: {},
   };
