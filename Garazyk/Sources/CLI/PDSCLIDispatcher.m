@@ -247,11 +247,14 @@
     return self;
 }
 
+extern void PDSCLIRegisterAllCommandsForDispatcher(PDSCLIDispatcher *dispatcher);
+
 - (void)registerDefaultCommands {
     [self addCommand:[PDSCLIHelpCommand command]];
     [self addCommand:[PDSCLIVersionCommand command]];
     [self addCommand:[PDSInstallerCommand command]];
     [self addCommand:[PDSCLIReplCommand command]];
+    PDSCLIRegisterAllCommandsForDispatcher(self);
 }
 
 - (void)addCommand:(id<PDSCLICommand>)command {
