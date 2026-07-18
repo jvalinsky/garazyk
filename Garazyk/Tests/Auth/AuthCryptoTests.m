@@ -420,6 +420,57 @@
     XCTAssertNotNil(publicKey);
 }
 
+// Regression: P-256 (ES256) verification must accept BOTH low-S and high-S
+// signatures. Low-S is a secp256k1 repo-signature rule that does not apply to
+// JOSE/DPoP/WebAuthn/PLC; enforcing it here rejected ~half of all valid DPoP
+// proofs non-deterministically. See AuthCryptoJWK verifySignature:forData:.
+- (void)testVerifySignatureAcceptsBothLowSAndHighS {
+    NSDictionary *privateJWK = @{
+        @"kty": @"EC",
+        @"crv": @"P-256",
+        @"x": @"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",
+        @"y": @"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",
+        @"d": @"jpsQnnGQmL-YBIffH1136cspYG6-0iY7X1fCE9-E9LI"
+    };
+
+    NSError *error = nil;
+    id<PDSPrivateKeyProtocol> privateKey =
+        [AuthCryptoJWK privateKeyFromJWK:privateJWK error:&error];
+    if (!privateKey) {
+        XCTSkip(@"P-256 key creation not available on this platform");
+        return;
+    }
+    id<PDSPublicKeyProtocol> publicKey =
+        [AuthCryptoJWK publicKeyFromJWK:privateJWK error:&error];
+    XCTAssertNotNil(publicKey);
+
+    NSData *message = [@"header.payload" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *rawSig = [privateKey signData:message error:&error];
+    XCTAssertNotNil(rawSig, @"signing should succeed");
+    XCTAssertEqual(rawSig.length, (NSUInteger)64, @"raw ECDSA sig is 64 bytes");
+
+    // Both (r, s) and (r, N-s) are valid signatures for the same message.
+    NSData *lowS = [AuthCryptoECDSA normalizeLowS:rawSig error:nil];
+    NSData *highS = [AuthCryptoECDSA denormalizeLowS:lowS error:nil];
+    XCTAssertNotNil(lowS);
+    XCTAssertNotNil(highS);
+    XCTAssertTrue([AuthCryptoECDSA isLowS:lowS error:nil]);
+    XCTAssertFalse([AuthCryptoECDSA isLowS:highS error:nil],
+                   @"denormalized signature must be high-S");
+
+    XCTAssertTrue([publicKey verifySignature:lowS forData:message error:&error],
+                  @"low-S signature must verify");
+    XCTAssertTrue([publicKey verifySignature:highS forData:message error:&error],
+                  @"high-S signature must verify (regression guard)");
+
+    // Guard: a signature over different data must still be rejected in both forms.
+    NSData *tampered = [@"header.tampered" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertFalse([publicKey verifySignature:lowS forData:tampered error:nil],
+                   @"low-S signature must not verify against different data");
+    XCTAssertFalse([publicKey verifySignature:highS forData:tampered error:nil],
+                   @"high-S signature must not verify against different data");
+}
+
 @end
 
 #pragma mark - AuthCryptoDPoP Tests
