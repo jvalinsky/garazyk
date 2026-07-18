@@ -112,17 +112,54 @@ sweep). Run this phase from a clean worktree or after those commit.
   (topology preset doesn't include pds3 capabilities; non-blocking — scenarios
   still ran).
 
+### DPoP verification fix (2026-07-18) — resolves the OAuth PAR blocker
+
+The scenario-93 OAuth PAR failure (recorded above as "401 invalid_client";
+a fresher binary surfaced it as `400 invalid_dpop_proof`) was root-caused to
+a P-256 signature-verification bug, **not** client registration. The verifier
+enforced low-S on P-256/JOSE signatures, and `AuthCryptoECDSA` used the P-256
+field prime `p` where it needed the group order `n`, so ~50% of DPoP proofs
+(any with high-S) were rejected non-deterministically. Full diagnosis (the
+repro-driven, S-value-correlation method) and the fix are in
+[ADR 0007](../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md).
+
+- Fix: `AuthCryptoJWK` verifies P-256 signatures as presented (no low-S gate);
+  `AuthCryptoECDSA` constants corrected to order `n`; characterization test
+  `testVerifySignatureAcceptsBothLowSAndHighS` added.
+- Verified: single-PDS PAR repro 50% → 16/16; `AuthCryptoECDSATests`,
+  `AuthCryptoJWKTests`, `OAuthDPoPTests`, `PLCAuditorTests`,
+  `WebAuthnVerifierTests`, `AuthVerifierTests` all green.
+
+### Scenario 93 GREEN (2026-07-18, `--binary --pds2`, 3-PDS)
+
+**Scenario 93 now passes 19/19** on the three-PDS binary topology. Two
+product fixes were required, each its own slice:
+
+1. DPoP P-256 low-S verification — [ADR 0007](../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md)
+   (unblocked the OAuth PAR step).
+2. **notifyWrite service-auth 401.** Once OAuth passed, the "Authority learns
+   the remote writer" step failed: PDS A sent `notifyWrite` to the authority's
+   resolved `#atproto_space_host` endpoint, but the authority returned 401.
+   `SpaceServiceAuthentication` (`XrpcSpacePack.m`) rejected the service-auth
+   JWT with "Missing subject claim" — inter-service tokens (iss/aud/lxm) carry
+   no `sub`. Fix: `verifier.allowMissingSubject = YES`, matching
+   `XrpcServerPack.m`. Covered by the scenario-93 run + auth/space unit suites
+   (45 tests green).
+
+The full path is exercised: OAuth PAR/PKCE/DPoP → delegation → credential →
+remote write → signed authority notification → remote reader credential read →
+public-repo isolation → membership-revocation credential denial.
+
 ### Next steps
 
-1. **OAuth 401 invalid_client (scenario 93)**: Investigate PDS OAuth client
-   registration and PAR endpoint. The PDS returns 401 when the scenario
-   attempts the PAR+PKCE+DPoP grant. Likely a client registration or
-   signature verification issue in the permissioned-spaces OAuth path.
-2. **OAuth authorization redirect missing code (scenario 94)**: The
-   authorization endpoint returns a redirect without a `code` parameter.
-   May be related to the same OAuth issue as scenario 93.
-3. Both OAuth failures are product-code issues, not scenario hacks. Each fix
-   is its own reviewed, characterization-guarded slice.
+1. **Scenario 94** still fails at "Owner obtains OAuth grant on authority PDS —
+   authorization redirect did not contain a code." This is a **separate** OAuth
+   consent/redirect issue (not the DPoP bug, which is fixed), surfacing at the
+   `/oauth/authorize/confirm` step. Its own slice.
+2. Private-blob acceptance and pruned-oplog recovery paths (P6.1 items 2–3)
+   remain.
+3. Move compatibility-gate rows to Implemented with the dated scenario-93 run
+   reference once 94 and the blob/oplog cases are also green.
 
 ## Acceptance gate
 
