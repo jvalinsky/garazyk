@@ -318,7 +318,10 @@ scenario 93/94 runtime passes.
    tests and a read-only CI scan; generator output remains in sync for 419
    endpoints.
 4. Continue `GZCommandLineOptions` and `GZServiceLifecycle` adoption beyond
-   Beskid, Mikrus, and Syrena, one binary at a time.
+   Beskid, Mikrus, and Syrena, one binary at a time. `garazyk-ui` is the first
+   preparatory slice: six bounded executable tests characterize its current
+   command grammar, exit statuses, and bind-failure boundary; its lifecycle
+   port remains pending.
 
 Exit gate: all three repositories pass format, lint, check, and tests; Garazyk
 uses released dependencies and retains a launcher smoke test.
