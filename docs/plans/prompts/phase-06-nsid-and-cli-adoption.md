@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: Generated NSID constants and CLI/lifecycle adoption
-status: in-progress
+status: complete
 agent: worker
 depends_on: [3]
 last_updated: 2026-07-19
@@ -11,13 +11,13 @@ last_updated: 2026-07-19
 
 ## Current slice (2026-07-19)
 
-Characterize and port `jelcz` from its handwritten option scan to `GZCommandLineOptions` and `GZServiceLifecycle`. First write bounded process-level characterization tests for `jelcz` (`JelczCommandTests.m`), then port `main.m` while preserving its command grammar and silent signal termination, and verify across native tests and the Linux Docker binary-entrypoint gate.
+Phase 6 is complete. All scope items (NSID constants generation/migration and CLI/lifecycle adoption for `garazyk-ui`, `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) are implemented and verified across native macOS and GNUstep/Linux environments.
 
 ## Progress (2026-07-19)
 
 - `garazyk-ui` characterization completed (`133ce30a5`) and lifecycle adoption completed (`2026-07-19`).
 - `garazyk-ui` is fully ported to `GZCommandLineOptions` and `GZServiceLifecycle` with `announceSignals:NO` and `GZCrashReporter` preserving its silent signal behavior and `/tmp/garazyk-ui-crash.log` crash-diagnostic contract. Verified via `GarazykUICommandTests` (7/7 pass natively) and `docker run ... garazyk-gnustep help/version/serve --help` across GNUstep/Linux.
-- Remaining binaries in Scope item 2: `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`. One binary per commit.
+- All remaining binaries (`jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) have been characterized (`JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) and ported to `GZCommandLineOptions` and `GZServiceLifecycle`. Verified natively and across GNUstep/Linux, preserving option parsing grammars, signal behavior, and `/tmp/<binary>-crash.log` contracts. Committed one binary per commit (`2888ba0ea`, `2aae843b`, `253d2406`, `d7009b3d`, `b614a23f`, `1244e7c2`). Phase 6 is now complete.
 
 ## Progress (2026-07-17)
 
