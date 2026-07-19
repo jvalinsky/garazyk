@@ -311,10 +311,12 @@ scenario 93/94 runtime passes.
    package releases remain deferred too (workstream 03).
 2. Remove the 92 scenario imports through `scripts/lib/deno` and the package
    back-reference in `packages/hamownia/tasks.ts` before the split deletion.
-3. **Complete except lint (2026-07-17):** plain Objective-C NSID constants are
-   generated deterministically (`f46ab5fb8`) and adopted at every call site
-   with a CI drift check (`e212288bd`). Remaining: a lint against new raw
-   endpoint literals (tracked in the phase-06 prompt).
+3. **Complete (2026-07-18):** plain Objective-C NSID constants are generated
+   deterministically (`f46ab5fb8`) and adopted at every call site with a CI
+   drift check (`e212288bd`). A Narzedzia guard now rejects direct non-internal
+   `registerMethod:@"..."` literals in production source, with six focused
+   tests and a read-only CI scan; generator output remains in sync for 419
+   endpoints.
 4. Continue `GZCommandLineOptions` and `GZServiceLifecycle` adoption beyond
    Beskid, Mikrus, and Syrena, one binary at a time.
 
