@@ -323,8 +323,14 @@ Known gaps verified against codebase and seeded as backlog leads:
   implements `space:` scope parsing; no `repo:`/`rpc:`/`blob:`/`account:`/
   `include:` resource-type scope evaluation found. Required for production
   readiness. Own lane.
-- **G2: Sync 1.1 remainder.** Export block ordering and collection-based
-  repo subsets still in-progress upstream. Track alongside workstream 02 A6.
+- **G2: Sync 1.1 remainder — closed (2026-07-19).** Export block ordering
+  and collection-based repo subsets remain "Future Work" prose upstream
+  (https://atproto.com/specs/sync, rechecked 2026-07-19), not published
+  spec text. A feature-flagged pre-order enumerator exists for block
+  ordering (default off — deferred until spec text finalizes) and
+  collection subsets are served by Garazyk's own
+  `tools.garazyk.sync.getRepoFiltered` vendor extension. See workstream 02
+  A6 for detail. Revisit if upstream publishes versioned Sync 1.1 text.
 - **G3: Account management surfaces.** S5 covers propagation; confirm
   deactivation/deletion/export UX endpoints against accounts spec.
 - **G4: Labels — self-signing key.** Label distribution and query endpoints
