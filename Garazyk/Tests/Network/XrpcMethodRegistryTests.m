@@ -56,8 +56,9 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
     SecKeyRef privateKey = NULL;
+    PDSApplication *app = nil;
     @try {
-        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
         app.configuration.requireDPoPNonce = YES;
         PDSController *controller = app.legacyController;
         XCTAssertNotNil(controller);
@@ -202,6 +203,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         if (privateKey) {
             CFRelease(privateKey);
         }
+        [app stop];
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
     }
 }
@@ -259,8 +261,9 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
+    PDSApplication *app = nil;
     @try {
-        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
         XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
@@ -279,6 +282,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
             XCTAssertNotEqual(response.statusCode, HttpStatusMethodNotAllowed, @"Expected callable route for %@", path);
         }
     } @finally {
+        [app stop];
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
     }
 }
@@ -288,8 +292,9 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
+    PDSApplication *app = nil;
     @try {
-        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
         XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
@@ -298,6 +303,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                      @{@"host": kPDSTestPDSHostHeader});
         XCTAssertEqual(response.statusCode, HttpStatusNotFound);
     } @finally {
+        [app stop];
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
     }
 }
@@ -307,8 +313,9 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
+    PDSApplication *app = nil;
     @try {
-        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
         XCTAssertNotNil(app.legacyController);
 
         XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
@@ -322,6 +329,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
         XCTAssertNotNil(response.jsonBody[@"did"]);
     } @finally {
+        [app stop];
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
     }
 }

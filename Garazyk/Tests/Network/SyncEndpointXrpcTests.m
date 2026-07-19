@@ -60,6 +60,9 @@
 }
 
 - (void)tearDown {
+    [self.controller stopServer];
+    self.dispatcher = nil;
+    self.controller = nil;
     [[NSFileManager defaultManager] removeItemAtURL:self.tempURL error:nil];
     [super tearDown];
 }
