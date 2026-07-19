@@ -39,7 +39,7 @@ static const NSTimeInterval kMinimumPruneInterval = 300.0;
         if (!self.stopped) return;
         self.stopped = NO;
         // Run an initial prune immediately.
-        dispatch_async(self.queue, ^{ [self pruneOnQueue]; });
+        dispatch_async(self.queue, ^{ [self pruneOnQueueIgnoringStopped:NO]; });
         self.timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, self.queue);
         uint64_t intervalNanos = (uint64_t)(self.interval * (NSTimeInterval)NSEC_PER_SEC);
         dispatch_source_set_timer(self.timer,
@@ -49,7 +49,7 @@ static const NSTimeInterval kMinimumPruneInterval = 300.0;
         __weak typeof(self) weakSelf = self;
         dispatch_source_set_event_handler(self.timer, ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
-            if (strongSelf && !strongSelf.stopped) [strongSelf pruneOnQueue];
+            if (strongSelf && !strongSelf.stopped) [strongSelf pruneOnQueueIgnoringStopped:NO];
         });
         dispatch_resume(self.timer);
     });
@@ -66,11 +66,11 @@ static const NSTimeInterval kMinimumPruneInterval = 300.0;
 }
 
 - (void)pruneNow {
-    dispatch_async(self.queue, ^{ [self pruneOnQueue]; });
+    dispatch_async(self.queue, ^{ [self pruneOnQueueIgnoringStopped:YES]; });
 }
 
-- (void)pruneOnQueue {
-    if (self.stopped) return;
+- (void)pruneOnQueueIgnoringStopped:(BOOL)ignoreStopped {
+    if (self.stopped && !ignoreStopped) return;
     NSInteger removed = [self.serviceDatabases pruneStaleCollectionMembershipsWithUserDatabasePool:self.userDatabasePool
                                                                                              error:nil];
     if (removed > 0) {
