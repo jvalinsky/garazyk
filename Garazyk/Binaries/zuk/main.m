@@ -35,10 +35,39 @@
 #import "Compat/PDSTypes.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "PLC/DIDPLCResolver.h"
-#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
-#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import "CLI/GZCommandLineOptions.h"
+#import "Runtime/GZServiceLifecycle.h"
 
 static const char *executable_name = "zuk";
+
+@interface ZukRuntimeComposite : NSObject <GZServiceRuntimeProtocol>
+@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
+@property (nonatomic, strong) NSArray<NSString *> *upstreamURLs;
+@property (nonatomic, assign) BOOL noUpstream;
+@end
+
+@implementation ZukRuntimeComposite
+- (BOOL)startWithError:(NSError **)error {
+    if (![self.server startWithError:error]) {
+        return NO;
+    }
+    if (!self.noUpstream && self.upstreamURLs.count > 0) {
+        printf("Connecting to %lu upstream(s)...\n", (unsigned long)self.upstreamURLs.count);
+        [self.upstreamManager connectAll];
+    } else if (!self.noUpstream) {
+        printf("No upstreams configured. Running in passthrough mode.\n");
+        printf("Use --upstream to connect to upstream firehose.\n");
+    }
+    return YES;
+}
+- (void)stop {
+    if (self.upstreamManager) {
+        [self.upstreamManager disconnectAll];
+    }
+    [self.server stop];
+}
+@end
 
 void print_usage(void) {
     printf("Usage: %s <command> [options]\n\n", executable_name);
@@ -77,98 +106,15 @@ static int fail_with_usage(NSString *message) {
     return 2;
 }
 
-static BOOL parse_relay_options(NSArray<NSString *> *args,
-                                NSUInteger *port,
-                                NSString **dataDir,
-                                NSString **configPath,
-                                NSMutableArray<NSString *> *upstreamURLs,
-                                BOOL *noUpstream,
-                                BOOL *verbose,
-                                NSString **errorMessage) {
-    for (NSUInteger i = 0; i < args.count; i++) {
-        NSString *arg = args[i];
-        if ([arg isEqualToString:@"--port"] || [arg isEqualToString:@"-p"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --port";
-                }
-                return NO;
-            }
-            if (port) {
-                *port = (NSUInteger)[args[++i] integerValue];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--data-dir"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --data-dir";
-                }
-                return NO;
-            }
-            if (dataDir) {
-                *dataDir = args[++i];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--config"] || [arg isEqualToString:@"-c"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --config";
-                }
-                return NO;
-            }
-            if (configPath) {
-                *configPath = args[++i];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--upstream"] || [arg isEqualToString:@"-u"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --upstream";
-                }
-                return NO;
-            }
-            if (upstreamURLs) {
-                [upstreamURLs addObject:args[++i]];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--no-upstream"]) {
-            if (noUpstream) {
-                *noUpstream = YES;
-            }
-        } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
-            if (verbose) {
-                *verbose = YES;
-            }
-            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
-        } else if ([arg hasPrefix:@"-"]) {
-            if (errorMessage) {
-                *errorMessage = [NSString stringWithFormat:@"Unknown option: %@", arg];
-            }
-            return NO;
-        } else {
-            if (errorMessage) {
-                *errorMessage = [NSString stringWithFormat:@"Unexpected argument: %@", arg];
-            }
-            return NO;
-        }
-    }
-    return YES;
-}
-
 // Force NSDateFormatter category to be linked
 extern void NSDateFormatterLinkATProtoCategory(void);
 
 int main(int argc, const char * argv[]) {
-    [[GZSignalManager sharedManager] installIgnoredSignals];
-    [GZCrashReporter installCrashHandlersWithExecutableName:"zuk"];
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
     @autoreleasepool {
+        [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
         // On Linux/GNUstep, verify critical categories are loaded
@@ -186,35 +132,61 @@ int main(int argc, const char * argv[]) {
             return fail_with_usage(@"Flags must follow the command name");
         }
 
-        NSMutableArray<NSString *> *args = [NSMutableArray array];
-        for (int i = 2; i < argc; i++) {
-            [args addObject:[NSString stringWithUTF8String:argv[i]]];
-        }
-
-        if ([command isEqualToString:@"help"]) {
+        if ([command isEqualToString:@"help"] || [command isEqualToString:@"-h"] || [command isEqualToString:@"--help"]) {
             print_usage();
             return 0;
         }
-        if ([command isEqualToString:@"version"]) {
+        if ([command isEqualToString:@"version"] || [command isEqualToString:@"-V"] || [command isEqualToString:@"--version"]) {
             print_version();
             return 0;
+        }
+
+        NSMutableArray<NSString *> *args = [NSMutableArray array];
+        for (int i = 2; i < argc; i++) {
+            [args addObject:[NSString stringWithUTF8String:argv[i]]];
         }
         if ([args containsObject:@"--help"] || [args containsObject:@"-h"]) {
             print_usage();
             return 0;
         }
 
-        NSUInteger port = 2584;
-        NSString *dataDir = nil;
-        NSString *configPath = nil;
-        NSMutableArray<NSString *> *upstreamURLs = [NSMutableArray array];
-        BOOL noUpstream = NO;
-        NSString *parseError = nil;
         if (![command isEqualToString:@"serve"] && ![command isEqualToString:@"status"]) {
             return fail_with_usage([NSString stringWithFormat:@"Unknown command: %@", command]);
         }
-        if (!parse_relay_options(args, &port, &dataDir, &configPath, upstreamURLs, &noUpstream, nil, &parseError)) {
-            return fail_with_usage(parseError);
+
+        GZCommandLineOptions *parser = [[GZCommandLineOptions alloc] init];
+        NSArray<GZCommandLineOption *> *serveOptions = @[
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"config" shortName:@"c" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"upstream" shortName:@"u" type:GZCommandLineOptionTypeRepeatableString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"no-upstream" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ];
+        [parser registerOptions:serveOptions forCommand:@"serve"];
+
+        NSArray<GZCommandLineOption *> *statusOptions = @[
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ];
+        [parser registerOptions:statusOptions forCommand:@"status"];
+
+        NSError *parseError = nil;
+        NSDictionary<NSString *, id> *parsedArgs = [parser parseArguments:args forCommand:command error:&parseError];
+        if (!parsedArgs) {
+            return fail_with_usage(parseError.localizedDescription);
+        }
+
+        NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 2584;
+        NSString *dataDir = parsedArgs[@"data-dir"];
+        NSString *configPath = parsedArgs[@"config"];
+        NSMutableArray<NSString *> *upstreamURLs = [NSMutableArray arrayWithArray:parsedArgs[@"upstream"] ?: @[]];
+        BOOL noUpstream = [parsedArgs[@"no-upstream"] boolValue];
+        BOOL verbose = [parsedArgs[@"verbose"] boolValue];
+        if (verbose) {
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
         }
 
         // Load configuration if provided
@@ -447,44 +419,32 @@ int main(int argc, const char * argv[]) {
         xrpcRoutePack.upstreamManager = upstreamManager;
         [xrpcRoutePack registerRoutesWithServer:server];
 
-        // Start server
-        NSError *startError = nil;
-        if (![server startWithError:&startError]) {
-            GZ_LOG_CORE_ERROR(@"Failed to start relay server: %@", startError.localizedDescription ?: @"unknown error");
-            return 1;
-        }
+        ZukRuntimeComposite *composite = [[ZukRuntimeComposite alloc] init];
+        composite.server = server;
+        composite.upstreamManager = upstreamManager;
+        composite.upstreamURLs = upstreamURLs;
+        composite.noUpstream = noUpstream;
 
-        // Connect to upstreams
-        if (!noUpstream && upstreamURLs.count > 0) {
-            printf("Connecting to %lu upstream(s)...\n", (unsigned long)upstreamURLs.count);
-            [upstreamManager connectAll];
-        } else if (!noUpstream) {
-            printf("No upstreams configured. Running in passthrough mode.\n");
-            printf("Use --upstream to connect to upstream firehose.\n");
-        }
-
-        printf("Zuk relay server started on port %lu\n", (unsigned long)port);
-        printf("Data directory: %s\n", [dataDir UTF8String]);
-        printf("Upstreams: %lu configured\n", (unsigned long)upstreamURLs.count);
-        printf("\nAPI endpoints:\n");
-        printf("  GET  /api/relay/metrics\n");
-        printf("  GET  /api/relay/upstreams\n");
-        printf("  POST /api/relay/upstreams\n");
-        printf("  GET  /api/relay/capabilities\n");
-        printf("  GET  /api/relay/health\n");
-        printf("  POST /api/relay/requestCrawl\n");
-        printf("  POST /api/relay/upstreams/reconnect-all\n");
-        printf("  POST /api/relay/upstreams/disconnect-all\n");
-        printf("\nFirehose endpoint:\n");
-        printf("  WS   /xrpc/com.atproto.sync.subscribeRepos\n");
-        printf("\nPress Ctrl+C to stop.\n");
-
-        // Run the run loop
-        [[NSRunLoop currentRunLoop] run];
-
-        // Cleanup
-        [upstreamManager disconnectAll];
-        [server stop];
+        return [GZServiceLifecycle runServiceWithRuntime:composite
+                                             serviceName:@"Zuk relay server"
+                                                 onStart:^{
+                                                     printf("Zuk relay server started on port %lu\n", (unsigned long)port);
+                                                     printf("Data directory: %s\n", [dataDir UTF8String]);
+                                                     printf("Upstreams: %lu configured\n", (unsigned long)upstreamURLs.count);
+                                                     printf("\nAPI endpoints:\n");
+                                                     printf("  GET  /api/relay/metrics\n");
+                                                     printf("  GET  /api/relay/upstreams\n");
+                                                     printf("  POST /api/relay/upstreams\n");
+                                                     printf("  GET  /api/relay/capabilities\n");
+                                                     printf("  GET  /api/relay/health\n");
+                                                     printf("  POST /api/relay/requestCrawl\n");
+                                                     printf("  POST /api/relay/upstreams/reconnect-all\n");
+                                                     printf("  POST /api/relay/upstreams/disconnect-all\n");
+                                                     printf("\nFirehose endpoint:\n");
+                                                     printf("  WS   /xrpc/com.atproto.sync.subscribeRepos\n");
+                                                     printf("\nPress Ctrl+C to stop.\n");
+                                                 }
+                                         announceSignals:NO];
     }
     return 0;
 }
