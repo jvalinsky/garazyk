@@ -69,11 +69,18 @@ Characterize and port `jelcz` from its handwritten option scan to `GZCommandLine
   the current CLI grammar and exit behavior only, leaving silent shutdown, the
   dedicated crash log, GNUstep category loading, and the actual lifecycle port
   for the next one-binary slice.
+- `garazyk-ui` and `jelcz` are fully migrated to `GZCommandLineOptions` and
+  `GZServiceLifecycle`. Both maintain their exact CLI grammar, return codes,
+  and dedicated crash log contracts (`/tmp/garazyk-ui-crash.log` and
+  `/tmp/jelcz-crash.log` via `GZCrashReporter`). Both have bounded executable
+  characterization test suites (`GarazykUICommandTests` and
+  `JelczCommandTests`) registered in `test_main.m` and verified natively on
+  macOS and inside the `garazyk-pds:gnustep` Linux Docker image (`docker run --rm --entrypoint /usr/local/bin/<binary> garazyk-pds:gnustep version/help`).
 - The full `./build/tests/AllTests --gated=run` acceptance run completed in
   697 seconds: 3,966 tests ran and 68 failures remain outside
-  `GarazykUICommandTests` (including the existing `PDSSQLiteRepositoryTests`,
-  OAuth client-auth-policy, and video-processor suites). The focused class
-  passes, but the inherited full-suite failures keep the global gate red.
+  `GarazykUICommandTests` and `JelczCommandTests` (including the existing `PDSSQLiteRepositoryTests`,
+  OAuth client-auth-policy, and video-processor suites). The focused classes
+  pass, but the inherited full-suite failures keep the global gate red.
 
 ## Mission
 

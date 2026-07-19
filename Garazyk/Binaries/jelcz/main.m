@@ -33,89 +33,74 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 #import "MediaCore/JelczCLI.h"
+#import "CLI/GZCommandLineOptions.h"
+#import "Runtime/GZServiceLifecycle.h"
+#import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 
-static ATProtoMediaServiceRuntime *gRuntime = nil;
+static const char *executable_name = "jelcz";
 
-#pragma mark - Signal Handling
+static int fail_with_usage(NSString *message) {
+    if (message.length > 0) {
+        fprintf(stderr, "Error: %s\n\n", message.UTF8String);
+    }
+    JelczPrintUsage();
+    return 1;
+}
 
-static void crash_signal_handler(int sig) {
-    const char *signame = (sig == SIGSEGV) ? "SIGSEGV" :
-                          (sig == SIGABRT) ? "SIGABRT" :
-                          (sig == SIGBUS)  ? "SIGBUS"  :
-                          (sig == SIGFPE)  ? "SIGFPE"  :
-                          (sig == SIGTRAP) ? "SIGTRAP" : "UNKNOWN";
-    char buf[256];
-    int len = snprintf(buf, sizeof(buf), "\n=== FATAL SIGNAL %s (%d) in jelcz ===\n", signame, sig);
-    write(STDERR_FILENO, buf, (size_t)len);
-    int fd = open("/tmp/jelcz-crash.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
-    if (fd >= 0) {
-        write(fd, buf, (size_t)len);
-        void *frames[32];
-        int frame_count = (int)backtrace(frames, 32);
-        for (int i = 0; i < frame_count; i++) {
-            char frame_buf[64];
-            int flen = snprintf(frame_buf, sizeof(frame_buf), "  #%d %p\n", i, frames[i]);
-            write(fd, frame_buf, (size_t)flen);
-        }
-        char **symbols = backtrace_symbols(frames, frame_count);
-        if (symbols) {
-            for (int i = 0; i < frame_count; i++) {
-                char sym_buf[256];
-                int slen = snprintf(sym_buf, sizeof(sym_buf), "  #%d %s\n", i, symbols[i] ?: "?");
-                write(fd, sym_buf, (size_t)slen);
+static BOOL help_requested_before_parse_error(NSArray<NSString *> *args) {
+    NSSet<NSString *> *argFlags = [NSSet setWithObjects:
+        @"--port", @"-p",
+        @"--pds-url",
+        @"--data-dir",
+        @"--blob-dir",
+        @"--did",
+        @"--s3-bucket",
+        @"--s3-region",
+        @"--s3-endpoint",
+        @"--hls-dir",
+        @"--hls-base-url",
+        nil];
+    for (NSUInteger i = 0; i < args.count; i++) {
+        NSString *arg = args[i];
+        if ([argFlags containsObject:arg]) {
+            if (i + 1 >= args.count) {
+                return NO;
             }
-            free(symbols);
+            i++;
+        } else if ([arg isEqualToString:@"--hls-1080p"] ||
+                   [arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
+        } else if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
+            return YES;
+        } else {
+            return NO;
         }
-        close(fd);
     }
-    signal(sig, SIG_DFL);
-    raise(sig);
+    return NO;
 }
-
-static void uncaught_exception_handler(NSException *exception) {
-    int fd = open("/tmp/jelcz-crash.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
-    if (fd >= 0) {
-        char buf[1024];
-        int len = snprintf(buf, sizeof(buf), "=== UNCAUGHT EXCEPTION ===\nName: %s\nReason: %s\n",
-            exception.name.UTF8String ?: "?", exception.reason.UTF8String ?: "?");
-        write(fd, buf, (size_t)len);
-        close(fd);
-    }
-}
-
-static void install_crash_handlers(void) {
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = crash_signal_handler;
-    sa.sa_flags = SA_RESETHAND;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGBUS,  &sa, NULL);
-    sigaction(SIGFPE,  &sa, NULL);
-    sigaction(SIGTRAP, &sa, NULL);
-    NSSetUncaughtExceptionHandler(&uncaught_exception_handler);
-}
-
-void handleSignal(int sig) {
-    GZ_LOG_INFO(@"Received signal %d, shutting down...", sig);
-    [gRuntime stop];
-    exit(0);
-}
-
-
 
 /// Queries `/_health` on a running Jelcz instance.
-static int run_status(int argc, const char *argv[]) {
-    NSUInteger port = 2586;
-    for (int i = 2; i < argc; i++) {
-        NSString *arg = [NSString stringWithUTF8String:argv[i]];
-        if ([arg isEqualToString:@"--port"] && i + 1 < argc) {
-            port = [[NSString stringWithUTF8String:argv[++i]] integerValue];
-        }
-    }
-    NSString *urlString = [NSString stringWithFormat:@"http://127.0.0.1:%lu/_health", (unsigned long)port];
+static int run_status(NSArray<NSString *> *args) {
+    GZCommandLineOptions *parser = [[GZCommandLineOptions alloc] init];
+    [parser registerOptions:@[
+        [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO]
+    ] forCommand:@"status"];
+
     NSError *error = nil;
+    NSDictionary<NSString *, id> *parsedArgs = [parser parseArguments:args forCommand:@"status" error:&error];
+    if (!parsedArgs) {
+        return fail_with_usage(error.localizedDescription);
+    }
+
+    NSUInteger port = 2586;
+    if (parsedArgs[@"port"]) {
+        NSInteger parsedPort = [parsedArgs[@"port"] integerValue];
+        if (parsedPort <= 0) {
+            return fail_with_usage(@"Port must be a positive integer");
+        }
+        port = (NSUInteger)parsedPort;
+    }
+
+    NSString *urlString = [NSString stringWithFormat:@"http://127.0.0.1:%lu/_health", (unsigned long)port];
     NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlString] options:0 error:&error];
     if (!data) {
         printf("Jelcz status: NOT RUNNING (port %lu)\n", (unsigned long)port);
@@ -215,39 +200,58 @@ static void registerHLSRoutes(HttpServer *server, ATProtoVideoHLSGenerator *hlsG
 
 #pragma mark - Serve
 
-int run_serve(int argc, const char *argv[]) {
-    install_crash_handlers();
-    signal(SIGINT, handleSignal);
-    signal(SIGTERM, handleSignal);
+static int run_serve(NSArray<NSString *> *args) {
+    if (help_requested_before_parse_error(args)) {
+        JelczPrintUsage();
+        return 0;
+    }
+
+    GZCommandLineOptions *parser = [[GZCommandLineOptions alloc] init];
+    [parser registerOptions:@[
+        [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"pds-url" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"blob-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"did" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"s3-bucket" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"s3-region" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"s3-endpoint" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"hls-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"hls-base-url" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"hls-1080p" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
+    ] forCommand:@"serve"];
+
+    NSError *parseError = nil;
+    NSDictionary<NSString *, id> *parsedArgs = [parser parseArguments:args
+                                                              forCommand:@"serve"
+                                                                   error:&parseError];
+    if (!parsedArgs) {
+        return fail_with_usage(parseError.localizedDescription);
+    }
+
+    NSString *portString = parsedArgs[@"port"];
+    if (portString && portString.integerValue <= 0) {
+        return fail_with_usage(@"Port must be a positive integer");
+    }
+
+    if ([parsedArgs[@"verbose"] boolValue]) {
+        [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
+    }
 
     // Build config from env + CLI overrides
     ATProtoMediaServiceConfiguration *config = [ATProtoMediaServiceConfiguration configurationFromEnvironmentWithPrefix:@"JELCZ"];
-
-    for (int i = 2; i < argc; i++) {
-        NSString *arg = [NSString stringWithUTF8String:argv[i]];
-        if ([arg isEqualToString:@"--port"] && i + 1 < argc)
-            config.port = [[NSString stringWithUTF8String:argv[++i]] integerValue];
-        else if ([arg isEqualToString:@"--pds-url"] && i + 1 < argc)
-            config.pdsURL = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--data-dir"] && i + 1 < argc)
-            config.dataDirectory = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--blob-dir"] && i + 1 < argc)
-            config.blobDirectory = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--did"] && i + 1 < argc)
-            config.serviceDID = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--s3-bucket"] && i + 1 < argc)
-            config.s3Bucket = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--s3-region"] && i + 1 < argc)
-            config.s3Region = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--s3-endpoint"] && i + 1 < argc)
-            config.s3Endpoint = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--hls-dir"] && i + 1 < argc)
-            config.outputDirectory = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--hls-base-url"] && i + 1 < argc)
-            config.outputBaseUrl = [NSString stringWithUTF8String:argv[++i]];
-        else if ([arg isEqualToString:@"--hls-1080p"])
-            config.includeHighQuality = YES;
-    }
+    if (parsedArgs[@"port"]) config.port = [parsedArgs[@"port"] integerValue];
+    if (parsedArgs[@"pds-url"]) config.pdsURL = parsedArgs[@"pds-url"];
+    if (parsedArgs[@"data-dir"]) config.dataDirectory = parsedArgs[@"data-dir"];
+    if (parsedArgs[@"blob-dir"]) config.blobDirectory = parsedArgs[@"blob-dir"];
+    if (parsedArgs[@"did"]) config.serviceDID = parsedArgs[@"did"];
+    if (parsedArgs[@"s3-bucket"]) config.s3Bucket = parsedArgs[@"s3-bucket"];
+    if (parsedArgs[@"s3-region"]) config.s3Region = parsedArgs[@"s3-region"];
+    if (parsedArgs[@"s3-endpoint"]) config.s3Endpoint = parsedArgs[@"s3-endpoint"];
+    if (parsedArgs[@"hls-dir"]) config.outputDirectory = parsedArgs[@"hls-dir"];
+    if (parsedArgs[@"hls-base-url"]) config.outputBaseUrl = parsedArgs[@"hls-base-url"];
+    if ([parsedArgs[@"hls-1080p"] boolValue]) config.includeHighQuality = YES;
 
     GZ_LOG_INFO(@"Jelcz video processing service starting (port %lu)", (unsigned long)config.port);
 
@@ -257,12 +261,7 @@ int run_serve(int argc, const char *argv[]) {
     videoProcessor.include1080p = config.includeHighQuality;
 
     // Boot the framework runtime
-    gRuntime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:config processor:videoProcessor];
-    NSError *error = nil;
-    if (![gRuntime startWithError:&error]) {
-        GZ_LOG_ERROR(@"Failed to start runtime: %@", error);
-        return 1;
-    }
+    ATProtoMediaServiceRuntime *runtime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:config processor:videoProcessor];
 
     // Configure HLS generator
     ATProtoVideoHLSGenerator *hlsGenerator = [ATProtoVideoHLSGenerator sharedGenerator];
@@ -270,11 +269,14 @@ int run_serve(int argc, const char *argv[]) {
     hlsGenerator.include1080p = config.includeHighQuality;
 
     // Register video-specific HLS serving routes on the runtime's HTTP server
-    registerHLSRoutes(gRuntime.httpServer, hlsGenerator);
+    registerHLSRoutes(runtime.httpServer, hlsGenerator);
 
-    GZ_LOG_INFO(@"Jelcz listening on port %lu", (unsigned long)config.port);
-    [[NSRunLoop currentRunLoop] run];
-    return 0;
+    return [GZServiceLifecycle runServiceWithRuntime:runtime
+                                         serviceName:@"Jelcz video processing service"
+                                             onStart:^{
+        GZ_LOG_INFO(@"Jelcz listening on port %lu", (unsigned long)config.port);
+    }
+                                     announceSignals:NO];
 }
 
 #pragma mark - Main
@@ -283,20 +285,36 @@ int main(int argc, const char *argv[]) {
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
+    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
+    [GZCrashReporter installCrashHandlersWithExecutableName:executable_name];
     @autoreleasepool {
-        if (argc < 2) { JelczPrintUsage(); return 1; }
+        if (argc < 2) {
+            JelczPrintUsage();
+            return 1;
+        }
         NSString *command = [NSString stringWithUTF8String:argv[1]];
-        if ([command isEqualToString:@"serve"])
-            return run_serve(argc, argv);
-        else if ([command isEqualToString:@"version"]) {
+        if ([command isEqualToString:@"help"] || [command isEqualToString:@"-h"] || [command isEqualToString:@"--help"]) {
+            JelczPrintUsage();
+            return 0;
+        }
+        if ([command isEqualToString:@"version"]) {
             printf("Jelcz 0.2.0 (AT Protocol Video Processing Service - ATProtoMediaCore)\n");
             return 0;
-        } else if ([command isEqualToString:@"status"])
-            return run_status(argc, argv);
-        else if ([command isEqualToString:@"help"] || [command isEqualToString:@"-h"] || [command isEqualToString:@"--help"]) {
-            JelczPrintUsage(); return 0;
+        }
+
+        NSMutableArray<NSString *> *args = [NSMutableArray array];
+        for (int i = 2; i < argc; i++) {
+            [args addObject:[NSString stringWithUTF8String:argv[i]]];
+        }
+
+        if ([command isEqualToString:@"serve"]) {
+            return run_serve(args);
+        } else if ([command isEqualToString:@"status"]) {
+            return run_status(args);
         } else {
-            printf("Unknown command: %s\n\n", argv[1]); JelczPrintUsage(); return 1;
+            printf("Unknown command: %s\n\n", argv[1]);
+            JelczPrintUsage();
+            return 1;
         }
     }
     return 0;

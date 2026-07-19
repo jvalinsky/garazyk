@@ -202,6 +202,9 @@ COPY --from=builder /src/build/bin/syrena /usr/local/bin/syrena
 COPY --from=builder /src/build/bin/mikrus /usr/local/bin/mikrus
 COPY --from=builder /src/build/bin/beskid /usr/local/bin/beskid
 COPY --from=builder /src/build/bin/garazyk-ui /usr/local/bin/garazyk-ui
+COPY --from=builder /src/build/bin/jelcz /usr/local/bin/jelcz
+COPY --from=builder /src/build/bin/syrena-chat /usr/local/bin/syrena-chat
+COPY --from=builder /src/build/bin/germ /usr/local/bin/germ
 
 # Copy UI assets for garazyk-ui
 COPY --from=builder /src/build/bin/Assets /usr/local/bin/Assets
