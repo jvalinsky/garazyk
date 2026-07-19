@@ -3311,6 +3311,9 @@ export interface LexiconDefs {
   "tools.garazyk.account.getUsage": {
     "main": never;
   };
+  "tools.garazyk.admin.getCollectionMembershipStats": {
+    "main": never;
+  };
   "tools.garazyk.sync.getRepoFiltered": {
     "main": never;
   };
@@ -8763,6 +8766,16 @@ export interface Lexicons {
       "repoBytes": number;
     };
   };
+  "tools.garazyk.admin.getCollectionMembershipStats": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: {
+      "count": number;
+      "pruned"?: number;
+    };
+  };
   "tools.garazyk.sync.getRepoFiltered": {
     type: "query";
     outputEncoding: "application/vnd.ipld.car";
@@ -9925,6 +9938,7 @@ export const LEXICON_DEFINITION_KINDS = {
   "social.grain.photo.getActorPhotos": "query",
   "social.grain.photo.uploadPhoto": "procedure",
   "tools.garazyk.account.getUsage": "query",
+  "tools.garazyk.admin.getCollectionMembershipStats": "procedure",
   "tools.garazyk.sync.getRepoFiltered": "query",
   "tools.ozone.communication.createTemplate": "procedure",
   "tools.ozone.communication.defs": "other",
@@ -10353,6 +10367,7 @@ export const LEXICON_METHOD_TYPES = {
   "social.grain.photo.getActorPhotos": "query",
   "social.grain.photo.uploadPhoto": "procedure",
   "tools.garazyk.account.getUsage": "query",
+  "tools.garazyk.admin.getCollectionMembershipStats": "procedure",
   "tools.garazyk.sync.getRepoFiltered": "query",
   "tools.ozone.communication.createTemplate": "procedure",
   "tools.ozone.communication.deleteTemplate": "procedure",
@@ -10575,6 +10590,7 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "social.grain.photo.createExif": "application/json",
   "social.grain.photo.deletePhoto": "application/json",
   "social.grain.photo.uploadPhoto": "*/*",
+  "tools.garazyk.admin.getCollectionMembershipStats": "application/json",
   "tools.ozone.communication.createTemplate": "application/json",
   "tools.ozone.communication.deleteTemplate": "application/json",
   "tools.ozone.communication.updateTemplate": "application/json",
@@ -10969,6 +10985,7 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "social.grain.photo.getActorPhotos": "application/json",
   "social.grain.photo.uploadPhoto": "application/json",
   "tools.garazyk.account.getUsage": "application/json",
+  "tools.garazyk.admin.getCollectionMembershipStats": "application/json",
   "tools.garazyk.sync.getRepoFiltered": "application/vnd.ipld.car",
   "tools.ozone.communication.createTemplate": "application/json",
   "tools.ozone.communication.deleteTemplate": "application/json",
@@ -11555,6 +11572,9 @@ export interface GeneratedClient {
     "garazyk": {
       "account": {
         "getUsage"(params?: QueryParams<"tools.garazyk.account.getUsage">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.garazyk.account.getUsage">>;
+      };
+      "admin": {
+        "getCollectionMembershipStats"(input?: ProcedureInput<"tools.garazyk.admin.getCollectionMembershipStats">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.garazyk.admin.getCollectionMembershipStats">>;
       };
       "sync": {
         "getRepoFiltered"(params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>;
