@@ -46,6 +46,8 @@ subagent invocation.
 | `architecture_auditor`      | `architecture-auditor`        | XRPC handlers, service boundaries, and platform compatibility. |
 | `web_ui_auditor`            | `web-ui-auditor`              | `AdminUI/` and web assets.                                     |
 | `atproto_coverage_auditor`  | `atproto-coverage-auditor`    | `Lexicons/` and XRPC registration.                             |
+| `sqlite_perf_auditor`       | `sqlite-perf-auditor`         | SQLite schema/query changes, migrations, index and PRAGMA fit. |
+| `scenario_runner`           | `scenario-runner`             | Structured hamownia scenario runs; dated evidence for gates.   |
 | `pr_reviewer`               | `pr-reviewer`                 | Branch and pull request reviews.                               |
 
 ## Project Skills
