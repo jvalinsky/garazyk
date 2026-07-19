@@ -75,13 +75,9 @@ For each binary:
 
 One binary per commit gives each port an independent rollback.
 
-`garazyk-ui` is the first remaining binary under characterization
-(2026-07-18): a bounded six-case executable suite captures its current command
-grammar, exit statuses, and startup bind-failure boundary before its
-`GZCommandLineOptions`/`GZServiceLifecycle` port. The port, service signals,
-crash-log contract, and Linux category smoke remain pending. Its focused test
-class passes; the full native acceptance run completes with 68 failures in
-other existing suites, so the global gate remains red.
+`garazyk-ui` is ported and verified across macOS and GNUstep/Linux (2026-07-19): its seven-case executable suite passes natively, `announceSignals:NO` and `GZCrashReporter` maintain its silent signal and `/tmp/garazyk-ui-crash.log` diagnostic contract, and the `garazyk-gnustep` Docker image confirms clean `--help` / `serve --help` execution inside Linux.
+
+The next remaining binary under characterization and adoption is `jelcz`, followed by `syrena-chat`, `germ`, `kaszlak`, `campagnola`, and `zuk`. One binary per commit.
 
 ## A5. Relay product decision (decided 2026-07-17 — remove)
 

@@ -5,6 +5,7 @@
 #import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 #import <execinfo.h>
+#import <signal.h>
 
 #if defined(GNUSTEP)
 #import <curl/curl.h>
@@ -13,7 +14,11 @@
 // Force NSDateFormatter category to be linked
 extern void NSDateFormatterLinkATProtoCategory(void);
 
-static id<GZServiceRuntimeProtocol> gRunningRuntime = nil;
+static volatile sig_atomic_t gShutdownSignal = 0;
+
+static void lifecycleShutdownHandler(int sig) {
+    gShutdownSignal = sig;
+}
 
 static void uncaughtExceptionHandler(NSException *exception) {
     fprintf(stderr, "=== UNCAUGHT NSException ===\n");
@@ -67,18 +72,23 @@ static void sigabrtHandler(int sig) {
 + (int)runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime
                  serviceName:(NSString *)serviceName
                      onStart:(void (^ _Nullable)(void))onStart {
-    gRunningRuntime = runtime;
+    return [self runServiceWithRuntime:runtime
+                            serviceName:serviceName
+                                onStart:onStart
+                        announceSignals:YES];
+}
 
-    [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
-        printf("\nReceived SIGTERM, shutting down...\n");
-        [gRunningRuntime stop];
-        exit(0);
-    }];
-    [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
-        printf("\nReceived SIGINT, shutting down...\n");
-        [gRunningRuntime stop];
-        exit(0);
-    }];
++ (int)runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime
+                 serviceName:(NSString *)serviceName
+                     onStart:(void (^ _Nullable)(void))onStart
+             announceSignals:(BOOL)announceSignals {
+    gShutdownSignal = 0;
+    struct sigaction shutdownAction;
+    memset(&shutdownAction, 0, sizeof(shutdownAction));
+    shutdownAction.sa_handler = lifecycleShutdownHandler;
+    sigemptyset(&shutdownAction.sa_mask);
+    sigaction(SIGTERM, &shutdownAction, NULL);
+    sigaction(SIGINT, &shutdownAction, NULL);
 
     NSError *startError = nil;
     if (![runtime startWithError:&startError]) {
@@ -90,7 +100,17 @@ static void sigabrtHandler(int sig) {
         onStart();
     }
 
-    [[NSRunLoop currentRunLoop] run];
+    while (gShutdownSignal == 0) {
+        @autoreleasepool {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+        }
+    }
+
+    if (announceSignals) {
+        const char *name = gShutdownSignal == SIGTERM ? "SIGTERM" : "SIGINT";
+        printf("\nReceived %s, shutting down...\n", name);
+    }
     [runtime stop];
     return 0;
 }

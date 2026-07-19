@@ -288,4 +288,62 @@ static NSString *GZUIStringFromFileDescriptor(int descriptor) {
     XCTAssertFalse([result.standardOutput containsString:@"Press Ctrl+C to stop."]);
 }
 
+- (void)testServeTerminatesSilentlyOnSIGTERM {
+    int reservation = socket(AF_INET, SOCK_STREAM, 0);
+    XCTAssertGreaterThanOrEqual(reservation, 0);
+    if (reservation < 0) return;
+
+    struct sockaddr_in address;
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    address.sin_port = 0;
+    int bindResult = bind(reservation, (struct sockaddr *)&address, sizeof(address));
+    XCTAssertEqual(bindResult, 0);
+    if (bindResult != 0) {
+        close(reservation);
+        return;
+    }
+    socklen_t addressLength = sizeof(address);
+    int nameResult = getsockname(reservation, (struct sockaddr *)&address, &addressLength);
+    XCTAssertEqual(nameResult, 0);
+    if (nameResult != 0) {
+        close(reservation);
+        return;
+    }
+    NSString *port = [NSString stringWithFormat:@"%u", ntohs(address.sin_port)];
+    close(reservation);
+
+    NSTask *task = [[NSTask alloc] init];
+    task.executableURL = [NSURL fileURLWithPath:[self garazykUIExecutablePath]];
+    task.arguments = @[@"serve", @"--host", @"127.0.0.1", @"--port", port];
+    NSPipe *standardOutput = [NSPipe pipe];
+    NSPipe *standardError = [NSPipe pipe];
+    task.standardOutput = standardOutput;
+    task.standardError = standardError;
+
+    NSError *launchError = nil;
+    XCTAssertTrue([task launchAndReturnError:&launchError], @"%@", launchError);
+    if (!task.isRunning) return;
+
+    usleep(250 * 1000);
+    XCTAssertTrue(task.isRunning, @"garazyk-ui exited before it could receive SIGTERM");
+    if (task.isRunning) {
+        [task terminate];
+    }
+    [task waitUntilExit];
+
+    NSString *output = [[NSString alloc] initWithData:
+        [standardOutput.fileHandleForReading readDataToEndOfFile]
+                                            encoding:NSUTF8StringEncoding] ?: @"";
+    NSString *error = [[NSString alloc] initWithData:
+        [standardError.fileHandleForReading readDataToEndOfFile]
+                                           encoding:NSUTF8StringEncoding] ?: @"";
+    XCTAssertEqual(task.terminationReason, NSTaskTerminationReasonExit);
+    XCTAssertEqual(task.terminationStatus, 0);
+    XCTAssertTrue([output containsString:@"garazyk-ui listening on"]);
+    XCTAssertFalse([output containsString:@"Received SIGTERM"]);
+    XCTAssertEqualObjects(error, @"");
+}
+
 @end
