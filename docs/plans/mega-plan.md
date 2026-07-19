@@ -305,9 +305,10 @@ scenario 93/94 runtime passes.
    **Checkpoint (2026-07-18):** `@garazyk/tui@0.1.0` is the first verified
    release candidate: its dedicated format, lint, type-check, and 252-test
    tasks pass, and it exposes the required root, runtime, and testing exports.
-   Phase 5 is blocked pending explicit approval and JSR `@garazyk` publisher
-   access to run `deno publish`; no package has been published. The later
-   ATProto package releases remain after that checkpoint (workstream 03).
+   Its JSR publication is indefinitely deferred by maintainer decision: do not
+   request or use publisher access, or run `deno publish`, until the maintainer
+   explicitly reopens Phase 5. No package has been published; later ATProto
+   package releases remain deferred too (workstream 03).
 2. Remove the 92 scenario imports through `scripts/lib/deno` and the package
    back-reference in `packages/hamownia/tasks.ts` before the split deletion.
 3. **Complete except lint (2026-07-17):** plain Objective-C NSID constants are
