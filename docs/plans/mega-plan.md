@@ -317,11 +317,7 @@ scenario 93/94 runtime passes.
    `registerMethod:@"..."` literals in production source, with six focused
    tests and a read-only CI scan; generator output remains in sync for 419
    endpoints.
-4. Continue `GZCommandLineOptions` and `GZServiceLifecycle` adoption beyond
-   Beskid, Mikrus, and Syrena, one binary at a time. `garazyk-ui` is ported
-   and verified across macOS and GNUstep/Linux (seven characterization tests,
-   silent signals, crash-log contract preserved). Next is `jelcz`, followed by
-   `syrena-chat`, `germ`, `kaszlak`, `campagnola`, and `zuk`.
+4. **Complete (2026-07-19):** `GZCommandLineOptions` and `GZServiceLifecycle` adoption is complete across all remaining service binaries (`garazyk-ui`, `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`). Each binary has a dedicated characterization suite (`GarazykUICommandTests`, `JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) verified natively and inside GNUstep/Linux, preserving signal handling and `/tmp/<binary>-crash.log` diagnostic contracts. All ports are committed one binary per commit.
 
 Exit gate: all three repositories pass format, lint, check, and tests; Garazyk
 uses released dependencies and retains a launcher smoke test.

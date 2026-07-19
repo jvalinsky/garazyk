@@ -73,11 +73,9 @@ For each binary:
   checks;
 - smoke `--help` plus one real invocation on macOS and Linux.
 
-One binary per commit gives each port an independent rollback.
-
 `garazyk-ui` is ported and verified across macOS and GNUstep/Linux (2026-07-19): its seven-case executable suite passes natively, `announceSignals:NO` and `GZCrashReporter` maintain its silent signal and `/tmp/garazyk-ui-crash.log` diagnostic contract, and the `garazyk-gnustep` Docker image confirms clean `--help` / `serve --help` execution inside Linux.
 
-The next remaining binary under characterization and adoption is `jelcz`, followed by `syrena-chat`, `germ`, `kaszlak`, `campagnola`, and `zuk`. One binary per commit.
+All remaining binaries (`jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) are now ported and verified (2026-07-19): each binary has an independent characterization suite (`JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) verified natively and across Linux/GNUstep, preserving specific option grammars, signal handling, and crash diagnostic logs (`/tmp/<binary>-crash.log`). All ports are committed one binary per commit.
 
 ## A5. Relay product decision (decided 2026-07-17 — remove)
 
