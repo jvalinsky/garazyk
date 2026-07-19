@@ -1,6 +1,6 @@
 ---
 title: Phase Execution Prompts
-last_verified: 2026-07-18
+last_verified: 2026-07-19
 ---
 
 # Phase Execution Prompts
@@ -23,8 +23,13 @@ depends_on: []          # phase numbers that must be complete first
 
 A driver (human, the primary Codex agent, or a delegated worker) repeats:
 
-1. Pick the lowest-numbered phase whose `status` is not `complete` and whose
-   `depends_on` phases are all `complete`.
+1. Pick the lowest-numbered phase whose `status` is `pending` or
+   `in-progress` and whose `depends_on` phases are all `complete`. Skip
+   `blocked` phases: they resume only when the input named under their
+   `## Blocked on` heading has actually arrived (then reset them to
+   `in-progress` with a note recording the unblock). A dependency that is
+   `blocked` does not satisfy `depends_on`; if every remaining phase is
+   blocked, stop and report rather than looping.
 2. Set `status: in-progress`. Read the phase file and every source it lists
    before writing code.
 3. Execute one coherent slice at a time. Run the mega plan's global gates
@@ -75,3 +80,5 @@ These are Codex built-in agent types; project audit roles live under
 | 8 | [phase-08](phase-08-admin-ui.md) | Admin UI accessibility and structural cleanup | 1 |
 | 9 | [phase-09](phase-09-spaces-hardening.md) | Space key rotation, ops readiness, attestation decision | 2 |
 | 10 | [phase-10](phase-10-deferred-products.md) | WASM baseline + SMTP/blob/STAR decisions + drift cadence | — |
+| 11 | [phase-11](phase-11-storage-and-mst-optimization.md) | Storage and MST optimization remainder (workstream 07) | 7 |
+| 12 | [phase-12](phase-12-godfile-decomposition.md) | Objective-C god-file decomposition (route packs, OAuth, PDS services) | 6 |
