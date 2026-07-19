@@ -4,7 +4,7 @@ title: Relay product decision and incremental public sync
 status: in-progress
 agent: worker
 depends_on: [4]
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 ---
 
 # Phase 7: Relay product decision and incremental public sync
@@ -47,12 +47,17 @@ preparation incremental instead of materializing up to 100k records.
 
 ## Remaining work
 
-1. Slice 3: the incremental export producer behind a bounded fallback,
-   peak memory tracked in tests (golden fixtures from slice 2 are the
-   safety net — exports must stay byte-identical).
-2. `PDSCollectionMembershipPruner` (committed in `6de6ebc64`) has no
-   tests yet — give it its own test coverage and commit.
-3. Sync 1.1 remainder (export block ordering, collection subsets):
+1. ~~Slice 3: the incremental export producer behind a bounded fallback~~ —
+   **done** (`788592aca`, 2026-07-19): paginated record-CID batching with a
+   200k safety cap, Tier 4 database fallback wired into the writer and STAR
+   chunk producer, byte-identical fixtures and memory bounds verified.
+2. ~~`PDSCollectionMembershipPruner` test coverage~~ — **done**
+   (`6b52752e0`, 2026-07-19), including on-demand pruning when stopped.
+3. Commit the regenerated `packages/gruszka/lexicons.ts` pickup of
+   `tools.garazyk.admin.getCollectionMembershipStats` (left uncommitted in
+   the working tree by the slice 2 endpoint addition) so the lexicon drift
+   check stays green.
+4. Sync 1.1 remainder (export block ordering, collection subsets):
    tracked as S6 gap G2; recheck spec status before closing this phase.
    **Update 2026-07-18:** a forward-compat streamable-CAR pre-order
    enumerator is committed (`ed01c8085`, on the lock-free atomic-root

@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-18
+last_verified: 2026-07-19
 ---
 
 # Garazyk Mega Plan
@@ -300,17 +300,21 @@ scenario 93/94 runtime passes.
 
 ### Phase 3: boundaries
 
-1. Complete the two-repository Deno extraction using released package versions
-   as the boundary. Keep thin compatibility launchers until consumers pass.
-   **Checkpoint (2026-07-18):** `@garazyk/tui@0.1.0` is the first verified
-   release candidate: its dedicated format, lint, type-check, and 252-test
-   tasks pass, and it exposes the required root, runtime, and testing exports.
-   Its JSR publication is indefinitely deferred by maintainer decision: do not
-   request or use publisher access, or run `deno publish`, until the maintainer
-   explicitly reopens Phase 5. No package has been published; later ATProto
-   package releases remain deferred too (workstream 03).
+1. **Blocked (2026-07-18, maintainer decision):** complete the two-repository
+   Deno extraction using released package versions as the boundary. Keep thin
+   compatibility launchers until consumers pass. `@garazyk/tui@0.1.0` is the
+   first verified release candidate: its dedicated format, lint, type-check,
+   and 252-test tasks pass, and it exposes the required root, runtime, and
+   testing exports. Its JSR publication is indefinitely deferred by maintainer
+   decision: do not request or use publisher access, or run `deno publish`,
+   until the maintainer explicitly reopens Phase 5. No package has been
+   published; later ATProto package releases and the in-tree deletion (R4)
+   remain deferred with it (workstream 03).
 2. Remove the 92 scenario imports through `scripts/lib/deno` and the package
    back-reference in `packages/hamownia/tasks.ts` before the split deletion.
+   The final form (imports by released package name) is deferred with item 1;
+   a preparatory rewrite onto workspace specifiers is allowed only if the
+   maintainer asks for it — otherwise this waits for the Phase 5 reopening.
 3. **Complete (2026-07-18):** plain Objective-C NSID constants are generated
    deterministically (`f46ab5fb8`) and adopted at every call site with a CI
    drift check (`e212288bd`). A Narzedzia guard now rejects direct non-internal
@@ -320,18 +324,22 @@ scenario 93/94 runtime passes.
 4. **Complete (2026-07-19):** `GZCommandLineOptions` and `GZServiceLifecycle` adoption is complete across all remaining service binaries (`garazyk-ui`, `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`). Each binary has a dedicated characterization suite (`GarazykUICommandTests`, `JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) verified natively and inside GNUstep/Linux, preserving signal handling and `/tmp/<binary>-crash.log` diagnostic contracts. All ports are committed one binary per commit.
 
 Exit gate: all three repositories pass format, lint, check, and tests; Garazyk
-uses released dependencies and retains a launcher smoke test.
+uses released dependencies and retains a launcher smoke test. This gate is
+deferred while the publication deferral stands; items 3-4 are complete and the
+remaining program does not depend on items 1-2.
 
 ### Phase 4: structure and scale
 
 1. **Complete (2026-07-17):** `kaszlak relay serve` removed (Operator decision: Option 3). `PDSCLIRelayCommand` deleted; `zuk` is the canonical relay binary. Underlying relay components (RelayClient, UpstreamManager, DownstreamHandler, Firehose, etc.) are untouched and continue to serve zuk, PDSRelayService, and AppViewIngestEngine.
-2. **In progress (2026-07-18):** stream repository export preparation and
+2. **Complete (2026-07-19):** stream repository export preparation and
    replace per-account summary scans with indexed metadata. The N+1 fix,
    byte-identical golden-fixture net, and materialized
    `collection_membership` index are committed (`6de6ebc64`); the
-   incremental producer and `PDSCollectionMembershipPruner` test coverage
-   are still pending (phase-07 prompt). Relay removal is recorded in
-   ADR 0006.
+   incremental export producer with bounded fallback landed (`788592aca`)
+   with byte-identical fixtures and memory bounds verified, and
+   `PDSCollectionMembershipPruner` now has its own test suite
+   (`6b52752e0`). Relay removal is recorded in ADR 0006. The Sync 1.1
+   remainder stays open under item 7.
 3. Decompose Objective-C god files after the branch recovery and
    characterization gates. Start with route ownership, then OAuth and Admin UI.
 4. Complete Admin UI accessibility, CSS generation, and browser-module splits.
