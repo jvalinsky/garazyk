@@ -1,0 +1,266 @@
+// SPDX-FileCopyrightText: 2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
+
+#import <XCTest/XCTest.h>
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+@interface JelczCommandResult : NSObject
+@property(nonatomic, assign) int exitStatus;
+@property(nonatomic, copy) NSString *standardOutput;
+@property(nonatomic, copy) NSString *standardError;
+@end
+
+@implementation JelczCommandResult
+@end
+
+static NSString *JelczStringFromFileDescriptor(int descriptor) {
+    NSMutableData *data = [NSMutableData data];
+    uint8_t buffer[4096];
+
+    for (;;) {
+        ssize_t count = read(descriptor, buffer, sizeof(buffer));
+        if (count > 0) {
+            [data appendBytes:buffer length:(NSUInteger)count];
+            continue;
+        }
+        if (count < 0 && errno == EINTR) {
+            continue;
+        }
+        break;
+    }
+
+    NSString *string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    return string ?: @"";
+}
+
+@interface JelczCommandTests : XCTestCase
+@end
+
+@implementation JelczCommandTests
+
+- (NSString *)jelczExecutablePath {
+    NSString *testExecutable = NSProcessInfo.processInfo.arguments.firstObject;
+    if (![testExecutable hasPrefix:@"/"]) {
+        testExecutable = [NSFileManager.defaultManager.currentDirectoryPath
+            stringByAppendingPathComponent:testExecutable];
+    }
+    NSString *testsDirectory = [testExecutable stringByDeletingLastPathComponent];
+    NSString *buildDirectory = [testsDirectory stringByDeletingLastPathComponent];
+    return [[buildDirectory stringByAppendingPathComponent:@"bin"]
+        stringByAppendingPathComponent:@"jelcz"];
+}
+
+- (nullable JelczCommandResult *)runJelczWithArguments:(NSArray<NSString *> *)arguments {
+    NSString *executable = [self jelczExecutablePath];
+    XCTAssertTrue([NSFileManager.defaultManager isExecutableFileAtPath:executable],
+                  @"Expected AllTests dependency to build %@", executable);
+    if (![NSFileManager.defaultManager isExecutableFileAtPath:executable]) {
+        return nil;
+    }
+
+    int stdoutPipe[2];
+    int stderrPipe[2];
+    int stdoutPipeResult = pipe(stdoutPipe);
+    int stderrPipeResult = pipe(stderrPipe);
+    XCTAssertEqual(stdoutPipeResult, 0);
+    XCTAssertEqual(stderrPipeResult, 0);
+    if (stdoutPipeResult != 0 || stderrPipeResult != 0) {
+        if (stdoutPipeResult == 0) {
+            close(stdoutPipe[0]);
+            close(stdoutPipe[1]);
+        }
+        if (stderrPipeResult == 0) {
+            close(stderrPipe[0]);
+            close(stderrPipe[1]);
+        }
+        return nil;
+    }
+
+    char **childArguments = calloc(arguments.count + 2, sizeof(char *));
+    XCTAssertNotEqual(childArguments, NULL);
+    if (!childArguments) {
+        close(stdoutPipe[0]);
+        close(stdoutPipe[1]);
+        close(stderrPipe[0]);
+        close(stderrPipe[1]);
+        return nil;
+    }
+
+    childArguments[0] = (char *)executable.fileSystemRepresentation;
+    for (NSUInteger index = 0; index < arguments.count; index++) {
+        childArguments[index + 1] = (char *)arguments[index].fileSystemRepresentation;
+    }
+
+    pid_t child = fork();
+    XCTAssertGreaterThanOrEqual(child, 0);
+    if (child == 0) {
+        dup2(stdoutPipe[1], STDOUT_FILENO);
+        dup2(stderrPipe[1], STDERR_FILENO);
+        close(stdoutPipe[0]);
+        close(stdoutPipe[1]);
+        close(stderrPipe[0]);
+        close(stderrPipe[1]);
+        execv(childArguments[0], childArguments);
+        _exit(127);
+    }
+
+    free(childArguments);
+    close(stdoutPipe[1]);
+    close(stderrPipe[1]);
+    if (child < 0) {
+        close(stdoutPipe[0]);
+        close(stderrPipe[0]);
+        return nil;
+    }
+
+    int waitStatus = 0;
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:2.5];
+    BOOL timedOut = NO;
+    for (;;) {
+        pid_t waitResult = waitpid(child, &waitStatus, WNOHANG);
+        if (waitResult == child) {
+            break;
+        }
+        if (waitResult < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            XCTFail(@"waitpid failed: %s", strerror(errno));
+            break;
+        }
+        if ([deadline timeIntervalSinceNow] <= 0) {
+            timedOut = YES;
+            kill(child, SIGTERM);
+            while (waitpid(child, &waitStatus, 0) < 0 && errno == EINTR) {
+            }
+            break;
+        }
+        usleep(10 * 1000);
+    }
+
+    NSString *standardOutput = JelczStringFromFileDescriptor(stdoutPipe[0]);
+    NSString *standardError = JelczStringFromFileDescriptor(stderrPipe[0]);
+    close(stdoutPipe[0]);
+    close(stderrPipe[0]);
+
+    if (timedOut) {
+        XCTFail(@"jelcz did not exit within the bounded process-test timeout");
+        return nil;
+    }
+    XCTAssertTrue(WIFEXITED(waitStatus), @"jelcz terminated unexpectedly: %@", standardError);
+    if (!WIFEXITED(waitStatus)) {
+        return nil;
+    }
+
+    JelczCommandResult *result = [[JelczCommandResult alloc] init];
+    result.exitStatus = WEXITSTATUS(waitStatus);
+    result.standardOutput = standardOutput;
+    result.standardError = standardError;
+    return result;
+}
+
+- (void)assertUsageOutput:(NSString *)output {
+    XCTAssertTrue([output containsString:@"Usage: jelcz <command> [options]\n\n"]);
+    XCTAssertTrue([output containsString:@"  serve        Start video processing service\n"]);
+    XCTAssertTrue([output containsString:@"  status       Query service status\n"]);
+    XCTAssertTrue([output containsString:@"  --port <number>       HTTP API port"]);
+}
+
+- (void)testNoArgumentsPrintsUsageAndReturnsOne {
+    JelczCommandResult *result = [self runJelczWithArguments:@[]];
+    XCTAssertNotNil(result);
+    if (!result) return;
+
+    XCTAssertEqual(result.exitStatus, 1);
+    [self assertUsageOutput:result.standardOutput];
+}
+
+- (void)testHelpPrintsUsageAndReturnsZero {
+    NSArray<NSString *> *helpFlags = @[@"help", @"-h", @"--help"];
+    for (NSString *flag in helpFlags) {
+        JelczCommandResult *result = [self runJelczWithArguments:@[flag]];
+        XCTAssertNotNil(result, @"Failed for flag %@", flag);
+        if (!result) continue;
+
+        XCTAssertEqual(result.exitStatus, 0, @"Failed exit status for flag %@", flag);
+        [self assertUsageOutput:result.standardOutput];
+    }
+}
+
+- (void)testVersionPrintsVersionAndReturnsZero {
+    JelczCommandResult *result = [self runJelczWithArguments:@[@"version"]];
+    XCTAssertNotNil(result);
+    if (!result) return;
+
+    XCTAssertEqual(result.exitStatus, 0);
+    XCTAssertTrue([result.standardOutput containsString:@"Jelcz 0.2.0 (AT Protocol Video Processing Service - ATProtoMediaCore)"]);
+}
+
+- (void)testUnknownCommandPrintsErrorAndReturnsOne {
+    JelczCommandResult *result = [self runJelczWithArguments:@[@"unknown-command"]];
+    XCTAssertNotNil(result);
+    if (!result) return;
+
+    XCTAssertEqual(result.exitStatus, 1);
+    XCTAssertTrue([result.standardOutput hasPrefix:@"Unknown command: unknown-command\n\n"]);
+    [self assertUsageOutput:result.standardOutput];
+}
+
+- (void)testStatusWhenNotRunningReturnsOne {
+    JelczCommandResult *result = [self runJelczWithArguments:@[@"status", @"--port", @"19876"]];
+    XCTAssertNotNil(result);
+    if (!result) return;
+
+    XCTAssertEqual(result.exitStatus, 1);
+    XCTAssertTrue([result.standardOutput containsString:@"Jelcz status: NOT RUNNING (port 19876)"]);
+}
+
+- (void)testServeBindFailureReturnsOne {
+    int listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+    XCTAssertGreaterThanOrEqual(listenSocket, 0);
+    if (listenSocket < 0) {
+        return;
+    }
+
+    int reuse = 1;
+    setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+
+    struct sockaddr_in address;
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_port = htons(19877);
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    int bindResult = bind(listenSocket, (struct sockaddr *)&address, sizeof(address));
+    XCTAssertEqual(bindResult, 0);
+    if (bindResult != 0) {
+        close(listenSocket);
+        return;
+    }
+
+    int listenResult = listen(listenSocket, 4);
+    XCTAssertEqual(listenResult, 0);
+    if (listenResult != 0) {
+        close(listenSocket);
+        return;
+    }
+
+    JelczCommandResult *result = [self runJelczWithArguments:@[@"serve", @"--port", @"19877"]];
+    close(listenSocket);
+
+    XCTAssertNotNil(result);
+    if (!result) return;
+
+    XCTAssertEqual(result.exitStatus, 1);
+}
+
+@end
