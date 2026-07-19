@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: Repository boundary completion
-status: pending
+status: in-progress
 agent: worker
 depends_on: []
 ---
@@ -9,6 +9,35 @@ depends_on: []
 <!-- Status reset 2026-07-17: this file was flipped to in-progress with no
 recorded progress — workstream 03 is untouched since 2026-07-12 and no
 R1-R4 commits exist. Reset to pending; nothing has started. -->
+
+## Progress
+
+Started 2026-07-18: audit the two external repositories, their package task
+surfaces, and remotes to prepare an evidence-backed R1/R2 handoff. This slice
+is read-only and will stop at the declared remote/ownership checkpoint.
+
+## Blocked on
+
+Choose the GitHub owner and visibility for `garazyk-tui` and
+`garazyk-atproto-testing`, then authorize repository creation, `origin` setup,
+and the initial pushes. The required access is repository-create/push
+permission for that owner or organization. Also confirm ownership and
+publisher access for the existing `@garazyk` JSR scope; each package publish
+will remain a separate approval. Both external repositories are clean but have
+no remotes.
+
+### Checkpoint resolved (2026-07-18)
+
+Owner `jvalinsky` authorized creation of both repositories as **private**,
+their `origin` remotes, and initial pushes. Package publication remains a
+separate approval.
+
+### Remote setup evidence (2026-07-18)
+
+Created and pushed private `origin/main` repositories:
+
+- `https://github.com/jvalinsky/garazyk-tui`
+- `https://github.com/jvalinsky/garazyk-atproto-testing`
 
 # Phase 5: Repository boundary completion
 
