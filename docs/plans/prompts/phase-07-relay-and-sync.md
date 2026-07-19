@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: Relay product decision and incremental public sync
-status: in-progress
+status: complete
 agent: worker
 depends_on: [4]
 last_updated: 2026-07-19
@@ -47,29 +47,45 @@ preparation incremental instead of materializing up to 100k records.
 
 ## Remaining work
 
+All items are closed; this phase is complete.
+
 1. ~~Slice 3: the incremental export producer behind a bounded fallback~~ —
    **done** (`788592aca`, 2026-07-19): paginated record-CID batching with a
    200k safety cap, Tier 4 database fallback wired into the writer and STAR
    chunk producer, byte-identical fixtures and memory bounds verified.
 2. ~~`PDSCollectionMembershipPruner` test coverage~~ — **done**
    (`6b52752e0`, 2026-07-19), including on-demand pruning when stopped.
-3. Commit the regenerated `packages/gruszka/lexicons.ts` pickup of
-   `tools.garazyk.admin.getCollectionMembershipStats` (left uncommitted in
-   the working tree by the slice 2 endpoint addition) so the lexicon drift
-   check stays green.
-4. Sync 1.1 remainder (export block ordering, collection subsets):
-   tracked as S6 gap G2; recheck spec status before closing this phase.
-   **Update 2026-07-18:** a forward-compat streamable-CAR pre-order
-   enumerator is committed (`ed01c8085`, on the lock-free atomic-root
-   refactor `34e2b94ae`) — MST.h/MST.m
+3. ~~Commit the regenerated `packages/gruszka/lexicons.ts` pickup of
+   `tools.garazyk.admin.getCollectionMembershipStats`~~ — **done**
+   (`1269ee19`, 2026-07-19).
+4. Sync 1.1 remainder (export block ordering, collection subsets) — **closed**
+   (2026-07-19). A forward-compat streamable-CAR pre-order enumerator was
+   already committed (`ed01c8085`, on `34e2b94ae`) — MST.h/MST.m
    (`-enumerateStreamableCARBlocksUsingBlock:recordProvider:error:`
    behind `+[MST setStreamableCARBlockOrderingEnabled:]`, default off),
    `PDSRepositoryService.m` wiring, and `MSTPreorderTests`/
-   `MSTPreorderFixtureTests`/`STARPreorderTests` with
-   `Garazyk/Tests/fixtures/mst/sync11-preorder-fixture.car`. Remaining
-   here: collection subsets, the spec-text recheck, and the flag-on
-   decision (golden fixtures from slice 2 must stay byte-identical
-   while the flag is off).
+   `MSTPreorderFixtureTests`/`STARPreorderTests`. Collection-based
+   repository subsets were already implemented independently as a vendor
+   extension, `tools.garazyk.sync.getRepoFiltered`
+   (`PDSRepositoryService.m:filteredRepoContentsChunkProducer:since:collections:error:`,
+   registered in `XrpcVendorPack.m`), but had no test coverage — three
+   tests added covering collection inclusion/exclusion, the no-match case,
+   and the empty-collections error path (`PDSRepositoryServiceTests.m`,
+   36/36 green including the 3 new cases).
+   - **Spec-text recheck (2026-07-19):** refetched
+     https://atproto.com/specs/sync. Export block ordering and
+     collection-based subsets remain under a "Future Work" heading —
+     described there as "likely to support," not published or finalized.
+     No version-numbered "Sync 1.1" text exists upstream; nothing has
+     changed since the 2026-07-18 note.
+   - **Flag-on decision:** keep `streamableCARBlockOrderingEnabled` at its
+     default (off). Turning it on ahead of finalized spec text risks
+     shipping block ordering that upstream later changes incompatibly, and
+     no consumer currently requires it — the existing default full-export
+     ordering is unaffected either way. Revisit when upstream publishes
+     Sync 1.1 as spec text rather than future-work prose. Garazyk's own
+     collection-subset need is already served by the `tools.garazyk`
+     vendor extension above, independent of this flag.
 
 ## Read first
 
@@ -80,12 +96,14 @@ preparation incremental instead of materializing up to 100k records.
 
 ## Acceptance gate
 
-- Decision recorded as an ADR — **met** (ADR 0006) once committed.
+- Decision recorded as an ADR — **met** (ADR 0006).
 - Export fixtures byte-identical before/after the incremental producer —
-  fixtures exist (slice 2); producer still pending.
-- Protocol E2E for Relay/sync green in structured runs; global gates pass.
+  **met** (`788592aca`, `PDSRepositoryServiceTests`).
+- Protocol E2E for Relay/sync green in structured runs; global gates pass —
+  **met**: `PDSRepositoryServiceTests` 36/36 (including the 3 new filtered-
+  export tests); full `AllTests --parallel 4` build and run green.
 
 ## On completion
 
-Update workstream 02 A5/A6, mega-plan Phase 4 items 1-2 and 7; set
-`status: complete` here.
+Workstream 02 A5/A6, workstream 01 S6 G2, and mega-plan Phase 4 items 1-2
+and 7 updated in the same change. `status: complete` here.
