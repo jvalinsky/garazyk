@@ -23,11 +23,20 @@ repository-root-relative `packages/hamownia/cli.ts` path. The later ATProto
 packages also still rely on the workspace import map instead of self-contained
 published dependencies; those are follow-up work after the first TUI release.
 
+2026-07-18 operator decision: defer the `@garazyk/tui` publication
+indefinitely. Do not request or use JSR publisher access, and do not run a
+publish command, unless the maintainer explicitly reopens this phase.
+
 ## Blocked on
 
-Approve the externally visible publication of `@garazyk/tui@0.1.0` and confirm
-that the acting account has JSR publisher access for the `@garazyk` scope. The
-requested command is:
+An explicit maintainer decision to lift the indefinite publication deferral and
+reopen Phase 5. Until then, do not request or use JSR publisher access and do
+not publish `@garazyk/tui` or any later `@garazyk` package.
+
+## Deferred publication record
+
+The verified but deferred first publication would be `@garazyk/tui@0.1.0` from
+the following command:
 
 ```bash
 cd /Users/jack/Software/garazyk-tui
@@ -38,7 +47,7 @@ The package contains the files declared by its `deno.json` publish include
 list (`README.md`, `LICENSE`, `deno.json`, root TypeScript files, and
 `testing/**/*.ts`/`testing/**/*.json`) and exports `.`, `./runtime`,
 `./testing`, and `./testing/world_schema.json`. No publish command has been
-run.
+run, and none will run while this deferral is in effect.
 
 ## Prior checkpoints
 
