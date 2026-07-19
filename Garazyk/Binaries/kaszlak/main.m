@@ -9,7 +9,7 @@
 #import <fcntl.h>
 #import <unistd.h>
 #import <string.h>
-#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import "Runtime/GZServiceLifecycle.h"
 #if defined(GNUSTEP)
 #import <curl/curl.h>
 #endif
@@ -228,7 +228,7 @@ static int fail_with_usage(NSString *errorMessage) {
  * Flags before command are rejected.
  */
 int main(int argc, const char * argv[]) {
-    [[GZSignalManager sharedManager] installIgnoredSignals];
+    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
     install_crash_handlers();
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
