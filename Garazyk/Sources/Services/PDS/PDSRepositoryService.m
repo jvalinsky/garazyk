@@ -262,11 +262,6 @@
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;
-    NSArray<NSString *> *changedMSTKeys = nil;
-    NSArray<NSString *> *recordCIDStrings = nil;
-    NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
-    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
-
     if (![self prepareRepoExportForDid:did
                                  since:nil
                                  store:&store
@@ -275,10 +270,10 @@
                            commitBlock:&commitBlock
                         noChangesSince:&noChangesSince
                         includeFullMST:&includeFullMST
-                        changedMSTKeys:&changedMSTKeys
-                       recordCIDStrings:&recordCIDStrings
-                            recordByCID:&recordByCID
-                    materializedBlocks:&materializedBlocks
+                        changedMSTKeys:nil
+                       recordCIDStrings:nil
+                            recordByCID:nil
+                    materializedBlocks:nil
                                  error:error]) {
         return nil;
     }
@@ -802,7 +797,6 @@
                     continue;
                 }
 
-                // Check materialized blocks first, then fall back to database
                 NSData *data = capturedMaterializedBlocks[cidString];
                 if (!data) {
                     PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
@@ -811,6 +805,15 @@
                 if (!data) {
                     PDSDatabaseRecord *record = capturedRecordByCID[cidString];
                     data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+                }
+                if (!data) {
+                    PDSActorStore *store = [strongSelf.databasePool storeForDid:did error:nil];
+                    if (store) {
+                        PDSDatabaseRecord *dbRec = [store getRecordByCID:cidString forDid:did error:nil];
+                        if (dbRec) {
+                            data = [strongSelf recordBlockDataForRecord:dbRec];
+                        }
+                    }
                 }
                 if (!data) {
                     continue;
@@ -891,6 +894,15 @@
             PDSDatabaseRecord *record = capturedRecordByCID[cidString];
             data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
         }
+        if (!data) {
+            PDSActorStore *store = [strongSelf.databasePool storeForDid:did error:nil];
+            if (store) {
+                PDSDatabaseRecord *dbRec = [store getRecordByCID:cidString forDid:did error:nil];
+                if (dbRec) {
+                    data = [strongSelf recordBlockDataForRecord:dbRec];
+                }
+            }
+        }
         return data;
     } error:error];
 
@@ -955,6 +967,15 @@
         if (!data) {
             PDSDatabaseRecord *record = capturedRecordByCID[cidString];
             data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+        }
+        if (!data) {
+            PDSActorStore *store = [strongSelf.databasePool storeForDid:did error:nil];
+            if (store) {
+                PDSDatabaseRecord *dbRec = [store getRecordByCID:cidString forDid:did error:nil];
+                if (dbRec) {
+                    data = [strongSelf recordBlockDataForRecord:dbRec];
+                }
+            }
         }
         return data;
     } error:error];
@@ -1029,6 +1050,15 @@
         if (!data) {
             PDSDatabaseRecord *record = capturedRecordByCID[cidString];
             data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+        }
+        if (!data) {
+            PDSActorStore *store = [strongSelf.databasePool storeForDid:did error:nil];
+            if (store) {
+                PDSDatabaseRecord *dbRec = [store getRecordByCID:cidString forDid:did error:nil];
+                if (dbRec) {
+                    data = [strongSelf recordBlockDataForRecord:dbRec];
+                }
+            }
         }
         return data;
     } error:&exportError];
@@ -1126,12 +1156,18 @@
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return NO;
 
-    NSArray<PDSDatabaseRecord *> *records = [self loadAllRecordsForStore:store did:did error:error];
-    if (!records && error && *error) {
+    NSArray<PDSDatabaseRecord *> *records = nil;
+    MST *mst = [self loadMSTForDid:did store:store error:error];
+    if (!mst && error && *error) {
         return NO;
     }
-
-    MST *mst = [self mstFromRecords:records ?: @[]];
+    if (!mst) {
+        records = [self loadAllRecordsForStore:store did:did error:error];
+        if (!records && error && *error) {
+            return NO;
+        }
+        mst = [self mstFromRecords:records ?: @[]];
+    }
     CID *mstRootCID = mst.rootCID;
     if (!mstRootCID) {
         if (error) {
@@ -1215,56 +1251,144 @@
     NSMutableSet<NSString *> *seenRecordCIDs = [NSMutableSet set];
     NSMutableOrderedSet<NSString *> *changedMSTKeys = [NSMutableOrderedSet orderedSet];
 
-    for (PDSDatabaseRecord *record in records) {
-        if (record.rev.length == 0) {
-            record.rev = defaultRecordRev;
-            [recordsNeedingRevBackfill addObject:record];
-        }
+    if (records) {
+        for (PDSDatabaseRecord *record in records) {
+            if (record.rev.length == 0) {
+                record.rev = defaultRecordRev;
+                [recordsNeedingRevBackfill addObject:record];
+            }
 
-        BOOL recordChangedSince = (deltaMode && [record.rev compare:sinceRev] == NSOrderedDescending);
-        BOOL blockChangedSince = (deltaMode && record.cid.length > 0 && [changedBlockCIDSet containsObject:record.cid]);
-        if (recordChangedSince && record.collection.length > 0 && record.rkey.length > 0) {
-            NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
-            [changedMSTKeys addObject:key];
-        }
+            BOOL recordChangedSince = (deltaMode && [record.rev compare:sinceRev] == NSOrderedDescending);
+            BOOL blockChangedSince = (deltaMode && record.cid.length > 0 && [changedBlockCIDSet containsObject:record.cid]);
+            if (recordChangedSince && record.collection.length > 0 && record.rkey.length > 0) {
+                NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
+                [changedMSTKeys addObject:key];
+            }
 
-        if (deltaMode && !(recordChangedSince || blockChangedSince)) {
-            continue;
-        }
+            if (deltaMode && !(recordChangedSince || blockChangedSince)) {
+                continue;
+            }
 
-        if (record.cid.length == 0 || [seenRecordCIDs containsObject:record.cid]) {
-            continue;
-        }
-        [seenRecordCIDs addObject:record.cid];
+            if (record.cid.length == 0 || [seenRecordCIDs containsObject:record.cid]) {
+                continue;
+            }
+            [seenRecordCIDs addObject:record.cid];
 
-        CID *recordCID = [CID cidFromString:record.cid];
-        if (!recordCID) {
-            continue;
-        }
+            CID *recordCID = [CID cidFromString:record.cid];
+            if (!recordCID) {
+                continue;
+            }
 
-        PDSDatabaseBlock *existingBlock = [self.blockRepository blockWithCid:recordCID.bytes repoDid:did error:nil];
-        NSData *blockData = existingBlock.blockData;
-        if (!blockData) {
-            blockData = [self recordBlockDataForRecord:record];
+            PDSDatabaseBlock *existingBlock = [self.blockRepository blockWithCid:recordCID.bytes repoDid:did error:nil];
+            NSData *blockData = existingBlock.blockData;
+            if (!blockData) {
+                blockData = [self recordBlockDataForRecord:record];
+                if (blockData) {
+                    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+                    block.cid = recordCID.bytes;
+                    block.repoDid = did;
+                    block.blockData = blockData;
+                    block.contentType = @"application/vnd.ipld.dag-cbor";
+                    block.size = (NSInteger)blockData.length;
+                    block.createdAt = [NSDate date];
+                    block.rev = record.rev;
+                    [newRecordBlocks addObject:block];
+                }
+            }
+
             if (blockData) {
-                PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
-                block.cid = recordCID.bytes;
-                block.repoDid = did;
-                block.blockData = blockData;
-                block.contentType = @"application/vnd.ipld.dag-cbor";
-                block.size = (NSInteger)blockData.length;
-                block.createdAt = [NSDate date];
-                block.rev = record.rev;
-                [newRecordBlocks addObject:block];
+                NSString *cidString = recordCID.stringValue;
+                if (cidString.length > 0) {
+                    if (recordCIDStringsOut) [recordCIDStrings addObject:cidString];
+                    if (recordByCIDOut) recordByCID[cidString] = record;
+                }
             }
         }
-
-        if (blockData) {
-            NSString *cidString = recordCID.stringValue;
-            if (cidString.length > 0) {
-                [recordCIDStrings addObject:cidString];
-                recordByCID[cidString] = record;
+    } else if (deltaMode) {
+        NSError *headerError = nil;
+        NSArray<PDSDatabaseRecord *> *changedHeaders = [store listRecordHeadersSinceRev:sinceRev forDid:did limit:200000 offset:0 error:&headerError];
+        if (!changedHeaders) {
+            if (error) {
+                *error = headerError ?: [NSError errorWithDomain:@"com.atproto.repo"
+                                                            code:14
+                                                        userInfo:@{NSLocalizedDescriptionKey: @"Failed to list changed record headers"}];
             }
+            return NO;
+        }
+        for (PDSDatabaseRecord *record in changedHeaders) {
+            if (record.rev.length == 0) {
+                record.rev = defaultRecordRev;
+                [recordsNeedingRevBackfill addObject:record];
+            }
+
+            BOOL recordChangedSince = ([record.rev compare:sinceRev] == NSOrderedDescending);
+            BOOL blockChangedSince = (record.cid.length > 0 && [changedBlockCIDSet containsObject:record.cid]);
+            if (recordChangedSince && record.collection.length > 0 && record.rkey.length > 0) {
+                NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
+                [changedMSTKeys addObject:key];
+            }
+
+            if (!(recordChangedSince || blockChangedSince)) {
+                continue;
+            }
+
+            if (record.cid.length == 0 || [seenRecordCIDs containsObject:record.cid]) {
+                continue;
+            }
+            [seenRecordCIDs addObject:record.cid];
+
+            CID *recordCID = [CID cidFromString:record.cid];
+            if (!recordCID) {
+                continue;
+            }
+
+            PDSDatabaseBlock *existingBlock = [self.blockRepository blockWithCid:recordCID.bytes repoDid:did error:nil];
+            NSData *blockData = existingBlock.blockData;
+            PDSDatabaseRecord *fullRecord = nil;
+            if (!blockData) {
+                fullRecord = [store getRecordByCID:record.cid forDid:did error:nil];
+                if (fullRecord) {
+                    blockData = [self recordBlockDataForRecord:fullRecord];
+                    if (blockData) {
+                        PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+                        block.cid = recordCID.bytes;
+                        block.repoDid = did;
+                        block.blockData = blockData;
+                        block.contentType = @"application/vnd.ipld.dag-cbor";
+                        block.size = (NSInteger)blockData.length;
+                        block.createdAt = [NSDate date];
+                        block.rev = fullRecord.rev ?: record.rev;
+                        [newRecordBlocks addObject:block];
+                    }
+                }
+            }
+
+            if (blockData || existingBlock) {
+                NSString *cidString = recordCID.stringValue;
+                if (cidString.length > 0) {
+                    if (recordCIDStringsOut) [recordCIDStrings addObject:cidString];
+                    if (recordByCIDOut) {
+                        if (!fullRecord) fullRecord = [store getRecordByCID:record.cid forDid:did error:nil];
+                        if (fullRecord) recordByCID[cidString] = fullRecord;
+                    }
+                }
+            }
+        }
+    } else if (recordCIDStringsOut) {
+        const NSUInteger pageSize = 10000;
+        NSUInteger offset = 0;
+        const NSUInteger maxOffset = 200000;
+        while (offset < maxOffset) {
+            NSArray<NSString *> *page = [store listRecordCIDsForDid:did limit:pageSize offset:offset error:nil];
+            if (!page || page.count == 0) break;
+            for (NSString *c in page) {
+                if (c.length > 0 && ![seenRecordCIDs containsObject:c]) {
+                    [seenRecordCIDs addObject:c];
+                    [recordCIDStrings addObject:c];
+                }
+            }
+            if (page.count < pageSize) break;
+            offset += pageSize;
         }
     }
 
@@ -1593,6 +1717,12 @@
             data = record ? [self recordBlockDataForRecord:record] : nil;
         }
         if (!data) {
+            PDSDatabaseRecord *dbRec = [store getRecordByCID:cidString forDid:did error:nil];
+            if (dbRec) {
+                data = [self recordBlockDataForRecord:dbRec];
+            }
+        }
+        if (!data) {
             continue;
         }
 
@@ -1805,6 +1935,15 @@
         if (!data) {
             PDSDatabaseRecord *record = capturedRecByCID[cidString];
             data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+        }
+        if (!data) {
+            PDSActorStore *store = [strongSelf.databasePool storeForDid:capturedDid error:nil];
+            if (store) {
+                PDSDatabaseRecord *dbRec = [store getRecordByCID:cidString forDid:capturedDid error:nil];
+                if (dbRec) {
+                    data = [strongSelf recordBlockDataForRecord:dbRec];
+                }
+            }
         }
         return data;
     };
