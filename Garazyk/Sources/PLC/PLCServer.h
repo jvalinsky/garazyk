@@ -18,6 +18,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Runtime/GZServiceLifecycle.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -40,7 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Declares the PLCServer public API.
  */
-@interface PLCServer : NSObject
+@interface PLCServer : NSObject <GZServiceRuntimeProtocol>
 
 /*! The underlying HTTP server instance. */
 @property (nonatomic, readonly) HttpServer *httpServer;
