@@ -76,6 +76,10 @@
     unsetenv("PDS_CHAT_URL");
     unsetenv("PDS_ISSUER");
 
+    [self.application stop];
+    self.dispatcher = nil;
+    self.controller = nil;
+    self.application = nil;
     [[NSFileManager defaultManager] removeItemAtURL:self.tempURL error:nil];
     [super tearDown];
 }

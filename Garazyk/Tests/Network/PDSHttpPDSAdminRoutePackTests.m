@@ -73,11 +73,12 @@
             unsetenv(key.UTF8String);
         }
     }
+    [self.databases closeAll];
+    self.databases = nil;
     if (self.testDirectory.length > 0) {
         [[NSFileManager defaultManager] removeItemAtPath:self.testDirectory error:nil];
     }
     self.server = nil;
-    self.databases = nil;
     self.testDirectory = nil;
     self.adminToken = nil;
     self.savedEnvValues = nil;
@@ -255,4 +256,3 @@
 }
 
 @end
-

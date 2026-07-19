@@ -79,10 +79,12 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
     tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
+    PDSApplication *app = nil;
     @try {
-        PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
     } @finally {
+        [app stop];
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
     }
 

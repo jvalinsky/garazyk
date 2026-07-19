@@ -48,6 +48,7 @@
 
 - (void)tearDown {
     [self.server stop];
+    [self.controller stopServer];
     self.controller = nil;
     [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     [super tearDown];
