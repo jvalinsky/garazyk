@@ -75,6 +75,14 @@ For each binary:
 
 One binary per commit gives each port an independent rollback.
 
+`garazyk-ui` is the first remaining binary under characterization
+(2026-07-18): a bounded six-case executable suite captures its current command
+grammar, exit statuses, and startup bind-failure boundary before its
+`GZCommandLineOptions`/`GZServiceLifecycle` port. The port, service signals,
+crash-log contract, and Linux category smoke remain pending. Its focused test
+class passes; the full native acceptance run completes with 68 failures in
+other existing suites, so the global gate remains red.
+
 ## A5. Relay product decision (decided 2026-07-17 — remove)
 
 Operator chose option 3: `kaszlak relay serve` is removed

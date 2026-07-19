@@ -1569,6 +1569,9 @@ if(BUILD_TESTS)
     ${TEST_OBJC_SOURCES}
   )
 
+  # Process characterization tests execute the adjacent binary directly.
+  add_dependencies(AllTests garazyk-ui)
+
   target_include_directories(AllTests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
     ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
