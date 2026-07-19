@@ -22,8 +22,11 @@ form the dependency boundary.
 - All 92 scenario files still import through `scripts/lib/deno` wrappers.
 - `packages/hamownia/tasks.ts` still imports the wrapper client.
 - Package `deno.json` files do not provide their own standard task set.
-- The external repositories have no configured Git remotes in the inspected
-  local state. Publishing and ownership are therefore not established.
+- **2026-07-18:** private GitHub remotes are established and initial local
+  `main` histories are pushed: `jvalinsky/garazyk-tui` and
+  `jvalinsky/garazyk-atproto-testing`. The local branches track `origin/main`.
+  JSR `@garazyk` publisher ownership and each package publication remain
+  separate approvals.
 
 ## R1. Synchronize forward
 
