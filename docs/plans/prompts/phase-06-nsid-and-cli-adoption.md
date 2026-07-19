@@ -4,6 +4,7 @@ title: Generated NSID constants and CLI/lifecycle adoption
 status: in-progress
 agent: worker
 depends_on: [3]
+last_updated: 2026-07-18
 ---
 
 # Phase 6: Generated NSID constants and CLI/lifecycle adoption
@@ -34,6 +35,21 @@ depends_on: [3]
   `GZCommandLineOptions`/`GZServiceLifecycle` arc itself, but it gives
   scope item 2 a ready-made characterization net for the CLI dispatch
   path.
+- The raw-NSID regression guard is now implemented: the Narzedzia check scans
+  only production Objective-C sources for direct `registerMethod:@"..."`
+  calls, permits internal underscore-prefixed handlers, and requires generated
+  constants for every other literal. Its six focused Deno tests, CI invocation,
+  source scan, and 419-endpoint generator drift check pass. Tests and indirect
+  test-control constants are intentionally outside this direct-registration
+  boundary.
+- Proportionate Deno gates: `deno task check` passes. The full package lint
+  still reports 2,043 pre-existing findings, and the full package test retains
+  the unrelated Gruszka checked-in-artifact mismatch; neither is changed by
+  this lint slice. The focused lint test, source scan, and generator drift
+  check all pass.
+- A read-only architecture audit selects `garazyk-ui` as the safest next
+  lifecycle adopter, subject to first characterizing its CLI grammar, silent
+  shutdown behavior, dedicated crash-log contract, and GNUstep category load.
 
 ## Mission
 

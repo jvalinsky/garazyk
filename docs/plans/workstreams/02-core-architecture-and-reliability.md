@@ -120,5 +120,10 @@ After generator and coverage work:
 - ~~generate plain `NSString * const` endpoint NSIDs~~ — done (`f46ab5fb8`);
 - ~~delete XrpcHandler pass-through registration methods in stages~~ — done
   in the adoption sweep (`e212288bd`, with a CI drift check);
-- lint new raw endpoint literals (still open — phase-06 prompt);
+- ~~lint new raw endpoint literals~~ — done (2026-07-18): Narzedzia scans
+  production Objective-C sources for direct `registerMethod:@"..."` calls,
+  permits only internal underscore-prefixed handlers, and rejects every other
+  literal in favor of generated constants. Six focused Deno tests and the
+  read-only scan run in the existing NSID CI job; tests and indirect
+  test-control constants are deliberately outside this narrow boundary;
 - keep AppView pooling deferred under ADR 0002.

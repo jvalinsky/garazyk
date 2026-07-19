@@ -32,6 +32,12 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Test Raw NSID Registration Literal Lint
+        run: deno test packages/narzedzia/nsid_registration_literal_check_test.ts
+
+      - name: Check Raw NSID Registration Literals
+        run: deno run --allow-read packages/narzedzia/nsid_registration_literal_check.ts .
+
       - name: Check NSID Constants Drift
         run: deno run -A scripts/generate_nsid_constants.ts --check
 
