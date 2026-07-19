@@ -1,14 +1,11 @@
 ---
 phase: 5
 title: Repository boundary completion
-status: in-progress
+status: blocked
 agent: worker
 depends_on: []
+last_updated: 2026-07-18
 ---
-
-<!-- Status reset 2026-07-17: this file was flipped to in-progress with no
-recorded progress — workstream 03 is untouched since 2026-07-12 and no
-R1-R4 commits exist. Reset to pending; nothing has started. -->
 
 ## Progress
 
@@ -16,15 +13,34 @@ Started 2026-07-18: audit the two external repositories, their package task
 surfaces, and remotes to prepare an evidence-backed R1/R2 handoff. This slice
 is read-only and will stop at the declared remote/ownership checkpoint.
 
+2026-07-18 R2 publication audit (read-only): `@garazyk/tui@0.1.0` has the
+required root, `runtime`, and `testing` exports and its `fmt --check`, lint,
+check, and test tasks pass (252 tests). Gruszka (304 passed, 6 intentional
+integration skips), Laweta (85 passed), and Schemat (188 passed) also pass
+their four package tasks. Hamownia's package-local test task fails (295
+passed, 14 failed, 1 ignored) because `test_utils.ts` hard-codes the
+repository-root-relative `packages/hamownia/cli.ts` path. The later ATProto
+packages also still rely on the workspace import map instead of self-contained
+published dependencies; those are follow-up work after the first TUI release.
+
 ## Blocked on
 
-Choose the GitHub owner and visibility for `garazyk-tui` and
-`garazyk-atproto-testing`, then authorize repository creation, `origin` setup,
-and the initial pushes. The required access is repository-create/push
-permission for that owner or organization. Also confirm ownership and
-publisher access for the existing `@garazyk` JSR scope; each package publish
-will remain a separate approval. Both external repositories are clean but have
-no remotes.
+Approve the externally visible publication of `@garazyk/tui@0.1.0` and confirm
+that the acting account has JSR publisher access for the `@garazyk` scope. The
+requested command is:
+
+```bash
+cd /Users/jack/Software/garazyk-tui
+deno publish
+```
+
+The package contains the files declared by its `deno.json` publish include
+list (`README.md`, `LICENSE`, `deno.json`, root TypeScript files, and
+`testing/**/*.ts`/`testing/**/*.json`) and exports `.`, `./runtime`,
+`./testing`, and `./testing/world_schema.json`. No publish command has been
+run.
+
+## Prior checkpoints
 
 ### Checkpoint resolved (2026-07-18)
 
