@@ -106,14 +106,27 @@ endpoint are committed (`6de6ebc64`). Still pending: the incremental
 producer itself, and test coverage for `PDSCollectionMembershipPruner` —
 phase 7 owns finishing these.
 
-When the Sync 1.1 remainder (export block ordering, collection-based
-repository subsets) reaches published spec text, implement it in this lane;
-workstream 01 S6 tracks the spec status. A forward-compat, feature-flagged
-streamable-CAR pre-order enumerator
+**Closed (2026-07-19).** The Sync 1.1 remainder (export block ordering,
+collection-based repository subsets) has not reached published spec text —
+refetched https://atproto.com/specs/sync on 2026-07-19 and both remain
+under "Future Work" prose, not a version-numbered spec. Workstream 01 S6 G2
+tracks the spec status for future revisits.
+
+A forward-compat, feature-flagged streamable-CAR pre-order enumerator
 (`+[MST setStreamableCARBlockOrderingEnabled:]`, default off) with
 preorder/fixture tests (`sync11-preorder-fixture.car`) is committed
 (`ed01c8085`, on the lock-free atomic-root refactor `34e2b94ae`,
-2026-07-18). Collection subsets and the flag-on decision remain open.
+2026-07-18). Decision: keep the flag off — turning it on ahead of
+finalized spec text risks shipping ordering upstream later changes
+incompatibly, and no consumer needs it today.
+
+Collection-based repository subsets were already implemented independently
+as a vendor extension, `tools.garazyk.sync.getRepoFiltered`
+(`-[PDSRepositoryService filteredRepoContentsChunkProducer:since:collections:error:]`,
+registered in `XrpcVendorPack.m`), now with test coverage for inclusion/
+exclusion, the no-match case, and the empty-collections error path
+(`PDSRepositoryServiceTests.m`, phase 7). This vendor extension serves
+Garazyk's own collection-subset need independent of the upstream flag.
 
 ## A7. Low-priority interface cleanup
 
