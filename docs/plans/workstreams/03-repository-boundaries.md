@@ -1,7 +1,7 @@
 ---
 title: Repository Boundaries
 status: active
-last_verified: 2026-07-12
+last_verified: 2026-07-18
 ---
 
 # Repository Boundaries
@@ -21,12 +21,21 @@ form the dependency boundary.
   Schemat, and TUI.
 - All 92 scenario files still import through `scripts/lib/deno` wrappers.
 - `packages/hamownia/tasks.ts` still imports the wrapper client.
-- Package `deno.json` files do not provide their own standard task set.
+- The external package manifests now provide dedicated `fmt`, `lint`, `check`,
+  and `test` task sets. A 2026-07-18 read-only R2 audit verified all four for
+  `@garazyk/tui@0.1.0` (252 tests), Gruszka (304 passed, 6 intended integration
+  skips), Laweta (85 passed), and Schemat (188 passed). Hamownia's package test
+  task has 14 failures because `test_utils.ts` assumes the monorepo-relative
+  `packages/hamownia/cli.ts` path; it needs a package-local fixture before its
+  later alpha publication. Gruszka, Laweta, Schemat, and Hamownia also inherit
+  their dependency mappings from the testing repository root, so their release
+  manifests are not yet self-contained.
 - **2026-07-18:** private GitHub remotes are established and initial local
   `main` histories are pushed: `jvalinsky/garazyk-tui` and
   `jvalinsky/garazyk-atproto-testing`. The local branches track `origin/main`.
-  JSR `@garazyk` publisher ownership and each package publication remain
-  separate approvals.
+  `@garazyk/tui@0.1.0` is the first release candidate and awaits the explicit
+  JSR `@garazyk` publisher-access confirmation and publication approval. Each
+  later package publication remains a separate approval.
 
 ## R1. Synchronize forward
 
