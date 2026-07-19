@@ -814,6 +814,113 @@
     XCTAssertGreaterThan(totalBytes, 0U);
 }
 
+#pragma mark - Filtered Repo Export (Collection Subsets)
+
+- (NSDictionary *)likeRecordForSubject:(NSString *)subjectURI {
+    return @{
+        @"$type": @"app.bsky.feed.like",
+        @"subject": @{@"uri": subjectURI, @"cid": @"bafyreicid"},
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+    };
+}
+
+- (void)testFilteredRepoContentsChunkProducerIncludesOnlyMatchingCollectionRecords {
+    [self.recordService putRecord:@"app.bsky.feed.post"
+                            rkey:@"filter-post-1"
+                           value:[self postRecordWithText:@"matching collection"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+    [self.recordService putRecord:@"app.bsky.feed.like"
+                            rkey:@"filter-like-1"
+                           value:[self likeRecordForSubject:@"at://did:web:other.example.com/app.bsky.feed.post/x"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+
+    NSError *postError = nil;
+    NSString *postURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/filter-post-1", self.testDID];
+    NSDictionary *postRecord = [self.recordService getRecord:postURI
+                                                        forDid:self.testDID
+                                                         error:&postError];
+    XCTAssertNotNil(postRecord);
+    NSString *postCID = postRecord[@"cid"];
+    XCTAssertNotNil(postCID);
+
+    NSError *likeError = nil;
+    NSString *likeURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.like/filter-like-1", self.testDID];
+    NSDictionary *likeRecord = [self.recordService getRecord:likeURI
+                                                        forDid:self.testDID
+                                                         error:&likeError];
+    XCTAssertNotNil(likeRecord);
+    NSString *likeCID = likeRecord[@"cid"];
+    XCTAssertNotNil(likeCID);
+
+    NSError *producerError = nil;
+    PDSRepoChunkProducer producer = [self.repositoryService filteredRepoContentsChunkProducer:self.testDID
+                                                                                          since:nil
+                                                                                    collections:@[@"app.bsky.feed.post"]
+                                                                                          error:&producerError];
+    XCTAssertNotNil(producer);
+    XCTAssertNil(producerError);
+
+    NSMutableData *carData = [NSMutableData data];
+    while (YES) {
+        NSError *chunkError = nil;
+        NSData *chunk = producer(&chunkError);
+        XCTAssertNil(chunkError);
+        if (!chunk) break;
+        [carData appendData:chunk];
+    }
+
+    XCTAssertTrue([self carData:carData containsBlockWithCIDString:postCID],
+                  @"filtered export must include records from a requested collection");
+    XCTAssertFalse([self carData:carData containsBlockWithCIDString:likeCID],
+                   @"filtered export must exclude records from a collection that was not requested");
+}
+
+- (void)testFilteredRepoContentsChunkProducerWithNoMatchingRecordsOmitsAllRecordBlocks {
+    [self.recordService putRecord:@"app.bsky.feed.post"
+                            rkey:@"filter-post-2"
+                           value:[self postRecordWithText:@"not in the requested collection"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+
+    NSError *producerError = nil;
+    PDSRepoChunkProducer producer = [self.repositoryService filteredRepoContentsChunkProducer:self.testDID
+                                                                                          since:nil
+                                                                                    collections:@[@"app.bsky.graph.follow"]
+                                                                                          error:&producerError];
+    XCTAssertNotNil(producer);
+    XCTAssertNil(producerError);
+
+    NSMutableData *carData = [NSMutableData data];
+    while (YES) {
+        NSError *chunkError = nil;
+        NSData *chunk = producer(&chunkError);
+        XCTAssertNil(chunkError);
+        if (!chunk) break;
+        [carData appendData:chunk];
+    }
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    XCTAssertNotNil(reader);
+    XCTAssertNil(parseError);
+    XCTAssertNotNil(reader.rootCID, @"a commit root must still be produced with no matching records");
+}
+
+- (void)testFilteredRepoContentsChunkProducerRejectsEmptyCollectionsList {
+    NSError *producerError = nil;
+    PDSRepoChunkProducer producer = [self.repositoryService filteredRepoContentsChunkProducer:self.testDID
+                                                                                          since:nil
+                                                                                    collections:@[]
+                                                                                          error:&producerError];
+    XCTAssertNil(producer);
+    XCTAssertNotNil(producerError);
+}
+
 #pragma mark - Golden Fixtures (Structural)
 
 // Fixed 32-byte secp256k1 private key for deterministic signing in golden tests.
