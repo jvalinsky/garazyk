@@ -15,8 +15,9 @@ Resolve the two scale-shaped Phase 4 items: decide what `kaszlak relay
 serve` is (then implement the choice), and make repository export
 preparation incremental instead of materializing up to 100k records.
 
-## Progress (2026-07-17)
+## Progress (2026-07-19)
 
+- **Part 2 — Slice 3 complete**: Implemented incremental repository export producer and bounded fallback (`loadMSTForDid:store:error:` + paginated record CIDs via `listRecordCIDsForDid:limit:offset:error:` with 10k batching and 200k safety cap). `prepareRepoExportForDid:deltaMode:error:` now avoids pre-materializing up to 100k records in memory when generating CAR exports, and Tier 4 database fallback (`getRecordByCID:` via `ActorStore`) is wired into `buildRepoWriterForDid:` and `repoContentsSTARL0ChunkProducer` to ensure non-materialized records can be exported seamlessly. Byte-identical export fixtures and memory growth bounds verified across `PDSRepositoryServiceTests`.
 - **Part 1 — relay decision: complete and committed** (`d9fa51a1d`).
   Operator chose Option 3 (remove). `PDSCLIRelayCommand.m/.h` and
   `PDSCLIRelayCommandTests.m` deleted; `PDSCLIRegisterAll.m` and

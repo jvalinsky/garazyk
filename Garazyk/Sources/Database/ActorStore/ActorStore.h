@@ -83,6 +83,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)mutationRevisionExists:(NSString *)rev error:(NSError **)error;
 - (BOOL)blockRevisionExists:(NSString *)rev error:(NSError **)error;
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
+- (nullable PDSDatabaseRecord *)getRecordByCID:(NSString *)cid forDid:(NSString *)did error:(NSError **)error;
 - (NSArray<NSDictionary<NSString *, id> *> *)listRecordTombstonesSinceRev:(nullable NSString *)rev
                                                                      limit:(NSUInteger)limit
                                                                      error:(NSError **)error;
@@ -100,6 +101,20 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                                limit:(NSUInteger)limit
                                               offset:(NSUInteger)offset
                                                error:(NSError **)error;
+- (NSArray<NSString *> *)listRecordCIDsForDid:(NSString *)did
+                                        limit:(NSUInteger)limit
+                                       offset:(NSUInteger)offset
+                                        error:(NSError **)error;
+- (NSArray<PDSDatabaseRecord *> *)listRecordHeadersForDid:(NSString *)did
+                                               collection:(nullable NSString *)collection
+                                                    limit:(NSUInteger)limit
+                                                   offset:(NSUInteger)offset
+                                                    error:(NSError **)error;
+- (NSArray<PDSDatabaseRecord *> *)listRecordHeadersSinceRev:(NSString *)rev
+                                                     forDid:(NSString *)did
+                                                      limit:(NSUInteger)limit
+                                                     offset:(NSUInteger)offset
+                                                      error:(NSError **)error;
 /**
  * @abstract List block cids since rev.
  * @param rev Repository revision.
