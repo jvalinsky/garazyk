@@ -341,6 +341,15 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return nil;
 }
 
+- (nullable PDSDatabaseRecord *)getRecordByCID:(NSString *)cid forDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did FROM records WHERE cid = ? LIMIT 1";
+    NSArray *results = [self.database executeParameterizedQuery:sql params:@[cid ?: @""] error:error];
+    if (results.count > 0) {
+        return [self recordFromDictionary:results.firstObject];
+    }
+    return nil;
+}
+
 - (NSArray<NSDictionary<NSString *, id> *> *)listRecordTombstonesSinceRev:(nullable NSString *)rev limit:(NSUInteger)limit error:(NSError **)error {
     BOOL hasRev = (rev.length > 0);
     NSString *sql = hasRev ? @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones WHERE rev > ? ORDER BY rev LIMIT ?" : @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones ORDER BY rev LIMIT ?";
@@ -368,6 +377,37 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     NSMutableArray *params = [NSMutableArray array];
     NSString *sql = collection ? @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did FROM records WHERE collection = ? ORDER BY rkey LIMIT ? OFFSET ?" : @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did FROM records ORDER BY rkey LIMIT ? OFFSET ?";
     if (collection) [params addObject:collection];
+    [params addObject:@(limit)];
+    [params addObject:@(offset)];
+    return [self.database executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseRecord class] error:error] ?: @[];
+}
+
+- (NSArray<NSString *> *)listRecordCIDsForDid:(NSString *)did limit:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error {
+    NSArray *results = [self.database executeParameterizedQuery:@"SELECT cid FROM records WHERE cid IS NOT NULL AND cid != '' ORDER BY rkey LIMIT ? OFFSET ?" params:@[@(limit), @(offset)] error:error];
+    if (!results) return nil;
+    NSMutableArray *cids = [NSMutableArray arrayWithCapacity:results.count];
+    for (NSDictionary *row in results) {
+        NSString *cid = row[@"cid"];
+        if ([cid isKindOfClass:[NSString class]] && cid.length > 0) {
+            [cids addObject:cid];
+        }
+    }
+    return [cids copy];
+}
+
+- (NSArray<PDSDatabaseRecord *> *)listRecordHeadersForDid:(NSString *)did collection:(nullable NSString *)collection limit:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error {
+    NSMutableArray *params = [NSMutableArray array];
+    NSString *sql = collection ? @"SELECT uri, did, collection, rkey, cid, created_at, rev, subject_did FROM records WHERE collection = ? ORDER BY rkey LIMIT ? OFFSET ?" : @"SELECT uri, did, collection, rkey, cid, created_at, rev, subject_did FROM records ORDER BY rkey LIMIT ? OFFSET ?";
+    if (collection) [params addObject:collection];
+    [params addObject:@(limit)];
+    [params addObject:@(offset)];
+    return [self.database executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseRecord class] error:error] ?: @[];
+}
+
+- (NSArray<PDSDatabaseRecord *> *)listRecordHeadersSinceRev:(NSString *)rev forDid:(NSString *)did limit:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error {
+    NSMutableArray *params = [NSMutableArray array];
+    NSString *sql = (rev.length > 0) ? @"SELECT uri, did, collection, rkey, cid, created_at, rev, subject_did FROM records WHERE rev > ? ORDER BY rkey LIMIT ? OFFSET ?" : @"SELECT uri, did, collection, rkey, cid, created_at, rev, subject_did FROM records ORDER BY rkey LIMIT ? OFFSET ?";
+    if (rev.length > 0) [params addObject:rev];
     [params addObject:@(limit)];
     [params addObject:@(offset)];
     return [self.database executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseRecord class] error:error] ?: @[];
