@@ -114,97 +114,27 @@ static int fail_with_usage(const char *executable_name, NSString *message) {
     return 2;
 }
 
-static BOOL parse_server_options(NSArray<NSString *> *args,
-                                 NSString **host,
-                                 NSUInteger *port,
-                                 NSString **dbPath,
-                                 NSString **dataDir,
-                                 NSString **upstreamURL,
-                                 BOOL *replicaMode,
-                                 BOOL *inMemory,
-                                 NSString **errorMessage) {
-    for (NSUInteger i = 0; i < args.count; i++) {
-        NSString *arg = args[i];
-        if ([arg isEqualToString:@"--host"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --host";
-                }
-                return NO;
-            }
-            if (host) {
-                *host = args[++i];
-            }
-        } else if ([arg isEqualToString:@"--port"] || [arg isEqualToString:@"-p"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --port";
-                }
-                return NO;
-            }
-            if (port) {
-                *port = (NSUInteger)[args[++i] integerValue];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--database"] || [arg isEqualToString:@"-d"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --database";
-                }
-                return NO;
-            }
-            if (dbPath) {
-                *dbPath = args[++i];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--data-dir"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --data-dir";
-                }
-                return NO;
-            }
-            if (dataDir) {
-                *dataDir = args[++i];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--upstream"] || [arg isEqualToString:@"-u"]) {
-            if (i + 1 >= args.count) {
-                if (errorMessage) {
-                    *errorMessage = @"Missing value for --upstream";
-                }
-                return NO;
-            }
-            if (upstreamURL) {
-                *upstreamURL = args[++i];
-            } else {
-                i++;
-            }
-        } else if ([arg isEqualToString:@"--replica"] || [arg isEqualToString:@"-r"]) {
-            if (replicaMode) {
-                *replicaMode = YES;
-            }
-        } else if ([arg isEqualToString:@"--in-memory"]) {
-            if (inMemory) {
-                *inMemory = YES;
-            }
-        } else if ([arg hasPrefix:@"-"]) {
-            if (errorMessage) {
-                *errorMessage = [NSString stringWithFormat:@"Unknown option: %@", arg];
-            }
-            return NO;
-        } else {
-            if (errorMessage) {
-                *errorMessage = [NSString stringWithFormat:@"Unexpected argument: %@", arg];
-            }
-            return NO;
-        }
-    }
-    return YES;
+#import "CLI/GZCommandLineOptions.h"
+#import "Runtime/GZServiceLifecycle.h"
+
+static const char *executable_name = "campagnola";
+
+@interface PLCRuntimeComposite : NSObject <GZServiceRuntimeProtocol>
+@property (nonatomic, strong) PLCServer *server;
+@property (nonatomic, strong, nullable) PLCSyncEngine *syncEngine;
+@end
+
+@implementation PLCRuntimeComposite
+- (BOOL)startWithError:(NSError **)error {
+    return [self.server startWithError:error];
 }
+- (void)stop {
+    if (self.syncEngine) {
+        [self.syncEngine stop];
+    }
+    [self.server stop];
+}
+@end
 
 static int run_status_command(NSString *host, NSUInteger port) {
     NSString *urlString = [NSString stringWithFormat:@"http://%@:%lu/_health", host, (unsigned long)port];
@@ -235,6 +165,7 @@ int main(int argc, const char * argv[]) {
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
     @autoreleasepool {
+        [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
         // On Linux/GNUstep, verify critical categories are loaded
@@ -253,6 +184,15 @@ int main(int argc, const char * argv[]) {
             return fail_with_usage(binaryName, @"Flags must follow the command name");
         }
 
+        if ([command isEqualToString:@"help"] || [command isEqualToString:@"-h"] || [command isEqualToString:@"--help"]) {
+            print_usage(binaryName);
+            return 0;
+        }
+        if ([command isEqualToString:@"version"] || [command isEqualToString:@"-V"] || [command isEqualToString:@"--version"]) {
+            print_version();
+            return 0;
+        }
+
         NSMutableArray<NSString *> *args = [NSMutableArray array];
         for (int i = 2; i < argc; i++) {
             [args addObject:[NSString stringWithUTF8String:argv[i]]];
@@ -262,53 +202,70 @@ int main(int argc, const char * argv[]) {
             return 0;
         }
 
-        if ([command isEqualToString:@"help"]) {
-            print_usage(binaryName);
-            return 0;
-        }
-        if ([command isEqualToString:@"version"]) {
-            print_version();
-            return 0;
+        if (![command isEqualToString:@"serve"] &&
+            ![command isEqualToString:@"replica"] &&
+            ![command isEqualToString:@"status"] &&
+            ![command isEqualToString:@"health"] &&
+            ![command isEqualToString:@"repl"]) {
+            return fail_with_usage(binaryName, [NSString stringWithFormat:@"Unknown command: %@", command]);
         }
 
-        NSUInteger port = 2582;
-        NSString *host = @"127.0.0.1";
-        NSString *dbPath = nil;
-        NSString *dataDir = nil;
-        NSString *upstreamURL = nil;
-        BOOL replicaMode = NO;
-        BOOL inMemory = NO;
-        NSString *parseError = nil;
+        GZCommandLineOptions *parser = [[GZCommandLineOptions alloc] init];
+        NSArray<GZCommandLineOption *> *serveOptions = @[
+            [GZCommandLineOption optionWithLongName:@"host" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"database" shortName:@"d" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"in-memory" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"replica" shortName:@"r" type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"upstream" shortName:@"u" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ];
+        [parser registerOptions:serveOptions forCommand:@"serve"];
+        [parser registerOptions:serveOptions forCommand:@"replica"];
+
+        NSArray<GZCommandLineOption *> *statusOptions = @[
+            [GZCommandLineOption optionWithLongName:@"host" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ];
+        [parser registerOptions:statusOptions forCommand:@"status"];
+        [parser registerOptions:statusOptions forCommand:@"health"];
+
+        NSArray<GZCommandLineOption *> *replOptions = @[
+            [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ];
+        [parser registerOptions:replOptions forCommand:@"repl"];
+
+        NSError *parseError = nil;
+        NSDictionary<NSString *, id> *parsedArgs = [parser parseArguments:args forCommand:command error:&parseError];
+        if (!parsedArgs) {
+            return fail_with_usage(binaryName, parseError.localizedDescription);
+        }
+
+        NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 2582;
+        NSString *host = parsedArgs[@"host"] ?: @"127.0.0.1";
+        NSString *dbPath = parsedArgs[@"database"];
+        NSString *dataDir = parsedArgs[@"data-dir"];
+        NSString *upstreamURL = parsedArgs[@"upstream"];
+        BOOL replicaMode = [parsedArgs[@"replica"] boolValue] || [command isEqualToString:@"replica"];
+        BOOL inMemory = [parsedArgs[@"in-memory"] boolValue];
+
         if ([command isEqualToString:@"status"] || [command isEqualToString:@"health"]) {
-            if (!parse_server_options(args, &host, &port, nil, nil, nil, nil, nil, &parseError)) {
-                return fail_with_usage(binaryName, parseError);
-            }
             return run_status_command(host, port);
         }
         if ([command isEqualToString:@"repl"]) {
-            if (!parse_server_options(args, nil, nil, nil, &dataDir, nil, nil, nil, &parseError)) {
-                return fail_with_usage(binaryName, parseError);
-            }
             run_repl(dataDir);
             return 0;
         }
-        if (![command isEqualToString:@"serve"] && ![command isEqualToString:@"replica"]) {
-            return fail_with_usage(binaryName, [NSString stringWithFormat:@"Unknown command: %@", command]);
-        }
-        if (!parse_server_options(args, &host, &port, &dbPath, &dataDir, &upstreamURL, &replicaMode, &inMemory, &parseError)) {
-            return fail_with_usage(binaryName, parseError);
-        }
-        if ([command isEqualToString:@"replica"]) {
-            replicaMode = YES;
-        }
-
 
         if (replicaMode && !upstreamURL) {
             upstreamURL = @"https://plc.directory";
             printf("No --upstream specified, defaulting to %s\n", [upstreamURL UTF8String]);
         }
 
-        id server;
+        PLCServer *server = nil;
         PLCSyncEngine *syncEngine = nil;
 
         if (replicaMode) {
@@ -371,22 +328,21 @@ int main(int argc, const char * argv[]) {
                                                   port:port];
         }
 
-        NSError *error = nil;
-        if (![server startWithError:&error]) {
-            GZ_LOG_CORE_ERROR(@"Failed to start PLC server: %@",
-                                error.localizedDescription ?: @"unknown error");
-            return 1;
-        }
+        PLCRuntimeComposite *composite = [[PLCRuntimeComposite alloc] init];
+        composite.server = server;
+        composite.syncEngine = syncEngine;
 
-        if (syncEngine) {
-            [syncEngine start];
-            printf("Sync engine started (upstream: %s)\n", [upstreamURL UTF8String]);
-        }
-
-        printf("PLC server listening on port %lu\n", (unsigned long)port);
-        printf("Use --help for options, 'repl' for interactive mode\n");
-
-        [[NSRunLoop currentRunLoop] run];
+        return [GZServiceLifecycle runServiceWithRuntime:composite
+                                             serviceName:@"PLC server"
+                                                 onStart:^{
+                                                     if (syncEngine) {
+                                                         [syncEngine start];
+                                                         printf("Sync engine started (upstream: %s)\n", [upstreamURL UTF8String]);
+                                                     }
+                                                     printf("PLC server listening on port %lu\n", (unsigned long)port);
+                                                     printf("Use --help for options, 'repl' for interactive mode\n");
+                                                 }
+                                         announceSignals:NO];
     }
     return 0;
 }
