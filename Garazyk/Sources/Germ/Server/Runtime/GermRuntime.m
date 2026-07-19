@@ -45,6 +45,12 @@ static const uint16_t kGermDefaultPort = 8082;
     return self;
 }
 
+- (BOOL)startWithError:(NSError **)error {
+    NSString *dir = self.dataDirectory ?: @"./germ-data";
+    uint16_t p = self.port != 0 ? self.port : kGermDefaultPort;
+    return [self startWithDataDirectory:dir port:p error:error];
+}
+
 - (BOOL)startWithDataDirectory:(NSString *)dataDirectory
                       port:(uint16_t)port
                      error:(NSError **)error {

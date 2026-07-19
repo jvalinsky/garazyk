@@ -6,81 +6,12 @@
  */
 
 #import <Foundation/Foundation.h>
-#import <signal.h>
-#import <unistd.h>
-#if defined(GNUSTEP)
-#import <curl/curl.h>
-#endif
-#import <fcntl.h>
-#import <execinfo.h>
 #import "Germ/Server/Runtime/GermRuntime.h"
+#import "CLI/GZCommandLineOptions.h"
 #import "Debug/GZLogger.h"
-#import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import "Runtime/GZServiceLifecycle.h"
 
 static const char *executable_name = "germ";
-static GermRuntime *gShutdownRuntime = nil;
-
-#pragma mark - Crash Diagnostics
-
-static void crash_signal_handler(int sig) {
-    const char *signame = (sig == SIGSEGV) ? "SIGSEGV" :
-                          (sig == SIGABRT) ? "SIGABRT" :
-                          (sig == SIGBUS)  ? "SIGBUS"  :
-                          (sig == SIGFPE)  ? "SIGFPE"  :
-                          (sig == SIGTRAP) ? "SIGTRAP" : "UNKNOWN";
-
-    char buf[256];
-    int len = snprintf(buf, sizeof(buf),
-        "\n=== FATAL SIGNAL %s (%d) in germ ===\n", signame, sig);
-    write(STDERR_FILENO, buf, (size_t)len);
-
-    int fd = open("/tmp/germ-crash.log",
-                  O_WRONLY | O_CREAT | O_APPEND, 0644);
-    if (fd >= 0) {
-        write(fd, buf, (size_t)len);
-        void *frames[32];
-        int frame_count = (int)backtrace(frames, 32);
-        for (int i = 0; i < frame_count; i++) {
-            char frame_buf[64];
-            int flen = snprintf(frame_buf, sizeof(frame_buf),
-                                "  #%d %p\n", i, frames[i]);
-            write(fd, frame_buf, (size_t)flen);
-        }
-        char **symbols = backtrace_symbols(frames, frame_count);
-        if (symbols) {
-            for (int i = 0; i < frame_count; i++) {
-                char sym_buf[256];
-                int slen = snprintf(sym_buf, sizeof(sym_buf),
-                                    "  #%d %s\n", i, symbols[i] ?: "?");
-                write(fd, sym_buf, (size_t)slen);
-            }
-            free(symbols);
-        }
-        close(fd);
-    }
-
-    signal(sig, SIG_DFL);
-    raise(sig);
-}
-
-static void install_crash_handlers(void) {
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = crash_signal_handler;
-    sa.sa_flags = SA_RESETHAND;
-    sigemptyset(&sa.sa_mask);
-
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGBUS,  &sa, NULL);
-    sigaction(SIGFPE,  &sa, NULL);
-    sigaction(SIGTRAP, &sa, NULL);
-}
-
-void handleSignal(int sig) {
-    [gShutdownRuntime stop];
-    exit(0);
-}
 
 void print_usage(void) {
     printf("Usage: %s serve [options]\n\n", executable_name);
@@ -94,12 +25,9 @@ void print_usage(void) {
 }
 
 int main(int argc, const char * argv[]) {
-#if defined(GNUSTEP)
-    curl_global_init(CURL_GLOBAL_ALL);
-#endif
-    [[GZSignalManager sharedManager] installIgnoredSignals];
-
     @autoreleasepool {
+        [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
+
         if (argc < 2) {
             print_usage();
             return 2;
@@ -116,36 +44,47 @@ int main(int argc, const char * argv[]) {
             return 2;
         }
 
-        uint16_t port = 8082;
-        NSString *dataDir = @"./germ-data";
+        GermRuntime *runtime = [GermRuntime sharedRuntime];
+        GZCommandLineOptions *optionsParser = [[GZCommandLineOptions alloc] init];
+        NSArray<GZCommandLineOption *> *options = @[
+            [GZCommandLineOption optionWithLongName:@"port" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+        ];
+        [optionsParser registerOptions:options forCommand:@"serve"];
 
-        // Parse basic arguments
+        NSMutableArray<NSString *> *arguments = [NSMutableArray array];
         for (int i = 2; i < argc; i++) {
-            NSString *arg = [NSString stringWithUTF8String:argv[i]];
-            if ([arg isEqualToString:@"--port"] && i + 1 < argc) {
-                port = (uint16_t)[[NSString stringWithUTF8String:argv[++i]] integerValue];
-            } else if ([arg isEqualToString:@"--data-dir"] && i + 1 < argc) {
-                dataDir = [NSString stringWithUTF8String:argv[++i]];
-            } else if ([arg isEqualToString:@"-v"] || [arg isEqualToString:@"--verbose"]) {
-                [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
-            }
+            [arguments addObject:[NSString stringWithUTF8String:argv[i]]];
         }
 
-        GermRuntime *runtime = [GermRuntime sharedRuntime];
         NSError *error = nil;
-        if (![runtime startWithDataDirectory:dataDir port:port error:&error]) {
-            fprintf(stderr, "Failed to start Germ service: %s\n", error.localizedDescription.UTF8String);
+        NSDictionary<NSString *, id> *parsed = [optionsParser parseArguments:arguments forCommand:@"serve" error:&error];
+        if (!parsed) {
+            fprintf(stderr, "%s\n", error.localizedDescription.UTF8String ?: "Invalid arguments");
             return 1;
         }
+        if ([parsed[@"help"] boolValue]) {
+            print_usage();
+            return 0;
+        }
+        if (parsed[@"port"]) {
+            runtime.port = (uint16_t)[parsed[@"port"] integerValue];
+        }
+        if (parsed[@"data-dir"]) {
+            runtime.dataDirectory = parsed[@"data-dir"];
+        }
+        if ([parsed[@"verbose"] boolValue]) {
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
+        }
 
-        printf("Germ E2EE mailbox server started on port %u\n", port);
-        
-        gShutdownRuntime = runtime;
-        install_crash_handlers();
-        signal(SIGTERM, handleSignal);
-        signal(SIGINT,  handleSignal);
-
-        [[NSRunLoop currentRunLoop] run];
+        return [GZServiceLifecycle runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime
+                                             serviceName:@"Germ service"
+                                                 onStart:^{
+                                                     printf("Germ E2EE mailbox server started on port %u\n", runtime.port != 0 ? runtime.port : 8082);
+                                                 }
+                                         announceSignals:NO];
     }
     return 0;
 }

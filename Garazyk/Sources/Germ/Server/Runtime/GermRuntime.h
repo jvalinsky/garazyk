@@ -15,13 +15,14 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Runtime/GZServiceLifecycle.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Declares the GermRuntime public API.
  */
-@interface GermRuntime : NSObject
+@interface GermRuntime : NSObject <GZServiceRuntimeProtocol>
 
 /**
  * @abstract Exposes the is running value.
@@ -29,9 +30,24 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL isRunning;
 
 /**
+ * @abstract Data directory for storage.
+ */
+@property (nonatomic, copy, nullable) NSString *dataDirectory;
+
+/**
+ * @abstract Port to listen on.
+ */
+@property (nonatomic, assign) uint16_t port;
+
+/**
  * @abstract Returns the shared runtime result.
  */
 + (instancetype)sharedRuntime;
+
+/**
+ * @abstract Performs standard lifecycle startup using configured dataDirectory and port.
+ */
+- (BOOL)startWithError:(NSError **)error;
 
 /**
  * @abstract Performs the startWithDataDirectory operation.
