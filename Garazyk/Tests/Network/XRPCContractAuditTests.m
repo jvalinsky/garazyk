@@ -91,6 +91,7 @@ static HttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
 
 - (void)tearDown {
     self.dispatcher  = nil;
+    [self.application stop];
     self.application = nil;
     [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     [super tearDown];

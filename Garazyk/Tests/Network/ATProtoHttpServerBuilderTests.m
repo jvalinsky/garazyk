@@ -24,7 +24,14 @@
 @interface ATProtoHttpServerBuilderTests : XCTestCase
 @property (nonatomic, strong) HttpServer *testServer;
 @property (nonatomic, strong) NSString *testDirectory;
+@property (nonatomic, strong) PDSController *testController;
 @end
+
+static void PDSCleanupControllerTestDirectory(PDSController *controller,
+                                              NSString *directory) {
+    [controller stopServer];
+    [[NSFileManager defaultManager] removeItemAtPath:directory error:nil];
+}
 
 @implementation ATProtoHttpServerBuilderTests
 
@@ -34,6 +41,8 @@
         [self.testServer stop];
         self.testServer = nil;
     }
+    [self.testController stopServer];
+    self.testController = nil;
     
     if (self.testDirectory) {
         [[NSFileManager defaultManager] removeItemAtPath:self.testDirectory error:nil];
@@ -76,7 +85,8 @@
 - (void)testWellKnownAtprotoDIDEndpointReturns404OnUnfixedCode {
     // Setup: Create a temporary directory and controller
     self.testDirectory = [self makeTemporaryDirectory];
-    PDSController *controller = [[PDSController alloc] initWithDirectory:self.testDirectory serviceMaxSize:10 userDatabaseSize:10];
+    self.testController = [[PDSController alloc] initWithDirectory:self.testDirectory serviceMaxSize:10 userDatabaseSize:10];
+    PDSController *controller = self.testController;
     
     // Create an account in the database so we have a valid handle to test
     NSError *createError = nil;
@@ -425,7 +435,7 @@
     NSDictionary *webSocketHandlers = [server valueForKey:@"webSocketHandlers"];
     XCTAssertNotNil(webSocketHandlers[@"/xrpc/com.atproto.sync.subscribeRepos"]);
 
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    PDSCleanupControllerTestDirectory(controller, tempDir);
 }
 
 - (void)testConfigureServerWithoutSubscribeReposHandlerHasNoWebSocketRoute {
@@ -449,7 +459,7 @@
     NSDictionary *webSocketHandlers = [server valueForKey:@"webSocketHandlers"];
     XCTAssertNil(webSocketHandlers[@"/xrpc/com.atproto.sync.subscribeRepos"]);
 
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    PDSCleanupControllerTestDirectory(controller, tempDir);
 }
 
 - (void)testOAuthNotRegisteredWhenDependenciesMissing {
@@ -497,7 +507,6 @@
         XCTAssertNotNil(self.testServer);
         XCTAssertNil(buildError);
         if (!self.testServer) {
-            [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
             return;
         }
 
@@ -507,11 +516,9 @@
             NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
             if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] &&
                 underlying.code == EPERM) {
-                [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
                 XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
                 return;
             }
-            [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
             XCTFail(@"Failed to start HTTP server: %@", startError);
             return;
         }
@@ -529,8 +536,8 @@
 
         [self.testServer stop];
         self.testServer = nil;
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
     } @finally {
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         if (previousUIURL.length > 0) {
             setenv("PDS_UI_SERVER_URL", previousUIURL.UTF8String, 1);
         } else {
@@ -660,7 +667,7 @@
     
     if (!server) {
         [serviceDatabases closeAll];
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         XCTFail(@"Failed to build HTTP server: %@", buildError);
         return;
     }
@@ -670,7 +677,7 @@
     
     if (!started) {
         [serviceDatabases closeAll];
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
         if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
             XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
@@ -692,7 +699,7 @@
     
     [server stop];
     [serviceDatabases closeAll];
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    PDSCleanupControllerTestDirectory(controller, tempDir);
 }
 
 /*!
@@ -732,7 +739,7 @@
     HttpServer *server = [builder buildWithError:&buildError];
     
     if (!server) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         XCTFail(@"Failed to build HTTP server: %@", buildError);
         return;
     }
@@ -741,7 +748,7 @@
     BOOL started = [server startWithError:&startError];
     
     if (!started) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
         if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
             XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
@@ -758,7 +765,7 @@
     [self verifyEndpointReturns200:nodeInfoURL withContentType:@"application/json" expectation:@"NodeInfo discovery"];
     
     [server stop];
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    PDSCleanupControllerTestDirectory(controller, tempDir);
 }
 
 /*!
@@ -798,7 +805,7 @@
     HttpServer *server = [builder buildWithError:&buildError];
     
     if (!server) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         XCTFail(@"Failed to build HTTP server: %@", buildError);
         return;
     }
@@ -807,7 +814,7 @@
     BOOL started = [server startWithError:&startError];
     
     if (!started) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
         if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
             XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
@@ -824,7 +831,7 @@
     [self verifyEndpointReturns200:xrpcURL withContentType:@"application/json" expectation:@"XRPC describeServer"];
     
     [server stop];
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    PDSCleanupControllerTestDirectory(controller, tempDir);
 }
 
 - (void)testXrpcDescribeServerPrefersXrpcRoutesOverExploreWildcard {
@@ -845,7 +852,7 @@
     NSError *buildError = nil;
     HttpServer *server = [builder buildWithError:&buildError];
     if (!server) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         XCTFail(@"Failed to build HTTP server: %@", buildError);
         return;
     }
@@ -853,7 +860,7 @@
     NSError *startError = nil;
     BOOL started = [server startWithError:&startError];
     if (!started) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        PDSCleanupControllerTestDirectory(controller, tempDir);
         NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
         if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] &&
             underlying.code == EPERM) {
@@ -873,7 +880,7 @@
                        expectation:@"XRPC describeServer with UI wildcard"];
 
     [server stop];
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    PDSCleanupControllerTestDirectory(controller, tempDir);
 }
 
 #pragma mark - Helper Methods
