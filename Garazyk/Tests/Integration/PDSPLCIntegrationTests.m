@@ -13,6 +13,7 @@
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, strong) NSURL *tempURL;
+@property (nonatomic, strong) NSURL *tempDirectoryURL;
 @property (nonatomic, strong) PLCServer *plcServer;
 @property (nonatomic, assign) NSUInteger plcPort;
 
@@ -37,14 +38,18 @@
     }
     self.plcPort = self.plcServer.httpServer.port;
 
-    self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
-    self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
-    self.tempURL = [self.tempURL URLByAppendingPathExtension:@"db"];
+    self.tempDirectoryURL = [[NSURL fileURLWithPath:NSTemporaryDirectory()]
+        URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    [[NSFileManager defaultManager] createDirectoryAtURL:self.tempDirectoryURL
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
+    self.tempURL = [self.tempDirectoryURL URLByAppendingPathComponent:@"pds.sqlite"];
 
     self.database = [PDSDatabase databaseAtURL:self.tempURL];
     [self.database openWithError:nil];
 
-    self.controller = [[PDSController alloc] initWithDirectory:[self.tempURL.path stringByDeletingLastPathComponent]
+    self.controller = [[PDSController alloc] initWithDirectory:self.tempDirectoryURL.path
                                                 serviceMaxSize:100
                                               userDatabaseSize:1000];
     
@@ -76,6 +81,12 @@
     [self.plcServer stop];
     self.plcServer = nil;
     [self.database close];
+    self.database = nil;
+    [self.controller stopServer];
+    self.controller = nil;
+    [[NSFileManager defaultManager] removeItemAtURL:self.tempDirectoryURL error:nil];
+    self.tempDirectoryURL = nil;
+    self.tempURL = nil;
     
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     config.plcURL = @"mock";

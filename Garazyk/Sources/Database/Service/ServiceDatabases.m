@@ -95,6 +95,10 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
 
 @implementation PDSServiceDatabases
 
+- (void)dealloc {
+    [self closeAll];
+}
+
 - (instancetype)initWithDirectory:(NSString *)directory 
                      serviceMaxSize:(NSUInteger)serviceMaxSize
                    didCacheMaxSize:(NSUInteger)didCacheMaxSize

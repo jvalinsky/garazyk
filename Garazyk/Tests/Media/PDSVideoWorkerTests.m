@@ -98,7 +98,8 @@
 - (void)tearDown {
     [self.worker stop];
     self.worker = nil;
-    [self.database close];
+    [self.serviceDatabases closeAll];
+    self.serviceDatabases = nil;
     self.database = nil;
     [[NSFileManager defaultManager] removeItemAtURL:self.tempDirURL error:nil];
     [super tearDown];

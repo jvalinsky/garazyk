@@ -458,6 +458,7 @@
     if (!db) return nil;
 
     [self addTeardownBlock:^{
+        [db closeAll];
         [fm removeItemAtPath:serviceDir error:nil];
     }];
 
