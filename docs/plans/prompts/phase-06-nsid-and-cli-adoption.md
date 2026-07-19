@@ -50,6 +50,20 @@ last_updated: 2026-07-18
 - A read-only architecture audit selects `garazyk-ui` as the safest next
   lifecycle adopter, subject to first characterizing its CLI grammar, silent
   shutdown behavior, dedicated crash-log contract, and GNUstep category load.
+- `garazyk-ui` now has six bounded executable characterization tests covering
+  no-argument/help/version/unknown-command behavior, five invalid `serve`
+  inputs, and a deterministic loopback bind failure. `AllTests` depends on the
+  sibling binary so the tests do not rely on a stale executable. The focused
+  `cmake --build build --target AllTests --parallel 4` build and
+  `./build/tests/AllTests -XCTest GarazykUICommandTests` pass; this records
+  the current CLI grammar and exit behavior only, leaving silent shutdown, the
+  dedicated crash log, GNUstep category loading, and the actual lifecycle port
+  for the next one-binary slice.
+- The full `./build/tests/AllTests --gated=run` acceptance run completed in
+  697 seconds: 3,966 tests ran and 68 failures remain outside
+  `GarazykUICommandTests` (including the existing `PDSSQLiteRepositoryTests`,
+  OAuth client-auth-policy, and video-processor suites). The focused class
+  passes, but the inherited full-suite failures keep the global gate red.
 
 ## Mission
 
