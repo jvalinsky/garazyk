@@ -39,6 +39,18 @@ NS_ASSUME_NONNULL_BEGIN
                  serviceName:(NSString *)serviceName
                      onStart:(void (^ _Nullable)(void))onStart;
 
+/**
+ * @abstract Runs a service while allowing its established signal-output policy.
+ * @param announceSignals Whether SIGINT and SIGTERM should be printed before
+ * the runtime is stopped and the process exits successfully.
+ * @discussion Pass NO only for a binary whose existing command contract
+ * requires silent signal termination.
+ */
++ (int)runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime
+                 serviceName:(NSString *)serviceName
+                     onStart:(void (^ _Nullable)(void))onStart
+             announceSignals:(BOOL)announceSignals;
+
 @end
 
 NS_ASSUME_NONNULL_END

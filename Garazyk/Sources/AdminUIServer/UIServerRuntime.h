@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
+#import "Runtime/GZServiceLifecycle.h"
 
 @class UIServiceConfig;
 @class HttpRequest;
@@ -11,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Runs the Admin UI HTTP service lifecycle.
  */
-@interface UIServerRuntime : NSObject
+@interface UIServerRuntime : NSObject <GZServiceRuntimeProtocol>
 
 @property(nonatomic, strong, readonly) UIServiceConfig *configuration;
 @property(nonatomic, assign, readonly, getter=isRunning) BOOL running;

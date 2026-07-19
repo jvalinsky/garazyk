@@ -4,10 +4,20 @@ title: Generated NSID constants and CLI/lifecycle adoption
 status: in-progress
 agent: worker
 depends_on: [3]
-last_updated: 2026-07-18
+last_updated: 2026-07-19
 ---
 
 # Phase 6: Generated NSID constants and CLI/lifecycle adoption
+
+## Current slice (2026-07-19)
+
+Characterize and port `jelcz` from its handwritten option scan to `GZCommandLineOptions` and `GZServiceLifecycle`. First write bounded process-level characterization tests for `jelcz` (`JelczCommandTests.m`), then port `main.m` while preserving its command grammar and silent signal termination, and verify across native tests and the Linux Docker binary-entrypoint gate.
+
+## Progress (2026-07-19)
+
+- `garazyk-ui` characterization completed (`133ce30a5`) and lifecycle adoption completed (`2026-07-19`).
+- `garazyk-ui` is fully ported to `GZCommandLineOptions` and `GZServiceLifecycle` with `announceSignals:NO` and `GZCrashReporter` preserving its silent signal behavior and `/tmp/garazyk-ui-crash.log` crash-diagnostic contract. Verified via `GarazykUICommandTests` (7/7 pass natively) and `docker run ... garazyk-gnustep help/version/serve --help` across GNUstep/Linux.
+- Remaining binaries in Scope item 2: `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`. One binary per commit.
 
 ## Progress (2026-07-17)
 
