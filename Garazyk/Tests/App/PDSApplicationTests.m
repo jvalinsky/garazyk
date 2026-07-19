@@ -48,10 +48,8 @@
 }
 
 - (void)tearDown {
-    // Stop application if running
-    if (self.application.isRunning) {
-        [self.application stop];
-    }
+    // stop releases database pools even when the test never started listeners.
+    [self.application stop];
     self.application = nil;
     
     // Clean up temp directory
