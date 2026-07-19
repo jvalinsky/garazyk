@@ -1008,6 +1008,7 @@ int main(int argc, char *argv[]) {
       @"FirehoseConformanceTests",
       @"FirehoseProtocolSessionTests",
       @"ServiceDatabasesPruningTests",
+      @"PDSCollectionMembershipPrunerTests",
       @"CoverageGapTests",
       @"DIDPLCResolverTests",
       @"PLCRotationKeyManagerTests",
