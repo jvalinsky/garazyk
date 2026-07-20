@@ -32,7 +32,7 @@ export default function NetworkStatus() {
   }
 
   return (
-    <div id="network-status" class="card" style="margin-bottom: var(--space-xl);">
+    <div id="network-status" class="card mb-xl">
       <div class="card-header">
         <div>
           <h2 class="card-title">Network Status</h2>
@@ -69,7 +69,7 @@ export default function NetworkStatus() {
           </button>
         </div>
       </div>
-      <div class="card-body" style="padding: 0;">
+      <div class="card-body p-0">
         <table class="network-table">
           <thead>
             <tr>
