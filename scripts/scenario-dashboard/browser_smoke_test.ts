@@ -14,6 +14,8 @@
  */
 
 import { runBrowserTest } from "./browser_test_helpers.ts";
+import { AnsiUp } from "ansi_up";
+import { sanitizeLogHtml } from "./utils/log_html.ts";
 
 const DASHBOARD_DIR = new URL(".", import.meta.url);
 const PORT = 3096;
@@ -200,7 +202,10 @@ async function main() {
       timeout: 15_000,
     });
 
-    const lang = await page.evaluate(() => document.documentElement.lang);
+    const lang = await page.evaluate(() =>
+      // deno-lint-ignore no-explicit-any
+      (globalThis as any).document.documentElement.lang
+    );
     if (lang !== "en") {
       throw new Error(`Expected <html lang="en">, got "${lang}"`);
     }
@@ -266,10 +271,12 @@ async function main() {
     // parse the numeric value rather than matching the string verbatim.
     await page.emulateMedia({ reducedMotion: "reduce" });
     const reducedDurationSeconds = await page.evaluate(() => {
-      const probe = document.createElement("div");
+      // deno-lint-ignore no-explicit-any
+      const win = globalThis as any;
+      const probe = win.document.createElement("div");
       probe.style.transition = "opacity 300ms";
-      document.body.appendChild(probe);
-      const duration = parseFloat(getComputedStyle(probe).transitionDuration);
+      win.document.body.appendChild(probe);
+      const duration = parseFloat(win.getComputedStyle(probe).transitionDuration);
       probe.remove();
       return duration;
     });
@@ -292,11 +299,12 @@ async function main() {
     // already-tracked bug — the source-level review of MobileNav.tsx's trap/
     // restore logic stands in as the manual check until the bundler gap is
     // fixed.
-    const mainBundleSrc = await page.evaluate(() =>
-      document.querySelector<HTMLScriptElement>(
-        'script[type="module"][src*="/_frsh/js/"]',
-      )?.src ?? null
-    );
+    const mainBundleSrc = await page.evaluate(() => {
+      // deno-lint-ignore no-explicit-any
+      const doc = (globalThis as any).document;
+      return doc.querySelector('script[type="module"][src*="/_frsh/js/"]')?.src ??
+        null;
+    });
     const bundleStatus = mainBundleSrc
       ? (await fetch(mainBundleSrc)).status
       : 0;
@@ -316,11 +324,12 @@ async function main() {
         const drawer = page.locator("#mobile-nav-drawer");
         await drawer.waitFor({ state: "visible", timeout: 5_000 });
 
-        const focusedInDrawer = await page.evaluate(() =>
-          document.querySelector("#mobile-nav-drawer")?.contains(
-            document.activeElement,
-          ) ?? false
-        );
+        const focusedInDrawer = await page.evaluate(() => {
+          // deno-lint-ignore no-explicit-any
+          const doc = (globalThis as any).document;
+          return doc.querySelector("#mobile-nav-drawer")?.contains(doc.activeElement) ??
+            false;
+        });
         if (!focusedInDrawer) {
           throw new Error(
             "Expected focus to move inside the mobile drawer when it opens",
@@ -331,12 +340,14 @@ async function main() {
         // Shift+Tab from the first focusable element must wrap to the last (trap).
         await page.keyboard.press("Shift+Tab");
         const wrappedToLast = await page.evaluate(() => {
-          const drawer = document.querySelector("#mobile-nav-drawer");
+          // deno-lint-ignore no-explicit-any
+          const doc = (globalThis as any).document;
+          const drawer = doc.querySelector("#mobile-nav-drawer");
           const focusable = drawer?.querySelectorAll(
             'button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])',
           );
           return !!focusable && focusable.length > 0 &&
-            document.activeElement === focusable[focusable.length - 1];
+            doc.activeElement === focusable[focusable.length - 1];
         });
         if (!wrappedToLast) {
           throw new Error(
@@ -349,9 +360,11 @@ async function main() {
 
         await page.keyboard.press("Escape");
         await drawer.waitFor({ state: "hidden", timeout: 5_000 });
-        const restoredFocus = await page.evaluate(() =>
-          document.activeElement?.classList.contains("mobile-nav-tab") ?? false
-        );
+        const restoredFocus = await page.evaluate(() => {
+          // deno-lint-ignore no-explicit-any
+          const doc = (globalThis as any).document;
+          return doc.activeElement?.classList.contains("mobile-nav-tab") ?? false;
+        });
         if (!restoredFocus) {
           throw new Error(
             "Expected focus to restore to the triggering nav tab after the drawer closes",
@@ -365,6 +378,73 @@ async function main() {
       }
       await page.setViewportSize({ width: 1280, height: 800 });
     }
+
+    // ── Area 7: Hostile ANSI log rendering (workstream 04 U6 item 5) ───
+    // LogViewer.tsx renders log output via
+    //   dangerouslySetInnerHTML={{ __html: sanitizeLogHtml(ansiUp.ansi_to_html(text)) }}
+    // Run the *real* production pipeline (same ansi_up instance config, same
+    // sanitizeLogHtml import) against a battery of hostile payloads embedded
+    // in ANSI-colored log text, then check what a real browser does with the
+    // output — this is the thing that actually matters for XSS, not just a
+    // regex unit test.
+    const ansiUp = new AnsiUp();
+    const hostilePayloads = [
+      "\x1b[31m<script>window.__logXss=1</script>\x1b[0m",
+      '<img src=x onerror="window.__logXss=2">',
+      '<a href="javascript:window.__logXss=3">click me</a>',
+      "<svg onload=\"window.__logXss=4\"></svg>",
+      // Nested/malformed tags — a classic regex-sanitizer bypass attempt.
+      "<scr<script>ipt>window.__logXss=5</scr</script>ipt>",
+      '<div onmouseover="window.__logXss=6">hover</div>',
+    ];
+
+    await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    await page.evaluate(() => {
+      (globalThis as unknown as { __logXss?: number }).__logXss = undefined;
+    });
+
+    for (const payload of hostilePayloads) {
+      const rendered = sanitizeLogHtml(ansiUp.ansi_to_html(payload));
+      await page.evaluate((html: string) => {
+        // deno-lint-ignore no-explicit-any
+        const doc = (globalThis as any).document;
+        const host = doc.getElementById("__smoke_log_host") ??
+          (() => {
+            const el = doc.createElement("pre");
+            el.id = "__smoke_log_host";
+            doc.body.appendChild(el);
+            return el;
+          })();
+        host.innerHTML = html;
+      }, rendered);
+    }
+    // Let any injected <script>/onerror/onload handlers have a chance to fire.
+    await page.waitForTimeout(200);
+
+    const xssMarker = await page.evaluate(() =>
+      (globalThis as unknown as { __logXss?: number }).__logXss
+    );
+    if (xssMarker !== undefined) {
+      throw new Error(
+        `Hostile ANSI log payload executed as script (marker=${xssMarker}) — ` +
+          "ansi_up escaping or sanitizeLogHtml regression",
+      );
+    }
+    console.log(
+      `[OK] ${hostilePayloads.length} hostile ANSI/HTML log payloads rendered inertly (no script execution)`,
+    );
+
+    const hostHtml: string = await page.evaluate(() => {
+      // deno-lint-ignore no-explicit-any
+      const doc = (globalThis as any).document;
+      return doc.getElementById("__smoke_log_host")?.innerHTML ?? "";
+    });
+    if (/<script[\s>]/i.test(hostHtml) || /\son\w+\s*=/i.test(hostHtml)) {
+      throw new Error(
+        "Sanitized log output still contains a live <script> tag or on* handler attribute",
+      );
+    }
+    console.log("[OK] Sanitized log output has no live <script> tags or event-handler attributes");
 
     // ── Summary ─────────────────────────────────────────────────────────
     console.log("\n✅ All browser smoke baseline checks completed");

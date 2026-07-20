@@ -143,6 +143,25 @@ source list). Verified behavior-preserving: `UIServerRuntimeTests` 23/23
 green, and a full `admin_ui_browser_smoke_test.ts` run (real binary, real
 browser) green end to end, including the new Area 5 accessibility checks.
 
+**Progress (2026-07-19): items 2 and 5 — audited and locked.** Audited
+every `innerHTML`/`dangerouslySetInnerHTML` sink in the Admin UI and
+dashboard JS/TSX (`admin-ui.js`, `lab.js`, `SessionPlayer.tsx`,
+`LogViewer.tsx`). All but one already followed a safe pattern (static
+template + `.textContent` for untrusted values, or trusted pre-escaped
+server-rendered fragments via the centralized `replaceServerHTML`/
+`showError` helpers in `admin-ui.js` — no separate centralization work
+needed there). The one real sink, `LogViewer.tsx`'s
+`dangerouslySetInnerHTML={{ __html: sanitizeLogHtml(ansiUp.ansi_to_html(text)) }}`
+(item 5's target), had unit coverage for `sanitizeLogHtml` in isolation
+but no proof the combination is safe in a real browser. Added a new Area
+7 to `scenario-dashboard/browser_smoke_test.ts` that runs the actual
+production pipeline (`ansi_up` + `utils/log_html.ts`'s `sanitizeLogHtml`,
+not a duplicate) against 6 hostile payloads (script tags, `onerror`/
+`onload`/`onmouseover` handlers, a `javascript:` href, a nested-tag
+regex-bypass attempt) embedded in ANSI-colored text, injects the result
+into a real page the way `LogViewer` does, and asserts no script executes
+and no live `<script>`/`on*` attribute survives. Green.
+
 Primary sources:
 
 - [CSP Level 3](https://www.w3.org/TR/CSP/)
