@@ -20,20 +20,53 @@ export default function MobileNav({ activeScenario }: MobileNavProps) {
   const panel = state.value.ux.mobileNavPanel;
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!panel) return;
 
+    // Save the currently focused element so we can restore it when the drawer closes.
+    lastFocusedRef.current = document.activeElement as HTMLElement;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         dispatch({ type: "ux/closeMobileNav" });
+        return;
+      }
+
+      // Focus trap: keep Tab/Shift+Tab within the drawer.
+      if (event.key === "Tab" && drawerRef.current) {
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey) {
+          if (
+            document.activeElement === first ||
+            !drawerRef.current.contains(document.activeElement)
+          ) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
       }
     };
 
     globalThis.addEventListener("keydown", onKeyDown);
     closeButtonRef.current?.focus();
 
-    return () => globalThis.removeEventListener("keydown", onKeyDown);
+    return () => {
+      globalThis.removeEventListener("keydown", onKeyDown);
+      // Restore focus to the element that had it before the drawer opened.
+      lastFocusedRef.current?.focus();
+    };
   }, [panel]);
 
   useEffect(() => {
@@ -42,7 +75,8 @@ export default function MobileNav({ activeScenario }: MobileNavProps) {
     } else {
       document.documentElement.classList.remove("mobile-drawer-open");
     }
-    return () => document.documentElement.classList.remove("mobile-drawer-open");
+    return () =>
+      document.documentElement.classList.remove("mobile-drawer-open");
   }, [panel]);
 
   function toggle(panelId: MobileNavPanel) {
@@ -60,7 +94,9 @@ export default function MobileNav({ activeScenario }: MobileNavProps) {
           <button
             key={id}
             type="button"
-            class={`mobile-nav-tab ${panel === id ? "mobile-nav-tab--active" : ""}`}
+            class={`mobile-nav-tab ${
+              panel === id ? "mobile-nav-tab--active" : ""
+            }`}
             aria-expanded={panel === id}
             aria-controls={panel === id ? "mobile-nav-drawer" : undefined}
             onClick={() => toggle(id)}

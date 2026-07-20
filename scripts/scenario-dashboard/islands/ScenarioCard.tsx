@@ -42,7 +42,10 @@ export default function ScenarioCard(
       missing.push("pds2");
     }
     for (const req of requires) {
-      if (!preview.capabilities.includes(req) && !preview.roles.includes(req.split(":")[0])) {
+      if (
+        !preview.capabilities.includes(req) &&
+        !preview.roles.includes(req.split(":")[0])
+      ) {
         missing.push(req);
       }
     }
@@ -59,28 +62,32 @@ export default function ScenarioCard(
     : "secondary";
 
   return (
-
-    <a href={href} class={`scenario-card ${!isCompatible ? "incompatible" : ""}`}>
+    <a
+      href={href}
+      class={`scenario-card ${!isCompatible ? "incompatible" : ""}`}
+    >
       <div class="card-id">{id}</div>
       <div class="card-name">{name}</div>
 
       {!isCompatible && (
-        <div class="compatibility-warning" title={`Missing: ${missing.join(", ")}`}>
+        <div
+          class="compatibility-warning"
+          title={`Missing: ${missing.join(", ")}`}
+        >
           ⚠️ Incompatible
         </div>
       )}
 
       {status && (
         <div class={`card-status badge badge-${badgeVariant}`}>
-          {icon} {status}
+          <span aria-hidden="true">{icon}</span> {status}
         </div>
       )}
       {(passed + failed + skipped) > 0 && (
-        <div style="font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin-top: var(--space-xs);">
-          {passed}✓ {failed}✗ {skipped}–
+        <div class="card-counts">
+          {passed} passed {failed} failed {skipped} skipped
         </div>
       )}
     </a>
-
   );
 }
