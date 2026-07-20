@@ -1,5 +1,18 @@
 /* Garazyk Scenario Dashboard — App Styles */
 
+/* Screen-reader-only utility (WCAG 1.3.1) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Reset */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -1646,5 +1659,67 @@ html, body {
 @media (max-width: 768px) and (pointer: coarse) {
   .toolbar-actions {
     flex-wrap: wrap;
+  }
+}
+
+/* Run history table (U4: named data tables, status not color-only) */
+.run-history-card {
+  margin-bottom: var(--space-xl);
+}
+
+.run-history-body {
+  padding: 0;
+}
+
+.run-history-empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: var(--space-2xl);
+}
+
+.run-history-link {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.run-history-flags {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.result-passed {
+  color: var(--color-success);
+}
+
+.result-failed {
+  color: var(--color-destructive);
+}
+
+.result-skipped {
+  color: var(--color-warning);
+}
+
+/* Summary card label (replaces inline style) */
+.summary-label {
+  margin-top: var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Scenario card counts (replaces inline style) */
+.card-counts {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-xs);
+}
+
+/* U5: Respect reduced-motion preference (WCAG 2.2 Success Criterion 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
