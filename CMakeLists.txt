@@ -1005,6 +1005,8 @@ add_executable(garazyk-ui
   Garazyk/Sources/AdminUIServer/UIAuthManager.m
   Garazyk/Sources/AdminUIServer/UIBackendClient.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m
 )
 
 target_include_directories(garazyk-ui PRIVATE
@@ -1501,6 +1503,8 @@ if(BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIAuthManager.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m"
   )
 
   # Exclude problematic tests (preserved from original)
