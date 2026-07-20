@@ -10,7 +10,7 @@
 /* === tokens.css === */
 /* Apple HIG-aligned color tokens and CSS variables
  * Migrated to OKLCH for perceptually uniform color manipulation
- * Brand hue: warm strawberry red (~15) at low chroma for tinted neutrals
+ * Brand hue: warm strawberry red (~15°) at low chroma for tinted neutrals
  */
 :root {
   /* Light mode semantic colors - OKLCH */
@@ -31,6 +31,7 @@
   --color-info: oklch(60% 0.15 210);
 
   /* Strawberry brand tint on neutrals - subtle warmth */
+  /* Background secondary gets slight chroma toward strawberry */
   --color-bg-secondary-tinted: oklch(99% 0.004 15);
 
   /* Separators and borders */
@@ -89,18 +90,23 @@
   --transition-slow: 0.3s ease;
 }
 
-/* Dark mode overrides - OKLCH with brand tint on backgrounds */
+/* Dark mode overrides - OKLCH with stronger brand tint on backgrounds for cohesion */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg-primary: oklch(15% 0.005 200);
-    --color-bg-secondary: oklch(22% 0.006 200);
-    --color-bg-tertiary: oklch(28% 0.007 200);
+    --color-bg-primary: oklch(15% 0.006 15);
+    --color-bg-secondary: oklch(22% 0.01 15);
+    --color-bg-tertiary: oklch(28% 0.012 15);
     --color-text-primary: oklch(96% 0.003 200);
     --color-text-secondary: oklch(70% 0.005 200);
     --color-text-tertiary: oklch(55% 0.004 200);
-    --color-bg-secondary-tinted: oklch(22% 0.008 15);
+
+    /* Dark mode - stronger brand tint on secondary bg for visual warmth */
+    --color-bg-secondary-tinted: oklch(22% 0.015 15);
+
     --separator-color: oklch(32% 0.005 200);
     --separator-color-secondary: oklch(28% 0.004 200);
+
+    /* Shadows for dark mode */
     --shadow-sm: 0 1px 3px oklch(0% 0 0 / 0.3);
     --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.4);
     --shadow-lg: 0 4px 16px oklch(0% 0 0 / 0.5);
@@ -108,26 +114,82 @@
 }
 
 /* === reset.css === */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: var(--font-system);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   color: var(--color-text-primary);
   background: var(--color-bg-primary);
+  overflow: hidden;
 }
-h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: var(--line-height-tight); margin: 0; }
-h1 { font-size: var(--font-size-2xl); }
-h2 { font-size: var(--font-size-xl); }
-h3 { font-size: var(--font-size-lg); }
-h4, h5, h6 { font-size: var(--font-size-md); }
-p { margin: 0; }
-a { color: var(--color-accent); text-decoration: none; cursor: pointer; transition: color var(--transition-fast); }
-a:hover { opacity: 0.8; }
-a:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
-button:focus-visible { outline-offset: -2px; }
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--font-size-2xl);
+}
+
+h2 {
+  font-size: var(--font-size-xl);
+}
+
+h3 {
+  font-size: var(--font-size-lg);
+}
+
+h4, h5, h6 {
+  font-size: var(--font-size-md);
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Focus visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+button:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Form elements */
 input, textarea, select {
   font-family: var(--font-system);
   font-size: var(--font-size-sm);
@@ -138,19 +200,82 @@ input, textarea, select {
   color: var(--color-text-primary);
   transition: border-color var(--transition-fast);
 }
-input:focus, textarea:focus, select:focus {
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--separator-color-secondary);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
 }
-input:disabled, textarea:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--color-bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--color-bg-tertiary); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--separator-color); }
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--separator-color);
+}
+
+/* Utility classes */
 .sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  padding: var(--space-sm) var(--space-md);
+  z-index: 100;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.visible {
+  display: block !important;
 }
 
 /* === components.css (selected) === */

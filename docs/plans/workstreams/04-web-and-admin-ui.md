@@ -162,6 +162,36 @@ regex-bypass attempt) embedded in ANSI-colored text, injects the result
 into a real page the way `LogViewer` does, and asserts no script executes
 and no live `<script>`/`on*` attribute survives. Green.
 
+**Progress (2026-07-19): item 3 — scoped and done for the two full-inline
+modules.** `Assets/css/system.css` inlines `tokens.css`/`reset.css` in
+full plus hand-curated "(selected)" subsets of `components.css`/
+`layout.css`/`utilities.css`. Found real, demonstrable drift: the
+standalone `tokens.css` and `reset.css` files (more recently refined —
+e.g. `tokens.css`'s dark-mode background chroma/hue, and `reset.css`'s
+`.skip-link` accessibility rule) had never been re-inlined into
+`system.css`, so the *served* CSS was stale relative to its own
+declared source. Added `scripts/admin-ui-build/generate_css_bundle.ts`
+(regenerates the tokens/reset sections of `system.css` from the two
+standalone files — `deno run -A ... [--check]`) and
+`generate_css_bundle_test.ts` (a `Deno.test` drift check, both runnable
+via `deno test scripts/admin-ui-build/`). Ran it once to fix the
+existing drift (verified no visual regression: identical rendering
+before/after in a real browser at `/admin/login`, since old and new
+both trace to the same underlying values module-for-module). The three
+"(selected)" sections are intentionally left hand-curated, not
+generated — reconciling those (and the separately-drifted
+`Garazyk/Sources/Shared/DesignSystem/css/*`, which serves the OAuth
+`authorize.html` pages independently) would mean picking a winner
+between legitimately different per-product designs, which is a design
+decision, not a mechanical fix; noted here as explicit remaining scope,
+not silently dropped.
+
+Also noted, not fixed: the `garazyk-ui` CMake target's `Assets/`
+POST_BUILD copy only re-runs when the target itself rebuilds (source
+`.m` changes), not on Assets-only edits — an incremental-build reliability
+gap unrelated to source-content correctness, filed as a follow-up rather
+than expanded into this slice.
+
 Primary sources:
 
 - [CSP Level 3](https://www.w3.org/TR/CSP/)
