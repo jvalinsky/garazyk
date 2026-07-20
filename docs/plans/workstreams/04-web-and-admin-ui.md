@@ -89,6 +89,21 @@ manual keyboard pass until this is fixed. Own lane — likely fix is loading
 `asciinema-player`'s pre-built browser bundle via the same CDN URL already
 used for its CSS, rather than the bare `npm:` specifier.
 
+**Progress (2026-07-19, slice 2): Admin UI — complete.**
+`UIServerRuntime.m`: heading order (login `h1`, shell `h1`, 48 section
+`h2`s, one nested `h3`); all labels bound via `for`/`id`; 12-tab nav gets
+full ARIA tablist/tab/tabpanel roles, `aria-selected`, roving `tabindex`,
+and arrow-key/`Home`/`End` navigation (`admin-ui.js`); ~19 status/error
+containers get `aria-live="polite"`/`role="alert"`.
+`Auth/Assets/authorize.html`: focus now moves into the consent step on
+sign-in (both password and passkey paths); `#auth-error` gets
+`role="alert"`. `admin_ui_browser_smoke_test.ts` Area 5 asserts all of
+this against the real binary (green), and the OAuth consent-focus check —
+previously a soft warning in the smoke test's own comments describing it
+as a known gap — is now a hard assertion. Manual keyboard pass: covered by
+Area 3 (tab order) plus Area 5's `ArrowRight`/`Home`/`End` tab-navigation
+assertions, both against a live browser and the real `garazyk-ui` binary.
+
 ## U5. Visual conformance
 
 Measure semantic foreground colors rather than trusting the design-system claim.

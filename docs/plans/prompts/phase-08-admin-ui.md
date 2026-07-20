@@ -28,10 +28,47 @@ for detail). Manual verification of the trap/restore logic was done by
 source review of `MobileNav.tsx` in lieu of a live browser pass, pending
 that bug's fix.
 
-Remaining: U4 Admin UI (the real ObjC AdminUIServer — page `h1`/heading
-order, label binding, tab role/state, live regions, OAuth focus move),
-the rest of U5 (measured contrast, 200% zoom/reflow, touch targets), and
-U6 (gated behind U4 landing in full).
+**Slice 2 complete (2026-07-19): U4 Admin UI (ObjC AdminUIServer).**
+`Garazyk/Sources/AdminUIServer/UIServerRuntime.m`: page heading order
+fixed (login page `<h2>`→`<h1>`; shell header `<div>`→`<h1>`; all 48
+`admin-section-title` `<h3>`→`<h2>`; the one nested MST-node `<h4>`→`<h3>`
+to stay one level below); all 23 `<label>` elements (21 bare + 2 already
+correct) bound via `for`/`id`, including the 12 originally missed in the
+per-service Connections form (caught by a new automated check — see
+below); the 12-tab nav gets `role="tablist"`/`role="tab"`/
+`role="tabpanel"`, `aria-selected`, `aria-controls`/`aria-labelledby`, and
+roving `tabindex`, with `ArrowLeft/Right/Up/Down/Home/End` keyboard
+navigation added to `Assets/js/admin-ui.js` per the WAI-ARIA APG tabs
+pattern; ~19 status/error containers (`*-result(s)` divs, the connection
+test-result span, the login error `<p>`) get `aria-live="polite"` or
+`role="alert"`. `Garazyk/Sources/Auth/Assets/authorize.html`: focus now
+moves to the consent step's heading on both the password and passkey
+sign-in paths (previously stranded focus on the now-hidden sign-in
+button); `#auth-error` gets `role="alert"`.
+
+`scripts/admin_ui_browser_smoke_test.ts` gets a new Area 5 asserting all
+of the above against the real built `garazyk-ui` binary (heading count/
+order, tablist roles, `aria-selected` + roving `tabindex` after
+`ArrowRight`, unbound-label count), and the pre-existing OAuth
+consent-focus check is promoted from a soft `warn()` to a hard `fail()`
+now that it's fixed. Full run green (`✅ Admin UI browser smoke
+completed`), including a real catch: the first pass at label binding
+missed the 12 per-service Connections-form labels (they use
+`class="form-label"`, not a bare `<label>`) — the new Area 5 check caught
+it before commit.
+
+`cmake --build build --target AllTests --parallel 4` succeeds cleanly.
+`./build/tests/AllTests --gated=run` surfaces 12 failing suites (~68
+failures), none in files this slice touches — see workstream 01 S5's
+"Regression discovered 2026-07-19" note for the full breakdown and root
+causes (a DID-format/fixture mismatch predating this session, plus a
+separate `MSTPreorderTests` bug from phase 7's Sync 1.1 work). Confirmed
+unrelated by code-area review and, for the deterministic `MSTPreorderTests`
+failure, three isolated re-runs.
+
+Remaining: the rest of U5 (measured contrast, 200% zoom/reflow, touch
+targets, dashboard keyboard order at narrow widths), and U6 (gated behind
+U4 landing in full — U4 now lands with this slice).
 
 # Phase 8: Admin UI accessibility and structural cleanup
 
