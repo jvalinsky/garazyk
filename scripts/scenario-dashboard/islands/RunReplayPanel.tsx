@@ -39,7 +39,9 @@ export default function RunReplayPanel({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/events`);
+        const res = await fetch(
+          `/api/runs/${encodeURIComponent(runId)}/events`,
+        );
         if (!res.ok) return;
         const rows = await res.json() as RunEventApiRow[];
         if (!cancelled) setEvents(rows);
@@ -59,10 +61,8 @@ export default function RunReplayPanel({
 
   return (
     <>
-      <div
-        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-sm);"
-      >
-        <h2 class="section-heading" style="margin: 0;">Replay</h2>
+      <div class="d-flex align-center justify-between mb-md flex-wrap gap-sm">
+        <h2 class="section-heading m-0">Replay</h2>
         <ExportReplayButton runId={runId} />
       </div>
       <RunTimeline

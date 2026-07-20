@@ -127,11 +127,8 @@ export default function ScenarioDetailPage(
       <Toolbar />
       <Sidebar activeScenario={scenario.id} />
       <main class="main-content">
-        <div style="margin-bottom: var(--space-lg);">
-          <a
-            href="/"
-            style="color: var(--color-accent); text-decoration: none; font-size: var(--font-size-sm);"
-          >
+        <div class="mb-lg">
+          <a href="/" class="link-subtle">
             ← Back
           </a>
         </div>
@@ -142,9 +139,9 @@ export default function ScenarioDetailPage(
 
         {latestResult
           ? (
-            <div class="card" style="margin-bottom: var(--space-lg);">
+            <div class="card mb-lg">
               <div class="card-body">
-                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
+                <div class="d-flex align-center gap-md mb-md">
                   <span
                     class={`badge ${
                       latestResult.status === "passed"
@@ -158,7 +155,7 @@ export default function ScenarioDetailPage(
                   >
                     {latestResult.status.toUpperCase()}
                   </span>
-                  <span style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                  <span class="text-secondary text-sm">
                     {latestResult.passed} passed · {latestResult.failed}{" "}
                     failed · {latestResult.skipped} skipped
                   </span>
@@ -178,17 +175,14 @@ export default function ScenarioDetailPage(
             </div>
           )
           : (
-            <div class="card" style="margin-bottom: var(--space-lg);">
-              <div
-                class="card-body"
-                style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);"
-              >
+            <div class="card mb-lg">
+              <div class="card-body empty-state">
                 No results recorded yet for this scenario.
               </div>
             </div>
           )}
 
-        <div style="display: flex; gap: var(--space-md);">
+        <div class="d-flex gap-md">
           <ScenarioRunner
             scenarioId={scenario.id}
             needsPds2={scenario.needsPds2}
@@ -196,7 +190,7 @@ export default function ScenarioDetailPage(
         </div>
 
         {scenario.needsPds2 && (
-          <div class="badge badge-warning" style="margin-top: var(--space-lg);">
+          <div class="badge badge-warning mt-lg">
             ⚠ Requires PDS2 — start network with PDS2 enabled
           </div>
         )}

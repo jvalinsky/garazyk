@@ -1305,9 +1305,11 @@ html, body {
 }
 
 .run-progress-bar-fill::after {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0; right: 0; bottom: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 8px;
   background: rgba(255, 255, 255, 0.4);
   filter: blur(2px);
@@ -1712,6 +1714,98 @@ html, body {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   margin-top: var(--space-xs);
+}
+
+/* U6: Reusable utility/state classes (replaces inline JSX styles) */
+.mb-sm {
+  margin-bottom: var(--space-sm);
+}
+.mb-md {
+  margin-bottom: var(--space-md);
+}
+.mb-lg {
+  margin-bottom: var(--space-lg);
+}
+.mb-xl {
+  margin-bottom: var(--space-xl);
+}
+.mt-lg {
+  margin-top: var(--space-lg);
+}
+.mt-sm {
+  margin-top: var(--space-sm);
+}
+.m-0 {
+  margin: 0;
+}
+.p-0 {
+  padding: 0;
+}
+.p-md {
+  padding: var(--space-md);
+}
+.w-full {
+  width: 100%;
+}
+.text-decoration-none {
+  text-decoration: none;
+}
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+.text-destructive {
+  color: var(--color-destructive);
+}
+.text-sm {
+  font-size: var(--font-size-sm);
+}
+.d-flex {
+  display: flex;
+}
+.d-block {
+  display: block;
+}
+.flex-wrap {
+  flex-wrap: wrap;
+}
+.align-center {
+  align-items: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.gap-xs {
+  gap: var(--space-xs);
+}
+.gap-sm {
+  gap: var(--space-sm);
+}
+.gap-md {
+  gap: var(--space-md);
+}
+.gap-xl {
+  gap: var(--space-xl);
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.border-none {
+  border: none;
+}
+.section-title-inline {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+.link-subtle {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+.empty-state {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: var(--space-2xl);
 }
 
 /* U5: Respect reduced-motion preference (WCAG 2.2 Success Criterion 2.3.3) */
