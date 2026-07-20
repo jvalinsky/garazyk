@@ -1253,10 +1253,10 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     ".login-card input{width:100%%;margin-bottom:var(--space-sm)}.login-card button{width:100%%}"
     ".login-error{color:var(--color-destructive);margin-top:var(--space-sm);font-size:var(--font-size-sm)}</style>"
     "</head><body><div class=\"login-shell\"><div class=\"login-card\">"
-    "<h2>Admin UI Service</h2><p>Sign in to continue.</p>"
+    "<h1>Admin UI Service</h1><p>Sign in to continue.</p>"
     "<form id=\"login-form\" data-ui-form=\"login\"><input id=\"password\" type=\"password\" placeholder=\"Admin password\" required/>"
     "<button type=\"submit\" class=\"btn btn-primary\">Sign in</button></form>"
-    "<p id=\"error\" class=\"login-error\"></p></div></div>"
+    "<p id=\"error\" class=\"login-error\" role=\"alert\"></p></div></div>"
     "<script type=\"module\" src=\"/js/admin-ui.js\"></script>"
     "</body></html>", csrfNonce, nonce];
 }
@@ -1268,107 +1268,107 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<meta name=\"csrf-nonce\" content=\"%@\">"
     "<script nonce=\"%@\" src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script>"
     "</head><body><div class=\"admin-shell\">"
-    "<header class=\"admin-header\"><div class=\"admin-header-title\">Garazyk UI Service</div>"
-    "<nav class=\"service-segments\" id=\"nav-tabs\">"
-    "<button class=\"service-segment active\" data-tab=\"overview\" data-ui-action=\"switch-tab\">Overview</button>"
-    "<button class=\"service-segment\" data-tab=\"connections\" data-ui-action=\"switch-tab\">Connections</button>"
-    "<button class=\"service-segment\" data-tab=\"pds\" data-ui-action=\"switch-tab\">PDS</button>"
-    "<button class=\"service-segment\" data-tab=\"appview\" data-ui-action=\"switch-tab\">AppView</button>"
-    "<button class=\"service-segment\" data-tab=\"relay\" data-ui-action=\"switch-tab\">Relay</button>"
-    "<button class=\"service-segment\" data-tab=\"plc\" data-ui-action=\"switch-tab\">PLC</button>"
-    "<button class=\"service-segment\" data-tab=\"explorer\" data-ui-action=\"switch-tab\">Explorer</button>"
-    "<button class=\"service-segment\" data-tab=\"ozone\" data-ui-action=\"switch-tab\">Ozone</button>"
-    "<button class=\"service-segment\" data-tab=\"security\" data-ui-action=\"switch-tab\">Security</button>"
-    "<button class=\"service-segment\" data-tab=\"mst\" data-ui-action=\"switch-tab\">MST</button>"
-    "<button class=\"service-segment\" data-tab=\"chat\" data-ui-action=\"switch-tab\">Chat</button>"
-    "<button class=\"service-segment\" data-tab=\"video\" data-ui-action=\"switch-tab\">Video</button>"
+    "<header class=\"admin-header\"><h1 class=\"admin-header-title\">Garazyk UI Service</h1>"
+    "<nav class=\"service-segments\" id=\"nav-tabs\" role=\"tablist\" aria-label=\"Service sections\">"
+    "<button class=\"service-segment active\" data-tab=\"overview\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-overview\" aria-controls=\"tab-overview\" aria-selected=\"true\" tabindex=\"0\">Overview</button>"
+    "<button class=\"service-segment\" data-tab=\"connections\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-connections\" aria-controls=\"tab-connections\" aria-selected=\"false\" tabindex=\"-1\">Connections</button>"
+    "<button class=\"service-segment\" data-tab=\"pds\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-pds\" aria-controls=\"tab-pds\" aria-selected=\"false\" tabindex=\"-1\">PDS</button>"
+    "<button class=\"service-segment\" data-tab=\"appview\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-appview\" aria-controls=\"tab-appview\" aria-selected=\"false\" tabindex=\"-1\">AppView</button>"
+    "<button class=\"service-segment\" data-tab=\"relay\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-relay\" aria-controls=\"tab-relay\" aria-selected=\"false\" tabindex=\"-1\">Relay</button>"
+    "<button class=\"service-segment\" data-tab=\"plc\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-plc\" aria-controls=\"tab-plc\" aria-selected=\"false\" tabindex=\"-1\">PLC</button>"
+    "<button class=\"service-segment\" data-tab=\"explorer\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-explorer\" aria-controls=\"tab-explorer\" aria-selected=\"false\" tabindex=\"-1\">Explorer</button>"
+    "<button class=\"service-segment\" data-tab=\"ozone\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-ozone\" aria-controls=\"tab-ozone\" aria-selected=\"false\" tabindex=\"-1\">Ozone</button>"
+    "<button class=\"service-segment\" data-tab=\"security\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-security\" aria-controls=\"tab-security\" aria-selected=\"false\" tabindex=\"-1\">Security</button>"
+    "<button class=\"service-segment\" data-tab=\"mst\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-mst\" aria-controls=\"tab-mst\" aria-selected=\"false\" tabindex=\"-1\">MST</button>"
+    "<button class=\"service-segment\" data-tab=\"chat\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-chat\" aria-controls=\"tab-chat\" aria-selected=\"false\" tabindex=\"-1\">Chat</button>"
+    "<button class=\"service-segment\" data-tab=\"video\" data-ui-action=\"switch-tab\" role=\"tab\" id=\"tabbtn-video\" aria-controls=\"tab-video\" aria-selected=\"false\" tabindex=\"-1\">Video</button>"
     "</nav>"
     "<div class=\"admin-header-right\">"
     "<form method=\"post\" action=\"/admin/logout\" data-ui-form=\"logout\">"
     "<button type=\"submit\" class=\"btn btn-secondary btn-sm\">Logout</button></form></div></header>"
     "<main class=\"admin-content\">"
     /* Overview tab */
-    "<div id=\"tab-overview\" class=\"tab-pane\">"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Status</h3>"
+    "<div id=\"tab-overview\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-overview\" tabindex=\"0\">"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Service Status</h2>"
     "<div id=\"overview\" hx-get=\"/admin/partials/overview\" hx-trigger=\"load, every 20s\"></div></section></div>"
     /* Connections tab */
-    "<div id=\"tab-connections\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Connections</h3>\""
+    "<div id=\"tab-connections\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-connections\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Service Connections</h2>\""
     "<p class=\"text-secondary text-sm mb-lg\">Configure URLs and admin tokens for each AT Protocol service. Changes apply immediately but are not persisted across restarts.</p>\""
     "<div id=\"connections-form\" hx-get=\"/admin/partials/connections\" hx-trigger=\"load\"></div></section></div>"
     /* PDS tab */
-    "<div id=\"tab-pds\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Accounts</h3>"
+    "<div id=\"tab-pds\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-pds\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Accounts</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/accounts\" hx-target=\"#accounts\">"
     "<input type=\"text\" name=\"q\" placeholder=\"Search email or DID\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Search</button></form></div>"
     "<div id=\"accounts\" hx-get=\"/admin/partials/accounts\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Invite Codes</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Invite Codes</h2>"
     "<div id=\"invites\" hx-get=\"/admin/partials/invites\" hx-trigger=\"load\"></div>"
     "<div class=\"action-row\"><input id=\"disable-account\" type=\"text\" placeholder=\"DID to disable invites\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-destructive btn-sm\" data-ui-action=\"disable-invites\">Disable Invites</button></div>"
     "<div class=\"action-row mt-sm\"><input id=\"enable-account\" type=\"text\" placeholder=\"DID to enable invites\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"enable-invites\">Enable Invites</button></div>"
-    "<div id=\"invite-action-result\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Server Stats</h3>"
+    "<div id=\"invite-action-result\" aria-live=\"polite\"></div></section>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Server Stats</h2>"
     "<div id=\"pds-stats\" hx-get=\"/admin/partials/pds-stats\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Audit Log</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Audit Log</h2>"
     "<div id=\"audit-log-content\" hx-get=\"/admin/partials/audit-log\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Blobs</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Blobs</h2>"
     "<div id=\"blobs-content\" hx-get=\"/admin/partials/blobs\" hx-trigger=\"load\"></div></section>"
     "</div>"
     /* AppView tab */
-    "<div id=\"tab-appview\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Metrics</h3>"
+    "<div id=\"tab-appview\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-appview\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Metrics</h2>"
     "<div id=\"appview-metrics\" hx-get=\"/admin/partials/appview-metrics\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Ingest Health</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Ingest Health</h2>"
     "<div id=\"appview-ingest\" hx-get=\"/admin/partials/appview-ingest\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Backfill Queue</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Backfill Queue</h2>"
     "<div id=\"appview-queue\" hx-get=\"/admin/partials/appview-queue\" hx-trigger=\"load, every 10s\"></div></section></div>"
     /* Relay tab */
-    "<div id=\"tab-relay\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Relay Metrics</h3>"
+    "<div id=\"tab-relay\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-relay\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Relay Metrics</h2>"
     "<div id=\"relay-metrics\" hx-get=\"/admin/partials/relay-metrics\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Health</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Health</h2>"
     "<div id=\"relay-health\" hx-get=\"/admin/partials/relay-health\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Upstreams</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Upstreams</h2>"
     "<div id=\"relay-upstreams\" hx-get=\"/admin/partials/relay-upstreams\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Request Crawl</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Request Crawl</h2>"
     "<div class=\"action-row\"><input id=\"crawl-hostname\" type=\"text\" placeholder=\"Hostname to crawl\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"request-crawl\">Request Crawl</button></div>"
-    "<div id=\"crawl-result\"></div></section></div>"
+    "<div id=\"crawl-result\" aria-live=\"polite\"></div></section></div>"
     /* PLC tab */
-    "<div id=\"tab-plc\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Health</h3>"
+    "<div id=\"tab-plc\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-plc\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Health</h2>"
     "<div id=\"plc-health\" hx-get=\"/admin/partials/plc-health\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Metrics</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Metrics</h2>"
     "<div id=\"plc-metrics\" hx-get=\"/admin/partials/plc-metrics\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">All DIDs</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">All DIDs</h2>"
     "<div id=\"plc-list\" hx-get=\"/admin/partials/plc-list\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">DID Lookup</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">DID Lookup</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/plc-did\" hx-target=\"#plc-did-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
-    "<div id=\"plc-did-result\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">DID Log</h3>"
+    "<div id=\"plc-did-result\" aria-live=\"polite\"></div></section>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">DID Log</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/plc-log\" hx-target=\"#plc-log-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">View Log</button></form></div>"
-    "<div id=\"plc-log-result\"></div></section></div>"
+    "<div id=\"plc-log-result\" aria-live=\"polite\"></div></section></div>"
     /* Explorer tab */
-    "<div id=\"tab-explorer\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Repo Explorer</h3>"
+    "<div id=\"tab-explorer\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-explorer\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Repo Explorer</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/describe-repo\" hx-target=\"#repo-detail\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:... or handle\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Describe</button></form></div>"
     "<div id=\"repo-detail\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">List Records</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">List Records</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/list-records\" hx-target=\"#records-list\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<input type=\"text\" name=\"collection\" placeholder=\"Collection (optional)\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">List</button></form></div>"
     "<div id=\"records-list\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Get Record</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Get Record</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/get-record\" hx-target=\"#record-detail\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<input type=\"text\" name=\"collection\" placeholder=\"Collection\" class=\"form-input flex-1\"/>"
@@ -1376,83 +1376,83 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Get</button></form></div>"
     "<div id=\"record-detail\"></div></section></div>"
     /* Ozone tab */
-    "<div id=\"tab-ozone\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Statuses</h3>"
+    "<div id=\"tab-ozone\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-ozone\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Moderation Statuses</h2>"
     "<div id=\"ozone-statuses\" hx-get=\"/admin/partials/ozone-statuses\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Events</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Moderation Events</h2>"
     "<div id=\"ozone-events\" hx-get=\"/admin/partials/ozone-events\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Subject Status</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Subject Status</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/ozone-subject\" hx-target=\"#ozone-subject-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
-    "<div id=\"ozone-subject-result\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Reports</h3>"
+    "<div id=\"ozone-subject-result\" aria-live=\"polite\"></div></section>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Moderation Reports</h2>"
     "<div id=\"ozone-reports\" hx-get=\"/admin/partials/ozone-reports\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Scheduled Actions</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Scheduled Actions</h2>"
     "<div id=\"ozone-scheduled\" hx-get=\"/admin/partials/ozone-scheduled\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Verification</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Verification</h2>"
     "<div id=\"ozone-verification\" hx-get=\"/admin/partials/ozone-verification\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Safelinks</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Safelinks</h2>"
     "<div id=\"ozone-safelinks\" hx-get=\"/admin/partials/ozone-safelinks\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Settings</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Settings</h2>"
     "<div id=\"ozone-settings\" hx-get=\"/admin/partials/ozone-settings\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Signatures</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Signatures</h2>"
     "<div id=\"ozone-signatures\" hx-get=\"/admin/partials/ozone-signatures\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Hosting History</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Hosting History</h2>"
     "<div id=\"ozone-hosting\" hx-get=\"/admin/partials/ozone-hosting\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Team Members</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Team Members</h2>"
     "<div id=\"ozone-team\" hx-get=\"/admin/partials/ozone-team\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Sets</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Sets</h2>"
     "<div id=\"ozone-sets\" hx-get=\"/admin/partials/ozone-sets\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Templates</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Templates</h2>"
     "<div id=\"ozone-templates\" hx-get=\"/admin/partials/ozone-templates\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Configuration</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Configuration</h2>"
     "<div id=\"ozone-config\" hx-get=\"/admin/partials/ozone-config\" hx-trigger=\"load\"></div></section></div>"
     /* Security tab */
-    "<div id=\"tab-security\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Active Sessions</h3>"
+    "<div id=\"tab-security\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-security\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Active Sessions</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/sessions\" hx-target=\"#sessions-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
-    "<div id=\"sessions-result\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">App Passwords</h3>"
+    "<div id=\"sessions-result\" aria-live=\"polite\"></div></section>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">App Passwords</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/app-passwords\" hx-target=\"#app-passwords-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
-    "<div id=\"app-passwords-result\"></div></section></div>"
+    "<div id=\"app-passwords-result\" aria-live=\"polite\"></div></section></div>"
     /* MST Viewer tab */
-    "<div id=\"tab-mst\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">MST Accounts</h3>"
+    "<div id=\"tab-mst\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-mst\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">MST Accounts</h2>"
     "<div id=\"mst-accounts\" hx-get=\"/admin/partials/mst-accounts\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">MST Tree</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">MST Tree</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/mst-tree\" hx-target=\"#mst-tree-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">View Tree</button></form></div>"
-    "<div id=\"mst-tree-result\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">MST Statistics</h3>"
+    "<div id=\"mst-tree-result\" aria-live=\"polite\"></div></section>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">MST Statistics</h2>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/mst-stats\" hx-target=\"#mst-stats-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">View Stats</button></form></div>"
-    "<div id=\"mst-stats-result\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Export MST</h3>"
+    "<div id=\"mst-stats-result\" aria-live=\"polite\"></div></section>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Export MST</h2>"
     "<div class=\"action-row\"><input id=\"mst-export-did\" type=\"text\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<select id=\"mst-export-format\" class=\"form-input flex-none\"><option value=\"json\">JSON</option><option value=\"dot\">DOT</option><option value=\"svg\">SVG</option></select>"
     "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"export-mst\">Export</button></div>"
-    "<div id=\"mst-export-result\"></div></section></div>"
+    "<div id=\"mst-export-result\" aria-live=\"polite\"></div></section></div>"
     /* Chat tab */
-    "<div id=\"tab-chat\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Conversations</h3>"
+    "<div id=\"tab-chat\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-chat\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Conversations</h2>"
     "<div id=\"chat-convos\" hx-get=\"/admin/partials/chat-convos\" hx-trigger=\"load, every 20s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Messages</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Messages</h2>"
     "<div class=\"action-row\"><input id=\"chat-convo-id\" type=\"text\" placeholder=\"Conversation ID\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"load-chat-messages\">Load Messages</button></div>"
     "<div id=\"chat-messages\" hx-trigger=\"load\"></div>"
-    "<div id=\"chat-action-result\"></div></section></div>"
+    "<div id=\"chat-action-result\" aria-live=\"polite\"></div></section></div>"
     /* Video tab */
-    "<div id=\"tab-video\" class=\"tab-pane\" hidden>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Health</h3>"
+    "<div id=\"tab-video\" class=\"tab-pane\" role=\"tabpanel\" aria-labelledby=\"tabbtn-video\" tabindex=\"0\" hidden>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Service Health</h2>"
     "<div id=\"video-health\" hx-get=\"/admin/partials/video-health\" hx-trigger=\"load, every 30s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Job Queue</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Job Queue</h2>"
     "<div class=\"action-row\">"
     "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"\">All</button>"
     "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"PENDING\">Pending</button>"
@@ -1461,9 +1461,9 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     "<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"filter-video-jobs\" data-ui-state=\"FAILED\">Failed</button>"
     "</div>"
     "<div id=\"video-jobs\" hx-get=\"/admin/partials/video-jobs\" hx-trigger=\"load, every 10s\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Upload Quotas</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Upload Quotas</h2>"
     "<div id=\"video-quotas\" hx-get=\"/admin/partials/video-quotas\" hx-trigger=\"load\"></div></section>"
-    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Job Lookup</h3>"
+    "<section class=\"admin-section\"><h2 class=\"admin-section-title\">Job Lookup</h2>"
     "<div class=\"action-row\"><input id=\"video-job-id\" type=\"text\" placeholder=\"Job ID\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-primary btn-sm\" data-ui-action=\"load-video-job-detail\">Look Up</button></div>"
     "<div id=\"video-job-detail\"></div></section></div>"
@@ -1566,7 +1566,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"appview-result\"></div><div class=\"mb-lg\"><button class=\"btn btn-secondary btn-sm\" data-ui-action=\"rebuild-appview-scope\">Rebuild Relevance Set</button></div><form class=\"form mb-lg\" data-ui-form=\"enqueue-backfill\"><div class=\"form-group\"><label>Enqueue DIDs (one per line):</label><textarea id=\"enqueue-dids-input\" class=\"form-input\" placeholder=\"did:plc:...\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Enqueue</button></form><table class=\"table\" id=\"queue-table\"><thead><tr><th>DID</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"appview-result\" aria-live=\"polite\"></div><div class=\"mb-lg\"><button class=\"btn btn-secondary btn-sm\" data-ui-action=\"rebuild-appview-scope\">Rebuild Relevance Set</button></div><form class=\"form mb-lg\" data-ui-form=\"enqueue-backfill\"><div class=\"form-group\"><label for=\"enqueue-dids-input\">Enqueue DIDs (one per line):</label><textarea id=\"enqueue-dids-input\" class=\"form-input\" placeholder=\"did:plc:...\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Enqueue</button></form><table class=\"table\" id=\"queue-table\"><thead><tr><th>DID</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *entries = [result[@"entries"] isKindOfClass:[NSArray class]] ? result[@"entries"] : @[];
     for (NSDictionary *entry in entries) {
         NSString *did = UIEscaped(entry[@"did"] ?: @"");
@@ -1609,7 +1609,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSString *did = result[@"did"] ?: @"";
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"account-detail-result\"></div><div class=\"detail-grid\">"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"account-detail-result\" aria-live=\"polite\"></div><div class=\"detail-grid\">"];
     NSArray *fields = @[@"did", @"handle", @"email", @"emailConfirmed", @"invitesDisabled", @"deactivatedAt"];
     for (NSString *key in fields) {
         id val = result[key];
@@ -1694,7 +1694,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray<NSDictionary *> *reports = [result[@"reports"] isKindOfClass:[NSArray class]] ? result[@"reports"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"pds-reports-result\"></div><table class=\"table\"><thead><tr><th>ID</th><th>Created At</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"pds-reports-result\" aria-live=\"polite\"></div><table class=\"table\"><thead><tr><th>ID</th><th>Created At</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *report in reports) {
         NSString *reportID = UIEscaped(report[@"id"] ?: @"");
         NSString *createdAt = UIEscaped(report[@"createdAt"] ?: @"");
@@ -1980,7 +1980,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *members = [result[@"members"] isKindOfClass:[NSArray class]] ? result[@"members"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"add-ozone-team-member\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"add-member-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label>Role:</label><select id=\"add-member-role\" class=\"form-input\"><option value=\"moderator\">Moderator</option><option value=\"admin\">Admin</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Member</button></form><table class=\"table\"><thead><tr><th>DID</th><th>Role</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"add-ozone-team-member\"><div class=\"form-group\"><label for=\"add-member-did\">DID:</label><input type=\"text\" id=\"add-member-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label for=\"add-member-role\">Role:</label><select id=\"add-member-role\" class=\"form-input\"><option value=\"moderator\">Moderator</option><option value=\"admin\">Admin</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Member</button></form><table class=\"table\"><thead><tr><th>DID</th><th>Role</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *m in members) {
         NSString *did = m[@"did"] ?: @"";
         [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td>"
@@ -1996,7 +1996,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *sets = [result[@"sets"] isKindOfClass:[NSArray class]] ? result[@"sets"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"upsert-ozone-set\"><div class=\"form-group\"><label>Set Name:</label><input type=\"text\" id=\"create-set-name\" class=\"form-input\" placeholder=\"Enter set name\"></div><div class=\"form-group\"><label>Description:</label><input type=\"text\" id=\"create-set-desc\" class=\"form-input\" placeholder=\"Enter description\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Set</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Description</th><th>Size</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"upsert-ozone-set\"><div class=\"form-group\"><label for=\"create-set-name\">Set Name:</label><input type=\"text\" id=\"create-set-name\" class=\"form-input\" placeholder=\"Enter set name\"></div><div class=\"form-group\"><label for=\"create-set-desc\">Description:</label><input type=\"text\" id=\"create-set-desc\" class=\"form-input\" placeholder=\"Enter description\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Set</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Description</th><th>Size</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *s in sets) {
         NSString *name = s[@"name"] ?: @"";
         [html appendFormat:@"<tr><td>%@</td><td>%@</td><td>%@</td>"
@@ -2012,7 +2012,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *templates = [result[@"templates"] isKindOfClass:[NSArray class]] ? result[@"templates"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"create-ozone-template\"><div class=\"form-group\"><label>Template Name:</label><input type=\"text\" id=\"create-template-name\" class=\"form-input\" placeholder=\"Enter template name\"></div><div class=\"form-group\"><label>Subject:</label><input type=\"text\" id=\"create-template-subject\" class=\"form-input\" placeholder=\"Enter subject\"></div><div class=\"form-group\"><label>Content (Markdown):</label><textarea id=\"create-template-content\" class=\"form-input\" placeholder=\"Enter template content\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Template</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Subject</th><th>Content</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form mb-lg\" data-ui-form=\"create-ozone-template\"><div class=\"form-group\"><label for=\"create-template-name\">Template Name:</label><input type=\"text\" id=\"create-template-name\" class=\"form-input\" placeholder=\"Enter template name\"></div><div class=\"form-group\"><label for=\"create-template-subject\">Subject:</label><input type=\"text\" id=\"create-template-subject\" class=\"form-input\" placeholder=\"Enter subject\"></div><div class=\"form-group\"><label for=\"create-template-content\">Content (Markdown):</label><textarea id=\"create-template-content\" class=\"form-input\" placeholder=\"Enter template content\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create Template</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Subject</th><th>Content</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *t in templates) {
         NSString *name = t[@"name"] ?: @"";
         NSString *content = t[@"contentMarkdown"] ?: @"";
@@ -2032,7 +2032,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     NSError *jsonError = nil;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&jsonError];
     NSString *jsonStr = jsonError ? @"" : [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"ozone-config-result\"></div><form class=\"form mb-lg\" data-ui-form=\"update-ozone-config\"><div class=\"form-group\"><label>Config (JSON):</label><textarea id=\"config-json\" class=\"form-input\" placeholder=\"Enter config as JSON\">"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"ozone-config-result\" aria-live=\"polite\"></div><form class=\"form mb-lg\" data-ui-form=\"update-ozone-config\"><div class=\"form-group\"><label for=\"config-json\">Config (JSON):</label><textarea id=\"config-json\" class=\"form-input\" placeholder=\"Enter config as JSON\">"];
     [html appendString:UIEscaped(jsonStr)];
     [html appendString:@"</textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Update Config</button></form><div class=\"detail-card\">"];
     [result enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
@@ -2067,7 +2067,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray *passwords = [result[@"passwords"] isKindOfClass:[NSArray class]] ? result[@"passwords"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"app-passwords-result\"></div><form class=\"form mb-lg\" data-ui-form=\"create-app-password\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"create-pwd-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label>Password Name:</label><input type=\"text\" id=\"create-pwd-name\" class=\"form-input\" placeholder=\"Enter password name\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"app-passwords-result\" aria-live=\"polite\"></div><form class=\"form mb-lg\" data-ui-form=\"create-app-password\"><div class=\"form-group\"><label for=\"create-pwd-did\">DID:</label><input type=\"text\" id=\"create-pwd-did\" class=\"form-input\" placeholder=\"Enter DID\"></div><div class=\"form-group\"><label for=\"create-pwd-name\">Password Name:</label><input type=\"text\" id=\"create-pwd-name\" class=\"form-input\" placeholder=\"Enter password name\"></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Create</button></form><table class=\"table\"><thead><tr><th>Name</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *p in passwords) {
         NSString *name = p[@"name"] ?: @"";
         NSString *did = p[@"did"] ?: @"";
@@ -2220,22 +2220,22 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         [html appendFormat:@"<div class=\"card-title mb-md\">%@ Service</div>", entry[@"label"]];
         
         [html appendFormat:@"<div class=\"form-group\">"];
-        [html appendFormat:@"<label class=\"form-label\">Base URL</label>"];
+        [html appendFormat:@"<label class=\"form-label\" for=\"conn-%@-url\">Base URL</label>", inputID];
         [html appendFormat:@"<input id=\"conn-%@-url\" type=\"text\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", inputID, urlKey, UIEscaped(fields[urlKey])];
         [html appendString:@"</div>"];
-        
+
         [html appendFormat:@"<div class=\"form-group\">"];
-        [html appendFormat:@"<label class=\"form-label\">Admin Token</label>"];
+        [html appendFormat:@"<label class=\"form-label\" for=\"conn-%@-token\">Admin Token</label>", inputID];
         [html appendFormat:@"<input id=\"conn-%@-token\" type=\"password\" name=\"%@\" value=\"\" data-original-token=\"%@\" class=\"form-input\" placeholder=\"Current token set, type to change\"/>", inputID, tokenKey, UIEscaped(fields[tokenKey])];
         [html appendString:@"</div>"];
 
-        [html appendFormat:@"<div class=\"d-flex align-center gap-sm\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" data-ui-action=\"test-connection\" data-ui-service=\"%@\">Test</button><span id=\"conn-%@-test-result\" class=\"text-sm text-secondary\"></span></div>", inputID, inputID];
+        [html appendFormat:@"<div class=\"d-flex align-center gap-sm\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" data-ui-action=\"test-connection\" data-ui-service=\"%@\">Test</button><span id=\"conn-%@-test-result\" class=\"text-sm text-secondary\" aria-live=\"polite\"></span></div>", inputID, inputID];
         
         [html appendString:@"</div>"];
     }
     
     [html appendString:@"</div>"];
-    [html appendString:@"<div id=\"connections-save-result\" class=\"mt-md\"></div>"];
+    [html appendString:@"<div id=\"connections-save-result\" class=\"mt-md\" aria-live=\"polite\"></div>"];
     [html appendString:@"<div class=\"mt-lg d-flex justify-end\">"];
     [html appendString:@"<button type=\"submit\" class=\"btn btn-primary\">Save Cluster Configuration</button>"];
     [html appendString:@"</div></form>"];
@@ -2342,7 +2342,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
             NSArray *entries = [node[@"entries"] isKindOfClass:[NSArray class]] ? node[@"entries"] : @[];
             if (entries.count > 0) {
                 NSString *cid = node[@"cid"] ?: @"";
-                [html appendFormat:@"<h4 class=\"mt-md\">Node %@</h4>", UIEscaped([cid substringToIndex:MIN(16, cid.length)])];
+                [html appendFormat:@"<h3 class=\"mt-md\">Node %@</h3>", UIEscaped([cid substringToIndex:MIN(16, cid.length)])];
                 [html appendString:@"<table class=\"table\"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>"];
                 for (NSDictionary *e in entries) {
                     [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td class=\"text-mono text-sm\">%@</td></tr>",
@@ -2458,7 +2458,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"schedule-ozone-action\"><div class=\"form-group\"><label>Subject DID(s):</label><input type=\"text\" id=\"schedule-subject-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Action Type:</label><select id=\"schedule-action-type\" class=\"form-input\"><option value=\"takedown\">Takedown</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Schedule Action</button></form></div>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"schedule-ozone-action\"><div class=\"form-group\"><label for=\"schedule-subject-did\">Subject DID(s):</label><input type=\"text\" id=\"schedule-subject-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label for=\"schedule-action-type\">Action Type:</label><select id=\"schedule-action-type\" class=\"form-input\"><option value=\"takedown\">Takedown</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Schedule Action</button></form></div>"];
 
     [html appendString:@"<table class=\"table\"><thead><tr><th>Subject</th><th>Action</th><th>Status</th><th>Execute At</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *actions = [result[@"actions"] isKindOfClass:[NSArray class]] ? result[@"actions"] : @[];
@@ -2486,7 +2486,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"grant-ozone-verification\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"grant-verification-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Display Name:</label><input type=\"text\" id=\"grant-verification-name\" class=\"form-input\" placeholder=\"Account display name\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Grant Verification</button></form></div>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"grant-ozone-verification\"><div class=\"form-group\"><label for=\"grant-verification-did\">DID:</label><input type=\"text\" id=\"grant-verification-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label for=\"grant-verification-name\">Display Name:</label><input type=\"text\" id=\"grant-verification-name\" class=\"form-input\" placeholder=\"Account display name\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Grant Verification</button></form></div>"];
 
     [html appendString:@"<table class=\"table\"><thead><tr><th>DID</th><th>Display Name</th><th>Issuer</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *verifications = [result[@"verifications"] isKindOfClass:[NSArray class]] ? result[@"verifications"] : @[];
@@ -2510,7 +2510,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"add-safelink-rule\"><div class=\"form-group\"><label>URL:</label><input type=\"text\" id=\"add-safelink-url\" class=\"form-input\" placeholder=\"https://example.com\"/></div><div class=\"form-group\"><label>Pattern Type:</label><select id=\"add-safelink-pattern\" class=\"form-input\"><option value=\"domain\">Domain</option><option value=\"url\">URL</option></select></div><div class=\"form-group\"><label>Action:</label><select id=\"add-safelink-action\" class=\"form-input\"><option value=\"block\">Block</option><option value=\"warn\">Warn</option><option value=\"whitelist\">Whitelist</option></select></div><div class=\"form-group\"><label>Reason:</label><select id=\"add-safelink-reason\" class=\"form-input\"><option value=\"csam\">CSAM</option><option value=\"spam\">Spam</option><option value=\"phishing\">Phishing</option><option value=\"none\">None</option></select></div><div class=\"form-group\"><label>Comment (optional):</label><input type=\"text\" id=\"add-safelink-comment\" class=\"form-input\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Rule</button></form></div>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"add-safelink-rule\"><div class=\"form-group\"><label for=\"add-safelink-url\">URL:</label><input type=\"text\" id=\"add-safelink-url\" class=\"form-input\" placeholder=\"https://example.com\"/></div><div class=\"form-group\"><label for=\"add-safelink-pattern\">Pattern Type:</label><select id=\"add-safelink-pattern\" class=\"form-input\"><option value=\"domain\">Domain</option><option value=\"url\">URL</option></select></div><div class=\"form-group\"><label for=\"add-safelink-action\">Action:</label><select id=\"add-safelink-action\" class=\"form-input\"><option value=\"block\">Block</option><option value=\"warn\">Warn</option><option value=\"whitelist\">Whitelist</option></select></div><div class=\"form-group\"><label for=\"add-safelink-reason\">Reason:</label><select id=\"add-safelink-reason\" class=\"form-input\"><option value=\"csam\">CSAM</option><option value=\"spam\">Spam</option><option value=\"phishing\">Phishing</option><option value=\"none\">None</option></select></div><div class=\"form-group\"><label for=\"add-safelink-comment\">Comment (optional):</label><input type=\"text\" id=\"add-safelink-comment\" class=\"form-input\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Rule</button></form></div>"];
 
     [html appendString:@"<table class=\"table\"><thead><tr><th>URL</th><th>Pattern</th><th>Action</th><th>Reason</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *rules = [result[@"rules"] isKindOfClass:[NSArray class]] ? result[@"rules"] : @[];
@@ -2551,7 +2551,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 }
 
 - (NSString *)renderOzoneSignaturesPartial:(NSDictionary *)result {
-    return @"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"find-ozone-related\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"ozone-find-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Find Related Accounts</button></form></div><div id=\"ozone-signature-results\"></div>";
+    return @"<div class=\"mb-lg\"><form class=\"form\" data-ui-form=\"find-ozone-related\"><div class=\"form-group\"><label for=\"ozone-find-did\">DID:</label><input type=\"text\" id=\"ozone-find-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Find Related Accounts</button></form></div><div id=\"ozone-signature-results\" aria-live=\"polite\"></div>";
 }
 
 - (NSString *)renderOzoneSignatureResultsPartial:(NSDictionary *)result {
@@ -2669,7 +2669,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
     @"<input type=\"text\" id=\"lab-new-handle-input\" class=\"form-input\" placeholder=\"newhandle.com\" />"
     @"</div>"
     @"<button type=\"submit\" class=\"btn btn-primary btn-sm\">Update Handle</button>"
-    @"<div id=\"lab-update-result\"></div>"
+    @"<div id=\"lab-update-result\" aria-live=\"polite\"></div>"
     @"</form>"
     @"<div style=\"margin-top:var(--space-xl);padding-top:var(--space-lg);border-top:1px solid var(--separator-color);\">"
     @"<button data-lab-action=\"sign-out\" class=\"btn btn-secondary btn-sm\">Sign Out</button>"

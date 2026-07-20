@@ -55,14 +55,45 @@ function reloadPartial(path, targetSelector) {
     .catch(() => showError(document.querySelector(targetSelector), 'Unable to refresh data.'));
 }
 
-function switchTab(name) {
+function switchTab(name, options = {}) {
   document.querySelectorAll('.tab-pane').forEach((pane) => {
     pane.hidden = pane.id !== `tab-${name}`;
   });
   document.querySelectorAll('.service-segment').forEach((segment) => {
-    segment.classList.toggle('active', segment.dataset.tab === name);
+    const selected = segment.dataset.tab === name;
+    segment.classList.toggle('active', selected);
+    segment.setAttribute('aria-selected', String(selected));
+    // Roving tabindex: only the selected tab is in the Tab order; arrow
+    // keys move among the rest (WAI-ARIA APG tabs pattern).
+    segment.tabIndex = selected ? 0 : -1;
   });
+  if (options.focus) {
+    byID(`tabbtn-${name}`)?.focus();
+  }
 }
+
+// Arrow-key navigation between tabs, per the WAI-ARIA APG tabs pattern.
+document.getElementById('nav-tabs')?.addEventListener('keydown', (event) => {
+  const tabs = Array.from(document.querySelectorAll('.service-segment'));
+  const currentIndex = tabs.indexOf(event.target.closest('.service-segment'));
+  if (currentIndex === -1) return;
+
+  let nextIndex = null;
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    nextIndex = (currentIndex + 1) % tabs.length;
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+  } else if (event.key === 'Home') {
+    nextIndex = 0;
+  } else if (event.key === 'End') {
+    nextIndex = tabs.length - 1;
+  } else {
+    return;
+  }
+
+  event.preventDefault();
+  switchTab(tabs[nextIndex].dataset.tab, { focus: true });
+});
 
 function activeTabPane() {
   return Array.from(document.querySelectorAll('.tab-pane')).find((pane) => !pane.hidden) || document;

@@ -309,6 +309,52 @@ twice from `PDSDatabaseLRUTests setUp` (22:12, 22:15). Undiagnosed;
 tracked as a follow-up. Possibly related to disk pressure given
 `PDSDatabase`'s use of SQLite, but not yet confirmed.
 
+**Regression discovered 2026-07-19 (during phase 8):** a full
+`AllTests --gated=run` (`build/tests/AllTests --gated=run`, full log
+`/tmp/alltests_phase8_gated.log`) is no longer clean — 12 suites now fail,
+roughly 68 individual assertion failures, contradicting the 2026-07-17
+"3454 tests, 0 failures" baseline above. None of the failing suites or
+files were touched by phase 8 (Admin UI/dashboard accessibility); this is
+tracked here rather than in the phase-08 prompt. Two root causes
+identified, the rest undiagnosed:
+
+- **DID-format/fixture mismatch (majority of failures):**
+  `PDSSQLiteRepositoryTests`, `PDSDatabaseWebAuthnTests`,
+  `PDSDatabaseModerationTests`, `PDSDatabaseAdminAuditTests`,
+  `PDSDatabaseOAuthClientsTests`, `PDSSequencerAnalyticsCollectorTests`,
+  `AppViewIndexerTests` all fail with `"Invalid DID for actor store path"`
+  or downstream nil/zero-count assertions. Root cause:
+  `+[ATProtoValidator validateDID:error:]`
+  (`Garazyk/Sources/.../ATProtoValidator.m`) requires `did:plc:`
+  identifiers to be exactly 24 lowercase-base32 characters; test fixtures
+  like `kTestDID = @"did:plc:repo123"` (7 chars) don't conform, so
+  `-[PDSDatabasePool dbPathForDid:]` refuses them. Both the validator
+  logic and the offending fixtures predate this session by many commits
+  (`07c96d421`, `65abe6e6f`) — this is old debt, not a new regression in
+  the code itself, but something changed to make it actually execute now
+  (see below).
+- **`MSTPreorderTests/testRefusesWhenFlagOff`:** fails deterministically
+  (reproduced 3/3 in isolation via `--filter "MSTPreorderTests*"`) with an
+  assertion message (`"Pre-order walk (records disabled) must succeed"`)
+  that belongs to a different helper (`capturePreorderMSTOnly:`) than the
+  one the failing test actually calls — either a test-name-attribution bug
+  in this project's custom `test_main` runner, or genuine cross-test state
+  leakage via the shared static `MST.streamableCARBlockOrderingEnabled`
+  flag. From phase 7's Sync 1.1 pre-order work (`ed01c8085`); needs its
+  own investigation.
+- **Undiagnosed:** `AtprotoInteropFixturesTests` (1/5),
+  `OAuthClientAuthPolicyTests` (1/30),
+  `ATProtoVideoProcessorTests`/`ATProtoVideoTranscoderUnitTests`
+  (MPEG signature validation, blob-provider default).
+
+Working theory for why long-standing fixture debt is newly visible: these
+suites may not have been reaching `--gated=run` execution before (compare
+the "new XCTest suites need cmake reconfigure + `test_main.m`
+registration, else 0 tests silently run" trap already noted in this
+repo's operational lore) rather than a code change breaking previously-
+passing tests. Not confirmed — needs a bisect, which is out of scope for
+phase 8. Own lane.
+
 ## S6. Published-spec conformance matrix
 
 **Status: complete (report-only).** Matrix built at
