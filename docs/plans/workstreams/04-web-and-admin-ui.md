@@ -128,6 +128,21 @@ The Admin architecture reference must be rewritten against the dedicated
 AdminUIServer. Obsolete migration-status and integration documents are retired
 by this consolidation.
 
+**Progress (2026-07-19): item 1 complete.** `UIServerRuntime.m` (was ~2900
+lines, one `@implementation`) split into three files sharing the class via
+categories, declared in a new `UIServerRuntime+Private.h`:
+`UIServerRuntime.m` (route registration/dispatch, auth, login/shell
+pages — core, ~1840 lines), `UIServerRuntime+StaticAssets.m` (the
+`StaticAssets` category, static browser-asset serving), and
+`UIServerRuntime+Renderers.m` (the `Renderers` category, 34 HTML-partial
+render methods). The 6 file-scope helper functions (`UIEscaped`, `UISafe`,
+etc.) lost their `static` linkage and moved to the shared private header so
+all three files can use them. `CMakeLists.txt` updated in both places that
+listed `UIServerRuntime.m` (the `garazyk-ui` executable and the `AllTests`
+source list). Verified behavior-preserving: `UIServerRuntimeTests` 23/23
+green, and a full `admin_ui_browser_smoke_test.ts` run (real binary, real
+browser) green end to end, including the new Area 5 accessibility checks.
+
 Primary sources:
 
 - [CSP Level 3](https://www.w3.org/TR/CSP/)
