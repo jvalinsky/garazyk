@@ -65,6 +65,30 @@ Scenario dashboard:
 Use [WCAG 2.2](https://www.w3.org/TR/WCAG22/) as the target. Include browser
 automation and a short manual keyboard pass.
 
+**Progress (2026-07-19, slice 1):** dashboard document language, page `h1`
+via `Layout`'s `hasOwnH1`, mobile-drawer focus trap/restore
+(`islands/MobileNav.tsx`), named `RunHistory` table (`<caption>`,
+`scope="col"`), non-color status (`StatusBar` health dot + sr-only text,
+`RunHistory`/`ScenarioCard` pass/fail/skip text), and
+`prefers-reduced-motion` coverage (`static/app.css`) are committed with
+automated assertions in `browser_smoke_test.ts`.
+
+**Known gap discovered while adding hydration-dependent assertions:**
+Fresh's dev esbuild bundle fails to build for the whole scenario dashboard —
+`islands/SessionPlayer.tsx`'s `await import("asciinema-player")` doesn't
+resolve via esbuild-deno-loader (`Could not resolve "asciinema-player"
+[plugin deno-loader]`), which breaks client-JS hydration for every island,
+not just `SessionPlayer`. This is pre-existing and unrelated to phase 8: the
+prior browser-smoke baseline (workstream 00 B0.2 item 5) only logged
+console errors as warnings, never asserted on them, so this was silently
+present already. It blocks live-browser verification of the mobile-drawer
+focus trap; `browser_smoke_test.ts` detects the broken bundle and skips
+those specific checks with a `[WARN]`. The trap/restore logic itself was
+verified by source review (`islands/MobileNav.tsx`), standing in for the
+manual keyboard pass until this is fixed. Own lane — likely fix is loading
+`asciinema-player`'s pre-built browser bundle via the same CDN URL already
+used for its CSS, rather than the bare `npm:` specifier.
+
 ## U5. Visual conformance
 
 Measure semantic foreground colors rather than trusting the design-system claim.

@@ -123,7 +123,7 @@ export default function ScenarioDetailPage(
   const { scenario, latestResult } = data;
 
   return (
-    <Layout title={`Scenario ${scenario.id}: ${scenario.name}`}>
+    <Layout title={`Scenario ${scenario.id}: ${scenario.name}`} hasOwnH1>
       <Toolbar />
       <Sidebar activeScenario={scenario.id} />
       <main class="main-content">

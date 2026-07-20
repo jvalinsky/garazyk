@@ -7,13 +7,22 @@ interface StatusBarProps {
 }
 
 /** Render the status bar with last run timestamp and PDS health indicator. */
-export default function StatusBar({ lastRun, pdsUrl, pdsHealthy }: StatusBarProps) {
+export default function StatusBar(
+  { lastRun, pdsUrl, pdsHealthy }: StatusBarProps,
+) {
   return (
-    <footer class="status-bar">
+    <footer class="status-bar" role="contentinfo">
       {lastRun && <span>Last run: {lastRun}</span>}
       {pdsUrl && (
         <span>
-          PDS: {pdsUrl} <span class={`health-dot ${pdsHealthy ? "healthy" : "unhealthy"}`} />
+          PDS: {pdsUrl}{" "}
+          <span class="health-dot-container">
+            <span
+              class={`health-dot ${pdsHealthy ? "healthy" : "unhealthy"}`}
+              aria-hidden="true"
+            />
+            <span class="sr-only">{pdsHealthy ? "healthy" : "unhealthy"}</span>
+          </span>
         </span>
       )}
     </footer>

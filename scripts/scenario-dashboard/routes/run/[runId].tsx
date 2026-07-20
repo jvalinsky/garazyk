@@ -54,7 +54,7 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
   });
 
   return (
-    <Layout title={`Run ${runId}`}>
+    <Layout title={`Run ${runId}`} hasOwnH1>
       <Toolbar />
       <main class="main-content">
         <div style="margin-bottom: var(--space-lg);">

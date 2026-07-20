@@ -1,10 +1,37 @@
 ---
 phase: 8
 title: Admin UI accessibility and structural cleanup
-status: pending
+status: in-progress
 agent: worker
 depends_on: [1]
+last_updated: 2026-07-19
 ---
+
+## Progress
+
+Started 2026-07-19.
+
+**Slice 1 complete (2026-07-19): U4 dashboard + part of U5.** Document
+language (`lang="en"`), `Layout`'s `hasOwnH1` so every route has exactly
+one `h1`, mobile-drawer focus trap/restore (`islands/MobileNav.tsx`), named
+`RunHistory` table (`<caption>`, `scope="col"` headers), status not
+color-only (`StatusBar` health dot paired with sr-only text; `RunHistory`/
+`ScenarioCard` pass/fail/skip rendered as text, not bare glyphs/color), and
+`prefers-reduced-motion` coverage (U5) in `static/app.css`. Automated
+assertions added to `browser_smoke_test.ts` (document lang, h1 presence,
+table semantics, non-color status, reduced-motion, mobile-drawer focus
+trap/restore) — all green except the drawer trap/restore check, which the
+test detects and skips with a `[WARN]` because of a pre-existing,
+unrelated bug: `islands/SessionPlayer.tsx`'s `import("asciinema-player")`
+breaks Fresh's dev esbuild bundle for every island (see workstream 04 U4
+for detail). Manual verification of the trap/restore logic was done by
+source review of `MobileNav.tsx` in lieu of a live browser pass, pending
+that bug's fix.
+
+Remaining: U4 Admin UI (the real ObjC AdminUIServer — page `h1`/heading
+order, label binding, tab role/state, live regions, OAuth focus move),
+the rest of U5 (measured contrast, 200% zoom/reflow, touch targets), and
+U6 (gated behind U4 landing in full).
 
 # Phase 8: Admin UI accessibility and structural cleanup
 
