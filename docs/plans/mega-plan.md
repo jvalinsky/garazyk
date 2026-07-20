@@ -349,13 +349,18 @@ remaining program does not depend on items 1-2.
 6. Space operational readiness: backup/restore drill for the space database,
    downgrade-retention verification, and reconciler/pruner observability
    (workstream 06, P6.5).
-7. **In progress (2026-07-18):** implement the Sync 1.1 remainder (export
-   block ordering, collection subsets) once published spec text exists
-   (workstream 02, A6). A feature-flagged streamable-CAR pre-order
-   enumerator (`+[MST setStreamableCARBlockOrderingEnabled:]`, default
-   off) with preorder/fixture tests is committed (`ed01c8085`, on the
-   lock-free atomic-root refactor `34e2b94ae`) — see the phase-07 prompt
-   for what remains before the flag can default on.
+7. **Complete (2026-07-19):** Sync 1.1 remainder (export block ordering,
+   collection subsets) — closed, not implemented pending spec text
+   (workstream 02, A6; workstream 01, S6 G2). Rechecked
+   https://atproto.com/specs/sync 2026-07-19: both remain "Future Work"
+   prose upstream, no version-numbered spec exists. The feature-flagged
+   streamable-CAR pre-order enumerator (`+[MST
+   setStreamableCARBlockOrderingEnabled:]`, default off) stays off by
+   decision (`ed01c8085`, on `34e2b94ae`). Collection-based subsets are
+   served independently via the `tools.garazyk.sync.getRepoFiltered`
+   vendor extension, now with test coverage (3 new cases,
+   `PDSRepositoryServiceTests.m`). See the phase-07 prompt for full
+   detail.
 8. **In progress (2026-07-18):** storage and MST optimization
    ([workstream 07](workstreams/07-storage-and-mst-optimization.md)).
    Done: `INSERT OR IGNORE` for `ipld_blocks` plus index/PRAGMA hardening
