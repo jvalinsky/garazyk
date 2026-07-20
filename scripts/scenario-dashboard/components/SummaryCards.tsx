@@ -8,7 +8,9 @@ interface SummaryCardsProps {
 }
 
 /** Render pass/fail/skip summary cards. */
-export default function SummaryCards({ passed, failed, skipped, label }: SummaryCardsProps) {
+export default function SummaryCards(
+  { passed, failed, skipped, label }: SummaryCardsProps,
+) {
   return (
     <div>
       <div class="summary-row">
@@ -26,7 +28,7 @@ export default function SummaryCards({ passed, failed, skipped, label }: Summary
         </div>
       </div>
       {label && (
-        <div style="margin-top: var(--space-md); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+        <div class="summary-label">
           {label}
         </div>
       )}

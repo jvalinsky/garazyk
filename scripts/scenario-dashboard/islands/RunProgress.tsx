@@ -106,7 +106,13 @@ export default function RunProgress(
         </div>
         <div class="run-progress-meta">
           {agentMode && <span class="run-progress-agent-badge">Agent</span>}
-          <span class="run-progress-status">{statusLabel}</span>
+          <span
+            class="run-progress-status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {statusLabel}
+          </span>
           <span class="run-progress-elapsed">
             {formatElapsedShort(displayElapsed)}
           </span>
@@ -127,7 +133,7 @@ export default function RunProgress(
         />
       </div>
 
-      <div class="run-progress-body">
+      <div class="run-progress-body" aria-live="polite" aria-atomic="true">
         {total > 0
           ? (
             <div class="run-progress-scenario">
@@ -144,7 +150,7 @@ export default function RunProgress(
           )}
 
         <div class={`run-progress-activity run-progress-activity--${level}`}>
-          <span class="run-progress-dot" />
+          <span class="run-progress-dot" aria-hidden="true" />
           {secondsSinceUpdate > 0
             ? `Last activity: ${
               formatElapsedShort(secondsSinceUpdate * 1000)
