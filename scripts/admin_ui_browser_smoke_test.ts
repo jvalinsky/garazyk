@@ -304,6 +304,100 @@ async function testKeyboardWorkflow(page: Page): Promise<void> {
   ok(`Second Tab focuses <${secondFocused}>`);
 }
 
+// ── Area 5: Accessibility structure (workstream 04 U4) ─────────────────────
+async function testAdminAccessibilityStructure(page: Page): Promise<void> {
+  logProgress("[Area 5] Starting Admin UI accessibility structure test");
+
+  // Login page: single h1, label bound via for/id.
+  await page.goto(`${UI_BASE_URL}/admin/login`, {
+    waitUntil: "domcontentloaded",
+  });
+  const loginH1Count = await page.locator("h1").count();
+  if (loginH1Count === 1) {
+    ok("Login page has exactly one <h1>");
+  } else {
+    fail(`Login page has ${loginH1Count} <h1> elements (expected 1)`);
+  }
+
+  // Admin shell: h1 for the page title, h2 for section titles (no h1->h3 skip).
+  await page.fill("#password", UI_ADMIN_PASSWORD);
+  await Promise.all([
+    page.waitForURL(`${UI_BASE_URL}/admin`, { timeout: 10_000 }),
+    page.click("form#login-form button[type=submit]"),
+  ]);
+  const shellH1Count = await page.locator("h1").count();
+  if (shellH1Count === 1) {
+    ok("Admin shell has exactly one <h1>");
+  } else {
+    fail(`Admin shell has ${shellH1Count} <h1> elements (expected 1)`);
+  }
+  const h3BeforeH2 = await page.evaluate(() => {
+    // deno-lint-ignore no-explicit-any
+    const doc = (globalThis as any).document;
+    const h1 = doc.querySelector("h1");
+    const h2 = doc.querySelector("h2");
+    return !!h1 && !h2;
+  });
+  if (h3BeforeH2) {
+    fail("Admin shell has an <h1> but no <h2> (heading level skipped)");
+  } else {
+    ok("Admin shell has both <h1> and <h2> (no top-level heading skip)");
+  }
+
+  // Tabs: ARIA tablist/tab/tabpanel roles and state, plus arrow-key nav.
+  const tablist = page.locator("#nav-tabs[role=tablist]");
+  if (await tablist.count() === 1) {
+    ok("Tab bar has role=tablist");
+  } else {
+    fail("Tab bar is missing role=tablist");
+  }
+  const overviewTab = page.locator("#tabbtn-overview");
+  const initialSelected = await overviewTab.getAttribute("aria-selected");
+  if (initialSelected === "true") {
+    ok("Overview tab starts aria-selected=true");
+  } else {
+    fail(`Overview tab aria-selected="${initialSelected}" (expected "true")`);
+  }
+  await overviewTab.focus();
+  await page.keyboard.press("ArrowRight");
+  const connectionsTab = page.locator("#tabbtn-connections");
+  const focusedAfterArrow = await page.evaluate(() => {
+    // deno-lint-ignore no-explicit-any
+    const doc = (globalThis as any).document;
+    return doc.activeElement?.id;
+  });
+  if (focusedAfterArrow === "tabbtn-connections") {
+    ok("ArrowRight moves focus from Overview tab to Connections tab");
+  } else {
+    fail(`ArrowRight moved focus to "${focusedAfterArrow}" (expected tabbtn-connections)`);
+  }
+  const connectionsSelected = await connectionsTab.getAttribute("aria-selected");
+  const connectionsPaneHidden = await page.locator("#tab-connections").isHidden();
+  if (connectionsSelected === "true" && !connectionsPaneHidden) {
+    ok("ArrowRight both selects the tab (aria-selected) and reveals its panel");
+  } else {
+    fail(
+      `After ArrowRight: connections aria-selected="${connectionsSelected}", ` +
+        `panel hidden=${connectionsPaneHidden}`,
+    );
+  }
+  // deno-lint-ignore no-explicit-any
+  const overviewTabIndex = await overviewTab.evaluate((el: any) => el.tabIndex);
+  if (overviewTabIndex === -1) {
+    ok("Roving tabindex: deselected Overview tab has tabindex=-1");
+  } else {
+    fail(`Deselected Overview tab has tabindex=${overviewTabIndex} (expected -1)`);
+  }
+
+  // Labels bound to controls: spot-check the Connections form (now visible).
+  const unboundLabelCount = await page.locator("#tab-connections label:not([for])").count();
+  if (unboundLabelCount === 0) {
+    ok("Connections form labels are all bound via for/id");
+  } else {
+    fail(`Connections form has ${unboundLabelCount} <label> without a for attribute`);
+  }
+}
+
 // ── Area 4: /lab OAuth PAR -> authorize -> consent -> callback ────────────
 async function testLabOAuthFlow(page: Page): Promise<void> {
   logProgress("[Area 4] Starting /lab OAuth flow test");
@@ -368,9 +462,9 @@ async function testLabOAuthFlow(page: Page): Promise<void> {
     return;
   }
 
-  // Workstream 04 U4: focus should move from sign-in to consent. This is a
-  // known open accessibility gap (authorize.html has no focus management on
-  // this transition) — file as evidence, don't block the smoke on it.
+  // Workstream 04 U4: focus must move from sign-in to consent (authorize.html
+  // focuses #consent-client-name on the transition) so keyboard/screen-reader
+  // users aren't stranded on the now-hidden sign-in button.
   const focusedId = await page.locator(":focus").evaluate((el) => el?.id ?? null)
     .catch(() => null);
   const focusedInsideConsent = await page.evaluate(() => {
@@ -383,9 +477,8 @@ async function testLabOAuthFlow(page: Page): Promise<void> {
   if (focusedInsideConsent) {
     ok("Focus moved into the consent step after sign-in");
   } else {
-    warn(
-      `Focus did NOT move into the consent step after sign-in (focused="${focusedId}"); ` +
-        "filed for workstream 04 U4 (authorize.html has no focus management on this transition)",
+    fail(
+      `Focus did NOT move into the consent step after sign-in (focused="${focusedId}")`,
     );
   }
 
@@ -473,6 +566,8 @@ async function main(): Promise<void> {
       await freshContext.close();
       logProgress("Running Area 3: keyboard workflow");
       await testKeyboardWorkflow(page);
+      logProgress("Running Area 5: accessibility structure");
+      await testAdminAccessibilityStructure(page);
       logProgress("Running Area 4: /lab OAuth flow");
       await testLabOAuthFlow(page);
       logProgress("All test areas completed");
