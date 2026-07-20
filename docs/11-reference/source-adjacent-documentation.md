@@ -59,9 +59,7 @@ code changes.
 
 | File                                                            | Module                    |
 | --------------------------------------------------------------- | ------------------------- |
-| `Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md`                 | Legacy architecture input |
-| `Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md`     | Archived delivery         |
-| `Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md` | Archived integration      |
+| `Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md`                 | Current architecture reference |
 | `Garazyk/Sources/Admin/Diagnostics/README.md`                   | Diagnostics               |
 | `Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md`         | Design system             |
 | `Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md`       | Quick reference           |

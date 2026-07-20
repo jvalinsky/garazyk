@@ -207,6 +207,30 @@ a stylesheet rule. `deno check`/`deno lint` clean on every touched file
 are pre-existing and unrelated — confirmed via `git stash`). Full
 `browser_smoke_test.ts` run green.
 
+**Progress (2026-07-19): U6 complete.** Last item: the Admin architecture
+reference (`Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md`) was fully
+rewritten against the current `AdminUIServer` implementation — it
+previously described a pre-`AdminUIServer` `PDSAdminHandler`/
+`AdminUITemplateRenderer`/handlebars-template layout that no longer
+exists. The rewrite covers the real source layout (the U6-item-1 file
+split), data flow (login, the htmx-driven tab shell, mutations, `/lab`
+OAuth), the CSS system (U6-item-3's generated bundle + its scope
+boundary), accessibility (all of U4/U6-item-2's work), and security
+(CSP nonce/CSRF/session mechanics, verified against `UIAuthManager.h`
+and `UIServerRuntime.m`). The two obsolete migration-status documents
+this consolidation retires (`Garazyk/Sources/Admin/archive/
+ADMINUI_DELIVERY_SUMMARY.md` and `ADMINUI_INTEGRATION_COMPLETE.md` — an
+April 2026 `PDSAdminHandler` delivery/integration report, fully
+superseded) are deleted; the three hand-maintained doc-index files that
+referenced them (`docs/11-reference/admin-ui-documentation.md`,
+`source-adjacent-documentation.md`, `documentation-map.md`) are updated
+to match. `docs/repo-index/*` is auto-generated and left for its own
+tooling to refresh.
+
+This closes workstream 04 U4 and U6 in full; U5 (visual conformance —
+measured contrast, 200% zoom/reflow, touch targets, dashboard keyboard
+order at narrow widths) remains open, tracked in phase 8's prompt.
+
 Primary sources:
 
 - [CSP Level 3](https://www.w3.org/TR/CSP/)

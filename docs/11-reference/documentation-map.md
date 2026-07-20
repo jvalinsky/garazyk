@@ -50,9 +50,7 @@ Every document in the repository, organized by subsystem and type.
 
 | Path                                                            | Type        | Description                                             |
 | --------------------------------------------------------------- | ----------- | ------------------------------------------------------- |
-| `Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md`                 | Explanation | Legacy architecture input pending AdminUIServer rewrite |
-| `Garazyk/Sources/Admin/archive/ADMINUI_DELIVERY_SUMMARY.md`     | Reference   | Archived delivery summary                               |
-| `Garazyk/Sources/Admin/archive/ADMINUI_INTEGRATION_COMPLETE.md` | Reference   | Archived integration report                             |
+| `Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md`                 | Explanation | Current architecture reference for AdminUIServer         |
 | `Garazyk/Sources/Admin/Diagnostics/README.md`                   | Reference   | Diagnostics module                                      |
 | `Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md`         | Reference   | Design system                                           |
 | `Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md`       | Reference   | Quick reference                                         |
