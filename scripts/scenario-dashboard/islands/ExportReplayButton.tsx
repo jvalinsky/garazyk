@@ -13,8 +13,7 @@ export default function ExportReplayButton({ runId }: ExportReplayButtonProps) {
       href={exportUrl}
       target="_blank"
       rel="noopener noreferrer"
-      class="btn btn-secondary btn-sm"
-      style="text-decoration: none;"
+      class="btn btn-secondary btn-sm text-decoration-none"
     >
       Export replay
     </a>

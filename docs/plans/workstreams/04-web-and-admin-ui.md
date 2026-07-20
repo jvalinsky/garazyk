@@ -192,6 +192,21 @@ POST_BUILD copy only re-runs when the target itself rebuilds (source
 gap unrelated to source-content correctness, filed as a follow-up rather
 than expanded into this slice.
 
+**Progress (2026-07-19): item 4 complete.** Replaced every remaining
+static inline `style="..."` in the scenario dashboard (7 files:
+`ExportReplayButton`, `NetworkStatus`, `RunReplayPanel`, `RunTimeline`,
+`SessionPlayer`, `routes/run/[runId].tsx`, `routes/scenario/[id].tsx` —
+20 unique property combinations, 28 call sites) with reusable utility/
+state classes added to `app.css` (`.mb-lg`/`.p-md`/`.d-flex`/`.gap-sm`/
+etc., plus semantic `.empty-state`/`.link-subtle`/`.section-title-inline`
+for the three repeated multi-property patterns already named that way
+in slice 1). Purely mechanical — every replacement carries the exact
+same CSS property:value pairs the inline style had, just relocated to
+a stylesheet rule. `deno check`/`deno lint` clean on every touched file
+(the one type error and four lint findings that show up on these files
+are pre-existing and unrelated — confirmed via `git stash`). Full
+`browser_smoke_test.ts` run green.
+
 Primary sources:
 
 - [CSP Level 3](https://www.w3.org/TR/CSP/)
