@@ -57,11 +57,8 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
     <Layout title={`Run ${runId}`} hasOwnH1>
       <Toolbar />
       <main class="main-content">
-        <div style="margin-bottom: var(--space-lg);">
-          <a
-            href="/"
-            style="color: var(--color-accent); text-decoration: none; font-size: var(--font-size-sm);"
-          >
+        <div class="mb-lg">
+          <a href="/" class="link-subtle">
             ← Back to Dashboard
           </a>
         </div>
@@ -78,7 +75,7 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
               completedScenarios={run.passed + run.failed + run.skipped}
               agentMode={run.agentMode}
             />
-            <div style="display: flex; gap: var(--space-xl); margin-bottom: var(--space-lg); font-size: var(--font-size-sm); color: var(--color-text-secondary); flex-wrap: wrap;">
+            <div class="d-flex gap-xl mb-lg text-sm text-secondary flex-wrap">
               <span>Started: {formatDate(run.startedAt)}</span>
               {run.finishedAt && (
                 <span>Duration: {formatDurationSec(run.durationS ?? 0)}</span>
@@ -144,10 +141,7 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
           )
           : (
             <div class="card">
-              <div
-                class="card-body"
-                style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);"
-              >
+              <div class="card-body empty-state">
                 Run {runId} not found in database.
               </div>
             </div>

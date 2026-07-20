@@ -21,7 +21,7 @@ export default function SessionPlayer({ castUrl }: SessionPlayerProps) {
 
     (async () => {
       try {
-        if (!document.querySelector('link[data-asciinema-player]')) {
+        if (!document.querySelector("link[data-asciinema-player]")) {
           const link = document.createElement("link");
           link.rel = "stylesheet";
           link.setAttribute("data-asciinema-player", "1");
@@ -48,7 +48,9 @@ export default function SessionPlayer({ castUrl }: SessionPlayerProps) {
           {
             data: async () => {
               const res = await fetch(castUrl);
-              if (!res.ok) throw new Error(`Failed to load cast (${res.status})`);
+              if (!res.ok) {
+                throw new Error(`Failed to load cast (${res.status})`);
+              }
               return await res.text();
             },
           },
@@ -78,22 +80,17 @@ export default function SessionPlayer({ castUrl }: SessionPlayerProps) {
   }, [castUrl]);
 
   return (
-    <div class="card" style="margin-bottom: var(--space-lg);">
-      <div
-        class="card-header"
-        style="font-size: var(--font-size-sm); font-weight: 600;"
-      >
+    <div class="card mb-lg">
+      <div class="card-header section-title-inline">
         TUI session replay
       </div>
-      <div class="card-body" style="padding: var(--space-md);">
+      <div class="card-body p-md">
         {loading && !error && (
-          <p style="color: var(--color-text-secondary); margin: 0;">
+          <p class="text-secondary m-0">
             Loading terminal recording…
           </p>
         )}
-        {error && (
-          <p style="color: var(--color-destructive); margin: 0;">{error}</p>
-        )}
+        {error && <p class="text-destructive m-0">{error}</p>}
         <div ref={containerRef} />
       </div>
     </div>

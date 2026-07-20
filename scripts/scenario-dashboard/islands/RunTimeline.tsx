@@ -87,7 +87,9 @@ export default function RunTimeline(
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/events`);
+        const res = await fetch(
+          `/api/runs/${encodeURIComponent(runId)}/events`,
+        );
         if (!res.ok) {
           if (res.status === 404) {
             setMarkers([]);
@@ -117,7 +119,7 @@ export default function RunTimeline(
 
   if (loadError) {
     return (
-      <p style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+      <p class="text-secondary text-sm">
         Timeline unavailable: {loadError}
       </p>
     );
@@ -129,21 +131,17 @@ export default function RunTimeline(
 
   return (
     <div
-      class="card"
-      style="margin-bottom: var(--space-lg);"
+      class="card mb-lg"
       role="region"
       aria-label="Run timeline"
     >
-      <div
-        class="card-header"
-        style="font-size: var(--font-size-sm); font-weight: 600;"
-      >
+      <div class="card-header section-title-inline">
         Timeline
       </div>
-      <div class="card-body" style="padding: var(--space-md);">
+      <div class="card-body p-md">
         <label
           for={`timeline-${runId}`}
-          style="display: block; font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-sm);"
+          class="d-block text-sm text-secondary mb-sm"
         >
           {label}
         </label>
@@ -158,18 +156,15 @@ export default function RunTimeline(
             setPosition(v);
             onSeek?.(v);
           }}
-          style="width: 100%;"
+          class="w-full"
           aria-valuetext={label}
         />
-        <div
-          style="display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-sm);"
-        >
+        <div class="d-flex flex-wrap gap-xs mt-sm">
           {markers.map((m) => (
             <button
               key={m.id}
               type="button"
-              class="badge badge-secondary"
-              style="cursor: pointer; border: none;"
+              class="badge badge-secondary cursor-pointer border-none"
               onClick={() => {
                 setPosition(m.t);
                 onSeek?.(m.t);
