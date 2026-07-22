@@ -112,7 +112,12 @@
 }
 
 - (void)testRefusesWhenFlagOff {
+    // buildMultiLevelTree's stopping condition calls capturePreorderMSTOnly:,
+    // which itself requires the flag on - so the tree must be constructed
+    // with the flag enabled before this test disables it to exercise refusal.
+    [MST setStreamableCARBlockOrderingEnabled:YES];
     MST *tree = [self buildMultiLevelTree];
+    [MST setStreamableCARBlockOrderingEnabled:NO];
     NSError *err = nil;
     __block NSUInteger emitted = 0;
     BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **e) {
