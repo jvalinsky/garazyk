@@ -342,7 +342,11 @@ remaining program does not depend on items 1-2.
    remainder stays open under item 7.
 3. Decompose Objective-C god files after the branch recovery and
    characterization gates. Start with route ownership, then OAuth and Admin UI.
-4. Complete Admin UI accessibility, CSS generation, and browser-module splits.
+4. **Complete (2026-07-22):** Admin UI accessibility, CSS generation, and
+   browser-module splits. The real-browser visual smoke proves 200%-zoom
+   reflow, 44px targets, keyboard-visible focus, and reduced-motion behavior
+   against the built `garazyk-ui` binary; the asset synchronization CTest
+   prevents stale served UI files.
 5. Design and ship the dedicated `#atproto_space` signing-key rotation and
    the existing-DID migration path (workstream 06, P6.2), after Phase 2's
    acceptance scenarios prove the current fallback end-to-end.
