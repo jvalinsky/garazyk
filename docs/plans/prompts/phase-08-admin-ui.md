@@ -70,6 +70,14 @@ Remaining: the rest of U5 (measured contrast, 200% zoom/reflow, touch
 targets, dashboard keyboard order at narrow widths), and U6 (gated behind
 U4 landing in full — U4 now lands with this slice).
 
+**Slice 3 in progress (2026-07-22): U5 reduced motion.** Both independently
+served Admin UI stylesheets, `system.css` and `utilities.css`, now honor
+`prefers-reduced-motion: reduce` by suppressing animation and transition
+durations while retaining the state changes. `scripts/admin-ui-build/
+reduced_motion_test.ts` verifies the rule and required declarations in both
+files. The remaining U5 work is measured contrast, 200% zoom/reflow, focus
+visibility, touch targets, and dashboard keyboard order at narrow widths.
+
 # Phase 8: Admin UI accessibility and structural cleanup
 
 ## Mission

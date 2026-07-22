@@ -367,3 +367,20 @@
   .print-only { display: block; }
   .print-flex { display: flex; }
 }
+
+/* ============================================================================
+   REDUCED MOTION (WCAG 2.2 Success Criterion 2.3.3)
+   ============================================================================ */
+
+/* Suppresses spinners, shimmer skeletons, status pulses, and htmx-swap
+   fades (system.css's spin/shimmer/pulse/fadeIn keyframes and the
+   --transition-* custom properties) for users who've asked for reduced
+   motion, without removing the underlying state change. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

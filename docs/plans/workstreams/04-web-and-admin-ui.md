@@ -111,6 +111,14 @@ Split foreground tokens from decorative/background tokens where needed. Add
 `prefers-reduced-motion` coverage for spinners, shimmer, pulse, and swaps.
 Verify 200% zoom, narrow reflow, focus visibility, and touch target size.
 
+**Progress (2026-07-22):** `system.css` and `utilities.css` each now include
+the same `prefers-reduced-motion: reduce` override for the Admin UI's served
+base bundle and independently consumable utility stylesheet. The rule reduces
+animation/transition duration without suppressing semantic state changes;
+`scripts/admin-ui-build/reduced_motion_test.ts` prevents either served asset
+from regressing. Contrast, zoom/reflow, focus, touch-target, and narrow
+keyboard-order verification remain.
+
 ## U6. Structural cleanup
 
 After U1-U4:
