@@ -1,4 +1,5 @@
 import { type TransportLayer, XrpcError } from "../transport.ts";
+import type { ProcedureOutput } from "../generated_types.ts";
 
 /**
  * AT Protocol account management (create, session, deactivation).
@@ -23,9 +24,11 @@ export class AccountsClient {
     handle: string,
     email: string,
     password: string,
-  ): Promise<any> {
+  ): Promise<ProcedureOutput<"com.atproto.server.createAccount">> {
     try {
-      return await this.transport.post("com.atproto.server.createAccount", {
+      return await this.transport.post<
+        ProcedureOutput<"com.atproto.server.createAccount">
+      >("com.atproto.server.createAccount", {
         email,
         handle,
         password,
@@ -50,8 +53,13 @@ export class AccountsClient {
    * @returns A promise that resolves to the session object
    * @throws XrpcError if the request fails
    */
-  async createSession(identifier: string, password: string): Promise<any> {
-    return await this.transport.post("com.atproto.server.createSession", {
+  async createSession(
+    identifier: string,
+    password: string,
+  ): Promise<ProcedureOutput<"com.atproto.server.createSession">> {
+    return await this.transport.post<
+      ProcedureOutput<"com.atproto.server.createSession">
+    >("com.atproto.server.createSession", {
       identifier,
       password,
     });
@@ -63,7 +71,7 @@ export class AccountsClient {
    * @returns A promise that resolves to the session info object
    * @throws XrpcError if the request fails
    */
-  async getSession(token: string): Promise<any> {
+  async getSession(token: string): Promise<unknown> {
     return await this.transport.get(
       "com.atproto.server.getSession",
       undefined,
@@ -77,7 +85,7 @@ export class AccountsClient {
    * @returns A promise that resolves to the new session object
    * @throws XrpcError if the request fails
    */
-  async refreshSession(refreshJwt: string): Promise<any> {
+  async refreshSession(refreshJwt: string): Promise<unknown> {
     return await this.transport.post(
       "com.atproto.server.refreshSession",
       undefined,
@@ -108,7 +116,7 @@ export class AccountsClient {
    * @returns A promise that resolves to the deactivation response
    * @throws XrpcError if the request fails
    */
-  async deactivateAccount(token: string): Promise<any> {
+  async deactivateAccount(token: string): Promise<unknown> {
     return await this.transport.post(
       "com.atproto.server.deactivateAccount",
       undefined,
@@ -121,7 +129,7 @@ export class AccountsClient {
    * @returns A promise that resolves to the server description object
    * @throws XrpcError if the request fails
    */
-  async describeServer(): Promise<any> {
+  async describeServer(): Promise<unknown> {
     return await this.transport.get("com.atproto.server.describeServer");
   }
 }

@@ -23,8 +23,8 @@ export class AgeAssuranceClient {
     language: string,
     countryCode: string,
     options: { regionCode?: string; token?: string } = {},
-  ): Promise<any> {
-    const body: Record<string, any> = {
+  ): Promise<unknown> {
+    const body: Record<string, unknown> = {
       email,
       language,
       countryCode,
@@ -43,7 +43,7 @@ export class AgeAssuranceClient {
    * @returns A promise that resolves to the configuration object
    * @throws XrpcError if the request fails
    */
-  async getAgeAssuranceConfig(token?: string): Promise<any> {
+  async getAgeAssuranceConfig(token?: string): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.ageassurance.getConfig",
       undefined,
@@ -61,8 +61,8 @@ export class AgeAssuranceClient {
   async getAgeAssuranceState(
     countryCode: string,
     options: { regionCode?: string; token?: string } = {},
-  ): Promise<any> {
-    const params: Record<string, any> = { countryCode };
+  ): Promise<unknown> {
+    const params: Record<string, unknown> = { countryCode };
     if (options.regionCode) params.regionCode = options.regionCode;
     return await this.transport.get(
       "app.bsky.ageassurance.getState",

@@ -18,7 +18,7 @@ export class FeedClient {
    * @returns A promise that resolves to the profile object
    * @throws XrpcError if the request fails
    */
-  async getProfile(actor: string, token?: string): Promise<any> {
+  async getProfile(actor: string, token?: string): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.actor.getProfile",
       { actor },
@@ -33,7 +33,7 @@ export class FeedClient {
    * @returns A promise that resolves to the timeline feed
    * @throws XrpcError if the request fails
    */
-  async getTimeline(token: string, limit = 50): Promise<any> {
+  async getTimeline(token: string, limit = 50): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getTimeline",
       { limit },
@@ -51,7 +51,7 @@ export class FeedClient {
   async getAuthorFeed(
     actor: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getAuthorFeed",
       { actor, limit: options.limit ?? 50 },
@@ -66,7 +66,7 @@ export class FeedClient {
    * @returns A promise that resolves to the post thread
    * @throws XrpcError if the request fails
    */
-  async getPostThread(uri: string, token?: string): Promise<any> {
+  async getPostThread(uri: string, token?: string): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getPostThread",
       { uri },
@@ -84,7 +84,7 @@ export class FeedClient {
   async getLikes(
     uri: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getLikes",
       { uri, limit: options.limit ?? 50 },
@@ -102,7 +102,7 @@ export class FeedClient {
   async searchActors(
     query: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.actor.searchActors",
       { q: query, limit: options.limit ?? 10 },
@@ -120,7 +120,7 @@ export class FeedClient {
   async getActorLikes(
     actor: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getActorLikes",
       { actor, limit: options.limit ?? 50 },
@@ -135,7 +135,7 @@ export class FeedClient {
    * @returns A promise that resolves to the list of posts
    * @throws XrpcError if the request fails
    */
-  async getPosts(uris: string[], token?: string): Promise<any> {
+  async getPosts(uris: string[], token?: string): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getPosts",
       { uris: uris.join(",") },
@@ -153,7 +153,7 @@ export class FeedClient {
   async getRepostedBy(
     uri: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getRepostedBy",
       { uri, limit: options.limit ?? 50 },
@@ -169,7 +169,7 @@ export class FeedClient {
    * @returns A promise that resolves to the feed content
    * @throws XrpcError if the request fails
    */
-  async getFeed(feedUri: string, token: string, limit = 50): Promise<any> {
+  async getFeed(feedUri: string, token: string, limit = 50): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getFeed",
       { feed: feedUri, limit },
@@ -184,7 +184,7 @@ export class FeedClient {
    * @returns A promise that resolves to the list of feed generators
    * @throws XrpcError if the request fails
    */
-  async getFeedGenerators(uris: string[], token?: string): Promise<any> {
+  async getFeedGenerators(uris: string[], token?: string): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.feed.getFeedGenerators",
       { uris: uris.join(",") },
