@@ -100,6 +100,13 @@ dashboard browser smoke passes again and makes the narrow-width drawer's
 hydration, focus trap, and focus restoration mandatory rather than skipped
 best-effort checks.
 
+**Slice 7 complete (2026-07-22): dashboard U5 visual validation.** The live
+browser smoke now asserts that narrow dashboard navigation controls are at
+least 44×44 CSS px, restored keyboard focus has a 2px visible indicator, and
+the dashboard has no page-level horizontal overflow at a 640px viewport (the
+CSS layout width of a 1280px viewport at 200% zoom). The remaining U5 work is
+the equivalent live Admin UI verification.
+
 # Phase 8: Admin UI accessibility and structural cleanup
 
 ## Mission

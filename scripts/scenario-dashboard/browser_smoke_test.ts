@@ -300,6 +300,21 @@ async function main() {
         "Mobile navigation trigger is not visible at 400px width",
       );
     }
+    const undersizedNavTabs = await page.locator(".mobile-nav-tab").evaluateAll(
+      (elements) =>
+        elements.map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }).filter(({ width, height }) => width < 44 || height < 44),
+    );
+    if (undersizedNavTabs.length > 0) {
+      throw new Error(
+        `Mobile navigation has ${undersizedNavTabs.length} target(s) smaller than 44×44 CSS px`,
+      );
+    }
+    console.log(
+      "[OK] Mobile navigation controls meet the 44×44 CSS px target size",
+    );
 
     await navTab.click();
     const drawer = page.locator("#mobile-nav-drawer");
@@ -352,6 +367,45 @@ async function main() {
       );
     }
     console.log("[OK] Focus restores to the trigger after the drawer closes");
+
+    const focusStyle = await page.evaluate(() => {
+      // deno-lint-ignore no-explicit-any
+      const win = globalThis as any;
+      const active = win.document.activeElement;
+      const style = active ? win.getComputedStyle(active) : null;
+      return {
+        matchesFocusVisible: active?.matches(":focus-visible") ?? false,
+        outlineStyle: style?.outlineStyle ?? "none",
+        outlineWidth: parseFloat(style?.outlineWidth ?? "0"),
+      };
+    });
+    if (
+      !focusStyle.matchesFocusVisible || focusStyle.outlineStyle === "none" ||
+      focusStyle.outlineWidth < 2
+    ) {
+      throw new Error(
+        `Restored mobile-nav focus indicator is not visibly 2px (style=${focusStyle.outlineStyle}, width=${focusStyle.outlineWidth})`,
+      );
+    }
+    console.log("[OK] Restored mobile-nav focus has a visible 2px indicator");
+
+    // A 640px CSS viewport is the layout width of a 1280px desktop viewport
+    // at 200% zoom. Reflow must avoid page-level horizontal scrolling.
+    await page.setViewportSize({ width: 640, height: 800 });
+    const horizontalOverflow = await page.evaluate(() => {
+      // deno-lint-ignore no-explicit-any
+      const doc = (globalThis as any).document;
+      return doc.documentElement.scrollWidth >
+        doc.documentElement.clientWidth + 1;
+    });
+    if (horizontalOverflow) {
+      throw new Error(
+        "Dashboard has page-level horizontal overflow at 200% zoom equivalent",
+      );
+    }
+    console.log(
+      "[OK] Dashboard reflows without page-level horizontal overflow at 200% zoom equivalent",
+    );
     await page.setViewportSize({ width: 1280, height: 800 });
 
     // ── Area 7: Hostile ANSI log rendering (workstream 04 U6 item 5) ───

@@ -129,6 +129,13 @@ build target replaces the managed output directory so removed source assets
 cannot linger. `AdminUIAssetsSync` is registered with CTest and compares the
 source/build inventories and SHA-256 hashes.
 
+**Progress (2026-07-22):** The dashboard browser smoke now proves its U5
+visual behavior live: every narrow-width mobile navigation control is at least
+44×44 CSS px, keyboard-restored focus has a visible 2px outline, and the
+document has no horizontal overflow at a 640px viewport (the 200%-zoom
+equivalent for a 1280px desktop layout). The remaining U5 verification is the
+same live reflow, focus, and target-size coverage for the Admin UI.
+
 ## U6. Structural cleanup
 
 After U1-U4:
