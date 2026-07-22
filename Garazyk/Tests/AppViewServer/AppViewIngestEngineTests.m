@@ -212,6 +212,33 @@
     XCTAssertEqualObjects(loaded.lastRev, @"rev1");
 }
 
+- (void)testQueuedLiveCommitIsAcknowledgedAfterMaterialization {
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[]];
+    engine.maxLagForBackpressure = 1000;
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 13;
+    event.repo = @"did:plc:queued";
+    event.rev = @"rev1";
+    event.ops = @[];
+
+    [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
+    [NSThread sleepForTimeInterval:0.2];
+
+    NSError *error = nil;
+    NSArray<NSDictionary *> *rows = [self.db executeParameterizedQuery:
+        @"SELECT raw_envelope, indexed_at, terminal_error, attempts "
+         "FROM appview_pending_index_events WHERE relay_url = ? AND seq = ?"
+        params:@[@"wss://test.relay", @13] error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual(rows.count, 1U);
+    XCTAssertGreaterThan([rows[0][@"raw_envelope"] length], 0U);
+    XCTAssertNotEqual(rows[0][@"indexed_at"], [NSNull null]);
+    XCTAssertNil(rows[0][@"terminal_error"]);
+    XCTAssertEqual([rows[0][@"attempts"] integerValue], 1);
+}
+
 - (void)testConcurrencySafety {
     AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[@"wss://relay1", @"wss://relay2"]];
