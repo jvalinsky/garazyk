@@ -106,6 +106,16 @@ extern NSString * const AppViewDatabaseErrorDomain;
                           rawEnvelope:(NSData *)rawEnvelope
                                 error:(NSError **)error;
 
+/** Atomically records the replay cursor event and its index-queue handoff. */
+- (BOOL)appendAndEnqueueIndexEventForRelayURL:(NSString *)relayURL
+                                           seq:(int64_t)seq
+                                     eventType:(NSString *)eventType
+                                           did:(nullable NSString *)did
+                                           rev:(nullable NSString *)rev
+                                           cid:(nullable NSString *)cid
+                                   rawEnvelope:(NSData *)rawEnvelope
+                                         error:(NSError **)error;
+
 /** Claims the oldest unindexed events whose lease is free or expired. */
 - (nullable NSArray<NSDictionary *> *)claimIndexEventsForWorker:(NSString *)workerID
                                                             limit:(NSInteger)limit

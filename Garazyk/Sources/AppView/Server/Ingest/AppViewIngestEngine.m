@@ -13,6 +13,7 @@
 #import "Debug/GZLogger.h"
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
+#import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
 #import "Core/NSDictionary+CID.h"
@@ -430,22 +431,24 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         return;
     }
 
-    // Persist the event envelope durably (fast, on relay thread)
-    // FIXME: replace with actual envelope from FirehoseCommitEvent; dummy is a placeholder
-    NSData *dummy = [NSData data]; // raw envelope not available from FirehoseCommitEvent directly
+    // Persist the spec-shaped stream envelope. This is both the replay record
+    // and the durable handoff payload for the index worker.
+    NSError *encodeError = nil;
+    NSData *rawEnvelope = [[[EventFormatter alloc] init] encodeCommitEvent:event error:&encodeError];
+    if (!rawEnvelope) {
+        GZ_LOG_WARN(@"[AppView Ingest] Failed to encode commit seq=%lld: %@",
+                     (long long)seq, encodeError.localizedDescription);
+        return;
+    }
     NSError *storeError = nil;
-    if (![_database appendStoredEventWithType:@"live_commit"
-                                          seq:seq
-                                          did:did
-                                          rev:rev
-                                          cid:cid
-                                  rawEnvelope:dummy
-                                        error:&storeError]) {
-        GZ_LOG_WARN(@"[AppView Ingest] Failed to durably append commit seq=%lld: %@",
+    if (![_database appendAndEnqueueIndexEventForRelayURL:relayURL seq:seq eventType:@"live_commit"
+                                                       did:did rev:rev cid:cid rawEnvelope:rawEnvelope
+                                                     error:&storeError]) {
+        GZ_LOG_WARN(@"[AppView Ingest] Failed to durably queue commit seq=%lld: %@",
                      (long long)seq, storeError.localizedDescription);
         return;
     }
-    [_database logEvent:seq did:did rev:rev cid:cid rawEnvelope:dummy error:nil];
+    [_database logEvent:seq did:did rev:rev cid:cid rawEnvelope:rawEnvelope error:nil];
 
     NSTimeInterval fastPathElapsed = [[NSDate date] timeIntervalSinceReferenceDate] - fastPathStart;
     GZ_LOG_DEBUG(@"[AppView Ingest] Fast path for seq=%lld did=%@ took %.3fms",
