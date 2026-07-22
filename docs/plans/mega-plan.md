@@ -127,9 +127,10 @@ documentation, TUI, package, and refactor plans.
   MST path starts root-only and its 256-entry lazy subtree cache has a 10K
   profile proving 7 path loads versus 2,507 eager loads; CAR/STAR fixtures are
   byte-identical. O5 is complete: resolver TTLs are enforced and AppView
-  `#identity` events invalidate the shared DID cache. O6 is blocked at its
-  required operator-review checkpoint in ADR 0008; it proposes a durable,
-  leased SQLite ingest/index queue with watermarked backpressure. A dedicated skill exists at
+  `#identity` events invalidate the shared DID cache. O6 is implemented under
+  accepted ADR 0008: a durable, leased SQLite ingest/index queue with atomic
+  acknowledgement, recovery, and watermarked backpressure. Workstream global
+  gates remain before Phase 11 can close. A dedicated skill exists at
   `.agents/skills/sqlite-performance-optimization`.
 
 ## Priority model
