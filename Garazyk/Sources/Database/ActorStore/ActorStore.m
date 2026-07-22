@@ -52,6 +52,8 @@ static inline void PDSActorStoreEnsureCategoryObjectsLinked(void) {
 @interface PDSActorStore ()
 #endif
 
+@property (nonatomic, strong, readwrite) id<PDSActorKeyManager> spaceKeyManager;
+
 - (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type;
 
 @end
@@ -102,10 +104,17 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         NSString *baseDir = PDSActorStoreBaseDirectoryFromDBPath(dbPath);
         NSString *keystorePath = [[baseDir stringByAppendingPathComponent:@"keys"] copy];
         _keyManager = [[PDSOpenSSLKeyManager alloc] initWithDid:did keystorePath:keystorePath];
+        _spaceKeyManager = [[PDSOpenSSLKeyManager alloc] initWithDid:did
+                                                          keystorePath:keystorePath
+                                                               purpose:PDSOpenSSLActorKeyPurposeSpace];
 #else
         _keyManager = [[PDSAppleActorKeyManager alloc] initWithDid:did];
+        _spaceKeyManager = [[PDSAppleActorKeyManager alloc] initWithDid:did purpose:PDSActorKeyPurposeSpace];
         if ([_keyManager isKindOfClass:[PDSAppleActorKeyManager class]]) {
             ((PDSAppleActorKeyManager *)_keyManager).delegate = self;
+        }
+        if ([_spaceKeyManager isKindOfClass:[PDSAppleActorKeyManager class]]) {
+            ((PDSAppleActorKeyManager *)_spaceKeyManager).delegate = self;
         }
 #endif
         _database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
@@ -529,6 +538,14 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return [self generateSigningKeyForDid:self.did error:error];
 }
 
+- (BOOL)generateSpaceSigningKeyWithError:(NSError **)error {
+    return [self.spaceKeyManager generateSigningKeyWithError:error];
+}
+
+- (nullable NSString *)spaceSigningDIDKeyStringWithError:(NSError **)error {
+    return [self.spaceKeyManager didKeyStringWithError:error];
+}
+
 - (BOOL)generateSigningKeyForDid:(NSString *)targetDid error:(NSError **)error {
     if (![targetDid isEqualToString:self.did]) {
 #if defined(GNUSTEP)
@@ -573,12 +590,32 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return results.firstObject[@"private_key"];
 }
 
+- (BOOL)storeSpaceSigningKey:(NSData *)privateKey publicKey:(NSData *)publicKey error:(NSError **)error {
+    NSString *sql = @"INSERT INTO space_signing_keys (did, private_key, public_key_compressed, created_at, updated_at) VALUES (?, ?, ?, ?, ?) "
+                     @"ON CONFLICT(did) DO UPDATE SET private_key=excluded.private_key, "
+                     @"public_key_compressed=excluded.public_key_compressed, "
+                     @"created_at=excluded.created_at, updated_at=excluded.updated_at";
+    double now = [[NSDate date] timeIntervalSince1970];
+    return [self.database executeParameterizedUpdate:sql params:@[self.did ?: @"", privateKey ?: [NSNull null], publicKey ?: [NSNull null], @(now), @(now)] error:error];
+}
+
+- (nullable NSData *)loadSpaceSigningKeyWithError:(NSError **)error {
+    NSArray *results = [self.database executeParameterizedQuery:@"SELECT private_key FROM space_signing_keys WHERE did = ?" params:@[self.did ?: @""] error:error];
+    return results.firstObject[@"private_key"];
+}
+
 #if !defined(GNUSTEP)
 #pragma mark - PDSAppleActorKeyManagerDelegate
 - (BOOL)appleActorKeyManager:(PDSAppleActorKeyManager *)manager storeSigningKey:(NSData *)privateKey publicKey:(NSData *)publicKey error:(NSError **)error {
+    if ([manager.keyPurpose isEqualToString:PDSActorKeyPurposeSpace]) {
+        return [self storeSpaceSigningKey:privateKey publicKey:publicKey error:error];
+    }
     return [self storeSigningKey:privateKey publicKey:publicKey error:error];
 }
 - (nullable NSData *)appleActorKeyManagerLoadSigningKey:(PDSAppleActorKeyManager *)manager error:(NSError **)error {
+    if ([manager.keyPurpose isEqualToString:PDSActorKeyPurposeSpace]) {
+        return [self loadSpaceSigningKeyWithError:error];
+    }
     return [self loadSigningKeyWithError:error];
 }
 #endif

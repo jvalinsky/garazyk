@@ -17,9 +17,12 @@
 #endif
 
 NSString * const PDSAppleActorKeyManagerErrorDomain = @"com.atproto.pds.actorkeymanager";
+NSString * const PDSActorKeyPurposeAccount = @"account";
+NSString * const PDSActorKeyPurposeSpace = @"space";
 
 static NSString * const kSigningKeyService = @"com.atproto.pds.signing";
 static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
+static NSString * const kSpaceSigningKeyAccountPrefix = @"space-signing-key-";
 
 @interface PDSAppleActorKeyManager ()
 @property (nonatomic, strong, nullable) NSData *memoryKeyData;
@@ -29,9 +32,15 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
 @implementation PDSAppleActorKeyManager
 
 - (instancetype)initWithDid:(NSString *)did {
+    return [self initWithDid:did purpose:PDSActorKeyPurposeAccount];
+}
+
+- (instancetype)initWithDid:(NSString *)did purpose:(NSString *)purpose {
     self = [super init];
     if (self) {
         _did = [did copy];
+        _keyPurpose = [purpose isEqualToString:PDSActorKeyPurposeSpace]
+            ? PDSActorKeyPurposeSpace : PDSActorKeyPurposeAccount;
 #if defined(GNUSTEP)
         _useKeychain = NO;
 #else
@@ -237,7 +246,9 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
 }
 
 - (NSString *)keychainAccount {
-    return [kSigningKeyAccountPrefix stringByAppendingString:self.did];
+    NSString *prefix = [self.keyPurpose isEqualToString:PDSActorKeyPurposeSpace]
+        ? kSpaceSigningKeyAccountPrefix : kSigningKeyAccountPrefix;
+    return [prefix stringByAppendingString:self.did];
 }
 
 #if !defined(GNUSTEP)

@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSAppleActorKeyManager;
 
+FOUNDATION_EXPORT NSString * const PDSActorKeyPurposeAccount;
+FOUNDATION_EXPORT NSString * const PDSActorKeyPurposeSpace;
+
 /**
  * @abstract Defines the PDSAppleActorKeyManagerDelegate protocol contract.
  */
@@ -65,6 +68,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! The DID this key manager is responsible for. */
 @property (nonatomic, copy, readonly) NSString *did;
+
+/*! Stable storage namespace for this actor signing key. */
+@property (nonatomic, copy, readonly) NSString *keyPurpose;
 @property (nonatomic, weak, nullable) id<PDSAppleActorKeyManagerDelegate> delegate;
 
 /*!
@@ -77,6 +83,9 @@ NS_ASSUME_NONNULL_BEGIN
  @return A new PDSAppleActorKeyManager instance.
  */
 - (instancetype)initWithDid:(NSString *)did;
+
+/*! Initializes a manager in the account or permissioned-space key namespace. */
+- (instancetype)initWithDid:(NSString *)did purpose:(NSString *)purpose;
 
 @end
 

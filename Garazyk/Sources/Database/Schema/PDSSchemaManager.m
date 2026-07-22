@@ -550,6 +550,16 @@
            @")";
 }
 
+- (NSString *)actorStoreSpaceSigningKeysTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS space_signing_keys ("
+           @"    did TEXT PRIMARY KEY,"
+           @"    private_key BLOB NOT NULL,"
+           @"    public_key_compressed BLOB NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    updated_at REAL NOT NULL"
+           @")";
+}
+
 - (NSString *)actorStoreSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self actorStoreRepoRootTableSchema]];
@@ -569,6 +579,8 @@
     [sql appendString:[self actorStoreRotationKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreSigningKeysTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self actorStoreSpaceSigningKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreAccountUsageTableSchema]];
     [sql appendString:@";\n\n"];

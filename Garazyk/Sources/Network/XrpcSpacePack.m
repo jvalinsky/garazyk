@@ -208,16 +208,20 @@ static DIDDocument *SpaceResolveDID(NSString *did, BOOL refresh, HttpResponse *r
   return document;
 }
 
-/* The current account key manager owns the ordinary account signing key.  It
- * may therefore identify a credential as #atproto_space only when the DID
- * document deliberately publishes that entry with the same key.  A distinct
- * dedicated key needs separate signing-key management before it can be used
- * for minting. */
-static NSString *SpaceCredentialKeyIDForAuthorityDocument(DIDDocument *document) {
-  NSString *accountKey = [ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:document];
+/* Use the dedicated signer only after the DID document publishes its exact
+ * public key.  A #atproto_space kid must never be attached to an account-key
+ * signature merely because a DID document happens to contain that fragment. */
+static id<PDSActorKeyManager> SpaceCredentialSignerForAuthorityDocument(PDSActorStore *authority,
+                                                                          DIDDocument *document,
+                                                                          NSString **keyID) {
   NSString *spaceKey = [ATProtoDIDDocumentFields dedicatedSpaceSigningKeyMultibaseFromDocument:document];
-  if (accountKey.length > 0 && [accountKey isEqualToString:spaceKey]) return @"#atproto_space";
-  return @"#atproto";
+  NSString *localSpaceKey = [authority spaceSigningDIDKeyStringWithError:nil];
+  if (spaceKey.length > 0 && [spaceKey isEqualToString:localSpaceKey]) {
+    if (keyID) *keyID = @"#atproto_space";
+    return authority.spaceKeyManager;
+  }
+  if (keyID) *keyID = @"#atproto";
+  return authority.keyManager;
 }
 
 static NSDictionary *SpaceCredentialAuthentication(HttpRequest *request, HttpResponse *response,
@@ -541,9 +545,11 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     NSDate *expires = [NSDate dateWithTimeIntervalSince1970:[claims[@"exp"] doubleValue]];
     if (![store consumeDelegationID:claims[@"jti"] expiresAt:expires now:[NSDate date] error:nil]) { SpaceError(response, HttpStatusUnauthorized, @"InvalidDelegationToken", @"Delegation token has already been used"); return; }
     PDSActorStore *authority = [resolvedServices.userDatabasePool storeForDid:space.authorityDID error:nil];
+    if (!authority) { SpaceError(response, HttpStatusInternalServerError, @"InternalError", @"Authority signing store is unavailable"); return; }
     DIDDocument *authorityDocument = SpaceResolveDID(space.authorityDID, NO, response); if (!authorityDocument) return;
-    NSString *credentialKeyID = SpaceCredentialKeyIDForAuthorityDocument(authorityDocument);
-    NSString *credential = [PDSSpaceJWT mintCredentialWithAuthority:space.authorityDID space:space.spaceURI keyID:credentialKeyID actorKeyManager:authority.keyManager now:nil expiration:nil error:nil];
+    NSString *credentialKeyID = nil;
+    id<PDSActorKeyManager> credentialSigner = SpaceCredentialSignerForAuthorityDocument(authority, authorityDocument, &credentialKeyID);
+    NSString *credential = [PDSSpaceJWT mintCredentialWithAuthority:space.authorityDID space:space.spaceURI keyID:credentialKeyID actorKeyManager:credentialSigner now:nil expiration:nil error:nil];
     if (!credential) { SpaceError(response, HttpStatusInternalServerError, @"InternalError", @"Unable to mint space credential"); return; }
     NSString *endpoint = [ATProtoDIDDocumentFields pdsEndpointFromDocument:userDocument];
     if (endpoint.length > 0) [store recordCredentialRecipientForSpace:space.spaceURI serviceDID:issuer serviceEndpoint:endpoint expiresAt:[[NSDate date] dateByAddingTimeInterval:PDSSpaceNotificationRegistrationLifetime] error:nil];
