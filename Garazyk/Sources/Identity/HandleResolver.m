@@ -43,8 +43,10 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
 @interface HandleResolver () {
     dispatch_queue_t _rateLimitQueue;
+    dispatch_queue_t _cacheQueue;
 }
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *resolutionCacheTimestamps;
 - (void)executeSafeHTTPSRequest:(NSURLRequest *)request
                         options:(ATProtoSafeHTTPClientOptions *)options
                         attempt:(NSInteger)attempt
@@ -67,6 +69,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
         BOOL isTestEnv = PDSHandleResolverRunningTests();
         _resolutionCache = [[NSCache alloc] init];
         _failureCache = [[NSCache alloc] init];
+        _resolutionCacheTimestamps = [NSMutableDictionary dictionary];
         _cacheExpirationInterval = 300.0;
         _rateLimitPerMinute = 100;
         NSString *envLimit = [[NSProcessInfo processInfo] environment][@"PDS_HANDLE_RESOLVE_LIMIT"];
@@ -79,6 +82,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
             _retryPolicy.initialDelay = 0.01;
         }
         _rateLimitQueue = dispatch_queue_create("com.atproto.handle.ratelimit", DISPATCH_QUEUE_SERIAL);
+        _cacheQueue = dispatch_queue_create("com.atproto.handle.cache", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -132,7 +136,17 @@ static BOOL PDSHandleResolverRunningTests(void) {
     }
     
     /*! Return cached DID if available. */
-    NSString *cachedDID = [self.resolutionCache objectForKey:handle];
+    __block NSString *cachedDID = nil;
+    dispatch_sync(_cacheQueue, ^{
+        NSDate *cachedAt = self.resolutionCacheTimestamps[handle];
+        NSTimeInterval age = cachedAt ? -[cachedAt timeIntervalSinceNow] : DBL_MAX;
+        if (cachedAt && age < self.cacheExpirationInterval) {
+            cachedDID = [self.resolutionCache objectForKey:handle];
+        } else {
+            [self.resolutionCache removeObjectForKey:handle];
+            [self.resolutionCacheTimestamps removeObjectForKey:handle];
+        }
+    });
     if (cachedDID) {
         completion(cachedDID, nil);
         return;
@@ -142,7 +156,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
     [self resolveHandleViaHTTPS:handle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
         if (did) {
             /*! Cache successful resolution for future requests. */
-            [self.resolutionCache setObject:did forKey:handle];
+            [self cacheDID:did forHandle:handle];
             [self.failureCache removeObjectForKey:handle]; // Clear failure count on success
             completion(did, nil);
         } else if (error && [error.domain isEqualToString:HandleErrorDomain] &&
@@ -150,7 +164,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
             /*! Fallback to DNS TXT record lookup on 404 response. */
             [self resolveHandleViaDNS:handle completion:^(NSString * _Nullable dnsDid, NSError * _Nullable dnsError) {
                 if (dnsDid) {
-                    [self.resolutionCache setObject:dnsDid forKey:handle];
+                    [self cacheDID:dnsDid forHandle:handle];
                     [self.failureCache removeObjectForKey:handle];
                     completion(dnsDid, nil);
                 } else {
@@ -173,6 +187,14 @@ static BOOL PDSHandleResolverRunningTests(void) {
             completion(nil, finalError);
         }
     }];
+}
+
+- (void)cacheDID:(NSString *)did forHandle:(NSString *)handle {
+    if (did.length == 0 || handle.length == 0) return;
+    dispatch_sync(_cacheQueue, ^{
+        [self.resolutionCache setObject:did forKey:handle];
+        self.resolutionCacheTimestamps[handle] = [NSDate date];
+    });
 }
 
 - (void)recordFailureForHandle:(NSString *)handle {
