@@ -1,10 +1,20 @@
 ---
 phase: 9
 title: Permissioned spaces production hardening
-status: pending
+status: in-progress
 agent: worker
 depends_on: [2]
+last_updated: 2026-07-22
 ---
+
+## Progress
+
+**Slice 1 complete (2026-07-22): P6.2 rotation design.** ADR 0004 now
+defines a per-DID, purpose-bound dedicated signer and the explicit operator
+PLC workflow: fallback, prepared, overlap, and cut-over states; exact-fragment
+signer selection; a bounded credential overlap; rollback without altering
+account signing or space data; and two-PDS verification requirements. This
+rules out a dangerous relabeling of the account key as `#atproto_space`.
 
 # Phase 9: Permissioned spaces production hardening
 
