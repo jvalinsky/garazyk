@@ -229,6 +229,32 @@
     GZ_LOG_INFO(@"[MST TEST] Deserialize with nil blockProvider completed.");
 }
 
+- (void)testLazyProofCacheIsBounded {
+    MST *tree = [[MST alloc] init];
+    NSMutableArray<NSString *> *keys = [NSMutableArray array];
+    for (NSUInteger index = 0; index < 1000; index++) {
+        NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/lazy-%04lu", (unsigned long)index];
+        [tree put:key valueCID:[CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]]];
+        [keys addObject:key];
+    }
+
+    NSMutableDictionary<NSString *, NSData *> *nodeDataByCID = [NSMutableDictionary dictionary];
+    XCTAssertTrue([tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+        nodeDataByCID[cid.stringValue] = data;
+        return YES;
+    } error:nil]);
+    MST *lazyTree = [MST deserializeFromCBOR:[tree serializeToCBOR] blockProvider:nil];
+    XCTAssertNotNil(lazyTree);
+    MSTBlockProvider provider = ^NSData * _Nullable(CID *cid) {
+        return nodeDataByCID[cid.stringValue];
+    };
+    for (NSString *key in keys) {
+        XCTAssertNotNil([lazyTree getProofNodesForKey:key blockProvider:provider]);
+    }
+    NSDictionary *cache = [lazyTree valueForKey:@"lazySubtreeCache"];
+    XCTAssertLessThanOrEqual(cache.count, 256UL);
+}
+
 - (void)testDeserializeWithMissingCIDInBlockProvider {
     // Verify graceful handling when block provider returns nil for a CID
     MST *tree = [[MST alloc] init];
