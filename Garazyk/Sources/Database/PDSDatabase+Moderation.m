@@ -63,9 +63,19 @@
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
+    // "Activate" is the unified reversal: an account can be inactive because
+    // it was deactivated (accounts.status) or taken down (admin_takedowns.applied),
+    // and this must clear both so isAccountTakedownActive: agrees with the
+    // reversal, not just accountStatusForDid:.
     NSString *sql = @"UPDATE accounts SET status = 'active', deactivated_at = NULL, updated_at = ? WHERE did = ?";
     NSNumber *now = @([[NSDate date] timeIntervalSince1970]);
     result = [self executeParameterizedUpdate:sql params:@[now, did] error:error];
+    if (!result) {
+        return;
+    }
+
+    NSString *clearTakedownSql = @"UPDATE admin_takedowns SET applied = 0 WHERE subjectId = ? AND subjectType = 'account'";
+    result = [self executeParameterizedUpdate:clearTakedownSql params:@[did] error:error];
     return;
     }];
     return result;
@@ -139,13 +149,17 @@
 
     NSString *sql = @"INSERT INTO labels (src, uri, cid, val, neg, cts, exp) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
+    // cts is NOT NULL; stamp it server-side (like created_at elsewhere) so a
+    // caller omitting it fails at validation, not with a raw constraint error.
+    NSString *cts = label[@"cts"] ?: [NSDateFormatter atproto_stringFromDate:[NSDate date]];
+
     NSArray *params = @[
         label[@"src"] ?: [NSNull null],
         label[@"uri"] ?: [NSNull null],
         label[@"cid"] ?: [NSNull null],
         label[@"val"] ?: [NSNull null],
         label[@"neg"] ?: @0,
-        label[@"cts"] ?: [NSNull null],
+        cts,
         label[@"exp"] ?: [NSNull null]
     ];
 
