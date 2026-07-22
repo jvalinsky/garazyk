@@ -1,12 +1,27 @@
 ---
 phase: 11
 title: Storage and MST optimization remainder
-status: pending
+status: in-progress
 agent: worker
 depends_on: [7]
 ---
 
 # Phase 11: Storage and MST optimization remainder
+
+## Progress
+
+**Started 2026-07-22: O2 phase C chat-store migration audit.** The source has
+two independent chat schema paths plus a service-owned `collection_membership`
+table, so the original five-table description needs implementation-specific
+migrations rather than one unsafe generic rewrite. Each replacement table will
+carry its original FK/default constraints and have fresh/upgrade/rollback
+evidence before O2 phase C is marked complete.
+
+**Completed 2026-07-22: O2 phase C.** PDS DB V12 migrates the four legacy
+chat tables; service DB V15 migrates the service-owned `collection_membership`
+table. Fresh DDL and both migrations have focused apply/rollback/re-apply
+coverage that retains rows, indexes, foreign keys, and defaults. O2 phase D
+(space store) is next.
 
 ## Mission
 
