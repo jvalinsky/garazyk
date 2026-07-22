@@ -6,6 +6,7 @@
 #import "Auth/CryptoUtils.h"
 #import "Auth/PDSKeyProtocol.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
@@ -971,9 +972,20 @@ static BOOL PLCP256UncompressPublicKey(const uint8_t compressed[33], uint8_t out
 - (BOOL)verifyP256Signature:(NSData *)rawSig hash:(NSData *)hash compressedPublicKey:(NSData *)pubKey {
     // Signature must be 64 bytes (raw r||s format)
     if (!rawSig || rawSig.length != 64) return NO;
-    
+
     // Hash must be 32 bytes (SHA-256)
     if (!hash || hash.length != 32) return NO;
+
+    // did:plc requires low-S canonical signatures (see AuthCryptoECDSA.h's
+    // normalizeLowS discussion / https://web.plc.directory/spec/v0.1/did-plc);
+    // libsecp256k1 enforces this for free on the ES256K path, but the shared
+    // P-256 JOSE verifier (AuthCryptoJWK) deliberately accepts both S forms
+    // per ADR 0007 (DPoP/JWT/WebAuthn callers must not reject high-S). PLC
+    // operation verification is not one of those callers, so it must reject
+    // non-canonical signatures explicitly here.
+    if (![AuthCryptoECDSA isLowS:rawSig error:nil]) {
+        return NO;
+    }
     
     // Convert public key to uncompressed format if needed
     NSData *uncompressedPubKey = pubKey;
