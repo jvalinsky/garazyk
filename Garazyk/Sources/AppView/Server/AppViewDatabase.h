@@ -94,6 +94,37 @@ extern NSString * const AppViewDatabaseErrorDomain;
  */
 - (void)markDurableCursor:(int64_t)seq forRelayURL:(NSString *)relayURL;
 
+#pragma mark - Durable Index Queue
+
+/** Enqueues an idempotent relay event for asynchronous materialization. */
+- (BOOL)enqueueIndexEventForRelayURL:(NSString *)relayURL
+                                  seq:(int64_t)seq
+                            eventType:(NSString *)eventType
+                                  did:(nullable NSString *)did
+                                  rev:(nullable NSString *)rev
+                                  cid:(nullable NSString *)cid
+                          rawEnvelope:(NSData *)rawEnvelope
+                                error:(NSError **)error;
+
+/** Claims the oldest unindexed events whose lease is free or expired. */
+- (nullable NSArray<NSDictionary *> *)claimIndexEventsForWorker:(NSString *)workerID
+                                                            limit:(NSInteger)limit
+                                                    leaseDuration:(NSTimeInterval)leaseDuration
+                                                            error:(NSError **)error;
+
+/** Marks a claimed event indexed after its materialization transaction commits. */
+- (BOOL)markIndexEventIndexedForRelayURL:(NSString *)relayURL
+                                      seq:(int64_t)seq
+                                workerID:(NSString *)workerID
+                                   error:(NSError **)error;
+
+/** Retains an unrecoverable event and removes it from worker eligibility. */
+- (BOOL)markIndexEventTerminalForRelayURL:(NSString *)relayURL
+                                       seq:(int64_t)seq
+                                 workerID:(NSString *)workerID
+                                    error:(NSString *)message
+                                   dbError:(NSError **)dbError;
+
 @end
 
 /*!

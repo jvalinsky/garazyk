@@ -390,7 +390,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return [NSDateFormatter atproto_dateFromString:str];
 }
 
-static const NSInteger kAppViewCurrentSchemaVersion = 2;
+static const NSInteger kAppViewCurrentSchemaVersion = 3;
 
 static NSInteger AppViewMigrationStatementCount(NSString *sql) {
     const char *cursor = sql.UTF8String;
@@ -684,6 +684,8 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
         case 2:
             // The legacy fixture needs ALTER TABLE, CREATE INDEX, and version insert.
             return 3;
+        case 3:
+            return 3;
         default:
             return 0;
     }
@@ -721,6 +723,25 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
             }
             return [self appView_recordMigrationVersion:2 statement:&statement error:error];
         }
+
+        case 3:
+            if (![self appView_executeMigrationSQL:
+                  @"CREATE TABLE IF NOT EXISTS appview_pending_index_events ("
+                  "relay_url TEXT NOT NULL, seq INTEGER NOT NULL, event_type TEXT NOT NULL,"
+                  "did TEXT, rev TEXT, cid TEXT, raw_envelope BLOB NOT NULL,"
+                  "received_at TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,"
+                  "lease_owner TEXT, lease_expires_at TEXT, indexed_at TEXT, terminal_error TEXT,"
+                  "PRIMARY KEY(relay_url, seq));"
+                                         version:3
+                                       statement:&statement
+                                           error:error]) return NO;
+            if (![self appView_executeMigrationSQL:
+                  @"CREATE INDEX IF NOT EXISTS idx_pending_index_events_ready "
+                  "ON appview_pending_index_events(indexed_at, terminal_error, lease_expires_at, relay_url, seq);"
+                                         version:3
+                                       statement:&statement
+                                           error:error]) return NO;
+            return [self appView_recordMigrationVersion:3 statement:&statement error:error];
 
         default:
             if (error) {
@@ -1121,6 +1142,94 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
             self->_durableCursorByRelayURL[relayURL] = @(seq);
         }
     });
+}
+
+// ---------------------------------------------------------------------------
+// Durable Index Queue
+// ---------------------------------------------------------------------------
+
+- (BOOL)enqueueIndexEventForRelayURL:(NSString *)relayURL
+                                  seq:(int64_t)seq
+                            eventType:(NSString *)eventType
+                                  did:(nullable NSString *)did
+                                  rev:(nullable NSString *)rev
+                                  cid:(nullable NSString *)cid
+                          rawEnvelope:(NSData *)rawEnvelope
+                                error:(NSError **)error {
+    if (relayURL.length == 0 || eventType.length == 0 || !rawEnvelope) {
+        if (error) *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:SQLITE_MISUSE
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Relay URL, event type, and envelope are required"}];
+        return NO;
+    }
+    NSString *sql = @"INSERT OR IGNORE INTO appview_pending_index_events("
+                    "relay_url, seq, event_type, did, rev, cid, raw_envelope, received_at) VALUES(?,?,?,?,?,?,?,?)";
+    return [self executeParameterizedUpdate:sql params:@[
+        relayURL, @(seq), eventType, did ?: [NSNull null], rev ?: [NSNull null],
+        cid ?: [NSNull null], rawEnvelope, iso8601Now()
+    ] error:error];
+}
+
+- (nullable NSArray<NSDictionary *> *)claimIndexEventsForWorker:(NSString *)workerID
+                                                            limit:(NSInteger)limit
+                                                    leaseDuration:(NSTimeInterval)leaseDuration
+                                                            error:(NSError **)error {
+    if (workerID.length == 0 || limit <= 0 || leaseDuration <= 0) {
+        if (error) *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:SQLITE_MISUSE
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Worker ID, positive limit, and lease duration are required"}];
+        return nil;
+    }
+    NSString *now = iso8601Now();
+    NSString *leaseUntil = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSinceNow:leaseDuration]];
+    __block NSArray<NSDictionary *> *claimed = nil;
+    NSError *innerError = nil;
+    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
+        NSArray<NSDictionary *> *candidates = [database executeParameterizedQuery:
+            @"SELECT relay_url, seq, event_type, did, rev, cid, raw_envelope, attempts "
+             "FROM appview_pending_index_events WHERE indexed_at IS NULL AND terminal_error IS NULL "
+             "AND (lease_expires_at IS NULL OR lease_expires_at <= ?) "
+             "ORDER BY relay_url ASC, seq ASC LIMIT ?"
+            params:@[now, @(limit)] error:transactionError];
+        if (!candidates) return NO;
+        NSMutableArray<NSDictionary *> *accepted = [NSMutableArray arrayWithCapacity:candidates.count];
+        for (NSDictionary *candidate in candidates) {
+            BOOL updated = [database executeParameterizedUpdate:
+                @"UPDATE appview_pending_index_events SET lease_owner = ?, lease_expires_at = ?, attempts = attempts + 1 "
+                 "WHERE relay_url = ? AND seq = ? AND indexed_at IS NULL AND terminal_error IS NULL "
+                 "AND (lease_expires_at IS NULL OR lease_expires_at <= ?)"
+                params:@[workerID, leaseUntil, candidate[@"relay_url"], candidate[@"seq"], now]
+                error:transactionError];
+            if (!updated) return NO;
+            [accepted addObject:candidate];
+        }
+        claimed = [accepted copy];
+        return YES;
+    } error:&innerError];
+    if (!ok) {
+        if (error) *error = innerError;
+        return nil;
+    }
+    return claimed;
+}
+
+- (BOOL)markIndexEventIndexedForRelayURL:(NSString *)relayURL
+                                      seq:(int64_t)seq
+                                workerID:(NSString *)workerID
+                                   error:(NSError **)error {
+    return [self executeParameterizedUpdate:
+        @"UPDATE appview_pending_index_events SET indexed_at = ?, lease_owner = NULL, lease_expires_at = NULL "
+         "WHERE relay_url = ? AND seq = ? AND lease_owner = ? AND indexed_at IS NULL AND terminal_error IS NULL"
+        params:@[iso8601Now(), relayURL, @(seq), workerID] error:error];
+}
+
+- (BOOL)markIndexEventTerminalForRelayURL:(NSString *)relayURL
+                                       seq:(int64_t)seq
+                                 workerID:(NSString *)workerID
+                                    error:(NSString *)message
+                                   dbError:(NSError **)dbError {
+    return [self executeParameterizedUpdate:
+        @"UPDATE appview_pending_index_events SET terminal_error = ?, lease_owner = NULL, lease_expires_at = NULL "
+         "WHERE relay_url = ? AND seq = ? AND lease_owner = ? AND indexed_at IS NULL"
+        params:@[message ?: @"Unknown indexing error", relayURL, @(seq), workerID] error:dbError];
 }
 
 // ---------------------------------------------------------------------------

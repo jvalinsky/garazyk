@@ -166,9 +166,10 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
         @"SELECT version FROM appview_schema_version ORDER BY version"
                                                        params:@[] error:&error];
     XCTAssertNotNil(versions, @"%@", error);
-    XCTAssertEqual(versions.count, 2U);
+    XCTAssertEqual(versions.count, 3U);
     XCTAssertEqual([versions[0][@"version"] integerValue], 1);
     XCTAssertEqual([versions[1][@"version"] integerValue], 2);
+    XCTAssertEqual([versions[2][@"version"] integerValue], 3);
 
     NSArray *columns = [database executeParameterizedQuery:
         @"PRAGMA table_info(bsky_feed_threadgates)"
@@ -206,7 +207,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     versions = [database executeParameterizedQuery:
         @"SELECT version FROM appview_schema_version ORDER BY version"
                                            params:@[] error:&error];
-    XCTAssertEqual(versions.count, 2U, @"Reopen must not record migrations twice");
+    XCTAssertEqual(versions.count, 3U, @"Reopen must not record migrations twice");
     indexes = [database executeParameterizedQuery:
         @"SELECT name FROM sqlite_master WHERE type = 'index' "
         "AND name IN ('idx_bsky_feed_threadgates_uri', 'idx_pending_deltas_did')"
@@ -217,7 +218,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 }
 
 - (void)testEveryMigrationStatementFailureRollsBackSchemaAndVersion {
-    for (NSNumber *versionNumber in @[@1, @2]) {
+    for (NSNumber *versionNumber in @[@1, @2, @3]) {
         NSInteger version = versionNumber.integerValue;
         NSInteger statementCount = [self.db appView_migrationStatementCountForTestingVersion:version];
         XCTAssertGreaterThan(statementCount, 0, @"Migration %ld must contain statements", (long)version);
@@ -280,7 +281,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertTrue(CreateLegacyAppViewFixture(path, &error), @"%@", error);
     XCTAssertTrue(ExecuteAppViewFixtureSQL(path,
                                             "CREATE TABLE appview_schema_version(version INTEGER NOT NULL);"
-                                            "INSERT INTO appview_schema_version(version) VALUES(3);",
+                                            "INSERT INTO appview_schema_version(version) VALUES(4);",
                                             &error), @"%@", error);
 
     AppViewDatabase *database = [[AppViewDatabase alloc] initWithPath:path error:&error];
@@ -292,7 +293,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
         @"SELECT version FROM appview_schema_version"
                                                        params:@[] error:nil];
     XCTAssertEqual(versions.count, 1U);
-    XCTAssertEqual([versions.firstObject[@"version"] integerValue], 3);
+    XCTAssertEqual([versions.firstObject[@"version"] integerValue], 4);
     NSArray *columns = [database executeParameterizedQuery:
         @"PRAGMA table_info(bsky_feed_threadgates)"
                                                       params:@[] error:nil];
@@ -551,6 +552,27 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     [self.db markDurableCursor:100 forRelayURL:@"wss://relay"];
     [self.db markDurableCursor:90 forRelayURL:@"wss://relay"];
     XCTAssertEqual([self.db durableCursorForRelayURL:@"wss://relay"], 100LL);
+}
+
+- (void)testDurableIndexQueueClaimsOnceAndAcknowledges {
+    NSError *error = nil;
+    NSData *envelope = [@"event" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://relay" seq:42 eventType:@"#commit"
+                                                    did:@"did:plc:queue" rev:@"rev" cid:@"cid"
+                                            rawEnvelope:envelope error:&error], @"%@", error);
+    XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://relay" seq:42 eventType:@"#commit"
+                                                    did:@"did:plc:queue" rev:@"rev" cid:@"cid"
+                                            rawEnvelope:envelope error:&error], @"%@", error);
+
+    NSArray<NSDictionary *> *first = [self.db claimIndexEventsForWorker:@"worker-a" limit:10 leaseDuration:60 error:&error];
+    XCTAssertNotNil(first, @"%@", error);
+    XCTAssertEqual(first.count, 1u);
+    XCTAssertEqualObjects(first.firstObject[@"relay_url"], @"wss://relay");
+    NSArray<NSDictionary *> *second = [self.db claimIndexEventsForWorker:@"worker-b" limit:10 leaseDuration:60 error:&error];
+    XCTAssertEqual(second.count, 0u, @"An active lease must prevent a duplicate claim");
+    XCTAssertTrue([self.db markIndexEventIndexedForRelayURL:@"wss://relay" seq:42 workerID:@"worker-a" error:&error], @"%@", error);
+    NSArray<NSDictionary *> *afterAck = [self.db claimIndexEventsForWorker:@"worker-b" limit:10 leaseDuration:60 error:&error];
+    XCTAssertEqual(afterAck.count, 0u, @"Indexed events must not be replayed");
 }
 
 // ---------------------------------------------------------------------------

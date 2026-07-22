@@ -1,7 +1,7 @@
 ---
 phase: 11
 title: Storage and MST optimization remainder
-status: blocked
+status: in-progress
 agent: worker
 depends_on: [7]
 ---
@@ -111,7 +111,8 @@ Update workstream 07 status rows and mega-plan Phase 4 item 8; set
 ## O6 checkpoint
 
 ADR 0008 records the durable queue design after confirming that the current
-AppView relay path synchronously decodes and materializes events. This phase
-is blocked for the operator decision required by the ADR: approve the
-eventual-consistency contract, queue capacity/lease defaults, dead-letter
-policy, and production disk budget before implementation begins.
+AppView relay path synchronously decodes and materializes events. The operator
+approved its eventual-consistency contract, queue capacity/lease defaults,
+dead-letter policy, and production disk budget on 2026-07-22. The migration
+and durable queue API are now in place; worker handoff and recovery scenarios
+remain.
