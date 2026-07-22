@@ -1,5 +1,5 @@
 /** Admin/moderation operations (subject status, reports, labels, login) @module admin */
-import { TransportLayer, XrpcError } from "../transport.ts";
+import { type TransportLayer, XrpcError } from "../transport.ts";
 
 /** Client for admin and moderation XRPC methods. */
 export class AdminClient {
@@ -16,7 +16,7 @@ export class AdminClient {
    * @returns A promise that resolves to the subject status object
    * @throws XrpcError if the request fails
    */
-  async getSubjectStatus(did: string, token: string): Promise<any> {
+  async getSubjectStatus(did: string, token: string): Promise<unknown> {
     return await this.transport.get("com.atproto.admin.getSubjectStatus", {
       did,
     }, token);
@@ -30,10 +30,10 @@ export class AdminClient {
    * @throws XrpcError if the request fails
    */
   async updateSubjectStatus(
-    subject: Record<string, any>,
-    options: { takedown?: Record<string, any>; token?: string } = {},
-  ): Promise<any> {
-    const body: Record<string, any> = { subject };
+    subject: Record<string, unknown>,
+    options: { takedown?: Record<string, unknown>; token?: string } = {},
+  ): Promise<unknown> {
+    const body: Record<string, unknown> = { subject };
     if (options.takedown) body.takedown = options.takedown;
     return await this.transport.post(
       "com.atproto.admin.updateSubjectStatus",
@@ -53,10 +53,10 @@ export class AdminClient {
    */
   async createReport(
     reasonType: string,
-    subject: Record<string, any>,
+    subject: Record<string, unknown>,
     reason: string,
     token: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.post(
       "com.atproto.moderation.createReport",
       { reasonType, subject, reason },
@@ -71,9 +71,9 @@ export class AdminClient {
    * @returns A promise that resolves to the labels response
    * @throws XrpcError if the request fails
    */
-  async getLabels(uris: string[], token?: string): Promise<any> {
+  async getLabels(uris: string[], token?: string): Promise<unknown> {
     // Preserve repeated URI parameters for this legacy XRPC shape.
-    const params: Record<string, any> = { "uris[]": uris };
+    const params: Record<string, unknown> = { "uris[]": uris };
     return await this.transport.get(
       "com.atproto.label.getLabels",
       params,

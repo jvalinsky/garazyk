@@ -37,99 +37,112 @@ import {
 /** Raw XRPC/HTTP methods bound to an actor's bearer token. */
 export interface ActorRawClient {
   /** Send an XRPC GET (deprecated — prefer xrpcGet). */
-  get(method: string, params?: Record<string, unknown>): Promise<any>;
+  get(method: string, params?: Record<string, unknown>): Promise<unknown>;
   /** Send an XRPC POST (deprecated — prefer xrpcPost). */
-  post(method: string, body?: unknown): Promise<any>;
+  post(method: string, body?: unknown): Promise<unknown>;
   /** Send an XRPC query. */
-  query(method: string, params?: Record<string, unknown>): Promise<any>;
+  query(method: string, params?: Record<string, unknown>): Promise<unknown>;
   /** Send an XRPC procedure. */
-  procedure(method: string, body?: unknown): Promise<any>;
+  procedure(method: string, body?: unknown): Promise<unknown>;
   /** Send a raw HTTP GET request. */
-  httpGet(path: string, params?: Record<string, unknown>): Promise<any>;
+  httpGet(path: string, params?: Record<string, unknown>): Promise<unknown>;
   /** Send a raw HTTP POST request. */
-  httpPost(path: string, body?: unknown): Promise<any>;
+  httpPost(path: string, body?: unknown): Promise<unknown>;
   /** Send an XRPC GET request. */
-  xrpcGet(method: string, params?: Record<string, unknown>): Promise<any>;
+  xrpcGet(method: string, params?: Record<string, unknown>): Promise<unknown>;
   /** Send an XRPC POST request. */
-  xrpcPost(method: string, body?: unknown): Promise<any>;
+  xrpcPost(method: string, body?: unknown): Promise<unknown>;
   /** Send an XRPC binary POST request. */
-  postBinary(method: string, data: Uint8Array, contentType: string): Promise<any>;
+  postBinary(
+    method: string,
+    data: Uint8Array,
+    contentType: string,
+  ): Promise<unknown>;
 }
 
 /** Repository record CRUD operations bound to an actor's DID and token. */
 export interface ActorRepoClient {
   /** Create a record in the actor's repo. */
-  createRecord(params: Record<string, unknown>): Promise<any>;
+  createRecord(params: Record<string, unknown>): Promise<unknown>;
   /** Get a record from the actor's repo. */
-  getRecord(params: Record<string, unknown>): Promise<any>;
+  getRecord(params: Record<string, unknown>): Promise<unknown>;
   /** Put (replace) a record in the actor's repo. */
-  putRecord(params: Record<string, unknown>): Promise<any>;
+  putRecord(params: Record<string, unknown>): Promise<unknown>;
   /** Delete a record from the actor's repo. */
-  deleteRecord(params: Record<string, unknown>): Promise<any>;
+  deleteRecord(params: Record<string, unknown>): Promise<unknown>;
   /** Apply batch writes to the actor's repo. */
-  applyWrites(params: Record<string, unknown>): Promise<any>;
+  applyWrites(params: Record<string, unknown>): Promise<unknown>;
   /** List records in the actor's repo collection. */
-  listRecords(params: Record<string, unknown>): Promise<any>;
+  listRecords(params: Record<string, unknown>): Promise<unknown>;
   /** Describe the actor's repo. */
-  describeRepo(params?: Record<string, unknown>): Promise<any>;
+  describeRepo(params?: Record<string, unknown>): Promise<unknown>;
   /** List missing blobs in the actor's repo. */
-  listMissingBlobs(params?: Record<string, unknown>): Promise<any>;
+  listMissingBlobs(params?: Record<string, unknown>): Promise<unknown>;
   /** Upload a blob to the actor's repo. */
-  uploadBlob(data: Uint8Array): Promise<any>;
+  uploadBlob(data: Uint8Array): Promise<unknown>;
 }
 
 /** Social graph operations bound to an actor's bearer token. */
 export interface ActorGraphClient {
   /** Get actors followed by a given actor. */
-  getFollows(actor: string, options?: { limit?: number }): Promise<any>;
+  getFollows(actor: string, options?: { limit?: number }): Promise<unknown>;
   /** Get followers of a given actor. */
-  getFollowers(actor: string, options?: { limit?: number }): Promise<any>;
+  getFollowers(actor: string, options?: { limit?: number }): Promise<unknown>;
   /** Get actors blocked by the authenticated user. */
-  getBlocks(limit?: number): Promise<any>;
+  getBlocks(limit?: number): Promise<unknown>;
   /** Get actors muted by the authenticated user. */
-  getMutes(limit?: number): Promise<any>;
+  getMutes(limit?: number): Promise<unknown>;
   /** Mute an actor by DID. */
-  muteActor(actorDid: string): Promise<any>;
+  muteActor(actorDid: string): Promise<unknown>;
   /** Unmute an actor by DID. */
-  unmuteActor(actorDid: string): Promise<any>;
+  unmuteActor(actorDid: string): Promise<unknown>;
   /** Get relationships between an actor and targets. */
-  getRelationships(actor: string, targets: string[]): Promise<any>;
+  getRelationships(actor: string, targets: string[]): Promise<unknown>;
   /** Get a starter pack by URI. */
-  getStarterPack(uri: string): Promise<any>;
+  getStarterPack(uri: string): Promise<unknown>;
   /** Get starter packs created by an actor. */
-  getActorStarterPacks(actor: string, options?: { limit?: number }): Promise<any>;
+  getActorStarterPacks(
+    actor: string,
+    options?: { limit?: number },
+  ): Promise<unknown>;
   /** Get multiple starter packs by URIs. */
-  getStarterPacks(uris: string[]): Promise<any>;
+  getStarterPacks(uris: string[]): Promise<unknown>;
   /** Get a list by URI. */
-  getList(listUri: string, options?: { limit?: number; cursor?: string }): Promise<any>;
+  getList(
+    listUri: string,
+    options?: { limit?: number; cursor?: string },
+  ): Promise<unknown>;
   /** Get lists created by an actor. */
-  getLists(actor: string, options?: { limit?: number; cursor?: string }): Promise<any>;
+  getLists(
+    actor: string,
+    options?: { limit?: number; cursor?: string },
+  ): Promise<unknown>;
 }
 
 /** Feed and timeline operations bound to an actor's bearer token. */
 export interface ActorFeedClient {
   /** Get an actor's profile. */
-  getProfile(actor: string): Promise<any>;
+  getProfile(actor: string): Promise<unknown>;
   /** Get the authenticated user's timeline. */
-  getTimeline(limit?: number): Promise<any>;
+  getTimeline(limit?: number): Promise<unknown>;
   /** Get an actor's authored feed. */
-  getAuthorFeed(actor: string, options?: { limit?: number }): Promise<any>;
+  getAuthorFeed(actor: string, options?: { limit?: number }): Promise<unknown>;
   /** Get a post thread by URI. */
-  getPostThread(uri: string): Promise<any>;
+  getPostThread(uri: string): Promise<unknown>;
   /** Get likes for a record. */
-  getLikes(uri: string, options?: { limit?: number }): Promise<any>;
+  getLikes(uri: string, options?: { limit?: number }): Promise<unknown>;
   /** Search actors by query. */
-  searchActors(query: string, options?: { limit?: number }): Promise<any>;
+  searchActors(query: string, options?: { limit?: number }): Promise<unknown>;
   /** Get posts liked by an actor. */
-  getActorLikes(actor: string, options?: { limit?: number }): Promise<any>;
+  getActorLikes(actor: string, options?: { limit?: number }): Promise<unknown>;
   /** Get posts by their AT URIs. */
-  getPosts(uris: string[]): Promise<any>;
+  getPosts(uris: string[]): Promise<unknown>;
   /** Get actors who reposted a post. */
-  getRepostedBy(uri: string, options?: { limit?: number }): Promise<any>;
+  getRepostedBy(uri: string, options?: { limit?: number }): Promise<unknown>;
   /** Get a custom feed generator's feed. */
-  getFeed(feedUri: string, limit?: number): Promise<any>;
+  getFeed(feedUri: string, limit?: number): Promise<unknown>;
   /** Get feed generator details by URIs. */
-  getFeedGenerators(uris: string[]): Promise<any>;
+  getFeedGenerators(uris: string[]): Promise<unknown>;
 }
 
 /**
@@ -322,25 +335,38 @@ export class XrpcClient {
    * Returns a scoped client bound to an actor's identity credentials.
    * @param actor - An object providing an accessJwt and did (e.g. an Actor instance)
    */
-  as(actor: { accessJwt?: string; token?: string; did?: string }): ActorScopedClient {
+  as(
+    actor: { accessJwt?: string; token?: string; did?: string },
+  ): ActorScopedClient {
     const token = actor.accessJwt || actor.token;
     const did = actor.did;
-    const wrap = <T extends Record<string, unknown>>(params?: T): T | { repo: string } & T => {
+    const wrap = <T extends Record<string, unknown>>(
+      params?: T,
+    ): T | { repo: string } & T => {
       const merged = { ...params } as { repo: string } & T;
       if (did) merged.repo = did;
       return merged;
     };
     return {
       raw: {
-        get: (method: string, params?: Record<string, unknown>) => this.raw.get(method, params, token),
-        post: (method: string, body?: unknown) => this.raw.post(method, body, token),
-        query: (method: string, params?: Record<string, unknown>) => this.raw.query(method, params, token),
-        procedure: (method: string, body?: unknown) => this.raw.procedure(method, body, token),
-        httpGet: (path: string, params?: Record<string, unknown>) => this.raw.httpGet(path, params, token),
-        httpPost: (path: string, body?: unknown) => this.raw.httpPost(path, body, token),
-        xrpcGet: (method: string, params?: Record<string, unknown>) => this.raw.xrpcGet(method, params, token),
-        xrpcPost: (method: string, body?: unknown) => this.raw.xrpcPost(method, body, token),
-        postBinary: (method: string, data: Uint8Array, contentType: string) => this.raw.postBinary(method, data, contentType, token),
+        get: (method: string, params?: Record<string, unknown>) =>
+          this.raw.get(method, params, token),
+        post: (method: string, body?: unknown) =>
+          this.raw.post(method, body, token),
+        query: (method: string, params?: Record<string, unknown>) =>
+          this.raw.query(method, params, token),
+        procedure: (method: string, body?: unknown) =>
+          this.raw.procedure(method, body, token),
+        httpGet: (path: string, params?: Record<string, unknown>) =>
+          this.raw.httpGet(path, params, token),
+        httpPost: (path: string, body?: unknown) =>
+          this.raw.httpPost(path, body, token),
+        xrpcGet: (method: string, params?: Record<string, unknown>) =>
+          this.raw.xrpcGet(method, params, token),
+        xrpcPost: (method: string, body?: unknown) =>
+          this.raw.xrpcPost(method, body, token),
+        postBinary: (method: string, data: Uint8Array, contentType: string) =>
+          this.raw.postBinary(method, data, contentType, token),
       },
       api: token ? this.auth(token) : this.api,
       repo: {
@@ -359,53 +385,58 @@ export class XrpcClient {
         describeRepo: (params?: Record<string, unknown>) =>
           this.raw.get("com.atproto.repo.describeRepo", wrap(params), token),
         listMissingBlobs: (params?: Record<string, unknown>) =>
-          this.raw.get("com.atproto.repo.listMissingBlobs", wrap(params), token),
+          this.raw.get(
+            "com.atproto.repo.listMissingBlobs",
+            wrap(params),
+            token,
+          ),
         uploadBlob: (data: Uint8Array) =>
-          this.raw.postBinary("com.atproto.repo.uploadBlob", data, "application/octet-stream", token),
+          this.raw.postBinary(
+            "com.atproto.repo.uploadBlob",
+            data,
+            "application/octet-stream",
+            token,
+          ),
       },
       graph: {
         getFollows: (actor: string, options?: { limit?: number }) =>
           this.graph.getFollows(actor, { ...options, token }),
         getFollowers: (actor: string, options?: { limit?: number }) =>
           this.graph.getFollowers(actor, { ...options, token }),
-        getBlocks: (limit?: number) =>
-          this.graph.getBlocks(token!, limit),
-        getMutes: (limit?: number) =>
-          this.graph.getMutes(token!, limit),
-        muteActor: (actorDid: string) =>
-          this.graph.muteActor(actorDid, token!),
+        getBlocks: (limit?: number) => this.graph.getBlocks(token!, limit),
+        getMutes: (limit?: number) => this.graph.getMutes(token!, limit),
+        muteActor: (actorDid: string) => this.graph.muteActor(actorDid, token!),
         unmuteActor: (actorDid: string) =>
           this.graph.unmuteActor(actorDid, token!),
         getRelationships: (actor: string, targets: string[]) =>
           this.graph.getRelationships(actor, targets, token),
-        getStarterPack: (uri: string) =>
-          this.graph.getStarterPack(uri, token),
+        getStarterPack: (uri: string) => this.graph.getStarterPack(uri, token),
         getActorStarterPacks: (actor: string, options?: { limit?: number }) =>
           this.graph.getActorStarterPacks(actor, { ...options, token }),
         getStarterPacks: (uris: string[]) =>
           this.graph.getStarterPacks(uris, token),
-        getList: (listUri: string, options?: { limit?: number; cursor?: string }) =>
-          this.graph.getList(listUri, { ...options, token }),
-        getLists: (actor: string, options?: { limit?: number; cursor?: string }) =>
-          this.graph.getLists(actor, { ...options, token }),
+        getList: (
+          listUri: string,
+          options?: { limit?: number; cursor?: string },
+        ) => this.graph.getList(listUri, { ...options, token }),
+        getLists: (
+          actor: string,
+          options?: { limit?: number; cursor?: string },
+        ) => this.graph.getLists(actor, { ...options, token }),
       },
       feed: {
-        getProfile: (actor: string) =>
-          this.feed.getProfile(actor, token),
-        getTimeline: (limit?: number) =>
-          this.feed.getTimeline(token!, limit),
+        getProfile: (actor: string) => this.feed.getProfile(actor, token),
+        getTimeline: (limit?: number) => this.feed.getTimeline(token!, limit),
         getAuthorFeed: (actor: string, options?: { limit?: number }) =>
           this.feed.getAuthorFeed(actor, { ...options, token }),
-        getPostThread: (uri: string) =>
-          this.feed.getPostThread(uri, token),
+        getPostThread: (uri: string) => this.feed.getPostThread(uri, token),
         getLikes: (uri: string, options?: { limit?: number }) =>
           this.feed.getLikes(uri, { ...options, token }),
         searchActors: (query: string, options?: { limit?: number }) =>
           this.feed.searchActors(query, { ...options, token }),
         getActorLikes: (actor: string, options?: { limit?: number }) =>
           this.feed.getActorLikes(actor, { ...options, token }),
-        getPosts: (uris: string[]) =>
-          this.feed.getPosts(uris, token),
+        getPosts: (uris: string[]) => this.feed.getPosts(uris, token),
         getRepostedBy: (uri: string, options?: { limit?: number }) =>
           this.feed.getRepostedBy(uri, { ...options, token }),
         getFeed: (feedUri: string, limit?: number) =>
@@ -452,8 +483,7 @@ export class XrpcClient {
 
   /** Dynamic proxy for authenticated XRPC method calls */
   get agent(): AgentProxy {
-    const self = this;
-    return createAgentProxy(self, this.#agentSession);
+    return createAgentProxy(this, this.#agentSession);
   }
 
   /** Check if the service is responding at the health endpoint. */
@@ -486,21 +516,6 @@ class AgentSession {
   refreshJwt?: string;
   did?: string;
   handle?: string;
-}
-
-/** Resolve the bearer token for an agent call
- * @param opts - Invocation options that may include an Authorization header
- * @param session - Stored agent session credentials
- * @returns The bearer token or undefined
- */
-function resolveToken(
-  opts: { headers?: { Authorization?: string } } | undefined,
-  session: AgentSession,
-): string | undefined {
-  if (opts?.headers?.Authorization) {
-    return opts.headers.Authorization.replace(/^Bearer\s+/i, "");
-  }
-  return session.accessJwt;
 }
 
 function isQueryMethod(method: string): boolean {
@@ -554,7 +569,14 @@ type WrapClient<C> = {
  * schema methods and custom session-helper operations (like createAccount and login).
  */
 export type AgentProxy = WrapClient<GeneratedClient> & {
-  /** Allow dynamic namespace access for methods not yet in GeneratedClient. */
+  /**
+   * Allow dynamic namespace access for methods not yet in GeneratedClient.
+   * `any` is required here (rather than `unknown`) so that arbitrary
+   * `client.agent.<namespace>.<method>(...)` chains type-check without a
+   * cast — an index signature of `unknown` would make both the property
+   * access and the subsequent call fail to type-check.
+   */
+  // deno-lint-ignore no-explicit-any -- intentional passthrough for dynamic proxy access
   [key: string]: any;
   /** Create a new account and store the session. */
   createAccount(params: {
@@ -596,9 +618,9 @@ class RawCaller implements XrpcCaller {
 
   async call(
     method: string,
-    paramsOrInput?: any,
+    paramsOrInput?: unknown,
     tokenOrOpts?: string | CallOptions,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const finalToken = extractToken(tokenOrOpts) || this.defaultToken;
     const isQuery = isQueryMethod(method);
 
@@ -638,9 +660,9 @@ class AgentCaller implements XrpcCaller {
 
   async call(
     method: string,
-    paramsOrInput?: any,
+    paramsOrInput?: unknown,
     tokenOrOpts?: string | CallOptions,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const finalToken = extractToken(tokenOrOpts) || this.session.accessJwt;
     const isQuery = isQueryMethod(method);
 

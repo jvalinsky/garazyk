@@ -1,6 +1,6 @@
 /** Search and suggestion operations (actors, posts, starter packs, preferences) @module search */
 import type { ProcedureOutput, QueryOutput } from "../lexicons.ts";
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for search, typeahead, and suggestion XRPC methods. */
 export class SearchClient {
