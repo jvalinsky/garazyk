@@ -7,7 +7,7 @@
  * without requiring filesystem access or Docker.
  */
 
-import { assertEquals, assertRejects, assertThrows } from "jsr:@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import {
   normalizePorts,
   normalizeVolumes,

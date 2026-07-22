@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   defaultRolePort,
   defaultServiceName,
-  ExperimentalRoleMetadata,
+  type ExperimentalRoleMetadata,
   isExperimentalRole,
   isKnownServiceRole,
   roleEnvKey,
@@ -782,11 +782,11 @@ function normalizeHealth(
 }
 
 function normalizeDiagnostics(
-  raw: Array<any> | undefined,
+  raw: z.infer<typeof containerPrimitiveSchema>["diagnostics"],
   role: string,
 ): DiagnosticProbeSpec[] {
   return (raw || []).map((probe, index) => {
-    if (probe.type) return diagnosticProbeSchema.parse(probe);
+    if ("type" in probe) return diagnosticProbeSchema.parse(probe);
     return {
       type: "http",
       name: probe.name || `${role}-${index}`,
