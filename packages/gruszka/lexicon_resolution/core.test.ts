@@ -8,7 +8,7 @@
  * @module lexicon_resolution
  */
 
-import { assert, assertEquals } from "jsr:@std/assert";
+import { assert, assertEquals } from "@std/assert";
 
 import {
   buildXrpcUrl,
@@ -561,7 +561,7 @@ Deno.test("core pipeline: parseNsid → deriveDnsDomain → … → verifyRecord
 
 Deno.test("core pipeline: verification rejects mismatched records", () => {
   const nsid = asNsid("app.bsky.feed.post");
-  const parsed = unwrap(parseNsid(nsid));
+  unwrap(parseNsid(nsid));
 
   const dnsResult = parseDnsTxtRecords(
     [["did=did:plc:test"]],
@@ -592,7 +592,7 @@ Deno.test("core pipeline: verification rejects mismatched records", () => {
 
 Deno.test("core pipeline: fails early on NoLexiconDnsRecord", () => {
   const nsid = asNsid("app.bsky.feed.post");
-  const parsed = unwrap(parseNsid(nsid));
+  unwrap(parseNsid(nsid));
 
   const domain = asDomain("feed.bsky.app");
   const result = parseDnsTxtRecords([["v=spf1 mx ~all"]], domain);
