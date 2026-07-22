@@ -160,3 +160,85 @@ unrelated signer. It must additionally prove, in a two-PDS topology, that:
 - a mismatched key/`kid`, an unpublished prepared key, and a stale DID cache
   are rejected or retried safely; and
 - after the bounded overlap, minting cannot return the account-key credential.
+
+## Amendment: `appAccess#allowList` client attestation implemented; `managing-app` policy stays deferred
+
+### Context
+
+The original decision deliberately disabled `managing-app` and
+`appAccess#allowList` "until the PDS can validate a client attestation
+end-to-end." No upstream AT Protocol spec defines an attestation wire format
+— Proposal 0016 names the `managing-app` policy without specifying one — so
+enabling this required Garazyk to define its own minimal scheme rather than
+implement an existing standard.
+
+Reading the vendored `com.atproto.simplespace` lexicons during implementation
+surfaced that "managing-app" is actually two separable mechanisms, not one:
+
+- `appAccess#allowList` gates *app-mediated access* to an already-authorized
+  user's credential request. Its own lexicon doc comment says exactly what
+  attestation must prove: "evaluated against the attested client_id."
+- `policy: managing-app` gates *user membership itself*, delegated to a
+  `checkUserAccess` service-auth XRPC call the space authority makes to the
+  managing app (`com.atproto.simplespace.checkUserAccess`). This is a
+  different mechanism entirely — an outbound service-to-service call, not a
+  client-presented attestation — and was never in the disabled-scope note's
+  list of attestation requirements.
+
+### Decision
+
+Implement full client attestation for `appAccess#allowList` only. Leave
+`policy: managing-app` (and the bare `managingApp` field, which is only
+meaningful under that policy) rejected, since `checkUserAccess` calling is a
+separate, unimplemented feature and enabling the field without it would
+promise behavior the code does not provide.
+
+Attestation scheme (`PDSSpaceAppAttestationVerifier`, no upstream spec to
+follow, so recorded here as the source of truth): an app's `client_id` is an
+`https://` URL serving a JSON client metadata document, mirroring the
+existing ATProto OAuth dynamic-client convention this codebase already uses.
+The app must present a compact JWT (`typ:
+"atproto-space-app-attestation+jwt"`, `alg: "ES256"`) self-signed with a key
+published in that document's JWKS (`jwks` inline or fetched from `jwks_uri`),
+satisfying every requirement the original disabled-scope note listed:
+
+- `iss` and `sub` both equal the `client_id` (self-asserted app identity —
+  there is no third party being identified, unlike a delegation JWT);
+- `aud` equals this PDS's `#atproto_space_host` service identifier, so an
+  attestation minted for one PDS cannot be replayed against another;
+- the client metadata's own `client_id` field must equal the URL it was
+  served from;
+- the JWT header's `kid` must match a key in the resolved JWKS;
+- the signature must verify against that key;
+- `exp`/`iat` must be present, bound to a maximum 5-minute lifetime (this is
+  minted fresh per request, not a long-lived credential); and
+- the `jti` must not have been seen before, tracked in its own
+  `space_app_attestation_replay` table (kept separate from
+  `space_delegation_replay` — an app's own key is an independent trust domain
+  from delegation tokens this PDS mints itself, so a jti collision between
+  the two can never be mistaken for a real replay).
+
+A structural-only check remains explicitly not an option, matching the
+original decision: every successful verification proves the caller controls
+the private key published at the client_id's own metadata endpoint, via a
+real signature check against a key fetched over the network at verification
+time.
+
+### Consequences and verification
+
+`createSpace`/`updateSpace` now accept `appAccess#allowList` with a validated
+(https-shaped) `allowed` list; `policy: managing-app` and `managingApp`
+remain rejected with an error naming the reason. `getSpaceCredential` accepts
+an optional `appClientID`/`clientAttestation` pair, verifies it before
+evaluating `appAccessType`, and only authorizes non-`open` access when the
+attested client_id appears in the space's `appAllowed` list.
+`PDSSpaceAppAttestationVerifierTests` proves the signature/claims machinery
+directly (wrong issuer/audience/subject/algorithm/key-id, expired and
+overlong-lifetime tokens, tampered signatures, and same-jti replay all
+rejected) and, separately, the real client-metadata-plus-JWKS network fetch
+against a local HTTP server, including rejecting metadata whose own
+`client_id` disagrees with the URL it was served from.
+
+Revisiting `policy: managing-app` requires its own decision and its own
+`checkUserAccess` client implementation; it is not blocked by anything in
+this amendment.
