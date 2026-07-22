@@ -687,3 +687,14 @@ pre code { background: none; padding: 0; color: inherit; }
 @media (max-width: 540px) {
   .grid-3, .grid-4, .grid-2 { grid-template-columns: 1fr; }
 }
+
+/* Reduced motion (WCAG 2.2 SC 2.3.3) — suppresses spin/shimmer/pulse/fadeIn
+   above and the --transition-* properties. Selected from utilities.css. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
