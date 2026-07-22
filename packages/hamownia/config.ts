@@ -7,7 +7,7 @@ import {
 } from "@garazyk/schemat";
 import type { Topology } from "@garazyk/schemat";
 export type { ScenarioContext } from "./scenario_context.ts";
-import { Actor, ActorFactory, ActorTemplate } from "./actor.ts";
+import { type Actor, ActorFactory, type ActorTemplate } from "./actor.ts";
 export { Actor, ActorFactory, type ActorTemplate } from "./actor.ts";
 
 /** Browser client topology exposed through scenario configuration. */
