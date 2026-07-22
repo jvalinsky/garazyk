@@ -207,7 +207,7 @@
     event.ops = @[];
 
     [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
-    [NSThread sleepForTimeInterval:0.2];
+    [engine waitForIndexQueueDrainForTesting];
 
     AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:live" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
@@ -227,7 +227,7 @@
     event.ops = @[];
 
     [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
-    [NSThread sleepForTimeInterval:0.2];
+    [engine waitForIndexQueueDrainForTesting];
 
     NSError *err = nil;
     AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:newrepo" error:&err];
@@ -247,7 +247,7 @@
     event.ops = @[];
 
     [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
-    [NSThread sleepForTimeInterval:0.2];
+    [engine waitForIndexQueueDrainForTesting];
 
     NSError *error = nil;
     NSArray<NSDictionary *> *rows = [self.db executeParameterizedQuery:
@@ -277,7 +277,7 @@
 
     AppViewIngestEngine *engine = [[AppViewIngestEngine alloc] initWithDatabase:self.db relayURLs:@[]];
     [engine start];
-    [NSThread sleepForTimeInterval:0.2];
+    [engine waitForIndexQueueDrainForTesting];
     [engine stop];
 
     AppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:event.repo error:&error];
@@ -331,10 +331,8 @@
     // like highestSeenSeq which should be >= 5000 + iterations - 1
     // and that the database has the expected number of events.
     
-    // Wait for the engine's internal processing queue to finish
-    // Since it's serial now, we can just dispatch a sync block to it if we had access,
-    // or wait a bit.
-    [NSThread sleepForTimeInterval:1.0];
+    // Wait for the engine's internal processing queue to finish.
+    [engine waitForIndexQueueDrainForTesting];
     
     NSError *err = nil;
     NSArray *events = [self.db loadStoredEventsAfterCursor:0 limit:iterations * 3 error:&err];
