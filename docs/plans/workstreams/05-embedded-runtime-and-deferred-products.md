@@ -35,12 +35,13 @@ compatibility smoke required by server development.
 
 Do not reopen the completed 200-app corpus plan in this repository.
 
-## E3. Decide incomplete product surfaces
+## E3. Decide incomplete product surfaces — blocked on operator disposition (2026-07-22)
 
 The source tree advertises or exposes incomplete behavior:
 
 - SMTP delivery always fails;
-- cloud blob copy/delete paths return 501;
+- the configured cloud blob path is not wired into PDS startup; its provider's
+  listing and streaming methods return 501 (DELETE is implemented; there is no copy method);
 - STAR reconstruction from CAR blocks is incomplete;
 - Skylab has incomplete repost and Germ E2EE integration;
 - some scenario-dashboard process metadata remains a TODO.
@@ -49,6 +50,9 @@ For each surface choose support, explicit experimental status, or removal.
 Implementation plans require a user-visible contract, owner, and integration
 test. Configuration must not promise a feature that always returns
 `NotImplemented`.
+
+The evidence, recommended dispositions, exact code locations, and acceptance
+requirements are in [the Phase 10 product-surface decision brief](../phase-10-product-surface-decision-brief.md).
 
 ## E4. Deferred AppView pooling
 
