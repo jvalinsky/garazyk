@@ -17,6 +17,8 @@
 #include <unistd.h>
 
 NSString * const PDSOpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslkeymanager";
+NSString * const PDSOpenSSLActorKeyPurposeAccount = @"account";
+NSString * const PDSOpenSSLActorKeyPurposeSpace = @"space";
 
 @interface PDSOpenSSLKeyManager ()
 @property (nonatomic, strong, nullable) NSData *memoryKeyData;
@@ -25,10 +27,18 @@ NSString * const PDSOpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslkeym
 @implementation PDSOpenSSLKeyManager
 
 - (instancetype)initWithDid:(NSString *)did keystorePath:(NSString *)keystorePath {
+    return [self initWithDid:did keystorePath:keystorePath purpose:PDSOpenSSLActorKeyPurposeAccount];
+}
+
+- (instancetype)initWithDid:(NSString *)did
+                keystorePath:(NSString *)keystorePath
+                     purpose:(NSString *)purpose {
     self = [super init];
     if (self) {
         _did = [did copy];
         _keystorePath = [keystorePath copy];
+        _keyPurpose = [purpose isEqualToString:PDSOpenSSLActorKeyPurposeSpace]
+            ? PDSOpenSSLActorKeyPurposeSpace : PDSOpenSSLActorKeyPurposeAccount;
     }
     return self;
 }
@@ -194,7 +204,9 @@ NSString * const PDSOpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslkeym
 - (NSString *)privateKeyPath {
     NSString *sanitizedDid = [[self.did stringByReplacingOccurrencesOfString:@":" withString:@"_"]
                            stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
-    NSString *fileName = [NSString stringWithFormat:@"%@.secp256k1.key", sanitizedDid];
+    NSString *suffix = [self.keyPurpose isEqualToString:PDSOpenSSLActorKeyPurposeSpace]
+        ? @".space.secp256k1.key" : @".secp256k1.key";
+    NSString *fileName = [sanitizedDid stringByAppendingString:suffix];
     return [self.keystorePath stringByAppendingPathComponent:fileName];
 }
 

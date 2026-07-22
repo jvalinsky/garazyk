@@ -505,6 +505,53 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V4 Dedicated Space Signing Key Schema (Actor Store)
+
+@interface V4DedicatedSpaceSigningKeySchema : NSObject <PDSMigration>
+@end
+
+@implementation V4DedicatedSpaceSigningKeySchema
+
+- (NSInteger)version { return 4; }
+
+- (NSString *)name { return @"dedicated_space_signing_key"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *sql = "CREATE TABLE IF NOT EXISTS space_signing_keys ("
+                      "did TEXT PRIMARY KEY,"
+                      "private_key BLOB NOT NULL,"
+                      "public_key_compressed BLOB NOT NULL,"
+                      "created_at REAL NOT NULL,"
+                      "updated_at REAL NOT NULL)";
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+    if (rc == SQLITE_OK) return YES;
+    if (error) {
+        NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: message}];
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return NO;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "DROP TABLE IF EXISTS space_signing_keys", NULL, NULL, &errMsg);
+    if (rc == SQLITE_OK) return YES;
+    if (error) {
+        NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: message}];
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return NO;
+}
+
+@end
+
 #pragma mark - PDSMigrationManager Implementation
 
 @interface PDSMigrationManager ()
@@ -2011,6 +2058,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"actor"]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
     [manager registerMigration:[[V3RecordTombstonesWithoutRowid alloc] init]];
+    [manager registerMigration:[[V4DedicatedSpaceSigningKeySchema alloc] init]];
     return manager;
 }
 
