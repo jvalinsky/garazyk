@@ -1,7 +1,7 @@
 ---
 title: Storage and MST Optimization
 status: active
-last_verified: 2026-07-18
+last_verified: 2026-07-22
 ---
 
 # Storage and MST Optimization
@@ -554,6 +554,38 @@ the relay, and event/byte high and low watermarks control pause/resume.
 Focused AppView tests, `deno task check`, `deno task test`, and full gated
 `AllTests` passed on 2026-07-22. The workstream remains open on the repository
 lint baseline (2,043 unrelated Deno findings).
+
+**Crash found and fixed (2026-07-22, later same day).** A subsequent full
+`AllTests --gated=run` crashed deterministically (SIGSEGV, reproduced 100% of
+runs both plain and under AddressSanitizer) in
+`AppViewIngestEngineTests/testProcessedLiveCommitAdvancesRepoLastRev`, inside
+the O6 drain worker (`-[AppViewIngestEngine _drainIndexQueue]`). Investigation
+tracked in deciduous (goal 1354, commit-linked). Root cause, found by
+bisection: `-[AppViewIngestEngine _processCommitEvent:fromRelay:rawEnvelope:
+outputEvent:failureReason:]` wrote its produced `AppViewIngestEvent` into the
+caller's `__autoreleasing outputEvent` out-parameter as the last statement
+inside an `@autoreleasepool` block, immediately before that pool drained —
+the caller observed a corrupted (poison-pattern) pointer instead of the real
+object, deterministically, every time. Same class of bug as the
+already-documented `ATProtoVideoTranscoderIntegrationTests` use-after-free fix
+elsewhere in this codebase (writing to an out-parameter whose value must
+outlive a scope about to release/drain something). Fixed by staging the
+result in a plain `__strong` local declared before the pool opens and writing
+the real out-parameter only after the pool closes
+(`AppViewIngestEngine.m`). Two independently-useful hardening changes landed
+alongside it: `AppViewIngestEngineTests` no longer waits on a fixed
+`[NSThread sleepForTimeInterval:]` to approximate "the async queue drained" (a
+comment in the test file's `testConcurrencySafety` had flagged this as a
+known gap) — it now calls a new `-waitForIndexQueueDrainForTesting` that
+`dispatch_sync`s onto the same serial queue; and the previously-undeclared
+`_processCommitEvent:...` gained a proper forward declaration in the class
+extension. Verified: 8/8 clean runs on the plain build, a clean
+AddressSanitizer run (0 errors), and a full, unfiltered
+`AllTests --gated=run` (4030 tests, 0 crashes, 2 pre-existing non-crash
+failures unrelated to this fix — the already-tracked ADR 0007 interop
+question above, and a newly-noticed order-dependent singleton-state leak in
+`ATProtoVideoTranscoderUnitTests`/`PDSVideoWorkerTests.m:303-314` filed as a
+follow-up, not fixed here).
 
 **Problem:** If the firehose ingestion path does synchronous indexing
 (updating AppView tables, search index, etc.), ingest throughput is

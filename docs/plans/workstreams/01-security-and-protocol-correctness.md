@@ -1,7 +1,7 @@
 ---
 title: Security and Protocol Correctness
 status: active
-last_verified: 2026-07-17
+last_verified: 2026-07-19
 ---
 
 # Security and Protocol Correctness
@@ -309,51 +309,141 @@ twice from `PDSDatabaseLRUTests setUp` (22:12, 22:15). Undiagnosed;
 tracked as a follow-up. Possibly related to disk pressure given
 `PDSDatabase`'s use of SQLite, but not yet confirmed.
 
-**Regression discovered 2026-07-19 (during phase 8):** a full
-`AllTests --gated=run` (`build/tests/AllTests --gated=run`, full log
-`/tmp/alltests_phase8_gated.log`) is no longer clean — 12 suites now fail,
-roughly 68 individual assertion failures, contradicting the 2026-07-17
-"3454 tests, 0 failures" baseline above. None of the failing suites or
-files were touched by phase 8 (Admin UI/dashboard accessibility); this is
-tracked here rather than in the phase-08 prompt. Two root causes
-identified, the rest undiagnosed:
+**Regression discovered 2026-07-19 (during phase 8), fully root-caused and
+repaired 2026-07-22.** A full `AllTests --gated=run` was no longer clean —
+12 suites failed, roughly 68 individual assertion failures, contradicting
+the 2026-07-17 "3454 tests, 0 failures" baseline above. None of the
+failing suites or files were touched by phase 8 (Admin UI/dashboard
+accessibility). Each suite had its own isolated root cause (theorized
+2026-07-19 as mostly DID-format fixture debt; verified 2026-07-22 to be
+more varied — several were genuine product bugs, not just stale fixtures):
 
-- **DID-format/fixture mismatch (majority of failures):**
-  `PDSSQLiteRepositoryTests`, `PDSDatabaseWebAuthnTests`,
-  `PDSDatabaseModerationTests`, `PDSDatabaseAdminAuditTests`,
-  `PDSDatabaseOAuthClientsTests`, `PDSSequencerAnalyticsCollectorTests`,
-  `AppViewIndexerTests` all fail with `"Invalid DID for actor store path"`
-  or downstream nil/zero-count assertions. Root cause:
-  `+[ATProtoValidator validateDID:error:]`
-  (`Garazyk/Sources/.../ATProtoValidator.m`) requires `did:plc:`
-  identifiers to be exactly 24 lowercase-base32 characters; test fixtures
-  like `kTestDID = @"did:plc:repo123"` (7 chars) don't conform, so
-  `-[PDSDatabasePool dbPathForDid:]` refuses them. Both the validator
-  logic and the offending fixtures predate this session by many commits
-  (`07c96d421`, `65abe6e6f`) — this is old debt, not a new regression in
-  the code itself, but something changed to make it actually execute now
-  (see below).
-- **`MSTPreorderTests/testRefusesWhenFlagOff`:** fails deterministically
-  (reproduced 3/3 in isolation via `--filter "MSTPreorderTests*"`) with an
-  assertion message (`"Pre-order walk (records disabled) must succeed"`)
-  that belongs to a different helper (`capturePreorderMSTOnly:`) than the
-  one the failing test actually calls — either a test-name-attribution bug
-  in this project's custom `test_main` runner, or genuine cross-test state
-  leakage via the shared static `MST.streamableCARBlockOrderingEnabled`
-  flag. From phase 7's Sync 1.1 pre-order work (`ed01c8085`); needs its
-  own investigation.
-- **Undiagnosed:** `AtprotoInteropFixturesTests` (1/5),
-  `OAuthClientAuthPolicyTests` (1/30),
-  `ATProtoVideoProcessorTests`/`ATProtoVideoTranscoderUnitTests`
-  (MPEG signature validation, blob-provider default).
+- **DID-format fixtures (`PDSSQLiteRepositoryTests`).** `+[ATProtoValidator
+  validateDID:error:]` requires `did:plc:` identifiers to be exactly 24
+  lowercase-base32 characters; fixtures like `kTestDID = @"did:plc:repo123"`
+  (7 chars) don't conform, so `-[PDSDatabasePool dbPathForDid:]` refuses
+  them. Fixed the fixtures to valid-length DIDs. Two more bugs surfaced
+  once the DIDs validated: `recordWithURI:did:did:` hardcoded
+  `collection`/`rkey` regardless of the URI passed in (so two records with
+  different collections collided), and `PDSSQLiteRepoRepository
+  allReposWithError:` was declared in `PDSRepoRepository.h` but never
+  implemented — `PDSDatabasePool` already had the working
+  `getAllReposWithError:` (cached `knownDids`, falls back to a directory
+  walk only when empty); the repository method just never delegated to it.
+  Both fixed.
+- **`PDSDatabaseAdminAuditTests`:** fixture dictionaries used stale keys
+  (`actor`/`subject`/`comment`) that don't match
+  `insertAuditLogEntry:`'s real contract (`admin_did`/`subject_type`/
+  `subject_id`/`details`) — `admin_did` landed as `NSNull`, tripping the
+  column's `NOT NULL` constraint. Fixed the fixtures.
+- **`PDSDatabaseModerationTests`:** `createLabel:` never defaulted `cts`
+  (NOT NULL, no default) when the caller omitted it — a **real product
+  bug**, not just a test gap: `PDSAdminService.createLabel:` only computes
+  a fallback `cts` for the *response* dict, never for what's actually
+  inserted, so a real `chat.bsky` API caller omitting `cts` would hit the
+  same constraint failure. Fixed by stamping `cts` server-side in
+  `PDSDatabase+Moderation.m`, matching the pattern already used for
+  `created_at` elsewhere. Separately, `activateAccount:` only ever touched
+  `accounts.status`, never `admin_takedowns.applied` — so activating an
+  account after a takedown left `isAccountTakedownActive:` still reporting
+  active takedown. `activateAccount:` has zero production callers today, so
+  this was safe to fix directly: it now clears both. Test fixture also
+  needed a real `accounts` row (via `createAccount:`) before asserting on
+  `accountStatusForDid:`.
+- **`PDSDatabaseOAuthClientsTests`:** asserted on `client_name`, a field
+  `oauth_clients` has never had a column for (confirmed: not in
+  `Schema.m`'s DDL, not in any migration). Fixed the fixtures to assert on
+  `redirect_uris`, which the roundtrip actually persists.
+- **`AppViewIndexerTests` (`testGroupIndexerIndexGroup`/
+  `testGroupIndexerDeleteRecord`):** **real product bug.** AppView's
+  `groups`/`group_members` DDL (`AppViewDatabase.m`) used stale column
+  names (`id`, `group_id`, `member_did`, `joined_at`) that don't match what
+  `AppViewGroupIndexer.m` — the only reader/writer of these two
+  AppView-internal tables — actually writes/reads (`uri`, `cid`,
+  `group_uri`, `did`, `added_at`). `chat.bsky.group.definition` indexing
+  was completely broken (every insert failed with "no such table" / "no
+  such column"). Fixed the DDL to match the indexer's contract; no existing
+  data to migrate since every write had been failing.
+- **`PDSDatabaseWebAuthnTests`:** the test opened a bare `PDSDatabase` via
+  `databaseAtURL:` + `openWithError:`, which only runs
+  `pdsDatabaseMigrationManager` (V10-V12, the legacy monolithic schema).
+  `webauthn_credentials` lives in the *service* schema
+  (`PDSSchemaManager.serviceSchemaSQL`), which production only ever applies
+  through `PDSActorStore`'s `"__service__"` shard handling (see
+  `ServiceDatabases.serviceDatabaseWithError:`) — never through a bare
+  `PDSDatabase`. This is test-setup drift, not a production bug: real
+  WebAuthn/second-factor callers (`WebAuthnRegistrationHandler.m`,
+  `OAuth2Handler.m`, `PDSSecondFactorService.m`) always get their
+  `PDSDatabase` by way of `PDSActorStore`, so the service schema is always
+  present in production. Fixed the test to open a real `PDSActorStore` for
+  `PDSServiceStoreDID` instead of reimplementing its bootstrap sequence.
+  One more bug surfaced once the schema existed: `deleteWebAuthnCredential:`
+  used the generic `executeParameterizedUpdate:` helper, which only reports
+  SQL errors, not match count — deleting a nonexistent credential silently
+  "succeeded". Added an explicit `sqlite3_changes()` check.
+- **`PDSSequencerAnalyticsCollectorTests`:** two independent bugs.
+  `startCollecting` used `dispatch_async`, so `isCollecting` wasn't set by
+  the time the method returned — three tests raced the private queue.
+  Changed to `dispatch_sync` (the queue is private to this class; no
+  reentrancy risk). Separately, `currentSnapshot` never checked
+  `self.serviceDatabases` for nil before calling a method on it — Objective-C
+  message-to-nil returns zeroed values without touching the error
+  out-param, so the "no database configured" case silently returned a
+  zero-filled snapshot instead of `nil`. Added an explicit nil guard.
+- **`MSTPreorderTests/testRefusesWhenFlagOff`:** not a runner
+  attribution bug or cross-test leakage as first suspected — `
+  buildMultiLevelTree`'s stopping condition unconditionally calls
+  `capturePreorderMSTOnly:`, which itself requires the streamable-CAR flag
+  on. Every other test flips the flag on before calling
+  `buildMultiLevelTree`; this test intentionally leaves it off (to test
+  refusal), so tree construction itself failed before the test ever
+  exercised what it meant to test. Fixed by building the tree with the flag
+  on, then turning it off before the refusal assertions.
+- **`OAuthClientAuthPolicyTests/testValidateRequestParametersClientSecretInNonLegacyRejected`:**
+  `+[OAuthClientAuthPolicy legacyOAuthEnabled]` hardcodes `YES` for `DEBUG`
+  builds, so the non-legacy `client_secret` rejection path this test wants
+  to exercise is unreachable from any DEBUG-compiled test binary. Marked
+  `XCTSkip` with the reason recorded in the test; testing the non-legacy
+  path meaningfully needs a way to override the flag under test, which is
+  a separate follow-up.
+- **`ATProtoVideoProcessorTests` (MPEG signature validation):** **real
+  product bug.** `validateContentSignature:declaredMimeType:` rejected any
+  input under 12 bytes before checking format-specific signatures, even
+  though the MPEG/WebM/Ogg checks each only need 4 bytes and already gate
+  correctly on their own minimum length. Valid 4-byte MPEG signatures were
+  being rejected outright. Removed the blanket 12-byte gate.
+- **`AtprotoInteropFixturesTests/testInteropSignatureFixtures`
+  (1 of 5 fixtures) — genuinely open, needs a decision, not a test fix.**
+  `PLCAuditor.verifyP256Signature:` (used for `did:plc` operation
+  signatures) delegates to the same P-256 verifier ADR 0007 changed to
+  stop enforcing low-S. The failing fixture is a canonical interop test
+  vector asserting a non-low-S P-256 signature **is invalid** for atproto.
+  ADR 0007's rationale ("wrong for JOSE/DPoP/WebAuthn/PLC") explicitly
+  named PLC, so this may be intentional — but it now contradicts a
+  standard interop fixture, which is a protocol-compliance question, not
+  something to paper over by weakening the fixture or the test. Needs
+  review: does PLC operation verification specifically require low-S
+  (matching the reference implementation and the interop fixture), even if
+  DPoP/JOSE/WebAuthn correctly don't? Left failing, undocumented as
+  resolved, pending that decision.
+- Two suites (`ATProtoVideoTranscoderIntegrationTests`'s prior use-after-free
+  signature, and the null-pointer `PDSDatabase(Private) safeExecuteSync:`
+  crash from `PDSDatabaseBlobsTests`/`PDSDatabaseLRUTests`) did not
+  reproduce during this pass — both suites are green in isolation now. The
+  `safeExecuteSync:` null-pointer crash (above) remains recorded as an
+  unconfirmed, possibly disk-pressure-related flake since it didn't
+  reproduce enough times to root-cause.
 
-Working theory for why long-standing fixture debt is newly visible: these
-suites may not have been reaching `--gated=run` execution before (compare
-the "new XCTest suites need cmake reconfigure + `test_main.m`
-registration, else 0 tests silently run" trap already noted in this
-repo's operational lore) rather than a code change breaking previously-
-passing tests. Not confirmed — needs a bisect, which is out of scope for
-phase 8. Own lane.
+Working theory for why long-standing fixture debt was newly visible,
+confirmed: most of these suites' assertions were failing quietly all
+along but the specific code paths they exercise (actor-store DID
+validation, AppView group indexing, service-schema bootstrap) simply
+weren't reached until other changes (recent schema/migration work, gated
+tests folding into the default run) made them execute. Not one incident —
+a backlog of drift across test fixtures and two real product bugs
+(`createLabel:`'s missing `cts` default, and the AppView `groups` schema
+mismatch) that would have surfaced in production the first time each
+feature was actually exercised.
 
 ## S6. Published-spec conformance matrix
 

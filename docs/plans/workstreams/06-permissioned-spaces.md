@@ -1,7 +1,7 @@
 ---
 title: Permissioned Spaces Productionization
 status: active
-last_verified: 2026-07-18
+last_verified: 2026-07-22
 ---
 
 # Permissioned Spaces Productionization
