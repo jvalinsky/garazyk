@@ -1,4 +1,4 @@
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /**
  * Feed, timeline, post thread, and actor profile operations.
