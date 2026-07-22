@@ -27,7 +27,6 @@ import {
 } from "./cli/agent.ts";
 import {
   MultiSink,
-  NdjsonSink,
 } from "./events.ts";
 import type {
   RunFinishedEvent,
@@ -952,7 +951,7 @@ Deno.test("CLI: agent --help lists all subcommands", async () => {
 });
 
 Deno.test("CLI: agent list produces valid JSON array", async () => {
-  const { stdout, stderr, code } = await spawnCli(["agent", "list"]);
+  const { stdout, code } = await spawnCli(["agent", "list"]);
 
   assertEquals(code, 0);
 
@@ -1005,7 +1004,7 @@ Deno.test("CLI: agent list --topology produces valid filtered JSON", async () =>
 });
 
 Deno.test("CLI: agent list with specific scenario IDs", async () => {
-  const { stdout, stderr, code } = await spawnCli([
+  const { stdout, code } = await spawnCli([
     "agent",
     "list",
     "01",
@@ -1124,7 +1123,7 @@ Deno.test("CLI: agent run stdout contains valid NDJSON among log lines", async (
 });
 
 Deno.test("CLI: agent triage with non-existent reports-dir returns valid JSON", async () => {
-  const { stdout, stderr, code } = await spawnCli([
+  const { stdout, code } = await spawnCli([
     "agent",
     "triage",
     "--reports-dir",
@@ -1352,7 +1351,7 @@ Deno.test("CLI: agent run --keep-running flag accepted", async () => {
 Deno.test("CLI: agent run with all flags combined (tool invocation shape)", async () => {
   // This exactly mirrors what the opencode tool constructs when run with
   // setup, binary, pds2, keepRunning, verbose, runner, topology, runId, timeout
-  const { stderr, code } = await spawnCli([
+  const { stderr } = await spawnCli([
     "agent",
     "run",
     "--no-setup",
@@ -1380,7 +1379,7 @@ Deno.test("CLI: agent run with all flags combined (tool invocation shape)", asyn
 
 Deno.test("CLI: agent triage --run-id with valid format returns valid JSON", async () => {
   // Even with a run-id that doesn't exist, triage should return valid JSON
-  const { stdout, code } = await spawnCli([
+  const { stdout } = await spawnCli([
     "agent",
     "triage",
     "--run-id",
