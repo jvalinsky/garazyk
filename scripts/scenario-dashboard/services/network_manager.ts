@@ -33,6 +33,7 @@ import {
 } from "@garazyk/hamownia/atproto_network.ts";
 import {
   loadRunResourceManifest,
+  type RunResourceManifest,
   serviceUrlsFromResourceManifest,
 } from "@garazyk/schemat";
 
@@ -52,6 +53,25 @@ const HOST_SERVICE_ROLES = [
 function isDenoTestRun(): boolean {
   return Deno.mainModule.endsWith("_test.ts") ||
     Deno.mainModule.endsWith(".test.ts");
+}
+
+/**
+ * Health-probe URL for `role` from a resource manifest's typed
+ * `services[role].healthPath`, or null if the manifest is missing, malformed
+ * (no `services` map), or doesn't cover this role with both a `hostUrl` and
+ * a `healthPath`. Pulled out of `NetworkManager` as a pure function so the
+ * manifest-parsing logic is unit-testable without a running dashboard
+ * instance or an active run.
+ */
+export function healthUrlFromManifest(
+  manifest: RunResourceManifest | undefined,
+  name: string,
+  normalizedRole: string,
+): string | null {
+  const endpoint = manifest?.services?.[normalizedRole] ??
+    manifest?.services?.[name];
+  if (!endpoint?.hostUrl || !endpoint?.healthPath) return null;
+  return `${endpoint.hostUrl}${endpoint.healthPath}`;
 }
 
 /** Manages Docker service lifecycle, health checks, container stats, and log streaming. */
@@ -461,6 +481,37 @@ class NetworkManager {
     return name.replace(/^local-/, "");
   }
 
+  /**
+   * Health-probe URL from the active run's resource manifest, when one
+   * exists and names a `healthPath` for this role. Returns null (never
+   * throws) if there's no active run, no manifest, or the manifest doesn't
+   * cover this role - callers fall back to the heuristic `getHealthUrl`.
+   */
+  private manifestHealthUrlForRole(name: string): string | null {
+    const activeRun = runManager.getActiveRun();
+    const manifestPath = activeRun?.manifestPath ??
+      (activeRun?.runDir
+        ? join(activeRun.runDir, "resource-manifest.json")
+        : undefined);
+    if (!manifestPath) return null;
+
+    let manifest;
+    try {
+      manifest = loadRunResourceManifest(manifestPath);
+    } catch (e) {
+      console.warn(
+        `[network] failed to load resource manifest ${manifestPath} for health probe:`,
+        e,
+      );
+      return null;
+    }
+    return healthUrlFromManifest(
+      manifest,
+      name,
+      this.normalizeServiceRole(name),
+    );
+  }
+
   async healthCheck(): Promise<Record<string, ServiceStatus>> {
     if (this.services.size === 0) {
       this.seedBinaryServiceDefaults();
@@ -468,17 +519,17 @@ class NetworkManager {
 
     const results: Record<string, ServiceStatus> = {};
 
-    // If we have an active run, we should have a manifest with health probes
-    // TODO: Load manifest from activeRun.manifestPath if available
-
     const checks = [...this.services].map(async ([name, s]) => {
       if (s.status === "stopped") {
         return [name, s] as const;
       }
 
       try {
-        // Fallback to heuristic-based health checks if no manifest probes
-        const healthUrl = this.getHealthUrl(name, s.url);
+        // Prefer the active run's typed manifest health probe; fall back to
+        // the role-name heuristic when no run, no manifest, or no probe for
+        // this role is available.
+        const healthUrl = this.manifestHealthUrlForRole(name) ??
+          this.getHealthUrl(name, s.url);
         if (!healthUrl) {
           return [name, s] as const;
         }
