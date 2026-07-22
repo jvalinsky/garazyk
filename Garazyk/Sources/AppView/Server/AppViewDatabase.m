@@ -1204,9 +1204,16 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
     BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
         NSArray<NSDictionary *> *candidates = [database executeParameterizedQuery:
             @"SELECT relay_url, seq, event_type, did, rev, cid, raw_envelope, attempts "
-             "FROM appview_pending_index_events WHERE indexed_at IS NULL AND terminal_error IS NULL "
-             "AND (lease_expires_at IS NULL OR lease_expires_at <= ?) "
-             "ORDER BY relay_url ASC, seq ASC LIMIT ?"
+             "FROM appview_pending_index_events AS candidate "
+             "WHERE candidate.indexed_at IS NULL AND candidate.terminal_error IS NULL "
+             "AND (candidate.lease_expires_at IS NULL OR candidate.lease_expires_at <= ?) "
+             "AND NOT EXISTS ("
+             "  SELECT 1 FROM appview_pending_index_events AS earlier "
+             "  WHERE earlier.relay_url = candidate.relay_url "
+             "    AND earlier.seq < candidate.seq "
+             "    AND earlier.indexed_at IS NULL"
+             ") "
+             "ORDER BY candidate.relay_url ASC, candidate.seq ASC LIMIT ?"
             params:@[now, @(limit)] error:transactionError];
         if (!candidates) return NO;
         NSMutableArray<NSDictionary *> *accepted = [NSMutableArray arrayWithCapacity:candidates.count];
