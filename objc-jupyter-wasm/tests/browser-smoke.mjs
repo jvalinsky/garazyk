@@ -53,7 +53,8 @@ const baseUrl = `http://127.0.0.1:${port}`;
 const consoleErrors = [];
 
 try {
-  const browser = await chromium.launch();
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  const browser = await chromium.launch(executablePath ? { executablePath } : undefined);
   const page = await browser.newPage();
   page.on("console", (message) => {
     if (message.type() === "error") {
