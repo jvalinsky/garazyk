@@ -408,10 +408,15 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
                         }
                     }
 
-                    // Use state as defaults if not provided in request
+                    // Preserve every published verification method unless the
+                    // request explicitly adds or updates its exact fragment.
+                    // In particular, preparing #atproto_space must never
+                    // remove the account #atproto fallback during overlap.
                     if (state) {
                         if (rotationKeys.count == 0) rotationKeys = state.rotationKeys;
-                        if (verificationMethods.count == 0) verificationMethods = state.verificationMethods;
+                        NSMutableDictionary *mergedVerificationMethods = [state.verificationMethods mutableCopy] ?: [NSMutableDictionary dictionary];
+                        [mergedVerificationMethods addEntriesFromDictionary:verificationMethods ?: @{}];
+                        verificationMethods = mergedVerificationMethods;
                         if (alsoKnownAs.count == 0) alsoKnownAs = state.alsoKnownAs;
                         if (services.count == 0) services = state.services;
                     }
@@ -423,9 +428,11 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
         if (rotationKeys.count == 0) {
             rotationKeys = @[serverRotationKey];
         }
-        if (verificationMethods.count == 0) {
-            verificationMethods = @{@"atproto": signingDidKey};
+        NSMutableDictionary *finalVerificationMethods = [verificationMethods mutableCopy] ?: [NSMutableDictionary dictionary];
+        if (![finalVerificationMethods[@"atproto"] isKindOfClass:[NSString class]]) {
+            finalVerificationMethods[@"atproto"] = signingDidKey;
         }
+        verificationMethods = finalVerificationMethods;
         if (alsoKnownAs.count == 0) {
             PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
             if (account.handle.length > 0) {
