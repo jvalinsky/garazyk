@@ -7,6 +7,7 @@
 
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/TID.h"
+#import "Database/Connection/ATProtoConnectionManager.h"
 #import "Database/Connection/ATProtoConnectionManagerSerial.h"
 #import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
@@ -199,6 +200,47 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
 
 - (void)close {
   [self.connection close];
+}
+
+- (BOOL)createOnlineBackupAtPath:(NSString *)destinationPath error:(NSError **)error {
+  if (destinationPath.length == 0 || [destinationPath isEqualToString:self.databasePath]) {
+    if (error) *error = [self invalidWriteError:@"Backup destination must differ from the space database"];
+    return NO;
+  }
+  NSString *directory = [destinationPath stringByDeletingLastPathComponent];
+  if (![[NSFileManager defaultManager] createDirectoryAtPath:directory
+                                  withIntermediateDirectories:YES attributes:nil error:error]) return NO;
+
+  __block NSError *localError = nil;
+  __block BOOL copied = NO;
+  BOOL executed = [self.connection execute:^(sqlite3 *source) {
+    sqlite3 *destination = NULL;
+    if (sqlite3_open_v2(destinationPath.fileSystemRepresentation, &destination,
+                        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL) != SQLITE_OK) {
+      localError = PDSSpaceSQLiteError(destination, @"Unable to open space backup destination");
+      if (destination) sqlite3_close(destination);
+      return;
+    }
+    sqlite3_backup *backup = sqlite3_backup_init(destination, "main", source, "main");
+    if (!backup) {
+      localError = PDSSpaceSQLiteError(destination, @"Unable to initialize online space backup");
+      sqlite3_close(destination);
+      return;
+    }
+    int step = sqlite3_backup_step(backup, -1);
+    int finish = sqlite3_backup_finish(backup);
+    if (step != SQLITE_DONE || finish != SQLITE_OK) {
+      localError = PDSSpaceSQLiteError(destination, @"Unable to copy space database backup");
+    } else {
+      copied = YES;
+    }
+    sqlite3_close(destination);
+  } error:nil];
+  if (!executed || !copied) {
+    if (error) *error = localError ?: PDSSpaceSQLiteError(NULL, @"Unable to create space database backup");
+    return NO;
+  }
+  return YES;
 }
 
 - (BOOL)applyMigrations:(NSError **)error {

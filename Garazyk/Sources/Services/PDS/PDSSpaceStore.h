@@ -55,6 +55,13 @@ typedef NS_ENUM(NSInteger, PDSSpaceWriteAction) {
 - (nullable instancetype)initWithDatabasePath:(NSString *)databasePath
                                         error:(NSError **)error;
 - (instancetype)init NS_UNAVAILABLE;
+
+/**
+ * Creates a transactionally consistent SQLite backup at @c destinationPath.
+ * The SQLite online-backup API includes committed WAL content without relying
+ * on filesystem copying of an active database and its sidecars.
+ */
+- (BOOL)createOnlineBackupAtPath:(NSString *)destinationPath error:(NSError **)error;
 - (void)close;
 
 /** Creates an authority-owned space. Writer repositories materialize on first write. */
