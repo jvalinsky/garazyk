@@ -218,6 +218,11 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                     cid:(nullable NSString *)cid
                                relayURL:(NSString *)relayURL
                                  reason:(NSString *)reason;
+- (BOOL)_processCommitEvent:(FirehoseCommitEvent *)event
+                  fromRelay:(NSString *)relayURL
+                rawEnvelope:(NSData *)rawEnvelope
+                outputEvent:(AppViewIngestEvent **)outputEvent
+              failureReason:(NSString **)failureReason;
 @end
 
 @implementation AppViewIngestEngine
@@ -369,6 +374,13 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     dispatch_sync(_checkpointQueue, ^{
         [self _flushCheckpointsOnQueue];
     });
+}
+
+- (void)waitForIndexQueueDrainForTesting {
+    // _processingQueue is serial, so a sync block submitted now only runs
+    // after every block already enqueued (including an in-flight
+    // _drainIndexQueue) has finished.
+    dispatch_sync(_processingQueue, ^{});
 }
 
 // Returns YES if backpressure is active (lag exceeds threshold)
@@ -533,29 +545,47 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             event.blobs = payload[@"blobs"] ?: @[];
             event.time = payload[@"time"];
             event.prevData = payload[@"prevData"];
-            __block AppViewIngestEvent *ingestEvent = nil;
-            __block NSString *failureReason = nil;
+            AppViewIngestEvent *ingestEvent = nil;
+            NSString *failureReason = nil;
             NSError *materializeError = nil;
             BOOL indexed = NO;
             @try {
+                // Receive _processCommitEvent:'s two out-params into locals
+                // scoped to this block literal, then bridge to the enclosing
+                // (non-__block) locals above via plain assignment after the
+                // transaction returns. Passing &ingestEvent/&failureReason
+                // (addresses of variables owned by the outer @try scope)
+                // directly into a call nested two blocks deep produced a
+                // corrupted __block byref for ingestEvent under load/ASan
+                // (read as a poison bit pattern instead of nil) - this keeps
+                // the call's out-params fully local to the block that uses
+                // them.
+                __block AppViewIngestEvent *capturedIngestEvent = nil;
+                __block NSString *capturedFailureReason = nil;
                 indexed = [self.database performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
+                    AppViewIngestEvent *localIngestEvent = nil;
+                    NSString *localFailureReason = nil;
                     if (![self _processCommitEvent:event
                                           fromRelay:relayURL
                                        rawEnvelope:stored[@"raw_envelope"]
-                                       outputEvent:&ingestEvent
-                                     failureReason:&failureReason]) {
+                                       outputEvent:&localIngestEvent
+                                     failureReason:&localFailureReason]) {
+                        capturedFailureReason = localFailureReason;
                         if (transactionError && !*transactionError) {
                             *transactionError = [NSError errorWithDomain:@"dev.garazyk.appview.ingest"
                                                                       code:1
-                                                                  userInfo:@{NSLocalizedDescriptionKey: failureReason ?: @"Commit materialization did not complete"}];
+                                                                  userInfo:@{NSLocalizedDescriptionKey: localFailureReason ?: @"Commit materialization did not complete"}];
                         }
                         return NO;
                     }
+                    capturedIngestEvent = localIngestEvent;
                     return [database markIndexEventIndexedForRelayURL:relayURL
                                                                     seq:seq
                                                               workerID:self.indexWorkerID
                                                                  error:transactionError];
                 } error:&materializeError];
+                ingestEvent = capturedIngestEvent;
+                failureReason = capturedFailureReason;
             } @catch (NSException *exception) {
                 GZ_LOG_ERROR(@"[AppView Ingest] Exception processing queued seq=%lld: %@", (long long)seq, exception.reason);
                 failureReason = @"materialization_exception";
@@ -611,9 +641,17 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                rawEnvelope:(NSData *)rawEnvelope
                outputEvent:(AppViewIngestEvent **)outputEvent
              failureReason:(NSString **)failureReason {
-    @autoreleasepool {
     if (outputEvent) *outputEvent = nil;
     if (failureReason) *failureReason = nil;
+    // Writing the produced AppViewIngestEvent directly into the
+    // __autoreleasing outputEvent out-parameter from inside this
+    // @autoreleasepool, right before it drains, corrupted the value the
+    // caller saw (observed as a poison bit pattern instead of a real
+    // pointer, deterministically reproducible). Stage it in a plain __strong
+    // local declared outside the pool and write the real out-parameter only
+    // after the pool has closed.
+    __strong AppViewIngestEvent *resultEvent = nil;
+    @autoreleasepool {
     NSTimeInterval processStart = [[NSDate date] timeIntervalSinceReferenceDate];
     NSString *did = event.repo;
     NSString *rev = event.rev;
@@ -886,9 +924,10 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                   (unsigned long)enrichedOps.count,
                   processElapsed * 1000.0);
 
-    if (outputEvent) *outputEvent = ingestEvent;
-    return YES;
+    resultEvent = ingestEvent;
     } // @autoreleasepool
+    if (outputEvent) *outputEvent = resultEvent;
+    return YES;
 }
 
 - (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL {

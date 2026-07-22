@@ -191,6 +191,22 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
  */
 - (void)flushCheckpoints;
 
+/*!
+ @method waitForIndexQueueDrainForTesting
+
+ @abstract Blocks until every index-queue block already enqueued (via
+ _drainIndexQueue's dispatch_async) has finished running.
+
+ @discussion _handleCommitEvent:fromRelay: enqueues durable-queue processing
+ asynchronously on a private serial queue. Tests must call this before
+ asserting on database state or tearing down - a fixed sleep is not a real
+ synchronization guarantee and can race a test's tearDown (which may close
+ the underlying database) against still-running background work, corrupting
+ shared SQLite state. Only waits for work enqueued before this call, not any
+ work a still-running block goes on to enqueue afterward.
+ */
+- (void)waitForIndexQueueDrainForTesting;
+
 // ---------------------------------------------------------------------------
 // Internal methods (for delegate callbacks)
 // ---------------------------------------------------------------------------
