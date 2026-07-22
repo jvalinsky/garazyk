@@ -7,7 +7,6 @@ import {
   hasRequirement,
   isScenarioCompatible,
   missingRequirements,
-  type missingRequirementsDescription,
   needsPds2,
   normalizeScenarioRequirements,
 } from "./scenario_metadata.ts";

@@ -110,7 +110,7 @@ Deno.test("OperationStats: toDict rounds to 2 decimal places", () => {
 
 Deno.test("OperationTimer: measure returns the function's return value", async () => {
   const timer = new OperationTimer();
-  const result = await timer.measure("op", async () => "hello");
+  const result = await timer.measure("op", () => Promise.resolve("hello"));
   assertEquals(result, "hello");
 });
 
@@ -140,7 +140,7 @@ Deno.test("OperationTimer: measure propagates thrown errors and still records du
   const timer = new OperationTimer();
   let caught = false;
   try {
-    await timer.measure("op", async () => {
+    await timer.measure("op", () => {
       throw new Error("boom");
     });
   } catch {

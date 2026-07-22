@@ -9,13 +9,15 @@
 
 import type { Actor } from "./actor.ts";
 import type { XrpcClient } from "../../scripts/lib/deno/client.ts";
+import type { LexiconDefs } from "@garazyk/gruszka/lexicons.ts";
+import type { ProcedureOutput } from "@garazyk/gruszka";
 
 /** Options for creating a post task. */
 export interface PostOptions {
   text: string;
-  facets?: any[];
-  reply?: any;
-  embed?: any;
+  facets?: LexiconDefs["app.bsky.feed.post"]["main"]["facets"];
+  reply?: LexiconDefs["app.bsky.feed.post"]["main"]["reply"];
+  embed?: LexiconDefs["app.bsky.feed.post"]["main"]["embed"];
 }
 
 /** Options for creating a profile. */
@@ -46,12 +48,15 @@ export async function postStatus(
   client: XrpcClient,
   actor: Actor,
   options: PostOptions,
-): Promise<any> {
+): Promise<ProcedureOutput<"com.atproto.repo.createRecord">> {
   const r = record("app.bsky.feed.post", { text: options.text });
   if (options.facets) r.facets = options.facets;
   if (options.reply) r.reply = options.reply;
   if (options.embed) r.embed = options.embed;
-  return await client.as(actor).repo.createRecord({ collection: "app.bsky.feed.post", record: r });
+  return await client.as(actor).repo.createRecord({
+    collection: "app.bsky.feed.post",
+    record: r,
+  });
 }
 
 /**
@@ -66,7 +71,7 @@ export async function followUser(
   client: XrpcClient,
   follower: Actor,
   targetDid: string,
-): Promise<any> {
+): Promise<ProcedureOutput<"com.atproto.repo.createRecord">> {
   return await client.as(follower).repo.createRecord({
     collection: "app.bsky.graph.follow",
     record: record("app.bsky.graph.follow", { subject: targetDid }),
@@ -85,7 +90,7 @@ export async function likePost(
   client: XrpcClient,
   actor: Actor,
   targetPost: { uri: string; cid: string },
-): Promise<any> {
+): Promise<ProcedureOutput<"com.atproto.repo.createRecord">> {
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.feed.like",
     record: record("app.bsky.feed.like", { subject: targetPost }),
@@ -104,7 +109,7 @@ export async function blockUser(
   client: XrpcClient,
   actor: Actor,
   targetDid: string,
-): Promise<any> {
+): Promise<ProcedureOutput<"com.atproto.repo.createRecord">> {
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.graph.block",
     record: record("app.bsky.graph.block", { subject: targetDid }),
@@ -123,7 +128,7 @@ export async function createProfile(
   client: XrpcClient,
   actor: Actor,
   profile: ProfileOptions,
-): Promise<any> {
+): Promise<ProcedureOutput<"com.atproto.repo.createRecord">> {
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.actor.profile",
     record: record("app.bsky.actor.profile", profile as Record<string, unknown>),
@@ -143,7 +148,7 @@ export async function deleteRecord(
   actor: Actor,
   collection: string,
   rkey: string,
-): Promise<any> {
+): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">> {
   return await client.as(actor).repo.deleteRecord({ collection, rkey });
 }
 
@@ -159,7 +164,7 @@ export async function repost(
   client: XrpcClient,
   actor: Actor,
   targetPost: { uri: string; cid: string },
-): Promise<any> {
+): Promise<ProcedureOutput<"com.atproto.repo.createRecord">> {
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.feed.repost",
     record: record("app.bsky.feed.repost", { subject: targetPost }),
@@ -178,7 +183,7 @@ export async function muteUser(
   client: XrpcClient,
   actor: Actor,
   targetDid: string,
-): Promise<any> {
+): Promise<void> {
   return await client.as(actor).graph.muteActor(targetDid);
 }
 
@@ -194,6 +199,6 @@ export async function unmuteUser(
   client: XrpcClient,
   actor: Actor,
   targetDid: string,
-): Promise<any> {
+): Promise<void> {
   return await client.as(actor).graph.unmuteActor(targetDid);
 }
