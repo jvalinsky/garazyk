@@ -60,3 +60,23 @@ full-state CAR reconciliation after oplog pruning; that case is covered by
 the three-path reconciliation protocol (incremental ops, lightweight record
 diff, full CAR import) implemented in PDSSpaceReconciler and awaiting a
 dedicated multi-PDS reconciliation scenario.
+
+## Upstream drift cadence
+
+Run `scripts/check_permissioned_spaces_drift.sh` monthly and whenever the
+Proposal 0016 discussion or [implementation PR 5187](https://github.com/bluesky-social/atproto/pull/5187)
+changes. The read-only check compares the pinned proposal commit
+[`1caad93`](https://github.com/bluesky-social/proposals/commit/1caad93dbb1f445396f6abf3b97eb4040345e78e),
+the pinned implementation commit
+[`3f6c96d`](https://github.com/bluesky-social/atproto/commit/3f6c96d5d2d25438bd40fa89d6ecc37865f8e354),
+and every vendored `com.atproto.space`/`com.atproto.simplespace` lexicon.
+It exits nonzero on drift and never regenerates or re-pins automatically.
+
+On drift: save the textual diff, assess each protocol and compatibility impact
+in this document, decide whether to retain or replace the local extension,
+then update the pin and regenerate lexicons only in that reviewed change.
+
+**First run (2026-07-22T05:36:04Z): clean.** Proposal HEAD remained
+`1caad93`; PR 5187 still pointed at `3f6c96d`; all 28 vendored space lexicons
+matched byte-for-byte. The Proposal README's only post-implementation change
+was a link to PR 5187, so it has no implementation impact.
