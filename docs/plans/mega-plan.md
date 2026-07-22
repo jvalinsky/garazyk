@@ -177,7 +177,7 @@ better-isolated steps.
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
 | SMTP, cloud blob, and STAR completion         |             3 |               3 |             3 |             2 |      3 | Blocked: operator decision |
-| Space app attestation (managing-app)          |             4 |               2 |             3 |             2 |      3 | Decision needed |
+| Space app attestation (`appAccess#allowList`)  |             4 |               2 |             3 |             2 |      3 | Decided (ADR 0004 amendment) |
 
 ## Dependency order
 
@@ -411,10 +411,13 @@ removals without caller proof.
    supported products. Remove configuration promises for rejected features.
 3. Keep AppView QueryRunner/pooling deferred until migration safety is fixed and
    measured contention justifies a concurrency change.
-4. Decide whether to implement full end-to-end app attestation for the
-   permissioned-spaces `managing-app` policy or keep it rejected until
-   upstream standardizes it (workstream 06, P6.3). A structural-only check
-   is not an option.
+4. **Complete (2026-07-22):** app attestation for permissioned-spaces
+   `appAccess#allowList` is fully implemented (client metadata, JWKS, key
+   identifier, signature, issuer/subject equality, audience, expiry, nonce
+   replay, app identity), recorded as an ADR 0004 amendment (workstream 06,
+   P6.3). `policy: managing-app` itself stays rejected by design pending a
+   separate `checkUserAccess` service-auth client, which the original
+   disabled-scope note never described.
 5. Track Proposal 0016 upstream drift on a monthly cadence (workstream 06,
    P6.4); re-pin, re-diff, and record impact before adopting any upstream
    change. `permissionedSpacesEnabled` stays off by default until the

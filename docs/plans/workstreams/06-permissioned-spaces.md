@@ -151,22 +151,34 @@ key. It proved that a remote PDS accepts both the pre-cutover `#atproto`
 credential and a newly minted `#atproto_space` credential during the bounded
 overlap window.
 
-## P6.3 App attestation decision (decision needed)
+## P6.3 App attestation decision (complete for `appAccess#allowList`)
 
-`managing-app` policy and `appAccess#allowList` are rejected rather than
-weakened (ADR 0004). Before any implementation, decide:
+`managing-app` policy and `appAccess#allowList` were rejected rather than
+weakened (ADR 0004). The operator chose option 1 (2026-07-22): implement full
+end-to-end attestation validation rather than keep the configuration rejected.
 
-1. implement full end-to-end attestation validation (client metadata, JWKS,
-   signature, issuer/subject, audience, expiry, nonce replay, app identity);
-2. or keep the configuration rejected until upstream standardizes
-   attestation.
+**Complete (2026-07-22): `appAccess#allowList` client attestation
+implemented.** `PDSSpaceAppAttestationVerifier` validates client metadata,
+JWKS resolution, key identifier, signature, issuer/subject equality,
+audience, expiry, and nonce replay — every requirement the original
+disabled-scope note listed, with no structural-only shortcut. `createSpace`/
+`updateSpace` now accept `appAccess#allowList`; `getSpaceCredential` verifies
+a presented attestation before authorizing non-open app-mediated access.
+Recorded as an ADR 0004 amendment with the full attestation scheme (no
+upstream spec defines one). `PDSSpaceAppAttestationVerifierTests` covers the
+claim/signature machinery directly plus one real client-metadata-and-JWKS
+network fetch.
 
-A merely structural check is not an option. Record the choice as an ADR
-amendment; only option 1 creates implementation work.
-
-**Blocked (2026-07-22): awaiting the operator's selection.** The current safe
-behavior continues to reject both configurations. The decision brief is in
-the Phase 9 prompt; a structural-only check remains out of scope.
+**Still deferred, by design: `policy: managing-app`.** Reading the
+`com.atproto.simplespace` lexicons during implementation found that
+`managing-app` is two separable mechanisms: `appAccess#allowList` (client
+attestation, done above) and `policy: managing-app` (delegates membership
+authorization to the managing app's own `checkUserAccess` service-auth XRPC
+endpoint — a service-to-service call, not client attestation, and never
+described by the original disabled-scope note). `policy: managing-app` and
+the bare `managingApp` field remain rejected; enabling them needs a
+`checkUserAccess` client implementation, which is its own separate decision
+and its own scoped work, not blocked by anything here.
 
 ## P6.4 Upstream drift tracking (ongoing)
 

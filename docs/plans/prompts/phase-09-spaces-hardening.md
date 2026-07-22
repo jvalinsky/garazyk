@@ -1,10 +1,11 @@
 ---
 phase: 9
 title: Permissioned spaces production hardening
-status: blocked
+status: complete
 agent: worker
 depends_on: [2]
 last_updated: 2026-07-22
+completed_at: 2026-07-22
 ---
 
 ## Progress
@@ -51,11 +52,17 @@ dedicated key, issued a new `#atproto_space` credential, and proved a remote
 PDS accepts that credential and the pre-cutover `#atproto` credential during
 overlap.
 
-**Blocked (2026-07-22): P6.3 operator decision.** The remaining work is the
-explicit choice between full end-to-end app attestation and continuing to
-reject `managing-app`/`appAccess#allowList` until upstream standardizes the
-attestation model. The plan forbids a structural-only implementation; no
-implementation can proceed without this choice.
+**Complete (2026-07-22): P6.3 operator decision and implementation.** The
+operator chose full end-to-end app attestation over continued rejection.
+`PDSSpaceAppAttestationVerifier` implements it in full for
+`appAccess#allowList` (client metadata, JWKS, key identifier, signature,
+issuer/subject equality, audience, expiry, nonce replay, app identity - no
+structural-only shortcut), wired into `createSpace`/`updateSpace`/
+`getSpaceCredential`, covered by `PDSSpaceAppAttestationVerifierTests`, and
+recorded as an ADR 0004 amendment. `policy: managing-app` itself stays
+rejected by design: it requires a separate `checkUserAccess` service-auth
+client call that the original disabled-scope note never described, so it is
+out of scope here rather than blocked.
 
 # Phase 9: Permissioned spaces production hardening
 
