@@ -1258,6 +1258,25 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
         params:@[message ?: @"Unknown indexing error", relayURL, @(seq), workerID] error:dbError];
 }
 
+- (nullable NSDictionary<NSString *, NSNumber *> *)pendingIndexQueueMetricsForRelayURL:(NSString *)relayURL
+                                                                                   error:(NSError **)error {
+    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:
+        @"SELECT "
+         "COALESCE(SUM(CASE WHEN indexed_at IS NULL AND terminal_error IS NULL THEN 1 ELSE 0 END), 0) AS event_count, "
+         "COALESCE(SUM(CASE WHEN indexed_at IS NULL AND terminal_error IS NULL THEN LENGTH(raw_envelope) ELSE 0 END), 0) AS envelope_bytes, "
+         "COALESCE(SUM(CASE WHEN terminal_error IS NOT NULL THEN 1 ELSE 0 END), 0) AS terminal_count "
+         "FROM appview_pending_index_events "
+         "WHERE relay_url = ?"
+        params:@[relayURL] error:error];
+    if (!rows) return nil;
+    NSDictionary *row = rows.firstObject ?: @{};
+    return @{
+        @"event_count": row[@"event_count"] ?: @0,
+        @"envelope_bytes": row[@"envelope_bytes"] ?: @0,
+        @"terminal_count": row[@"terminal_count"] ?: @0,
+    };
+}
+
 // ---------------------------------------------------------------------------
 // Relevance Set
 // ---------------------------------------------------------------------------

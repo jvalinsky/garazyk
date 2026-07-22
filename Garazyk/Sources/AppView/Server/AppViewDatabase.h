@@ -135,6 +135,10 @@ extern NSString * const AppViewDatabaseErrorDomain;
                                     error:(NSString *)message
                                    dbError:(NSError **)dbError;
 
+/** Returns pending queue depth and raw-envelope bytes for one relay. */
+- (nullable NSDictionary<NSString *, NSNumber *> *)pendingIndexQueueMetricsForRelayURL:(NSString *)relayURL
+                                                                                   error:(NSError **)error;
+
 @end
 
 /*!
