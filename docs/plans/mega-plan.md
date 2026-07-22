@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-19
+last_verified: 2026-07-22
 ---
 
 # Garazyk Mega Plan
@@ -115,7 +115,17 @@ documentation, TUI, package, and refactor plans.
   RelayUpstreamManager forward them, AppViewIngestEngine persists them
   (`28641e671`, `a3f8d3c53`), proven E2E by scenario 97 (`7bde0e0b6`).
   Scenarios 93-97 all exist beyond the original 92 discovered in May.
-  Evidence in workstream 01 S5.
+  Evidence in workstream 01 S5. A later regression (discovered 2026-07-19,
+  12 suites/~68 failures, unrelated to phase 8's own changes) is now fully
+  root-caused and repaired (2026-07-22): stale/mismatched test fixtures
+  across seven suites, plus three real product bugs found along the
+  way — `PDSAdminService.createLabel:` could insert a NOT NULL `cts`
+  column as null via the real API path, AppView's `groups`/`group_members`
+  schema didn't match what `AppViewGroupIndexer.m` actually writes (making
+  `chat.bsky.group.definition` indexing entirely non-functional), and
+  `PDSSequencerAnalyticsCollector.startCollecting` raced its own queue.
+  Full detail and one still-open protocol-compliance question (a P-256
+  low-S interop fixture now contradicting ADR 0007) in workstream 01 S5.
 - Workstream 07 (storage and MST optimization) is underway: O1 landed
   (`3be4ee1ab` — `INSERT OR IGNORE` for `ipld_blocks`, plus 15 more
   `INSERT OR REPLACE` → `ON CONFLICT DO UPDATE` conversions, six missing
@@ -129,8 +139,13 @@ documentation, TUI, package, and refactor plans.
   byte-identical. O5 is complete: resolver TTLs are enforced and AppView
   `#identity` events invalidate the shared DID cache. O6 is implemented under
   accepted ADR 0008: a durable, leased SQLite ingest/index queue with atomic
-  acknowledgement, recovery, and watermarked backpressure. Workstream global
-  gates remain before Phase 11 can close. A dedicated skill exists at
+  acknowledgement, recovery, and watermarked backpressure. A deterministic
+  SIGSEGV found in the O6 drain worker after the initial checkpoint (an
+  `@autoreleasepool` draining before the caller could safely read a written
+  out-parameter — see workstream 07 O6) is root-caused and fixed; a full
+  `AllTests --gated=run` and an AddressSanitizer run are both clean.
+  Workstream global gates remain open only on the repository-wide lint
+  baseline before Phase 11 can close. A dedicated skill exists at
   `.agents/skills/sqlite-performance-optimization`.
 
 ## Priority model
