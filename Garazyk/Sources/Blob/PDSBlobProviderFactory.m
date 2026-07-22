@@ -31,7 +31,19 @@ NSString * const PDSBlobProviderFactoryErrorDomain = @"com.atproto.pds.blobprovi
     if ([storageType isEqualToString:@"disk"]) {
         return [self diskBlobProviderWithConfiguration:configuration error:error];
     } else if ([storageType isEqualToString:@"s3"]) {
-        return [self cloudStorageBlobProviderWithConfiguration:configuration error:error];
+        // Removed per the Phase 10 product-surface decision (docs/plans/
+        // phase-10-product-surface-decision-brief.md): PDSApplication never
+        // actually wires this factory's result into the PDS data path (it
+        // hardcodes PDSDiskBlobProvider at startup), and the provider's own
+        // listAllCIDs/streaming retrieval return 501. A configured s3 type
+        // could look valid while never actually taking effect.
+        if (error) {
+            *error = [NSError errorWithDomain:PDSBlobProviderFactoryErrorDomain
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                @"S3-compatible blob storage is not supported; use \"disk\""}];
+        }
+        return nil;
     } else {
         if (error) {
             *error = [NSError errorWithDomain:PDSBlobProviderFactoryErrorDomain
