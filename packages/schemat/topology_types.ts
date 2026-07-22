@@ -9,7 +9,6 @@ import {
   DEFAULT_SERVICE_NAMES,
   type KnownServiceRole,
   ROLE_ENV_REGISTRY,
-  type roleEnvKey,
 } from "./topology_registry.ts";
 import type {
   ContainerSpec,

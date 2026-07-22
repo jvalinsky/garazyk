@@ -80,8 +80,6 @@ import {
   internalUrlForRole,
   loadTopologyManifest,
   publicUrlForRole,
-  type roleToEnvKey,
-  type sanitizeTopologyName,
   serviceNameForRole,
 } from "./topology_manifest.ts";
 import type {
@@ -96,12 +94,7 @@ import type {
   TopologyResolveOptions,
   WebClientTopology,
 } from "./topology_types.ts";
-import {
-  type defaultRolePort,
-  defaultServiceName,
-  type KnownServiceRole,
-  type roleEnvKey,
-} from "./topology_registry.ts";
+import { defaultServiceName } from "./topology_registry.ts";
 import {
   loadRunResourceManifest,
   serviceUrlsFromResourceManifest,
@@ -119,20 +112,7 @@ function readEnv(name: string): string | undefined {
   }
 }
 
-const publicWebUrl = readEnv("WEB_CLIENT_URL") || "http://localhost:2591";
-const internalWebUrl = readEnv("WEB_CLIENT_INTERNAL_URL") ||
-  "http://web-client:2590";
 const oauthClientUrl = readEnv("OAUTH_CLIENT_URL");
-
-function health(url: string) {
-  return {
-    url,
-    intervalSeconds: 5,
-    timeoutSeconds: 5,
-    retries: 30,
-    startPeriodSeconds: 20,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Preset loading
@@ -480,9 +460,9 @@ export function resolveTopology(
   }
 
   let preset: TopologyPreset | undefined;
-  let capabilities = new Set<string>();
-  let capabilitiesByRole: Record<string, Set<string>> = {};
-  let serviceNames: Record<string, string> = {};
+  const capabilities = new Set<string>();
+  const capabilitiesByRole: Record<string, Set<string>> = {};
+  const serviceNames: Record<string, string> = {};
   let internalUrls: Record<string, string> = {};
 
   if (topologyName) {
