@@ -242,23 +242,9 @@ Deno.test("FirehoseClient.handleMessage: does not invoke callback for invalid fr
   );
 });
 
-Deno.test("FirehoseClient: subscribe cursor defaults to lastSeq", async () => {
+Deno.test("FirehoseClient: subscribe cursor defaults to lastSeq", () => {
   const client = new FirehoseClient("ws://localhost:2584");
   client.lastSeq = 999;
-
-  // Spy on the subscribe URL construction
-  let capturedCursor: string | null = null;
-  const url = new URL(
-    `ws://localhost:2584/xrpc/com.atproto.sync.subscribeRepos`,
-  );
-  const effectiveCursor = undefined;
-  // The subscribe method uses `cursor ?? this.lastSeq` for the effective cursor
-  // We simulate by checking the default fallback
-  const fallbackCursor = effectiveCursor ?? client.lastSeq;
-  if (fallbackCursor !== undefined) {
-    url.searchParams.append("cursor", String(fallbackCursor));
-  }
-  capturedCursor = url.searchParams.get("cursor");
 
   // Verify subscribe would pass cursor=999
   const wsUrl = new URL(`${client.wsUrl}/xrpc/com.atproto.sync.subscribeRepos`);
