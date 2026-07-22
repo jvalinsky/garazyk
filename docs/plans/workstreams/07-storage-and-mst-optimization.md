@@ -555,6 +555,30 @@ Focused AppView tests, `deno task check`, `deno task test`, and full gated
 `AllTests` passed on 2026-07-22. The workstream remains open on the repository
 lint baseline (2,043 unrelated Deno findings).
 
+**Lint baseline closed (2026-07-22, later same day).** `deno task lint`
+(`deno lint packages/ --ignore=packages/gruszka/lexicons.ts`) went from 2,043
+findings to 0. Fixed in six slices, one per package plus an initial mechanical
+pass: an auto-fix pass for `verbatim-module-syntax`/`prefer-const` (2043 ->
+1755), then gruszka's `client.ts`/`clients/*.ts` (`no-explicit-any`, mostly
+dead `Promise<any>` return annotations on methods that already forward to
+`TransportLayer`'s `unknown`-defaulted generics — two real exceptions kept
+concrete lexicon-generated types where downstream code reads specific
+properties, and one dynamic-proxy index signature stays `any` with a
+`deno-lint-ignore`, matching existing precedent), the rest of gruszka
+(`require-await`, `no-import-prefix`/`no-unversioned-import`,
+`no-unused-vars`), schemat (`no-unused-vars`, `no-explicit-any` including a
+real discriminated-union narrowing fix in `normalizeDiagnostics`,
+`prefer-const`), hamownia (`require-await`, `no-explicit-any` against real
+generated types in `tasks.ts`, `no-unused-vars`), and narzedzia+tui
+(`no-unused-vars`, `require-await`, misplaced `deno-lint-ignore no-control-regex`
+comments, `no-slow-types`). One cross-package integration break surfaced only
+after merging two independently-worked slices together: hamownia's `tasks.ts`
+declared concrete `ProcedureOutput<...>` return types that no longer matched
+gruszka's now-`unknown`-typed generic `ActorRepoClient.createRecord`/
+`deleteRecord` — fixed with explicit casts at each call site. Verified after
+every merge: `deno task check`, `deno task lint`, `deno task test` (7572
+passed, 0 failed).
+
 **Crash found and fixed (2026-07-22, later same day).** A subsequent full
 `AllTests --gated=run` crashed deterministically (SIGSEGV, reproduced 100% of
 runs both plain and under AddressSanitizer) in

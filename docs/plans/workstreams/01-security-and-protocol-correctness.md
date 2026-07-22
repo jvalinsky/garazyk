@@ -412,20 +412,20 @@ more varied — several were genuine product bugs, not just stale fixtures):
   though the MPEG/WebM/Ogg checks each only need 4 bytes and already gate
   correctly on their own minimum length. Valid 4-byte MPEG signatures were
   being rejected outright. Removed the blanket 12-byte gate.
-- **`AtprotoInteropFixturesTests/testInteropSignatureFixtures`
-  (1 of 5 fixtures) — genuinely open, needs a decision, not a test fix.**
-  `PLCAuditor.verifyP256Signature:` (used for `did:plc` operation
-  signatures) delegates to the same P-256 verifier ADR 0007 changed to
-  stop enforcing low-S. The failing fixture is a canonical interop test
-  vector asserting a non-low-S P-256 signature **is invalid** for atproto.
-  ADR 0007's rationale ("wrong for JOSE/DPoP/WebAuthn/PLC") explicitly
-  named PLC, so this may be intentional — but it now contradicts a
-  standard interop fixture, which is a protocol-compliance question, not
-  something to paper over by weakening the fixture or the test. Needs
-  review: does PLC operation verification specifically require low-S
-  (matching the reference implementation and the interop fixture), even if
-  DPoP/JOSE/WebAuthn correctly don't? Left failing, undocumented as
-  resolved, pending that decision.
+- **`AtprotoInteropFixturesTests/testInteropSignatureFixtures` — resolved
+  (2026-07-22).** The decision this item was pending: does PLC operation
+  verification specifically require low-S (matching the reference
+  implementation and the interop fixture), even though DPoP/JOSE/WebAuthn
+  correctly don't? Yes — did:plc's own spec defines low-S as part of what
+  makes a signature valid, independent of curve, and ADR 0007's blast-radius
+  list was wrong to include `PLCAuditor` among the paths that should accept
+  both S forms. `PLCAuditor.verifyP256Signature:` now calls
+  `[AuthCryptoECDSA isLowS:error:]` and rejects non-canonical signatures
+  before verification, local to that caller only — `AuthCryptoJWK`'s shared
+  verifier (DPoP/JWT/WebAuthn) is unchanged and still accepts both forms, so
+  ADR 0007's original fix for those callers is unaffected. Full evidence
+  trail in ADR 0007's 2026-07-22 amendment. All 5 interop fixtures now pass;
+  new regression test `PLCAuditorTests/testAuditorRejectsHighSP256Signature`.
 - Two suites (`ATProtoVideoTranscoderIntegrationTests`'s prior use-after-free
   signature, and the null-pointer `PDSDatabase(Private) safeExecuteSync:`
   crash from `PDSDatabaseBlobsTests`/`PDSDatabaseLRUTests`) did not

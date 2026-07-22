@@ -124,8 +124,11 @@ documentation, TUI, package, and refactor plans.
   schema didn't match what `AppViewGroupIndexer.m` actually writes (making
   `chat.bsky.group.definition` indexing entirely non-functional), and
   `PDSSequencerAnalyticsCollector.startCollecting` raced its own queue.
-  Full detail and one still-open protocol-compliance question (a P-256
-  low-S interop fixture now contradicting ADR 0007) in workstream 01 S5.
+  Full detail in workstream 01 S5. The one protocol-compliance question
+  raised there (a P-256 low-S interop fixture contradicting ADR 0007) is
+  **resolved (2026-07-22)**: `PLCAuditor` now enforces low-S locally
+  (ADR 0007 amendment), leaving the shared DPoP/JWT/WebAuthn verifier
+  unchanged.
 - Workstream 07 (storage and MST optimization) is underway: O1 landed
   (`3be4ee1ab` — `INSERT OR IGNORE` for `ipld_blocks`, plus 15 more
   `INSERT OR REPLACE` → `ON CONFLICT DO UPDATE` conversions, six missing
@@ -172,7 +175,7 @@ better-isolated steps.
 | Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | P2              |
 | Dedicated space signing key rotation          |             4 |               2 |             3 |             3 |      4 | P2              |
 | Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | P2              |
-| Storage and MST optimization (workstream 07)  |             3 |               3 |             4 |             4 |      4 | P1              |
+| Storage and MST optimization (workstream 07)  |             3 |               3 |             4 |             4 |      4 | Complete (phase 11) |
 | Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
@@ -392,13 +395,17 @@ remaining program does not depend on items 1-2.
    vendor extension, now with test coverage (3 new cases,
    `PDSRepositoryServiceTests.m`). See the phase-07 prompt for full
    detail.
-8. **In progress (2026-07-18):** storage and MST optimization
-   ([workstream 07](workstreams/07-storage-and-mst-optimization.md)).
-   Done: `INSERT OR IGNORE` for `ipld_blocks` plus index/PRAGMA hardening
-   (`3be4ee1ab`), and `WITHOUT ROWID` phases A/B (`fc1705696`,
-   `50f2482c2`+`2f7ba5bdb`). Remaining: `WITHOUT ROWID` phases C/D (chat,
-   space store), lazy MST subtree hydration, covering indexes, DID/handle
-   resolution caching audit, and ingest/indexing decoupling.
+8. **Complete (2026-07-22):** storage and MST optimization
+   ([workstream 07](workstreams/07-storage-and-mst-optimization.md), phase 11).
+   All lanes done: `INSERT OR IGNORE`/index/PRAGMA hardening (O1),
+   `WITHOUT ROWID` phases A-D including chat and space store (O2), lazy MST
+   subtree hydration (O3), the evidence-backed `records(rev)` covering index
+   (O4), DID/handle resolution caching audit (O5), and the durable
+   ingest/indexing queue with backpressure and dead-letter retention (O6,
+   ADR 0008). The repo-wide `deno task lint` baseline this phase left open
+   (2,043 findings) is also closed to 0 — see workstream 07's O6 checkpoint
+   for the per-package breakdown and one cross-package integration fix it
+   required.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
