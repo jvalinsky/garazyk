@@ -189,6 +189,13 @@ entries removed for each run. `PDSSpaceStoreTests` verifies the transactional
 count; reconciler recovery-path observability and the restore/downgrade drills
 remain.
 
+**Progress (2026-07-22): reconciler observability complete.** The reconciler
+emits credential-free structured events for outbound replay attempts/outcomes,
+inbound reconciliation attempts, detected cursor gaps, and the selected
+incremental, lightweight, or full-CAR path. Operators can now observe both
+convergence components without reading SQLite. Backup/restore and
+downgrade-retention drills remain.
+
 ## Primary sources
 
 - Proposal 0016, pinned `3f6c96d5d2d25438bd40fa89d6ecc37865f8e354`

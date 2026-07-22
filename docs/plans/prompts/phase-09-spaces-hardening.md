@@ -21,6 +21,12 @@ now emits a structured, credential-free event with the exact number of removed
 entries and configured retention; failures emit a separate failure event. The
 store API reports its count transactionally, covered by `PDSSpaceStoreTests`.
 
+**Slice 3 complete (2026-07-22): P6.5 reconciliation observability.** The
+reconciler now emits credential-free structured events for replay attempts and
+outcomes, reconciliation attempts, gap detection, and the selected
+incremental/lightweight/full-CAR recovery path. This adds no protocol state or
+behavior; the targeted native space suite remains green.
+
 # Phase 9: Permissioned spaces production hardening
 
 ## Mission
