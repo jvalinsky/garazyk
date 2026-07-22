@@ -56,8 +56,17 @@
     XCTAssertFalse(isActive, @"Account should no longer be in takedown state");
 }
 
-- (void)testDeactivateAndReinstateAccount {
+- (void)testDeactivateAndActivateAccount {
     NSString *did = @"did:plc:mod-deactivate";
+
+    PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+    account.did = did;
+    account.handle = @"mod-deactivate.test";
+    account.status = @"active";
+    account.createdAt = [[NSDate date] timeIntervalSince1970];
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    NSError *createError = nil;
+    XCTAssertTrue([self.database createAccount:account error:&createError], @"fixture account creation should succeed: %@", createError);
 
     NSError *error = nil;
     BOOL deactivated = [self.database deactivateAccount:did error:&error];
@@ -65,11 +74,15 @@
     XCTAssertNil(error);
 
     NSString *status = [self.database accountStatusForDid:did error:&error];
-    XCTAssertNotNil(status);
+    XCTAssertEqualObjects(status, @"deactivated");
     XCTAssertNil(error);
 
-    BOOL reinstated = [self.database reinstateAccount:did error:&error];
-    XCTAssertTrue(reinstated, @"reinstateAccount should succeed");
+    BOOL activated = [self.database activateAccount:did error:&error];
+    XCTAssertTrue(activated, @"activateAccount should succeed");
+    XCTAssertNil(error);
+
+    status = [self.database accountStatusForDid:did error:&error];
+    XCTAssertEqualObjects(status, @"active");
     XCTAssertNil(error);
 }
 
