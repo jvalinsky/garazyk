@@ -11,8 +11,11 @@
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 
-static NSString * const kTestDID = @"did:plc:repo123";
-static NSString * const kTestDID2 = @"did:plc:repo456";
+// did:plc identifiers must be exactly 24 lowercase base32 chars (see
+// ATProtoValidator validateDID:) - the actor store path derivation rejects
+// anything shorter.
+static NSString * const kTestDID = @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa";
+static NSString * const kTestDID2 = @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb";
 
 @interface PDSSQLiteRepositoryTests : XCTestCase {
     NSString *_tempDir;
@@ -74,11 +77,18 @@ static NSString * const kTestDID2 = @"did:plc:repo456";
 }
 
 - (PDSDatabaseRecord *)recordWithURI:(NSString *)uri did:(NSString *)did {
+    // AT-URI shape: at://<did>/<collection>/<rkey> - derive collection/rkey
+    // from the actual URI rather than hardcoding, so callers passing distinct
+    // collections/rkeys (e.g. testRecordListForDID) get distinct records.
+    NSArray<NSString *> *components = [uri componentsSeparatedByString:@"/"];
+    NSString *collection = components.count >= 2 ? components[components.count - 2] : @"app.bsky.actor.profile";
+    NSString *rkey = components.count >= 1 ? components[components.count - 1] : @"self";
+
     PDSDatabaseRecord *rec = [[PDSDatabaseRecord alloc] init];
     rec.uri = uri;
     rec.did = did;
-    rec.collection = @"app.bsky.actor.profile";
-    rec.rkey = @"self";
+    rec.collection = collection;
+    rec.rkey = rkey;
     rec.cid = @"bafyreicid";
     rec.createdAt = [NSDate date];
     rec.value = @"{}";
@@ -147,8 +157,10 @@ static NSString * const kTestDID2 = @"did:plc:repo456";
 
 - (void)testAccountRepoListPagination {
     for (int i = 0; i < 5; i++) {
+        // did:plc identifiers must be exactly 24 lowercase base32 chars; pad
+        // with 'a' and vary a single trailing base32 digit ('2'-'7') for uniqueness.
         PDSDatabaseAccount *a = [self accountWithDID:
-            [NSString stringWithFormat:@"did:plc:pg%d", i]
+            [NSString stringWithFormat:@"did:plc:pg%caaaaaaaaaaaaaaaaaaaaa", (char)('2' + i)]
                                              handle:[NSString stringWithFormat:@"pg%d.test", i]];
         [_accountRepo saveAccount:a error:nil];
     }
@@ -502,7 +514,7 @@ static NSString * const kTestDID2 = @"did:plc:repo456";
 
 - (void)testRepoAllRepos {
     for (int i = 0; i < 3; i++) {
-        NSString *did = [NSString stringWithFormat:@"did:plc:all%d", i];
+        NSString *did = [NSString stringWithFormat:@"did:plc:all%caaaaaaaaaaaaaaaaaaaa", (char)('2' + i)];
         [_repoRepo createRepo:[self repoWithDID:did] error:nil];
     }
 
