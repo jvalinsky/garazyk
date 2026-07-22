@@ -510,17 +510,54 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             event.blobs = payload[@"blobs"] ?: @[];
             event.time = payload[@"time"];
             event.prevData = payload[@"prevData"];
+            __block AppViewIngestEvent *ingestEvent = nil;
+            __block NSString *failureReason = nil;
+            NSError *materializeError = nil;
             BOOL indexed = NO;
             @try {
-                indexed = [self _processCommitEvent:event fromRelay:relayURL];
+                indexed = [self.database performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
+                    if (![self _processCommitEvent:event
+                                          fromRelay:relayURL
+                                       rawEnvelope:stored[@"raw_envelope"]
+                                       outputEvent:&ingestEvent
+                                     failureReason:&failureReason]) {
+                        if (transactionError && !*transactionError) {
+                            *transactionError = [NSError errorWithDomain:@"dev.garazyk.appview.ingest"
+                                                                      code:1
+                                                                  userInfo:@{NSLocalizedDescriptionKey: failureReason ?: @"Commit materialization did not complete"}];
+                        }
+                        return NO;
+                    }
+                    return [database markIndexEventIndexedForRelayURL:relayURL
+                                                                    seq:seq
+                                                              workerID:self.indexWorkerID
+                                                                 error:transactionError];
+                } error:&materializeError];
             } @catch (NSException *exception) {
                 GZ_LOG_ERROR(@"[AppView Ingest] Exception processing queued seq=%lld: %@", (long long)seq, exception.reason);
+                failureReason = @"materialization_exception";
             }
             if (indexed) {
-                NSError *ackError = nil;
-                if (![self.database markIndexEventIndexedForRelayURL:relayURL seq:seq workerID:self.indexWorkerID error:&ackError]) {
-                    GZ_LOG_WARN(@"[AppView Ingest] Failed to acknowledge indexed seq=%lld: %@", (long long)seq, ackError.localizedDescription);
+                [self.database markDurableCursor:seq forRelayURL:relayURL];
+                _eventsSinceLastFlush++;
+                if (_eventsSinceLastFlush >= 100) {
+                    _eventsSinceLastFlush = 0;
+                    dispatch_async(_checkpointQueue, ^{
+                        [self _flushCheckpointsOnQueue];
+                    });
                 }
+                id<AppViewIngestEngineDelegate> delegate = self.delegate;
+                if (ingestEvent && delegate && [delegate respondsToSelector:@selector(ingestEngine:didReceiveCommit:)]) {
+                    dispatch_async(_eventQueue, ^{
+                        [delegate ingestEngine:self didReceiveCommit:ingestEvent];
+                    });
+                }
+            } else if (failureReason) {
+                GZ_LOG_WARN(@"[AppView Ingest] Materialization deferred for queued seq=%lld: %@ (%@)",
+                            (long long)seq, failureReason, materializeError.localizedDescription);
+                [self _persistDirtyRepairMarkerForDID:event.repo seq:seq rev:event.rev
+                                                   cid:event.commit ? event.commit.stringValue : nil
+                                              relayURL:relayURL reason:failureReason];
             }
         }
         if (events.count == 100 && self.acceptingIndexWork) {
@@ -529,15 +566,19 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     });
 }
 
-- (BOOL)_processCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL {
+- (BOOL)_processCommitEvent:(FirehoseCommitEvent *)event
+                  fromRelay:(NSString *)relayURL
+               rawEnvelope:(NSData *)rawEnvelope
+               outputEvent:(AppViewIngestEvent **)outputEvent
+             failureReason:(NSString **)failureReason {
     @autoreleasepool {
+    if (outputEvent) *outputEvent = nil;
+    if (failureReason) *failureReason = nil;
     NSTimeInterval processStart = [[NSDate date] timeIntervalSinceReferenceDate];
     NSString *did = event.repo;
     NSString *rev = event.rev;
     NSString *cid = event.commit ? [event.commit stringValue] : nil;
     int64_t seq   = event.seq;
-    // FIXME: replace with actual envelope from FirehoseCommitEvent; dummy is a placeholder
-    NSData *dummy = [NSData data];
 
     NSError *err = nil;
     AppViewRepoSyncState *syncState = [_database loadRepoSyncStateForDID:did error:&err];
@@ -553,6 +594,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 [delegate ingestEngine:self didDetectGapForDID:did atSeq:seq];
             });
         }
+        if (failureReason) *failureReason = @"continuity_gap";
         return NO;
     }
 
@@ -572,6 +614,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         if (!reader) {
             GZ_LOG_WARN(@"[AppView Ingest] Failed to parse blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
             [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"car_parse_failed"];
+            if (failureReason) *failureReason = @"car_parse_failed";
             return NO;
         }
     }
@@ -713,6 +756,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 GZ_LOG_WARN(@"[AppView Ingest] Failed to store record %@ seq=%lld: %@",
                              uri, (long long)seq, recordError.localizedDescription);
                 [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"record_store_failed"];
+                if (failureReason) *failureReason = @"record_store_failed";
                 return NO;
             }
         } else if ([action isEqualToString:@"delete"]) {
@@ -721,6 +765,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 GZ_LOG_WARN(@"[AppView Ingest] Failed to delete record %@ seq=%lld: %@",
                              uri, (long long)seq, deleteError.localizedDescription);
                 [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"record_delete_failed"];
+                if (failureReason) *failureReason = @"record_delete_failed";
                 return NO;
             }
         }
@@ -744,6 +789,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             GZ_LOG_WARN(@"[AppView Ingest] Failed to store block for %@ seq=%lld: %@",
                          did, (long long)seq, blockError.localizedDescription);
             [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"block_store_failed"];
+            if (failureReason) *failureReason = @"block_store_failed";
             return NO;
         }
     }
@@ -757,26 +803,21 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     ingestEvent.cid        = cid;
     ingestEvent.eventType  = @"#commit";
     ingestEvent.ops        = [enrichedOps copy];
-    ingestEvent.rawEnvelope = dummy;
+    ingestEvent.rawEnvelope = rawEnvelope;
     ingestEvent.receivedAt  = [NSDate date];
 
     // Check repo sync status — buffer if backfill in-flight
     if (syncState && syncState.status == AppViewRepoSyncStatusProcessing) {
         // Buffer the delta; it will be replayed after backfill completes
         AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
-            initWithDID:did seq:seq commitCID:cid ?: @"" rev:rev ?: @"" rawEnvelope:dummy];
-        [_database enqueuePendingDelta:delta error:nil];
+            initWithDID:did seq:seq commitCID:cid ?: @"" rev:rev ?: @"" rawEnvelope:rawEnvelope];
+        NSError *deltaError = nil;
+        if (![_database enqueuePendingDelta:delta error:&deltaError]) {
+            if (failureReason) *failureReason = @"pending_delta_enqueue_failed";
+            return NO;
+        }
         GZ_LOG_DEBUG(@"[AppView Ingest] Buffered delta for in-flight backfill: did=%@", did);
-        [_database markDurableCursor:seq forRelayURL:relayURL];
-        return NO;
-    }
-
-    // Dispatch to delegate
-    id<AppViewIngestEngineDelegate> delegate = self.delegate;
-    if (delegate && [delegate respondsToSelector:@selector(ingestEngine:didReceiveCommit:)]) {
-        dispatch_async(_eventQueue, ^{
-            [delegate ingestEngine:self didReceiveCommit:ingestEvent];
-        });
+        return YES;
     }
 
     // Advance the per-repo live cursor only after the commit has been materialized.
@@ -793,21 +834,9 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             GZ_LOG_WARN(@"[AppView Ingest] Failed to advance repo sync state for %@ seq=%lld: %@",
                          did, (long long)seq, stateError.localizedDescription);
             [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"sync_state_update_failed"];
+            if (failureReason) *failureReason = @"sync_state_update_failed";
             return NO;
         }
-    }
-
-    [_database markDurableCursor:seq forRelayURL:relayURL];
-
-    // Event-driven checkpoint: flush immediately when lag is significant
-    // (every 100 events) to keep the durable cursor advancing even under
-    // heavy load when the timer-based flush hasn't fired yet.
-    _eventsSinceLastFlush++;
-    if (_eventsSinceLastFlush >= 100) {
-        _eventsSinceLastFlush = 0;
-        dispatch_async(_checkpointQueue, ^{
-            [self _flushCheckpointsOnQueue];
-        });
     }
 
     NSTimeInterval processElapsed = [[NSDate date] timeIntervalSinceReferenceDate] - processStart;
@@ -817,6 +846,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                   (unsigned long)enrichedOps.count,
                   processElapsed * 1000.0);
 
+    if (outputEvent) *outputEvent = ingestEvent;
     return YES;
     } // @autoreleasepool
 }
