@@ -180,6 +180,16 @@ typedef NS_ENUM(NSInteger, PDSSpaceWriteAction) {
                         now:(NSDate *)now
                       error:(NSError **)error;
 
+/**
+ * Atomically records a managing-app attestation jti, in its own replay table
+ * (a remote app's key is an independent trust domain from delegation tokens
+ * this PDS itself mints). NO means it has already been consumed.
+ */
+- (BOOL)consumeAppAttestationID:(NSString *)jti
+                       expiresAt:(NSDate *)expiresAt
+                             now:(NSDate *)now
+                           error:(NSError **)error;
+
 #pragma mark - Oplog pruning
 
 /** Deletes oplog entries for a single repo, keeping at most @c keepCount
