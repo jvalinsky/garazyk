@@ -186,6 +186,15 @@ change, and the protocol team expects spec-level changes through summer
    proposal stabilizes; enabling it earlier is an explicit operator decision
    per ADR 0004.
 
+**Progress (2026-07-22): drift cadence established.**
+`scripts/check_permissioned_spaces_drift.sh` compares the pinned Proposal
+0016 commit, pinned atproto implementation commit, PR 5187 head, and all
+vendored space lexicons without writing or regenerating anything. Its first
+run at `2026-07-22T05:36:04Z` was clean: Proposal HEAD and PR head remained
+pinned and all 28 local lexicons matched byte-for-byte. The only Proposal
+README delta after the implementation commit is a link to PR 5187, with no
+compatibility impact; the full procedure is in the compatibility document.
+
 ## P6.5 Operational readiness (P2, after P6.1)
 
 1. Backup/restore drill: back up the space SQLite database plus WAL

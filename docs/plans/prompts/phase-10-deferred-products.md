@@ -1,7 +1,7 @@
 ---
 phase: 10
 title: Deferred products, WASM baseline, and drift cadence
-status: pending
+status: in-progress
 agent: default
 depends_on: []
 ---
@@ -14,6 +14,16 @@ Clear the "Decision needed" ledger: regenerate the WASM capability
 baseline, decide the incomplete product surfaces, and stand up the
 recurring Proposal 0016 upstream-drift check. Mostly decision briefs — the
 implementation load depends on what the operator chooses.
+
+## Progress
+
+**Slice 1 complete (2026-07-22): P6.4 drift cadence.**
+`scripts/check_permissioned_spaces_drift.sh` is the monthly read-only check
+for the pinned Proposal 0016 source, atproto PR 5187 implementation commit,
+and vendored space lexicons. The first run at `2026-07-22T05:36:04Z` found no
+drift: both upstream references remained pinned and all 28 lexicons matched
+byte-for-byte. The compatibility document records the source links, response
+to a future nonzero result, and the only documentation-only upstream delta.
 
 ## Read first
 
