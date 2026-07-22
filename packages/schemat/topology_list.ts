@@ -15,7 +15,7 @@ export interface TopologyPresetSummary {
  *
  * @returns The available topology presets sorted by name.
  */
-export async function listTopologyPresets(): Promise<TopologyPresetSummary[]> {
+export function listTopologyPresets(): TopologyPresetSummary[] {
   const presetsMap = new Map<string, TopologyPresetSummary>();
 
   for (const name of TopologyRegistry.listPresets()) {
