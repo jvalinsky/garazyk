@@ -6,6 +6,8 @@
 #import "Network/RateLimiter.h"
 #import "Sync/Relay/EventFormatter.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Database/Pool/DatabasePool.h"
 
 @interface RepoAuthIdentityTests : RepoAuthXrpcTestBase
 @end
@@ -78,6 +80,26 @@
                                                             body:@{@"operation": operation}
                                                          headers:@{@"authorization": authHeader}];
     XCTAssertEqual(submitResponse.statusCode, 200);
+}
+
+- (void)testIdentitySignsOperationWithDedicatedSpaceVerificationMethod {
+    PDSActorStore *store = [self.application.userDatabasePool storeForDid:self.did1 error:nil];
+    XCTAssertTrue([store generateSpaceSigningKeyWithError:nil]);
+    NSString *spaceKey = [store spaceSigningDIDKeyStringWithError:nil];
+    XCTAssertTrue([spaceKey hasPrefix:@"did:key:z"]);
+
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
+                                                              body:@{}
+                                                           headers:@{@"authorization": authHeader}];
+    NSString *token = requestSignature.jsonBody[@"token"];
+    XCTAssertNotNil(token);
+    HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
+                                                          body:@{ @"token": token,
+                                                                  @"verificationMethods": @{ @"atproto_space": spaceKey } }
+                                                       headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(signResponse.statusCode, 200);
+    XCTAssertEqualObjects(signResponse.jsonBody[@"operation"][@"verificationMethods"][@"atproto_space"], spaceKey);
 }
 
 - (void)testIdentityUpdateHandleUniquenessReturns409 {

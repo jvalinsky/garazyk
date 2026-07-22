@@ -114,6 +114,28 @@
     [db close];
 }
 
+- (void)testPrepareSpaceKeyIsIdempotentAndReturnsOnlyPublicMaterial {
+    NSArray *createArgs = @[@"create", @"--email", @"space@example.com", @"--handle", @"space.example.com", @"--password", @"password123"];
+    XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:createArgs context:self.context], 0);
+
+    NSString *dbPath = [[self.tempDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    XCTAssertTrue([db openWithError:nil]);
+    NSString *actorDID = [db getAccountByHandle:@"space.example.com" error:nil].did;
+    [db close];
+
+    self.context.jsonOutput = YES;
+    NSArray *spaceArgs = @[@"prepare-space-key", actorDID];
+    XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:spaceArgs context:self.context], 0);
+    NSDictionary *first = self.context.jsonOutputs.lastObject;
+    NSString *firstKey = first[@"verificationMethods"][@"atproto_space"];
+    XCTAssertTrue([firstKey hasPrefix:@"did:key:z"]);
+
+    XCTAssertEqual([self.dispatcher dispatchWithCommandName:@"account" arguments:spaceArgs context:self.context], 0);
+    NSDictionary *second = self.context.jsonOutputs.lastObject;
+    XCTAssertEqualObjects(second[@"verificationMethods"][@"atproto_space"], firstKey);
+}
+
 - (void)testCreateAccountMissingArguments {
     NSArray *args = @[@"create", @"--email", @"test@example.com"];
     
