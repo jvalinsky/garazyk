@@ -129,6 +129,13 @@ against primary/tertiary light and dark surfaces and every on-fill text pair
 at WCAG AA's 4.5:1 threshold. Zoom/reflow, focus, touch-target, and narrow
 keyboard-order verification remain.
 
+**Progress (2026-07-22):** The `garazyk-ui` asset copy is now a file-dependent
+build target rather than a `POST_BUILD` side effect. Every change, addition,
+or deletion under `AdminUIServer/Assets` rebuilds `build/bin/Assets`; the
+build target replaces the managed output directory so removed source assets
+cannot linger. `AdminUIAssetsSync` is registered with CTest and compares the
+source/build inventories and SHA-256 hashes.
+
 ## U6. Structural cleanup
 
 After U1-U4:
