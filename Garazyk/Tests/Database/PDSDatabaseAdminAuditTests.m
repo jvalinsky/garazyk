@@ -38,10 +38,10 @@
 
 - (void)testInsertAuditLogEntry {
     NSDictionary *entry = @{
-        @"actor": @"did:plc:admin1",
+        @"admin_did": @"did:plc:admin1",
         @"action": @"account.takedown",
-        @"subject": @"did:plc:target1",
-        @"comment": @"Spam account",
+        @"subject_id": @"did:plc:target1",
+        @"details": @"Spam account",
     };
 
     NSError *error = nil;
@@ -52,10 +52,10 @@
 
 - (void)testQueryAuditLog {
     NSDictionary *entry = @{
-        @"actor": @"did:plc:admin2",
+        @"admin_did": @"did:plc:admin2",
         @"action": @"account.suspend",
-        @"subject": @"did:plc:target2",
-        @"comment": @"Review pending",
+        @"subject_id": @"did:plc:target2",
+        @"details": @"Review pending",
     };
     [self.database insertAuditLogEntry:entry error:nil];
 
@@ -70,14 +70,14 @@
 
 - (void)testQueryAuditLogFiltered {
     NSDictionary *entry1 = @{
-        @"actor": @"did:plc:admin3",
+        @"admin_did": @"did:plc:admin3",
         @"action": @"account.takedown",
-        @"subject": @"did:plc:target3",
+        @"subject_id": @"did:plc:target3",
     };
     NSDictionary *entry2 = @{
-        @"actor": @"did:plc:admin3",
+        @"admin_did": @"did:plc:admin3",
         @"action": @"record.delete",
-        @"subject": @"did:plc:target4",
+        @"subject_id": @"did:plc:target4",
     };
     [self.database insertAuditLogEntry:entry1 error:nil];
     [self.database insertAuditLogEntry:entry2 error:nil];
@@ -97,9 +97,9 @@
 
 - (void)testDeleteAuditLogsOlderThanDays {
     NSDictionary *entry = @{
-        @"actor": @"did:plc:admin4",
+        @"admin_did": @"did:plc:admin4",
         @"action": @"config.update",
-        @"subject": @"pds.mode",
+        @"subject_id": @"pds.mode",
     };
     [self.database insertAuditLogEntry:entry error:nil];
 
