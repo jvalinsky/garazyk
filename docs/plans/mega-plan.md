@@ -126,7 +126,10 @@ documentation, TUI, package, and refactor plans.
   actor V5 `records(rev)` covering index), and O3 are complete. The production
   MST path starts root-only and its 256-entry lazy subtree cache has a 10K
   profile proving 7 path loads versus 2,507 eager loads; CAR/STAR fixtures are
-  byte-identical. O5-O6 remain. A dedicated skill exists at
+  byte-identical. O5 is complete: resolver TTLs are enforced and AppView
+  `#identity` events invalidate the shared DID cache. O6 is blocked at its
+  required operator-review checkpoint in ADR 0008; it proposes a durable,
+  leased SQLite ingest/index queue with watermarked backpressure. A dedicated skill exists at
   `.agents/skills/sqlite-performance-optimization`.
 
 ## Priority model
