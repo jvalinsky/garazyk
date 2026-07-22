@@ -313,6 +313,29 @@
     XCTAssertNotNil(signature, @"Signing should still work after repeated key generation: %@", signError);
 }
 
+- (void)testSpaceSigningKeyIsSeparateFromAccountSigningKey {
+    NSError *error = nil;
+    if (![self.store generateSigningKeyWithError:&error]) {
+        XCTSkip(@"Account signing key generation unavailable: %@", error);
+        return;
+    }
+    NSString *accountKey = [self.store didKeyStringWithError:&error];
+    XCTAssertNotNil(accountKey, @"Account DID key should be available: %@", error);
+
+    error = nil;
+    if (![self.store generateSpaceSigningKeyWithError:&error]) {
+        XCTSkip(@"Space signing key generation unavailable: %@", error);
+        return;
+    }
+    NSString *spaceKey = [self.store spaceSigningDIDKeyStringWithError:&error];
+    XCTAssertNotNil(spaceKey, @"Space DID key should be available: %@", error);
+    XCTAssertFalse([accountKey isEqualToString:spaceKey], @"Space credentials require distinct key material");
+
+    NSData *payload = [@"space-credential" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signature = [self.store.spaceKeyManager signData:payload error:&error];
+    XCTAssertNotNil(signature, @"Dedicated space signer should sign: %@", error);
+}
+
 - (void)testRecordCount {
     __autoreleasing NSError *error = nil;
     
