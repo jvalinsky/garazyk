@@ -1,5 +1,5 @@
 /** Social graph operations (follows, blocks, mutes, starter packs) @module graph */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for social graph XRPC methods such as follows, blocks, mutes, and lists. */
 export class GraphClient {
@@ -19,7 +19,7 @@ export class GraphClient {
   async getFollows(
     actor: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getFollows",
       { actor, limit: options.limit ?? 50 },
@@ -37,7 +37,7 @@ export class GraphClient {
   async getFollowers(
     actor: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getFollowers",
       { actor, limit: options.limit ?? 50 },
@@ -52,7 +52,7 @@ export class GraphClient {
    * @returns A promise that resolves to the list of blocked actors
    * @throws XrpcError if the request fails
    */
-  async getBlocks(token: string, limit = 50): Promise<any> {
+  async getBlocks(token: string, limit = 50): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getBlocks",
       { limit },
@@ -67,7 +67,7 @@ export class GraphClient {
    * @returns A promise that resolves to the list of muted actors
    * @throws XrpcError if the request fails
    */
-  async getMutes(token: string, limit = 50): Promise<any> {
+  async getMutes(token: string, limit = 50): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getMutes",
       { limit },
@@ -82,7 +82,7 @@ export class GraphClient {
    * @returns A promise that resolves to the mute response
    * @throws XrpcError if the request fails
    */
-  async muteActor(actorDid: string, token: string): Promise<any> {
+  async muteActor(actorDid: string, token: string): Promise<unknown> {
     return await this.transport.post("app.bsky.graph.muteActor", {
       actor: actorDid,
     }, token);
@@ -95,7 +95,7 @@ export class GraphClient {
    * @returns A promise that resolves to the unmute response
    * @throws XrpcError if the request fails
    */
-  async unmuteActor(actorDid: string, token: string): Promise<any> {
+  async unmuteActor(actorDid: string, token: string): Promise<unknown> {
     return await this.transport.post("app.bsky.graph.unmuteActor", {
       actor: actorDid,
     }, token);
@@ -113,7 +113,7 @@ export class GraphClient {
     actor: string,
     targets: string[],
     token?: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getRelationships",
       { actor, others: targets },
@@ -128,7 +128,7 @@ export class GraphClient {
    * @returns A promise that resolves to the starter pack object
    * @throws XrpcError if the request fails
    */
-  async getStarterPack(uri: string, token?: string): Promise<any> {
+  async getStarterPack(uri: string, token?: string): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getStarterPack",
       { uri },
@@ -146,7 +146,7 @@ export class GraphClient {
   async getActorStarterPacks(
     actor: string,
     options: { token?: string; limit?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getActorStarterPacks",
       { actor, limit: options.limit ?? 50 },
@@ -161,7 +161,7 @@ export class GraphClient {
    * @returns A promise that resolves to the list of starter packs
    * @throws XrpcError if the request fails
    */
-  async getStarterPacks(uris: string[], token?: string): Promise<any> {
+  async getStarterPacks(uris: string[], token?: string): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getStarterPacks",
       { uris: uris.join(",") },
@@ -179,7 +179,7 @@ export class GraphClient {
   async getList(
     listUri: string,
     options: { token?: string; limit?: number; cursor?: string } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getList",
       { list: listUri, limit: options.limit ?? 50, cursor: options.cursor },
@@ -197,7 +197,7 @@ export class GraphClient {
   async getLists(
     actor: string,
     options: { token?: string; limit?: number; cursor?: string } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "app.bsky.graph.getLists",
       { actor, limit: options.limit ?? 50, cursor: options.cursor },
