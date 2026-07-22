@@ -141,7 +141,7 @@ async function maybeLatency(ms: number) {
 }
 
 /** Simulate a random request failure based on the configured fail rate. */
-async function maybeFail(failRate: number): Promise<boolean> {
+function maybeFail(failRate: number): boolean {
   if (failRate > 0 && Math.random() < failRate) return true;
   return false;
 }

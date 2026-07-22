@@ -28,9 +28,10 @@ function makeLifecycle(
   let calls = 0;
   let lastOpts: Record<string, unknown> | undefined;
 
-  const stopLocalNetwork = stopFn ?? (async (opts) => {
+  const stopLocalNetwork = stopFn ?? ((opts) => {
     calls++;
     lastOpts = opts as Record<string, unknown>;
+    return Promise.resolve();
   });
 
   const lifecycle = createProcessLifecycle({
@@ -89,7 +90,7 @@ Deno.test("createProcessLifecycle: stopIfNeeded swallows errors from stopLocalNe
       noSetup: false,
     },
     context: { runId: "r", diagnosticsDir: "/d" },
-    stopLocalNetwork: async () => {
+    stopLocalNetwork: () => {
       throw new Error("network error");
     },
   });
@@ -120,8 +121,9 @@ Deno.test("createProcessLifecycle: finalizeRun collects diagnostics when there a
   await lifecycle.finalizeRun({
     results: [{ result: { failed: 1 } }],
     fatalError: null,
-    collectDiagnostics: async () => {
+    collectDiagnostics: () => {
       collected = true;
+      return Promise.resolve();
     },
   });
   assertEquals(collected, true);
@@ -133,8 +135,9 @@ Deno.test("createProcessLifecycle: finalizeRun skips diagnostics when all pass a
   await lifecycle.finalizeRun({
     results: [{ result: { failed: 0 } }],
     fatalError: null,
-    collectDiagnostics: async () => {
+    collectDiagnostics: () => {
       collected = true;
+      return Promise.resolve();
     },
   });
   assertEquals(collected, false);
@@ -146,8 +149,9 @@ Deno.test("createProcessLifecycle: finalizeRun collects diagnostics when fatalEr
   await lifecycle.finalizeRun({
     results: [{ result: { failed: 0 } }],
     fatalError: new Error("fatal"),
-    collectDiagnostics: async () => {
+    collectDiagnostics: () => {
       collected = true;
+      return Promise.resolve();
     },
   });
   assertEquals(collected, true);
@@ -159,7 +163,7 @@ Deno.test("createProcessLifecycle: finalizeRun still stops network when diagnost
   await lifecycle.finalizeRun({
     results: [],
     fatalError: new Error("fatal"),
-    collectDiagnostics: async () => {
+    collectDiagnostics: () => {
       throw new Error("diagnostics failed");
     },
   });

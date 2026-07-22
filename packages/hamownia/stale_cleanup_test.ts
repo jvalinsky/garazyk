@@ -27,19 +27,20 @@ Deno.test("withCleanupLock: prevents concurrent execution of tasks", async () =>
 Deno.test("withCleanupLock: releases lock after failure", async () => {
   let taskRan = false;
 
-  const failingTask = async () => {
+  const failingTask = () => {
     throw new Error("Simulated failure");
   };
 
-  const successfulTask = async () => {
+  const successfulTask = () => {
     taskRan = true;
+    return Promise.resolve();
   };
 
   // Run a failing task that throws an exception
   await assertRejects(() => withCleanupLock(failingTask));
-  
+
   // The lock should be released by the finally block, allowing the next task to run successfully
   await withCleanupLock(successfulTask);
-  
+
   assertEquals(taskRan, true);
 });

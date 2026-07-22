@@ -8,7 +8,6 @@ import { initRunDir, serviceUrl } from "@garazyk/schemat/runtime";
 import type {
   RegisteredTopologyPreset,
   TopologyManifest,
-  TopologyManifestV2,
 } from "@garazyk/schemat";
 import { DEFAULT_PORTS, DEFAULT_SERVICE_NAMES } from "@garazyk/schemat";
 
