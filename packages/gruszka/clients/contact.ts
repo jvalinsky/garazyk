@@ -1,6 +1,6 @@
 /** Phone contact verification, import, and sync @module contact */
 import type { ProcedureOutput, QueryOutput } from "../lexicons.ts";
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for phone contact verification, import, and sync XRPC methods. */
 export class ContactClient {

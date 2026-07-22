@@ -1,4 +1,4 @@
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /**
  * Binary blob upload operations.
@@ -23,7 +23,7 @@ export class BlobsClient {
     data: Uint8Array,
     contentType: string,
     token: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.postBinary(
       "com.atproto.repo.uploadBlob",
       data,
