@@ -5,7 +5,7 @@
  * @module lexicon_resolution
  */
 
-import { assert, assertEquals, assertFalse } from "jsr:@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import {
   CachingDidResolver,
   CachingDnsResolver,
@@ -278,9 +278,9 @@ function stubRecordFetcher(
   return {
     calls,
     fetcher: {
-      fetch: async (endpoint: string) => {
+      fetch: (endpoint: string) => {
         calls.push(endpoint);
-        return result;
+        return Promise.resolve(result);
       },
     },
   };
@@ -370,9 +370,9 @@ function stubDnsResolver(
   return {
     calls,
     resolver: {
-      resolveTxt: async (domain: Domain) => {
+      resolveTxt: (domain: Domain) => {
         calls.push(domain);
-        return result;
+        return Promise.resolve(result);
       },
     },
   };
@@ -452,9 +452,9 @@ function stubDidResolver(
   return {
     calls,
     resolver: {
-      resolve: async (did: Did) => {
+      resolve: (did: Did) => {
         calls.push(did);
-        return result;
+        return Promise.resolve(result);
       },
     },
   };
@@ -520,21 +520,21 @@ Deno.test("Caching wrappers compose: cache across all three layers", async () =>
   let recordCalls = 0;
 
   const dnsResolver: DnsResolver = {
-    resolveTxt: async (_domain: Domain) => {
+    resolveTxt: (_domain: Domain) => {
       dnsCalls++;
-      return { ok: true, value: dnsRecords };
+      return Promise.resolve({ ok: true, value: dnsRecords });
     },
   };
   const didResolver: DidResolver = {
-    resolve: async (_did: Did) => {
+    resolve: (_did: Did) => {
       didCalls++;
-      return { ok: true, value: didDoc };
+      return Promise.resolve({ ok: true, value: didDoc });
     },
   };
   const recordFetcher: RecordFetcher = {
-    fetch: async (_endpoint: string) => {
+    fetch: (_endpoint: string) => {
       recordCalls++;
-      return { ok: true, value: lexicon };
+      return Promise.resolve({ ok: true, value: lexicon });
     },
   };
 
