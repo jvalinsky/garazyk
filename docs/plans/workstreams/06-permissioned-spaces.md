@@ -196,6 +196,12 @@ incremental, lightweight, or full-CAR path. Operators can now observe both
 convergence components without reading SQLite. Backup/restore and
 downgrade-retention drills remain.
 
+**Progress (2026-07-22): online backup/restore drill complete.**
+`PDSSpaceStore` now creates serialized SQLite online backups, so committed WAL
+content is captured consistently without filesystem copying active sidecars.
+The native drill restores to a fresh database and verifies a record and its
+repository LtHash state/digest. Downgrade-retention evidence remains.
+
 ## Primary sources
 
 - Proposal 0016, pinned `3f6c96d5d2d25438bd40fa89d6ecc37865f8e354`
