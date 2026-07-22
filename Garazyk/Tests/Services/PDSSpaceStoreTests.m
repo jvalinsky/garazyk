@@ -2,9 +2,33 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
 #import <XCTest/XCTest.h>
+#import <sqlite3.h>
 
 #import "Services/PDS/PDSSpaceStore.h"
 #import "Security/Space/PDSSpaceLtHash.h"
+
+@interface PDSSpaceStore (Testing)
+- (BOOL)rollbackMigrationsToVersion:(NSInteger)version error:(NSError **)error;
+@end
+
+static BOOL PDSSpaceTestTableUsesWithoutRowid(NSString *path, NSString *tableName) {
+  sqlite3 *database = NULL;
+  if (sqlite3_open(path.fileSystemRepresentation, &database) != SQLITE_OK) return NO;
+  sqlite3_stmt *statement = NULL;
+  BOOL usesWithoutRowid = NO;
+  if (sqlite3_prepare_v2(database, "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", -1,
+                         &statement, NULL) == SQLITE_OK) {
+    sqlite3_bind_text(statement, 1, tableName.UTF8String, -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(statement) == SQLITE_ROW) {
+      const unsigned char *sql = sqlite3_column_text(statement, 0);
+      usesWithoutRowid = sql && [[NSString stringWithUTF8String:(const char *)sql]
+          rangeOfString:@"WITHOUT ROWID" options:NSCaseInsensitiveSearch].location != NSNotFound;
+    }
+  }
+  if (statement) sqlite3_finalize(statement);
+  sqlite3_close(database);
+  return usesWithoutRowid;
+}
 
 @interface PDSSpaceStoreTests : XCTestCase
 @property(nonatomic, copy) NSString *temporaryDirectory;
@@ -347,6 +371,56 @@
                                             space:[self space]
                                            author:@"did:example:alice"
                                             error:&error] objectForKey:@"data"], data);
+}
+
+- (void)testWithoutRowidMigrationRollbackAndReapplyPreserveSpaceData {
+  NSError *error = nil;
+  NSString *path = [self.temporaryDirectory stringByAppendingPathComponent:@"spaces.sqlite"];
+  XCTAssertTrue([self.store addMember:@"did:example:alice" toSpace:[self space] error:&error]);
+  XCTAssertNotNil([self.store applyWrites:@[[self write:PDSSpaceWriteActionCreate cid:@"bafy-round-trip" value:@"round-trip"]]
+                                  toSpace:[self space]
+                                   author:@"did:example:alice"
+                                      rev:@"3jzfcijpj2z2a"
+                                    error:&error]);
+  XCTAssertTrue([self.store recordWriter:@"did:example:alice"
+                                forSpace:[self space]
+                                     rev:@"3jzfcijpj2z2a"
+                                    hash:[NSMutableData dataWithLength:32]
+                                   error:&error]);
+  XCTAssertTrue([self.store recordCredentialRecipientForSpace:[self space]
+                                                    serviceDID:@"did:example:sync"
+                                               serviceEndpoint:@"https://sync.example/xrpc"
+                                                     expiresAt:[NSDate dateWithTimeIntervalSinceNow:60]
+                                                         error:&error]);
+  XCTAssertNotNil([self.store storeBlobData:[@"private" dataUsingEncoding:NSUTF8StringEncoding]
+                                    mimeType:@"text/plain"
+                                     toSpace:[self space]
+                                      author:@"did:example:alice"
+                                       error:&error]);
+  XCTAssertNil(error);
+
+  XCTAssertTrue([self.store rollbackMigrationsToVersion:3 error:&error], @"%@", error);
+  XCTAssertNil(error);
+  [self.store close];
+  NSArray<NSString *> *tables = @[@"space_member", @"space_repo", @"space_record", @"space_record_oplog",
+                                  @"space_writer", @"space_credential_recipient", @"space_blob"];
+  for (NSString *table in tables) XCTAssertFalse(PDSSpaceTestTableUsesWithoutRowid(path, table));
+
+  self.store = [[PDSSpaceStore alloc] initWithDatabasePath:path error:&error];
+  XCTAssertNotNil(self.store);
+  XCTAssertNil(error);
+  [self.store close];
+  for (NSString *table in tables) XCTAssertTrue(PDSSpaceTestTableUsesWithoutRowid(path, table));
+
+  self.store = [[PDSSpaceStore alloc] initWithDatabasePath:path error:&error];
+  XCTAssertEqualObjects([self.store recordForSpace:[self space]
+                                            author:@"did:example:alice"
+                                        collection:@"com.example.note"
+                                              rkey:@"one"
+                                             error:&error][@"cid"], @"bafy-round-trip");
+  XCTAssertTrue([self.store isMember:@"did:example:alice" ofSpace:[self space] error:&error]);
+  XCTAssertEqual([self.store writersForSpace:[self space] limit:10 cursor:nil error:&error].count, 1UL);
+  XCTAssertEqual([self.store credentialRecipientsForSpace:[self space] error:&error].count, 1UL);
 }
 
 - (PDSSpaceWrite *)write:(PDSSpaceWriteAction)action cid:(NSString *)cid value:(NSString *)value {

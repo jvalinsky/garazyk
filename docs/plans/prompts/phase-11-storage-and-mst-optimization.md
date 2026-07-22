@@ -23,6 +23,11 @@ table. Fresh DDL and both migrations have focused apply/rollback/re-apply
 coverage that retains rows, indexes, foreign keys, and defaults. O2 phase D
 (space store) is next.
 
+**Completed 2026-07-22: O2 phase D.** Space-store V4 converts all seven
+composite-key tables with FK-safe parent/child replacement ordering. The
+focused test exercises populated data in every target table through V4
+apply/rollback/re-apply. O4 covering-index evidence is next.
+
 ## Mission
 
 Finish workstream 07: the remaining `WITHOUT ROWID` conversions (O2 phases

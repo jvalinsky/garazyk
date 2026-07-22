@@ -39,7 +39,11 @@ analysis, indexing, PRAGMA tuning) — load it before touching any lane here.
   five fresh DDL definitions use `WITHOUT ROWID`; the focused migration tests
   prove apply/rollback/re-apply data and index preservation. This split is
   intentional: `collection_membership` is not owned by the chat runtime.
-  **O2 Phase D (space store) pending.** O3-O6 not started.
+- **O2 Phase D complete (this commit):** space-store V4 converts all seven
+  composite-key tables, including the `space_repo` child-table dependency
+  graph, without disabling FK enforcement. Its focused test creates data in
+  every converted table, rolls V4 back to V3, reapplies it, and verifies the
+  persisted space data. **O3-O6 not started.**
 
 ## Scope
 
@@ -53,7 +57,7 @@ transaction discipline) are already done and excluded from this plan.
 | Item                                     | Boundary risk | Structural drag | Test leverage | Change safety | Payoff | Priority | Status |
 | ---------------------------------------- | ------------- | ---------------- | ------------- | -------------- | ------ | -------- | ------ |
 | O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       | Done (`3be4ee1ab`) |
-| O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | A-C done; D pending |
+| O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | Complete |
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Open   |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Open   |
 | O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Open   |
@@ -116,11 +120,10 @@ None. Can ship independently.
 
 ---
 
-## O2: `WITHOUT ROWID` for composite-PK tables — Phases A-C COMPLETE, D PENDING
+## O2: `WITHOUT ROWID` for composite-PK tables — COMPLETE
 
 Phase A landed in `fc1705696`; Phase B in `50f2482c2` + `2f7ba5bdb` (FK
-restoration — see the Status lesson). Phase C is complete; only Phase D below
-remains.
+restoration — see the Status lesson). Phases C and D are complete.
 
 **Problem:** Zero tables in the codebase use `WITHOUT ROWID`. Tables with
 composite primary keys maintain a redundant rowid B-tree plus a secondary
@@ -226,14 +229,20 @@ they are the hottest tables. Defer to a later phase.
 13. **Test and run existing tests.** Focused round-trip tests cover fresh
     DDL plus PDS V12 and service V15 apply/rollback/re-apply behavior.
 
-#### Phase D: Space store — 7 tables
+#### Phase D: Space store — 7 tables — COMPLETE
 
-14. **Create a space store migration.** Convert all 7 tables. The
-    space store has its own schema in `PDSSpaceStore.m`.
+14. **Create a space store migration.** V4 converts all 7 tables. The
+    `space_repo` parent is replaced before its dependent record/oplog tables,
+    allowing the replacement children to reference the replacement parent
+    without disabling foreign-key enforcement.
 
-15. **Update `PDSSpaceStore.m`.** Change `CREATE TABLE` statements.
+15. **Update `PDSSpaceStore.m`.** Fresh `CREATE TABLE` statements use
+    `WITHOUT ROWID`; V4 has a private, tested rollback to V3 for migration
+    round-trip validation.
 
-16. **Test and run existing tests.**
+16. **Test and run existing tests.** The space-store test creates data in
+    every converted table, rolls V4 back to V3, reapplies it, and checks both
+    DDL and application-level data preservation.
 
 ### Files
 

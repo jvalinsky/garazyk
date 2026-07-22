@@ -27,32 +27,32 @@ static NSString *const PDSSpaceSchemaSQL =
      "created_at TEXT NOT NULL, deleted_at TEXT);"
      "CREATE TABLE IF NOT EXISTS space_member ("
      "space TEXT NOT NULL, did TEXT NOT NULL, PRIMARY KEY (space, did), "
-     "FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
      "CREATE TABLE IF NOT EXISTS space_repo ("
      "space TEXT NOT NULL, author_did TEXT NOT NULL, lthash_state BLOB NOT NULL, "
      "rev TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (space, author_did), "
-     "FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
      "CREATE TABLE IF NOT EXISTS space_record ("
      "space TEXT NOT NULL, author_did TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL, "
      "cid TEXT NOT NULL, value BLOB NOT NULL, repo_rev TEXT NOT NULL, indexed_at TEXT NOT NULL, "
      "PRIMARY KEY (space, author_did, collection, rkey), "
-     "FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE);"
+     "FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE) WITHOUT ROWID;"
      "CREATE INDEX IF NOT EXISTS space_record_repo_rev_idx "
      "ON space_record(space, author_did, repo_rev);"
      "CREATE TABLE IF NOT EXISTS space_record_oplog ("
      "space TEXT NOT NULL, author_did TEXT NOT NULL, rev TEXT NOT NULL, idx INTEGER NOT NULL, "
      "action TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL, cid TEXT, prev TEXT, "
      "PRIMARY KEY (space, author_did, rev, idx), "
-     "FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE);"
+     "FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE) WITHOUT ROWID;"
      "CREATE INDEX IF NOT EXISTS space_record_oplog_since_idx "
      "ON space_record_oplog(space, author_did, rev, idx);"
      "CREATE TABLE IF NOT EXISTS space_writer ("
      "space TEXT NOT NULL, did TEXT NOT NULL, rev TEXT NOT NULL, hash BLOB NOT NULL, "
-     "PRIMARY KEY (space, did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "PRIMARY KEY (space, did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
      "CREATE TABLE IF NOT EXISTS space_credential_recipient ("
      "space TEXT NOT NULL, service_did TEXT NOT NULL, service_endpoint TEXT NOT NULL, "
      "last_issued_at TEXT NOT NULL, PRIMARY KEY (space, service_did), "
-     "FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
      "CREATE TABLE IF NOT EXISTS space_delegation_replay ("
      "jti TEXT PRIMARY KEY NOT NULL, expires_at REAL NOT NULL);"
      "CREATE INDEX IF NOT EXISTS space_delegation_replay_expiry_idx "
@@ -65,7 +65,7 @@ static NSString *const PDSSpaceBlobSchemaSQL =
     @"CREATE TABLE IF NOT EXISTS space_blob ("
      "space TEXT NOT NULL, author_did TEXT NOT NULL, cid TEXT NOT NULL, "
      "mime_type TEXT NOT NULL, size INTEGER NOT NULL, data BLOB NOT NULL, "
-     "created_at TEXT NOT NULL, PRIMARY KEY (space, author_did, cid));"
+     "created_at TEXT NOT NULL, PRIMARY KEY (space, author_did, cid)) WITHOUT ROWID;"
      "CREATE INDEX IF NOT EXISTS space_blob_lookup_idx "
      "ON space_blob(space, author_did, cid);";
 
@@ -76,6 +76,77 @@ static NSString *const PDSSpaceRecipientExpirySchemaSQL =
      "UPDATE space_credential_recipient SET expires_at = 0 WHERE expires_at IS NULL;"
      "CREATE INDEX IF NOT EXISTS space_credential_recipient_expiry_idx "
      "ON space_credential_recipient(space, expires_at);";
+
+/* V4 converts the seven composite-key tables. The repo table is renamed
+ * before its dependent tables so their old FKs track the temporary name;
+ * replacement children then reference the replacement repo table. */
+static NSString *const PDSSpaceWithoutRowidMigrationSQL =
+    @"ALTER TABLE space_repo RENAME TO space_repo_rowid;"
+     "CREATE TABLE space_repo (space TEXT NOT NULL, author_did TEXT NOT NULL, lthash_state BLOB NOT NULL, rev TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (space, author_did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
+     "INSERT INTO space_repo (space, author_did, lthash_state, rev, updated_at) SELECT space, author_did, lthash_state, rev, updated_at FROM space_repo_rowid;"
+     "CREATE TABLE space_record_new (space TEXT NOT NULL, author_did TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL, cid TEXT NOT NULL, value BLOB NOT NULL, repo_rev TEXT NOT NULL, indexed_at TEXT NOT NULL, PRIMARY KEY (space, author_did, collection, rkey), FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE) WITHOUT ROWID;"
+     "INSERT INTO space_record_new (space, author_did, collection, rkey, cid, value, repo_rev, indexed_at) SELECT space, author_did, collection, rkey, cid, value, repo_rev, indexed_at FROM space_record;"
+     "CREATE TABLE space_record_oplog_new (space TEXT NOT NULL, author_did TEXT NOT NULL, rev TEXT NOT NULL, idx INTEGER NOT NULL, action TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL, cid TEXT, prev TEXT, PRIMARY KEY (space, author_did, rev, idx), FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE) WITHOUT ROWID;"
+     "INSERT INTO space_record_oplog_new (space, author_did, rev, idx, action, collection, rkey, cid, prev) SELECT space, author_did, rev, idx, action, collection, rkey, cid, prev FROM space_record_oplog;"
+     "DROP TABLE space_record;"
+     "DROP TABLE space_record_oplog;"
+     "DROP TABLE space_repo_rowid;"
+     "ALTER TABLE space_record_new RENAME TO space_record;"
+     "ALTER TABLE space_record_oplog_new RENAME TO space_record_oplog;"
+     "CREATE INDEX space_record_repo_rev_idx ON space_record(space, author_did, repo_rev);"
+     "CREATE INDEX space_record_oplog_since_idx ON space_record_oplog(space, author_did, rev, idx);"
+     "CREATE TABLE space_member_new (space TEXT NOT NULL, did TEXT NOT NULL, PRIMARY KEY (space, did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
+     "INSERT INTO space_member_new (space, did) SELECT space, did FROM space_member;"
+     "DROP TABLE space_member;"
+     "ALTER TABLE space_member_new RENAME TO space_member;"
+     "CREATE TABLE space_writer_new (space TEXT NOT NULL, did TEXT NOT NULL, rev TEXT NOT NULL, hash BLOB NOT NULL, PRIMARY KEY (space, did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
+     "INSERT INTO space_writer_new (space, did, rev, hash) SELECT space, did, rev, hash FROM space_writer;"
+     "DROP TABLE space_writer;"
+     "ALTER TABLE space_writer_new RENAME TO space_writer;"
+     "CREATE TABLE space_credential_recipient_new (space TEXT NOT NULL, service_did TEXT NOT NULL, service_endpoint TEXT NOT NULL, last_issued_at TEXT NOT NULL, expires_at REAL, PRIMARY KEY (space, service_did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE) WITHOUT ROWID;"
+     "INSERT INTO space_credential_recipient_new (space, service_did, service_endpoint, last_issued_at, expires_at) SELECT space, service_did, service_endpoint, last_issued_at, expires_at FROM space_credential_recipient;"
+     "DROP TABLE space_credential_recipient;"
+     "ALTER TABLE space_credential_recipient_new RENAME TO space_credential_recipient;"
+     "CREATE INDEX space_credential_recipient_expiry_idx ON space_credential_recipient(space, expires_at);"
+     "CREATE TABLE space_blob_new (space TEXT NOT NULL, author_did TEXT NOT NULL, cid TEXT NOT NULL, mime_type TEXT NOT NULL, size INTEGER NOT NULL, data BLOB NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (space, author_did, cid)) WITHOUT ROWID;"
+     "INSERT INTO space_blob_new (space, author_did, cid, mime_type, size, data, created_at) SELECT space, author_did, cid, mime_type, size, data, created_at FROM space_blob;"
+     "DROP TABLE space_blob;"
+     "ALTER TABLE space_blob_new RENAME TO space_blob;"
+     "CREATE INDEX space_blob_lookup_idx ON space_blob(space, author_did, cid);";
+
+static NSString *const PDSSpaceWithoutRowidRollbackSQL =
+    @"ALTER TABLE space_repo RENAME TO space_repo_without_rowid;"
+     "CREATE TABLE space_repo (space TEXT NOT NULL, author_did TEXT NOT NULL, lthash_state BLOB NOT NULL, rev TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (space, author_did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "INSERT INTO space_repo (space, author_did, lthash_state, rev, updated_at) SELECT space, author_did, lthash_state, rev, updated_at FROM space_repo_without_rowid;"
+     "CREATE TABLE space_record_new (space TEXT NOT NULL, author_did TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL, cid TEXT NOT NULL, value BLOB NOT NULL, repo_rev TEXT NOT NULL, indexed_at TEXT NOT NULL, PRIMARY KEY (space, author_did, collection, rkey), FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE);"
+     "INSERT INTO space_record_new (space, author_did, collection, rkey, cid, value, repo_rev, indexed_at) SELECT space, author_did, collection, rkey, cid, value, repo_rev, indexed_at FROM space_record;"
+     "CREATE TABLE space_record_oplog_new (space TEXT NOT NULL, author_did TEXT NOT NULL, rev TEXT NOT NULL, idx INTEGER NOT NULL, action TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL, cid TEXT, prev TEXT, PRIMARY KEY (space, author_did, rev, idx), FOREIGN KEY(space, author_did) REFERENCES space_repo(space, author_did) ON DELETE CASCADE);"
+     "INSERT INTO space_record_oplog_new (space, author_did, rev, idx, action, collection, rkey, cid, prev) SELECT space, author_did, rev, idx, action, collection, rkey, cid, prev FROM space_record_oplog;"
+     "DROP TABLE space_record;"
+     "DROP TABLE space_record_oplog;"
+     "DROP TABLE space_repo_without_rowid;"
+     "ALTER TABLE space_record_new RENAME TO space_record;"
+     "ALTER TABLE space_record_oplog_new RENAME TO space_record_oplog;"
+     "CREATE INDEX space_record_repo_rev_idx ON space_record(space, author_did, repo_rev);"
+     "CREATE INDEX space_record_oplog_since_idx ON space_record_oplog(space, author_did, rev, idx);"
+     "CREATE TABLE space_member_new (space TEXT NOT NULL, did TEXT NOT NULL, PRIMARY KEY (space, did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "INSERT INTO space_member_new (space, did) SELECT space, did FROM space_member;"
+     "DROP TABLE space_member;"
+     "ALTER TABLE space_member_new RENAME TO space_member;"
+     "CREATE TABLE space_writer_new (space TEXT NOT NULL, did TEXT NOT NULL, rev TEXT NOT NULL, hash BLOB NOT NULL, PRIMARY KEY (space, did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "INSERT INTO space_writer_new (space, did, rev, hash) SELECT space, did, rev, hash FROM space_writer;"
+     "DROP TABLE space_writer;"
+     "ALTER TABLE space_writer_new RENAME TO space_writer;"
+     "CREATE TABLE space_credential_recipient_new (space TEXT NOT NULL, service_did TEXT NOT NULL, service_endpoint TEXT NOT NULL, last_issued_at TEXT NOT NULL, expires_at REAL, PRIMARY KEY (space, service_did), FOREIGN KEY(space) REFERENCES space(uri) ON DELETE CASCADE);"
+     "INSERT INTO space_credential_recipient_new (space, service_did, service_endpoint, last_issued_at, expires_at) SELECT space, service_did, service_endpoint, last_issued_at, expires_at FROM space_credential_recipient;"
+     "DROP TABLE space_credential_recipient;"
+     "ALTER TABLE space_credential_recipient_new RENAME TO space_credential_recipient;"
+     "CREATE INDEX space_credential_recipient_expiry_idx ON space_credential_recipient(space, expires_at);"
+     "CREATE TABLE space_blob_new (space TEXT NOT NULL, author_did TEXT NOT NULL, cid TEXT NOT NULL, mime_type TEXT NOT NULL, size INTEGER NOT NULL, data BLOB NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (space, author_did, cid));"
+     "INSERT INTO space_blob_new (space, author_did, cid, mime_type, size, data, created_at) SELECT space, author_did, cid, mime_type, size, data, created_at FROM space_blob;"
+     "DROP TABLE space_blob;"
+     "ALTER TABLE space_blob_new RENAME TO space_blob;"
+     "CREATE INDEX space_blob_lookup_idx ON space_blob(space, author_did, cid);";
 
 static NSString *PDSSpaceTimestamp(NSDate *date) {
   return [NSDateFormatter atproto_stringFromDate:date ?: [NSDate date]];
@@ -119,6 +190,49 @@ static BOOL PDSSpaceStepDone(sqlite3 *database, sqlite3_stmt *statement, NSError
   return NO;
 }
 
+static BOOL PDSSpaceTableUsesWithoutRowid(sqlite3 *database, const char *tableName) {
+  sqlite3_stmt *statement = NULL;
+  if (sqlite3_prepare_v2(database,
+                         "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+                         -1, &statement, NULL) != SQLITE_OK) return NO;
+  sqlite3_bind_text(statement, 1, tableName, -1, SQLITE_STATIC);
+  BOOL result = NO;
+  if (sqlite3_step(statement) == SQLITE_ROW) {
+    const unsigned char *sql = sqlite3_column_text(statement, 0);
+    result = sql && [[NSString stringWithUTF8String:(const char *)sql]
+        rangeOfString:@"WITHOUT ROWID" options:NSCaseInsensitiveSearch].location != NSNotFound;
+  }
+  sqlite3_finalize(statement);
+  return result;
+}
+
+static BOOL PDSSpaceMigrateCompositeKeysWithoutRowid(sqlite3 *database, NSError **error) {
+  const char *tables[] = {
+      "space_member", "space_repo", "space_record", "space_record_oplog",
+      "space_writer", "space_credential_recipient", "space_blob",
+  };
+  BOOL allConverted = YES;
+  for (NSUInteger index = 0; index < sizeof(tables) / sizeof(tables[0]); index++) {
+    allConverted = allConverted && PDSSpaceTableUsesWithoutRowid(database, tables[index]);
+  }
+  if (allConverted) return YES;
+
+  char *message = NULL;
+  if (sqlite3_exec(database, PDSSpaceWithoutRowidMigrationSQL.UTF8String, NULL, NULL, &message) == SQLITE_OK) return YES;
+  if (message) sqlite3_free(message);
+  if (error) *error = PDSSpaceSQLiteError(database, @"Unable to convert space-store composite keys without rowid");
+  return NO;
+}
+
+static BOOL PDSSpaceRollbackCompositeKeysWithoutRowid(sqlite3 *database, NSError **error) {
+  if (!PDSSpaceTableUsesWithoutRowid(database, "space_repo")) return YES;
+  char *message = NULL;
+  if (sqlite3_exec(database, PDSSpaceWithoutRowidRollbackSQL.UTF8String, NULL, NULL, &message) == SQLITE_OK) return YES;
+  if (message) sqlite3_free(message);
+  if (error) *error = PDSSpaceSQLiteError(database, @"Unable to roll back space-store WITHOUT ROWID migration");
+  return NO;
+}
+
 static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
   switch (action) {
     case PDSSpaceWriteActionCreate: return @"create";
@@ -157,6 +271,8 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
 @interface PDSSpaceStore ()
 @property(nonatomic, strong) ATProtoConnectionManagerSerial *connection;
 @property(nonatomic, copy) NSString *databasePath;
+- (BOOL)applyMigrations:(NSError **)error;
+- (BOOL)rollbackMigrationsToVersion:(NSInteger)version error:(NSError **)error;
 @end
 
 @implementation PDSSpaceStore
@@ -269,13 +385,17 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
         @{ @"version" : @1, @"name" : @"permissioned_spaces_initial", @"sql" : PDSSpaceSchemaSQL },
         @{ @"version" : @2, @"name" : @"permissioned_spaces_private_blobs", @"sql" : PDSSpaceBlobSchemaSQL },
         @{ @"version" : @3, @"name" : @"permissioned_spaces_notification_expiry", @"sql" : PDSSpaceRecipientExpirySchemaSQL },
+        @{ @"version" : @4, @"name" : @"permissioned_spaces_without_rowid" },
     ];
     for (NSDictionary<NSString *, id> *migration in migrations) {
       if (currentVersion >= [migration[@"version"] integerValue]) continue;
       char *message = NULL;
-      if (sqlite3_exec(database, [migration[@"sql"] UTF8String], NULL, NULL, &message) != SQLITE_OK) {
+      BOOL applied = [migration[@"version"] integerValue] == 4
+          ? PDSSpaceMigrateCompositeKeysWithoutRowid(database, &localError)
+          : sqlite3_exec(database, [migration[@"sql"] UTF8String], NULL, NULL, &message) == SQLITE_OK;
+      if (!applied) {
         if (message) sqlite3_free(message);
-        localError = PDSSpaceSQLiteError(database, @"Unable to create space-store schema");
+        if (!localError) localError = PDSSpaceSQLiteError(database, @"Unable to create space-store schema");
         migrationOK = NO;
         *rollback = YES;
         return;
@@ -298,6 +418,36 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
   } error:nil];
   if (!transacted || !migrationOK) {
     if (error) *error = localError ?: PDSSpaceSQLiteError(NULL, @"Unable to migrate space store");
+    return NO;
+  }
+  return YES;
+}
+
+/* The space store has only one reversible schema migration today. Keeping
+ * this private lets the migration tests exercise the real rollback script
+ * without advertising a partial rollback contract to callers. */
+- (BOOL)rollbackMigrationsToVersion:(NSInteger)version error:(NSError **)error {
+  if (version != 3) {
+    if (error) *error = [self invalidWriteError:@"Only rollback to space schema V3 is supported"];
+    return NO;
+  }
+  __block NSError *localError = nil;
+  __block BOOL migrationOK = YES;
+  BOOL transacted = [self.connection transact:^(sqlite3 *database, BOOL *rollback) {
+    if (!PDSSpaceRollbackCompositeKeysWithoutRowid(database, &localError)) {
+      migrationOK = NO;
+      *rollback = YES;
+      return;
+    }
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *statement = NULL;
+    if (!PDSSpacePrepare(database, "DELETE FROM _migrations WHERE version = 4", &statement, &localError) ||
+        !PDSSpaceStepDone(database, statement, &localError)) {
+      migrationOK = NO;
+      *rollback = YES;
+    }
+  } error:nil];
+  if (!transacted || !migrationOK) {
+    if (error) *error = localError ?: PDSSpaceSQLiteError(NULL, @"Unable to roll back space-store migration");
     return NO;
   }
   return YES;
