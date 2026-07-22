@@ -3,9 +3,12 @@
 
 #import <XCTest/XCTest.h>
 #import "Database/PDSDatabase.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 
 @interface PDSDatabaseWebAuthnTests : XCTestCase
 @property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) PDSActorStore *serviceStore;
 @property (nonatomic, strong) NSURL *tempDirURL;
 @end
 
@@ -21,14 +24,24 @@
                                               attributes:nil
                                                    error:nil];
     NSURL *dbURL = [self.tempDirURL URLByAppendingPathComponent:@"test.db"];
-    self.database = [PDSDatabase databaseAtURL:dbURL];
+
+    // webauthn_credentials lives in the service schema (PDSSchemaManager
+    // serviceSchemaSQL), which only gets bootstrapped onto a PDSDatabase via
+    // PDSActorStore's "__service__" shard handling (see
+    // ServiceDatabases.serviceDatabaseWithError:) - a bare
+    // [PDSDatabase databaseAtURL:] + openWithError: never applies it. Go
+    // through the same PDSActorStore path production uses instead of
+    // reimplementing its bootstrap sequence here.
+    self.serviceStore = [[PDSActorStore alloc] initWithDid:PDSServiceStoreDID dbPath:dbURL.path];
     NSError *error = nil;
-    XCTAssertTrue([self.database openWithError:&error], @"Failed to open database: %@", error);
+    XCTAssertTrue([self.serviceStore openWithError:&error], @"Failed to open service store: %@", error);
     XCTAssertNil(error);
+    self.database = self.serviceStore.database;
 }
 
 - (void)tearDown {
-    [self.database close];
+    [self.serviceStore close];
+    self.serviceStore = nil;
     self.database = nil;
     [[NSFileManager defaultManager] removeItemAtURL:self.tempDirURL error:nil];
     [super tearDown];
