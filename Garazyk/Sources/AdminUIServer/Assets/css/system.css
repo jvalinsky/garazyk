@@ -30,6 +30,22 @@
   --color-warning: oklch(75% 0.18 70);
   --color-info: oklch(60% 0.15 210);
 
+  /* Accessible foregrounds are separate from the action/background colors.
+   * The action colors are chosen for fills; these darker values meet text and
+   * non-text contrast requirements on the light semantic surfaces. */
+  --color-foreground-accent: oklch(50% 0.18 255);
+  --color-foreground-destructive: oklch(52% 0.22 25);
+  --color-foreground-success: oklch(48% 0.18 145);
+  --color-foreground-warning: oklch(50% 0.18 70);
+  --color-foreground-info: oklch(46% 0.15 210);
+
+  /* Text placed on solid action fills. */
+  --color-on-accent: white;
+  --color-on-destructive: white;
+  --color-on-success: oklch(13% 0.005 200);
+  --color-on-warning: oklch(13% 0.005 200);
+  --color-on-info: oklch(13% 0.005 200);
+
   /* Strawberry brand tint on neutrals - subtle warmth */
   /* Background secondary gets slight chroma toward strawberry */
   --color-bg-secondary-tinted: oklch(99% 0.004 15);
@@ -100,6 +116,14 @@
     --color-text-secondary: oklch(70% 0.005 200);
     --color-text-tertiary: oklch(55% 0.004 200);
 
+    /* Lighter foregrounds preserve contrast against dark primary and
+     * tertiary surfaces without changing the action-fill palette above. */
+    --color-foreground-accent: oklch(66% 0.18 255);
+    --color-foreground-destructive: oklch(70% 0.22 25);
+    --color-foreground-success: oklch(64% 0.18 145);
+    --color-foreground-warning: oklch(66% 0.18 70);
+    --color-foreground-info: oklch(62% 0.15 210);
+
     /* Dark mode - stronger brand tint on secondary bg for visual warmth */
     --color-bg-secondary-tinted: oklch(22% 0.015 15);
 
@@ -163,7 +187,7 @@ p {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-foreground-accent);
   text-decoration: none;
   cursor: pointer;
   transition: color var(--transition-fast);
@@ -297,11 +321,11 @@ select:disabled {
   min-height: 28px;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--color-accent); color: white; }
+.btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
 .btn-primary:hover:not(:disabled) { background: #0066cc; box-shadow: var(--shadow-md); }
 .btn-secondary { background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--separator-color); }
 .btn-secondary:hover:not(:disabled) { background: var(--separator-color); }
-.btn-destructive { background: var(--color-destructive); color: white; }
+.btn-destructive { background: var(--color-destructive); color: var(--color-on-destructive); }
 .btn-destructive:hover:not(:disabled) { background: #ff3b30; box-shadow: var(--shadow-md); }
 .btn-sm { padding: 4px 8px; font-size: var(--font-size-xs); min-height: 24px; }
 
@@ -337,9 +361,9 @@ select:disabled {
   border-radius: var(--radius-md); font-size: var(--font-size-xs);
   font-weight: 500; white-space: nowrap;
 }
-.badge-success { background: rgba(52, 199, 89, 0.1); color: var(--color-success); }
-.badge-warning { background: rgba(255, 149, 0, 0.1); color: var(--color-warning); }
-.badge-destructive { background: rgba(255, 69, 58, 0.1); color: var(--color-destructive); }
+.badge-success { background: rgba(52, 199, 89, 0.1); color: var(--color-foreground-success); }
+.badge-warning { background: rgba(255, 149, 0, 0.1); color: var(--color-foreground-warning); }
+.badge-destructive { background: rgba(255, 69, 58, 0.1); color: var(--color-foreground-destructive); }
 .badge-secondary { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
 
 /* Alerts */
@@ -348,10 +372,10 @@ select:disabled {
   border: 1px solid; display: flex; align-items: flex-start;
   gap: var(--space-md); margin-bottom: var(--space-md);
 }
-.alert-info { background: rgba(48, 176, 192, 0.08); border-color: var(--color-info); color: var(--color-info); }
-.alert-success { background: rgba(52, 199, 89, 0.08); border-color: var(--color-success); color: var(--color-success); }
-.alert-warning { background: rgba(255, 149, 0, 0.08); border-color: var(--color-warning); color: var(--color-warning); }
-.alert-destructive { background: rgba(255, 69, 58, 0.08); border-color: var(--color-destructive); color: var(--color-destructive); }
+.alert-info { background: rgba(48, 176, 192, 0.08); border-color: var(--color-foreground-info); color: var(--color-foreground-info); }
+.alert-success { background: rgba(52, 199, 89, 0.08); border-color: var(--color-foreground-success); color: var(--color-foreground-success); }
+.alert-warning { background: rgba(255, 149, 0, 0.08); border-color: var(--color-foreground-warning); color: var(--color-foreground-warning); }
+.alert-destructive { background: rgba(255, 69, 58, 0.08); border-color: var(--color-foreground-destructive); color: var(--color-foreground-destructive); }
 
 /* Stat cards */
 .stat-card {
@@ -383,9 +407,9 @@ select:disabled {
   text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;
 }
 .metric-value { color: var(--color-text-primary); font-size: var(--font-size-lg); font-weight: 600; }
-.metric-value.status-healthy, .metric-value.status-ok { color: var(--color-success); }
-.metric-value.status-warning { color: var(--color-warning); }
-.metric-value.status-critical, .metric-value.status-error { color: var(--color-destructive); }
+.metric-value.status-healthy, .metric-value.status-ok { color: var(--color-foreground-success); }
+.metric-value.status-warning { color: var(--color-foreground-warning); }
+.metric-value.status-critical, .metric-value.status-error { color: var(--color-foreground-destructive); }
 
 /* Tabs */
 .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--separator-color); }
@@ -396,7 +420,7 @@ select:disabled {
   border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
 .tab:hover { color: var(--color-text-primary); }
-.tab.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.tab.active { color: var(--color-foreground-accent); border-bottom-color: var(--color-foreground-accent); }
 
 /* Progress */
 .progress { width: 100%; height: 4px; background: var(--color-bg-tertiary); border-radius: var(--radius-full); overflow: hidden; }
@@ -406,7 +430,7 @@ select:disabled {
 code {
   background: var(--color-bg-tertiary); padding: 2px 6px;
   border-radius: var(--radius-sm); font-family: "Monaco", "Menlo", "Courier New", monospace;
-  font-size: 0.9em; color: var(--color-destructive);
+  font-size: 0.9em; color: var(--color-foreground-destructive);
 }
 pre {
   background: var(--color-bg-tertiary); padding: var(--space-md);
@@ -494,9 +518,9 @@ pre code { background: none; padding: 0; color: inherit; }
 .status-indicator {
   width: 8px; height: 8px; border-radius: var(--radius-full); display: inline-block;
 }
-.status-indicator.connected { background: var(--color-success); }
-.status-indicator.disconnected { background: var(--color-destructive); }
-.status-indicator.pending { background: var(--color-warning); animation: pulse 1.5s ease-in-out infinite; }
+.status-indicator.connected { background: var(--color-foreground-success); }
+.status-indicator.disconnected { background: var(--color-foreground-destructive); }
+.status-indicator.pending { background: var(--color-foreground-warning); animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* Search row */
@@ -517,7 +541,7 @@ pre code { background: none; padding: 0; color: inherit; }
 .htmx-request .btn { pointer-events: none; }
 .htmx-swapped { animation: fadeIn 0.15s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.htmx-error { border-color: var(--color-destructive) !important; }
+.htmx-error { border-color: var(--color-foreground-destructive) !important; }
 
 /* Empty state */
 .empty-state {
@@ -660,10 +684,10 @@ pre code { background: none; padding: 0; color: inherit; }
 .text-center { text-align: center !important; }
 .text-primary { color: var(--color-text-primary) !important; }
 .text-secondary { color: var(--color-text-secondary) !important; }
-.text-accent { color: var(--color-accent) !important; }
-.text-destructive { color: var(--color-destructive) !important; }
-.text-success { color: var(--color-success) !important; }
-.text-warning { color: var(--color-warning) !important; }
+.text-accent { color: var(--color-foreground-accent) !important; }
+.text-destructive { color: var(--color-foreground-destructive) !important; }
+.text-success { color: var(--color-foreground-success) !important; }
+.text-warning { color: var(--color-foreground-warning) !important; }
 .w-full { width: 100% !important; }
 .overflow-auto { overflow: auto !important; }
 .overflow-x-auto { overflow-x: auto !important; }
