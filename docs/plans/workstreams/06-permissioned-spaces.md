@@ -183,6 +183,12 @@ Owner boundary: `Sources/Services/PDS/PDSSpaceReconciler.m`,
 `PDSSpaceOplogPruner.m`, ops runbooks. Log/counter additions must not
 change protocol behavior.
 
+**Progress (2026-07-22): pruning observability complete.** The pruner logs
+credential-free structured success/failure events and reports the exact oplog
+entries removed for each run. `PDSSpaceStoreTests` verifies the transactional
+count; reconciler recovery-path observability and the restore/downgrade drills
+remain.
+
 ## Primary sources
 
 - Proposal 0016, pinned `3f6c96d5d2d25438bd40fa89d6ecc37865f8e354`

@@ -136,6 +136,36 @@
   XCTAssertEqualObjects(operations[2][@"prev"], @"bafy-second");
 }
 
+- (void)testOplogPruningReportsRemovedEntries {
+  NSError *error = nil;
+  for (NSUInteger index = 0; index < 3; index++) {
+    NSString *revision = [NSString stringWithFormat:@"3jzfcijpj2z2%lu", (unsigned long)index];
+    NSString *cid = [NSString stringWithFormat:@"bafy-%lu", (unsigned long)index];
+    PDSSpaceWriteAction action = index == 0 ? PDSSpaceWriteActionCreate : PDSSpaceWriteActionUpdate;
+    XCTAssertNotNil([self.store applyWrites:@[[self write:action
+                                                      cid:cid
+                                                    value:revision]]
+                                  toSpace:[self space]
+                                   author:@"did:example:alice"
+                                      rev:revision
+                                    error:&error]);
+    XCTAssertNil(error);
+  }
+  NSUInteger prunedEntries = 0;
+  XCTAssertTrue([self.store pruneAllOplogsKeepingRevisions:1
+                                             prunedEntries:&prunedEntries
+                                                      error:&error]);
+  XCTAssertNil(error);
+  XCTAssertEqual(prunedEntries, 2UL);
+  NSArray *operations = [self.store repoOperationsForSpace:[self space]
+                                                     author:@"did:example:alice"
+                                                      since:nil
+                                                      limit:10
+                                                      error:&error];
+  XCTAssertNil(error);
+  XCTAssertEqual(operations.count, 1UL);
+}
+
 - (void)testMembershipWriterSetAndDelegationReplayStateAreDurable {
   NSError *error = nil;
   XCTAssertTrue([self.store addMember:@"did:example:alice" toSpace:[self space] error:&error]);
