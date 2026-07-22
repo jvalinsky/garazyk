@@ -119,4 +119,7 @@ dead-letter policy, and production disk budget on 2026-07-22. Schema V3,
 atomic enqueue, leased ordered materialization, transaction-coupled
 acknowledgement, startup recovery, poison-event retention, and event/byte
 watermark pause-resume are implemented. Focused database and ingest tests
-cover each boundary; global gates remain.
+cover each boundary. Verification on 2026-07-22 passed `deno task check`,
+`deno task test`, and the full gated `AllTests` suite. `deno task lint` remains
+the sole global-gate failure: it reports 2,043 pre-existing package-wide lint
+findings outside this phase's Objective-C/AppView scope.
