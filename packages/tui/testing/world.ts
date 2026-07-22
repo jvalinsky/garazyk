@@ -119,6 +119,30 @@ export interface WorldQuery {
   intent?: string;
 }
 
+/** Compact or full rendering of a {@link TuiNode} for query results. */
+export type NodeSummary = TuiNode | Record<string, unknown> | null;
+
+/** Compact or full rendering of a {@link TuiEdge} for query results. */
+export type EdgeSummary = TuiEdge | {
+  id: string;
+  kind: string;
+  from: string;
+  to: string;
+  confidence: number;
+};
+
+/** Compact or full rendering of a {@link TuiAction} for query results. */
+export type ActionSummary = TuiAction | {
+  id: string;
+  kind: string;
+  key?: string;
+  label?: string;
+  source?: string;
+  sourceRef?: string;
+  targetRef?: string;
+  confidence: number;
+} | null;
+
 const NON_INTERACTIVE_ROLES = new Set([
   "screen",
   "cursor",
@@ -489,7 +513,7 @@ function queryError(
 function nodeSummary(
   node: TuiNode | null | undefined,
   detail: "compact" | "full" = "compact",
-) {
+): NodeSummary {
   if (!node) return null;
   if (detail === "full") return node;
   const summary: Record<string, unknown> = {};
@@ -504,7 +528,7 @@ function edgeSummary(
   edge: TuiEdge,
   world: TuiWorld,
   detail: "compact" | "full" = "compact",
-) {
+): EdgeSummary {
   if (detail === "full") return edge;
   const from = world.nodes.find((node) => node.id === edge.from);
   const to = world.nodes.find((node) => node.id === edge.to);
@@ -520,7 +544,7 @@ function edgeSummary(
 function actionSummary(
   action: TuiAction | undefined | null,
   detail: "compact" | "full" = "compact",
-) {
+): ActionSummary {
   if (!action) return null;
   if (detail === "full") return action;
   return {
@@ -611,7 +635,7 @@ export function related(
   world: TuiWorld,
   ref: string,
   options: Partial<WorldQuery> = {},
-) {
+): Array<{ edge: TuiEdge; node: TuiNode }> {
   const node = getByRef(world, ref);
   const direction = options.direction ?? "both";
   return world.edges
@@ -812,7 +836,14 @@ export function validate(world: TuiWorld): TuiDiagnostic[] {
   return diagnostics;
 }
 
-export function explain(world: TuiWorld, ref: string) {
+export function explain(world: TuiWorld, ref: string): {
+  node: TuiNode;
+  evidence: TuiEvidence[];
+  incoming: TuiEdge[];
+  outgoing: TuiEdge[];
+  actions: TuiAction[];
+  diagnostics: TuiDiagnostic[];
+} {
   const node = getByRef(world, ref);
   return {
     node,
@@ -826,7 +857,18 @@ export function explain(world: TuiWorld, ref: string) {
   };
 }
 
-export function worldQuery(world: TuiWorld, query: WorldQuery) {
+export function worldQuery(world: TuiWorld, query: WorldQuery): {
+  op: string;
+  nodes?: NodeSummary[];
+  node?: NodeSummary;
+  entries?: Array<{ edge: EdgeSummary; node: NodeSummary }>;
+  evidence?: TuiEvidence[];
+  incoming?: EdgeSummary[];
+  outgoing?: EdgeSummary[];
+  actions?: ActionSummary[];
+  action?: ActionSummary;
+  diagnostics?: TuiDiagnostic[];
+} {
   const detail = query.detail ?? "compact";
   const op = query.op;
   if (!op) throw new Error("world query op is required");
