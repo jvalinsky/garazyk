@@ -1,4 +1,4 @@
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /**
  * Binary blob upload operations.

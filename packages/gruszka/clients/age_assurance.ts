@@ -1,5 +1,5 @@
 /** Age verification flows (begin, config, state) @module age_assurance */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for age-assurance flow XRPC methods. */
 export class AgeAssuranceClient {
