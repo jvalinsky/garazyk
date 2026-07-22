@@ -1169,6 +1169,25 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
     ] error:error];
 }
 
+- (BOOL)appendAndEnqueueIndexEventForRelayURL:(NSString *)relayURL
+                                           seq:(int64_t)seq
+                                     eventType:(NSString *)eventType
+                                           did:(nullable NSString *)did
+                                           rev:(nullable NSString *)rev
+                                           cid:(nullable NSString *)cid
+                                   rawEnvelope:(NSData *)rawEnvelope
+                                         error:(NSError **)error {
+    NSError *innerError = nil;
+    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
+        if (![database appendStoredEventWithType:eventType seq:seq did:did rev:rev cid:cid
+                                      rawEnvelope:rawEnvelope error:transactionError]) return NO;
+        return [database enqueueIndexEventForRelayURL:relayURL seq:seq eventType:eventType did:did rev:rev
+                                                  cid:cid rawEnvelope:rawEnvelope error:transactionError];
+    } error:&innerError];
+    if (!ok && error) *error = innerError;
+    return ok;
+}
+
 - (nullable NSArray<NSDictionary *> *)claimIndexEventsForWorker:(NSString *)workerID
                                                             limit:(NSInteger)limit
                                                     leaseDuration:(NSTimeInterval)leaseDuration
