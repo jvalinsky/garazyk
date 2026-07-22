@@ -153,7 +153,7 @@ better-isolated steps.
 | Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
-| SMTP, cloud blob, and STAR completion         |             3 |               3 |             3 |             2 |      3 | Decision needed |
+| SMTP, cloud blob, and STAR completion         |             3 |               3 |             3 |             2 |      3 | Blocked: operator decision |
 | Space app attestation (managing-app)          |             4 |               2 |             3 |             2 |      3 | Decision needed |
 
 ## Dependency order
@@ -384,7 +384,7 @@ removals without caller proof.
 
 1. Regenerate the `objc-jupyter-wasm` capability baseline and choose a small
    supported subset before scheduling parser/runtime work.
-2. Decide whether SMTP, cloud blob delete/copy, and STAR CAR reconstruction are
+2. Decide whether SMTP, cloud blob startup/listing/streaming, and STAR CAR reconstruction are
    supported products. Remove configuration promises for rejected features.
 3. Keep AppView QueryRunner/pooling deferred until migration safety is fixed and
    measured contention justifies a concurrency change.
