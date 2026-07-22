@@ -28,6 +28,12 @@ composite-key tables with FK-safe parent/child replacement ordering. The
 focused test exercises populated data in every target table through V4
 apply/rollback/re-apply. O4 covering-index evidence is next.
 
+**Completed 2026-07-22: O4.** The query-plan audit added only actor-store V5
+`idx_records_rev`, which SQLite uses as a covering index for the repo-status
+revision query. Other candidate paths already use primary/existing indexes or
+would need to duplicate BLOB payloads, so no speculative index was added. O3
+lazy subtree hydration is next.
+
 ## Mission
 
 Finish workstream 07: the remaining `WITHOUT ROWID` conversions (O2 phases
