@@ -47,6 +47,24 @@ function base64Url(bytes: Uint8Array): string {
   );
 }
 
+function base64UrlJSON(segment: string): Record<string, unknown> {
+  const padded = segment.replaceAll("-", "+").replaceAll("_", "/") +
+    "=".repeat((4 - segment.length % 4) % 4);
+  const value = JSON.parse(atob(padded));
+  if (!value || typeof value !== "object") {
+    throw new Error("expected JWT JSON object");
+  }
+  return value as Record<string, unknown>;
+}
+
+function credentialKeyID(token: string): string {
+  const header = token.split(".", 1)[0];
+  if (!header) throw new Error("credential has no JWT header");
+  const kid = base64UrlJSON(header).kid;
+  if (typeof kid !== "string") throw new Error("credential JWT has no kid");
+  return kid;
+}
+
 function randomBase64Url(length = 32): string {
   const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
@@ -143,6 +161,69 @@ async function readJSON(response: Response): Promise<Record<string, unknown>> {
     throw new Error("expected a JSON object response");
   }
   return value as Record<string, unknown>;
+}
+
+async function authenticatedXrpc(
+  base: string,
+  method: string,
+  accessToken: string,
+  body: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const response = await fetch(new URL(`/xrpc/${method}`, base), {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  return await readJSON(response);
+}
+
+async function prepareDedicatedSpaceKey(did: string): Promise<string> {
+  const runDir = Deno.env.get("ATPROTO_E2E_RUN_DIR");
+  if (!runDir) throw new Error("binary run directory is unavailable");
+  const binDir = Deno.env.get("BUILD_DIR") || "build/bin";
+  const command = new Deno.Command(`${binDir}/kaszlak`, {
+    args: [
+      "account",
+      "--json",
+      "--data-dir",
+      `${runDir}/data/pds2`,
+      "--config",
+      `${runDir}/data/pds2/pds2-config.json`,
+      "prepare-space-key",
+      did,
+    ],
+    env: {
+      ...Deno.env.toObject(),
+      PDS_USE_KEYCHAIN: "false",
+      PDS_MASTER_SECRET: "test-master-secret-123",
+    },
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const output = await command.output();
+  if (!output.success) {
+    throw new Error(
+      `space-key preparation failed: ${
+        new TextDecoder().decode(output.stderr).trim()
+      }`,
+    );
+  }
+  const rawOutput = new TextDecoder().decode(output.stdout);
+  // The standalone CLI initializes the PDS and writes startup diagnostics before
+  // its JSON result.  Its machine-readable payload is the final JSON document.
+  const jsonStart = rawOutput.indexOf("\n{");
+  const parsed = JSON.parse(
+    jsonStart >= 0 ? rawOutput.slice(jsonStart + 1) : rawOutput.trimStart(),
+  );
+  const methods = parsed?.verificationMethods;
+  const key = methods?.atproto_space;
+  if (typeof key !== "string" || !key.startsWith("did:key:z")) {
+    throw new Error("space-key preparation returned no public did:key");
+  }
+  return key;
 }
 
 async function postFormWithDPoP(
@@ -679,6 +760,114 @@ export async function run(): Promise<ScenarioResult> {
         throw new Error(
           "credential read did not return the private record",
         );
+      }
+    },
+  );
+
+  const dedicatedSpaceKey = await timedCall(
+    result,
+    "Authority prepares a dedicated space signing key",
+    () => prepareDedicatedSpaceKey(owner.did),
+    (key) => `public_key=${key.slice(0, 20)}…`,
+  );
+  if (!dedicatedSpaceKey || !owner.accessJwt) {
+    result.finish();
+    return result;
+  }
+
+  await timedCall(
+    result,
+    "Authority publishes the dedicated key through a signed PLC operation",
+    async () => {
+      const confirmation = await authenticatedXrpc(
+        PDS2,
+        "com.atproto.identity.requestPlcOperationSignature",
+        owner.accessJwt,
+        {},
+      );
+      const token = confirmation.token;
+      if (typeof token !== "string") {
+        throw new Error("PLC confirmation did not return a test token");
+      }
+      const signed = await authenticatedXrpc(
+        PDS2,
+        "com.atproto.identity.signPlcOperation",
+        owner.accessJwt,
+        {
+          token,
+          verificationMethods: { atproto_space: dedicatedSpaceKey },
+        },
+      );
+      const operation = signed.operation;
+      if (!operation || typeof operation !== "object") {
+        throw new Error("PLC signing did not return an operation");
+      }
+      const methods = (operation as Record<string, unknown>)
+        .verificationMethods as Record<string, unknown> | undefined;
+      if (
+        methods?.atproto_space !== dedicatedSpaceKey ||
+        typeof methods?.atproto !== "string"
+      ) {
+        throw new Error(
+          "PLC operation did not preserve both credential verification methods",
+        );
+      }
+      await authenticatedXrpc(
+        PDS2,
+        "com.atproto.identity.submitPlcOperation",
+        owner.accessJwt,
+        { operation },
+      );
+    },
+  );
+
+  const dedicatedReaderCredential = await timedCall(
+    result,
+    "Reader receives a credential from the dedicated signing key",
+    () => delegationAndCredential(readerPDS, PDS2, readerGrant, space),
+    (token) => `kid=${credentialKeyID(token)}`,
+  );
+  if (!dedicatedReaderCredential) {
+    result.finish();
+    return result;
+  }
+  if (
+    credentialKeyID(readerCredential) !== "#atproto" ||
+    credentialKeyID(dedicatedReaderCredential) !== "#atproto_space"
+  ) {
+    result.stepFailed(
+      "Credential key overlap",
+      "expected old #atproto and new #atproto_space credentials",
+    );
+    result.finish();
+    return result;
+  }
+
+  await timedCall(
+    result,
+    "Remote PDS accepts both account and dedicated credentials during overlap",
+    async () => {
+      for (const credential of [readerCredential, dedicatedReaderCredential]) {
+        const record = await credentialXrpc(
+          PDS1,
+          "com.atproto.space.getRecord",
+          credential,
+          undefined,
+          {
+            space,
+            repo: writer.did,
+            collection: COLLECTION,
+            rkey: "scenario-93-private",
+          },
+        );
+        if (
+          (record.value as Record<string, unknown> | undefined)?.text !==
+            privateText
+        ) {
+          throw new Error(
+            "overlap credential did not authorize the remote read",
+          );
+        }
       }
     },
   );
