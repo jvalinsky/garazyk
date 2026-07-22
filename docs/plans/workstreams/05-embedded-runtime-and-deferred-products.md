@@ -1,7 +1,7 @@
 ---
 title: Embedded Runtime and Deferred Products
 status: active
-last_verified: 2026-07-12
+last_verified: 2026-07-22
 ---
 
 # Embedded Runtime and Deferred Products
