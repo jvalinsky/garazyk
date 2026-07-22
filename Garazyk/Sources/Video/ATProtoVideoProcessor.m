@@ -51,7 +51,10 @@
 }
 
 - (BOOL)validateContentSignature:(NSData *)data declaredMimeType:(NSString *)declaredMime {
-    if (data.length < 12) return NO;
+    // Each format check below gates on its own minimum length before indexing
+    // (e.g. MPEG/WebM/Ogg only need 4 bytes) - a blanket 12-byte minimum here
+    // would reject those shorter-but-valid signatures before ever checking them.
+    if (data.length == 0) return NO;
 
     const uint8_t *bytes = (const uint8_t *)data.bytes;
 
