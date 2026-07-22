@@ -73,7 +73,7 @@ transaction discipline) are already done and excluded from this plan.
 | O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | Complete |
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Complete |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Complete (actor V5) |
-| O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | In progress |
+| O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Complete |
 | O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Open   |
 
 ## O1: `INSERT OR IGNORE` for `ipld_blocks` — COMPLETE
@@ -472,9 +472,11 @@ old table structure.
 | One-shot/injected resolvers | Per-instance cache only | Retained where configuration or test injection requires isolation; they are not long-lived hot-path caches. |
 
 The first two concrete gaps are fixed and covered by
-`HandleResolverTests` and `DIDResolverTests`. Before marking O5 complete,
-the remaining call sites are dispositioned against this table rather than
-adding a second, incompatible identity cache.
+`HandleResolverTests` and `DIDResolverTests`. Long-lived PDS, repository,
+space, Beskid, and Mikrus paths use `DIDResolver sharedResolver`. The remaining
+per-instance resolvers are intentionally retained only for injected tests or
+callers with a service-specific PLC URL; adding a second global cache there
+would silently cross configuration boundaries.
 
 **Problem:** `Beskid` provides a TTL-based identity cache, but coverage
 of all hot identity resolution paths is unverified. Bluesky's reference
