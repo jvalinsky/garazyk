@@ -85,7 +85,10 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   NSArray<NSDictionary<NSString *, id> *> *heads = [self.spaceStore repositoriesForReconciliation:nil];
   for (NSDictionary<NSString *, id> *head in heads) {
     [self replayHead:head];
-    [self syncRemoteRepo:head requestCounts:nil];
+    NSString *selector = [self syncRemoteRepo:head requestCounts:nil];
+    if (selector) {
+      GZ_LOG_SYNC_INFO(@"permissioned-space event=recovery_path selector=%@", selector);
+    }
   }
 }
 
@@ -109,6 +112,8 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                                                       error:nil];
   if (!endpoint || !token) return;
 
+  GZ_LOG_SYNC_INFO(@"permissioned-space event=replay_attempt");
+
   NSURL *url = [NSURL URLWithString:@"xrpc/com.atproto.space.notifyWrite" relativeToURL:endpoint];
   if (!url) return;
   NSError *encodeError = nil;
@@ -126,7 +131,12 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   [request setValue:[@"Bearer " stringByAppendingString:token] forHTTPHeaderField:@"Authorization"];
   [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:nil completion:
       ^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
-        /* The next durable pass retries transport and non-2xx failures. */
+        if (error || response.statusCode < 200 || response.statusCode >= 300) {
+          GZ_LOG_SYNC_WARN(@"permissioned-space event=replay_failed status=%ld error=%@",
+                           (long)response.statusCode, error.localizedDescription ?: @"none");
+        } else {
+          GZ_LOG_SYNC_INFO(@"permissioned-space event=replay_succeeded");
+        }
       }];
 }
 
@@ -149,6 +159,9 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
     }
     NSMutableDictionary<NSString *, NSNumber *> *requestCounts = [NSMutableDictionary dictionary];
     NSString *selector = [self syncRemoteRepo:head requestCounts:requestCounts];
+    if (selector) {
+      GZ_LOG_SYNC_INFO(@"permissioned-space event=recovery_path selector=%@", selector);
+    }
     if (completion) completion(@{ @"selector" : selector ?: @"unavailable", @"requests" : [requestCounts copy] });
   });
 }
@@ -170,6 +183,8 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                                            actorKeyManager:actor.keyManager
                                                       error:nil];
   if (!endpoint || endpoint.absoluteString.length == 0 || !token) return nil;
+
+  GZ_LOG_SYNC_INFO(@"permissioned-space event=reconcile_attempt");
 
   NSDictionary *remoteCommitResponse = [self xrpcGet:@"com.atproto.space.getLatestCommit"
                                      endpoint:endpoint
@@ -199,6 +214,9 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
    * field is the prior record CID (not a repository revision), so comparing
    * it to localRev would falsely turn every update into a recovery gap. */
   BOOL gapDetected = ops.count == 0;
+  if (gapDetected) {
+    GZ_LOG_SYNC_INFO(@"permissioned-space event=reconciliation_gap_detected");
+  }
 
   if (!gapDetected) {
     NSMutableArray<PDSSpaceWrite *> *writes = [NSMutableArray array];
