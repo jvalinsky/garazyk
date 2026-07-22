@@ -483,7 +483,7 @@ NSString * const kPDSConversationMembersTableCreateSQL =
     @"joined_at TEXT NOT NULL,"
     @"PRIMARY KEY (convo_id, member_did),"
     @"FOREIGN KEY (convo_id) REFERENCES conversations(id) ON DELETE CASCADE"
-    @")";
+    @") WITHOUT ROWID";
 
 NSString * const kPDSMessagesTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS messages ("
@@ -505,7 +505,7 @@ NSString * const kPDSMessageReactionsTableCreateSQL =
     @"created_at TEXT NOT NULL,"
     @"PRIMARY KEY (message_id, actor_did, emoji),"
     @"FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE"
-    @")";
+    @") WITHOUT ROWID";
 
 NSString * const kPDSIndexConversationMembersConvoSQL =
     @"CREATE INDEX IF NOT EXISTS idx_conversation_members_convo ON conversation_members(convo_id)";
@@ -543,7 +543,7 @@ NSString * const kPDSGroupMembersTableCreateSQL =
     @"invited_by TEXT,"
     @"joined_at TEXT NOT NULL,"
     @"PRIMARY KEY (group_uri, member_did)"
-    @")";
+    @") WITHOUT ROWID";
 
 NSString * const kPDSGroupInviteLinksTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS group_invite_links ("
@@ -604,7 +604,7 @@ NSString * const kPDSGroupMessageReactionsTableCreateSQL =
     @"created_at TEXT NOT NULL,"
     @"PRIMARY KEY (message_id, actor_did, emoji),"
     @"FOREIGN KEY (message_id) REFERENCES group_messages(id)"
-    @")";
+    @") WITHOUT ROWID";
 
 NSString * const kPDSIndexGroupMessagesGroupSQL =
     @"CREATE INDEX IF NOT EXISTS idx_group_messages_group ON group_messages(group_uri)";
@@ -657,7 +657,7 @@ NSString * const kPDSCollectionMembershipTableCreateSQL =
     @"collection TEXT NOT NULL,"
     @"indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
     @"PRIMARY KEY (did, collection)"
-    @")";
+    @") WITHOUT ROWID";
 
 NSString * const kPDSIndexCollectionMembershipCollectionSQL =
     @"CREATE INDEX IF NOT EXISTS idx_collection_membership_collection ON collection_membership(collection)";
