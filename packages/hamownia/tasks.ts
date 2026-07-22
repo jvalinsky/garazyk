@@ -31,7 +31,10 @@ export interface ProfileOptions {
 /**
  * Build a standard record with $type and createdAt.
  */
-function record($type: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
+function record(
+  $type: string,
+  extra: Record<string, unknown> = {},
+): Record<string, unknown> {
   return { $type, createdAt: new Date().toISOString(), ...extra };
 }
 
@@ -56,7 +59,7 @@ export async function postStatus(
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.feed.post",
     record: r,
-  });
+  }) as ProcedureOutput<"com.atproto.repo.createRecord">;
 }
 
 /**
@@ -75,7 +78,7 @@ export async function followUser(
   return await client.as(follower).repo.createRecord({
     collection: "app.bsky.graph.follow",
     record: record("app.bsky.graph.follow", { subject: targetDid }),
-  });
+  }) as ProcedureOutput<"com.atproto.repo.createRecord">;
 }
 
 /**
@@ -94,7 +97,7 @@ export async function likePost(
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.feed.like",
     record: record("app.bsky.feed.like", { subject: targetPost }),
-  });
+  }) as ProcedureOutput<"com.atproto.repo.createRecord">;
 }
 
 /**
@@ -113,7 +116,7 @@ export async function blockUser(
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.graph.block",
     record: record("app.bsky.graph.block", { subject: targetDid }),
-  });
+  }) as ProcedureOutput<"com.atproto.repo.createRecord">;
 }
 
 /**
@@ -131,8 +134,11 @@ export async function createProfile(
 ): Promise<ProcedureOutput<"com.atproto.repo.createRecord">> {
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.actor.profile",
-    record: record("app.bsky.actor.profile", profile as Record<string, unknown>),
-  });
+    record: record(
+      "app.bsky.actor.profile",
+      profile as Record<string, unknown>,
+    ),
+  }) as ProcedureOutput<"com.atproto.repo.createRecord">;
 }
 
 /**
@@ -149,7 +155,10 @@ export async function deleteRecord(
   collection: string,
   rkey: string,
 ): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">> {
-  return await client.as(actor).repo.deleteRecord({ collection, rkey });
+  return await client.as(actor).repo.deleteRecord({
+    collection,
+    rkey,
+  }) as ProcedureOutput<"com.atproto.repo.deleteRecord">;
 }
 
 /**
@@ -168,7 +177,7 @@ export async function repost(
   return await client.as(actor).repo.createRecord({
     collection: "app.bsky.feed.repost",
     record: record("app.bsky.feed.repost", { subject: targetPost }),
-  });
+  }) as ProcedureOutput<"com.atproto.repo.createRecord">;
 }
 
 /**
@@ -184,7 +193,7 @@ export async function muteUser(
   actor: Actor,
   targetDid: string,
 ): Promise<void> {
-  return await client.as(actor).graph.muteActor(targetDid);
+  await client.as(actor).graph.muteActor(targetDid);
 }
 
 /**
@@ -200,5 +209,5 @@ export async function unmuteUser(
   actor: Actor,
   targetDid: string,
 ): Promise<void> {
-  return await client.as(actor).graph.unmuteActor(targetDid);
+  await client.as(actor).graph.unmuteActor(targetDid);
 }
