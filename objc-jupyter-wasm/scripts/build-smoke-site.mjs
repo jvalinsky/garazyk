@@ -108,8 +108,8 @@ await copyFile(
 );
 await writeRuntimeAssets(kernelWasm, outputDir);
 await copyFile(
-  path.join(projectRoot, "demo/hello.ipynb"),
-  path.join(outputDir, "files/demo/hello.ipynb"),
+  path.join(projectRoot, "demo/01-hello-objc.ipynb"),
+  path.join(outputDir, "files/demo/01-hello-objc.ipynb"),
 );
 
 const kernelSpec = {
