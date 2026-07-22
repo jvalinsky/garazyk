@@ -74,7 +74,7 @@ transaction discipline) are already done and excluded from this plan.
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Complete |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Complete (actor V5) |
 | O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Complete |
-| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Blocked — ADR 0008 operator review |
+| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | In progress — ADR 0008 accepted |
 
 ## O1: `INSERT OR IGNORE` for `ipld_blocks` — COMPLETE
 
@@ -540,12 +540,13 @@ None. Can proceed in parallel.
 
 ## O6: Decouple Ingest from Indexing
 
-**Design checkpoint (2026-07-22):** ADR 0008 proposes a SQLite-backed,
+**Design checkpoint (2026-07-22):** ADR 0008 accepts a SQLite-backed,
 idempotent relay-event queue with an independently acknowledged index worker,
 leases, watermarked backpressure, and dead-letter retention. The current
 ingest engine synchronously decodes and materializes commits, so the change is
-needed; implementation is deliberately blocked pending operator approval of
-eventual consistency, capacity, and dead-letter policy.
+needed; the operator accepted eventual consistency, capacity, and dead-letter
+policy on 2026-07-22. Schema V3 now provides idempotent enqueue, leased claim,
+terminal retention, and indexed acknowledgement; worker handoff remains.
 
 **Problem:** If the firehose ingestion path does synchronous indexing
 (updating AppView tables, search index, etc.), ingest throughput is
