@@ -14,6 +14,7 @@
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
+#import "Core/DID.h"
 #import "Core/NSDictionary+CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoDagCBOR.h"
@@ -777,6 +778,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         [_database saveHandle:event.handle did:event.did error:nil];
         GZ_LOG_INFO(@"[AppView Ingest] Updated handle mapping: %@ -> %@", event.handle, event.did);
     }
+    [[DIDResolver sharedResolver] invalidateDID:event.did];
 
     AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
     ingestEvent.seq        = event.seq;
