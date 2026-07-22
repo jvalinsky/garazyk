@@ -73,21 +73,14 @@ via `Layout`'s `hasOwnH1`, mobile-drawer focus trap/restore
 `prefers-reduced-motion` coverage (`static/app.css`) are committed with
 automated assertions in `browser_smoke_test.ts`.
 
-**Known gap discovered while adding hydration-dependent assertions:**
-Fresh's dev esbuild bundle fails to build for the whole scenario dashboard —
-`islands/SessionPlayer.tsx`'s `await import("asciinema-player")` doesn't
-resolve via esbuild-deno-loader (`Could not resolve "asciinema-player"
-[plugin deno-loader]`), which breaks client-JS hydration for every island,
-not just `SessionPlayer`. This is pre-existing and unrelated to phase 8: the
-prior browser-smoke baseline (workstream 00 B0.2 item 5) only logged
-console errors as warnings, never asserted on them, so this was silently
-present already. It blocks live-browser verification of the mobile-drawer
-focus trap; `browser_smoke_test.ts` detects the broken bundle and skips
-those specific checks with a `[WARN]`. The trap/restore logic itself was
-verified by source review (`islands/MobileNav.tsx`), standing in for the
-manual keyboard pass until this is fixed. Own lane — likely fix is loading
-`asciinema-player`'s pre-built browser bundle via the same CDN URL already
-used for its CSS, rather than the bare `npm:` specifier.
+**Resolved hydration gap (2026-07-22):** Fresh's dev esbuild loader could not
+resolve `SessionPlayer.tsx`'s bare `import("asciinema-player")`, breaking the
+client bundle for every dashboard island. The island now loads asciinema
+player's version-pinned standalone browser bundle from the same CDN already
+used for its stylesheet, exposing the documented `AsciinemaPlayer.create`
+API without involving Fresh's npm resolver. The browser smoke now asserts,
+rather than skips, the narrow-width drawer's hydrated click behavior, focus
+trap, and focus restoration; the full run is green.
 
 **Progress (2026-07-19, slice 2): Admin UI — complete.**
 `UIServerRuntime.m`: heading order (login `h1`, shell `h1`, 48 section

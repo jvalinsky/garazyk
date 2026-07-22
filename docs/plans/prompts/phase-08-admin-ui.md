@@ -20,13 +20,10 @@ color-only (`StatusBar` health dot paired with sr-only text; `RunHistory`/
 `prefers-reduced-motion` coverage (U5) in `static/app.css`. Automated
 assertions added to `browser_smoke_test.ts` (document lang, h1 presence,
 table semantics, non-color status, reduced-motion, mobile-drawer focus
-trap/restore) — all green except the drawer trap/restore check, which the
-test detects and skips with a `[WARN]` because of a pre-existing,
-unrelated bug: `islands/SessionPlayer.tsx`'s `import("asciinema-player")`
-breaks Fresh's dev esbuild bundle for every island (see workstream 04 U4
-for detail). Manual verification of the trap/restore logic was done by
-source review of `MobileNav.tsx` in lieu of a live browser pass, pending
-that bug's fix.
+trap/restore). The drawer check was initially skipped because
+`SessionPlayer.tsx`'s bare npm dynamic import broke Fresh's island bundle;
+Slice 6 replaces that import with the version-pinned standalone browser bundle
+and promotes the live focus-trap/restore test to a hard assertion.
 
 **Slice 2 complete (2026-07-19): U4 Admin UI (ObjC AdminUIServer).**
 `Garazyk/Sources/AdminUIServer/UIServerRuntime.m`: page heading order
@@ -95,6 +92,13 @@ changes, so incremental builds could serve stale UI files. It is replaced by
 an asset-file-dependent custom target that recreates `build/bin/Assets` and a
 CTest assertion that the complete built asset inventory and hashes match the
 source tree.
+
+**Slice 6 in progress (2026-07-22): dashboard hydration.** `SessionPlayer`
+now loads asciinema-player's pinned standalone browser bundle instead of a
+bare npm dynamic import that Fresh's esbuild loader could not resolve. The
+dashboard browser smoke passes again and makes the narrow-width drawer's
+hydration, focus trap, and focus restoration mandatory rather than skipped
+best-effort checks.
 
 # Phase 8: Admin UI accessibility and structural cleanup
 
