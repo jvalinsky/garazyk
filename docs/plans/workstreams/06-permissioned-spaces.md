@@ -200,7 +200,15 @@ downgrade-retention drills remain.
 `PDSSpaceStore` now creates serialized SQLite online backups, so committed WAL
 content is captured consistently without filesystem copying active sidecars.
 The native drill restores to a fresh database and verifies a record and its
-repository LtHash state/digest. Downgrade-retention evidence remains.
+repository LtHash state/digest.
+
+**Progress (2026-07-22): disabled-mode retention complete.** The native
+application test seeds a space database, starts the PDS with
+`permissionedSpacesEnabled` explicitly false, and verifies that no space store
+is opened and the database remains byte-for-byte unchanged. A pre-feature
+binary has no code path that references this database; that is an inference
+from the feature's isolated data path rather than a claim that a historical
+binary was executed.
 
 ## Primary sources
 
