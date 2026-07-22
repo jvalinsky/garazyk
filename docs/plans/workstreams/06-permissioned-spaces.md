@@ -126,6 +126,15 @@ proves the current fallback end-to-end.
 Rollback: the fallback key path remains supported; rotation is per-account
 and reversible by rotating back.
 
+**Progress (2026-07-22): rotation design complete.** ADR 0004 now requires a
+purpose-bound separate signer and an explicit per-DID PLC operator workflow,
+with fallback, prepared, overlap, and cut-over states. The design preserves
+the account key, refuses to mint a `#atproto_space` credential until that exact
+public key is published, permits both exact key layouts during the bounded
+credential overlap, and forbids private-key or credential logging. Implement
+the signer primitive, PLC tooling, and two-PDS exercise as the next P6.2
+slice.
+
 ## P6.3 App attestation decision (decision needed)
 
 `managing-app` policy and `appAccess#allowList` are rejected rather than

@@ -92,3 +92,71 @@ HTTP(S) URL when the endpoint that PDS peers resolve differs from the public
 issuer (for example, a Docker network alias). Existing `did:plc` accounts need
 an ordinary PLC rotation to acquire these entries; the PDS never rewrites a
 user's DID document implicitly.
+
+## Amendment: dedicated space signing-key rotation
+
+### Context
+
+The current `#atproto_space` entry can intentionally reuse `#atproto`, but
+credential minting therefore uses the account signing key. Relabeling that
+signature as a dedicated space key would make the DID document lie. A real
+migration needs a separate private key, an ordinary operator-authorized PLC
+operation, and a bounded overlap in which existing credentials continue to
+verify.
+
+### Decision
+
+Implement dedicated-key migration as an explicit per-DID operator workflow.
+The future implementation introduces a purpose-bound `PDSActorKeyManager`
+instance for `#atproto_space`; it must use the same platform-protected key
+storage class as account signing keys, but a distinct storage identifier and
+access policy. Neither its private material, an encoded credential, nor a
+delegation token is accepted as a CLI argument or emitted in logs.
+
+The workflow has four durable states, recorded separately from the public
+space database:
+
+1. **Fallback** — only `#atproto` is authoritative. New credentials carry
+   `kid: "#atproto"` and are signed by the account signer.
+2. **Prepared** — the operator generated and durably stored the dedicated
+   signer, but no DID operation has been accepted. This state cannot mint a
+   `#atproto_space` credential.
+3. **Overlap** — an operator-submitted PLC operation has published the
+   dedicated public key at the exact `#atproto_space` fragment, preserving the
+   account key at `#atproto`. New credentials use the dedicated signer and
+   `kid: "#atproto_space"`; verifiers accept either exact fragment according
+   to the token `kid`. The old account signer remains available only through
+   the maximum existing credential lifetime (currently two hours) plus DID
+   cache propagation time.
+4. **Cut over** — after that deadline, account-key credentials are rejected
+   as expired and only the dedicated signer mints credentials. The account
+   key remains unchanged for ordinary repository signing.
+
+The operator command will create a PLC operation for review and submit it only
+with the account's existing rotation authority. It must show the DID, the new
+public `did:key` value, the proposed operation CID, and the earliest safe
+cutover time before submission; it never performs an implicit DID update at
+account creation, login, or credential mint. Existing DIDs follow exactly the
+same command. A failed or abandoned PLC operation leaves the persisted
+dedicated signer unused and the DID in **Fallback**; it cannot change minted
+credential headers.
+
+Rollback during **Overlap** means stopping dedicated-key minting and allowing
+already-issued credentials to expire naturally. A second ordinary PLC
+operation may restore the same-value fallback entry only after no unexpired
+dedicated-key credential can be presented. No rotation removes the account
+key, rewrites public repository signatures, or deletes permissioned data.
+
+### Consequences and verification
+
+The implementation must make signer selection a typed `SpaceCredentialSigner`
+primitive that returns both a validated exact fragment and its signing
+capability. This prevents a caller from pairing arbitrary `kid` text with an
+unrelated signer. It must additionally prove, in a two-PDS topology, that:
+
+- an existing fallback credential remains readable during overlap;
+- a newly minted dedicated-key credential is signed by the new public key and
+  is accepted after a fresh DID resolve;
+- a mismatched key/`kid`, an unpublished prepared key, and a stale DID cache
+  are rejected or retried safely; and
+- after the bounded overlap, minting cannot return the account-key credential.
