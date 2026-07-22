@@ -1,7 +1,7 @@
 ---
 title: Web and Admin UI
-status: active
-last_verified: 2026-07-12
+status: complete
+last_verified: 2026-07-22
 ---
 
 # Web and Admin UI
@@ -136,6 +136,14 @@ document has no horizontal overflow at a 640px viewport (the 200%-zoom
 equivalent for a 1280px desktop layout). The remaining U5 verification is the
 same live reflow, focus, and target-size coverage for the Admin UI.
 
+**Progress (2026-07-22): U5 complete.** The new focused live-browser smoke
+starts the built `garazyk-ui` binary and validates its login page at the same
+640px / 200%-zoom-equivalent viewport: no page-level horizontal overflow,
+44×44 CSS-pixel password and sign-in targets, a keyboard-visible password
+focus indicator, and suppressed transitions under `prefers-reduced-motion`.
+`system.css` now establishes the narrow-width target-size minimum for Admin
+UI controls. The smoke and the built-asset hash/inventory CTest pass.
+
 ## U6. Structural cleanup
 
 After U1-U4:
@@ -252,9 +260,8 @@ referenced them (`docs/11-reference/admin-ui-documentation.md`,
 to match. `docs/repo-index/*` is auto-generated and left for its own
 tooling to refresh.
 
-This closes workstream 04 U4 and U6 in full; U5 (visual conformance —
-measured contrast, 200% zoom/reflow, touch targets, dashboard keyboard
-order at narrow widths) remains open, tracked in phase 8's prompt.
+This closes workstream 04: U4 accessible workflows, U5 visual conformance,
+and U6 structural cleanup are all complete.
 
 Primary sources:
 

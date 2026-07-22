@@ -1,10 +1,11 @@
 ---
 phase: 8
 title: Admin UI accessibility and structural cleanup
-status: in-progress
+status: complete
 agent: worker
 depends_on: [1]
-last_updated: 2026-07-19
+last_updated: 2026-07-22
+completed_at: 2026-07-22
 ---
 
 ## Progress
@@ -106,6 +107,16 @@ least 44×44 CSS px, restored keyboard focus has a 2px visible indicator, and
 the dashboard has no page-level horizontal overflow at a 640px viewport (the
 CSS layout width of a 1280px viewport at 200% zoom). The remaining U5 work is
 the equivalent live Admin UI verification.
+
+**Slice 8 complete (2026-07-22): Admin UI U5 visual validation.** The new
+`scripts/admin_ui_visual_smoke_test.ts` starts the built `garazyk-ui` binary
+and verifies the login page in Chromium at a 640px viewport (the 200%-zoom
+equivalent): no document-level horizontal overflow, at least 44×44 CSS-pixel
+password and sign-in targets, a keyboard-visible password focus indicator,
+and reduced-motion transition suppression. The responsive target-size rule in
+`system.css` applies that minimum to interactive form controls and Admin UI
+navigation controls at narrow widths. The focused test and
+`AdminUIAssetsSync` CTest both pass, completing U5 and Phase 8.
 
 # Phase 8: Admin UI accessibility and structural cleanup
 
