@@ -164,7 +164,7 @@
             test -f site/kernel/kernel.wasm
             ls site/kernel/kernel.*.wasm >/dev/null
             grep -Eq 'kernel\.[0-9a-f]{64}\.wasm' site/runtime-manifest.json
-            test -f site/files/demo/hello.ipynb
+            test -f site/files/demo/01-hello-objc.ipynb
             test -f site/kernelspecs/objective-c/kernel.json
             mkdir -p $out
             touch $out/passed
