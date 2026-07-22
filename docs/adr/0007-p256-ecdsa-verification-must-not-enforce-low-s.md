@@ -90,3 +90,39 @@ PDS could emit invalid DPoP proofs for outbound requests.
 - This was the prerequisite blocker for the phase-2 permissioned-spaces
   acceptance gate (scenario 93). It is a general OAuth/auth correctness fix,
   not a spaces-specific one.
+
+## Amendment (2026-07-22): PLC operation verification must still enforce low-S
+
+This decision's blast-radius list named `PLCAuditor` as one of the paths
+correctly fixed by no longer enforcing low-S. That was wrong for that specific
+caller. did:plc operation-log signatures require low-S canonicalization —
+`AuthCryptoECDSA.h`'s own `normalizeLowS:` documents this
+(<https://web.plc.directory/spec/v0.1/did-plc>) — and the official atproto
+interop test fixtures (`Garazyk/Tests/fixtures/atproto-interop-tests/crypto/signature-fixtures.json`)
+assert a non-low-S P-256 **and** a non-low-S K-256 (secp256k1) signature are
+both invalid. The K-256 case already passed because `libsecp256k1`'s
+`secp256k1_ecdsa_verify` rejects non-canonical signatures for free; the P-256
+case (`AtprotoInteropFixturesTests/testInteropSignatureFixtures`) failed,
+because this decision's fix removed the only low-S check the P-256/PLC path
+had, and nothing replaced it for the PLC caller specifically.
+
+The distinction this decision should have drawn: the DPoP/JWT/WebAuthn
+callers verify signatures over data those protocols generated (JOSE, RFC
+7515), where malleability is a non-issue and rejecting high-S breaks
+interop with real clients (Decision item 1 remains correct for them).
+PLC operations are different — did:plc's own spec defines low-S as part of
+what makes a signature valid, independent of which curve signed it.
+
+**Fix:** `PLCAuditor.verifyP256Signature:hash:compressedPublicKey:`
+(`Garazyk/Sources/PLC/PLCAuditor.m`) now calls `[AuthCryptoECDSA isLowS:error:]`
+and rejects the signature outright if it isn't low-S, before attempting
+verification. This is local to the PLC caller; `AuthCryptoJWK`'s shared
+verifier (used by DPoP/JWT/WebAuthn) is unchanged and still accepts both S
+forms, so this decision's original fix for those callers is not affected.
+
+Verified: `AtprotoInteropFixturesTests` (5/5, including the previously-failing
+signature fixture), `PLCAuditorTests` (12/12, including a new
+`testAuditorRejectsHighSP256Signature` regression test), `AuthCryptoECDSATests`,
+`AuthCryptoJWKTests` (including `testVerifySignatureAcceptsBothLowSAndHighS`,
+confirming the DPoP-facing path still accepts high-S), `OAuthDPoPTests`,
+`WebAuthnVerifierTests`, and `AuthVerifierTests` all pass.

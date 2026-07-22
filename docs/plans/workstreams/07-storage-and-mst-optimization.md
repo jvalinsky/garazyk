@@ -587,6 +587,19 @@ question above, and a newly-noticed order-dependent singleton-state leak in
 `ATProtoVideoTranscoderUnitTests`/`PDSVideoWorkerTests.m:303-314` filed as a
 follow-up, not fixed here).
 
+**ADR 0007 interop question resolved (2026-07-22).** The failing
+`AtprotoInteropFixturesTests/testInteropSignatureFixtures` case was not a
+flaky/incidental failure: ADR 0007's fix correctly stopped the shared P-256
+verifier from rejecting high-S DPoP/JWT/WebAuthn signatures, but its
+blast-radius list wrongly included `PLCAuditor` among the paths that should
+accept both S forms — did:plc operation signatures require low-S
+canonicalization per spec, and the official atproto interop fixtures assert
+exactly that for both P-256 and K-256. `PLCAuditor.verifyP256Signature:` now
+enforces low-S itself (`AuthCryptoECDSA isLowS:`) without touching the shared
+DPoP-facing verifier. See ADR 0007's 2026-07-22 amendment for the full
+evidence trail. `AtprotoInteropFixturesTests` is 5/5; the video-test singleton
+leak remains a separate, still-open follow-up.
+
 **Problem:** If the firehose ingestion path does synchronous indexing
 (updating AppView tables, search index, etc.), ingest throughput is
 limited by the slowest indexing operation.
