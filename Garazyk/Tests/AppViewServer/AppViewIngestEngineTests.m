@@ -14,6 +14,7 @@
 #import "AppView/Server/AppViewTypes.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Sync/Firehose/Firehose.h"
+#import "Sync/Relay/EventFormatter.h"
 
 // ---------------------------------------------------------------------------
 // Tracking delegate
@@ -165,6 +166,28 @@
     XCTAssertEqualObjects(events[0][@"event_type"], @"dirty_repair");
 }
 
+- (void)testQueueWatermarkAppliesBackpressureBeforeAcceptingAnotherEvent {
+    NSError *error = nil;
+    XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://test.relay" seq:9 eventType:@"#commit"
+                                                    did:@"did:plc:queued" rev:@"rev0" cid:nil
+                                            rawEnvelope:[NSData data] error:&error]);
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc] initWithDatabase:self.db relayURLs:@[]];
+    engine.maxLagForBackpressure = INT64_MAX;
+    engine.indexQueueHighWatermarkEvents = 1;
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 10;
+    event.repo = @"did:plc:over-limit";
+    event.rev = @"rev1";
+    event.ops = @[];
+    [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
+
+    NSDictionary<NSString *, NSNumber *> *metrics = [self.db pendingIndexQueueMetricsForRelayURL:@"wss://test.relay" error:&error];
+    XCTAssertEqual([metrics[@"event_count"] integerValue], 1);
+    NSArray<NSDictionary *> *events = [self.db loadStoredEventsAfterCursor:0 limit:10 error:&error];
+    XCTAssertEqualObjects(events[0][@"event_type"], @"dirty_repair");
+}
+
 - (void)testProcessedLiveCommitAdvancesRepoLastRev {
     NSError *err = nil;
     AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:live"];
@@ -237,6 +260,33 @@
     XCTAssertNotEqual(rows[0][@"indexed_at"], [NSNull null]);
     XCTAssertNil(rows[0][@"terminal_error"]);
     XCTAssertEqual([rows[0][@"attempts"] integerValue], 1);
+}
+
+- (void)testStartRecoversQueuedCommitBeforeRelayConsumption {
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 14;
+    event.repo = @"did:plc:recovered";
+    event.rev = @"rev1";
+    event.ops = @[];
+
+    NSError *error = nil;
+    NSData *envelope = [[[EventFormatter alloc] init] encodeCommitEvent:event error:&error];
+    XCTAssertNotNil(envelope, @"%@", error);
+    XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://test.relay" seq:event.seq eventType:@"live_commit"
+                                                    did:event.repo rev:event.rev cid:nil rawEnvelope:envelope error:&error], @"%@", error);
+
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc] initWithDatabase:self.db relayURLs:@[]];
+    [engine start];
+    [NSThread sleepForTimeInterval:0.2];
+    [engine stop];
+
+    AppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:event.repo error:&error];
+    XCTAssertEqual(state.status, AppViewRepoSyncStatusSynced);
+    XCTAssertEqualObjects(state.lastRev, @"rev1");
+    NSArray<NSDictionary *> *rows = [self.db executeParameterizedQuery:
+        @"SELECT indexed_at FROM appview_pending_index_events WHERE relay_url = ? AND seq = ?"
+        params:@[@"wss://test.relay", @14] error:&error];
+    XCTAssertNotNil(rows[0][@"indexed_at"]);
 }
 
 - (void)testConcurrencySafety {
