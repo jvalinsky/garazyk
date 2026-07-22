@@ -54,7 +54,7 @@ where a caller supplies a service-specific PLC URL or injected resolver; the
 shared resolver is used by the durable PDS, repository, space, Beskid, and
 Mikrus paths. `HandleResolverTests` (27) and `DIDResolverTests` (6) cover
 cache hit, expiry, stale response, max-age eviction, and invalidation. O6
-requires an operator-reviewed architecture decision.
+is implemented and awaits the workstream-wide gates.
 
 ## Mission
 
@@ -92,9 +92,11 @@ slice 2 are the safety net for every MST-adjacent change here.
    fixtures must stay byte-identical; track peak memory in tests.
 4. **O5 caching audit**: evidence-first; report coverage gaps before adding
    any cache.
-5. **O6 ingest/indexing decoupling**: design-first — write the design as an
-   ADR draft and set `status: blocked` for operator review before
-   implementing; it is an architectural change.
+5. **O6 ingest/indexing decoupling**: implemented after ADR 0008 acceptance.
+   The relay path persists a replayable envelope before scheduling the leased
+   worker; materialization and acknowledgement share a transaction; startup
+   resumes outstanding work; queue watermarks and poison events pause relay
+   consumption. Run the workstream-wide gates before closing the phase.
 
 ## Acceptance gate
 
@@ -113,6 +115,8 @@ Update workstream 07 status rows and mega-plan Phase 4 item 8; set
 ADR 0008 records the durable queue design after confirming that the current
 AppView relay path synchronously decodes and materializes events. The operator
 approved its eventual-consistency contract, queue capacity/lease defaults,
-dead-letter policy, and production disk budget on 2026-07-22. The migration
-and durable queue API are now in place; worker handoff and recovery scenarios
-remain.
+dead-letter policy, and production disk budget on 2026-07-22. Schema V3,
+atomic enqueue, leased ordered materialization, transaction-coupled
+acknowledgement, startup recovery, poison-event retention, and event/byte
+watermark pause-resume are implemented. Focused database and ingest tests
+cover each boundary; global gates remain.
