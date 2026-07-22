@@ -89,6 +89,13 @@ luminance from the OKLCH tokens and enforces at least 4.5:1 against primary
 and tertiary surfaces in light and dark themes, plus every action-fill text
 pair.
 
+**Slice 5 in progress (2026-07-22): asset build reliability.** The old
+`garazyk-ui` `POST_BUILD` asset copy did not run for CSS/JS/template-only
+changes, so incremental builds could serve stale UI files. It is replaced by
+an asset-file-dependent custom target that recreates `build/bin/Assets` and a
+CTest assertion that the complete built asset inventory and hashes match the
+source tree.
+
 # Phase 8: Admin UI accessibility and structural cleanup
 
 ## Mission

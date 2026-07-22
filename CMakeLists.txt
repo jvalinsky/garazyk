@@ -1158,13 +1158,27 @@ set_target_properties(germ PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
-# Copy UI server assets to build output
-add_custom_command(TARGET garazyk-ui POST_BUILD
+# Copy UI server assets to build output.  A POST_BUILD command only runs when
+# Objective-C sources relink the executable, leaving CSS/JS/template-only
+# changes stale in incremental builds.  Track every source asset through a
+# stamp target so `cmake --build --target garazyk-ui` serves the current tree.
+file(GLOB_RECURSE ADMIN_UI_ASSET_FILES CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets/*"
+)
+set(ADMIN_UI_ASSET_STAMP "${CMAKE_BINARY_DIR}/bin/.garazyk-ui-assets.stamp")
+add_custom_command(
+  OUTPUT "${ADMIN_UI_ASSET_STAMP}"
+  COMMAND ${CMAKE_COMMAND} -E rm -rf "${CMAKE_BINARY_DIR}/bin/Assets"
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets"
     "${CMAKE_BINARY_DIR}/bin/Assets"
-  COMMENT "Copying UI server assets to build output"
+  COMMAND ${CMAKE_COMMAND} -E touch "${ADMIN_UI_ASSET_STAMP}"
+  DEPENDS ${ADMIN_UI_ASSET_FILES}
+  COMMENT "Synchronizing UI server assets to build output"
+  VERBATIM
 )
+add_custom_target(garazyk-ui-assets DEPENDS "${ADMIN_UI_ASSET_STAMP}")
+add_dependencies(garazyk-ui garazyk-ui-assets)
 
 # Tutorial examples are optional; local/dev checkouts may omit examples/.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/tutorial-1-hello-pds/src/main.m")
@@ -1647,6 +1661,13 @@ if(BUILD_TESTS)
   # (workstream 01 S5) is repaired; a full --gated=run pass is green
   # (3454 tests, 0 failures).
   add_test(NAME AllTests COMMAND AllTests --gated=run)
+  add_test(
+    NAME AdminUIAssetsSync
+    COMMAND ${CMAKE_COMMAND}
+      "-DSOURCE_ASSETS=${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets"
+      "-DBUILT_ASSETS=${CMAKE_BINARY_DIR}/bin/Assets"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/scripts/test/assert_admin_ui_assets_synced.cmake"
+  )
 endif()
 
 #=============================

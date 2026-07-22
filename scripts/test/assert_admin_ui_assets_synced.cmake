@@ -1,0 +1,27 @@
+if(NOT DEFINED SOURCE_ASSETS OR NOT DEFINED BUILT_ASSETS)
+  message(FATAL_ERROR "SOURCE_ASSETS and BUILT_ASSETS are required")
+endif()
+
+if(NOT IS_DIRECTORY "${SOURCE_ASSETS}")
+  message(FATAL_ERROR "Admin UI source assets do not exist: ${SOURCE_ASSETS}")
+endif()
+if(NOT IS_DIRECTORY "${BUILT_ASSETS}")
+  message(FATAL_ERROR "Admin UI built assets do not exist: ${BUILT_ASSETS}")
+endif()
+
+file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false RELATIVE "${SOURCE_ASSETS}" "${SOURCE_ASSETS}/*")
+file(GLOB_RECURSE BUILT_FILES LIST_DIRECTORIES false RELATIVE "${BUILT_ASSETS}" "${BUILT_ASSETS}/*")
+list(SORT SOURCE_FILES)
+list(SORT BUILT_FILES)
+
+if(NOT SOURCE_FILES STREQUAL BUILT_FILES)
+  message(FATAL_ERROR "Admin UI built asset inventory differs from source assets")
+endif()
+
+foreach(RELATIVE_PATH IN LISTS SOURCE_FILES)
+  file(SHA256 "${SOURCE_ASSETS}/${RELATIVE_PATH}" SOURCE_HASH)
+  file(SHA256 "${BUILT_ASSETS}/${RELATIVE_PATH}" BUILT_HASH)
+  if(NOT SOURCE_HASH STREQUAL BUILT_HASH)
+    message(FATAL_ERROR "Admin UI asset differs: ${RELATIVE_PATH}")
+  endif()
+endforeach()
