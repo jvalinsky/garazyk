@@ -35,24 +35,27 @@ compatibility smoke required by server development.
 
 Do not reopen the completed 200-app corpus plan in this repository.
 
-## E3. Decide incomplete product surfaces — blocked on operator disposition (2026-07-22)
+## E3. Decide incomplete product surfaces — complete, with one correction (2026-07-22)
 
-The source tree advertises or exposes incomplete behavior:
+The operator approved all six dispositions recommended in
+[the Phase 10 product-surface decision brief](../phase-10-product-surface-decision-brief.md).
+Five are implemented:
 
-- SMTP delivery always fails;
-- the configured cloud blob path is not wired into PDS startup; its provider's
-  listing and streaming methods return 501 (DELETE is implemented; there is no copy method);
-- STAR reconstruction from CAR blocks is incomplete;
-- Skylab has incomplete repost and Germ E2EE integration;
-- some scenario-dashboard process metadata remains a TODO.
+- SMTP delivery removed (`PDSEmailProviderFactory` now rejects `smtp`; use `resend` or `mock`).
+- S3-compatible blob storage config now fails closed instead of silently not taking effect
+  (`PDSBlobProviderFactory` rejects `"s3"`; `PDSCloudStorageBlobProvider` itself is left in place).
+- Skylab repost button (non-functional, "coming soon") removed.
+- Skylab Germ E2EE selector removed — it announced encryption but silently fell back to plaintext.
+- Scenario-dashboard health checks now use the active run's resource manifest
+  (`hostUrl`/`healthPath`) when available, falling back to the prior role-name heuristic.
 
-For each surface choose support, explicit experimental status, or removal.
-Implementation plans require a user-visible contract, owner, and integration
-test. Configuration must not promise a feature that always returns
-`NotImplemented`.
-
-The evidence, recommended dispositions, exact code locations, and acceptance
-requirements are in [the Phase 10 product-surface decision brief](../phase-10-product-surface-decision-brief.md).
+The sixth — CAR→STAR reconstruction / public STAR negotiation — was **not** removed. Implementing
+that disposition surfaced that the brief's evidence was stale: the flagged lossy converter
+(`STARConverter.starL0DataFromCARData:`) has zero production callers, while the actual negotiated
+public sync export path (`PDSRepositoryService.repoContentsSTARL0ChunkProducer:`) uses a separate,
+correct `STARL0Writer` that genuinely walks the live MST. See the brief's "Correction: STAR
+disposition not executed" section for the full evidence trail. STAR negotiation is unchanged and
+remains supported.
 
 ## E4. Deferred AppView pooling
 

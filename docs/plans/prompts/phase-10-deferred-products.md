@@ -1,9 +1,10 @@
 ---
 phase: 10
 title: Deferred products, WASM baseline, and drift cadence
-status: blocked
+status: complete
 agent: default
 depends_on: []
+completed_at: 2026-07-22
 ---
 
 # Phase 10: Deferred products, WASM baseline, and drift cadence
@@ -39,13 +40,14 @@ See [the product-surface decision brief](../phase-10-product-surface-decision-br
 It corrects the stale cloud-blob description and records a support,
 experimental, or remove choice for every incomplete surface.
 
-## Blocked on
-
-Operator approval of the six E3 dispositions in
-`docs/plans/phase-10-product-surface-decision-brief.md`, or an explicit
-replacement disposition and owner for each. Once received, reset this prompt
-to `in-progress`, implement one disposition per commit, and run its defined
-integration evidence.
+**Slice 4 complete (2026-07-22): E3 dispositions implemented, five of six.**
+Operator approved all six recommended dispositions. Implemented: SMTP removal,
+S3 blob config rejection, Skylab repost removal, Skylab E2EE removal, and
+scenario-dashboard manifest health probes — one commit per disposition. The
+sixth (STAR) was **not** executed: implementing it surfaced that the brief's
+evidence was stale for the actually-negotiated public sync export path, which
+is correct and tested. See the brief's "Correction: STAR disposition not
+executed" section. No code changed for STAR; negotiation remains as-is.
 
 ## Read first
 

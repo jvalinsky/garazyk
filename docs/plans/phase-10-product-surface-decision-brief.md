@@ -1,6 +1,6 @@
 ---
 title: Phase 10 Product Surface Decision Brief
-status: awaiting-operator-decision
+status: complete-with-correction
 last_verified: 2026-07-22
 ---
 
@@ -11,6 +11,13 @@ Each needs one operator disposition: **support**, **experimental**, or **remove*
 surface needs a user-visible contract, named owner, configuration that is truthful, and an
 integration test. Experimental surfaces must be opt-in and clearly labelled. Removed surfaces must
 be rejected at configuration or hidden from public UI/negotiation.
+
+**Operator decision (2026-07-22):** approved all six recommended dispositions below. SMTP removal,
+S3 blob rejection, Skylab repost removal, Skylab E2EE removal, and dashboard manifest health probes
+are implemented — see the commits touching the files under "Evidence locations" below. **The STAR
+row's disposition was NOT executed** — investigation while implementing it found the row's evidence
+was stale/inaccurate for the negotiated public sync export path. See "Correction: STAR disposition
+not executed" below.
 
 ## Evidence and recommendation
 
@@ -29,6 +36,27 @@ The Phase 10 prompt and mega plan previously described cloud "copy/delete" paths
 The current source has no cloud copy path, implements DELETE, and returns 501 only for listing and
 stream retrieval. The plan wording has been corrected to match the source; it does not change the
 decision that the configured S3 path is not production-ready.
+
+## Correction: STAR disposition not executed
+
+This brief's STAR row claimed `STARConverter` "does not deserialize and walk MST blocks" and that
+this lossy behavior is "negotiated for public sync export." Both claims are wrong for the path that
+is actually negotiated:
+
+- `STARConverter.starL0DataFromCARData:` (`Garazyk/Sources/Repository/STAR.m`) — the flagged lossy
+  CAR→STAR converter — has **zero production callers** anywhere in `Garazyk/Sources`. It is dead
+  code, not a path any client or server negotiation exercises.
+- The path that actually serves public sync export —
+  `PDSRepositoryService.repoContentsSTARL0ChunkProducer:`/`getRepoContentsSTARLite:`
+  (`Garazyk/Sources/Services/PDS/PDSRepositoryService.m`) — uses a separate, properly implemented
+  `STARL0Writer.writeFromMST:blockProvider:` that genuinely walks the live MST depth-first
+  (`writeMSTNode:depth:cidCache:blockProvider:error:`), matching this repo's own byte-identical
+  CAR/STAR fixture tests referenced elsewhere in the plan docs.
+
+Removing STAR negotiation on the strength of the original evidence would have broken working,
+tested, correct code. No change was made to STAR negotiation or `STARConverter`. If the dead
+`starL0DataFromCARData:` converter should be deleted as unreachable code, that is a separate,
+much lower-stakes cleanup than "remove STAR negotiation" — it is not tracked as a Phase 10 item.
 
 ## Required operator decision
 
