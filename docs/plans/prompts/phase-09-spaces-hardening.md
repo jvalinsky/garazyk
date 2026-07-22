@@ -31,8 +31,14 @@ behavior; the targeted native space suite remains green.
 `PDSSpaceStore` now offers a serialized SQLite online-backup operation, which
 includes committed WAL content without unsafe filesystem copying of a live
 database. The native restore drill opens the fresh backup and verifies the
-restored record plus repository LtHash state and digest. Downgrade-retention
-evidence remains.
+restored record plus repository LtHash state and digest.
+
+**Slice 5 complete (2026-07-22): P6.5 disabled-mode retention.** The native
+application test seeds a space database, starts the PDS with permissioned
+spaces explicitly disabled, and verifies that the store is not opened and the
+database bytes are unchanged. A binary predating the feature likewise has no
+reference to this database, so this demonstrates the required non-interference
+rollback path without claiming to execute a historical binary.
 
 # Phase 9: Permissioned spaces production hardening
 

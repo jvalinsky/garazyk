@@ -20,7 +20,9 @@
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Admin/PDSAdminController.h"
 #import "Auth/JWT.h"
+#import "Core/ATProtoDataPaths.h"
 #import "Network/RateLimiter.h"
+#import "Services/PDS/PDSSpaceStore.h"
 
 @interface PDSApplicationTests : XCTestCase
 
@@ -113,6 +115,38 @@
 - (void)testRateLimiterInitialized {
     XCTAssertNotNil(self.application.rateLimiter);
     XCTAssertEqual(self.application.rateLimiter.blobLimit, self.application.configuration.rateLimitBlobLimit);
+}
+
+- (void)testDisabledPermissionedSpacesRetainsExistingDatabase {
+    ATProtoDataPaths *paths = [ATProtoDataPaths pathsForBaseDirectory:self.tempDirectory];
+    NSString *spacePath = [paths permissionedSpacesDatabasePath];
+    NSError *error = nil;
+    PDSSpaceStore *store = [[PDSSpaceStore alloc] initWithDatabasePath:spacePath error:&error];
+    XCTAssertNotNil(store);
+    XCTAssertNil(error);
+    XCTAssertTrue([store createSpace:@"at://did:example:authority/space/com.example.group/default"
+                               owner:YES policy:@"member-list" managingApp:nil
+                        appAccessType:@"open" appAllowed:@[] error:&error]);
+    XCTAssertNil(error);
+    [store close];
+    NSData *before = [NSData dataWithContentsOfFile:spacePath];
+    XCTAssertNotNil(before);
+
+    NSDictionary *contents = @{ @"permissionedSpacesEnabled" : @NO };
+    NSData *configData = [NSJSONSerialization dataWithJSONObject:contents options:0 error:&error];
+    NSString *configPath = [self.tempDirectory stringByAppendingPathComponent:@"disabled-spaces.json"];
+    XCTAssertTrue([configData writeToFile:configPath options:0 error:&error]);
+    ATProtoServiceConfiguration *configuration =
+        [ATProtoServiceConfiguration configurationWithPath:configPath error:&error];
+    XCTAssertNotNil(configuration);
+    XCTAssertNil(error);
+
+    PDSApplication *disabled = [[PDSApplication alloc] initWithConfiguration:configuration
+                                                                 dataDirectory:self.tempDirectory];
+    XCTAssertNil(disabled.spaceStore);
+    [disabled stop];
+    NSData *after = [NSData dataWithContentsOfFile:spacePath];
+    XCTAssertEqualObjects(after, before);
 }
 
 #pragma mark - Service Tests
