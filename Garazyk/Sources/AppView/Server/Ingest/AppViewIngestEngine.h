@@ -155,6 +155,12 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
 /*! Maximum lag (seq gap) before backpressure kicks in. Default 50000. */
 @property (nonatomic, assign) int64_t maxLagForBackpressure;
 
+/*! Maximum pending event count before ingest pauses. Default 100,000. */
+@property (nonatomic, assign) NSUInteger indexQueueHighWatermarkEvents;
+
+/*! Maximum pending raw-envelope bytes before ingest pauses. Default 2 GiB. */
+@property (nonatomic, assign) uint64_t indexQueueHighWatermarkBytes;
+
 /*!
  @method initWithDatabase:relayURLs:
 

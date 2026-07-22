@@ -244,6 +244,8 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                                    DISPATCH_QUEUE_SERIAL);
     _indexWorkerID        = [[NSProcessInfo processInfo].globallyUniqueString copy];
     _acceptingIndexWork   = YES;
+    _indexQueueHighWatermarkEvents = 100000;
+    _indexQueueHighWatermarkBytes = UINT64_C(2) * 1024 * 1024 * 1024;
     _relayHeartbeatTimeout = 10.0;
     // Allow environment override for backpressure threshold (default 5000, was 50000)
     {
@@ -343,13 +345,22 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         BOOL isPaused = [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1;
         [_stateLock unlock];
 
-        if (lag < self.maxLagForBackpressure / 2 && isPaused) {
+        NSDictionary<NSString *, NSNumber *> *metrics = [self.database pendingIndexQueueMetricsForRelayURL:conn.relayURL
+                                                                                                      error:nil];
+        NSUInteger lowEventWatermark = self.indexQueueHighWatermarkEvents * 3 / 4;
+        uint64_t lowByteWatermark = self.indexQueueHighWatermarkBytes * 3 / 4;
+        BOOL belowQueueLowWatermark = metrics &&
+            [metrics[@"event_count"] unsignedIntegerValue] <= lowEventWatermark &&
+            [metrics[@"envelope_bytes"] unsignedLongLongValue] <= lowByteWatermark &&
+            [metrics[@"terminal_count"] unsignedIntegerValue] == 0;
+
+        if (lag < self.maxLagForBackpressure / 2 && belowQueueLowWatermark && isPaused) {
             [conn.client resumeReading];
             [_stateLock lock];
             self.backpressureStateByRelay[conn.relayURL] = @0;
             [_stateLock unlock];
-            GZ_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld)",
-                         conn.relayURL, (long long)lag);
+            GZ_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld, events=%@, bytes=%@)",
+                         conn.relayURL, (long long)lag, metrics[@"event_count"], metrics[@"envelope_bytes"]);
         }
     }
 }
@@ -375,6 +386,18 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     int64_t durableSeq = [_database durableCursorForRelayURL:relayURL];
 
     int64_t lag = _highestSeenSeq - durableSeq;
+    NSError *metricsError = nil;
+    NSDictionary<NSString *, NSNumber *> *metrics = [_database pendingIndexQueueMetricsForRelayURL:relayURL error:&metricsError];
+    if (metrics && ([metrics[@"event_count"] unsignedIntegerValue] >= self.indexQueueHighWatermarkEvents ||
+                    [metrics[@"envelope_bytes"] unsignedLongLongValue] >= self.indexQueueHighWatermarkBytes)) {
+        GZ_LOG_WARN(@"[AppView Ingest] Queue backpressure: relay=%@ events=%@ bytes=%@",
+                    relayURL, metrics[@"event_count"], metrics[@"envelope_bytes"]);
+        return YES;
+    }
+    if (!metrics) {
+        GZ_LOG_WARN(@"[AppView Ingest] Unable to read queue metrics for %@: %@", relayURL,
+                    metricsError.localizedDescription);
+    }
     if (lag > self.maxLagForBackpressure) {
         GZ_LOG_WARN(@"[AppView Ingest] Backpressure: lag=%lld exceeds threshold=%lld for %@",
                      (long long)lag, (long long)self.maxLagForBackpressure, relayURL);
@@ -558,6 +581,23 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 [self _persistDirtyRepairMarkerForDID:event.repo seq:seq rev:event.rev
                                                    cid:event.commit ? event.commit.stringValue : nil
                                               relayURL:relayURL reason:failureReason];
+                NSInteger attempts = [stored[@"attempts"] integerValue] + 1;
+                if (attempts >= 10) {
+                    NSError *terminalError = nil;
+                    if (![self.database markIndexEventTerminalForRelayURL:relayURL seq:seq workerID:self.indexWorkerID
+                                                                       error:failureReason dbError:&terminalError]) {
+                        GZ_LOG_ERROR(@"[AppView Ingest] Failed to dead-letter seq=%lld: %@",
+                                     (long long)seq, terminalError.localizedDescription);
+                    } else {
+                        AppViewRelayConnection *connection = [self _connectionForRelayURL:relayURL];
+                        [connection.client pauseReading];
+                        [_stateLock lock];
+                        self.backpressureStateByRelay[relayURL] = @1;
+                        [_stateLock unlock];
+                        GZ_LOG_ERROR(@"[AppView Ingest] Dead-lettered seq=%lld after %ld attempts; relay paused",
+                                     (long long)seq, (long)attempts);
+                    }
+                }
             }
         }
         if (events.count == 100 && self.acceptingIndexWork) {
