@@ -9,21 +9,14 @@
  * @module lexicon_resolution
  */
 
-import { assert, assertEquals } from "jsr:@std/assert";
+import { assert, assertEquals } from "@std/assert";
 
 import {
   DenoDnsResolver,
   HttpDidResolver,
   HttpRecordFetcher,
 } from "./adapters.ts";
-import {
-  asDid,
-  asDomain,
-  type Did,
-  type DidDocument,
-  type Domain,
-  type LexiconDoc,
-} from "./types.ts";
+import { asDid, asDomain, type DidDocument, type LexiconDoc } from "./types.ts";
 
 // ===========================================================================
 // Mock helpers
@@ -47,8 +40,9 @@ type ResolveDnsMock = (
  * leaking a pending promise: the resolver aborts on timeout, which rejects it.
  */
 function pendingUntilAbort(opts?: unknown): Promise<never> {
-  const signal = (opts as { signal?: AbortSignal | null } | undefined)?.signal ??
-    undefined;
+  const signal =
+    (opts as { signal?: AbortSignal | null } | undefined)?.signal ??
+      undefined;
   return new Promise<never>((_, reject) => {
     if (!signal) return;
     if (signal.aborted) {
@@ -502,7 +496,10 @@ Deno.test("HttpDidResolver: rejects on timeout", async () => {
 
     assert(!result.ok);
     if (!result.ok) {
-      assert(result.error.includes("TimeoutError") || result.error.includes("Timeout"));
+      assert(
+        result.error.includes("TimeoutError") ||
+          result.error.includes("Timeout"),
+      );
     }
   } finally {
     restore();
@@ -725,7 +722,10 @@ Deno.test("HttpRecordFetcher: rejects on timeout", async () => {
 
     assert(!result.ok);
     if (!result.ok) {
-      assert(result.error.includes("TimeoutError") || result.error.includes("Timeout"));
+      assert(
+        result.error.includes("TimeoutError") ||
+          result.error.includes("Timeout"),
+      );
     }
   } finally {
     restore();

@@ -5,7 +5,7 @@
  * Mocks global fetch to avoid network I/O.
  */
 
-import { assertEquals, assertInstanceOf, assertRejects } from "jsr:@std/assert";
+import { assertEquals, assertInstanceOf } from "@std/assert";
 import { TransportError, TransportLayer, XrpcError } from "./transport.ts";
 
 // ---------------------------------------------------------------------------
@@ -13,17 +13,23 @@ import { TransportError, TransportLayer, XrpcError } from "./transport.ts";
 // ---------------------------------------------------------------------------
 
 let mockFetch:
-  | ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>)
+  | ((
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => Response | Promise<Response>)
   | null = null;
 
 const originalFetch = globalThis.fetch;
 
 function installMockFetch(
-  impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  impl: (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => Response | Promise<Response>,
 ) {
   mockFetch = impl;
   globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-    if (mockFetch) return mockFetch(input, init);
+    if (mockFetch) return Promise.resolve(mockFetch(input, init));
     return originalFetch(input, init);
   };
 }
@@ -34,7 +40,7 @@ function restoreFetch() {
 }
 
 function jsonResponse(
-  body: any,
+  body: unknown,
   status = 200,
   headers: Record<string, string> = {},
 ): Response {
@@ -89,7 +95,7 @@ Deno.test("TransportError: constructs with method, url, cause, attempt", () => {
 
 Deno.test("request: GET retries on 503", async () => {
   let calls = 0;
-  installMockFetch(async () => {
+  installMockFetch(() => {
     calls++;
     if (calls < 3) return jsonResponse({ error: "ServiceUnavailable" }, 503);
     return jsonResponse({ data: "ok" }, 200);
@@ -108,7 +114,7 @@ Deno.test("request: GET retries on 503", async () => {
 
 Deno.test("request: GET retries on 429", async () => {
   let calls = 0;
-  installMockFetch(async () => {
+  installMockFetch(() => {
     calls++;
     if (calls < 2) return jsonResponse({ error: "RateLimitExceeded" }, 429);
     return jsonResponse({ data: "ok" }, 200);
@@ -130,7 +136,7 @@ Deno.test("request: GET retries on 429", async () => {
 
 Deno.test("request: POST does not retry on 503 by default", async () => {
   let calls = 0;
-  installMockFetch(async () => {
+  installMockFetch(() => {
     calls++;
     return jsonResponse({ error: "ServiceUnavailable" }, 503);
   });
@@ -147,7 +153,7 @@ Deno.test("request: POST does not retry on 503 by default", async () => {
 
 Deno.test("request: POST retries when maxRetries and allowMutationRetry are set", async () => {
   let calls = 0;
-  installMockFetch(async () => {
+  installMockFetch(() => {
     calls++;
     if (calls < 2) return jsonResponse({ error: "ServiceUnavailable" }, 503);
     return jsonResponse({ data: "ok" }, 200);
@@ -171,7 +177,7 @@ Deno.test("request: POST retries when maxRetries and allowMutationRetry are set"
 // ---------------------------------------------------------------------------
 
 Deno.test("request: throws TransportError on network failure after max attempts", async () => {
-  installMockFetch(async () => {
+  installMockFetch(() => {
     throw new TypeError("NetworkError: Failed to fetch");
   });
 
@@ -188,7 +194,7 @@ Deno.test("request: throws TransportError on network failure after max attempts"
 });
 
 Deno.test("request: POST throws TransportError on first network failure", async () => {
-  installMockFetch(async () => {
+  installMockFetch(() => {
     throw new TypeError("NetworkError: Failed to fetch");
   });
 
@@ -209,7 +215,7 @@ Deno.test("request: POST throws TransportError on first network failure", async 
 // ---------------------------------------------------------------------------
 
 Deno.test("get: throws XrpcError on 400", async () => {
-  installMockFetch(async () => {
+  installMockFetch(() => {
     return jsonResponse({ error: "InvalidRequest", message: "Bad query" }, 400);
   });
 
@@ -226,7 +232,7 @@ Deno.test("get: throws XrpcError on 400", async () => {
 });
 
 Deno.test("post: throws XrpcError on 401", async () => {
-  installMockFetch(async () => {
+  installMockFetch(() => {
     return jsonResponse({ error: "AuthenticationRequired" }, 401);
   });
 
@@ -248,7 +254,7 @@ Deno.test("post: throws XrpcError on 401", async () => {
 
 Deno.test("get: encodes query parameters", async () => {
   let capturedUrl = "";
-  installMockFetch(async (input) => {
+  installMockFetch((input) => {
     capturedUrl = input.toString();
     return jsonResponse({ did: "did:plc:test" }, 200);
   });
@@ -265,7 +271,7 @@ Deno.test("get: encodes query parameters", async () => {
 
 Deno.test("get: skips null/undefined params", async () => {
   let capturedUrl = "";
-  installMockFetch(async (input) => {
+  installMockFetch((input) => {
     capturedUrl = input.toString();
     return jsonResponse({ data: "ok" }, 200);
   });
@@ -290,7 +296,7 @@ Deno.test("get: skips null/undefined params", async () => {
 
 Deno.test("get: encodes array params as repeated keys", async () => {
   let capturedUrl = "";
-  installMockFetch(async (input) => {
+  installMockFetch((input) => {
     capturedUrl = input.toString();
     return jsonResponse({ data: "ok" }, 200);
   });
@@ -315,7 +321,7 @@ Deno.test("get: encodes array params as repeated keys", async () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("request: parses JSON response body", async () => {
-  installMockFetch(async () => {
+  installMockFetch(() => {
     return jsonResponse(
       { did: "did:plc:test", handle: "test.bsky.social" },
       200,
@@ -324,7 +330,10 @@ Deno.test("request: parses JSON response body", async () => {
 
   try {
     const t = new TransportLayer("http://localhost:2583");
-    const res = await t.request("GET", "/xrpc/test");
+    const res = await t.request<{ did: string; handle: string }>(
+      "GET",
+      "/xrpc/test",
+    );
     assertEquals(res.body.did, "did:plc:test");
     assertEquals(res.body.handle, "test.bsky.social");
   } finally {
@@ -333,7 +342,7 @@ Deno.test("request: parses JSON response body", async () => {
 });
 
 Deno.test("request: returns text body when response is not JSON", async () => {
-  installMockFetch(async () => {
+  installMockFetch(() => {
     return textResponse("plain text response", 200);
   });
 
@@ -351,7 +360,7 @@ Deno.test("request: returns text body when response is not JSON", async () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("request: records responses in lastResponses", async () => {
-  installMockFetch(async () => {
+  installMockFetch(() => {
     return jsonResponse({ data: "ok" }, 200);
   });
 
@@ -382,7 +391,7 @@ Deno.test("TransportLayer: strips trailing slash from baseUrl", () => {
 
 Deno.test("request: custom retryableStatuses overrides defaults", async () => {
   let calls = 0;
-  installMockFetch(async () => {
+  installMockFetch(() => {
     calls++;
     if (calls < 2) return jsonResponse({ error: "InternalError" }, 500);
     return jsonResponse({ data: "ok" }, 200);
@@ -403,7 +412,7 @@ Deno.test("request: custom retryableStatuses overrides defaults", async () => {
 
 Deno.test("request: 500 is NOT retried by default", async () => {
   let calls = 0;
-  installMockFetch(async () => {
+  installMockFetch(() => {
     calls++;
     return jsonResponse({ error: "InternalError" }, 500);
   });

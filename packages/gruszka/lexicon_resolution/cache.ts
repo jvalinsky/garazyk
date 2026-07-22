@@ -112,38 +112,41 @@ export class InMemoryCache<T> implements KeyValueCache<T> {
   }
 
   /** @inheritdoc */
-  async get(key: string): Promise<T | undefined> {
+  get(key: string): Promise<T | undefined> {
     const entry = this.store.get(key);
-    if (!entry) return undefined;
+    if (!entry) return Promise.resolve(undefined);
     if (entry.expiresAt < Date.now()) {
       this.store.delete(key);
-      return undefined;
+      return Promise.resolve(undefined);
     }
-    return entry.value;
+    return Promise.resolve(entry.value);
   }
 
   /** @inheritdoc */
-  async set(key: string, value: T, ttlMs?: number): Promise<void> {
+  set(key: string, value: T, ttlMs?: number): Promise<void> {
     const effectiveTtl = ttlMs ?? this.defaultTtlMs;
     const expiresAt = effectiveTtl != null
       ? Date.now() + effectiveTtl
       : Number.POSITIVE_INFINITY;
     this.store.set(key, { value, expiresAt });
+    return Promise.resolve();
   }
 
   /** @inheritdoc */
-  async evictExpired(): Promise<void> {
+  evictExpired(): Promise<void> {
     const now = Date.now();
     for (const [key, entry] of this.store) {
       if (entry.expiresAt < now) {
         this.store.delete(key);
       }
     }
+    return Promise.resolve();
   }
 
   /** @inheritdoc */
-  async clear(): Promise<void> {
+  clear(): Promise<void> {
     this.store.clear();
+    return Promise.resolve();
   }
 
   /** Number of entries currently in the store (including expired). */

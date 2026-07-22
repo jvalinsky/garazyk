@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import { XrpcClient } from "./client.ts";
 
 const originalFetch = globalThis.fetch;

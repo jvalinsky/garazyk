@@ -220,7 +220,7 @@ export async function chatServiceAuthForMethod(
       aud: context.serviceDid,
       lxm: method,
     }, accessJwt);
-  const token = String((response as any)?.token || "");
+  const token = String(response?.token || "");
   if (!token) {
     throw new Error(
       `com.atproto.server.getServiceAuth did not return a token for ${method}`,
@@ -237,12 +237,12 @@ export async function chatServiceAuthForMethod(
  * @param method - XRPC method NSID
  * @param params - Query parameters
  */
-export async function chatXrpcGet(
+export async function chatXrpcGet<T = unknown>(
   context: ChatServiceContext,
   accessJwt: string,
   method: string,
   params?: Record<string, unknown>,
-): Promise<any> {
+): Promise<T> {
   const token = await chatServiceAuthForMethod(context, accessJwt, method);
   return await context.chatClient.raw.xrpcGet(method, params, token);
 }
@@ -255,12 +255,12 @@ export async function chatXrpcGet(
  * @param method - XRPC method NSID
  * @param body - Request body
  */
-export async function chatXrpcPost(
+export async function chatXrpcPost<T = unknown>(
   context: ChatServiceContext,
   accessJwt: string,
   method: string,
   body?: Record<string, unknown>,
-): Promise<any> {
+): Promise<T> {
   const token = await chatServiceAuthForMethod(context, accessJwt, method);
   return await context.chatClient.raw.xrpcPost(method, body, token);
 }
@@ -277,7 +277,7 @@ export async function chatGetConvoForMembers(
   accessJwt: string,
   memberDids: string[],
 ): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">> {
-  return await chatXrpcGet(
+  return await chatXrpcGet<QueryOutput<"chat.bsky.convo.getConvoForMembers">>(
     context,
     accessJwt,
     "chat.bsky.convo.getConvoForMembers",
@@ -301,10 +301,15 @@ export async function chatSendMessage(
   convoId: string,
   text: string,
 ): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">> {
-  return await chatXrpcPost(context, accessJwt, "chat.bsky.convo.sendMessage", {
-    convoId,
-    message: { text },
-  });
+  return await chatXrpcPost<ProcedureOutput<"chat.bsky.convo.sendMessage">>(
+    context,
+    accessJwt,
+    "chat.bsky.convo.sendMessage",
+    {
+      convoId,
+      message: { text },
+    },
+  );
 }
 
 /**
@@ -319,9 +324,12 @@ export async function chatListConvos(
   accessJwt: string,
   limit = 20,
 ): Promise<QueryOutput<"chat.bsky.convo.listConvos">> {
-  return await chatXrpcGet(context, accessJwt, "chat.bsky.convo.listConvos", {
-    limit,
-  });
+  return await chatXrpcGet<QueryOutput<"chat.bsky.convo.listConvos">>(
+    context,
+    accessJwt,
+    "chat.bsky.convo.listConvos",
+    { limit },
+  );
 }
 
 /**
@@ -338,10 +346,12 @@ export async function chatGetMessages(
   convoId: string,
   limit = 50,
 ): Promise<QueryOutput<"chat.bsky.convo.getMessages">> {
-  return await chatXrpcGet(context, accessJwt, "chat.bsky.convo.getMessages", {
-    convoId,
-    limit,
-  });
+  return await chatXrpcGet<QueryOutput<"chat.bsky.convo.getMessages">>(
+    context,
+    accessJwt,
+    "chat.bsky.convo.getMessages",
+    { convoId, limit },
+  );
 }
 
 /** Get or create a DM conversation for a set of members (direct XRPC, no service auth). */
