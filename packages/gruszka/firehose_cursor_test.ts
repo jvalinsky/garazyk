@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { encode } from "npm:@ipld/dag-cbor";
+import { encode } from "@ipld/dag-cbor";
 import { FirehoseClient } from "./firehose.ts";
 
 Deno.test("FirehoseClient: tracks cursor", async () => {
@@ -15,9 +15,8 @@ Deno.test("FirehoseClient: tracks cursor", async () => {
 
   // Now verify that the next subscribe uses the cursor
   let capturedUrl: string | undefined;
-  const originalSubscribe = client.subscribe;
 
-  client.subscribe = (callback, _duration, cursor) => {
+  client.subscribe = (_callback, _duration, cursor) => {
     const url = new URL(`${client.wsUrl}/xrpc/com.atproto.sync.subscribeRepos`);
     const effectiveCursor = cursor ?? client.lastSeq;
     if (effectiveCursor !== undefined) {

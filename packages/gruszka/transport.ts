@@ -165,7 +165,7 @@ export class TransportLayer {
    * @returns The HTTP status and response body
    * @throws TransportError if the max number of retries is exceeded
    */
-  async request<T = any>(
+  async request<T = unknown>(
     method: string,
     url: string,
     options: RequestInit = {},

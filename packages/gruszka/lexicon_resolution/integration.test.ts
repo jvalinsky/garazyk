@@ -12,7 +12,7 @@
  * @module lexicon_resolution
  */
 
-import { assert, assertEquals, assertFalse } from "jsr:@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { resolveLexicon } from "./mod.ts";
 import {
   DenoDnsResolver,
