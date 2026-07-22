@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { parse } from "jsr:@std/yaml@0.224.0";
+import { parse } from "@std/yaml";
 import {
   Cap,
   compileTopology,
@@ -9,7 +9,6 @@ import {
   health,
   port,
   renderComposeYaml,
-  type requires,
   Role,
   role,
   source,
@@ -24,13 +23,13 @@ import {
   resolvePreset,
   resolveTopology,
   type ServiceAdapter,
-  type Topology,
   type TopologyPreset,
 } from "./topology.ts";
 import {
   normalizeTopologyPreset,
   parseTopologyPresetJson,
 } from "./topology_schema.ts";
+import type { ComposeObject } from "./topology_compiler.ts";
 
 const VALID_ADAPTER: ServiceAdapter = {
   name: "test-pds",
@@ -89,7 +88,10 @@ Deno.test("validatePreset: adapter missing name", () => {
 });
 
 Deno.test("validatePreset: adapter missing healthCheck", () => {
-  const adapter = { ...VALID_ADAPTER, healthCheck: undefined as any };
+  const adapter = {
+    ...VALID_ADAPTER,
+    healthCheck: undefined as unknown as ServiceAdapter["healthCheck"],
+  };
   const preset = { ...VALID_PRESET, roles: { pds: adapter } };
   const errors = validatePreset(preset);
   assertEquals(errors.length, 1);
@@ -149,7 +151,7 @@ Deno.test("renderComposeYaml: image-based adapter", () => {
     composeProject: "test",
   });
 
-  const parsed = parse(yaml) as any;
+  const parsed = parse(yaml) as ComposeObject;
   assertEquals(
     parsed.services["local-pds"].image,
     "ghcr.io/bluesky-social/atproto/pds:latest",
@@ -228,7 +230,9 @@ Deno.test("compileTopology: garazyk-default includes cache services and garazyk-
       composeProject: "test",
     });
 
-    const parsed = parse(await Deno.readTextFile(result.composeFile)) as any;
+    const parsed = parse(
+      await Deno.readTextFile(result.composeFile),
+    ) as ComposeObject;
     const ui = parsed.services["local-ui"];
     const mikrus = parsed.services["local-mikrus"];
     const beskid = parsed.services["local-beskid"];
@@ -265,18 +269,18 @@ Deno.test("compileTopology: garazyk-default includes cache services and garazyk-
         DEFAULT_ADMIN_PASSWORD,
     );
     assertEquals(mikrus.entrypoint, ["/usr/local/bin/mikrus"]);
-    assertEquals(mikrus.ports.includes("3210:3210"), true);
+    assertEquals(mikrus.ports!.includes("3210:3210"), true);
     assertEquals(beskid.entrypoint, ["/usr/local/bin/beskid"]);
-    assertEquals(beskid.ports.includes("8085:8085"), true);
-    assertEquals(beskid.environment.BESKID_PDS_URL, "http://local-pds:2583");
+    assertEquals(beskid.ports!.includes("8085:8085"), true);
+    assertEquals(beskid.environment!.BESKID_PDS_URL, "http://local-pds:2583");
     assertEquals(ui.entrypoint, ["/usr/local/bin/garazyk-ui"]);
-    assertEquals(ui.ports.includes("2590:2590"), true);
+    assertEquals(ui.ports!.includes("2590:2590"), true);
     assertEquals(
-      ui.healthcheck.test.includes("http://localhost:2590/lab"),
+      ui.healthcheck!.test.includes("http://localhost:2590/lab"),
       true,
     );
-    assertEquals(ui.depends_on["local-pds"].condition, "service_healthy");
-    assertEquals(ui.depends_on["local-appview"].condition, "service_healthy");
+    assertEquals(ui.depends_on!["local-pds"].condition, "service_healthy");
+    assertEquals(ui.depends_on!["local-appview"].condition, "service_healthy");
   } finally {
     await Deno.remove(runDir, { recursive: true });
   }
@@ -341,16 +345,16 @@ Deno.test("renderComposeYaml: sidecars rendered as separate services", () => {
     composeProject: "test",
   });
 
-  const parsed = parse(yaml) as any;
+  const parsed = parse(yaml) as ComposeObject;
   assertEquals(!!parsed.services["local-plc"], true);
   assertEquals(!!parsed.services["local-plc-db"], true);
   assertEquals(parsed.services["local-plc-db"].image, "postgres:16-alpine");
   assertEquals(
-    parsed.services["local-plc-db"].healthcheck.test.join(" "),
+    parsed.services["local-plc-db"].healthcheck!.test.join(" "),
     "CMD-SHELL pg_isready -U plc",
   );
   assertEquals(
-    parsed.services["local-plc-db"].volumes.includes(
+    parsed.services["local-plc-db"].volumes!.includes(
       "ref_plc_pg_data:/var/lib/postgresql/data",
     ),
     true,
@@ -718,19 +722,19 @@ Deno.test("compileTopology: typed port and volume objects survive registry loadi
     });
 
     const yaml = await Deno.readTextFile(result.composeFile);
-    const parsed = parse(yaml) as any;
+    const parsed = parse(yaml) as ComposeObject;
     assertEquals(
-      parsed.services["local-appview"].ports.includes("3300:3000"),
+      parsed.services["local-appview"].ports!.includes("3300:3000"),
       true,
     );
     assertEquals(
-      parsed.services["local-appview"].volumes.includes(
+      parsed.services["local-appview"].volumes!.includes(
         "object_appview_data:/data",
       ),
       true,
     );
     assertEquals(
-      parsed.services["local-appview"].volumes.includes(
+      parsed.services["local-appview"].volumes!.includes(
         "/repo/fixtures:/fixtures:ro",
       ),
       true,
@@ -778,9 +782,11 @@ Deno.test("compileTopology: dynamic publish mode rewrites host ports and manifes
       hostPortOverrides: { appview: 45678 },
     });
 
-    const parsed = parse(await Deno.readTextFile(result.composeFile)) as any;
+    const parsed = parse(
+      await Deno.readTextFile(result.composeFile),
+    ) as ComposeObject;
     assertEquals(
-      parsed.services["local-appview"].ports.includes("127.0.0.1:45678:3000"),
+      parsed.services["local-appview"].ports!.includes("127.0.0.1:45678:3000"),
       true,
     );
     assertEquals(result.serviceUrls.appview, "http://127.0.0.1:45678");
@@ -811,21 +817,23 @@ Deno.test("compileTopology: dynamic publish mode rewrites OTel host ports", asyn
       },
     });
 
-    const parsed = parse(await Deno.readTextFile(result.composeFile)) as any;
+    const parsed = parse(
+      await Deno.readTextFile(result.composeFile),
+    ) as ComposeObject;
     assertEquals(
-      parsed.services["signoz-otel-collector"].ports.includes(
+      parsed.services["signoz-otel-collector"].ports!.includes(
         "127.0.0.1:34317:4317",
       ),
       true,
     );
     assertEquals(
-      parsed.services["signoz-otel-collector"].ports.includes(
+      parsed.services["signoz-otel-collector"].ports!.includes(
         "127.0.0.1:34318:4318",
       ),
       true,
     );
     assertEquals(
-      parsed.services.signoz.ports.includes("127.0.0.1:33301:8080"),
+      parsed.services.signoz.ports!.includes("127.0.0.1:33301:8080"),
       true,
     );
   } finally {
@@ -970,7 +978,7 @@ Deno.test("loadTopologyManifest: malformed explicit manifest throws", async () =
 
 async function assertThrowsAsync(
   fn: () => Promise<unknown>,
-  ErrorClass: new (...args: any[]) => Error,
+  ErrorClass: new (message?: string) => Error,
   msgIncludes: string,
 ) {
   let thrown: unknown;
