@@ -443,17 +443,14 @@
       const likeButton = makeActionButton("Like", "skylab-post-like");
       likeButton.addEventListener("click", () => likePost(post, likeButton));
 
-      const repostButton = makeActionButton("Repost", "skylab-post-repost");
-      repostButton.title = "Repost coming soon";
-      repostButton.addEventListener("click", () => {
-        console.info("Repost is not implemented yet for this panel.");
-      });
+      // Repost removed per the Phase 10 product-surface decision (docs/plans/
+      // phase-10-product-surface-decision-brief.md): the control exposed a
+      // non-action as an action ("coming soon", click handler only logged).
 
       const replyButton = makeActionButton("Reply", "skylab-post-reply");
       replyButton.addEventListener("click", () => focusReplyComposer(post));
 
       actionsEl.appendChild(likeButton);
-      actionsEl.appendChild(repostButton);
       actionsEl.appendChild(replyButton);
 
       container.appendChild(headerEl);
