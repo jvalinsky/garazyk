@@ -1,7 +1,7 @@
 ---
 phase: 11
 title: Storage and MST optimization remainder
-status: in-progress
+status: blocked
 agent: worker
 depends_on: [7]
 ---
@@ -107,3 +107,11 @@ slice 2 are the safety net for every MST-adjacent change here.
 
 Update workstream 07 status rows and mega-plan Phase 4 item 8; set
 `status: complete` here (or `blocked` at the O6 design checkpoint).
+
+## O6 checkpoint
+
+ADR 0008 records the durable queue design after confirming that the current
+AppView relay path synchronously decodes and materializes events. This phase
+is blocked for the operator decision required by the ADR: approve the
+eventual-consistency contract, queue capacity/lease defaults, dead-letter
+policy, and production disk budget before implementation begins.
