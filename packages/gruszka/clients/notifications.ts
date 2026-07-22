@@ -1,5 +1,5 @@
 /** Notification and push subscription management @module notifications */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for notification and push-preference XRPC methods. */
 export class NotificationsClient {

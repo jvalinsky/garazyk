@@ -5,7 +5,11 @@
  * Mocks global fetch to avoid network I/O.
  */
 
-import { assertEquals, assertInstanceOf, assertRejects } from "jsr:@std/assert";
+import {
+  assertEquals,
+  assertInstanceOf,
+  type assertRejects,
+} from "jsr:@std/assert";
 import { TransportError, TransportLayer, XrpcError } from "./transport.ts";
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 /** Raw HTTP/XRPC access (get, post, binary) for advanced use cases. @module raw */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 import type {
   LexiconProcedureIds,
   LexiconQueryIds,

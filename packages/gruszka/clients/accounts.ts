@@ -1,4 +1,4 @@
-import { TransportLayer, XrpcError } from "../transport.ts";
+import { type TransportLayer, XrpcError } from "../transport.ts";
 
 /**
  * AT Protocol account management (create, session, deactivation).

@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   defaultRolePort,
   defaultServiceName,
-  ExperimentalRoleMetadata,
+  type ExperimentalRoleMetadata,
   isExperimentalRole,
   isKnownServiceRole,
   roleEnvKey,

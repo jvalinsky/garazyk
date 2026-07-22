@@ -1,5 +1,5 @@
 /** Shared boilerplate utilities for scenario authoring. @module boilerplate */
-import { XrpcClient, XrpcError } from "@garazyk/gruszka";
+import { type XrpcClient, XrpcError } from "@garazyk/gruszka";
 import type { ScenarioResult } from "./runner.ts";
 
 /** Current timestamp as an ISO-8601 string suitable for ATProto record createdAt fields. */
@@ -30,9 +30,14 @@ export async function tryEndpoint<T>(
     if (e instanceof XrpcError && (e.status === 404 || e.status === 501)) {
       result.stepSkipped(label, `endpoint not available (HTTP ${e.status})`);
     } else if (e instanceof XrpcError && e.status === 403) {
-      result.stepSkipped(label, `access denied (HTTP 403) — requires elevated role`);
+      result.stepSkipped(
+        label,
+        `access denied (HTTP 403) — requires elevated role`,
+      );
     } else if (e instanceof XrpcError && e.status === 400) {
-      const body = typeof e.body === "string" ? e.body : JSON.stringify(e.body ?? "");
+      const body = typeof e.body === "string"
+        ? e.body
+        : JSON.stringify(e.body ?? "");
       if (body.includes("not implemented") || body.includes("unknown method")) {
         result.stepSkipped(label, `endpoint not implemented`);
       } else {
@@ -62,7 +67,9 @@ export async function tryEndpoint<T>(
 export async function createAccountOrLogin(
   client: XrpcClient,
   params: { handle: string; email: string; password: string },
-): Promise<{ did: string; accessJwt: string; refreshJwt: string; handle: string }> {
+): Promise<
+  { did: string; accessJwt: string; refreshJwt: string; handle: string }
+> {
   try {
     const res = await client.agent.createAccount({
       handle: params.handle,
@@ -73,7 +80,8 @@ export async function createAccountOrLogin(
   } catch (e: unknown) {
     if (
       e instanceof Error &&
-      (e.message.includes("already exists") || e.message.includes("HandleAlreadyExists"))
+      (e.message.includes("already exists") ||
+        e.message.includes("HandleAlreadyExists"))
     ) {
       const res = await client.agent.login({
         identifier: params.handle,

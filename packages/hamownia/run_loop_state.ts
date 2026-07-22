@@ -9,7 +9,7 @@
  */
 
 import type { ScenarioInfo } from "./scenario_metadata.ts";
-import { ScenarioResult } from "./runner.ts";
+import type { ScenarioResult } from "./runner.ts";
 
 // ── Crashed container tracking ────────────────────────────────────────
 

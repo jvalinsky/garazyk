@@ -1,5 +1,5 @@
 /** Social graph operations (follows, blocks, mutes, starter packs) @module graph */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for social graph XRPC methods such as follows, blocks, mutes, and lists. */
 export class GraphClient {

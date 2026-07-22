@@ -8,12 +8,12 @@ import {
   parsePortMapping,
   resolvePreset,
   sanitizeTopologyName,
-  ServiceAdapter,
+  type ServiceAdapter,
   serviceNameForRole,
-  SidecarAdapter,
-  SourceBuildInfo,
-  TopologyManifestV2,
-  TopologyPreset,
+  type SidecarAdapter,
+  type SourceBuildInfo,
+  type TopologyManifestV2,
+  type TopologyPreset,
   writeTopologyManifest,
 } from "./topology.ts";
 import {

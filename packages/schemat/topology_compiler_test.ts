@@ -9,7 +9,7 @@ import {
   health,
   port,
   renderComposeYaml,
-  requires,
+  type requires,
   Role,
   role,
   source,
@@ -23,9 +23,9 @@ import {
   loadTopologyManifest,
   resolvePreset,
   resolveTopology,
-  ServiceAdapter,
-  Topology,
-  TopologyPreset,
+  type ServiceAdapter,
+  type Topology,
+  type TopologyPreset,
 } from "./topology.ts";
 import {
   normalizeTopologyPreset,
