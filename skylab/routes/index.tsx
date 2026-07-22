@@ -188,12 +188,10 @@ export default function SkyLabPage({ data }: PageProps<PageData>) {
             <div class="skylab-panel" id="panel-chat">
               <div class="skylab-panel-header">
                 <h1 class="skylab-panel-title">Chat</h1>
-                <div class="skylab-chat-mode-toggle">
-                  <button class="skylab-btn skylab-btn-sm active" id="chat-mode-plain">
-                    Plaintext
-                  </button>
-                  <button class="skylab-btn skylab-btn-sm" id="chat-mode-e2ee">E2EE (Germ)</button>
-                </div>
+                {/* E2EE (Germ) mode selector removed per the Phase 10 product-surface
+                    decision (docs/plans/phase-10-product-surface-decision-brief.md):
+                    selecting it announced client-side encryption but silently sent
+                    plaintext, a privacy/consent failure. */}
               </div>
               <div class="skylab-chat-layout">
                 <div class="skylab-chat-list" id="chat-list">
