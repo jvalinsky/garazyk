@@ -11,7 +11,6 @@
 #import "Email/PDSEmailProviderFactory.h"
 #import "Email/PDSEmailProvider.h"
 #import "Email/PDSMockEmailProvider.h"
-#import "Email/PDSSMTPEmailProvider.h"
 #import "Email/PDSResendEmailProvider.h"
 #import "Email/PDSSecretsProvider.h"
 #import "Email/PDSKeychainSecretsProvider.h"
@@ -43,7 +42,7 @@ static dispatch_queue_t sRegistryQueue = nil;
 #pragma mark - GZProviderFactory
 
 + (NSArray<NSString *> *)supportedIdentifiers {
-    return @[@"mock", @"smtp", @"resend"];
+    return @[@"mock", @"resend"];
 }
 
 + (nullable id)providerWithIdentifier:(NSString *)identifier
@@ -81,16 +80,21 @@ static dispatch_queue_t sRegistryQueue = nil;
     }
 
     if ([provider isEqualToString:@"smtp"]) {
-        PDSSMTPEmailProvider *smtp = [[PDSSMTPEmailProvider alloc]
-            initWithHost:configuration.emailSmtpHost ?: @"localhost"
-                    port:configuration.emailSmtpPort
-                username:configuration.emailSmtpUsername
-                password:configuration.emailSmtpPassword
-                  useTLS:configuration.emailSmtpUseTLS];
-        GZ_LOG_WARN(@"SMTP email provider is configured, but SMTP delivery is not implemented. "
-                      @"All sends will fail closed with PDSSMTPEmailProviderErrorNotImplemented. "
-                      @"Use PDSResendEmailProvider for working email delivery.");
-        return smtp;
+        // Removed per the Phase 10 product-surface decision (docs/plans/
+        // phase-10-product-surface-decision-brief.md): PDSSMTPEmailProvider's
+        // send methods always returned NotImplemented, so a deployed
+        // configuration could appear valid while every verification or
+        // notification email silently failed. Use "resend" for working
+        // delivery or "mock" for tests.
+        if (error) {
+            *error = [NSError errorWithDomain:PDSEmailProviderFactoryErrorDomain
+                                         code:PDSEmailProviderFactoryErrorUnsupportedProvider
+                                     userInfo:@{
+                                         NSLocalizedDescriptionKey:
+                                             @"SMTP email delivery is not supported; use \"resend\" or \"mock\""
+                                     }];
+        }
+        return nil;
     }
 
     if ([provider isEqualToString:@"resend"]) {
