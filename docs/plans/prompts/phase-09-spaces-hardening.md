@@ -1,7 +1,7 @@
 ---
 phase: 9
 title: Permissioned spaces production hardening
-status: in-progress
+status: blocked
 agent: worker
 depends_on: [2]
 last_updated: 2026-07-22
@@ -50,6 +50,12 @@ publication, verification, overlap, and rollback. Binary three-PDS scenario
 dedicated key, issued a new `#atproto_space` credential, and proved a remote
 PDS accepts that credential and the pre-cutover `#atproto` credential during
 overlap.
+
+**Blocked (2026-07-22): P6.3 operator decision.** The remaining work is the
+explicit choice between full end-to-end app attestation and continuing to
+reject `managing-app`/`appAccess#allowList` until upstream standardizes the
+attestation model. The plan forbids a structural-only implementation; no
+implementation can proceed without this choice.
 
 # Phase 9: Permissioned spaces production hardening
 
