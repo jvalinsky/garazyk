@@ -276,7 +276,9 @@ async function main() {
       const probe = win.document.createElement("div");
       probe.style.transition = "opacity 300ms";
       win.document.body.appendChild(probe);
-      const duration = parseFloat(win.getComputedStyle(probe).transitionDuration);
+      const duration = parseFloat(
+        win.getComputedStyle(probe).transitionDuration,
+      );
       probe.remove();
       return duration;
     });
@@ -288,96 +290,69 @@ async function main() {
     console.log("[OK] prefers-reduced-motion suppresses transition duration");
     await page.emulateMedia({ reducedMotion: null });
 
-    // Mobile drawer: focus trap while open, focus restore on close.
-    //
-    // This needs island hydration (client JS). Pre-existing, unrelated bug:
-    // islands/SessionPlayer.tsx's `await import("asciinema-player")` fails to
-    // resolve in Fresh's dev esbuild bundle (tracked in workstream 04 as a
-    // hydration-blocking gap), which breaks the client bundle for every
-    // island, not just this one. Detect that condition up front and degrade
-    // to an [INFO]/[WARN] skip rather than fail this suite on an unrelated,
-    // already-tracked bug — the source-level review of MobileNav.tsx's trap/
-    // restore logic stands in as the manual check until the bundler gap is
-    // fixed.
-    const mainBundleSrc = await page.evaluate(() => {
+    // Mobile drawer: focus trap while open, focus restore on close. Clicking
+    // the island's trigger is the end-to-end proof that Fresh hydrated it.
+    await page.setViewportSize({ width: 400, height: 800 });
+    const navTab = page.locator(".mobile-nav-tab").first();
+    await navTab.waitFor({ state: "visible", timeout: 5_000 });
+    if (await navTab.count() === 0 || !await navTab.isVisible()) {
+      throw new Error(
+        "Mobile navigation trigger is not visible at 400px width",
+      );
+    }
+
+    await navTab.click();
+    const drawer = page.locator("#mobile-nav-drawer");
+    await drawer.waitFor({ state: "visible", timeout: 5_000 });
+
+    const focusedInDrawer = await page.evaluate(() => {
       // deno-lint-ignore no-explicit-any
       const doc = (globalThis as any).document;
-      return doc.querySelector('script[type="module"][src*="/_frsh/js/"]')?.src ??
-        null;
+      return doc.querySelector("#mobile-nav-drawer")?.contains(
+        doc.activeElement,
+      ) ??
+        false;
     });
-    const bundleStatus = mainBundleSrc
-      ? (await fetch(mainBundleSrc)).status
-      : 0;
-    if (bundleStatus !== 200) {
-      console.log(
-        `[WARN] Client JS bundle unavailable (status ${bundleStatus}); skipping hydration-dependent ` +
-          "focus-trap/restore checks — see workstream 04 known-gap note",
+    if (!focusedInDrawer) {
+      throw new Error(
+        "Expected focus to move inside the mobile drawer when it opens",
       );
-    } else {
-      await page.setViewportSize({ width: 400, height: 800 });
-      const navTab = page.locator(".mobile-nav-tab").first();
-      await navTab.waitFor({ state: "visible", timeout: 5_000 }).catch(
-        () => {},
-      );
-      if (await navTab.count() > 0 && await navTab.isVisible()) {
-        await navTab.click();
-        const drawer = page.locator("#mobile-nav-drawer");
-        await drawer.waitFor({ state: "visible", timeout: 5_000 });
-
-        const focusedInDrawer = await page.evaluate(() => {
-          // deno-lint-ignore no-explicit-any
-          const doc = (globalThis as any).document;
-          return doc.querySelector("#mobile-nav-drawer")?.contains(doc.activeElement) ??
-            false;
-        });
-        if (!focusedInDrawer) {
-          throw new Error(
-            "Expected focus to move inside the mobile drawer when it opens",
-          );
-        }
-        console.log("[OK] Focus moves into the mobile drawer on open");
-
-        // Shift+Tab from the first focusable element must wrap to the last (trap).
-        await page.keyboard.press("Shift+Tab");
-        const wrappedToLast = await page.evaluate(() => {
-          // deno-lint-ignore no-explicit-any
-          const doc = (globalThis as any).document;
-          const drawer = doc.querySelector("#mobile-nav-drawer");
-          const focusable = drawer?.querySelectorAll(
-            'button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])',
-          );
-          return !!focusable && focusable.length > 0 &&
-            doc.activeElement === focusable[focusable.length - 1];
-        });
-        if (!wrappedToLast) {
-          throw new Error(
-            "Expected Shift+Tab from the first drawer control to wrap to the last (focus trap)",
-          );
-        }
-        console.log(
-          "[OK] Focus trap wraps Shift+Tab to the last drawer control",
-        );
-
-        await page.keyboard.press("Escape");
-        await drawer.waitFor({ state: "hidden", timeout: 5_000 });
-        const restoredFocus = await page.evaluate(() => {
-          // deno-lint-ignore no-explicit-any
-          const doc = (globalThis as any).document;
-          return doc.activeElement?.classList.contains("mobile-nav-tab") ?? false;
-        });
-        if (!restoredFocus) {
-          throw new Error(
-            "Expected focus to restore to the triggering nav tab after the drawer closes",
-          );
-        }
-        console.log(
-          "[OK] Focus restores to the trigger after the drawer closes",
-        );
-      } else {
-        console.log("[INFO] Mobile nav tabs not present at 400x800 viewport");
-      }
-      await page.setViewportSize({ width: 1280, height: 800 });
     }
+    console.log("[OK] Focus moves into the mobile drawer on open");
+
+    // Shift+Tab from the first focusable element must wrap to the last (trap).
+    await page.keyboard.press("Shift+Tab");
+    const wrappedToLast = await page.evaluate(() => {
+      // deno-lint-ignore no-explicit-any
+      const doc = (globalThis as any).document;
+      const drawer = doc.querySelector("#mobile-nav-drawer");
+      const focusable = drawer?.querySelectorAll(
+        'button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      return !!focusable && focusable.length > 0 &&
+        doc.activeElement === focusable[focusable.length - 1];
+    });
+    if (!wrappedToLast) {
+      throw new Error(
+        "Expected Shift+Tab from the first drawer control to wrap to the last (focus trap)",
+      );
+    }
+    console.log("[OK] Focus trap wraps Shift+Tab to the last drawer control");
+
+    await page.keyboard.press("Escape");
+    await drawer.waitFor({ state: "hidden", timeout: 5_000 });
+    const restoredFocus = await page.evaluate(() => {
+      // deno-lint-ignore no-explicit-any
+      const doc = (globalThis as any).document;
+      return doc.activeElement?.classList.contains("mobile-nav-tab") ?? false;
+    });
+    if (!restoredFocus) {
+      throw new Error(
+        "Expected focus to restore to the triggering nav tab after the drawer closes",
+      );
+    }
+    console.log("[OK] Focus restores to the trigger after the drawer closes");
+    await page.setViewportSize({ width: 1280, height: 800 });
 
     // ── Area 7: Hostile ANSI log rendering (workstream 04 U6 item 5) ───
     // LogViewer.tsx renders log output via
@@ -392,13 +367,16 @@ async function main() {
       "\x1b[31m<script>window.__logXss=1</script>\x1b[0m",
       '<img src=x onerror="window.__logXss=2">',
       '<a href="javascript:window.__logXss=3">click me</a>',
-      "<svg onload=\"window.__logXss=4\"></svg>",
+      '<svg onload="window.__logXss=4"></svg>',
       // Nested/malformed tags — a classic regex-sanitizer bypass attempt.
       "<scr<script>ipt>window.__logXss=5</scr</script>ipt>",
       '<div onmouseover="window.__logXss=6">hover</div>',
     ];
 
-    await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    await page.goto(baseUrl, {
+      waitUntil: "domcontentloaded",
+      timeout: 15_000,
+    });
     await page.evaluate(() => {
       (globalThis as unknown as { __logXss?: number }).__logXss = undefined;
     });
@@ -444,7 +422,9 @@ async function main() {
         "Sanitized log output still contains a live <script> tag or on* handler attribute",
       );
     }
-    console.log("[OK] Sanitized log output has no live <script> tags or event-handler attributes");
+    console.log(
+      "[OK] Sanitized log output has no live <script> tags or event-handler attributes",
+    );
 
     // ── Summary ─────────────────────────────────────────────────────────
     console.log("\n✅ All browser smoke baseline checks completed");

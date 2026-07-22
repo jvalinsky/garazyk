@@ -1,6 +1,59 @@
 /** Asciinema player island for TUI session recordings. @module SessionPlayer */
 import { useEffect, useRef, useState } from "preact/hooks";
 
+const ASCIINEMA_PLAYER_CSS =
+  "https://cdn.jsdelivr.net/npm/asciinema-player@3.8.0/dist/bundle/asciinema-player.css";
+const ASCIINEMA_PLAYER_SCRIPT =
+  "https://cdn.jsdelivr.net/npm/asciinema-player@3.8.0/dist/bundle/asciinema-player.min.js";
+
+interface AsciinemaPlayerInstance {
+  dispose?: () => void;
+}
+
+interface AsciinemaPlayerAPI {
+  create(
+    src: string | { data: () => Promise<string> },
+    el: HTMLElement,
+    opts?: Record<string, unknown>,
+  ): AsciinemaPlayerInstance;
+}
+
+function installedAsciinemaPlayer(): AsciinemaPlayerAPI | undefined {
+  return (globalThis as typeof globalThis & {
+    AsciinemaPlayer?: AsciinemaPlayerAPI;
+  }).AsciinemaPlayer;
+}
+
+function loadAsciinemaPlayer(): Promise<AsciinemaPlayerAPI> {
+  const existing = installedAsciinemaPlayer();
+  if (existing) return Promise.resolve(existing);
+
+  return new Promise((resolve, reject) => {
+    let script = document.querySelector<HTMLScriptElement>(
+      "script[data-asciinema-player]",
+    );
+    if (!script) {
+      script = document.createElement("script");
+      script.async = true;
+      script.src = ASCIINEMA_PLAYER_SCRIPT;
+      script.setAttribute("data-asciinema-player", "1");
+      document.head.appendChild(script);
+    }
+
+    script.addEventListener("load", () => {
+      const player = installedAsciinemaPlayer();
+      if (player) {
+        resolve(player);
+      } else {
+        reject(new Error("asciinema-player bundle loaded without its API"));
+      }
+    }, { once: true });
+    script.addEventListener("error", () => {
+      reject(new Error("Failed to load the asciinema-player browser bundle"));
+    }, { once: true });
+  });
+}
+
 interface SessionPlayerProps {
   /** URL to fetch .cast content (e.g. /api/runs/id/tui-cast). */
   castUrl: string;
@@ -9,7 +62,7 @@ interface SessionPlayerProps {
 /** Embeds asciinema-player for terminal session playback. */
 export default function SessionPlayer({ castUrl }: SessionPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<{ dispose?: () => void } | null>(null);
+  const playerRef = useRef<AsciinemaPlayerInstance | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +71,8 @@ export default function SessionPlayer({ castUrl }: SessionPlayerProps) {
     if (!container) return;
 
     let cancelled = false;
+    setError(null);
+    setLoading(true);
 
     (async () => {
       try {
@@ -25,24 +80,16 @@ export default function SessionPlayer({ castUrl }: SessionPlayerProps) {
           const link = document.createElement("link");
           link.rel = "stylesheet";
           link.setAttribute("data-asciinema-player", "1");
-          link.href =
-            "https://cdn.jsdelivr.net/npm/asciinema-player@3.8.0/dist/bundle/asciinema-player.css";
+          link.href = ASCIINEMA_PLAYER_CSS;
           document.head.appendChild(link);
         }
 
-        const mod = await import("asciinema-player");
-        const AsciinemaPlayer = mod as {
-          create: (
-            src: string | { data: () => Promise<string> },
-            el: HTMLElement,
-            opts?: Record<string, unknown>,
-          ) => { dispose?: () => void };
-        };
+        const AsciinemaPlayer = await loadAsciinemaPlayer();
 
         if (cancelled) return;
 
         playerRef.current?.dispose?.();
-        container.innerHTML = "";
+        container.replaceChildren();
 
         playerRef.current = AsciinemaPlayer.create(
           {
