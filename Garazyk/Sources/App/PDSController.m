@@ -52,7 +52,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 #import "Email/PDSKeychainSecretsProvider.h"
 #import "Email/PDSMockEmailProvider.h"
 #import "Email/PDSResendEmailProvider.h"
-#import "Email/PDSSMTPEmailProvider.h"
 
 @implementation PDSController {
   PDSApplication
