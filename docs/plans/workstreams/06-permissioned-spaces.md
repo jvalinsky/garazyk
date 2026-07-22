@@ -106,9 +106,10 @@ default regardless of outcome.
 ## P6.2 Dedicated space signing key and DID migration (P2)
 
 The implementation uses the documented account-`#atproto`-key fallback.
-New DID documents publish explicit same-value `#atproto_space` and
-`#atproto_space_host` entries; existing `did:plc` accounts have neither
-until an ordinary PLC rotation adds them.
+An operator publishes `#atproto_space` only after generating a distinct,
+purpose-bound signing key; existing and new DIDs otherwise retain the
+account-key fallback. `#atproto_space_host` remains a service entry rather
+than a signing-key alias.
 
 1. Design the key-rotation migration for a genuinely independent
    `#atproto_space` key (generation, PLC operation, credential issuance
@@ -134,6 +135,15 @@ public key is published, permits both exact key layouts during the bounded
 credential overlap, and forbids private-key or credential logging. Implement
 the signer primitive, PLC tooling, and two-PDS exercise as the next P6.2
 slice.
+
+**Progress (2026-07-22): signer and operator tooling complete.** Account and
+space signers now use separate macOS Keychain/Linux keystore namespaces and a
+migrated fallback table. Minting selects the dedicated signer only when its
+local public key exactly equals the DID document's `#atproto_space` value;
+otherwise it mints with `#atproto`. `kaszlak account prepare-space-key <did>`
+is idempotent and returns only the public key for the existing authenticated
+PLC sign/submit flow; `docs/permissioned-spaces-key-rotation.md` defines the
+operator runbook. A two-PDS overlap exercise remains.
 
 ## P6.3 App attestation decision (decision needed)
 
