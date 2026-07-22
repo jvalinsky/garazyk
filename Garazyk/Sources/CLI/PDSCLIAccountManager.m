@@ -734,4 +734,43 @@
     return success;
 }
 
++ (nullable NSString *)prepareSpaceSigningKeyWithContext:(PDSCLICommandContext *)context
+                                                     did:(NSString *)did
+                                                   error:(NSError **)error {
+    PDSDatabase *serviceDatabase = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:[self databasePathForContext:context]]];
+    NSError *localError = nil;
+    if (![serviceDatabase openWithError:&localError]) {
+        if (error) *error = localError;
+        return nil;
+    }
+    PDSDatabaseAccount *account = [serviceDatabase getAccountByDid:did error:&localError];
+    [serviceDatabase close];
+    if (!account) {
+        if (error) *error = localError ?: [NSError errorWithDomain:@"com.atproto.pds.cli"
+                                                               code:404
+                                                           userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+        return nil;
+    }
+
+    PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:1];
+    pool.masterSecret = [ATProtoServiceConfiguration sharedConfiguration].masterSecret;
+    PDSActorStore *store = [pool storeForDid:did error:&localError];
+    if (!store) {
+        [pool closeAll];
+        if (error) *error = localError;
+        return nil;
+    }
+
+    NSString *spaceKey = [store spaceSigningDIDKeyStringWithError:nil];
+    if (!spaceKey && ![store generateSpaceSigningKeyWithError:&localError]) {
+        [pool closeAll];
+        if (error) *error = localError;
+        return nil;
+    }
+    if (!spaceKey) spaceKey = [store spaceSigningDIDKeyStringWithError:&localError];
+    [pool closeAll];
+    if (!spaceKey && error) *error = localError;
+    return spaceKey;
+}
+
 @end

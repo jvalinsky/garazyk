@@ -396,17 +396,10 @@
              @"controller" : did,
              @"publicKeyMultibase" : publicKeyMultibase
            };
-           if ([svgConfig boolForKey:@"permissionedSpacesEnabled"]) {
-             NSDictionary *spaceVerificationMethod = @{
-               @"id" : [NSString stringWithFormat:@"%@#atproto_space", did],
-               @"type" : @"Multikey",
-               @"controller" : did,
-               @"publicKeyMultibase" : publicKeyMultibase
-             };
-             doc[@"verificationMethod"] = @[ verificationMethod, spaceVerificationMethod ];
-           } else {
-             doc[@"verificationMethod"] = @[ verificationMethod ];
-           }
+           /* Permissioned-space credentials remain on #atproto until an
+            * operator publishes a distinct dedicated key through a DID
+            * update. Never relabel this server key as #atproto_space. */
+           doc[@"verificationMethod"] = @[ verificationMethod ];
            doc[@"authentication"] = @[ verificationMethod[@"id"] ];
          } else {
            doc[@"verificationMethod"] = @[];
