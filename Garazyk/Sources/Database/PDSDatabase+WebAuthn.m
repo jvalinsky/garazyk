@@ -51,7 +51,19 @@
 - (BOOL)deleteWebAuthnCredential:(NSData *)credentialId forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"DELETE FROM webauthn_credentials WHERE credential_id = ? AND account_did = ?";
     NSArray *params = @[credentialId, did];
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    if (![self executeParameterizedUpdate:sql params:params error:error]) {
+        return NO;
+    }
+    // executeParameterizedUpdate: only reports SQL errors, not match count -
+    // a DELETE that matches nothing still "succeeds". Callers need to know
+    // whether a credential actually existed.
+    if (sqlite3_changes(self.db) == 0) {
+        if (error) {
+            *error = [self errorWithMessage:"No matching WebAuthn credential found" code:PDSDatabaseErrorNotFound];
+        }
+        return NO;
+    }
+    return YES;
 }
 
 - (BOOL)updateWebAuthnCredentialSignCount:(NSData *)credentialId forDid:(NSString *)did signCount:(uint32_t)signCount error:(NSError **)error {
