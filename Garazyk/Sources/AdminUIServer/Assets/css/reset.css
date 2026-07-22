@@ -49,7 +49,7 @@ p {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-foreground-accent);
   text-decoration: none;
   cursor: pointer;
   transition: color var(--transition-fast);

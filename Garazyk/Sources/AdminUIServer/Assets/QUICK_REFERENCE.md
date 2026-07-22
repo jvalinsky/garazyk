@@ -251,6 +251,18 @@ boundaries.
 - `--color-destructive`: Dangerous/irreversible
 - `--color-info`: Informational
 
+### Semantic Foregrounds
+
+- `--color-foreground-accent`: Links and active text on semantic surfaces
+- `--color-foreground-success`: Success text, badges, alerts, and indicators
+- `--color-foreground-warning`: Warning text, badges, alerts, and indicators
+- `--color-foreground-destructive`: Error text, badges, alerts, and indicators
+- `--color-foreground-info`: Informational alert text and indicators
+
+Use `--color-on-*` for text on a solid semantic action fill. Do not use the
+action-fill tokens as normal-sized text; their foreground variants are the
+contrast-safe choice in both color schemes.
+
 ### Structural
 
 - `--separator-color`: Standard borders

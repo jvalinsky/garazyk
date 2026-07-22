@@ -119,6 +119,16 @@ animation/transition duration without suppressing semantic state changes;
 from regressing. Contrast, zoom/reflow, focus, touch-target, and narrow
 keyboard-order verification remain.
 
+**Progress (2026-07-22):** Measured contrast found the decorative semantic
+palette was insufficient when used as foreground text. `tokens.css` now
+defines `--color-foreground-*` and `--color-on-*` tokens, with dark-mode
+foreground overrides; the served bundle and modular component styles use them
+where text or text-bearing indicators need contrast. The independent
+`scripts/admin-ui-build/contrast_test.ts` verifies every semantic foreground
+against primary/tertiary light and dark surfaces and every on-fill text pair
+at WCAG AA's 4.5:1 threshold. Zoom/reflow, focus, touch-target, and narrow
+keyboard-order verification remain.
+
 ## U6. Structural cleanup
 
 After U1-U4:

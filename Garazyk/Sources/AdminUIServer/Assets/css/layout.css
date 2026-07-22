@@ -298,7 +298,7 @@ main[role="main"] {
 }
 
 .breadcrumbs a {
-  color: var(--color-accent);
+  color: var(--color-foreground-accent);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
@@ -520,8 +520,8 @@ footer[role="contentinfo"],
 }
 
 .admin-tab.active {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+  color: var(--color-foreground-accent);
+  border-bottom-color: var(--color-foreground-accent);
 }
 
 /* ============================================================================
@@ -607,7 +607,7 @@ footer[role="contentinfo"],
 }
 
 .is-error {
-  color: var(--color-destructive);
+  color: var(--color-foreground-destructive);
 }
 
 /* ============================================================================
