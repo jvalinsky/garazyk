@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — operator review required (2026-07-22)
+Accepted — 2026-07-22
 
 ## Context
 
@@ -51,7 +51,7 @@ operators; it never silently advances the indexed cursor.
 
 ### Capacity and operations
 
-Defaults proposed for operator approval:
+Approved defaults:
 
 - high watermark: 100,000 events or 2 GiB of raw envelopes;
 - low watermark: 75% of the selected high watermark;
@@ -89,7 +89,5 @@ This creates bounded eventual consistency for AppView queries and requires new
 operator dashboards/alerts. In return, ingestion is independently durable,
 recoverable, observable, and protected from slow downstream indexers.
 
-## Required approval
-
-An operator must approve the eventual-consistency contract, defaults above,
-dead-letter policy, and production capacity budget before implementation.
+The operator approved the eventual-consistency contract, capacity defaults,
+dead-letter policy, and production budget on 2026-07-22.
