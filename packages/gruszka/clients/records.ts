@@ -22,11 +22,11 @@ export class RecordsClient {
   async createRecord(
     repo: string,
     collection: string,
-    record: Record<string, any>,
+    record: Record<string, unknown>,
     token: string,
     options: { rkey?: string; validate?: boolean } = {},
-  ): Promise<any> {
-    const body: Record<string, any> = {
+  ): Promise<unknown> {
+    const body: Record<string, unknown> = {
       repo,
       collection,
       record,
@@ -52,7 +52,7 @@ export class RecordsClient {
     repo: string,
     collection: string,
     rkey: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get("com.atproto.repo.getRecord", {
       repo,
       collection,
@@ -74,7 +74,7 @@ export class RecordsClient {
     collection: string,
     rkey: string,
     token: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.post(
       "com.atproto.repo.deleteRecord",
       { repo, collection, rkey },
@@ -96,9 +96,9 @@ export class RecordsClient {
     repo: string,
     collection: string,
     rkey: string,
-    record: Record<string, any>,
+    record: Record<string, unknown>,
     token: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.post(
       "com.atproto.repo.putRecord",
       { repo, collection, rkey, record },
@@ -118,7 +118,7 @@ export class RecordsClient {
     repo: string,
     collection: string,
     options: { limit?: number; token?: string } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.get(
       "com.atproto.repo.listRecords",
       { repo, collection, limit: options.limit ?? 50 },
@@ -136,9 +136,9 @@ export class RecordsClient {
    */
   async applyWrites(
     repo: string,
-    writes: Array<Record<string, any>>,
+    writes: Array<Record<string, unknown>>,
     token: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.post(
       "com.atproto.repo.applyWrites",
       { repo, writes },
