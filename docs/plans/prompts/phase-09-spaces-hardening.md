@@ -16,6 +16,11 @@ signer selection; a bounded credential overlap; rollback without altering
 account signing or space data; and two-PDS verification requirements. This
 rules out a dangerous relabeling of the account key as `#atproto_space`.
 
+**Slice 2 complete (2026-07-22): P6.5 pruning observability.** Oplog pruning
+now emits a structured, credential-free event with the exact number of removed
+entries and configured retention; failures emit a separate failure event. The
+store API reports its count transactionally, covered by `PDSSpaceStoreTests`.
+
 # Phase 9: Permissioned spaces production hardening
 
 ## Mission
