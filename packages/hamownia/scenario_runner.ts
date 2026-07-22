@@ -10,8 +10,6 @@ import {
   runScenarioInDocker,
 } from "./docker_runner.ts";
 
-const HOST_CHILD_GRACE_MS = 2_000;
-
 /**
  * Race a promise against a timeout
  * @typeParam T - The expected result type
