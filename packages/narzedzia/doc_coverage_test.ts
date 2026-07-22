@@ -1,4 +1,4 @@
-import { assert, assertEquals, type assertThrows } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
   addCounts,
   classifyDoc,

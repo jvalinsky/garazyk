@@ -166,14 +166,13 @@ async function validateBashSyntax(
       stderr: "piped",
     });
 
-    const { code: exitCode, stderr } = await proc.output();
+    const { code: exitCode } = await proc.output();
     if (exitCode !== 0) {
       logWarn(`Bash syntax warning in ${filePath}`);
-      // console.error(new TextDecoder().decode(stderr));
       return true; // Don't fail on bash warnings
     }
     return true;
-  } catch (err) {
+  } catch {
     return true;
   } finally {
     await Deno.remove(tempFile).catch(() => {});
@@ -181,19 +180,19 @@ async function validateBashSyntax(
 }
 
 /** Validate documentation diagrams (mermaid/dot). */
-export async function validateDocDiagrams(
-  options: DocValidationOptions,
+export function validateDocDiagrams(
+  _options: DocValidationOptions,
 ): Promise<boolean> {
   logWarn("Documentation diagram validation not yet implemented");
-  return false;
+  return Promise.resolve(false);
 }
 
 /** Check for anti-patterns or specific tropes in documentation. */
-export async function checkDocPatterns(
-  options: DocValidationOptions,
+export function checkDocPatterns(
+  _options: DocValidationOptions,
 ): Promise<boolean> {
   logWarn("Documentation pattern checking not yet implemented");
-  return false;
+  return Promise.resolve(false);
 }
 
 /** Entry point for documentation validation CLI. */
