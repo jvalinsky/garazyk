@@ -334,6 +334,99 @@
     XCTAssertTrue(success, @"Auditor should verify P-256 signed operation. Error: %@", verifyError);
 }
 
+- (void)testAuditorRejectsHighSP256Signature {
+    // Same fixed P-256 keypair as testAuditorVerifiesP256Signature, but this
+    // time the signature is deliberately denormalized to high-S. did:plc
+    // requires low-S canonical signatures
+    // (https://web.plc.directory/spec/v0.1/did-plc); AuthCryptoJWK's shared
+    // verifier accepts both forms per ADR 0007 (that fix is for DPoP/JWT/
+    // WebAuthn callers, which must not reject high-S), so PLCAuditor must
+    // enforce low-S itself rather than relying on the shared verifier.
+    NSData *xData = [self dataFromHexString:@"44073c1c6da8c2c9736c011ff13a2b3602a1d819e687582bdf87262ad1b12f50" expectedLength:32];
+    NSData *yData = [self dataFromHexString:@"79720e75ce2eaae05079972dd065b2eb437d9af5c9a974d3ce186525494bdc3c" expectedLength:32];
+    NSData *dData = [self dataFromHexString:@"8d12e99fb324f3c1bafed77fa91968a36c252590f0e55fef10f9bfb027b59504" expectedLength:32];
+    XCTAssertNotNil(xData);
+    XCTAssertNotNil(yData);
+    XCTAssertNotNil(dData);
+
+    NSMutableData *privateKeyData = [NSMutableData dataWithCapacity:97];
+    uint8_t prefix = 0x04;
+    [privateKeyData appendBytes:&prefix length:1];
+    [privateKeyData appendData:xData];
+    [privateKeyData appendData:yData];
+    [privateKeyData appendData:dData];
+
+    NSDictionary *attrs = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
+        (__bridge id)kSecAttrKeySizeInBits: @256
+    };
+
+    CFErrorRef errorRef = NULL;
+    SecKeyRef privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData, (__bridge CFDictionaryRef)attrs, &errorRef);
+    if (!privateKey) {
+        NSError *nsError = errorRef ? CFBridgingRelease(errorRef) : nil;
+        XCTSkip(@"Skipping PLC P-256 signature test: key import unavailable (%@)", nsError);
+        return;
+    }
+    if (errorRef) CFRelease(errorRef);
+
+    NSMutableData *compressedPub = [NSMutableData dataWithCapacity:33];
+    const uint8_t *yBytes = yData.bytes;
+    uint8_t compressedPrefix = (yBytes[31] & 1) ? 0x03 : 0x02;
+    [compressedPub appendBytes:&compressedPrefix length:1];
+    [compressedPub appendData:xData];
+
+    uint8_t codec[] = {0x80, 0x24};
+    NSMutableData *prefixed = [NSMutableData dataWithBytes:codec length:2];
+    [prefixed appendData:compressedPub];
+    NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:prefixed]];
+
+    NSDictionary *opData = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://p256-highs.test"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
+
+    NSData *opHash = [self.auditor hashForOperationData:opData];
+
+    NSData *derSig = (__bridge_transfer NSData *)SecKeyCreateSignature(privateKey,
+                                                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+                                                                       (__bridge CFDataRef)opHash,
+                                                                       &errorRef);
+    XCTAssertNotNil(derSig);
+    CFRelease(privateKey);
+
+    NSData *rawSig = [self rawSignatureFromDER:derSig];
+    XCTAssertNotNil(rawSig);
+
+    // Force high-S: normalize first (SecKeyCreateSignature's S form isn't
+    // guaranteed either way), then denormalize to guarantee a genuine,
+    // otherwise-valid high-S signature over this exact data.
+    NSError *normalizeError = nil;
+    NSData *lowS = [AuthCryptoECDSA normalizeLowS:rawSig error:&normalizeError];
+    XCTAssertNotNil(lowS, @"Low-S normalization failed: %@", normalizeError);
+    NSError *denormalizeError = nil;
+    NSData *highS = [AuthCryptoECDSA denormalizeLowS:lowS error:&denormalizeError];
+    XCTAssertNotNil(highS, @"High-S denormalization failed: %@", denormalizeError);
+    XCTAssertFalse([AuthCryptoECDSA isLowS:highS error:nil], @"sanity: signature must actually be high-S");
+
+    PLCOperation *op = [[PLCOperation alloc] init];
+    op.sig = [self base64URLEncode:highS];
+    op.data = opData;
+    op.prev = nil;
+    op.did = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+
+    [self.store appendOperation:op nullifyCIDs:@[] error:nil];
+
+    NSError *verifyError = nil;
+    BOOL success = [self.auditor verifyDID:op.did error:&verifyError];
+    XCTAssertFalse(success, @"Auditor must reject a high-S PLC operation signature (did:plc requires low-S canonical form)");
+}
+
 - (NSData *)dataFromHexString:(NSString *)hex expectedLength:(NSUInteger)expectedLength {
     if (![hex isKindOfClass:[NSString class]]) {
         return nil;
