@@ -111,22 +111,11 @@ export function missingCounts(counts: Counts): MissingCounts {
   return results;
 }
 
-/** Represents a single declaration found in a header. */
-interface Declaration {
-  kind: Bucket;
-  name: string;
-  line: number;
-  documented: boolean;
-}
-
 export function countDocumentation(content: string): Counts {
   const results = emptyCounts();
-  const declarations: Declaration[] = [];
   const lines = content.split("\n");
 
-  let currentInterface: string | null = null;
   let lastCommentStartLine = -1000;
-  let inComment = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -134,11 +123,7 @@ export function countDocumentation(content: string): Counts {
 
     // Track comments
     if (line.startsWith("/*!") || line.startsWith("/**")) {
-      inComment = true;
       lastCommentStartLine = i;
-    }
-    if (line.includes("*/")) {
-      inComment = false;
     }
 
     // Detect declarations
@@ -154,7 +139,6 @@ export function countDocumentation(content: string): Counts {
     // @interface ClassName : BaseClass
     const interfaceMatch = line.match(/^@interface\s+(\w+)\s*[:{<]/);
     if (interfaceMatch) {
-      currentInterface = interfaceMatch[1];
       const documented = i - lastCommentStartLine <= 10;
       results.classes.total++;
       if (documented) results.classes.documented++;
@@ -163,7 +147,6 @@ export function countDocumentation(content: string): Counts {
 
     // @end
     if (line.startsWith("@end")) {
-      currentInterface = null;
       continue;
     }
 
@@ -641,14 +624,10 @@ Examples:
   deno run -A packages/narzedzia/doc_coverage.ts Garazyk/Sources --min-subsystem Chat=60`);
 }
 
-function formatBucket(bucket: Bucket): string {
-  return bucket.charAt(0).toUpperCase() + bucket.slice(1).padEnd(11);
-}
-
-export async function parseArgs(
+export function parseArgs(
   args: string[],
   defaultSearchDir = "Garazyk/Sources",
-): Promise<Options> {
+): Options {
   const options: Options = {
     searchDir: defaultSearchDir,
     minSubsystems: new Map<Subsystem, number>(),
