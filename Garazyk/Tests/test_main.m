@@ -885,6 +885,7 @@ int main(int argc, char *argv[]) {
       @"PDSSpaceLtHashTests",
       @"PDSSpaceURIAndScopeTests",
       @"PDSSpaceStoreTests",
+      @"PDSSpaceAppAttestationVerifierTests",
       @"PDSSpaceJWTTests",
       @"PDSSpaceCommitTests",
       @"AuthCryptoBase64URLTests",
