@@ -594,6 +594,33 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual([second.firstObject[@"seq"] longLongValue], 101LL);
 }
 
+- (void)testPendingIndexQueueMetricsExcludeAcknowledgedAndTerminalEvents {
+    NSError *error = nil;
+    NSData *pendingEnvelope = [@"pending" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *otherEnvelope = [@"other" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://relay" seq:200 eventType:@"#commit"
+                                                    did:nil rev:nil cid:nil rawEnvelope:pendingEnvelope error:&error]);
+    XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://relay" seq:201 eventType:@"#commit"
+                                                    did:nil rev:nil cid:nil rawEnvelope:otherEnvelope error:&error]);
+    NSArray<NSDictionary *> *claimed = [self.db claimIndexEventsForWorker:@"worker-a" limit:1 leaseDuration:60 error:&error];
+    XCTAssertEqual(claimed.count, 1u);
+    XCTAssertTrue([self.db markIndexEventIndexedForRelayURL:@"wss://relay" seq:200 workerID:@"worker-a" error:&error]);
+
+    NSDictionary<NSString *, NSNumber *> *metrics = [self.db pendingIndexQueueMetricsForRelayURL:@"wss://relay" error:&error];
+    XCTAssertNotNil(metrics, @"%@", error);
+    XCTAssertEqual([metrics[@"event_count"] integerValue], 1);
+    XCTAssertEqual([metrics[@"envelope_bytes"] unsignedIntegerValue], otherEnvelope.length);
+    XCTAssertEqual([metrics[@"terminal_count"] integerValue], 0);
+
+    claimed = [self.db claimIndexEventsForWorker:@"worker-a" limit:1 leaseDuration:60 error:&error];
+    XCTAssertEqual(claimed.count, 1u);
+    XCTAssertTrue([self.db markIndexEventTerminalForRelayURL:@"wss://relay" seq:201 workerID:@"worker-a"
+                                                        error:@"poison" dbError:&error]);
+    metrics = [self.db pendingIndexQueueMetricsForRelayURL:@"wss://relay" error:&error];
+    XCTAssertEqual([metrics[@"event_count"] integerValue], 0);
+    XCTAssertEqual([metrics[@"terminal_count"] integerValue], 1);
+}
+
 // ---------------------------------------------------------------------------
 // Relevance Set
 // ---------------------------------------------------------------------------
