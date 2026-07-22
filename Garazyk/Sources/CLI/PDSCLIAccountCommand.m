@@ -44,7 +44,8 @@
            @"  delete <did>           Permanently delete an account\n"
            @"  update-email <did> <email>  Update account email\n"
            @"  update-handle <did> <handle>  Update account handle\n"
-           @"  update-plc-endpoint <did> <endpoint>  Update the account PLC service endpoint\n\n"
+           @"  update-plc-endpoint <did> <endpoint>  Update the account PLC service endpoint\n"
+           @"  prepare-space-key <did>  Generate or show the dedicated space credential key\n\n"
            @"Options for 'list':\n"
            @"  --limit, -l <n>        Limit results (default: 100)\n"
            @"  --filter, -f <text>    Filter by handle, email, or DID\n\n"
@@ -60,7 +61,7 @@
 }
 
 - (NSArray<NSString *> *)subcommands {
-    return @[@"list", @"info", @"create", @"deactivate", @"reactivate", @"delete", @"update-email", @"update-handle", @"update-plc-endpoint"];
+    return @[@"list", @"info", @"create", @"deactivate", @"reactivate", @"delete", @"update-email", @"update-handle", @"update-plc-endpoint", @"prepare-space-key"];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -90,6 +91,8 @@
         return [self executeUpdateHandleWithArgs:subArgs context:context];
     } else if ([subcommand isEqualToString:@"update-plc-endpoint"]) {
         return [self executeUpdatePlcEndpointWithArgs:subArgs context:context];
+    } else if ([subcommand isEqualToString:@"prepare-space-key"]) {
+        return [self executePrepareSpaceKeyWithArgs:subArgs context:context];
     } else {
         [context printError:[NSString stringWithFormat:@"Unknown subcommand: %@", subcommand]];
         return 1;
@@ -426,6 +429,28 @@
         [context printError:@"Failed to update PLC endpoint"];
         return 1;
     }
+}
+
+- (int)executePrepareSpaceKeyWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
+    if (args.count != 1) {
+        [context printError:@"Usage: kaszlak account prepare-space-key <did>"];
+        return 1;
+    }
+    NSError *error = nil;
+    NSString *spaceKey = [PDSCLIAccountManager prepareSpaceSigningKeyWithContext:context did:args.firstObject error:&error];
+    if (!spaceKey) {
+        [context printError:[NSString stringWithFormat:@"Unable to prepare dedicated space key: %@", error.localizedDescription ?: @"unknown error"]];
+        return 1;
+    }
+    NSDictionary *verificationMethods = @{ @"atproto_space" : spaceKey };
+    if (context.jsonOutput) {
+        [context printJSON:@{ @"did" : args.firstObject, @"verificationMethods" : verificationMethods }];
+    } else {
+        [context printInfo:@"Dedicated space key prepared. Add this mapping to a signed PLC operation:"];
+        [context printInfo:[NSString stringWithFormat:@"  atproto_space: %@", spaceKey]];
+        [context printInfo:@"Do not treat this output as a PLC update; submit it through the authenticated PLC signing workflow."];
+    }
+    return 0;
 }
 
 - (int)executeUpdateHandleWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {

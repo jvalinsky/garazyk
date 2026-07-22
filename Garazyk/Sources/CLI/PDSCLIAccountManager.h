@@ -48,6 +48,11 @@ NS_ASSUME_NONNULL_BEGIN
                                   did:(NSString *)did
                           newEndpoint:(NSString *)newEndpoint;
 
+/** Generates (or returns) the dedicated permissioned-space public signing key for an account. */
++ (nullable NSString *)prepareSpaceSigningKeyWithContext:(PDSCLICommandContext *)context
+                                                     did:(NSString *)did
+                                                   error:(NSError **)error;
+
 /** Resolves the database path used by the CLI context. */
 + (NSString *)databasePathForContext:(PDSCLICommandContext *)context;
 /** Resolves the PDS hostname used by the CLI context. */

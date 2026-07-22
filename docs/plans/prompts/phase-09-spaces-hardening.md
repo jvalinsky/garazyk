@@ -40,6 +40,14 @@ database bytes are unchanged. A binary predating the feature likewise has no
 reference to this database, so this demonstrates the required non-interference
 rollback path without claiming to execute a historical binary.
 
+**Slice 6 complete (2026-07-22): P6.2 signer and PLC preparation.** Dedicated
+space credentials now use purpose-isolated key storage and are selected only
+when the DID document publishes the exact local public key. The idempotent
+`kaszlak account prepare-space-key` command returns only that public key for
+the authenticated PLC operation flow; the runbook records preparation,
+publication, verification, overlap, and rollback. The remaining P6.2 evidence
+is a two-PDS overlap exercise.
+
 # Phase 9: Permissioned spaces production hardening
 
 ## Mission
