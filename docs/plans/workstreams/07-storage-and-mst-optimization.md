@@ -551,6 +551,9 @@ the spec-shaped envelope before dispatching a serial worker; record/block/state
 mutations and acknowledgement commit together. Startup resumes outstanding
 rows, retries use 60-second leases, the tenth failure dead-letters and pauses
 the relay, and event/byte high and low watermarks control pause/resume.
+Focused AppView tests, `deno task check`, `deno task test`, and full gated
+`AllTests` passed on 2026-07-22. The workstream remains open on the repository
+lint baseline (2,043 unrelated Deno findings).
 
 **Problem:** If the firehose ingestion path does synchronous indexing
 (updating AppView tables, search index, etc.), ingest throughput is
