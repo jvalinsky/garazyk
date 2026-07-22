@@ -347,9 +347,13 @@ remaining program does not depend on items 1-2.
    reflow, 44px targets, keyboard-visible focus, and reduced-motion behavior
    against the built `garazyk-ui` binary; the asset synchronization CTest
    prevents stale served UI files.
-5. Design and ship the dedicated `#atproto_space` signing-key rotation and
-   the existing-DID migration path (workstream 06, P6.2), after Phase 2's
-   acceptance scenarios prove the current fallback end-to-end.
+5. **Complete (2026-07-22):** Dedicated `#atproto_space` signing-key rotation
+   and existing-DID migration path (workstream 06, P6.2). Purpose-isolated
+   signers, explicit PLC operator tooling, and the runbook preserve the
+   account-key fallback until the exact dedicated public key is published.
+   Binary three-PDS scenario 93 run `2026-07-22t0530z-70080` passed 25/25,
+   including remote verification of both credential key layouts during
+   overlap.
 6. Space operational readiness: backup/restore drill for the space database,
    downgrade-retention verification, and reconciler/pruner observability
    (workstream 06, P6.5).
