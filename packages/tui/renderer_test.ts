@@ -316,8 +316,8 @@ Deno.test("Encoding: reverse video produces '7' in escape sequence", () => {
   buf.setCell(0, 0, { char: "R", style });
   const output = buf.diff();
   // The escape sequence should contain \x1b[...7...m (reverse video)
-  // deno-lint-ignore no-control-regex
   assert(
+    // deno-lint-ignore no-control-regex
     output.match(/\x1b\[[0-9;]*7[0-9;]*m/),
     `Expected reverse video (7) in: ${JSON.stringify(output)}`,
   );
@@ -333,8 +333,8 @@ Deno.test("Encoding: reverse video with foreground color", () => {
     output.includes("32"),
     `Expected green fg (32) in: ${JSON.stringify(output)}`,
   );
-  // deno-lint-ignore no-control-regex
   assert(
+    // deno-lint-ignore no-control-regex
     output.match(/\x1b\[[0-9;]*7[0-9;]*m/),
     `Expected reverse (7) in: ${JSON.stringify(output)}`,
   );
@@ -349,8 +349,8 @@ Deno.test("Encoding: underline produces '4' in escape sequence", () => {
   const style = { ...DEFAULT_STYLE, underline: true };
   buf.setCell(0, 0, { char: "U", style });
   const output = buf.diff();
-  // deno-lint-ignore no-control-regex
   assert(
+    // deno-lint-ignore no-control-regex
     output.match(/\x1b\[[0-9;]*4[0-9;]*m/),
     `Expected underline (4) in: ${JSON.stringify(output)}`,
   );
@@ -365,8 +365,8 @@ Deno.test("Encoding: underline combined with bold", () => {
     output.includes("1"),
     `Expected bold (1) in: ${JSON.stringify(output)}`,
   );
-  // deno-lint-ignore no-control-regex
   assert(
+    // deno-lint-ignore no-control-regex
     output.match(/\x1b\[[0-9;]*4[0-9;]*m/),
     `Expected underline (4) in: ${JSON.stringify(output)}`,
   );
