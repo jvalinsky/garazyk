@@ -78,6 +78,17 @@ reduced_motion_test.ts` verifies the rule and required declarations in both
 files. The remaining U5 work is measured contrast, 200% zoom/reflow, focus
 visibility, touch targets, and dashboard keyboard order at narrow widths.
 
+**Slice 4 in progress (2026-07-22): U5 measured contrast.** The prior action
+palette was being used directly as normal-sized status text, producing
+sub-4.5:1 combinations on light surfaces and in dark mode. `tokens.css` now
+separates action-fill, accessible semantic-foreground, and on-fill text
+tokens. The served bundle and modular styles apply the foreground tokens to
+links, feedback text, badges, alerts, metric states, and text-bearing status
+indicators. `scripts/admin-ui-build/contrast_test.ts` calculates relative
+luminance from the OKLCH tokens and enforces at least 4.5:1 against primary
+and tertiary surfaces in light and dark themes, plus every action-fill text
+pair.
+
 # Phase 8: Admin UI accessibility and structural cleanup
 
 ## Mission

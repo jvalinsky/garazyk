@@ -160,7 +160,7 @@ body {
 
 .loading-indicator {
     font-size: var(--font-size-xs);
-    color: var(--color-accent);
+    color: var(--color-foreground-accent);
 }
 
 .tree-container,

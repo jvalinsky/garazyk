@@ -47,6 +47,15 @@ highlights.
 | `--color-text-primary`   | oklch(13% 0.005 200) | oklch(96% 0.003 200) | Main text                          |
 | `--color-text-secondary` | oklch(45% 0.005 200) | oklch(70% 0.005 200) | Secondary labels, captions         |
 | `--color-accent`         | oklch(52% 0.18 255)  | oklch(52% 0.18 255)  | Primary actions, focus states      |
+| `--color-foreground-*`   | Darker semantic colors | Lighter semantic colors | Status text, badges, alerts, links |
+
+Action-fill tokens and foreground tokens are deliberately separate. Use
+`--color-accent`, `--color-success`, `--color-warning`,
+`--color-destructive`, and `--color-info` for fills, borders, and other
+decorative signals. Use the corresponding `--color-foreground-*` token for
+normal-sized text, badges, alert content, and text-bearing status indicators.
+The foreground variants maintain at least 4.5:1 contrast on the primary and
+tertiary semantic surfaces in both color schemes.
 
 ### Brand Tinting
 
@@ -56,14 +65,15 @@ tinting (chroma 0.01–0.012) for visibility.
 - Light mode: Very subtle (chroma 0.003–0.005)
 - Dark mode: Noticeable warmth (chroma 0.006–0.012)
 
-### Action Colors
+### Action Colors and Foregrounds
 
-| Semantic    | OKLCH               | Use Case                         |
-| ----------- | ------------------- | -------------------------------- |
-| Success     | oklch(60% 0.18 145) | Positive outcomes, confirmations |
-| Warning     | oklch(75% 0.18 70)  | Caution, requires attention      |
-| Destructive | oklch(58% 0.22 25)  | Deletion, irreversible actions   |
-| Info        | oklch(60% 0.15 210) | Informational messages           |
+| Semantic    | Fill token          | Accessible foreground token          | On-fill text token               |
+| ----------- | ------------------- | ----------------------------------- | -------------------------------- |
+| Accent      | `--color-accent`    | `--color-foreground-accent`         | `--color-on-accent`              |
+| Success     | `--color-success`   | `--color-foreground-success`        | `--color-on-success`             |
+| Warning     | `--color-warning`   | `--color-foreground-warning`        | `--color-on-warning`             |
+| Destructive | `--color-destructive` | `--color-foreground-destructive`  | `--color-on-destructive`         |
+| Info        | `--color-info`      | `--color-foreground-info`           | `--color-on-info`                |
 
 ---
 
@@ -218,9 +228,9 @@ Card
 **Never use side-stripe borders** (it's an AI slop pattern). Use **full borders instead**:
 
 ```css
-border: 1px solid var(--color-warning);
+border: 1px solid var(--color-foreground-warning);
 background: rgba(255, 149, 0, 0.08);
-color: var(--color-warning);
+color: var(--color-foreground-warning);
 ```
 
 **Types**:
