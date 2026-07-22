@@ -1,9 +1,10 @@
 ---
 phase: 11
 title: Storage and MST optimization remainder
-status: in-progress
+status: complete
 agent: worker
 depends_on: [7]
+completed_at: 2026-07-22
 ---
 
 # Phase 11: Storage and MST optimization remainder
