@@ -37,9 +37,11 @@
 #pragma mark - Create & Get (Legacy)
 
 - (void)testCreateAndGetClient {
+    // client_name is not a column oauth_clients stores (see
+    // PDSDatabase+OAuthClients.m's SELECT list) - assert on redirect_uris,
+    // which the roundtrip actually persists and returns.
     NSDictionary *client = @{
         @"client_id": @"test-client-1",
-        @"client_name": @"Test App",
         @"redirect_uris": @[@"https://example.com/callback"],
     };
 
@@ -51,7 +53,7 @@
     NSDictionary *fetched = [self.database getClientWithID:@"test-client-1" error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(fetched);
-    XCTAssertEqualObjects(fetched[@"client_name"], @"Test App");
+    XCTAssertEqualObjects(fetched[@"redirect_uris"], (@[@"https://example.com/callback"]));
 }
 
 - (void)testGetClientNotFound {
@@ -66,7 +68,6 @@
 - (void)testCreateAndGetOAuthClient {
     NSDictionary *client = @{
         @"client_id": @"oauth-client-1",
-        @"client_name": @"OAuth Test App",
         @"redirect_uris": @[@"https://example.com/callback"],
     };
 
@@ -78,7 +79,7 @@
     NSDictionary *fetched = [self.database getOAuthClientWithID:@"oauth-client-1" error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(fetched);
-    XCTAssertEqualObjects(fetched[@"client_name"], @"OAuth Test App");
+    XCTAssertEqualObjects(fetched[@"redirect_uris"], (@[@"https://example.com/callback"]));
 }
 
 - (void)testGetOAuthClientNotFound {
