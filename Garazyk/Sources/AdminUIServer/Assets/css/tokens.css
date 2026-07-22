@@ -22,6 +22,22 @@
   --color-warning: oklch(75% 0.18 70);
   --color-info: oklch(60% 0.15 210);
 
+  /* Accessible foregrounds are separate from the action/background colors.
+   * The action colors are chosen for fills; these darker values meet text and
+   * non-text contrast requirements on the light semantic surfaces. */
+  --color-foreground-accent: oklch(50% 0.18 255);
+  --color-foreground-destructive: oklch(52% 0.22 25);
+  --color-foreground-success: oklch(48% 0.18 145);
+  --color-foreground-warning: oklch(50% 0.18 70);
+  --color-foreground-info: oklch(46% 0.15 210);
+
+  /* Text placed on solid action fills. */
+  --color-on-accent: white;
+  --color-on-destructive: white;
+  --color-on-success: oklch(13% 0.005 200);
+  --color-on-warning: oklch(13% 0.005 200);
+  --color-on-info: oklch(13% 0.005 200);
+
   /* Strawberry brand tint on neutrals - subtle warmth */
   /* Background secondary gets slight chroma toward strawberry */
   --color-bg-secondary-tinted: oklch(99% 0.004 15);
@@ -91,6 +107,14 @@
     --color-text-primary: oklch(96% 0.003 200);
     --color-text-secondary: oklch(70% 0.005 200);
     --color-text-tertiary: oklch(55% 0.004 200);
+
+    /* Lighter foregrounds preserve contrast against dark primary and
+     * tertiary surfaces without changing the action-fill palette above. */
+    --color-foreground-accent: oklch(66% 0.18 255);
+    --color-foreground-destructive: oklch(70% 0.22 25);
+    --color-foreground-success: oklch(64% 0.18 145);
+    --color-foreground-warning: oklch(66% 0.18 70);
+    --color-foreground-info: oklch(62% 0.15 210);
 
     /* Dark mode - stronger brand tint on secondary bg for visual warmth */
     --color-bg-secondary-tinted: oklch(22% 0.015 15);

@@ -38,7 +38,7 @@
 /* Primary: Prominent, high-intent actions */
 .btn-primary {
   background: var(--color-accent);
-  color: white;
+  color: var(--color-on-accent);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
@@ -72,7 +72,7 @@
 /* Destructive: Irreversible, high-risk actions */
 .btn-destructive {
   background: var(--color-destructive);
-  color: white;
+  color: var(--color-on-destructive);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
@@ -89,7 +89,7 @@
 /* Success: Positive completion */
 .btn-success {
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-success);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
@@ -138,7 +138,7 @@
 /* Ghost button: minimal, text-like */
 .btn-ghost {
   background: transparent;
-  color: var(--color-accent);
+  color: var(--color-foreground-accent);
   border: none;
   padding: var(--space-xs) var(--space-sm);
 }
@@ -251,7 +251,7 @@
 
 .form-label.required::after {
   content: " *";
-  color: var(--color-destructive);
+  color: var(--color-foreground-destructive);
 }
 
 .form-input {
@@ -352,7 +352,7 @@ input[type="radio"]:focus {
 
 .form-error {
   font-size: var(--font-size-xs);
-  color: var(--color-destructive);
+  color: var(--color-foreground-destructive);
   margin-top: -4px;
 }
 
@@ -455,11 +455,11 @@ input[type="radio"]:focus {
 }
 
 .stat-change.positive {
-  color: var(--color-success);
+  color: var(--color-foreground-success);
 }
 
 .stat-change.negative {
-  color: var(--color-destructive);
+  color: var(--color-foreground-destructive);
 }
 
 .stat-change.neutral {
@@ -505,16 +505,16 @@ input[type="radio"]:focus {
 
 .metric-value.status-healthy,
 .metric-value.status-ok {
-  color: var(--color-success);
+  color: var(--color-foreground-success);
 }
 
 .metric-value.status-warning {
-  color: var(--color-warning);
+  color: var(--color-foreground-warning);
 }
 
 .metric-value.status-critical,
 .metric-value.status-error {
-  color: var(--color-destructive);
+  color: var(--color-foreground-destructive);
 }
 
 /* ============================================================================
@@ -534,22 +534,22 @@ input[type="radio"]:focus {
 
 .badge-primary {
   background: rgba(0, 113, 227, 0.12);
-  color: var(--color-accent);
+  color: var(--color-foreground-accent);
 }
 
 .badge-success {
   background: rgba(52, 199, 89, 0.12);
-  color: var(--color-success);
+  color: var(--color-foreground-success);
 }
 
 .badge-warning {
   background: rgba(255, 149, 0, 0.12);
-  color: var(--color-warning);
+  color: var(--color-foreground-warning);
 }
 
 .badge-destructive {
   background: rgba(255, 69, 58, 0.12);
-  color: var(--color-destructive);
+  color: var(--color-foreground-destructive);
 }
 
 .badge-secondary {
@@ -564,13 +564,13 @@ input[type="radio"]:focus {
 }
 
 .badge-outline.badge-primary {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  border-color: var(--color-foreground-accent);
+  color: var(--color-foreground-accent);
 }
 
 .badge-outline.badge-success {
-  border-color: var(--color-success);
-  color: var(--color-success);
+  border-color: var(--color-foreground-success);
+  color: var(--color-foreground-success);
 }
 
 /* ============================================================================
@@ -596,26 +596,26 @@ input[type="radio"]:focus {
 
 .alert-info {
   background: rgba(48, 176, 192, 0.08);
-  border-color: var(--color-info);
-  color: var(--color-info);
+  border-color: var(--color-foreground-info);
+  color: var(--color-foreground-info);
 }
 
 .alert-success {
   background: rgba(52, 199, 89, 0.08);
-  border-color: var(--color-success);
-  color: var(--color-success);
+  border-color: var(--color-foreground-success);
+  color: var(--color-foreground-success);
 }
 
 .alert-warning {
   background: rgba(255, 149, 0, 0.08);
-  border-color: var(--color-warning);
-  color: var(--color-warning);
+  border-color: var(--color-foreground-warning);
+  color: var(--color-foreground-warning);
 }
 
 .alert-destructive {
   background: rgba(255, 69, 58, 0.08);
-  border-color: var(--color-destructive);
-  color: var(--color-destructive);
+  border-color: var(--color-foreground-destructive);
+  color: var(--color-foreground-destructive);
 }
 
 .alert-title {
@@ -712,8 +712,8 @@ dialog > form {
 }
 
 .tab.active {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+  color: var(--color-foreground-accent);
+  border-bottom-color: var(--color-foreground-accent);
 }
 
 /* ============================================================================
@@ -882,7 +882,7 @@ code {
   border-radius: var(--radius-sm);
   font-family: "Monaco", "Menlo", "SF Mono", "Courier New", monospace;
   font-size: 0.9em;
-  color: var(--color-destructive);
+  color: var(--color-foreground-destructive);
 }
 
 pre {
