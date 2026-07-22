@@ -56,7 +56,11 @@ static NSString *const PDSSpaceSchemaSQL =
      "CREATE TABLE IF NOT EXISTS space_delegation_replay ("
      "jti TEXT PRIMARY KEY NOT NULL, expires_at REAL NOT NULL);"
      "CREATE INDEX IF NOT EXISTS space_delegation_replay_expiry_idx "
-     "ON space_delegation_replay(expires_at);";
+     "ON space_delegation_replay(expires_at);"
+     "CREATE TABLE IF NOT EXISTS space_app_attestation_replay ("
+     "jti TEXT PRIMARY KEY NOT NULL, expires_at REAL NOT NULL);"
+     "CREATE INDEX IF NOT EXISTS space_app_attestation_replay_expiry_idx "
+     "ON space_app_attestation_replay(expires_at);";
 
 /* Blobs are deliberately not related to the public PDS blob store.  A remote
  * user's PDS may receive a space-bound upload before it has synchronized the
@@ -1269,6 +1273,41 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
   } error:nil];
   if (!transacted || localError) {
     if (error) *error = localError ?: PDSSpaceSQLiteError(NULL, @"Unable to record delegation replay state");
+    return NO;
+  }
+  return inserted;
+}
+
+// A separate table from space_delegation_replay: delegation jtis are minted
+// by this PDS, but attestation jtis are minted by a remote managing-app's own
+// key, an independent trust domain. Keeping them apart avoids a jti chosen by
+// one issuer ever being able to collide with the other's replay history.
+- (BOOL)consumeAppAttestationID:(NSString *)jti expiresAt:(NSDate *)expiresAt now:(NSDate *)now error:(NSError **)error {
+  if (jti.length == 0 || !expiresAt || [expiresAt compare:now ?: [NSDate date]] != NSOrderedDescending) {
+    if (error) *error = [self invalidWriteError:@"Attestation jti must be unexpired"];
+    return NO;
+  }
+  __block NSError *localError = nil;
+  __block BOOL inserted = NO;
+  BOOL transacted = [self.connection transact:^(sqlite3 *database, BOOL *rollback) {
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *cleanup = NULL;
+    if (!PDSSpacePrepare(database, "DELETE FROM space_app_attestation_replay WHERE expires_at <= ?", &cleanup, &localError)) {
+      *rollback = YES; return;
+    }
+    ATProtoDBBindParams(cleanup, @[@((now ?: [NSDate date]).timeIntervalSince1970)]);
+    if (!PDSSpaceStepDone(database, cleanup, &localError)) { *rollback = YES; return; }
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *statement = NULL;
+    if (!PDSSpacePrepare(database,
+                         "INSERT OR IGNORE INTO space_app_attestation_replay(jti, expires_at) VALUES(?, ?)",
+                         &statement, &localError)) {
+      *rollback = YES; return;
+    }
+    ATProtoDBBindParams(statement, @[jti, @(expiresAt.timeIntervalSince1970)]);
+    if (!PDSSpaceStepDone(database, statement, &localError)) { *rollback = YES; return; }
+    inserted = sqlite3_changes(database) == 1;
+  } error:nil];
+  if (!transacted || localError) {
+    if (error) *error = localError ?: PDSSpaceSQLiteError(NULL, @"Unable to record attestation replay state");
     return NO;
   }
   return inserted;
