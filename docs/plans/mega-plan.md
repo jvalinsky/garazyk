@@ -122,8 +122,12 @@ documentation, TUI, package, and refactor plans.
   indexes, and standardized PRAGMAs) and O2 phases A/B landed
   (`fc1705696` actor store V3 `record_tombstones`; `50f2482c2` +
   FK-restoration fix `2f7ba5bdb` service V14 moderation tables), both
-  merged to `main`. O2 phases C/D (chat, space store) and O3-O6 remain.
-  A dedicated skill exists at `.agents/skills/sqlite-performance-optimization`.
+  merged to `main`. O2 phases C/D (chat, space store), O4 (the evidence-backed
+  actor V5 `records(rev)` covering index), and O3 are complete. The production
+  MST path starts root-only and its 256-entry lazy subtree cache has a 10K
+  profile proving 7 path loads versus 2,507 eager loads; CAR/STAR fixtures are
+  byte-identical. O5-O6 remain. A dedicated skill exists at
+  `.agents/skills/sqlite-performance-optimization`.
 
 ## Priority model
 
