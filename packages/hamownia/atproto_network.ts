@@ -12,8 +12,6 @@ import {
   composeDown,
   composeUp,
   ContainerEventWatcher,
-  type ContainerStatsSampler,
-  type createDockerClient,
   waitForHttp,
   waitForService,
   waitForServiceCLI,
@@ -39,7 +37,6 @@ import {
 import type { PortRange, ResourceIsolationMode } from "@garazyk/schemat";
 import { startBinaryServices, stopBinaryServices } from "./binary_services.ts";
 import { collectDiagnostics } from "./docker_diagnostics.ts";
-import type { formatBytes } from "./format.ts";
 import { isOtelEnabled, withSpan } from "./otel.ts";
 import { stopStaleDockerE2e, stopStaleHostProcesses } from "./stale_cleanup.ts";
 

@@ -66,7 +66,7 @@ export async function stopStaleDockerE2e(
     return [];
   }
 
-  return withCleanupLock(async () => {
+  return await withCleanupLock(async () => {
     const client = await createDockerClient();
     if (!client) {
       return stopStaleDockerE2eCLI(opts, currentProject);
@@ -184,7 +184,7 @@ export async function stopStaleHostProcesses(
     return;
   }
 
-  return withCleanupLock(async () => {
+  return await withCleanupLock(async () => {
     const ports = neededPorts(opts);
     const knownBinaries = new Set([
       "kaszlak",
