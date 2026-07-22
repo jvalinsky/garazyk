@@ -275,6 +275,9 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Key manager for cryptographic operations. */
 @property (nonatomic, strong) id<PDSActorKeyManager> keyManager;
 
+/*! Dedicated key manager for permissioned-space credentials. */
+@property (nonatomic, strong, readonly) id<PDSActorKeyManager> spaceKeyManager;
+
 /*! Master secret for database encryption/decryption. */
 @property (nonatomic, copy, nullable) NSString *masterSecret;
 
@@ -314,6 +317,12 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 
 /*! Generates a new signing key. */
 - (BOOL)generateSigningKeyWithError:(NSError **)error;
+
+/*! Generates a dedicated permissioned-space signing key without changing the account key. */
+- (BOOL)generateSpaceSigningKeyWithError:(NSError **)error;
+
+/*! Gets the DID-key encoding for the dedicated permissioned-space signer. */
+- (nullable NSString *)spaceSigningDIDKeyStringWithError:(NSError **)error;
 
 /*! Imports an existing signing key (raw private bytes). */
 - (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error;
