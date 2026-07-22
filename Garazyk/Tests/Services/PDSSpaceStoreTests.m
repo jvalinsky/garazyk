@@ -166,6 +166,41 @@
   XCTAssertEqual(operations.count, 1UL);
 }
 
+- (void)testOnlineBackupRestoresRepositoryLTHashState {
+  NSError *error = nil;
+  NSDictionary *commit = [self.store applyWrites:@[[self write:PDSSpaceWriteActionCreate
+                                                           cid:@"bafy-backup"
+                                                         value:@"backup"]]
+                                        toSpace:[self space]
+                                         author:@"did:example:alice"
+                                            rev:@"3jzfcijpj2z2a"
+                                          error:&error];
+  XCTAssertNotNil(commit);
+  XCTAssertNil(error);
+
+  NSString *backupPath = [self.temporaryDirectory stringByAppendingPathComponent:@"restore/spaces.sqlite"];
+  XCTAssertTrue([self.store createOnlineBackupAtPath:backupPath error:&error]);
+  XCTAssertNil(error);
+
+  PDSSpaceStore *restored = [[PDSSpaceStore alloc] initWithDatabasePath:backupPath error:&error];
+  XCTAssertNotNil(restored);
+  XCTAssertNil(error);
+  NSDictionary *state = [restored repositoryStateForSpace:[self space]
+                                                    author:@"did:example:alice"
+                                                     error:&error];
+  XCTAssertNil(error);
+  XCTAssertEqualObjects(state[@"state"], commit[@"state"]);
+  XCTAssertEqualObjects(state[@"hash"], commit[@"hash"]);
+  NSDictionary *record = [restored recordForSpace:[self space]
+                                           author:@"did:example:alice"
+                                       collection:@"com.example.note"
+                                             rkey:@"one"
+                                            error:&error];
+  XCTAssertNil(error);
+  XCTAssertEqualObjects(record[@"cid"], @"bafy-backup");
+  [restored close];
+}
+
 - (void)testMembershipWriterSetAndDelegationReplayStateAreDurable {
   NSError *error = nil;
   XCTAssertTrue([self.store addMember:@"did:example:alice" toSpace:[self space] error:&error]);
