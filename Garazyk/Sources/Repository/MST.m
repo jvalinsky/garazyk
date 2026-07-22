@@ -441,6 +441,8 @@ extern id objc_autorelease(id);
 /// written under @synchronized(self) for thread-safe publish-during-proof.
 @property (nonatomic, strong, nullable)
     NSMutableDictionary<CID *, MSTNode *> *lazySubtreeCache;
+/// Recency order for the bounded lazy-subtree cache (least recent first).
+@property (nonatomic, strong, nullable) NSMutableArray<CID *> *lazySubtreeCacheOrder;
 - (BOOL)enumerateStreamableNode:(MSTNode *)node
                           cache:(NSMapTable<MSTNode *, CID *> *)cache
                      addedCIDs:(NSMutableSet<NSString *> *)addedCIDs
@@ -461,6 +463,7 @@ extern id objc_autorelease(id);
 /// the latest published value; concurrent read-write pairs serialize
 /// correctly. Production callers may flip the flag from any thread.
 static atomic_bool gMSTStreamableCARBlockOrderingEnabled = true;
+static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
 @implementation MST
 
@@ -652,6 +655,7 @@ static atomic_bool gMSTStreamableCARBlockOrderingEnabled = true;
     @synchronized(self) {
         if (self.lazySubtreeCache) {
             [self.lazySubtreeCache removeAllObjects];
+            [self.lazySubtreeCacheOrder removeAllObjects];
         }
     }
 }
@@ -738,6 +742,7 @@ static atomic_bool gMSTStreamableCARBlockOrderingEnabled = true;
     @synchronized(self) {
         if (self.lazySubtreeCache) {
             [self.lazySubtreeCache removeAllObjects];
+            [self.lazySubtreeCacheOrder removeAllObjects];
         }
     }
 }
@@ -1548,6 +1553,10 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
     if (!subtree && subtreeCID && blockProvider) {
         @synchronized(self) {
             subtree = [self.lazySubtreeCache objectForKey:subtreeCID];
+            if (subtree) {
+                [self.lazySubtreeCacheOrder removeObject:subtreeCID];
+                [self.lazySubtreeCacheOrder addObject:subtreeCID];
+            }
         }
         if (subtree) {
             return [self collectProofNodes:subtree forKey:key into:path blockProvider:blockProvider];
@@ -1563,12 +1572,23 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
         @synchronized(self) {
             if (!self.lazySubtreeCache) {
                 self.lazySubtreeCache = [NSMutableDictionary dictionary];
+                self.lazySubtreeCacheOrder = [NSMutableArray array];
             }
             MSTNode *existing = self.lazySubtreeCache[subtreeCID];
             if (!existing) {
+                if (self.lazySubtreeCacheOrder.count >= kMSTLazySubtreeCacheCapacity) {
+                    CID *leastRecentCID = self.lazySubtreeCacheOrder.firstObject;
+                    if (leastRecentCID) {
+                        [self.lazySubtreeCache removeObjectForKey:leastRecentCID];
+                        [self.lazySubtreeCacheOrder removeObjectAtIndex:0];
+                    }
+                }
                 self.lazySubtreeCache[subtreeCID] = resolved;
+                [self.lazySubtreeCacheOrder addObject:subtreeCID];
                 subtree = resolved;
             } else {
+                [self.lazySubtreeCacheOrder removeObject:subtreeCID];
+                [self.lazySubtreeCacheOrder addObject:subtreeCID];
                 subtree = existing;
             }
         }

@@ -34,6 +34,11 @@ revision query. Other candidate paths already use primary/existing indexes or
 would need to duplicate BLOB payloads, so no speculative index was added. O3
 lazy subtree hydration is next.
 
+**In progress 2026-07-22: O3.** The production repo-block loader already
+deserializes the root without a block provider and resolves proof subtrees on
+demand. Its unbounded side cache is now a 256-entry LRU with direct root-only
+proof coverage; export-fixture and memory evidence remain before completion.
+
 ## Mission
 
 Finish workstream 07: the remaining `WITHOUT ROWID` conversions (O2 phases
