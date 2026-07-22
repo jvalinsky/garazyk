@@ -24,6 +24,7 @@
 #import "Security/Space/PDSSpaceScope.h"
 #import "Security/Space/PDSSpaceCommit.h"
 #import "Security/Space/PDSSpaceJWT.h"
+#import "Security/Space/PDSSpaceAppAttestationVerifier.h"
 #import "Security/Space/PDSSpaceLtHash.h"
 #import "Security/Space/PDSSpaceURI.h"
 #import "Services/PDS/PDSSpaceStore.h"
@@ -35,6 +36,17 @@ static void SpaceError(HttpResponse *response, HttpStatusCode status, NSString *
                        NSString *message) {
   response.statusCode = status;
   [response setJsonBody:@{ @"error" : code, @"message" : message }];
+}
+
+// An app client_id is only ever a shape check at config time (the party
+// declaring managingApp/appAllowed is the space owner, not the app author) -
+// real proof of identity happens at credential-issuance time via
+// PDSSpaceAppAttestationVerifier, where the app itself must present a
+// verifiable attestation. This just rejects obviously-wrong values early.
+static BOOL SpaceIsValidAppClientID(NSString *clientID) {
+  if (![clientID isKindOfClass:[NSString class]] || clientID.length == 0) return NO;
+  NSURL *url = [NSURL URLWithString:clientID];
+  return url != nil && [url.scheme.lowercaseString isEqualToString:@"https"] && url.host.length > 0;
 }
 
 static NSString *SpaceAuthorizationToken(HttpRequest *request) {
@@ -416,6 +428,8 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
   PDSSpaceStore *store = services.spaceStore;
   if (!store) return; // Feature flag is off: no experimental API surface.
   id<XrpcRoutePackServices> resolvedServices = services;
+  PDSSpaceAppAttestationVerifier *appAttestationVerifier =
+      [[PDSSpaceAppAttestationVerifier alloc] initWithSpaceStore:store];
 
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getSpace handler:^(HttpRequest *request, HttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
@@ -496,9 +510,17 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     PDSSpaceURI *space = [PDSSpaceURI URIWithString:[NSString stringWithFormat:@"at://%@/space/%@/%@", did, type, skey] error:nil]; if (!space) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Invalid space key"); return; }
     NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return; if (!SpaceAllowsManage(auth, space, @"create")) { SpaceError(response, HttpStatusForbidden, @"Forbidden", @"manage=create scope is required"); return; }
     NSDictionary *config = [body[@"config"] isKindOfClass:[NSDictionary class]] ? body[@"config"] : @{}; NSString *policy = SpaceString(config[@"policy"] ?: @"member-list"); NSDictionary *access = [config[@"appAccess"] isKindOfClass:[NSDictionary class]] ? config[@"appAccess"] : @{}; BOOL allowList = [SpaceString(access[@"$type"]) hasSuffix:@"#allowList"];
-    if (!([policy isEqualToString:@"public"] || [policy isEqualToString:@"member-list"]) || allowList || config[@"managingApp"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app and app allow-lists are not enabled in this experimental build"); return; }
+    // policy=managing-app is a separate, still-unimplemented mechanism (a
+    // checkUserAccess service-auth call to the managingApp, per
+    // com.atproto.simplespace.checkUserAccess) - not client attestation, and
+    // out of scope here. appAccess#allowList is client attestation exactly as
+    // ADR 0004 describes, and is now enabled.
+    if (!([policy isEqualToString:@"public"] || [policy isEqualToString:@"member-list"]) || config[@"managingApp"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app policy is not enabled in this experimental build (appAccess#allowList is)"); return; }
+    NSArray *allowedClients = allowList ? access[@"allowed"] : @[];
+    if (allowList && (![allowedClients isKindOfClass:[NSArray class]] || allowedClients.count == 0)) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"appAccess#allowList requires a non-empty allowed array"); return; }
+    for (id client in allowedClients) { if (!SpaceIsValidAppClientID(client)) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Every allowed client_id must be an https URL"); return; } }
     BOOL isOwner = [auth[@"did"] isEqualToString:did];
-    NSError *error = nil; if (![store createSpace:space.spaceURI owner:isOwner policy:policy managingApp:nil appAccessType:@"open" appAllowed:@[] error:&error]) { SpaceError(response, HttpStatusConflict, @"SpaceAlreadyExists", error.localizedDescription ?: @"Space already exists"); return; }
+    NSError *error = nil; if (![store createSpace:space.spaceURI owner:isOwner policy:policy managingApp:nil appAccessType:(allowList ? @"allowList" : @"open") appAllowed:allowedClients error:&error]) { SpaceError(response, HttpStatusConflict, @"SpaceAlreadyExists", error.localizedDescription ?: @"Space already exists"); return; }
     if (isOwner) [store addMember:did toSpace:space.spaceURI error:nil]; response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"uri" : space.spaceURI }];
   }];
 
@@ -532,7 +554,17 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
 
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getSpaceCredential handler:^(HttpRequest *request, HttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
-    if (body[@"clientAttestation"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidClientAttestation", @"Client attestation is not enabled for this host"); return; }
+    NSString *attestedAppClientID = nil;
+    if (body[@"clientAttestation"]) {
+      NSString *appClientID = SpaceString(body[@"appClientID"]);
+      NSString *attestationJWT = SpaceString(body[@"clientAttestation"]);
+      if (!SpaceIsValidAppClientID(appClientID) || attestationJWT.length == 0) { SpaceError(response, HttpStatusBadRequest, @"InvalidClientAttestation", @"appClientID (an https URL) and clientAttestation are both required together"); return; }
+      NSError *attestError = nil;
+      if (![appAttestationVerifier verifyAttestationJWT:attestationJWT forAppClientID:appClientID audience:[space.authorityDID stringByAppendingString:@"#atproto_space_host"] error:&attestError]) {
+        SpaceError(response, HttpStatusUnauthorized, @"InvalidClientAttestation", attestError.localizedDescription ?: @"Client attestation did not verify"); return;
+      }
+      attestedAppClientID = appClientID;
+    }
     NSString *token = SpaceAuthorizationToken(request); JWT *unverified = [JWT jwtWithToken:token error:nil];
     NSString *issuer = unverified.payload.iss; if (![ATProtoValidator validateDID:issuer error:nil]) { SpaceError(response, HttpStatusUnauthorized, @"InvalidDelegationToken", @"Delegation issuer is invalid"); return; }
     DIDDocument *userDocument = SpaceResolveDID(issuer, NO, response); if (!userDocument) return;
@@ -544,7 +576,9 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     if (!info) { SpaceError(response, HttpStatusNotFound, @"SpaceNotFound", @"Space not found"); return; }
     if (info[@"deletedAt"] != [NSNull null]) { SpaceError(response, HttpStatusGone, @"SpaceDeleted", @"Space has been deleted"); return; }
     BOOL authorized = [info[@"policy"] isEqualToString:@"public"] || [store isMember:issuer ofSpace:space.spaceURI error:nil];
-    if (!authorized || ![info[@"appAccessType"] isEqualToString:@"open"]) { SpaceError(response, HttpStatusForbidden, @"UserNotAuthorized", @"User is not authorized for this space"); return; }
+    BOOL appAuthorized = [info[@"appAccessType"] isEqualToString:@"open"] ||
+        (attestedAppClientID.length > 0 && [info[@"appAllowed"] containsObject:attestedAppClientID]);
+    if (!authorized || !appAuthorized) { SpaceError(response, HttpStatusForbidden, @"UserNotAuthorized", @"User is not authorized for this space"); return; }
     NSDate *expires = [NSDate dateWithTimeIntervalSince1970:[claims[@"exp"] doubleValue]];
     if (![store consumeDelegationID:claims[@"jti"] expiresAt:expires now:[NSDate date] error:nil]) { SpaceError(response, HttpStatusUnauthorized, @"InvalidDelegationToken", @"Delegation token has already been used"); return; }
     PDSActorStore *authority = [resolvedServices.userDatabasePool storeForDid:space.authorityDID error:nil];
@@ -625,11 +659,21 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     if (![auth[@"did"] isEqualToString:space.authorityDID] || !SpaceAllowsManage(auth, space, @"update")) { SpaceError(response, HttpStatusForbidden, @"NotSpaceOwner", @"Owner manage=update scope is required"); return; }
     NSDictionary *old = [store spaceInfoForURI:space.spaceURI error:nil]; if (!old || old[@"deletedAt"] != [NSNull null] || ![old[@"isOwner"] boolValue]) { SpaceError(response, HttpStatusNotFound, @"SpaceNotFound", @"Space not found"); return; }
     NSString *policy = body[@"policy"]; NSDictionary *appAccess = [body[@"appAccess"] isKindOfClass:[NSDictionary class]] ? body[@"appAccess"] : nil;
-    NSString *appType = nil; if (appAccess) appType = [SpaceString(appAccess[@"$type"]) hasSuffix:@"#open"] ? @"open" : @"invalid";
-    if (policy && !([policy isEqualToString:@"public"] || [policy isEqualToString:@"member-list"])) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app is not enabled"); return; }
-    if (appAccess && ![appType isEqualToString:@"open"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"App allow-lists are not enabled"); return; }
-    if (body[@"managingApp"] && ![body[@"managingApp"] isEqualToString:@""]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app is not enabled"); return; }
-    if (![store updateSpace:space.spaceURI policy:policy managingApp:body[@"managingApp"] appAccessType:appType appAllowed:nil error:nil]) { SpaceError(response, HttpStatusNotFound, @"SpaceNotFound", @"Space not found"); return; }
+    NSString *appType = nil; NSArray *allowedClients = nil;
+    if (appAccess) {
+      if ([SpaceString(appAccess[@"$type"]) hasSuffix:@"#open"]) { appType = @"open"; allowedClients = @[]; }
+      else if ([SpaceString(appAccess[@"$type"]) hasSuffix:@"#allowList"]) {
+        appType = @"allowList"; allowedClients = appAccess[@"allowed"];
+        if (![allowedClients isKindOfClass:[NSArray class]] || allowedClients.count == 0) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"appAccess#allowList requires a non-empty allowed array"); return; }
+        for (id client in allowedClients) { if (!SpaceIsValidAppClientID(client)) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Every allowed client_id must be an https URL"); return; } }
+      } else { appType = @"invalid"; }
+    }
+    // policy=managing-app is a separate, still-unimplemented mechanism (see
+    // the createSpace handler's comment above) - not client attestation.
+    if (policy && !([policy isEqualToString:@"public"] || [policy isEqualToString:@"member-list"])) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app policy is not enabled in this experimental build (appAccess#allowList is)"); return; }
+    if (appAccess && [appType isEqualToString:@"invalid"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"appAccess must be #open or #allowList"); return; }
+    if (body[@"managingApp"] && ![body[@"managingApp"] isEqualToString:@""]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app policy is not enabled in this experimental build"); return; }
+    if (![store updateSpace:space.spaceURI policy:policy managingApp:body[@"managingApp"] appAccessType:appType appAllowed:allowedClients error:nil]) { SpaceError(response, HttpStatusNotFound, @"SpaceNotFound", @"Space not found"); return; }
     response.statusCode = HttpStatusOK; [response setJsonBody:@{}];
   }];
 
