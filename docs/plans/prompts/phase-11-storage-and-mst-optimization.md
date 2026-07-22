@@ -42,6 +42,16 @@ on macOS the retained eager tree added 5.4 MB RSS in the recorded run. The
 CAR, STAR-L0, STAR-Lite, and pre-order fixture suites remain byte-identical.
 O5 caching audit is next.
 
+**In progress 2026-07-22: O5.** `DIDResolver` already matches the reference
+one-hour stale / one-day maximum policy and shared production callers use that
+cache. The audit found that `HandleResolver`'s advertised five-minute TTL was
+not enforced; entries now carry timestamps and expire. AppView `#identity`
+ingestion now invalidates the shared DID cache after persisting the new handle
+mapping. Beskid's independent SQLite edge cache remains TTL-only because that
+binary does not consume the firehose; its 24-hour expiry is the deliberate
+cross-process bound. The remaining call-site disposition and test evidence
+are being recorded before O5 is closed.
+
 ## Mission
 
 Finish workstream 07: the remaining `WITHOUT ROWID` conversions (O2 phases

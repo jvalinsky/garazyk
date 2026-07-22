@@ -152,6 +152,9 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
  */
 - (void)seedCacheWithDID:(NSString *)did documentJSON:(NSDictionary *)json;
 
+/** Removes a DID document from the in-process cache after an identity event. */
+- (void)invalidateDID:(NSString *)did;
+
 /*!
  @method resolveHandleSync:error:
  @abstract Resolve a handle to its DID synchronously.

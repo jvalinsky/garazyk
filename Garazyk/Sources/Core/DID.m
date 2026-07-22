@@ -146,6 +146,14 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     }
 }
 
+- (void)invalidateDID:(NSString *)did {
+    if (did.length == 0) return;
+    dispatch_sync(_cacheQueue, ^{
+        [self.cache removeObjectForKey:did];
+        [self.cacheTimestamps removeObjectForKey:did];
+    });
+}
+
 - (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion {
     // Check cache first with TTL logic
     DIDCacheStatus status;

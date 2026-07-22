@@ -43,6 +43,20 @@
     XCTAssertGreaterThan(keyBytes.length, 0);
 }
 
+- (void)testInvalidateDIDRemovesCachedDocument {
+    DIDResolver *resolver = [[DIDResolver alloc] init];
+    NSString *did = @"did:plc:invalidate";
+    DIDDocument *document = [DIDDocument documentWithJSON:@{ @"id": did }
+                                                   error:nil];
+    [resolver.cache setObject:document forKey:did];
+    resolver.cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
+
+    [resolver invalidateDID:did];
+
+    XCTAssertNil([resolver.cache objectForKey:did]);
+    XCTAssertNil(resolver.cacheTimestamps[did]);
+}
+
 #ifndef GNUSTEP
 - (void)testDIDResolutionCachingReturnsCachedDocument {
     DIDResolver *resolver = [[DIDResolver alloc] init];

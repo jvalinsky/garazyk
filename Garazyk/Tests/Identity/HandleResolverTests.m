@@ -21,6 +21,7 @@
 
 @interface TestHandleResolver : HandleResolver
 @property (nonatomic, strong) MockURLSession *mockSession;
+@property (nonatomic, assign) NSUInteger requestCount;
 @end
 
 @implementation TestHandleResolver
@@ -28,6 +29,7 @@
                         options:(id)options
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
+    self.requestCount++;
     if (!self.mockSession) {
         NSError *error = [NSError errorWithDomain:HandleErrorDomain
                                              code:HandleErrorNetworkError
@@ -241,6 +243,43 @@
     }];
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
+}
+
+- (void)testHandleResolutionCacheHonorsExpirationInterval {
+    MockURLSession *session = [[MockURLSession alloc] initWithResponse:@{ @"statusCode": @200, @"body": @"did:plc:cached" }
+                                                              error:nil
+                                                              delay:0.0];
+    TestHandleResolver *resolver = [[TestHandleResolver alloc] init];
+    resolver.mockSession = session;
+    resolver.cacheExpirationInterval = 60.0;
+
+    XCTestExpectation *first = [self expectationWithDescription:@"first resolution"];
+    [resolver resolveHandle:@"cached.example.com" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+        XCTAssertEqualObjects(did, @"did:plc:cached");
+        XCTAssertNil(error);
+        [first fulfill];
+    }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(resolver.requestCount, 1UL);
+
+    XCTestExpectation *cached = [self expectationWithDescription:@"cached resolution"];
+    [resolver resolveHandle:@"cached.example.com" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+        XCTAssertEqualObjects(did, @"did:plc:cached");
+        XCTAssertNil(error);
+        [cached fulfill];
+    }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(resolver.requestCount, 1UL, @"Fresh cache entry must avoid a network request");
+
+    resolver.cacheExpirationInterval = 0.0;
+    XCTestExpectation *expired = [self expectationWithDescription:@"expired resolution"];
+    [resolver resolveHandle:@"cached.example.com" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+        XCTAssertEqualObjects(did, @"did:plc:cached");
+        XCTAssertNil(error);
+        [expired fulfill];
+    }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(resolver.requestCount, 2UL, @"Expired cache entry must resolve again");
 }
 
 - (void)testHTTPSResolutionNetworkError {
