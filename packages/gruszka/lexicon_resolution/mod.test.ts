@@ -7,7 +7,7 @@
  * @module lexicon_resolution
  */
 
-import { assert, assertEquals, assertFalse } from "jsr:@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { type ResolutionPorts, resolveLexicon } from "./mod.ts";
 import { InMemoryCache } from "./cache.ts";
 import type { Did, DidDocument, Domain, LexiconDoc, Result } from "./types.ts";

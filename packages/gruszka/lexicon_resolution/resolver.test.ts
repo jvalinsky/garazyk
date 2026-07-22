@@ -8,7 +8,7 @@
  * @module lexicon_resolution
  */
 
-import { assert, assertEquals } from "jsr:@std/assert";
+import { assert, assertEquals } from "@std/assert";
 
 import { init, update } from "./resolver.ts";
 import {
@@ -19,10 +19,8 @@ import {
   type DidDocument,
   type DidPendingState,
   type DnsPendingState,
-  type Domain,
   type LexiconDoc,
   type RecordPendingState,
-  type ResolverCmd,
   type ResolverMsg,
   type ResolverState,
 } from "./types.ts";
