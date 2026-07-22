@@ -27,6 +27,13 @@ outcomes, reconciliation attempts, gap detection, and the selected
 incremental/lightweight/full-CAR recovery path. This adds no protocol state or
 behavior; the targeted native space suite remains green.
 
+**Slice 4 complete (2026-07-22): P6.5 online backup/restore drill.**
+`PDSSpaceStore` now offers a serialized SQLite online-backup operation, which
+includes committed WAL content without unsafe filesystem copying of a live
+database. The native restore drill opens the fresh backup and verifies the
+restored record plus repository LtHash state and digest. Downgrade-retention
+evidence remains.
+
 # Phase 9: Permissioned spaces production hardening
 
 ## Mission
