@@ -101,6 +101,13 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
 }
 
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 input:disabled,
 textarea:disabled,
 select:disabled {
