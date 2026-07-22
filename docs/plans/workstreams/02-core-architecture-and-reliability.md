@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-18
+last_verified: 2026-07-19
 ---
 
 # Core Architecture and Reliability

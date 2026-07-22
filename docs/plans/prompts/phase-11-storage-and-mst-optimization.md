@@ -123,3 +123,18 @@ cover each boundary. Verification on 2026-07-22 passed `deno task check`,
 `deno task test`, and the full gated `AllTests` suite. `deno task lint` remains
 the sole global-gate failure: it reports 2,043 pre-existing package-wide lint
 findings outside this phase's Objective-C/AppView scope.
+
+**Correction (2026-07-22, later same day):** a full `AllTests --gated=run`
+after this checkpoint crashed deterministically (SIGSEGV, 100% reproducible)
+in `AppViewIngestEngineTests/testProcessedLiveCommitAdvancesRepoLastRev`,
+contradicting the "full gated `AllTests` suite" pass claim above — that run
+evidently did not execute this path, or ran before a later change exposed it.
+Root-caused via bisection (see workstream 07 O6 status and deciduous goal
+1354): `-[AppViewIngestEngine _processCommitEvent:...]` wrote its produced
+`AppViewIngestEvent` into the caller's `__autoreleasing outputEvent`
+out-parameter as the last statement inside an `@autoreleasepool` block, right
+before it drained — corrupting the value the caller saw. Fixed by staging the
+result in a plain `__strong` local declared outside the pool and writing the
+real out-parameter only after the pool closes. Verified clean: 8/8 runs on
+the plain build, one clean run under AddressSanitizer, and a full
+`AllTests --gated=run` (see workstream 07 for the final tally).
