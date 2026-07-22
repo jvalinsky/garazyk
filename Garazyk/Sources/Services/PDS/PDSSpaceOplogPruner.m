@@ -4,6 +4,7 @@
 #import "Services/PDS/PDSSpaceOplogPruner.h"
 
 #import "Compat/PDSTypes.h"
+#import "Debug/GZLogger.h"
 #import "Services/PDS/PDSSpaceStore.h"
 
 static const NSTimeInterval PDSSpaceOplogPrunerMinimumInterval = 300.0;
@@ -69,7 +70,17 @@ static const NSTimeInterval PDSSpaceOplogPrunerMinimumInterval = 300.0;
 
 - (void)pruneOnQueue {
   if (self.stopped || self.retentionRevisions == 0) return;
-  [self.spaceStore pruneAllOplogsKeepingRevisions:self.retentionRevisions error:nil];
+  NSUInteger prunedEntries = 0;
+  NSError *error = nil;
+  if (![self.spaceStore pruneAllOplogsKeepingRevisions:self.retentionRevisions
+                                        prunedEntries:&prunedEntries
+                                                 error:&error]) {
+    GZ_LOG_SYNC_WARN(@"permissioned-space event=oplog_prune_failed error=%@",
+                     error.localizedDescription ?: @"unknown");
+    return;
+  }
+  GZ_LOG_SYNC_INFO(@"permissioned-space event=oplog_pruned entries=%lu retention_revisions=%lu",
+                   (unsigned long)prunedEntries, (unsigned long)self.retentionRevisions);
 }
 
 @end

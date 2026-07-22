@@ -1129,16 +1129,36 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
 }
 
 - (BOOL)pruneAllOplogsKeepingRevisions:(NSUInteger)keepCount error:(NSError **)error {
+  return [self pruneAllOplogsKeepingRevisions:keepCount prunedEntries:NULL error:error];
+}
+
+- (BOOL)pruneAllOplogsKeepingRevisions:(NSUInteger)keepCount
+                         prunedEntries:(NSUInteger *)prunedEntries
+                                  error:(NSError **)error {
+  if (prunedEntries) *prunedEntries = 0;
   NSArray<NSDictionary<NSString *, id> *> *repos = [self repositoriesWithOplogs:error];
   if (!repos) return NO;
+  __block NSUInteger total = 0;
   for (NSDictionary<NSString *, id> *repo in repos) {
-    if (![self pruneOplogForSpace:repo[@"space"]
-                           author:repo[@"author"]
-                 keepingRevisions:keepCount
-                            error:error]) {
+    __block NSError *localError = nil;
+    __block NSUInteger removed = 0;
+    BOOL transacted = [self.connection transact:^(sqlite3 *database, BOOL *rollback) {
+      PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *prune = NULL;
+      const char *sql = keepCount == 0
+          ? "DELETE FROM space_record_oplog WHERE space = ? AND author_did = ?"
+          : "DELETE FROM space_record_oplog WHERE space = ? AND author_did = ? AND rev NOT IN (SELECT DISTINCT rev FROM space_record_oplog WHERE space = ? AND author_did = ? ORDER BY rev DESC LIMIT ?)";
+      if (!PDSSpacePrepare(database, sql, &prune, &localError)) { *rollback = YES; return; }
+      ATProtoDBBindParams(prune, keepCount == 0 ? @[repo[@"space"], repo[@"author"]] : @[repo[@"space"], repo[@"author"], repo[@"space"], repo[@"author"], @(keepCount)]);
+      if (!PDSSpaceStepDone(database, prune, &localError)) { *rollback = YES; return; }
+      removed = (NSUInteger)sqlite3_changes(database);
+    } error:nil];
+    if (!transacted || localError) {
+      if (error) *error = localError ?: PDSSpaceSQLiteError(NULL, @"Unable to prune space oplog");
       return NO;
     }
+    total += removed;
   }
+  if (prunedEntries) *prunedEntries = total;
   return YES;
 }
 

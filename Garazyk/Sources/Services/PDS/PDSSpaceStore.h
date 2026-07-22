@@ -186,6 +186,11 @@ typedef NS_ENUM(NSInteger, PDSSpaceWriteAction) {
 - (BOOL)pruneAllOplogsKeepingRevisions:(NSUInteger)keepCount
                                   error:(NSError **)error;
 
+/** Prunes every repo's oplog and reports the number of removed entries. */
+- (BOOL)pruneAllOplogsKeepingRevisions:(NSUInteger)keepCount
+                         prunedEntries:(NSUInteger * _Nullable)prunedEntries
+                                  error:(NSError **)error;
+
 /** Returns @c { @"space", @"author" } for each distinct (space, author_did)
  *  pair that has at least one oplog entry. */
 - (NSArray<NSDictionary<NSString *, id> *> *)repositoriesWithOplogs:(NSError **)error;
