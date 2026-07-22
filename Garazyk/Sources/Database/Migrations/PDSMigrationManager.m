@@ -1618,7 +1618,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         "collection TEXT NOT NULL, "
         "indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), "
         "PRIMARY KEY (did, collection)"
-        ")",
+        ") WITHOUT ROWID",
         NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         if (error) {
@@ -1642,6 +1642,180 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error {
     sqlite3_exec(db, "DROP TABLE IF EXISTS collection_membership", NULL, NULL, NULL);
     return YES;
+}
+
+@end
+
+#pragma mark - Shared WITHOUT ROWID Migration Helpers
+
+static BOOL PDSMigrationTableUsesWithoutRowid(sqlite3 *db, const char *tableName) {
+    const char *sql = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?";
+    sqlite3_stmt *statement = NULL;
+    if (sqlite3_prepare_v2(db, sql, -1, &statement, NULL) != SQLITE_OK) return NO;
+    sqlite3_bind_text(statement, 1, tableName, -1, SQLITE_STATIC);
+    BOOL usesWithoutRowid = NO;
+    if (sqlite3_step(statement) == SQLITE_ROW) {
+        const unsigned char *tableSQL = sqlite3_column_text(statement, 0);
+        if (tableSQL) {
+            usesWithoutRowid = [[NSString stringWithUTF8String:(const char *)tableSQL]
+                rangeOfString:@"WITHOUT ROWID" options:NSCaseInsensitiveSearch].location != NSNotFound;
+        }
+    }
+    sqlite3_finalize(statement);
+    return usesWithoutRowid;
+}
+
+static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, size_t count,
+                                     NSString *migrationName, NSError **error) {
+    for (size_t i = 0; i < count; i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc == SQLITE_OK) continue;
+        NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        if (errMsg) sqlite3_free(errMsg);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         [NSString stringWithFormat:@"%@ step %zu failed: %@", migrationName, i, message]}];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+#pragma mark - V12 Legacy Chat Tables Without Rowid
+
+@interface V12LegacyChatWithoutRowid : NSObject <PDSMigration>
+@end
+
+@implementation V12LegacyChatWithoutRowid
+
+- (NSInteger)version { return 12; }
+- (NSString *)name { return @"legacy_chat_without_rowid"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    if (!PDSMigrationTableUsesWithoutRowid(db, "conversation_members")) {
+        const char *steps[] = {
+            "CREATE TABLE conversation_members_new (convo_id TEXT NOT NULL, member_did TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', muted INTEGER DEFAULT 0, last_read_id TEXT, joined_at TEXT NOT NULL, PRIMARY KEY (convo_id, member_did), FOREIGN KEY (convo_id) REFERENCES conversations(id) ON DELETE CASCADE) WITHOUT ROWID",
+            "INSERT INTO conversation_members_new (convo_id, member_did, status, muted, last_read_id, joined_at) SELECT convo_id, member_did, status, muted, last_read_id, joined_at FROM conversation_members",
+            "DROP TABLE conversation_members",
+            "ALTER TABLE conversation_members_new RENAME TO conversation_members",
+            "CREATE INDEX IF NOT EXISTS idx_conversation_members_convo ON conversation_members(convo_id)",
+            "CREATE INDEX IF NOT EXISTS idx_conversation_members_actor ON conversation_members(member_did)",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 conversation_members", error)) return NO;
+    }
+    if (!PDSMigrationTableUsesWithoutRowid(db, "message_reactions")) {
+        const char *steps[] = {
+            "CREATE TABLE message_reactions_new (message_id TEXT NOT NULL, actor_did TEXT NOT NULL, emoji TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (message_id, actor_did, emoji), FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE) WITHOUT ROWID",
+            "INSERT INTO message_reactions_new (message_id, actor_did, emoji, created_at) SELECT message_id, actor_did, emoji, created_at FROM message_reactions",
+            "DROP TABLE message_reactions",
+            "ALTER TABLE message_reactions_new RENAME TO message_reactions",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 message_reactions", error)) return NO;
+    }
+    if (!PDSMigrationTableUsesWithoutRowid(db, "group_members")) {
+        const char *steps[] = {
+            "CREATE TABLE group_members_new (group_uri TEXT NOT NULL, member_did TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member', status TEXT NOT NULL DEFAULT 'accepted', invited_by TEXT, joined_at TEXT NOT NULL, PRIMARY KEY (group_uri, member_did)) WITHOUT ROWID",
+            "INSERT INTO group_members_new (group_uri, member_did, role, status, invited_by, joined_at) SELECT group_uri, member_did, role, status, invited_by, joined_at FROM group_members",
+            "DROP TABLE group_members",
+            "ALTER TABLE group_members_new RENAME TO group_members",
+            "CREATE INDEX IF NOT EXISTS idx_group_members_group ON group_members(group_uri)",
+            "CREATE INDEX IF NOT EXISTS idx_group_members_member ON group_members(member_did)",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 group_members", error)) return NO;
+    }
+    if (!PDSMigrationTableUsesWithoutRowid(db, "group_message_reactions")) {
+        const char *steps[] = {
+            "CREATE TABLE group_message_reactions_new (message_id TEXT NOT NULL, actor_did TEXT NOT NULL, emoji TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (message_id, actor_did, emoji), FOREIGN KEY (message_id) REFERENCES group_messages(id)) WITHOUT ROWID",
+            "INSERT INTO group_message_reactions_new (message_id, actor_did, emoji, created_at) SELECT message_id, actor_did, emoji, created_at FROM group_message_reactions",
+            "DROP TABLE group_message_reactions",
+            "ALTER TABLE group_message_reactions_new RENAME TO group_message_reactions",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 group_message_reactions", error)) return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    if (PDSMigrationTableUsesWithoutRowid(db, "conversation_members")) {
+        const char *steps[] = {
+            "CREATE TABLE conversation_members_old (convo_id TEXT NOT NULL, member_did TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', muted INTEGER DEFAULT 0, last_read_id TEXT, joined_at TEXT NOT NULL, PRIMARY KEY (convo_id, member_did), FOREIGN KEY (convo_id) REFERENCES conversations(id) ON DELETE CASCADE)",
+            "INSERT INTO conversation_members_old (convo_id, member_did, status, muted, last_read_id, joined_at) SELECT convo_id, member_did, status, muted, last_read_id, joined_at FROM conversation_members",
+            "DROP TABLE conversation_members",
+            "ALTER TABLE conversation_members_old RENAME TO conversation_members",
+            "CREATE INDEX IF NOT EXISTS idx_conversation_members_convo ON conversation_members(convo_id)",
+            "CREATE INDEX IF NOT EXISTS idx_conversation_members_actor ON conversation_members(member_did)",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 rollback conversation_members", error)) return NO;
+    }
+    if (PDSMigrationTableUsesWithoutRowid(db, "message_reactions")) {
+        const char *steps[] = {
+            "CREATE TABLE message_reactions_old (message_id TEXT NOT NULL, actor_did TEXT NOT NULL, emoji TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (message_id, actor_did, emoji), FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE)",
+            "INSERT INTO message_reactions_old (message_id, actor_did, emoji, created_at) SELECT message_id, actor_did, emoji, created_at FROM message_reactions",
+            "DROP TABLE message_reactions",
+            "ALTER TABLE message_reactions_old RENAME TO message_reactions",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 rollback message_reactions", error)) return NO;
+    }
+    if (PDSMigrationTableUsesWithoutRowid(db, "group_members")) {
+        const char *steps[] = {
+            "CREATE TABLE group_members_old (group_uri TEXT NOT NULL, member_did TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member', status TEXT NOT NULL DEFAULT 'accepted', invited_by TEXT, joined_at TEXT NOT NULL, PRIMARY KEY (group_uri, member_did))",
+            "INSERT INTO group_members_old (group_uri, member_did, role, status, invited_by, joined_at) SELECT group_uri, member_did, role, status, invited_by, joined_at FROM group_members",
+            "DROP TABLE group_members",
+            "ALTER TABLE group_members_old RENAME TO group_members",
+            "CREATE INDEX IF NOT EXISTS idx_group_members_group ON group_members(group_uri)",
+            "CREATE INDEX IF NOT EXISTS idx_group_members_member ON group_members(member_did)",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 rollback group_members", error)) return NO;
+    }
+    if (PDSMigrationTableUsesWithoutRowid(db, "group_message_reactions")) {
+        const char *steps[] = {
+            "CREATE TABLE group_message_reactions_old (message_id TEXT NOT NULL, actor_did TEXT NOT NULL, emoji TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (message_id, actor_did, emoji), FOREIGN KEY (message_id) REFERENCES group_messages(id))",
+            "INSERT INTO group_message_reactions_old (message_id, actor_did, emoji, created_at) SELECT message_id, actor_did, emoji, created_at FROM group_message_reactions",
+            "DROP TABLE group_message_reactions",
+            "ALTER TABLE group_message_reactions_old RENAME TO group_message_reactions",
+        };
+        if (!PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V12 rollback group_message_reactions", error)) return NO;
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - V15 Collection Membership Without Rowid
+
+@interface V15CollectionMembershipWithoutRowid : NSObject <PDSMigration>
+@end
+
+@implementation V15CollectionMembershipWithoutRowid
+
+- (NSInteger)version { return 15; }
+- (NSString *)name { return @"collection_membership_without_rowid"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    if (PDSMigrationTableUsesWithoutRowid(db, "collection_membership")) return YES;
+    const char *steps[] = {
+        "CREATE TABLE collection_membership_new (did TEXT NOT NULL, collection TEXT NOT NULL, indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), PRIMARY KEY (did, collection)) WITHOUT ROWID",
+        "INSERT INTO collection_membership_new (did, collection, indexed_at) SELECT did, collection, indexed_at FROM collection_membership",
+        "DROP TABLE collection_membership",
+        "ALTER TABLE collection_membership_new RENAME TO collection_membership",
+        "CREATE INDEX IF NOT EXISTS idx_collection_membership_collection ON collection_membership(collection)",
+    };
+    return PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V15 collection_membership", error);
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    if (!PDSMigrationTableUsesWithoutRowid(db, "collection_membership")) return YES;
+    const char *steps[] = {
+        "CREATE TABLE collection_membership_old (did TEXT NOT NULL, collection TEXT NOT NULL, indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), PRIMARY KEY (did, collection))",
+        "INSERT INTO collection_membership_old (did, collection, indexed_at) SELECT did, collection, indexed_at FROM collection_membership",
+        "DROP TABLE collection_membership",
+        "ALTER TABLE collection_membership_old RENAME TO collection_membership",
+        "CREATE INDEX IF NOT EXISTS idx_collection_membership_collection ON collection_membership(collection)",
+    };
+    return PDSMigrationExecuteSteps(db, steps, sizeof(steps) / sizeof(steps[0]), @"V15 rollback collection_membership", error);
 }
 
 @end
@@ -2050,6 +2224,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V13CollectionMembershipSchema alloc] init]];
     [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
     [manager registerMigration:[[V14ModerationWithoutRowid alloc] init]];
+    [manager registerMigration:[[V15CollectionMembershipWithoutRowid alloc] init]];
     return manager;
 }
 
@@ -2066,6 +2241,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
     [manager registerMigration:[[V10LegacySchemaBridge alloc] init]];
     [manager registerMigration:[[V11AddLegacyColumns alloc] init]];
+    [manager registerMigration:[[V12LegacyChatWithoutRowid alloc] init]];
     return manager;
 }
 

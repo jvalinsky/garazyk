@@ -32,7 +32,14 @@ analysis, indexing, PRAGMA tuning) — load it before touching any lane here.
   **Lesson for Phases C/D: a WITHOUT ROWID table rewrite must carry over
   every constraint (FKs, CHECKs, DEFAULTs) from the original DDL, not just
   the columns and PK.**
-- **O2 Phases C (chat) and D (space store) pending.** O3-O6 not started.
+- **O2 Phase C complete (this commit):** the four legacy PDS chat tables
+  (`conversation_members`, `message_reactions`, `group_members`, and
+  `group_message_reactions`) migrate in PDS DB V12; the service-owned
+  `collection_membership` table migrates separately in service DB V15. All
+  five fresh DDL definitions use `WITHOUT ROWID`; the focused migration tests
+  prove apply/rollback/re-apply data and index preservation. This split is
+  intentional: `collection_membership` is not owned by the chat runtime.
+  **O2 Phase D (space store) pending.** O3-O6 not started.
 
 ## Scope
 
@@ -46,7 +53,7 @@ transaction discipline) are already done and excluded from this plan.
 | Item                                     | Boundary risk | Structural drag | Test leverage | Change safety | Payoff | Priority | Status |
 | ---------------------------------------- | ------------- | ---------------- | ------------- | -------------- | ------ | -------- | ------ |
 | O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       | Done (`3be4ee1ab`) |
-| O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | A+B done; C/D pending |
+| O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | A-C done; D pending |
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Open   |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Open   |
 | O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Open   |
@@ -109,11 +116,11 @@ None. Can ship independently.
 
 ---
 
-## O2: `WITHOUT ROWID` for composite-PK tables — Phases A/B COMPLETE, C/D PENDING
+## O2: `WITHOUT ROWID` for composite-PK tables — Phases A-C COMPLETE, D PENDING
 
 Phase A landed in `fc1705696`; Phase B in `50f2482c2` + `2f7ba5bdb` (FK
-restoration — see the Status lesson). Phases C and D below are the
-remaining work.
+restoration — see the Status lesson). Phase C is complete; only Phase D below
+remains.
 
 **Problem:** Zero tables in the codebase use `WITHOUT ROWID`. Tables with
 composite primary keys maintain a redundant rowid B-tree plus a secondary
@@ -144,7 +151,7 @@ index, wasting ~20-30% storage and doubling B-tree lookups for PK queries.
 | `message_reactions` | `(message_id, actor_did, emoji)` | Chat migration |
 | `group_members` | `(group_uri, member_did)` | Chat migration |
 | `group_message_reactions` | `(message_id, actor_did, emoji)` | Chat migration |
-| `collection_membership` | `(did, collection)` | Chat migration |
+| `collection_membership` | `(did, collection)` | Service DB V15 migration (service-owned; not chat runtime) |
 
 **Space store schema** (`PDSSpaceStore.m`):
 
@@ -205,18 +212,19 @@ they are the hottest tables. Defer to a later phase.
 
 10. **Run existing tests.**
 
-#### Phase C: Chat schema — 5 tables
+#### Phase C: Chat schema and service-owned membership — COMPLETE
 
-11. **Create a chat schema migration.** Convert all 5 tables in one
-    migration. The chat schema is in `Schema.m`, so the migration
-    may need a separate migration manager or registration path.
+11. **Create ownership-specific migrations.** The four legacy PDS chat
+    tables use V12 of `pdsDatabaseMigrationManager`; the service-owned
+    `collection_membership` uses V15 of `serviceDatabaseMigrationManager`.
     Carry over every FK/CHECK/DEFAULT constraint from the original DDL
     (the Phase B rewrite dropped an FK — `2f7ba5bdb`).
 
-12. **Update `Schema.m`.** Change `CREATE TABLE` statements to include
-    `WITHOUT ROWID` for fresh databases.
+12. **Update fresh DDL.** Change `Schema.m` and the ChatRuntime schema
+    manager statements to include `WITHOUT ROWID` for fresh databases.
 
-13. **Test and run existing tests.**
+13. **Test and run existing tests.** Focused round-trip tests cover fresh
+    DDL plus PDS V12 and service V15 apply/rollback/re-apply behavior.
 
 #### Phase D: Space store — 7 tables
 

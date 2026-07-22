@@ -33,7 +33,7 @@
            @"    joined_at TEXT NOT NULL,"
            @"    PRIMARY KEY (convo_id, member_did),"
            @"    FOREIGN KEY (convo_id) REFERENCES conversations(id) ON DELETE CASCADE"
-           @")";
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)messagesTableSchema {
@@ -57,7 +57,7 @@
            @"    created_at TEXT NOT NULL,"
            @"    PRIMARY KEY (message_id, actor_did, emoji),"
            @"    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE"
-           @")";
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)eventLogTableSchema {
