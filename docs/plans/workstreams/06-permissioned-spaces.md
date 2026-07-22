@@ -164,6 +164,10 @@ weakened (ADR 0004). Before any implementation, decide:
 A merely structural check is not an option. Record the choice as an ADR
 amendment; only option 1 creates implementation work.
 
+**Blocked (2026-07-22): awaiting the operator's selection.** The current safe
+behavior continues to reject both configurations. The decision brief is in
+the Phase 9 prompt; a structural-only check remains out of scope.
+
 ## P6.4 Upstream drift tracking (ongoing)
 
 Proposal 0016 says details, terminology, and behaviors are likely to
