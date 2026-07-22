@@ -1,5 +1,5 @@
 /** Shared boilerplate utilities for scenario authoring. @module boilerplate */
-import { XrpcClient, XrpcError } from "@garazyk/gruszka";
+import { type XrpcClient, XrpcError } from "@garazyk/gruszka";
 import type { ScenarioResult } from "./runner.ts";
 
 /** Current timestamp as an ISO-8601 string suitable for ATProto record createdAt fields. */
