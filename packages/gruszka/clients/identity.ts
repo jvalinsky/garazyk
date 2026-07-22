@@ -1,5 +1,5 @@
 /** Handle resolution and identity management @module identity */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for handle resolution and identity-management XRPC methods. */
 export class IdentityClient {
@@ -15,7 +15,7 @@ export class IdentityClient {
    * @returns A promise that resolves to the resolution response
    * @throws XrpcError if the request fails
    */
-  async resolveHandle(handle: string): Promise<any> {
+  async resolveHandle(handle: string): Promise<unknown> {
     return await this.transport.get("com.atproto.identity.resolveHandle", {
       handle,
     });
@@ -28,7 +28,7 @@ export class IdentityClient {
    * @returns A promise that resolves to the update response
    * @throws XrpcError if the request fails
    */
-  async updateHandle(handle: string, token: string): Promise<any> {
+  async updateHandle(handle: string, token: string): Promise<unknown> {
     return await this.transport.post("com.atproto.identity.updateHandle", {
       handle,
     }, token);
