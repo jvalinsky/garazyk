@@ -1,39 +1,24 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * SkyLab Chat Panel — DMs and group conversations with plaintext/E2EE toggle.
+ * SkyLab Chat Panel — DMs and group conversations.
+ *
+ * The E2EE (Germ) mode selector was removed per the Phase 10 product-surface
+ * decision (docs/plans/phase-10-product-surface-decision-brief.md):
+ * selecting it announced client-side encryption but silently sent plaintext,
+ * a privacy/consent failure, not just an unimplemented feature. This client
+ * only ever sends plaintext now. Incoming messages that arrive as
+ * ciphertext (e.g. from a federated client that does support Germ) still
+ * render as "[Encrypted]" below - that's an honest statement that this
+ * client can't read them, not a claim this client encrypts anything itself.
  */
 
 function initChatPanel(bridge) {
   const listEl = document.getElementById("chat-list");
   const viewEl = document.getElementById("chat-view");
-  const plainBtn = document.getElementById("chat-mode-plain");
-  const e2eeBtn = document.getElementById("chat-mode-e2ee");
 
-  let currentMode = "plaintext"; // or 'e2ee'
   let selectedConvoId = null;
   let conversations = [];
-
-  // ---- Mode toggle ----
-  plainBtn.addEventListener("click", () => {
-    currentMode = "plaintext";
-    plainBtn.classList.add("active");
-    e2eeBtn.classList.remove("active");
-  });
-
-  e2eeBtn.addEventListener("click", () => {
-    currentMode = "e2ee";
-    e2eeBtn.classList.add("active");
-    plainBtn.classList.remove("active");
-    // Show note about Germ
-    viewEl.innerHTML = `
-            <div class="skylab-empty-state" style="padding:var(--space-xl);">
-                <p>E2EE mode requires the Germ service to be running on port 8082.</p>
-                <p style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);margin-top:var(--space-sm);">
-                    Messages will be encrypted client-side before delivery via the Germ mailbox.
-                </p>
-            </div>`;
-  });
 
   // ---- Load conversations ----
   async function loadConversations() {
@@ -147,13 +132,6 @@ function initChatPanel(bridge) {
     const text = input.value.trim();
     if (!text || !selectedConvoId) return;
 
-    if (currentMode === "e2ee") {
-      // Germ E2EE — placeholder for SDK integration
-      appendSystemMessage(
-        "E2EE messaging requires Germ SDK integration. Falling back to plaintext for now.",
-      );
-    }
-
     const resp = await bridge.xrpc("chat.bsky.convo.sendMessage", null, {
       convoId: selectedConvoId,
       message: {
@@ -175,16 +153,6 @@ function initChatPanel(bridge) {
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
     }
-  }
-
-  function appendSystemMessage(text) {
-    const messagesEl = document.getElementById("chat-messages");
-    if (!messagesEl) return;
-    const el = document.createElement("div");
-    el.style.cssText =
-      "text-align:center;color:var(--color-text-tertiary);font-size:var(--font-size-xs);padding:var(--space-sm);";
-    el.textContent = text;
-    messagesEl.appendChild(el);
   }
 
   // ---- New conversation ----
