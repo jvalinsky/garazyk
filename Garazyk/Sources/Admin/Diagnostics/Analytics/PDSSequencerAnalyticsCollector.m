@@ -39,9 +39,10 @@
 }
 
 - (void)startCollecting {
-    // Capture self strongly - dispatch_source and timer handler will extend lifetime
-    // stopCollecting must be called to cancel timer and release this reference
-    dispatch_async(self.queue, ^{
+    // Synchronous so isCollecting is accurate to the caller as soon as this
+    // returns; self.queue is a private queue only this class dispatches to,
+    // so there is no reentrancy/deadlock risk.
+    dispatch_sync(self.queue, ^{
         if (self.timer) {
             return; // Already collecting
         }
@@ -195,13 +196,15 @@
 }
 
 - (nullable NSDictionary *)currentSnapshot {
+    if (!self.serviceDatabases) return nil;
+
     __block NSDictionary *snapshot = nil;
     __weak typeof(self) weakSelf = self;
-    
+
     dispatch_sync(self.queue, ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
-        
+
         NSError *error = nil;
         int64_t currentSeq = [strongSelf.serviceDatabases getMaxEventSequence:&error];
         if (error) return;
