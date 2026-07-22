@@ -74,7 +74,7 @@ transaction discipline) are already done and excluded from this plan.
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Complete |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Complete (actor V5) |
 | O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Complete |
-| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | In progress — ADR 0008 accepted |
+| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Implemented — global gates pending |
 
 ## O1: `INSERT OR IGNORE` for `ipld_blocks` — COMPLETE
 
@@ -545,8 +545,12 @@ idempotent relay-event queue with an independently acknowledged index worker,
 leases, watermarked backpressure, and dead-letter retention. The current
 ingest engine synchronously decodes and materializes commits, so the change is
 needed; the operator accepted eventual consistency, capacity, and dead-letter
-policy on 2026-07-22. Schema V3 now provides idempotent enqueue, leased claim,
-terminal retention, and indexed acknowledgement; worker handoff remains.
+policy on 2026-07-22. Schema V3 now provides idempotent enqueue, ordered leased
+claim, terminal retention, and indexed acknowledgement. The relay path writes
+the spec-shaped envelope before dispatching a serial worker; record/block/state
+mutations and acknowledgement commit together. Startup resumes outstanding
+rows, retries use 60-second leases, the tenth failure dead-letters and pauses
+the relay, and event/byte high and low watermarks control pause/resume.
 
 **Problem:** If the firehose ingestion path does synchronous indexing
 (updating AppView tables, search index, etc.), ingest throughput is
