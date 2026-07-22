@@ -51,4 +51,8 @@
     return success;
 }
 
+- (nullable NSArray<PDSDatabaseRepo *> *)allReposWithError:(NSError **)error {
+    return [_databasePool getAllReposWithError:error];
+}
+
 @end
