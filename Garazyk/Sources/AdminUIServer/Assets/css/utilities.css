@@ -340,9 +340,9 @@
 .is-inactive { opacity: 0.5; pointer-events: none; }
 .is-loading { opacity: 0.7; pointer-events: none; }
 .is-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
-.is-error { color: var(--color-destructive); }
-.is-success { color: var(--color-success); }
-.is-warning { color: var(--color-warning); }
+.is-error { color: var(--color-foreground-destructive); }
+.is-success { color: var(--color-foreground-success); }
+.is-warning { color: var(--color-foreground-warning); }
 
 /* ============================================================================
    RESPONSIVE UTILITIES
