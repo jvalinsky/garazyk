@@ -14,6 +14,12 @@ trap cleanup EXIT
 
 cd -- "$repository_dir"
 
+if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+  printf '%s\n' 'Refusing to generate a capability baseline from a dirty checkout.' >&2
+  printf '%s\n' 'Commit or stash local changes, then rerun this command.' >&2
+  exit 1
+fi
+
 nix build ./objc-jupyter-wasm#kernel-wasm --out-link "$baseline_dir/kernel-first"
 first_store_path=$(readlink "$baseline_dir/kernel-first")
 second_store_path=$(nix build ./objc-jupyter-wasm#kernel-wasm --no-link --print-out-paths | tail -n 1)
