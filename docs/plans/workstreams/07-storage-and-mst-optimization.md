@@ -44,6 +44,11 @@ analysis, indexing, PRAGMA tuning) — load it before touching any lane here.
   graph, without disabling FK enforcement. Its focused test creates data in
   every converted table, rolls V4 back to V3, reapplies it, and verifies the
   persisted space data. **O3-O6 not started.**
+- **O4 complete (this commit):** query-plan audit found one safe covering
+  index: actor-store V5 `idx_records_rev` for `getRepoStatus`'s revision
+  union. `listRecords`, `getRecord`, and `getBlocks` already use existing
+  indexes or primary keys; making their payload reads covering would duplicate
+  record/block BLOBs. No speculative service-DB index was added.
 
 ## Scope
 
@@ -59,7 +64,7 @@ transaction discipline) are already done and excluded from this plan.
 | O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       | Done (`3be4ee1ab`) |
 | O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | Complete |
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Open   |
-| O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Open   |
+| O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Complete (actor V5) |
 | O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Open   |
 | O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Open   |
 
@@ -361,7 +366,7 @@ None on O1 or O2. Can proceed in parallel.
 
 ---
 
-## O4: Covering Indexes for Hot Read Paths
+## O4: Covering Indexes for Hot Read Paths — COMPLETE
 
 **Problem:** `listRecords` queries by `(collection, rkey)` but may also need
 `uri` or `value`. Without a covering index, SQLite must look up the base
@@ -371,8 +376,22 @@ table row after finding the index entry.
 
 ### Steps
 
-1. **Profile the top 10 queries.** Add `EXPLAIN QUERY PLAN` logging to
-   the hot read paths:
+1. **Profile the hot queries.** The source audit and an executable
+   `EXPLAIN QUERY PLAN` test produced the following evidence:
+
+   | Path | Query shape | Disposition |
+   | --- | --- | --- |
+   | `listRecords` | `collection = ? ORDER BY rkey`, returning `value` | Existing `idx_records_collection_rkey`; a covering index would duplicate the value BLOB. |
+   | `getRecord` | `uri = ?`, returning the full record | `uri` primary key is already the correct lookup. |
+   | `getBlocks` | `cid = ?`, returning block bytes | `cid` primary key is already the correct lookup; covering would duplicate the block BLOB. |
+   | `describeServer` | configuration-only | No database query. |
+   | `getRepoStatus` | latest non-null `rev` across records/tombstones | Added actor-store V5 `idx_records_rev`; the test confirms a covering-index plan. |
+
+   The planned migration slots were stale: actor V4 was occupied by the
+   dedicated space signing-key migration, and service V15 by O2 phase C.
+   O4 therefore uses actor V5 only; no service candidate met the evidence bar.
+
+   The audit covered the plan's original hot read paths:
    - `listRecords` (by collection, paginated)
    - `getRecord` (by URI)
    - `getBlocks` (by CID)
@@ -383,8 +402,7 @@ table row after finding the index entry.
    which columns are filtered on and which are selected. A covering
    index includes all selected columns.
 
-3. **Add indexes.** Create a migration (V15 service — V14 is taken by
-   O2 Phase B — and V4 actor store) that adds the covering indexes.
+3. **Add indexes.** Create actor-store V5 for the one verified covering index.
    Note `3be4ee1ab` already added six plain filter indexes
    (`idx_records_collection`, `idx_blocks_repo_did_created`,
    `idx_blobs_did_created`, `idx_labels_val`, `idx_labels_src_val`,
@@ -399,9 +417,9 @@ table row after finding the index entry.
    uses the covering index (look for "USING COVERING INDEX" in the
    output).
 
-5. **Test.** Add tests that verify the query planner uses the covering
-   index. Run `EXPLAIN QUERY PLAN` in test code and assert the index
-   name appears.
+5. **Test.** `PDSMigrationManagerTests` migrates a V4 actor store, verifies
+   `idx_records_rev`, asserts its query-plan use, then rolls V5 back and
+   reapplies it.
 
 6. **Run existing tests.**
 
@@ -418,7 +436,7 @@ cmake --build build --target AllTests --parallel 4
 ./build/tests/AllTests --gated=run
 
 # Verify covering index usage
-sqlite3 <actorstore.db> "EXPLAIN QUERY PLAN SELECT uri, value FROM records WHERE collection = 'app.bsky.feed.post' ORDER BY rkey LIMIT 50"
+sqlite3 <actorstore.db> "EXPLAIN QUERY PLAN SELECT rev FROM records WHERE rev IS NOT NULL ORDER BY rev DESC LIMIT 1"
 # Should show "USING COVERING INDEX"
 ```
 

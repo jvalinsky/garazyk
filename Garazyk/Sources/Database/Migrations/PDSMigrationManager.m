@@ -552,6 +552,44 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V5 Records Revision Covering Index (Actor Store)
+
+@interface V5RecordsRevisionCoveringIndex : NSObject <PDSMigration>
+@end
+
+@implementation V5RecordsRevisionCoveringIndex
+
+- (NSInteger)version { return 5; }
+- (NSString *)name { return @"records_revision_covering_index"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    if (sqlite3_exec(db, "CREATE INDEX IF NOT EXISTS idx_records_rev ON records(rev)", NULL, NULL, &errMsg) == SQLITE_OK) return YES;
+    if (error) {
+        NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: message}];
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return NO;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    if (sqlite3_exec(db, "DROP INDEX IF EXISTS idx_records_rev", NULL, NULL, &errMsg) == SQLITE_OK) return YES;
+    if (error) {
+        NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: message}];
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return NO;
+}
+
+@end
+
 #pragma mark - PDSMigrationManager Implementation
 
 @interface PDSMigrationManager ()
@@ -2234,6 +2272,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
     [manager registerMigration:[[V3RecordTombstonesWithoutRowid alloc] init]];
     [manager registerMigration:[[V4DedicatedSpaceSigningKeySchema alloc] init]];
+    [manager registerMigration:[[V5RecordsRevisionCoveringIndex alloc] init]];
     return manager;
 }
 
