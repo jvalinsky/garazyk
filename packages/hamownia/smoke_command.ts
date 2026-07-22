@@ -1,4 +1,4 @@
-import { XrpcClient } from "@garazyk/gruszka";
+import { XrpcClient, XrpcError } from "@garazyk/gruszka";
 import { createCharacterRegistry } from "./config.ts";
 import { ScenarioResult, timedCall } from "./runner.ts";
 
@@ -31,10 +31,11 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
           password: luna.password,
         });
         return res.data;
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (
-          e?.status === 400 &&
-          String(e.body?.error ?? "").includes("already exists")
+          e instanceof XrpcError && e.status === 400 &&
+          String((e.body as { error?: string } | undefined)?.error ?? "")
+            .includes("already exists")
         ) {
           const res = await client.agent.login({
             identifier: luna.handle,
