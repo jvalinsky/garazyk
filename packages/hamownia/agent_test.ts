@@ -12,23 +12,12 @@
  */
 // spell-checker: disable
 
-import {
-  assertEquals,
-  assertExists,
-  assertMatch,
-} from "@std/assert";
+import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { TopologyRegistry } from "@garazyk/schemat";
 import type { AgentTriageResult } from "./cli/agent.ts";
-import {
-  classifyBoundary,
-  toSummary,
-  triageReports,
-} from "./cli/agent.ts";
-import {
-  MultiSink,
-  NdjsonSink,
-} from "./events.ts";
+import { classifyBoundary, toSummary, triageReports } from "./cli/agent.ts";
+import { MultiSink, type NdjsonSink } from "./events.ts";
 import type {
   RunFinishedEvent,
   RunProgressEvent,
@@ -412,7 +401,12 @@ Deno.test("triageReports: captures only first failure when multiple fail", async
       JSON.stringify({
         scenario: "first failure",
         steps: [
-          { name: "did lookup", status: "failed", detail: "not found", duration_ms: 10 },
+          {
+            name: "did lookup",
+            status: "failed",
+            detail: "not found",
+            duration_ms: 10,
+          },
         ],
         summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
         ok: false,
@@ -424,7 +418,12 @@ Deno.test("triageReports: captures only first failure when multiple fail", async
       JSON.stringify({
         scenario: "second failure",
         steps: [
-          { name: "createRecord", status: "failed", detail: "timeout", duration_ms: 5000 },
+          {
+            name: "createRecord",
+            status: "failed",
+            detail: "timeout",
+            duration_ms: 5000,
+          },
         ],
         summary: { passed: 0, failed: 1, skipped: 0, total: 1 },
         ok: false,
@@ -463,7 +462,10 @@ Deno.test("triageReports: malformed report JSON is skipped gracefully", async ()
     assertEquals(result.runId, "test-malformed");
     assertEquals(result.ok, false);
     assertEquals(result.firstFailure, undefined);
-    assertEquals(result.evidence.some((e) => e.startsWith("Could not read report")), true);
+    assertEquals(
+      result.evidence.some((e) => e.startsWith("Could not read report")),
+      true,
+    );
   } finally {
     await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
   }
@@ -698,7 +700,13 @@ Deno.test("NdjsonSink: full run lifecycle emits 7 valid JSON lines in order", ()
   sink.emit(makeScenarioStarted({ scenarioId: "01", index: 0 }));
   sink.emit(makeScenarioCompleted({ scenarioId: "01", ok: true, passed: 2 }));
   sink.emit(makeRunProgress({ completed: 1, currentScenarioId: "02" }));
-  sink.emit(makeScenarioStarted({ scenarioId: "02", index: 1, name: "failing scenario" }));
+  sink.emit(
+    makeScenarioStarted({
+      scenarioId: "02",
+      index: 1,
+      name: "failing scenario",
+    }),
+  );
   sink.emit(makeScenarioCompleted({
     scenarioId: "02",
     name: "failing scenario",
@@ -707,9 +715,24 @@ Deno.test("NdjsonSink: full run lifecycle emits 7 valid JSON lines in order", ()
     failed: 1,
   }));
   sink.emit(makeRunProgress({ completed: 2, currentScenarioId: "03" }));
-  sink.emit(makeScenarioStarted({ scenarioId: "03", index: 2, name: "final scenario" }));
-  sink.emit(makeScenarioCompleted({ scenarioId: "03", name: "final scenario", ok: true }));
-  sink.emit(makeRunProgress({ completed: 3, running: false, currentScenarioId: null, currentScenarioName: null }));
+  sink.emit(
+    makeScenarioStarted({ scenarioId: "03", index: 2, name: "final scenario" }),
+  );
+  sink.emit(
+    makeScenarioCompleted({
+      scenarioId: "03",
+      name: "final scenario",
+      ok: true,
+    }),
+  );
+  sink.emit(
+    makeRunProgress({
+      completed: 3,
+      running: false,
+      currentScenarioId: null,
+      currentScenarioName: null,
+    }),
+  );
   sink.emit(makeRunFinished({
     ok: false,
     totalPassed: 5,
@@ -751,8 +774,17 @@ Deno.test("NdjsonSink: service failure aborts remaining scenarios", () => {
   sink.emit(makeScenarioStarted({ scenarioId: "01", index: 0 }));
   sink.emit(makeScenarioCompleted({ scenarioId: "01", ok: true }));
   sink.emit(makeServiceFailure({ message: "PDS container crashed" }));
-  sink.emit(makeRunProgress({ completed: 1, running: false, currentScenarioId: null }));
-  sink.emit(makeRunFinished({ ok: false, totalPassed: 3, totalFailed: 0, crashedContainer: true }));
+  sink.emit(
+    makeRunProgress({ completed: 1, running: false, currentScenarioId: null }),
+  );
+  sink.emit(
+    makeRunFinished({
+      ok: false,
+      totalPassed: 3,
+      totalFailed: 0,
+      crashedContainer: true,
+    }),
+  );
 
   assertEquals(sink.lines.length, 6);
 
@@ -815,11 +847,15 @@ Deno.test("MultiSink: close propagates to all sinks", async () => {
 
   const sinkA: ScenarioRunEventSink = {
     emit: () => {},
-    close: () => { closedA = true; },
+    close: () => {
+      closedA = true;
+    },
   };
   const sinkB: ScenarioRunEventSink = {
     emit: () => {},
-    close: () => { closedB = true; },
+    close: () => {
+      closedB = true;
+    },
   };
 
   const multi = new MultiSink([sinkA, sinkB]);
@@ -1046,7 +1082,11 @@ Deno.test("CLI: agent run --help shows all options", async () => {
 });
 
 Deno.test("CLI: agent triage --help shows options", async () => {
-  const { stdout, stderr, code } = await spawnCli(["agent", "triage", "--help"]);
+  const { stdout, stderr, code } = await spawnCli([
+    "agent",
+    "triage",
+    "--help",
+  ]);
 
   assertEquals(code, 0);
   assertEquals(stderr, "");
@@ -1147,7 +1187,9 @@ Deno.test("CLI: agent triage with non-existent reports-dir returns valid JSON", 
 Deno.test("CLI: all topology presets produce valid JSON", async () => {
   const presets = TopologyRegistry.listPresets();
   if (presets.length === 0) {
-    throw new Error("TopologyRegistry.listPresets() returned empty — presets not loaded");
+    throw new Error(
+      "TopologyRegistry.listPresets() returned empty — presets not loaded",
+    );
   }
 
   // Spawn all preset queries concurrently (not sequentially).
@@ -1165,17 +1207,41 @@ Deno.test("CLI: all topology presets produce valid JSON", async () => {
     assertEquals(code, 0, `topology "${preset}" exited non-zero`);
 
     const parsed = JSON.parse(stdout.trim());
-    assertEquals(Array.isArray(parsed), true, `topology "${preset}" not an array`);
+    assertEquals(
+      Array.isArray(parsed),
+      true,
+      `topology "${preset}" not an array`,
+    );
 
     for (const s of parsed) {
       assertEquals(typeof s.id, "string", `${preset}: id not string`);
       assertEquals(typeof s.name, "string", `${preset}: name not string`);
       assertEquals(typeof s.path, "string", `${preset}: path not string`);
-      assertEquals(Array.isArray(s.requires), true, `${preset}: requires not array`);
-      assertEquals(Array.isArray(s.optional), true, `${preset}: optional not array`);
-      assertEquals(typeof s.needsPds2, "boolean", `${preset}: needsPds2 not boolean`);
-      assertEquals(Array.isArray(s.browserFlows), true, `${preset}: browserFlows not array`);
-      assertEquals(typeof s.parameters, "object", `${preset}: parameters not object`);
+      assertEquals(
+        Array.isArray(s.requires),
+        true,
+        `${preset}: requires not array`,
+      );
+      assertEquals(
+        Array.isArray(s.optional),
+        true,
+        `${preset}: optional not array`,
+      );
+      assertEquals(
+        typeof s.needsPds2,
+        "boolean",
+        `${preset}: needsPds2 not boolean`,
+      );
+      assertEquals(
+        Array.isArray(s.browserFlows),
+        true,
+        `${preset}: browserFlows not array`,
+      );
+      assertEquals(
+        typeof s.parameters,
+        "object",
+        `${preset}: parameters not object`,
+      );
     }
   }
 });
@@ -1299,7 +1365,11 @@ Deno.test("CLI: agent run with --runner docker flag accepted", async () => {
   // Should NOT fail with enum validation error
   // (may fail because docker isn't running, but shouldn't fail on flag parsing)
   const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
-  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+  assertEquals(
+    isFlagError,
+    false,
+    `Flag parsing error: ${stderr.slice(0, 200)}`,
+  );
 });
 
 Deno.test("CLI: agent run --pds2 flag accepted", async () => {
@@ -1316,7 +1386,11 @@ Deno.test("CLI: agent run --pds2 flag accepted", async () => {
 
   // Should not fail on flag parsing for --pds2
   const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
-  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+  assertEquals(
+    isFlagError,
+    false,
+    `Flag parsing error: ${stderr.slice(0, 200)}`,
+  );
 });
 
 Deno.test("CLI: agent run --binary flag accepted", async () => {
@@ -1331,7 +1405,11 @@ Deno.test("CLI: agent run --binary flag accepted", async () => {
   ]);
 
   const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
-  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+  assertEquals(
+    isFlagError,
+    false,
+    `Flag parsing error: ${stderr.slice(0, 200)}`,
+  );
 });
 
 Deno.test("CLI: agent run --keep-running flag accepted", async () => {
@@ -1346,7 +1424,11 @@ Deno.test("CLI: agent run --keep-running flag accepted", async () => {
   ]);
 
   const isFlagError = /Unknown|Invalid|Expected/.test(stderr);
-  assertEquals(isFlagError, false, `Flag parsing error: ${stderr.slice(0, 200)}`);
+  assertEquals(
+    isFlagError,
+    false,
+    `Flag parsing error: ${stderr.slice(0, 200)}`,
+  );
 });
 
 Deno.test("CLI: agent run with all flags combined (tool invocation shape)", async () => {
@@ -1369,8 +1451,9 @@ Deno.test("CLI: agent run with all flags combined (tool invocation shape)", asyn
   ]);
 
   // Verify: no flag parsing errors, even if the run itself fails
-  const isFlagError =
-    /Unknown option|Invalid value|Expected.*value/i.test(stderr);
+  const isFlagError = /Unknown option|Invalid value|Expected.*value/i.test(
+    stderr,
+  );
   assertEquals(
     isFlagError,
     false,
@@ -1535,5 +1618,5 @@ Deno.test({
     // Verify the finished event reports success.
     const finished = events.find((e) => e.type === "run_finished");
     assertEquals(finished?.ok, true);
-  }
+  },
 });

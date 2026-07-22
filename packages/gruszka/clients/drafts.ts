@@ -1,5 +1,5 @@
 /** Draft post CRUD operations @module drafts */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for draft post XRPC methods. */
 export class DraftsClient {

@@ -3,11 +3,11 @@ import {
   ConsoleLogger,
   createLogger,
   initLogger,
-  logDebug,
-  logError,
-  logInfo,
-  logOk,
-  logWarn,
+  type logDebug,
+  type logError,
+  type logInfo,
+  type logOk,
+  type logWarn,
 } from "./logging.ts";
 
 /** Collect output from a logger into a string array. */

@@ -1,5 +1,5 @@
 /** Handle resolution and identity management @module identity */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for handle resolution and identity-management XRPC methods. */
 export class IdentityClient {

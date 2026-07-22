@@ -1,5 +1,5 @@
 /** Admin/moderation operations (subject status, reports, labels, login) @module admin */
-import { TransportLayer, XrpcError } from "../transport.ts";
+import { type TransportLayer, XrpcError } from "../transport.ts";
 
 /** Client for admin and moderation XRPC methods. */
 export class AdminClient {
