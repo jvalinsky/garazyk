@@ -1,14 +1,5 @@
 import { assert } from "@std/assert";
-import {
-  ConsoleLogger,
-  createLogger,
-  initLogger,
-  logDebug,
-  logError,
-  logInfo,
-  logOk,
-  logWarn,
-} from "./logging.ts";
+import { ConsoleLogger, createLogger, initLogger } from "./logging.ts";
 
 /** Collect output from a logger into a string array. */
 class StringOutput {
