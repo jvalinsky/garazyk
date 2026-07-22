@@ -100,6 +100,7 @@
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(signResponse.statusCode, 200);
     XCTAssertEqualObjects(signResponse.jsonBody[@"operation"][@"verificationMethods"][@"atproto_space"], spaceKey);
+    XCTAssertNotNil(signResponse.jsonBody[@"operation"][@"verificationMethods"][@"atproto"], @"Adding a space key must preserve the account signing key");
 }
 
 - (void)testIdentityUpdateHandleUniquenessReturns409 {
