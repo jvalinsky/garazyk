@@ -23,7 +23,7 @@ export class BlobsClient {
     data: Uint8Array,
     contentType: string,
     token: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.transport.postBinary(
       "com.atproto.repo.uploadBlob",
       data,
