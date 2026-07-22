@@ -370,7 +370,6 @@ export function renderComposeYaml(
         "sources",
         sanitizeTopologyName(adapter.name),
       );
-      const dockerDir = adapter.source.dockerDir || ".";
       const buildCtx = adapter.source.dockerDir
         ? join(cloneDir, adapter.source.dockerDir)
         : cloneDir;
@@ -597,12 +596,6 @@ export async function compileTopology(
     manifest,
     capabilitiesByRole: manifest.capabilitiesByRole,
   };
-}
-
-/** Extract the host port from the first port mapping (e.g. "2583:2583" → "2583") */
-function extractHostPort(adapter: ServiceAdapter): string | undefined {
-  if (!adapter.ports || adapter.ports.length === 0) return undefined;
-  return parsePortMapping(adapter.ports[0]).hostPort;
 }
 
 /** Extract the container port from the first port mapping (e.g. "3200:3000" → "3000") */

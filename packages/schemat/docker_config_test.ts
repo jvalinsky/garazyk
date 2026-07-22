@@ -260,7 +260,7 @@ Deno.test("serviceUrlFromManifest: returns undefined when no manifest env is set
   assertEquals(result, undefined);
 });
 
-Deno.test("serviceUrlFromManifest: returns undefined when manifest file does not exist", async (t) => {
+Deno.test("serviceUrlFromManifest: returns undefined when manifest file does not exist", async () => {
   const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
   const manifestPath = join(dir, "nonexistent.json");
   const env = mockEnv({ ATPROTO_RESOURCE_MANIFEST: manifestPath });
@@ -269,7 +269,7 @@ Deno.test("serviceUrlFromManifest: returns undefined when manifest file does not
   await Deno.remove(dir, { recursive: true });
 });
 
-Deno.test("serviceUrlFromManifest: returns hostUrl from services in manifest", async (t) => {
+Deno.test("serviceUrlFromManifest: returns hostUrl from services in manifest", async () => {
   const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
   const manifestPath = join(dir, "manifest.json");
   const manifest = {
@@ -286,7 +286,7 @@ Deno.test("serviceUrlFromManifest: returns hostUrl from services in manifest", a
   await Deno.remove(dir, { recursive: true });
 });
 
-Deno.test("serviceUrlFromManifest: returns hostUrl from mockProviders in manifest", async (t) => {
+Deno.test("serviceUrlFromManifest: returns hostUrl from mockProviders in manifest", async () => {
   const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
   const manifestPath = join(dir, "manifest.json");
   const manifest = {
@@ -300,7 +300,7 @@ Deno.test("serviceUrlFromManifest: returns hostUrl from mockProviders in manifes
   await Deno.remove(dir, { recursive: true });
 });
 
-Deno.test("serviceUrl: prefers manifest URL over SERVICE_PORTS default", async (t) => {
+Deno.test("serviceUrl: prefers manifest URL over SERVICE_PORTS default", async () => {
   const dir = await Deno.makeTempDir({ prefix: "service-url-manifest-test-" });
   const manifestPath = join(dir, "manifest.json");
   const manifest = {
@@ -330,7 +330,7 @@ Deno.test("serviceUrl: prefers manifest URL over SERVICE_PORTS default", async (
 // neededPorts (manifest-aware)
 // ---------------------------------------------------------------------------
 
-Deno.test("neededPorts: returns manifest ports when a manifest is available", async (t) => {
+Deno.test("neededPorts: returns manifest ports when a manifest is available", async () => {
   const dir = await Deno.makeTempDir({ prefix: "needed-ports-manifest-test-" });
   const manifestPath = join(dir, "manifest.json");
   const manifest = {
@@ -370,7 +370,7 @@ Deno.test("neededPorts: returns manifest ports when a manifest is available", as
   }
 });
 
-Deno.test("neededPorts: adds otel ports even with manifest", async (t) => {
+Deno.test("neededPorts: adds otel ports even with manifest", async () => {
   const dir = await Deno.makeTempDir({ prefix: "needed-ports-manifest-test-" });
   const manifestPath = join(dir, "manifest.json");
   const manifest = {

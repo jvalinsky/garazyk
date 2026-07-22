@@ -12,10 +12,8 @@ import {
 } from "./topology_registry.ts";
 import { parseTopologyManifestJson } from "./topology_schema.ts";
 import type {
-  DiagnosticProbeConfig,
   InheritedAdapter,
   ServiceAdapter,
-  ServiceRole,
   SourceBuild,
   SourceBuildInfo,
   TopologyDiagnosticProbe,
