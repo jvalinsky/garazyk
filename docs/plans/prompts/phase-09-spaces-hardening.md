@@ -45,8 +45,11 @@ space credentials now use purpose-isolated key storage and are selected only
 when the DID document publishes the exact local public key. The idempotent
 `kaszlak account prepare-space-key` command returns only that public key for
 the authenticated PLC operation flow; the runbook records preparation,
-publication, verification, overlap, and rollback. The remaining P6.2 evidence
-is a two-PDS overlap exercise.
+publication, verification, overlap, and rollback. Binary three-PDS scenario
+93 run `2026-07-22t0530z-70080` passed 25/25: it prepared and published a
+dedicated key, issued a new `#atproto_space` credential, and proved a remote
+PDS accepts that credential and the pre-cutover `#atproto` credential during
+overlap.
 
 # Phase 9: Permissioned spaces production hardening
 

@@ -216,6 +216,9 @@ static id<PDSActorKeyManager> SpaceCredentialSignerForAuthorityDocument(PDSActor
                                                                           NSString **keyID) {
   NSString *spaceKey = [ATProtoDIDDocumentFields dedicatedSpaceSigningKeyMultibaseFromDocument:document];
   NSString *localSpaceKey = [authority spaceSigningDIDKeyStringWithError:nil];
+  if ([localSpaceKey hasPrefix:@"did:key:"]) {
+    localSpaceKey = [localSpaceKey substringFromIndex:@"did:key:".length];
+  }
   if (spaceKey.length > 0 && [spaceKey isEqualToString:localSpaceKey]) {
     if (keyID) *keyID = @"#atproto_space";
     return authority.spaceKeyManager;

@@ -143,7 +143,13 @@ local public key exactly equals the DID document's `#atproto_space` value;
 otherwise it mints with `#atproto`. `kaszlak account prepare-space-key <did>`
 is idempotent and returns only the public key for the existing authenticated
 PLC sign/submit flow; `docs/permissioned-spaces-key-rotation.md` defines the
-operator runbook. A two-PDS overlap exercise remains.
+operator runbook.
+
+**Complete (2026-07-22): P6.2 overlap evidence.** Binary three-PDS scenario
+93 run `2026-07-22t0530z-70080` passed 25/25 after publishing a dedicated
+key. It proved that a remote PDS accepts both the pre-cutover `#atproto`
+credential and a newly minted `#atproto_space` credential during the bounded
+overlap window.
 
 ## P6.3 App attestation decision (decision needed)
 

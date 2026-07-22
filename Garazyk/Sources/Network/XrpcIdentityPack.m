@@ -26,6 +26,7 @@
 #import "PLC/DIDPLCResolver.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
+#import "Core/DID.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/Secp256k1.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -657,6 +658,15 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
         }
 
         GZ_LOG_INFO(@"Submitted PLC operation for DID %@", did);
+
+        NSError *refreshError = nil;
+        DIDDocument *refreshedDocument = [[DIDResolver sharedResolver] resolveDIDSync:did forceRefresh:YES error:&refreshError];
+        if (!refreshedDocument) {
+            // Submission has already succeeded.  Do not return a retryable status here:
+            // repeating the operation would use a stale `prev` CID.  A later resolver
+            // request will retry the cache refresh.
+            GZ_LOG_WARN(@"PLC operation for DID %@ was accepted but the local DID cache refresh is pending", did);
+        }
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
