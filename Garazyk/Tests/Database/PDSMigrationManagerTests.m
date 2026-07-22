@@ -8,6 +8,7 @@
 
 #import "Database/Migrations/PDSMigrationManager.h"
 #import "Database/Schema.h"
+#import "Database/Schema/PDSSchemaManager.h"
 #import "Chat/Server/Config/ChatSchemaManager.h"
 #import <sqlite3.h>
 
@@ -62,6 +63,23 @@ static BOOL PDSMigrationTestIndexExists(sqlite3 *db, const char *indexName) {
     BOOL exists = sqlite3_step(statement) == SQLITE_ROW;
     sqlite3_finalize(statement);
     return exists;
+}
+
+static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, const char *indexName) {
+    NSString *explain = [NSString stringWithFormat:@"EXPLAIN QUERY PLAN %s", sql];
+    sqlite3_stmt *statement = NULL;
+    if (sqlite3_prepare_v2(db, explain.UTF8String, -1, &statement, NULL) != SQLITE_OK) return NO;
+    BOOL usesIndex = NO;
+    while (sqlite3_step(statement) == SQLITE_ROW) {
+        const unsigned char *detail = sqlite3_column_text(statement, 3);
+        if (detail && [[NSString stringWithUTF8String:(const char *)detail]
+            rangeOfString:[NSString stringWithUTF8String:indexName]].location != NSNotFound) {
+            usesIndex = YES;
+            break;
+        }
+    }
+    sqlite3_finalize(statement);
+    return usesIndex;
 }
 
 @interface PDSMigrationManagerTests : XCTestCase
@@ -218,6 +236,31 @@ static BOOL PDSMigrationTestIndexExists(sqlite3 *db, const char *indexName) {
     ChatSchemaManager *chatSchema = [ChatSchemaManager sharedManager];
     XCTAssertNotEqual([[chatSchema conversationMembersTableSchema] rangeOfString:@"WITHOUT ROWID"].location, NSNotFound);
     XCTAssertNotEqual([[chatSchema messageReactionsTableSchema] rangeOfString:@"WITHOUT ROWID"].location, NSNotFound);
+}
+
+- (void)testRecordsRevisionIndexMigrationIsCoveringAndReversible {
+    sqlite3 *db = NULL;
+    XCTAssertEqual(SQLITE_OK, sqlite3_open(":memory:", &db));
+    PDSMigrationTestExecute(db, "CREATE TABLE _migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at REAL NOT NULL)");
+    for (NSInteger version = 1; version <= 4; version++) {
+        NSString *sql = [NSString stringWithFormat:@"INSERT INTO _migrations VALUES (%ld, 'seed', 0)", (long)version];
+        PDSMigrationTestExecute(db, sql.UTF8String);
+    }
+    PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, rev TEXT)");
+    PDSMigrationTestExecute(db, "INSERT INTO records VALUES ('at://did:plc:alice/app.bsky.feed.post/one', '3jzfcijpj2z2a')");
+
+    PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
+    NSError *error = nil;
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_records_rev"));
+    XCTAssertTrue(PDSMigrationTestQueryPlanUsesIndex(db,
+        "SELECT rev FROM records WHERE rev IS NOT NULL ORDER BY rev DESC LIMIT 1", "idx_records_rev"));
+    XCTAssertNotEqual([[[PDSSchemaManager sharedManager] actorStoreSchemaSQL] rangeOfString:@"idx_records_rev"].location, NSNotFound);
+    XCTAssertTrue([manager rollbackToVersion:db version:4 error:&error], @"%@", error);
+    XCTAssertFalse(PDSMigrationTestIndexExists(db, "idx_records_rev"));
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_records_rev"));
+    sqlite3_close(db);
 }
 
 - (void)testLegacyChatMigrationRoundTripPreservesRowsAndIndexes {
