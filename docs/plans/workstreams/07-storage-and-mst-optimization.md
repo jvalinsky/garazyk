@@ -39,16 +39,24 @@ analysis, indexing, PRAGMA tuning) — load it before touching any lane here.
   five fresh DDL definitions use `WITHOUT ROWID`; the focused migration tests
   prove apply/rollback/re-apply data and index preservation. This split is
   intentional: `collection_membership` is not owned by the chat runtime.
-- **O2 Phase D complete (this commit):** space-store V4 converts all seven
+- **O2 Phase D complete:** space-store V4 converts all seven
   composite-key tables, including the `space_repo` child-table dependency
   graph, without disabling FK enforcement. Its focused test creates data in
   every converted table, rolls V4 back to V3, reapplies it, and verifies the
-  persisted space data. **O3-O6 not started.**
+  persisted space data.
 - **O4 complete (this commit):** query-plan audit found one safe covering
   index: actor-store V5 `idx_records_rev` for `getRepoStatus`'s revision
   union. `listRecords`, `getRecord`, and `getBlocks` already use existing
   indexes or primary keys; making their payload reads covering would duplicate
   record/block BLOBs. No speculative service-DB index was added.
+- **O3 complete (this commit):** the production repo-block loader was already
+  root-only. Proof traversal now uses a bounded 256-entry LRU side cache.
+  A 10K-record profile test proves zero child-block loads at initialization,
+  seven loads for one leaf path, and 2,507 for equivalent eager hydration; its
+  macOS snapshot observed 0 bytes root-only versus 5,406,720 bytes for the
+  retained eager tree. `PDSRepositoryServiceTests` (36),
+  `MSTPreorderFixtureTests` (3 active), and `STARPreorderTests` (6) preserve
+  the CAR/STAR byte-identical and structural fixtures.
 
 ## Scope
 
@@ -63,7 +71,7 @@ transaction discipline) are already done and excluded from this plan.
 | ---------------------------------------- | ------------- | ---------------- | ------------- | -------------- | ------ | -------- | ------ |
 | O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       | Done (`3be4ee1ab`) |
 | O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | Complete |
-| O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Open   |
+| O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Complete |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Complete (actor V5) |
 | O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Open   |
 | O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Open   |

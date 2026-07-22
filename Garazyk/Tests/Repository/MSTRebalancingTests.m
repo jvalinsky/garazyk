@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
+#if !defined(GNUSTEP)
+#import <mach/mach.h>
+#endif
 #import "Repository/MST.h"
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
@@ -9,6 +12,16 @@
 @end
 
 @implementation MSTRebalancingTests
+
+#if !defined(GNUSTEP)
+- (uint64_t)currentResidentMemory {
+    struct mach_task_basic_info info;
+    mach_msg_type_number_t size = MACH_TASK_BASIC_INFO_COUNT;
+    kern_return_t result = task_info(mach_task_self(), MACH_TASK_BASIC_INFO,
+                                     (task_info_t)&info, &size);
+    return result == KERN_SUCCESS ? info.resident_size : 0;
+}
+#endif
 
 - (void)testSequentialKeysStress {
     // Stress test with sequential keys and various key patterns.
@@ -253,6 +266,92 @@
     }
     NSDictionary *cache = [lazyTree valueForKey:@"lazySubtreeCache"];
     XCTAssertLessThanOrEqual(cache.count, 256UL);
+}
+
+- (void)testLazyRootOnlyHydrationBoundsTenThousandRecordRepo {
+    const NSUInteger recordCount = 10000;
+    MST *tree = [[MST alloc] init];
+    NSMutableArray<NSString *> *keys = [NSMutableArray arrayWithCapacity:recordCount];
+    for (NSUInteger index = 0; index < recordCount; index++) {
+        NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/profile-%05lu",
+                         (unsigned long)index];
+        [tree put:key valueCID:[CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]]];
+        [keys addObject:key];
+    }
+
+    NSMutableDictionary<NSString *, NSData *> *nodeDataByCID = [NSMutableDictionary dictionary];
+    XCTAssertTrue([tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+        nodeDataByCID[cid.stringValue] = data;
+        return YES;
+    } error:nil]);
+    XCTAssertGreaterThan(nodeDataByCID.count, 1UL,
+                         @"The profile fixture must contain child MST blocks");
+
+    NSData *rootData = [tree serializeToCBOR];
+    XCTAssertNotNil(rootData);
+
+    __block NSUInteger lazyFetches = 0;
+    MSTBlockProvider lazyProvider = ^NSData * _Nullable(CID *cid) {
+        lazyFetches++;
+        return nodeDataByCID[cid.stringValue];
+    };
+
+#if !defined(GNUSTEP)
+    uint64_t lazyBefore = [self currentResidentMemory];
+#endif
+    MST *lazyTree = [MST deserializeFromCBOR:rootData blockProvider:nil];
+#if !defined(GNUSTEP)
+    uint64_t lazyRootOnlyResident = [self currentResidentMemory];
+#endif
+    XCTAssertNotNil(lazyTree);
+    XCTAssertEqual(lazyFetches, 0UL,
+                   @"Root-only deserialization must not fetch a child block");
+    XCTAssertLessThan(lazyTree.root.entries.count, recordCount,
+                      @"Root-only deserialization must leave child subtrees unresolved");
+
+    NSArray<MSTNode *> *proof = [lazyTree getProofNodesForKey:keys.lastObject
+                                                  blockProvider:lazyProvider];
+    XCTAssertNotNil(proof);
+    XCTAssertGreaterThan(proof.count, 1UL,
+                         @"The selected key must traverse into a hydrated child subtree");
+    XCTAssertGreaterThan(lazyFetches, 0UL,
+                         @"A proof through the lazy tree must fetch only its path");
+    NSUInteger pathFetches = lazyFetches;
+    NSDictionary *lazyCache = [lazyTree valueForKey:@"lazySubtreeCache"];
+    XCTAssertLessThanOrEqual(lazyCache.count, 256UL);
+
+    __block NSUInteger eagerFetches = 0;
+    MSTBlockProvider eagerProvider = ^NSData * _Nullable(CID *cid) {
+        eagerFetches++;
+        return nodeDataByCID[cid.stringValue];
+    };
+#if !defined(GNUSTEP)
+    uint64_t eagerBefore = [self currentResidentMemory];
+#endif
+    MST *eagerTree = [MST deserializeFromCBOR:rootData blockProvider:eagerProvider];
+#if !defined(GNUSTEP)
+    uint64_t eagerResident = [self currentResidentMemory];
+#endif
+    XCTAssertNotNil(eagerTree);
+    XCTAssertEqual(eagerTree.allEntries.count, recordCount);
+    XCTAssertEqual(eagerFetches, nodeDataByCID.count - 1,
+                   @"Eager deserialization must materialize every non-root MST block");
+    XCTAssertLessThan(pathFetches, eagerFetches,
+                      @"A single lazy proof must hydrate fewer blocks than an eager load");
+
+#if !defined(GNUSTEP)
+    int64_t rootOnlyGrowth = (int64_t)lazyRootOnlyResident - (int64_t)lazyBefore;
+    int64_t eagerGrowth = (int64_t)eagerResident - (int64_t)eagerBefore;
+    NSLog(@"[MST PROFILE] records=%lu nodes=%lu lazyRootOnlyRSS=%lld eagerRSS=%lld "
+          @"lazyPathFetches=%lu eagerFetches=%lu",
+          (unsigned long)recordCount, (unsigned long)nodeDataByCID.count,
+          (long long)rootOnlyGrowth, (long long)eagerGrowth,
+          (unsigned long)pathFetches, (unsigned long)eagerFetches);
+#else
+    NSLog(@"[MST PROFILE] records=%lu nodes=%lu lazyPathFetches=%lu eagerFetches=%lu",
+          (unsigned long)recordCount, (unsigned long)nodeDataByCID.count,
+          (unsigned long)pathFetches, (unsigned long)eagerFetches);
+#endif
 }
 
 - (void)testDeserializeWithMissingCIDInBlockProvider {
