@@ -575,6 +575,25 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual(afterAck.count, 0u, @"Indexed events must not be replayed");
 }
 
+- (void)testDurableIndexQueuePreservesPerRelayOrder {
+    NSError *error = nil;
+    NSData *envelope = [@"event" dataUsingEncoding:NSUTF8StringEncoding];
+    for (int64_t seq = 100; seq <= 101; seq++) {
+        XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://relay" seq:seq eventType:@"#commit"
+                                                        did:@"did:plc:ordered" rev:@"rev" cid:@"cid"
+                                                rawEnvelope:envelope error:&error], @"%@", error);
+    }
+
+    NSArray<NSDictionary *> *first = [self.db claimIndexEventsForWorker:@"worker-a" limit:10 leaseDuration:60 error:&error];
+    XCTAssertEqual(first.count, 1u, @"Only the head event may be claimed for a relay");
+    XCTAssertEqual([first.firstObject[@"seq"] longLongValue], 100LL);
+    XCTAssertTrue([self.db markIndexEventIndexedForRelayURL:@"wss://relay" seq:100 workerID:@"worker-a" error:&error], @"%@", error);
+
+    NSArray<NSDictionary *> *second = [self.db claimIndexEventsForWorker:@"worker-a" limit:10 leaseDuration:60 error:&error];
+    XCTAssertEqual(second.count, 1u);
+    XCTAssertEqual([second.firstObject[@"seq"] longLongValue], 101LL);
+}
+
 // ---------------------------------------------------------------------------
 // Relevance Set
 // ---------------------------------------------------------------------------
