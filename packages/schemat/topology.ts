@@ -8,7 +8,7 @@
  */
 
 import {
-  normalizeTopologyPreset,
+  type normalizeTopologyPreset,
   renderPortSpec,
   renderVolumeSpec,
 } from "./topology_schema.ts";
@@ -80,8 +80,8 @@ import {
   internalUrlForRole,
   loadTopologyManifest,
   publicUrlForRole,
-  roleToEnvKey,
-  sanitizeTopologyName,
+  type roleToEnvKey,
+  type sanitizeTopologyName,
   serviceNameForRole,
 } from "./topology_manifest.ts";
 import type {
@@ -97,10 +97,10 @@ import type {
   WebClientTopology,
 } from "./topology_types.ts";
 import {
-  defaultRolePort,
+  type defaultRolePort,
   defaultServiceName,
-  KnownServiceRole,
-  roleEnvKey,
+  type KnownServiceRole,
+  type roleEnvKey,
 } from "./topology_registry.ts";
 import {
   loadRunResourceManifest,

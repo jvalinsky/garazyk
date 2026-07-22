@@ -1,5 +1,5 @@
 /** AT Protocol repository record operations (CRUD, list, applyWrites) @module records */
-import { TransportLayer } from "../transport.ts";
+import type { TransportLayer } from "../transport.ts";
 
 /** Client for repository record CRUD, listing, and write-batch XRPC methods. */
 export class RecordsClient {
