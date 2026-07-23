@@ -489,3 +489,35 @@ Primary sources:
 - [OAuth profile](https://atproto.com/specs/oauth)
 - [Permissions](https://atproto.com/specs/permissions)
 - [did:plc v0.3](https://web.plc.directory/spec/v0.1/did-plc)
+
+## S7. STAR conformance and verifying import
+
+**Status: audited, not started.** Audit 2026-07-22 (deciduous `#1368`);
+execution detail in [the STAR conformance plan](../star-conformance-plan.md).
+
+Evidence: `Garazyk/Sources/Repository/STAR.m` — the export writer
+(`STARL0Writer`) is correct and fixture-tested and the negotiated public
+sync export path uses it (phase-10 brief correction section), but
+(1) the writer emits `V: true` on layer-0 entries whose `v` is omitted,
+violating the spec's "`V` must not be present when `v` is not present"
+and making archives non-canonical; (2) `STARReader.parseL0Body`
+(STAR.m:756) is non-verifying and computes node CIDs over STAR wire
+bytes, so `carDataFromSTARData:` produces CARs whose node blocks cannot
+match `commit.data` or `t`/`l` links and which lack a commit block —
+the STAR import paths (`XrpcRepoPack.m:1260` importRepo,
+`AppViewIngestEngine.m:683`, `AppViewBackfillWorker.m:291`) cannot
+round-trip a real STAR-L0 tree and verify nothing; (3) the CAR→STAR
+converters are degenerate dead code (FIXME at STAR.m:974, zero callers).
+
+Owner boundary: `Garazyk/Sources/Repository/STAR.m` plus its tests;
+import call sites are consumers only and stay untouched.
+
+Gate: existing STAR fixture tests regenerated and passing; new
+round-trip (CAR → STAR → CAR) and malformed-input rejection suites;
+global gates.
+
+Rollback: each slice is a single-commit revert; fixtures regenerate
+deterministically. Slice A changes emitted bytes, but STAR is negotiated
+only via Garazyk's vendor MIME types with no known external consumer.
+
+Primary source: https://tangled.org/microcosm.blue/star

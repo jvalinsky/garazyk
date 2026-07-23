@@ -1,6 +1,6 @@
 # Phase 12, Slice 1: Route Pack Decomposition
 
-## Status: draft
+## Status: in progress — Steps 1–2 landed (`c85b1bed8`, `72a059eae`); Steps 3–4 remain
 
 ## Summary
 
@@ -13,7 +13,7 @@ of Phase 12 (mega-plan Phase 4 item 3 / workstream 02 A3).
 | File | Lines | Namespace(s) | Seams |
 |------|-------|-------------|-------|
 | `XrpcServerPack.m` | 1446 → 410 | `com.atproto.server.*` | describeServer, session, inviteCodes, appPasswords, accountManagement, accountLifecycle, health |
-| `XrpcAdminPack.m` | 1672 | `com.atproto.admin.*` | accountLookup/search/email, serverStats/audit/repair, accountInfo/invites/subjectStatus, accountLifecycle/records/takedown, moderation (deprecated) |
+| `XrpcAdminPack.m` | 1672 → 496 | `com.atproto.admin.*` | accountLookup/search/email, serverStats/audit/repair, accountInfo/invites/subjectStatus, accountLifecycle/records/takedown, moderation (deprecated) |
 | `XrpcRepoPack.m` | 1748 | `com.atproto.repo.*` | validation helpers (PDSRepoImportValidationResult, PDSRepoImportValidator), route registration |
 | `AppViewXRpcRoutePack.m` | 2019 | `app.bsky.*`, `com.atproto.*` | actor, feed, graph, notification, identity/repo/moderation, ageAssurance, drafts, bookmarks, contact, searchSkeleton |
 
@@ -54,9 +54,10 @@ The main `XrpcServerPack.m` keeps: `routePackIdentifier`, `registerWithDispatche
 
 A shared internal header `XrpcServerPack_Internal.h` exposes helper functions shared by categories.
 
-### Step 2: `XrpcAdminPack.m` (1672 lines)
+### Step 2: `XrpcAdminPack.m` (1672 → 496 lines) ✅ DONE
 
-Split by `#pragma mark` sections:
+Committed as `72a059eae`. Split by `#pragma mark` sections, one `.h`/`.m`
+pair per category plus `XrpcAdminPack_Internal.h` for shared helpers:
 
 | Category file | Routes moved |
 |---------------|--------------|
@@ -70,13 +71,32 @@ The main `XrpcAdminPack.m` keeps: `routePackIdentifier`, `registerWithDispatcher
 
 ### Step 3: `XrpcRepoPack.m` (1748 lines)
 
+**Structural caution**: unlike ServerPack/AdminPack, RepoPack registers all
+12 routes inline as blocks inside a single ~1030-line
+`+registerWithDispatcher:services:` (line 716 to EOF). There are no
+per-route methods to move. The split therefore extracts per-area
+`+register<Area>RoutesWithDispatcher:services:` class methods, each
+implemented in its category file, with the main
+`+registerWithDispatcher:services:` reduced to orchestration calls —
+the same shape ServerPack ended with. The `upsertRecordHandler` block is
+shared by the `putRecord` and `updateRecord` registrations; both live in
+`+Records`, so it stays a local block there.
+
 Two-phase decomposition:
 
 **Phase A**: Extract validation helpers to their own files:
 - `PDSRepoImportValidationResult.h/.m` — the result class
 - `PDSRepoImportValidator.h/.m` — the validator class
 
-**Phase B**: Category-decompose the route registration:
+Both classes are currently file-private (`@interface` in the `.m`,
+lines 397–710). Their new headers stay internal — do not add them to any
+public umbrella header. Note `PDSRepoImportValidator` has two
+`+validateCARData:` overload variants (lines 406 and 647); keep both
+together in the extracted class.
+
+**Phase B**: Add `XrpcRepoPack_Internal.h` for the shared helper
+functions (`#pragma mark - Helpers`, lines 87–395), then
+category-decompose the route registration:
 
 | Category file | Routes moved |
 |---------------|--------------|
@@ -95,20 +115,47 @@ Instance-based class with injected services. Split by namespace area:
 | `AppViewXRpcRoutePack+Feed.m` | `handleGetTimeline`, `handleGetAuthorFeed`, `handleGetPostThread`, `handleGetFeed`, `handleGetActorLikes`, `handleGetPosts`, `handleGetFeedGenerators`, `handleGetLikes`, `handleGetRepostedBy` |
 | `AppViewXRpcRoutePack+Graph.m` | `handleGetFollows`, `handleGetFollowers`, `handleGetBlocks`, `handleGetMutes`, `handleGetRelationships`, `handleGetStarterPack`, `handleGetStarterPacks`, `handleGetLists`, `handleGetList`, `handleMuteActor`, `handleUnmuteActor`, `handleGetStarterPacksBulk` |
 | `AppViewXRpcRoutePack+Notification.m` | `handleListNotifications`, `handleGetUnreadCount`, `handleUpdateSeen`, `handleRegisterPush`, `handleUnregisterPush`, `handleListActivitySubscriptions`, `handlePutActivitySubscription`, `handleGetNotificationPreferences`, `handlePutNotificationPreferences` |
-| `AppViewXRpcRoutePack+Identity.m` | `handleResolveHandle`, `handleGetRecord`, `handleQueryLabels`, `handleGetAccountInfos`, `handleGetSubjectStatus` |
-| `AppViewXRpcRoutePack+AgeAssurance.m` | `handleAgeAssuranceBegin`, `handleAgeAssuranceGetConfig`, `handleAgeAssuranceGetState`, `handleProxyWrite` |
+| `AppViewXRpcRoutePack+Identity.m` | `handleResolveHandle`, `handleGetRecord`, `handleQueryLabels`, `handleGetAccountInfos`, `handleGetSubjectStatus`, `handleProxyWrite:response:nsid:` |
+| `AppViewXRpcRoutePack+AgeAssurance.m` | `handleAgeAssuranceBegin`, `handleAgeAssuranceGetConfig`, `handleAgeAssuranceGetState` |
 | `AppViewXRpcRoutePack+Contact.m` | `handleStartPhoneVerification`, `handleVerifyPhone`, `handleImportContacts`, `handleGetContactMatches`, `handleDismissContactMatch`, `handleGetContactSyncStatus`, `handleRemoveContactData` |
 | `AppViewXRpcRoutePack+Search.m` | `handleSearchActorsSkeleton`, `handleSearchPostsSkeleton`, `handleSearchStarterPacksSkeleton` |
-| `AppViewXRpcRoutePack+Drafts.m` | `handleGetDrafts`, `handleGetBookmarks` |
+| `AppViewXRpcRoutePack+DraftsAndBookmarks.m` | `handleGetDrafts`, `handleGetBookmarks` |
 
-The main `AppViewXRpcRoutePack.m` keeps: `init`, ivars, `registerRoutesWithServer:`, `extractDIDFromAuth:request:`, `requireAuth:response:`.
+`handleProxyWrite:response:nsid:` goes in `+Identity`, not
+`+AgeAssurance`: despite sitting in the ageassurance `#pragma mark`
+region of the file, it backs the proxied `com.atproto.repo.createRecord`
+/ `putRecord` / `deleteRecord` routes registered at lines 341–351 and
+has nothing to do with age assurance.
+
+The main `AppViewXRpcRoutePack.m` keeps: `init`, ivars, `registerRoutesWithServer:` (~400 lines of route wiring), `extractDIDFromAuth:request:`, `requireAuth:response:`.
+
+Method grouping follows NSID namespace, not file position — e.g.
+`handleGetLikes`/`handleGetRepostedBy` are `app.bsky.feed.*` and go in
+`+Feed` even though they sit in the graph `#pragma mark` region today.
+Because ObjC category methods collide silently at load time if two
+categories define the same selector, verify each handler appears in
+exactly one category file before building (grep the selector across the
+new files).
 
 ## Build system
 
-CMake uses `file(GLOB_RECURSE ATPROTO_XRPC_SOURCES "Garazyk/Sources/Network/Xrpc*.m" ...)`. 
-New category files matching `Xrpc*.m` are automatically picked up. 
-`AppViewXRpcRoutePack.m` is explicitly listed at CMakeLists.txt:396; 
-new `AppViewXRpcRoutePack+*.m` files will need explicit entries.
+CMake uses `file(GLOB_RECURSE ATPROTO_XRPC_SOURCES "Garazyk/Sources/Network/Xrpc*.m" ...)`.
+New category files matching `Xrpc*.m` (Steps 1–3) are automatically
+picked up, and the `ATPROTO_TRANSPORT_SOURCES` exclude regex
+`.*/Network/Xrpc.*\.m$` (CMakeLists.txt:382) already keeps them out of
+the transport target.
+
+`AppViewXRpcRoutePack+*.m` files (Step 4) are different — two edits
+are required, not one:
+
+1. Add each new file to the explicit `ATPROTO_XRPC_SOURCES` list next to
+   `AppViewXRpcRoutePack.m` (CMakeLists.txt:396).
+2. Broaden the transport exclude at CMakeLists.txt:386 from
+   `.*/Network/AppViewXRpcRoutePack\.m$` to
+   `.*/Network/AppViewXRpcRoutePack.*\.m$`. Without this the
+   `Network/*.m` glob sweeps the category files into
+   `ATPROTO_TRANSPORT_SOURCES` as well, producing duplicate symbols
+   across the two targets.
 
 ## Constraints
 
@@ -134,6 +181,14 @@ deno task lint
 - Linux Docker gate passes for Network changes.
 - NSID drift check passes.
 - No handler logic changed — pure file-level decomposition.
+
+## Tracking
+
+Deciduous goal `#1362` (actions `#1363`–`#1366`, outcome `#1367`); this
+plan is attached to the goal node. On slice completion: mark `#1362`
+completed, update workstream 02 A3 and mega-plan Phase 4 item 3, and set
+`docs/plans/prompts/phase-12-godfile-decomposition.md` status (it moves
+to `complete` only after the OAuth and PDS-service slices below).
 
 ## Remaining Phase 12 slices (not in this plan)
 
