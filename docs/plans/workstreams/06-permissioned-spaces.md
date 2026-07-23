@@ -207,7 +207,16 @@ pinned and all 28 local lexicons matched byte-for-byte. The only Proposal
 README delta after the implementation commit is a link to PR 5187, with no
 compatibility impact; the full procedure is in the compatibility document.
 
-## P6.5 Operational readiness (P2, after P6.1)
+## P6.5 Operational readiness — complete (2026-07-22)
+
+All three items below are done (progress notes follow): the online
+backup/restore drill with LtHash verification, disabled-mode retention
+(flag off opens no space store and leaves the database byte-for-byte
+unchanged), and credential-free structured observability for both the
+reconciler and the pruner. With P6.1-P6.3 and P6.5 closed, this
+workstream's only ongoing work is the P6.4 monthly drift cadence (next
+check due ~2026-08-22) and the separately-scoped `policy: managing-app`
+decision recorded under P6.3.
 
 1. Backup/restore drill: back up the space SQLite database plus WAL
    sidecars, restore onto a fresh instance, and verify LtHash/commit

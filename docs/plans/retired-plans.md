@@ -25,6 +25,7 @@ own active work and where unresolved acceptance criteria moved.
 | 2026-07-13 test-regression remediation plan                                           | WS1 (RateLimiter) closed in HEAD; WS2/WS3/WS4 landed (`0a32d9fcc`, `6b7bcf788`, `7b665c840`) and verified green on a fresh build. WS5 (gated-class CI wiring) moved to workstream 01 (S5). |
 | `queryrunner_deepening_pilot_plan.md` (repo root)                                     | Implementation diary for the completed QueryRunner deepening arc; all stores migrated, outcomes in deciduous goal 1187 and ADR 0002. Deleted 2026-07-16; last text at `6f8921ab6`.        |
 | `space-reconciliation-implementation.md`                                              | Every phase implemented and verified in source on 2026-07-16 (CAR multi-root, import, pruning + timer, record index, inbound sync, cursor fixes, scenarios 93/94). Design is ADR 0005. Residual runtime acceptance moved to workstream 06 (P6.1). |
+| `phase12-route-pack-slice-1-plan.md`                                                  | Implementation diary for the completed phase-12 route-pack decomposition (all 4 god files → 31 category files; `c85b1bed8`, `72a059eae`, `cbe62f84e`). Outcomes in workstream 02 A3, mega-plan Phase 4 item 3, and deciduous `#1362`-`#1374`. Deleted 2026-07-23. |
 
 ## Preserved noncanonical records
 

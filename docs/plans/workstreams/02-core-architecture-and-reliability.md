@@ -66,7 +66,17 @@ Priority decomposition targets:
   (+MST, +Export, +Commit, +RecordMaterializer, +RepoInit) plus _Internal.h;
   main file reduced from 2123 to 77 lines.
   36 PDS repository + 31 SQLite repository characterization tests pass.
-- `UIServerRuntime.m` and `UIBackendClient.m` — **DONE (2026-07-23)** (phase 8, workstream 04 U6).
+- `UIBackendClient.m` — **DONE (2026-07-23)**: decomposed into 10 service
+  categories (+PDS, +AppView, +Relay, +PLC, +Ozone, +Security, +Chat,
+  +Video, +MST, +DataExplorer) plus `UIBackendClient_Internal.h`
+  (`9f5d4d59c`).
+- `UIServerRuntime.m` — **DONE (2026-07-23)**: route registrations moved
+  into 11 route categories (+PDSRoutes, +AppViewRoutes, +RelayRoutes,
+  +PLCRoutes, +DataExplorerRoutes, +LabRoutes, +OzoneRoutes,
+  +SecurityRoutes, +ChatRoutes, +VideoRoutes, +MSTRoutes), core file
+  ~1840 → ~900 lines (`ce5c80065`). `garazyk-ui`/`AllTests` build clean
+  and `UIServerRuntimeTests` passes 23/23. Codemod scripts removed.
+  Browser smoke and Linux GNUstep gate verified clean.
 - Migration manager — covered by phase 11 database decomposition.
 
 Keep MST and STAR cohesive unless a measured seam appears. GNUstep category

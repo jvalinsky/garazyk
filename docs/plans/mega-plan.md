@@ -179,7 +179,7 @@ better-isolated steps.
 | Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
 | STAR conformance and verifying import (workstream 01 S7) | 3 |               3 |             4 |             3 |      3 | Complete (2026-07-23) |
-| WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
+| WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2 (subset decided, ADR 0010) |
 | SMTP, cloud blob, Skylab, dashboard dispositions |          3 |               3 |             3 |             2 |      3 | Decided (5/6 implemented; STAR exempted, see brief) |
 | Space app attestation (`appAccess#allowList`)  |             4 |               2 |             3 |             2 |      3 | Decided (ADR 0004 amendment) |
 
@@ -367,18 +367,15 @@ remaining program does not depend on items 1-2.
    `PDSCollectionMembershipPruner` now has its own test suite
    (`6b52752e0`). Relay removal is recorded in ADR 0006. The Sync 1.1
    remainder stays open under item 7.
-3. **Nearly complete (2026-07-23):** Decompose Objective-C god files after
-   the branch recovery and characterization gates. All committed:
-   the 4 route packs → 31 category files (deciduous `#1362`/`#1374`; the
-   slice diary is retired to the retired-plans ledger), `OAuth2Handler.m`
-   (4197 → 252 lines, 12 categories), `PDSRecordService.m` and
-   `PDSRepositoryService.m` (11 categories), and `UIBackendClient.m`
-   (`9f5d4d59c`, 10 categories) — each behind a green characterization
-   suite. The final piece, the `UIServerRuntime.m` route-category split
-   (11 categories, core ~1840 → ~900 lines), sits in the working tree:
-   builds clean, `UIServerRuntimeTests` 23/23; the browser smoke and the
-   Linux Docker/GNUstep gate must pass before it commits (workstream 02
-   A3 has the checklist).
+3. **Complete (2026-07-23):** Decompose Objective-C god files. All
+   committed: the 4 route packs → 31 category files (deciduous
+   `#1362`/`#1374`), `OAuth2Handler.m` (4197 → 252 lines, 12 categories),
+   `PDSRecordService.m` and `PDSRepositoryService.m` (11 categories),
+   `UIBackendClient.m` (10 categories, `9f5d4d59c`), and
+   `UIServerRuntime.m` (11 route categories, core ~1840 → ~900 lines,
+   `ce5c80065`) — each behind a green characterization suite.
+   Codemod scripts removed; browser smoke and Linux GNUstep gate
+   verified clean (workstream 02 A3).
 4. **Complete (2026-07-22):** Admin UI accessibility, CSS generation, and
    browser-module splits. The real-browser visual smoke proves 200%-zoom
    reflow, 44px targets, keyboard-visible focus, and reduced-motion behavior
@@ -434,15 +431,19 @@ removals without caller proof.
 
 ### Phase 5: decisions
 
-1. **Baseline complete (2026-07-22); subset choice open.** The reproducible
-   capability baseline landed in phase 10 slice 2:
+1. **Complete (2026-07-23): baseline and subset both decided.** The
+   reproducible capability baseline landed in phase 10 slice 2:
    `objc-jupyter-wasm/scripts/run-capability-baseline.sh` rejects a dirty
    checkout, builds `kernel-wasm` twice, runs smoke/runtime/notebook/
    compatibility probes (91/91 runtime probes, 18/18 compat cases, Chromium
    worker smoke green), and regenerates the capability matrix;
-   `kernel/PARSER_STATUS.md` and the gap report now redirect to it. What
-   remains is the human checkpoint: choose the small supported subset before
-   scheduling any parser/runtime work (workstream 05 E1).
+   `kernel/PARSER_STATUS.md` and the gap report now redirect to it. The
+   subset checkpoint is decided in ADR 0010 (operator delegated,
+   2026-07-23): a parser-termination invariant plus `->` member access and
+   top-level C function definitions become supported; `@encode`/
+   `@synchronized` become intentionally-unsupported diagnostics; the
+   compiled-cell plane stays deferred. The implementation lane is
+   unscheduled P2 work (workstream 05 E1); nothing blocks on it.
 2. **Complete (2026-07-22), 5 of 6:** operator approved all six dispositions in
    [the Phase 10 product-surface decision brief](phase-10-product-surface-decision-brief.md).
    Implemented: SMTP removed, S3 blob config now rejected (fails closed), Skylab
