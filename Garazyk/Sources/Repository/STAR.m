@@ -193,10 +193,9 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
         if (entry.value) {
             entryDict[[CBORValue textString:@"v"]] = CIDToTaggedCBOR(entry.value);
-        }
-
-        if (entry.valueArchived) {
-            entryDict[[CBORValue textString:@"V"]] = [CBORValue simple:21]; // true
+            if (entry.valueArchived) {
+                entryDict[[CBORValue textString:@"V"]] = [CBORValue simple:21]; // true
+            }
         }
 
         if (entry.tree) {
@@ -753,73 +752,254 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     return commit;
 }
 
+/// Extract a CID from a CBOR tag-42 value (0x00-prefixed byte string).
+static CID * _Nullable CIDFromCBORTag(CBORValue *tagVal) {
+    if (!tagVal || tagVal.type != CBORTypeTag) return nil;
+    NSData *cidBytes = tagVal.tagValue.byteString;
+    if (cidBytes.length <= 1) return nil;
+    return [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+}
+
+/// Reinsert a CID as a tagged CBOR v-link in a mutable entry map.
+static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryDict,
+                            CBORValue *key, CID *cid) {
+    if (!cid) return;
+    entryDict[key] = CIDToTaggedCBOR(cid);
+}
+
 - (BOOL)parseL0Body:(const uint8_t *)bytes
               length:(NSUInteger)length
                offset:(NSUInteger)offset
                 error:(NSError **)error {
+    // Empty tree: commit has no data CID, archive has only a header
+    if (!self.commit.data) {
+        self.blocks = @[];
+        // Reject trailing body bytes after an empty-tree header
+        if (offset < length) {
+            if (error) *error = STARError(30, @"Trailing bytes after empty-tree header "
+                                          @"(%lu bytes remaining)",
+                                          (unsigned long)(length - offset));
+            return NO;
+        }
+        return YES;
+    }
+
     NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
 
-    // Stack-based parser following the Rust implementation
-    // Stack items: expect node or record
-    typedef NS_ENUM(NSUInteger, StackItemType) {
-        StackItemNode,
-        StackItemRecord
-    };
+    // Stack of expected CIDs, popped in depth-first order.
+    // Root expectation is commit.data (the MST root CID).
+    NSMutableArray<CID *> *expectedStack = [NSMutableArray array];
+    [expectedStack addObject:self.commit.data];
 
-    // Stack entry: type + expected CID + key (for records) + implicit index
-    typedef struct {
-        StackItemType type;
-        __unsafe_unretained CID *expectedCID;
-        NSUInteger implicitIndex; // for layer-0 records with omitted v
-    } StackItem;
+    while (expectedStack.count > 0) {
+        CID *expectedCID = [expectedStack lastObject];
+        [expectedStack removeLastObject];
 
-    // We need to track pending layer-0 node verification
-    // When a layer-0 node has implicit records, we need to buffer them
-    // and compute their CIDs before verifying the node.
+        if (offset >= length) {
+            if (error) *error = STARError(31, @"Truncated: expected block for %@ but stream ended",
+                                          expectedCID.stringValue);
+            return NO;
+        }
 
-    // For simplicity in this initial implementation, we'll do a
-    // two-pass approach: first collect all blocks, then verify.
-    // A production implementation would use the stack-based approach
-    // from the Rust reference.
-
-    // Parse all blocks in order
-    NSMutableArray<CARBlock *> *pendingBlocks = [NSMutableArray array];
-
-    while (offset < length) {
-        // Read varint length
+        // Read wire-format node
         uint64_t blockLen = 0;
         NSUInteger lenSize = STARReadVarint(bytes + offset, length - offset, &blockLen);
         if (lenSize == 0) {
-            if (error) *error = STARError(8, @"Failed to read block length at offset %lu", (unsigned long)offset);
+            if (error) *error = STARError(32, @"Failed to read block length at offset %lu",
+                                          (unsigned long)offset);
             return NO;
         }
         offset += lenSize;
 
         if (offset + blockLen > length) {
-            if (error) *error = STARError(9, @"Block data truncated at offset %lu", (unsigned long)offset);
+            if (error) *error = STARError(33, @"Block data truncated at offset %lu",
+                                          (unsigned long)offset);
             return NO;
         }
 
-        NSData *blockData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)blockLen];
+        NSData *wireData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)blockLen];
         offset += (NSUInteger)blockLen;
 
-        // Compute CID from content (sha256 of block data)
-        CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
-        CARBlock *block = [CARBlock blockWithCID:cid data:blockData];
-        [pendingBlocks addObject:block];
+        // Parse wire-format node CBOR
+        CBORValue *wireNode = [CBORValue decode:wireData];
+        if (!wireNode || wireNode.type != CBORTypeMap) {
+            if (error) *error = STARError(34, @"Expected MST node CBOR map at offset %lu",
+                                          (unsigned long)(offset - blockLen));
+            return NO;
+        }
+
+        NSMutableDictionary<CBORValue *, CBORValue *> *nodeDict = [wireNode.map mutableCopy];
+
+        // Validate L/l consistency: L must not be present without l
+        BOOL hasL = nodeDict[[CBORValue textString:@"l"]] != nil;
+        BOOL hasLFlag = nodeDict[[CBORValue textString:@"L"]] != nil;
+        if (hasLFlag && !hasL) {
+            if (error) *error = STARError(35, @"'L' flag present without 'l' CID at offset %lu",
+                                          (unsigned long)(offset - blockLen));
+            return NO;
+        }
+
+        // Collect entries and count implicit records (entries with V=true)
+        CBORValue *entriesVal = nodeDict[[CBORValue textString:@"e"]];
+        if (!entriesVal || entriesVal.type != CBORTypeArray) {
+            if (error) *error = STARError(36, @"MST node has no 'e' array at offset %lu",
+                                          (unsigned long)(offset - blockLen));
+            return NO;
+        }
+
+        NSMutableArray<CBORValue *> *entries = [entriesVal.array mutableCopy];
+        NSUInteger recordCount = 0;
+        NSMutableArray<NSNumber *> *recordEntryIndices = [NSMutableArray array];
+
+        for (NSUInteger i = 0; i < entries.count; i++) {
+            CBORValue *entry = entries[i];
+            if (entry.type != CBORTypeMap) continue;
+
+            BOOL entryHasV = entry.map[[CBORValue textString:@"v"]] != nil;
+            BOOL entryHasVFlag = entry.map[[CBORValue textString:@"V"]] != nil;
+
+            // Spec: V must not be present when v is not present
+            if (entryHasVFlag && !entryHasV) {
+                if (error) *error = STARError(37, @"'V' flag without 'v' CID in entry %lu at offset %lu",
+                                              (unsigned long)i, (unsigned long)(offset - blockLen));
+                return NO;
+            }
+
+            // Validate T/t consistency
+            BOOL entryHasT = entry.map[[CBORValue textString:@"t"]] != nil;
+            BOOL entryHasTFlag = entry.map[[CBORValue textString:@"T"]] != nil;
+            if (entryHasTFlag && !entryHasT) {
+                if (error) *error = STARError(38, @"'T' flag without 't' CID in entry %lu at offset %lu",
+                                              (unsigned long)i, (unsigned long)(offset - blockLen));
+                return NO;
+            }
+
+            if (entryHasVFlag) {
+                recordCount++;
+                [recordEntryIndices addObject:@(i)];
+            }
+        }
+
+        // Read implicit records that follow this node
+        NSMutableArray<CARBlock *> *pendingRecords = [NSMutableArray array];
+        for (NSUInteger ri = 0; ri < recordCount; ri++) {
+            if (offset >= length) {
+                if (error) *error = STARError(39, @"Truncated: expected record %lu of %lu after node at offset %lu",
+                                              (unsigned long)ri + 1, (unsigned long)recordCount,
+                                              (unsigned long)(offset - blockLen));
+                return NO;
+            }
+
+            uint64_t recLen = 0;
+            NSUInteger recLenSize = STARReadVarint(bytes + offset, length - offset, &recLen);
+            if (recLenSize == 0) {
+                if (error) *error = STARError(40, @"Failed to read record length at offset %lu",
+                                              (unsigned long)offset);
+                return NO;
+            }
+            offset += recLenSize;
+
+            if (offset + recLen > length) {
+                if (error) *error = STARError(41, @"Record data truncated at offset %lu",
+                                              (unsigned long)offset);
+                return NO;
+            }
+
+            NSData *recordData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)recLen];
+            offset += (NSUInteger)recLen;
+
+            CID *recordCID = [CID cidWithDigest:[CID sha256Digest:recordData] codec:0x71];
+            CARBlock *recordBlock = [CARBlock blockWithCID:recordCID data:recordData];
+            [pendingRecords addObject:recordBlock];
+        }
+
+        // Patch entries: reinsert v for V entries, strip V/T flags
+        NSMutableArray<CBORValue *> *patchedEntries = [NSMutableArray array];
+        NSUInteger recIdx = 0;
+
+        for (NSUInteger i = 0; i < entries.count; i++) {
+            CBORValue *entry = entries[i];
+            if (entry.type != CBORTypeMap) {
+                [patchedEntries addObject:entry];
+                continue;
+            }
+
+            NSMutableDictionary<CBORValue *, CBORValue *> *entryDict = [entry.map mutableCopy];
+
+            // If V was true, reinsert v from the corresponding buffered record
+            if (entryDict[[CBORValue textString:@"V"]]) {
+                CARBlock *recBlock = pendingRecords[recIdx++];
+                EntryMapSetCID(entryDict, [CBORValue textString:@"v"], recBlock.cid);
+                [entryDict removeObjectForKey:[CBORValue textString:@"V"]];
+            }
+
+            // Strip T flag (t is already present from wire format)
+            [entryDict removeObjectForKey:[CBORValue textString:@"T"]];
+
+            [patchedEntries addObject:[CBORValue map:entryDict]];
+        }
+
+        nodeDict[[CBORValue textString:@"e"]] = [CBORValue array:patchedEntries];
+
+        // Strip L flag (l is already present from wire format)
+        [nodeDict removeObjectForKey:[CBORValue textString:@"L"]];
+
+        // Re-serialize to repo-spec MST node form and verify CID
+        CBORValue *repoNode = [CBORValue map:nodeDict];
+        NSData *repoData = [repoNode encode];
+
+        CID *computedCID = [CID cidWithDigest:[CID sha256Digest:repoData] codec:0x71];
+        if (![computedCID isEqualToCID:expectedCID]) {
+            if (error) *error = STARError(42, @"CID mismatch at offset %lu: expected %@, computed %@",
+                                          (unsigned long)(offset - blockLen),
+                                          expectedCID.stringValue, computedCID.stringValue);
+            return NO;
+        }
+
+        // Record the verified node block
+        CARBlock *nodeBlock = [CARBlock blockWithCID:computedCID data:repoData];
+        [blocks addObject:nodeBlock];
+        self.blockIndex[computedCID.stringValue] = nodeBlock;
+
+        // Record the verified record blocks
+        for (CARBlock *recBlock in pendingRecords) {
+            [blocks addObject:recBlock];
+            self.blockIndex[recBlock.cid.stringValue] = recBlock;
+        }
+
+        // Push children in reverse order for depth-first pop
+        NSMutableArray<CID *> *children = [NSMutableArray array];
+
+        // Left child: l from node
+        CID *leftCID = CIDFromCBORTag(nodeDict[[CBORValue textString:@"l"]]);
+        if (leftCID) {
+            [children addObject:leftCID];
+        }
+
+        // Tree children: t from patched entries
+        for (CBORValue *entry in patchedEntries) {
+            if (entry.type != CBORTypeMap) continue;
+            CID *treeCID = CIDFromCBORTag(entry.map[[CBORValue textString:@"t"]]);
+            if (treeCID) {
+                [children addObject:treeCID];
+            }
+        }
+
+        // Push in reverse so left is processed first, then entries in order
+        for (NSInteger i = (NSInteger)children.count - 1; i >= 0; i--) {
+            [expectedStack addObject:children[i]];
+        }
     }
 
-    // Reconstruct blocks as CARBlock array
-    // The first block is the root MST node, subsequent blocks are
-    // interleaved nodes and records in depth-first order.
-    // For compatibility with existing code, we just return all blocks
-    // with their computed CIDs.
-
-    for (CARBlock *block in pendingBlocks) {
-        self.blockIndex[block.cid.stringValue] = block;
+    // Reject trailing bytes after the tree completes
+    if (offset < length) {
+        if (error) *error = STARError(44, @"Trailing bytes after tree completes at offset %lu "
+                                      @"(%lu bytes remaining)",
+                                      (unsigned long)offset, (unsigned long)(length - offset));
+        return NO;
     }
 
-    self.blocks = [pendingBlocks copy];
+    self.blocks = [blocks copy];
     return YES;
 }
 
@@ -887,177 +1067,36 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     STARReader *reader = [STARReader readFromData:starData error:error];
     if (!reader) return nil;
 
-    CID *rootCID = reader.rootCID ?: reader.commit.data;
-    if (!rootCID) {
-        if (error) *error = STARError(20, @"STAR archive has no root CID");
+    STARCommit *commit = reader.commit;
+    if (!commit) {
+        if (error) *error = STARError(20, @"STAR archive has no commit");
         return nil;
     }
 
-    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    // A sig-less STAR cannot become a compliant CAR
+    if (!commit.sig) {
+        if (error) *error = STARError(21, @"STAR archive has no signature; cannot produce a compliant CAR");
+        return nil;
+    }
+
+    // Serialize the repo-spec commit block and compute its CID
+    NSError *cborErr = nil;
+    NSData *commitData = [commit serializeToDagCBOR:&cborErr];
+    if (!commitData) {
+        if (error) *error = cborErr ?: STARError(22, @"Failed to serialize commit block");
+        return nil;
+    }
+
+    CID *commitCID = [CID cidWithDigest:[CID sha256Digest:commitData] codec:0x71];
+
+    // CAR root is the commit CID, not the MST root
+    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitData]];
+
+    // Emit the verified, depth-first ordered blocks from the reader
     for (CARBlock *block in reader.blocks) {
         [writer addBlock:block];
     }
-    return [writer serialize];
-}
-
-+ (nullable NSData *)starL0DataFromCARData:(NSData *)carData error:(NSError **)error {
-    CARReader *reader = [CARReader readFromData:carData error:error];
-    if (!reader) return nil;
-
-    // Build a block index for record lookup
-    NSMutableDictionary<NSString *, NSData *> *blockIndex = [NSMutableDictionary dictionary];
-    for (CARBlock *block in reader.blocks) {
-        blockIndex[block.cid.stringValue] = block.data;
-    }
-
-    // Reconstruct the MST from the CAR blocks
-    // The root CID is the MST root, and we need to walk it depth-first
-    // For now, we build the STAR commit from the CAR root CID
-    // and serialize the MST blocks in depth-first order
-
-    // Parse the commit block (first block after the root)
-    // The CAR root is the commit CID, the commit's data field points to the MST root
-    CID *commitCID = reader.rootCID;
-    CARBlock *commitBlock = [reader blockWithCID:commitCID];
-    if (!commitBlock) {
-        if (error) *error = STARError(21, @"CAR has no commit block");
-        return nil;
-    }
-
-    // Parse commit to extract fields
-    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
-    if (!commitValue || commitValue.type != CBORTypeMap) {
-        if (error) *error = STARError(22, @"Commit block is not a CBOR map");
-        return nil;
-    }
-
-    NSString *did = @"";
-    NSString *rev = @"";
-    CID *dataCID = nil;
-    CID *prevCID = nil;
-    NSData *sig = nil;
-
-    CBORValue *didVal = commitValue.map[[CBORValue textString:@"did"]];
-    if (didVal && didVal.type == CBORTypeTextString) did = didVal.textString;
-
-    CBORValue *revVal = commitValue.map[[CBORValue textString:@"rev"]];
-    if (revVal && revVal.type == CBORTypeTextString) rev = revVal.textString;
-
-    CBORValue *dataVal = commitValue.map[[CBORValue textString:@"data"]];
-    if (dataVal && dataVal.type == CBORTypeTag) {
-        NSData *cidBytes = dataVal.tagValue.byteString;
-        if (cidBytes.length > 1) {
-            dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
-        }
-    }
-
-    CBORValue *prevVal = commitValue.map[[CBORValue textString:@"prev"]];
-    if (prevVal && prevVal.type == CBORTypeTag) {
-        NSData *cidBytes = prevVal.tagValue.byteString;
-        if (cidBytes.length > 1) {
-            prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
-        }
-    }
-
-    CBORValue *sigVal = commitValue.map[[CBORValue textString:@"sig"]];
-    if (sigVal && sigVal.type == CBORTypeByteString) sig = sigVal.byteString;
-
-    STARCommit *commit = [STARCommit commitWithDid:did
-                                           version:3
-                                             data:dataCID
-                                              rev:rev
-                                             prev:prevCID
-                                              sig:sig];
-
-    // Build MST from the CAR blocks
-    MST *mst = [[MST alloc] initWithRootCID:dataCID];
-    // FIXME: MST reconstruction from CAR blocks not implemented.
-    // The MST nodes stored in the CAR file must be deserialized and
-    // walked to reconstruct the full Merkle Search Tree. Currently
-    // only the commit is used, producing a degenerate STAR-L0 with
-    // no tree structure. This limits verification to commit-level
-    // signatures rather than per-record proofs.
-
-    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
-    // The block provider looks up record data from the CAR block index
-    BOOL success = [writer writeFromMST:mst
-                         blockProvider:^NSData * _Nullable(CID *cid) {
-        return blockIndex[cid.stringValue];
-    } error:error];
-
-    if (!success) return nil;
-    return [writer serialize];
-}
-
-+ (nullable NSData *)starLiteDataFromCARData:(NSData *)carData error:(NSError **)error {
-    CARReader *reader = [CARReader readFromData:carData error:error];
-    if (!reader) return nil;
-
-    NSMutableDictionary<NSString *, NSData *> *blockIndex = [NSMutableDictionary dictionary];
-    for (CARBlock *block in reader.blocks) {
-        blockIndex[block.cid.stringValue] = block.data;
-    }
-
-    CID *commitCID = reader.rootCID;
-    CARBlock *commitBlock = [reader blockWithCID:commitCID];
-    if (!commitBlock) {
-        if (error) *error = STARError(21, @"CAR has no commit block");
-        return nil;
-    }
-
-    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
-    if (!commitValue || commitValue.type != CBORTypeMap) {
-        if (error) *error = STARError(22, @"Commit block is not a CBOR map");
-        return nil;
-    }
-
-    NSString *did = @"";
-    NSString *rev = @"";
-    CID *dataCID = nil;
-    CID *prevCID = nil;
-    NSData *sig = nil;
-
-    CBORValue *didVal = commitValue.map[[CBORValue textString:@"did"]];
-    if (didVal && didVal.type == CBORTypeTextString) did = didVal.textString;
-
-    CBORValue *revVal = commitValue.map[[CBORValue textString:@"rev"]];
-    if (revVal && revVal.type == CBORTypeTextString) rev = revVal.textString;
-
-    CBORValue *dataVal = commitValue.map[[CBORValue textString:@"data"]];
-    if (dataVal && dataVal.type == CBORTypeTag) {
-        NSData *cidBytes = dataVal.tagValue.byteString;
-        if (cidBytes.length > 1) {
-            dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
-        }
-    }
-
-    CBORValue *prevVal = commitValue.map[[CBORValue textString:@"prev"]];
-    if (prevVal && prevVal.type == CBORTypeTag) {
-        NSData *cidBytes = prevVal.tagValue.byteString;
-        if (cidBytes.length > 1) {
-            prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
-        }
-    }
-
-    CBORValue *sigVal = commitValue.map[[CBORValue textString:@"sig"]];
-    if (sigVal && sigVal.type == CBORTypeByteString) sig = sigVal.byteString;
-
-    STARCommit *commit = [STARCommit commitWithDid:did
-                                           version:3
-                                             data:dataCID
-                                              rev:rev
-                                             prev:prevCID
-                                              sig:sig];
-
-    MST *mst = [[MST alloc] initWithRootCID:dataCID];
-
-    STARLiteWriter *writer = [[STARLiteWriter alloc] initWithCommit:commit];
-    BOOL success = [writer writeFromMST:mst
-                         blockProvider:^NSData * _Nullable(CID *cid) {
-        return blockIndex[cid.stringValue];
-    } error:error];
-
-    if (!success) return nil;
     return [writer serialize];
 }
 
