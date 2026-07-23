@@ -10,6 +10,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+#define AUTH_GUARD(weakSelf, req, res) \
+    if (![weakSelf ensureAuthorized:(req) response:(res)]) return;
+
 /// Shared helpers used across UIServerRuntime's implementation files.
 NSString *UIEscaped(NSString *value);
 NSString * _Nullable UIStringFromDict(NSDictionary *dict, NSString *key);
@@ -28,6 +31,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 @property(nonatomic, strong) XrpcDispatcher *xrpcDispatcher;
 @property(nonatomic, assign, readwrite, getter=isRunning) BOOL running;
 
+- (BOOL)ensureAuthorized:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end
 
@@ -40,6 +44,23 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 
 /// Admin-panel HTML partial renderers. Implemented in UIServerRuntime+Renderers.m.
 @interface UIServerRuntime (Renderers)
+- (NSString *)renderAccountsPartial:(NSDictionary *)result;
+- (NSString *)renderInvitesPartial:(NSDictionary *)result;
+- (NSString *)renderAppViewMetricsPartial:(NSDictionary *)result;
+- (NSString *)renderIngestHealthPartial:(NSDictionary *)result;
+- (NSString *)renderBackfillQueuePartial:(NSDictionary *)result;
+- (NSString *)renderRelayMetricsPartial:(NSDictionary *)result;
+- (NSString *)renderAccountDetailPartial:(NSDictionary *)result;
+- (NSString *)renderBlobsPartial:(NSDictionary *)result did:(nullable NSString *)did;
+- (NSString *)renderServerStatsPartial:(NSDictionary *)result;
+- (NSString *)renderAuditLogPartial:(NSDictionary *)result;
+- (NSString *)renderPDSReportsPartial:(NSDictionary *)result;
+- (NSString *)renderRelayUpstreamsPartial:(NSDictionary *)result;
+- (NSString *)renderPLCDIDPartial:(NSDictionary *)result;
+- (NSString *)renderPLCLogPartial:(NSDictionary *)result;
+- (NSString *)renderDescribeRepoPartial:(NSDictionary *)result;
+- (NSString *)renderListRecordsPartial:(NSDictionary *)result;
+- (NSString *)renderGetRecordPartial:(NSDictionary *)result;
 
 - (NSString *)renderOzoneStatusesPartial:(NSDictionary *)result;
 - (NSString *)renderOzoneEventsPartial:(NSDictionary *)result;
@@ -76,6 +97,21 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderVideoJobDetailPartial:(NSDictionary *)result;
 - (NSString *)renderVideoQuotasPartial:(NSDictionary *)result;
 
+@end
+
+
+@interface UIServerRuntime (Routes)
+- (void)registerPDSRoutes;
+- (void)registerAppViewRoutes;
+- (void)registerRelayRoutes;
+- (void)registerPLCRoutes;
+- (void)registerDataExplorerRoutes;
+- (void)registerLabRoutes;
+- (void)registerOzoneRoutes;
+- (void)registerSecurityRoutes;
+- (void)registerChatRoutes;
+- (void)registerVideoRoutes;
+- (void)registerMSTRoutes;
 @end
 
 NS_ASSUME_NONNULL_END
