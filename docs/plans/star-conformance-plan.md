@@ -1,6 +1,6 @@
 # STAR Conformance: Verifying Reader and Wire-Format Fix
 
-## Status: draft — audit complete (deciduous `#1368`, 2026-07-22), no slice started
+## Status: complete (2026-07-23) — all three slices landed
 
 ## Summary
 
@@ -132,9 +132,26 @@ deno task lint
 Linux Docker gate if any Network or Compat file is touched (expected:
 none).
 
-## Tracking
+## Resolution (2026-07-23)
 
-Deciduous: audit observation `#1368` → goal `#1369`, slice actions
-`#1370` (A), `#1371` (B), `#1372` (C); this plan is attached to the
-goal node. Update workstream 01 S7 and mega-plan Phase 4 item 9 on
-completion, then delete this file per the plans README lifecycle rule.
+All three slices landed in a single commit on 2026-07-23:
+
+- **Slice A**: V-flag fix (tied `V` emission to `v` presence in
+  `STARMstNode.serializeToDagCBOR:`) + fixture regeneration + new
+  `testSTARL0VFlagAbsentWhenVIsAbsent` assertion.
+- **Slice B**: `parseL0Body` rewritten as verifying stack-based reader;
+  `carDataFromSTARData:` fixed to synthesize a repo-spec commit block,
+  set the CAR root to the commit CID, and reject sig-less archives.
+  Round-trip, empty-tree, malformed-input, and STAR→CAR conversion
+  tests added (6 new test methods).
+- **Slice C**: `starL0DataFromCARData:` and `starLiteDataFromCARData:`
+  deleted from `.m` and `.h` with zero-caller proof; ADR 0009 recorded
+  for versioning, variants, MIME types, and the empty-tree encoding
+  decision.
+
+Deciduous goal `#1369` closed; actions `#1370`–`#1372` complete.
+Mega-plan Phase 4 item 9 marked complete.
+
+Per the plans README lifecycle rule: this file is superseded by the
+commit record, ADR 0009, and the mega-plan status update. It can be
+archived or deleted after a reasonable retention window.

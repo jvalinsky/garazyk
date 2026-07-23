@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-22
+last_verified: 2026-07-23
 ---
 
 # Garazyk Mega Plan
@@ -174,11 +174,11 @@ better-isolated steps.
 | Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | P2              |
 | Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | P2              |
 | Dedicated space signing key rotation          |             4 |               2 |             3 |             3 |      4 | P2              |
-| Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | P2              |
+| Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | Complete (2026-07-22) |
 | Storage and MST optimization (workstream 07)  |             3 |               3 |             4 |             4 |      4 | Complete (phase 11) |
 | Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
-| STAR conformance and verifying import (workstream 01 S7) | 3 |               3 |             4 |             3 |      3 | P2              |
+| STAR conformance and verifying import (workstream 01 S7) | 3 |               3 |             4 |             3 |      3 | Complete (2026-07-23) |
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
 | SMTP, cloud blob, Skylab, dashboard dispositions |          3 |               3 |             3 |             2 |      3 | Decided (5/6 implemented; STAR exempted, see brief) |
 | Space app attestation (`appAccess#allowList`)  |             4 |               2 |             3 |             2 |      3 | Decided (ADR 0004 amendment) |
@@ -367,14 +367,18 @@ remaining program does not depend on items 1-2.
    `PDSCollectionMembershipPruner` now has its own test suite
    (`6b52752e0`). Relay removal is recorded in ADR 0006. The Sync 1.1
    remainder stays open under item 7.
-3. **Complete (2026-07-23):** Decompose Objective-C god files after the
-   branch recovery and characterization gates. Start with route ownership,
-   then OAuth and Admin UI. Route-pack slice complete
-   (`docs/plans/phase12-route-pack-slice-1-plan.md`, deciduous `#1362`):
-   all 4 route-pack files decomposed into 31 category files (75% line
-   reduction). OAuth2Handler.m, PDSRecordService.m, PDSRepositoryService.m,
-   UIBackendClient.m, and UIServerRuntime.m decomposed into category files,
-   reducing line counts drastically and successfully passing all characterization tests.
+3. **Nearly complete (2026-07-23):** Decompose Objective-C god files after
+   the branch recovery and characterization gates. All committed:
+   the 4 route packs → 31 category files (deciduous `#1362`/`#1374`; the
+   slice diary is retired to the retired-plans ledger), `OAuth2Handler.m`
+   (4197 → 252 lines, 12 categories), `PDSRecordService.m` and
+   `PDSRepositoryService.m` (11 categories), and `UIBackendClient.m`
+   (`9f5d4d59c`, 10 categories) — each behind a green characterization
+   suite. The final piece, the `UIServerRuntime.m` route-category split
+   (11 categories, core ~1840 → ~900 lines), sits in the working tree:
+   builds clean, `UIServerRuntimeTests` 23/23; the browser smoke and the
+   Linux Docker/GNUstep gate must pass before it commits (workstream 02
+   A3 has the checklist).
 4. **Complete (2026-07-22):** Admin UI accessibility, CSS generation, and
    browser-module splits. The real-browser visual smoke proves 200%-zoom
    reflow, 44px targets, keyboard-visible focus, and reduced-motion behavior
@@ -387,9 +391,12 @@ remaining program does not depend on items 1-2.
    Binary three-PDS scenario 93 run `2026-07-22t0530z-70080` passed 25/25,
    including remote verification of both credential key layouts during
    overlap.
-6. Space operational readiness: backup/restore drill for the space database,
-   downgrade-retention verification, and reconciler/pruner observability
-   (workstream 06, P6.5).
+6. **Complete (2026-07-22):** space operational readiness (workstream 06,
+   P6.5). Online SQLite backup/restore drill with LtHash verification,
+   disabled-mode retention proof (flag off leaves the space database
+   byte-for-byte unchanged), and credential-free structured observability
+   for both the reconciler (replay/gap/recovery-path events) and the
+   pruner (per-run removed-entry counts).
 7. **Complete (2026-07-19):** Sync 1.1 remainder (export block ordering,
    collection subsets) — closed, not implemented pending spec text
    (workstream 02, A6; workstream 01, S6 G2). Rechecked
@@ -414,23 +421,28 @@ remaining program does not depend on items 1-2.
    for the per-package breakdown and one cross-package integration fix it
    required.
 
-9. STAR conformance and verifying import (workstream 01 S7,
-   `docs/plans/star-conformance-plan.md`): fix the layer-0 `V`-flag
-   wire-format violation (with fixture regeneration), replace the
-   non-verifying `STARReader.parseL0Body` with the spec's stack-based
-   verifying read model so STAR→CAR conversion and the STAR import
-   paths actually round-trip and verify trees, and delete the dead
-   degenerate CAR→STAR converters with caller proof. Audit recorded as
-   deciduous `#1368` (2026-07-22); export path is correct and stays
-   untouched.
+9. **Complete (2026-07-23):** STAR conformance and verifying import
+   (workstream 01 S7, `docs/plans/star-conformance-plan.md`). All three
+   slices landed: V-flag wire-format fix + fixture regeneration (Slice A),
+   verifying stack-based `parseL0Body` + corrected `carDataFromSTARData:`
+   (Slice B), dead CAR→STAR converter deletion + ADR 0009 (Slice C).
+   Round-trip, empty-tree, malformed-input, and STAR→CAR conversion tests
+   added (6 new test methods). All 20 STARPreorderTests pass.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
 
 ### Phase 5: decisions
 
-1. Regenerate the `objc-jupyter-wasm` capability baseline and choose a small
-   supported subset before scheduling parser/runtime work.
+1. **Baseline complete (2026-07-22); subset choice open.** The reproducible
+   capability baseline landed in phase 10 slice 2:
+   `objc-jupyter-wasm/scripts/run-capability-baseline.sh` rejects a dirty
+   checkout, builds `kernel-wasm` twice, runs smoke/runtime/notebook/
+   compatibility probes (91/91 runtime probes, 18/18 compat cases, Chromium
+   worker smoke green), and regenerates the capability matrix;
+   `kernel/PARSER_STATUS.md` and the gap report now redirect to it. What
+   remains is the human checkpoint: choose the small supported subset before
+   scheduling any parser/runtime work (workstream 05 E1).
 2. **Complete (2026-07-22), 5 of 6:** operator approved all six dispositions in
    [the Phase 10 product-surface decision brief](phase-10-product-surface-decision-brief.md).
    Implemented: SMTP removed, S3 blob config now rejected (fails closed), Skylab

@@ -369,11 +369,13 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 /*!
  @class STARConverter
 
- @abstract Bidirectional conversion between STAR and CAR formats.
+ @abstract Conversion from STAR to CAR format.
 
- @discussion Provides conversion utilities for interoperability:
- - STAR to CAR: lossless for full trees, lossy for slices missing out-of-tree blocks
- - CAR to STAR: requires walking the MST to establish depth-first order
+ @discussion Provides verifying STAR-to-CAR conversion. The reader
+ validates every MST node CID against the commit's data CID chain,
+ rehydrates layer-0 record links, and strips wire-format flags. CAR-to-STAR
+ conversion is not supported; use the live-MST writer (STARL0Writer)
+ for export.
  */
 @interface STARConverter : NSObject
 
@@ -382,33 +384,17 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
  @abstract Convert STAR data (L0 or lite) to CAR format.
 
+ @discussion STAR-to-CAR conversion is verifying: the reader validates
+ every MST node CID against the commit's data CID chain, rehydrates
+ layer-0 record links, and strips wire-format flags before
+ re-serializing to repo-spec form. Sig-less STAR archives are rejected
+ because they cannot produce a compliant CAR.
+
  @param starData STAR-encoded archive data.
  @param error Error pointer for conversion failures.
- @return CAR-encoded data, or nil on failure.
+ @return CAR-encoded data with the commit CID as root, or nil on failure.
  */
 + (nullable NSData *)carDataFromSTARData:(NSData *)starData error:(NSError **)error;
-
-/*!
- @method starL0DataFromCARData:error:
-
- @abstract Convert CAR data to STAR-L0 format.
-
- @param carData CAR-encoded archive data.
- @param error Error pointer for conversion failures.
- @return STAR-L0 encoded data, or nil on failure.
- */
-+ (nullable NSData *)starL0DataFromCARData:(NSData *)carData error:(NSError **)error;
-
-/*!
- @method starLiteDataFromCARData:error:
-
- @abstract Convert CAR data to STAR-lite format.
-
- @param carData CAR-encoded archive data.
- @param error Error pointer for conversion failures.
- @return STAR-lite encoded data, or nil on failure.
- */
-+ (nullable NSData *)starLiteDataFromCARData:(NSData *)carData error:(NSError **)error;
 
 @end
 
