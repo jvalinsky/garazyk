@@ -381,9 +381,11 @@ file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
 )
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.c$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSRepoImport.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpXrpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/RelayXrpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\+.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpServerBuilder\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Generated/GZXrpcNSID\\.m$")
 # UI route packs migrated to garazyk-ui — exclude from service binaries
@@ -394,6 +396,17 @@ file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m"
   "Garazyk/Sources/Network/RelayXrpcRoutePack.m"
   "Garazyk/Sources/Network/AppViewXRpcRoutePack.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Actor.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+AgeAssurance.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Contact.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+DraftsAndBookmarks.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Feed.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Graph.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Identity.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Notification.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Search.m"
+  "Garazyk/Sources/Network/PDSRepoImportValidationResult.m"
+  "Garazyk/Sources/Network/PDSRepoImportValidator.m"
   "Garazyk/Sources/Network/Generated/GZXrpcNSID.m"
 )
 # XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
