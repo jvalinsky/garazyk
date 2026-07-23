@@ -18,8 +18,7 @@ Chromium worker smoke). `kernel/PARSER_STATUS.md` and
 `docs/runtime-gap-report.md` redirect to the generated matrix, so no
 contradictory hand-maintained tables remain.
 
-**Subset decided (2026-07-23, ADR 0010; operator delegated the
-checkpoint).** The next supported subset is the two notebook-relevant
+**Subset confirmed (2026-07-23, ADR 0010; operator-confirmed).** The next supported subset is the two notebook-relevant
 language gaps plus a parser-termination invariant: fix the `->`
 infinite-loop hang and support `->` member access; support top-level C
 function definitions with value-typed parameters; `@encode` and
