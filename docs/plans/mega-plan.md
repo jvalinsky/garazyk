@@ -465,7 +465,7 @@ removals without caller proof.
 5. Track Proposal 0016 upstream drift on a monthly cadence (workstream 06,
    P6.4); re-pin, re-diff, and record impact before adopting any upstream
    change. `permissionedSpacesEnabled` stays off by default until the
-   proposal stabilizes.
+   proposal stabilizes. Second check 2026-07-23 clean; next due ~2026-08-23.
 
 ## Global gates
 
