@@ -2,8 +2,7 @@
 
 ## Status
 
-Accepted — 2026-07-23 (operator delegated the E1 subset checkpoint;
-workstream 05 E1, mega-plan Phase 5 item 1)
+Accepted — 2026-07-23 (operator-confirmed; workstream 05 E1, mega-plan Phase 5 item 1)
 
 ## Context
 
