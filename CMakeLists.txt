@@ -1017,6 +1017,16 @@ add_executable(garazyk-ui
   Garazyk/Sources/AdminUIServer/UIServiceConfig.m
   Garazyk/Sources/AdminUIServer/UIAuthManager.m
   Garazyk/Sources/AdminUIServer/UIBackendClient.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+AppView.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+Chat.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+DataExplorer.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+MST.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+Ozone.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+PDS.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+PLC.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+Relay.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+Security.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient+Video.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m
@@ -1529,6 +1539,16 @@ if(BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServiceConfig.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIAuthManager.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+AppView.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Chat.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+DataExplorer.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+MST.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Ozone.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+PDS.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+PLC.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Relay.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Security.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Video.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m"
