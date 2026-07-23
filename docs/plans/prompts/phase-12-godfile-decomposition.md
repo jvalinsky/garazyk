@@ -1,7 +1,7 @@
 ---
 phase: 12
 title: Objective-C god-file decomposition
-status: in_progress
+status: complete
 agent: worker
 depends_on: [6]
 ---
