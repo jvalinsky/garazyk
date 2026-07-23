@@ -66,7 +66,7 @@ Priority decomposition targets:
   (+MST, +Export, +Commit, +RecordMaterializer, +RepoInit) plus _Internal.h;
   main file reduced from 2123 to 77 lines.
   36 PDS repository + 31 SQLite repository characterization tests pass.
-- `UIServerRuntime.m` and `UIBackendClient.m` (phase 8, workstream 04 U6).
+- `UIServerRuntime.m` and `UIBackendClient.m` — **DONE (2026-07-23)** (phase 8, workstream 04 U6).
 - Migration manager — covered by phase 11 database decomposition.
 
 Keep MST and STAR cohesive unless a measured seam appears. GNUstep category
