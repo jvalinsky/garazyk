@@ -6,7 +6,30 @@ last_verified: 2026-07-22
 
 # Embedded Runtime and Deferred Products
 
-## E1. Rebuild the WASM capability baseline
+## E1. Rebuild the WASM capability baseline — baseline complete (2026-07-22); subset choice open
+
+**Items 1-5 complete (2026-07-22, phase 10 slice 2).**
+`objc-jupyter-wasm/scripts/run-capability-baseline.sh` rejects a dirty
+checkout, builds `kernel-wasm` twice, runs the smoke/runtime/notebook/
+compatibility probes from one command, and regenerates the capability matrix
+from test results (91/91 runtime probes, 22 demo notebooks with 138/152
+executed cells and 14 explicit skips, 18/18 compatibility cases, passing
+Chromium worker smoke). `kernel/PARSER_STATUS.md` and
+`docs/runtime-gap-report.md` redirect to the generated matrix, so no
+contradictory hand-maintained tables remain.
+
+**Subset decided (2026-07-23, ADR 0010; operator delegated the
+checkpoint).** The next supported subset is the two notebook-relevant
+language gaps plus a parser-termination invariant: fix the `->`
+infinite-loop hang and support `->` member access; support top-level C
+function definitions with value-typed parameters; `@encode` and
+`@synchronized` become intentionally unsupported with clean diagnostics
+(consistent with the snippet policy's threading exclusion). The compiled
+Emscripten cell plane and Jupyter UX features stay deferred. Acceptance:
+the four skipped cases in `tests/test-runtime-gap-probes.mjs` become
+active probes, the baseline runner regenerates the matrix, and the
+notebooks plus compatibility corpus stay green. The implementation lane
+is unscheduled P2 work; nothing else blocks on it.
 
 The historical runtime plans say phases D-G are complete. The runtime feature
 review and gap report still list loop, super-dispatch, protocol, and Foundation
