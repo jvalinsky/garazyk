@@ -367,13 +367,13 @@ remaining program does not depend on items 1-2.
    `PDSCollectionMembershipPruner` now has its own test suite
    (`6b52752e0`). Relay removal is recorded in ADR 0006. The Sync 1.1
    remainder stays open under item 7.
-3. **In progress (2026-07-22):** Decompose Objective-C god files after the
+3. **In progress (2026-07-23):** Decompose Objective-C god files after the
    branch recovery and characterization gates. Start with route ownership,
-   then OAuth and Admin UI. Route-pack slice underway
+   then OAuth and Admin UI. Route-pack slice complete
    (`docs/plans/phase12-route-pack-slice-1-plan.md`, deciduous `#1362`):
-   `XrpcServerPack` (`c85b1bed8`) and `XrpcAdminPack` (`72a059eae`) are
-   decomposed behind characterization tests; `XrpcRepoPack` and
-   `AppViewXRpcRoutePack` remain.
+   all 4 route-pack files decomposed into 31 category files (75% line
+   reduction). Next: OAuth2Handler.m (4197 lines) and
+   PDSRecordService.m/PDSRepositoryService.m.
 4. **Complete (2026-07-22):** Admin UI accessibility, CSS generation, and
    browser-module splits. The real-browser visual smoke proves 200%-zoom
    reflow, 44px targets, keyboard-visible focus, and reduced-motion behavior
