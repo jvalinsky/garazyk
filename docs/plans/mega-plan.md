@@ -178,6 +178,7 @@ better-isolated steps.
 | Storage and MST optimization (workstream 07)  |             3 |               3 |             4 |             4 |      4 | Complete (phase 11) |
 | Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
 | Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
+| STAR conformance and verifying import (workstream 01 S7) | 3 |               3 |             4 |             3 |      3 | P2              |
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2              |
 | SMTP, cloud blob, Skylab, dashboard dispositions |          3 |               3 |             3 |             2 |      3 | Decided (5/6 implemented; STAR exempted, see brief) |
 | Space app attestation (`appAccess#allowList`)  |             4 |               2 |             3 |             2 |      3 | Decided (ADR 0004 amendment) |
@@ -366,8 +367,13 @@ remaining program does not depend on items 1-2.
    `PDSCollectionMembershipPruner` now has its own test suite
    (`6b52752e0`). Relay removal is recorded in ADR 0006. The Sync 1.1
    remainder stays open under item 7.
-3. Decompose Objective-C god files after the branch recovery and
-   characterization gates. Start with route ownership, then OAuth and Admin UI.
+3. **In progress (2026-07-22):** Decompose Objective-C god files after the
+   branch recovery and characterization gates. Start with route ownership,
+   then OAuth and Admin UI. Route-pack slice underway
+   (`docs/plans/phase12-route-pack-slice-1-plan.md`, deciduous `#1362`):
+   `XrpcServerPack` (`c85b1bed8`) and `XrpcAdminPack` (`72a059eae`) are
+   decomposed behind characterization tests; `XrpcRepoPack` and
+   `AppViewXRpcRoutePack` remain.
 4. **Complete (2026-07-22):** Admin UI accessibility, CSS generation, and
    browser-module splits. The real-browser visual smoke proves 200%-zoom
    reflow, 44px targets, keyboard-visible focus, and reduced-motion behavior
@@ -406,6 +412,16 @@ remaining program does not depend on items 1-2.
    (2,043 findings) is also closed to 0 — see workstream 07's O6 checkpoint
    for the per-package breakdown and one cross-package integration fix it
    required.
+
+9. STAR conformance and verifying import (workstream 01 S7,
+   `docs/plans/star-conformance-plan.md`): fix the layer-0 `V`-flag
+   wire-format violation (with fixture regeneration), replace the
+   non-verifying `STARReader.parseL0Body` with the spec's stack-based
+   verifying read model so STAR→CAR conversion and the STAR import
+   paths actually round-trip and verify trees, and delete the dead
+   degenerate CAR→STAR converters with caller proof. Audit recorded as
+   deciduous `#1368` (2026-07-22); export path is correct and stays
+   untouched.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
