@@ -198,14 +198,10 @@ change, and the protocol team expects spec-level changes through summer
    proposal stabilizes; enabling it earlier is an explicit operator decision
    per ADR 0004.
 
-**Progress (2026-07-22): drift cadence established.**
-`scripts/check_permissioned_spaces_drift.sh` compares the pinned Proposal
-0016 commit, pinned atproto implementation commit, PR 5187 head, and all
-vendored space lexicons without writing or regenerating anything. Its first
-run at `2026-07-22T05:36:04Z` was clean: Proposal HEAD and PR head remained
-pinned and all 28 local lexicons matched byte-for-byte. The only Proposal
-README delta after the implementation commit is a link to PR 5187, with no
-compatibility impact; the full procedure is in the compatibility document.
+**Progress (2026-07-23): second monthly drift check clean.** All three
+surfaces (proposal HEAD `1caad93`, implementation PR head `3f6c96d`, all 28
+vendored space lexicons) remain pinned with zero drift. Next check due
+~2026-08-23.
 
 ## P6.5 Operational readiness — complete (2026-07-22)
 
