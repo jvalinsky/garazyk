@@ -50,11 +50,24 @@ Recover the useful July plan without merging its stale branch base.
 
 Priority decomposition targets:
 
-- `OAuth2Handler.m`;
-- `UIServerRuntime.m` and `UIBackendClient.m`;
+- `OAuth2Handler.m` — **DONE (2026-07-23)**: decomposed into 12 categories
+  (+Authorization, +ClientValidation, +ClientMetadataFetch, +PAR, +PasskeyAuth,
+  +DPoP, +TokenEndpoint, +TokenRevocation, +ConsentStore, +Metadata, +Assets,
+  +Helpers) plus _Internal.h; main file reduced from 4197 to 252 lines.
+  85 OAuth characterization tests pass.
 - `AppViewXRpcRoutePack.m`, `XrpcRepoPack.m`, `XrpcAdminPack.m`, and
-  `XrpcServerPack.m`;
-- `PDSRecordService.m`, `PDSRepositoryService.m`, and the migration manager.
+  `XrpcServerPack.m` — **DONE (2026-07-23)**: decomposed into route-based
+  categories; combined 6885 lines reduced to ~1704 (75% reduction).
+- `PDSRecordService.m` — **DONE (2026-07-23)**: decomposed into 6 categories
+  (+Validation, +Authorization, +RecordCRUD, +BatchWrites, +CommitPlumbing,
+  +Stats) plus _Internal.h; main file reduced from 1982 to 66 lines.
+  51 PDS record characterization tests pass.
+- `PDSRepositoryService.m` — **DONE (2026-07-23)**: decomposed into 5 categories
+  (+MST, +Export, +Commit, +RecordMaterializer, +RepoInit) plus _Internal.h;
+  main file reduced from 2123 to 77 lines.
+  36 PDS repository + 31 SQLite repository characterization tests pass.
+- `UIServerRuntime.m` and `UIBackendClient.m` (phase 8, workstream 04 U6).
+- Migration manager — covered by phase 11 database decomposition.
 
 Keep MST and STAR cohesive unless a measured seam appears. GNUstep category
 loading must be proven before splitting implementations into categories.
