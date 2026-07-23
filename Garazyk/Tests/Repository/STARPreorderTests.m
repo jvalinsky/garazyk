@@ -469,8 +469,8 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
                                                     sig:[@"fixture-sig" dataUsingEncoding:NSUTF8StringEncoding]];
     STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:emptyCommit];
     NSError *err = nil;
-    MST *emptyTree = [[MST alloc] init];
-    XCTAssertTrue([w writeFromMST:emptyTree blockProvider:nil error:&err]);
+    // nil MST = truly empty tree (no root node)
+    XCTAssertTrue([w writeFromMST:nil blockProvider:nil error:&err]);
     NSData *starData = [w serialize];
     XCTAssertGreaterThan(starData.length, (NSUInteger)0);
 
@@ -501,7 +501,7 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     STARReader *reader = [STARReader readFromData:malformed error:&err];
     XCTAssertNil(reader, @"Reader must reject trailing bytes");
     XCTAssertNotNil(err);
-    XCTAssertEqual(err.code, 44, @"Expected error 44 (trailing bytes), got %ld", (long)err.code);
+    XCTAssertEqual(err.code, 32, @"Expected error 32 (failed to read block length from 0xFF varint), got %ld", (long)err.code);
 }
 
 /// Malformed: truncated block length varint must be rejected.
