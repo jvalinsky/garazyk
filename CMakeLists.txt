@@ -1030,6 +1030,17 @@ add_executable(garazyk-ui
   Garazyk/Sources/AdminUIServer/UIServerRuntime.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+LabRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+MSTRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+OzoneRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+PDSRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+PLCRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m
 )
 
 target_include_directories(garazyk-ui PRIVATE
@@ -1552,6 +1563,17 @@ if(BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+LabRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+MSTRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+OzoneRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+PDSRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+PLCRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m"
   )
 
   # Exclude problematic tests (preserved from original)
