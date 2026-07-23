@@ -80,3 +80,7 @@ then update the pin and regenerate lexicons only in that reviewed change.
 `1caad93`; PR 5187 still pointed at `3f6c96d`; all 28 vendored space lexicons
 matched byte-for-byte. The Proposal README's only post-implementation change
 was a link to PR 5187, so it has no implementation impact.
+
+**Second run (2026-07-23): clean.** All three surfaces (proposal HEAD,
+implementation PR head, vendored lexicons) remain pinned with zero drift.
+Next check due ~2026-08-23.
