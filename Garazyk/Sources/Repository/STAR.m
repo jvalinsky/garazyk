@@ -913,7 +913,10 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
             [pendingRecords addObject:recordBlock];
         }
 
-        // Patch entries: reinsert v for V entries, strip V/T flags
+        // Patch entries: build repo-spec entry maps with correct key order (k, p, v, t).
+        // Must construct new dictionaries rather than mutate wire-format dicts,
+        // because reinserting v into a mutable dict that already has t would
+        // produce (k, p, t, v) — wrong DAG-CBOR order, wrong CID.
         NSMutableArray<CBORValue *> *patchedEntries = [NSMutableArray array];
         NSUInteger recIdx = 0;
 
@@ -924,19 +927,32 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
                 continue;
             }
 
-            NSMutableDictionary<CBORValue *, CBORValue *> *entryDict = [entry.map mutableCopy];
+            NSDictionary<CBORValue *, CBORValue *> *wireMap = entry.map;
+            NSMutableDictionary<CBORValue *, CBORValue *> *repoEntry = [NSMutableDictionary dictionary];
 
-            // If V was true, reinsert v from the corresponding buffered record
-            if (entryDict[[CBORValue textString:@"V"]]) {
+            // k (key suffix) — always present
+            repoEntry[[CBORValue textString:@"k"]] = wireMap[[CBORValue textString:@"k"]];
+            // p (prefix length) — always present
+            repoEntry[[CBORValue textString:@"p"]] = wireMap[[CBORValue textString:@"p"]];
+
+            // v (value CID): from computed record CID if V was set, else from wire format
+            if (wireMap[[CBORValue textString:@"V"]]) {
                 CARBlock *recBlock = pendingRecords[recIdx++];
-                EntryMapSetCID(entryDict, [CBORValue textString:@"v"], recBlock.cid);
-                [entryDict removeObjectForKey:[CBORValue textString:@"V"]];
+                EntryMapSetCID(repoEntry, [CBORValue textString:@"v"], recBlock.cid);
+            } else {
+                CBORValue *wireV = wireMap[[CBORValue textString:@"v"]];
+                if (wireV) {
+                    repoEntry[[CBORValue textString:@"v"]] = wireV;
+                }
             }
 
-            // Strip T flag (t is already present from wire format)
-            [entryDict removeObjectForKey:[CBORValue textString:@"T"]];
+            // t (tree CID) — optional, preserved from wire format
+            CBORValue *wireT = wireMap[[CBORValue textString:@"t"]];
+            if (wireT) {
+                repoEntry[[CBORValue textString:@"t"]] = wireT;
+            }
 
-            [patchedEntries addObject:[CBORValue map:entryDict]];
+            [patchedEntries addObject:[CBORValue map:repoEntry]];
         }
 
         nodeDict[[CBORValue textString:@"e"]] = [CBORValue array:patchedEntries];
