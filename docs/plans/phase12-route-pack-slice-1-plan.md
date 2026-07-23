@@ -1,6 +1,6 @@
 # Phase 12, Slice 1: Route Pack Decomposition
 
-## Status: in progress — Steps 1–2 landed (`c85b1bed8`, `72a059eae`); Steps 3–4 remain
+## Status: Steps 1–4 complete
 
 ## Summary
 
@@ -15,7 +15,7 @@ of Phase 12 (mega-plan Phase 4 item 3 / workstream 02 A3).
 | `XrpcServerPack.m` | 1446 → 410 | `com.atproto.server.*` | describeServer, session, inviteCodes, appPasswords, accountManagement, accountLifecycle, health |
 | `XrpcAdminPack.m` | 1672 → 496 | `com.atproto.admin.*` | accountLookup/search/email, serverStats/audit/repair, accountInfo/invites/subjectStatus, accountLifecycle/records/takedown, moderation (deprecated) |
 | `XrpcRepoPack.m` | 1748 | `com.atproto.repo.*` | validation helpers (PDSRepoImportValidationResult, PDSRepoImportValidator), route registration |
-| `AppViewXRpcRoutePack.m` | 2019 | `app.bsky.*`, `com.atproto.*` | actor, feed, graph, notification, identity/repo/moderation, ageAssurance, drafts, bookmarks, contact, searchSkeleton |
+| `AppViewXRpcRoutePack.m` | 2019 → 540 | `app.bsky.*`, `com.atproto.*` | actor, feed, graph, notification, identity/repo/moderation, ageAssurance, drafts, bookmarks, contact, searchSkeleton |
 
 All files in `Garazyk/Sources/Network/`.
 
@@ -105,7 +105,7 @@ category-decompose the route registration:
 | `XrpcRepoPack+Import.m` | `importRepo` |
 | `XrpcRepoPack+Describe.m` | `describeRepo` |
 
-### Step 4: `AppViewXRpcRoutePack.m` (2019 lines)
+### Step 4: `AppViewXRpcRoutePack.m` (2019 → 540 lines) ✅ DONE
 
 Instance-based class with injected services. Split by namespace area:
 
