@@ -467,7 +467,19 @@ Value parse_message_send(Parser *p) {
                 char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "FDObj:", needed);
                 cstr_copy(buf + 6, target_class_name, needed - 6);
-                return value_from_obj(h);
+                {
+                    Value allocated = value_from_obj(h);
+                    /* Find if the class has a custom init method */
+                    unsigned int mi;
+                    for (mi = 0; mi < g_ctx.method_count; mi++) {
+                        if (g_ctx.methods[mi].class_ptr == target.cls_val &&
+                            !g_ctx.methods[mi].is_class_method &&
+                            cstr_eq(sel_getName(g_ctx.methods[mi].selector), "init")) {
+                            return execute_interpreter_method(p, &g_ctx.methods[mi], g_ctx.methods[mi].selector, h, 0, 0, 1);
+                        }
+                    }
+                    return allocated;
+                }
             }
             return value_from_obj(OBJ_NULL);
         }

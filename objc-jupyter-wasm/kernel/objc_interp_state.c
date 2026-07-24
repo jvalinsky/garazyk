@@ -195,10 +195,10 @@ Value value_from_interp_var(const InterpVar *var) {
     v.int_val = var->int_value;
     v.float_val = var->float_value;
     v.is_int = var->is_int;
+    v.is_id = var->is_id;
     v.is_float = var->is_float;
     v.is_class = var->is_class;
     v.is_sel = var->is_sel;
-    v.is_id = var->is_id;
     v.is_void = 0;
     return v;
 }
