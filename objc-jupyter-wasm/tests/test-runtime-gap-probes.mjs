@@ -548,7 +548,32 @@ const probes = [
   },
 
   // ── Static variables ────────────────────────────────────────
-  // SKIPPED: C function definitions not supported by interpreter
+  // SKIPPED: static function-local state persistence across calls
+
+  // ── C function definitions ───────────────────────────────────
+  {
+    cat: "C functions",
+    name: "C function definition and call (tutorial shape)",
+    code:
+      `int add(int a, int b) {\n  return a + b;\n}\nint result = add(3, 4);\nNSLog(@"%d", result);`,
+    expect: "7",
+  },
+  {
+    cat: "C functions",
+    name: "C function with void return and NSLog side effect",
+    code:
+      `void greet(const char *name) {\n  NSLog(@"hello %s", name);\n}\ngreet("world");`,
+    expect: "hello world",
+  },
+
+  // ── Parser termination guard ──────────────────────────────────
+  {
+    cat: "Parser termination",
+    name: "-> on non-pointer variable produces clean error",
+    code: `int x = 5;\nx->field;`,
+    expectError: true,
+    expectDiag: "'->' operator requires",
+  },
 
   // ── Typedef ─────────────────────────────────────────────────
   {
@@ -633,20 +658,22 @@ const probes = [
     expect: "hello",
   },
 
-  // ── @encode ────────────────────────────────────────────────
+  // ── @encode (intentionally unsupported, ADR 0010) ──────────
   {
     cat: "@encode",
-    name: "@encode(int) diagnostic",
+    name: "@encode(int) produces clean diagnostic",
     code: `const char *enc = @encode(int);\nNSLog(@"%s", enc);`,
     expectError: true,
+    expectDiag: "the @encode directive is not supported",
   },
 
-  // ── @synchronized ──────────────────────────────────────────
+  // ── @synchronized (intentionally unsupported, ADR 0010) ─────
   {
     cat: "@synchronized",
-    name: "@synchronized(self) diagnostic",
+    name: "@synchronized(self) produces clean diagnostic",
     code: `@synchronized(self) {\n  NSLog(@"locked");\n}`,
     expectError: true,
+    expectDiag: "the @synchronized directive is not supported",
   },
 
   // ── Struct/NSRange ─────────────────────────────────────────
@@ -845,6 +872,12 @@ for (const probe of probes) {
   let passed;
   if (probe.expectError) {
     passed = result.status === "error";
+    if (passed && probe.expectDiag) {
+      passed = result.evalue && result.evalue.includes(probe.expectDiag);
+      if (!passed) {
+        console.log(`       diag mismatch: expected "${probe.expectDiag}" in "${result.evalue}"`);
+      }
+    }
   } else if (probe.expectAbsent) {
     passed = !result.output.includes(probe.expect);
   } else if (probe.expect === "") {
