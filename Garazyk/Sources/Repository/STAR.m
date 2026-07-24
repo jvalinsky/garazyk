@@ -437,6 +437,17 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     }
     [self writeNode:nodeCBOR];
 
+    // Emit records for this node immediately after the node CBOR.
+    // The reader (parseL0Body) expects all implicit records contiguous
+    // after the node, before any child subtrees, so it can read them
+    // in one pass without desyncing the stream.
+    for (MSTNodeEntry *entry in node.internalEntries) {
+        NSData *recordData = recordDataCache[entry.value.stringValue];
+        if (recordData) {
+            [self writeRecord:recordData];
+        }
+    }
+
     // Emit children in depth-first order:
     // 1. Left subtree
     if (node.internalLeft) {
@@ -449,15 +460,9 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         }
     }
 
-    // 2. For each entry: record (if included), then subtree (if included)
+    // 2. For each entry: subtree (if included). Records were already
+    //    emitted above, before the left subtree.
     for (MSTNodeEntry *entry in node.internalEntries) {
-        // Emit record if included
-        NSData *recordData = recordDataCache[entry.value.stringValue];
-        if (recordData) {
-            [self writeRecord:recordData];
-        }
-
-        // Emit subtree
         if (entry.internalTree) {
             if (![self writeMSTNode:entry.internalTree
                                depth:depth + 1
@@ -956,10 +961,14 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
                 repoEntry[[CBORValue textString:@"v"]] = wireMap[[CBORValue textString:@"v"]];
             }
 
-            // t (tree CID) — optional, preserved from wire format
+            // t (tree CID) — always present in repo-spec MST (nilValue when absent).
+            // The STAR wire format omits t for entries without subtrees,
+            // but the repo-spec node always includes it so map pair counts match.
             CBORValue *wireT = wireMap[[CBORValue textString:@"t"]];
             if (wireT) {
                 repoEntry[[CBORValue textString:@"t"]] = wireT;
+            } else {
+                repoEntry[[CBORValue textString:@"t"]] = [CBORValue nilValue];
             }
 
             [patchedEntries addObject:[CBORValue map:repoEntry]];
@@ -969,6 +978,13 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
 
         // Strip L flag (l is already present from wire format)
         [nodeDict removeObjectForKey:[CBORValue textString:@"L"]];
+
+        // l (left CID) — always present in repo-spec MST (nilValue when absent).
+        // The STAR wire format omits l when there is no left child, but the
+        // repo-spec node always includes it so map pair counts match.
+        if (!nodeDict[[CBORValue textString:@"l"]]) {
+            nodeDict[[CBORValue textString:@"l"]] = [CBORValue nilValue];
+        }
 
         // Re-serialize to repo-spec MST node form and verify CID
         CBORValue *repoNode = [CBORValue map:nodeDict];
