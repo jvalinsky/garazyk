@@ -62,12 +62,20 @@
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong) MockWorkerBlobProvider *blobProvider;
 @property (nonatomic, strong) NSURL *tempDirURL;
+@property (nonatomic, strong) id<PDSBlobProvider> savedTranscoderProvider;
+@property (nonatomic, strong) id<PDSBlobProvider> savedGeneratorProvider;
 @end
 
 @implementation ATProtoVideoWorkerTests
 
 - (void)setUp {
     [super setUp];
+
+    // worker.blobProvider propagates into the shared transcoder/generator
+    // singletons; capture their state so tearDown can undo the leak that
+    // otherwise breaks later suites asserting singleton defaults.
+    self.savedTranscoderProvider = [ATProtoVideoTranscoder sharedTranscoder].blobProvider;
+    self.savedGeneratorProvider = [ATProtoVideoThumbnailGenerator sharedGenerator].blobProvider;
 
     // Create temp database
     self.tempDirURL = [NSURL fileURLWithPath:
@@ -96,6 +104,8 @@
 }
 
 - (void)tearDown {
+    [ATProtoVideoTranscoder sharedTranscoder].blobProvider = self.savedTranscoderProvider;
+    [ATProtoVideoThumbnailGenerator sharedGenerator].blobProvider = self.savedGeneratorProvider;
     [self.worker stop];
     self.worker = nil;
     [self.serviceDatabases closeAll];

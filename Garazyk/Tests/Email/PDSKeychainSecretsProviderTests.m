@@ -41,9 +41,15 @@
         return NO;
     }
 
+    // Writing can succeed while read-back fails with errSecAuthFailed
+    // (-25293) when an unattended test process cannot answer the keychain
+    // ACL prompt; the probe must round-trip, not just store.
+    NSError *retrieveError = nil;
+    NSString *retrieved = [self.provider secretForKey:key error:&retrieveError];
+
     NSError *deleteError = nil;
     (void)[self.provider deleteSecretForKey:key error:&deleteError];
-    return YES;
+    return [retrieved isEqualToString:@"probe"];
 }
 
 - (void)cleanupAllTestData {
