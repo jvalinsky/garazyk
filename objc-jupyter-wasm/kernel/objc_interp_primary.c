@@ -894,12 +894,12 @@ Value parse_primary(Parser *p) {
                     return value_from_int(old_val);
                 }
 
-                /* Struct member access: r.location, r.length, etc. */
-                if (var->is_struct && parser_current(p).type == TOK_DOT) {
+                /* Struct member access via . or ->: r.location, r.length, etc. */
+                if (var->is_struct && (parser_current(p).type == TOK_DOT || parser_current(p).type == TOK_ARROW)) {
                     char field_name[64];
                     StructDef *sd;
                     StructInstance *si;
-                    parser_advance(p); /* consume . */
+                    parser_advance(p); /* consume . or -> */
                     if (parser_current(p).type != TOK_IDENTIFIER) {
                         parser_error(p, "Expected field name after '.'");
                         return value_void();
@@ -927,6 +927,29 @@ Value parse_primary(Parser *p) {
                     }
                     parser_error(p, "Unknown struct field");
                     return value_void();
+                }
+
+                /* Object ivar access via ->: obj->field.
+                 * The dispatch layer already flushes class ivars to the
+                 * instance var side table at method exit, so direct
+                 * lookup is sufficient. */
+                if (parser_current(p).type == TOK_ARROW && var->is_id) {
+                    char ivar_name[64];
+                    parser_advance(p); /* consume -> */
+                    if (parser_current(p).type != TOK_IDENTIFIER) {
+                        parser_error(p, "Expected ivar name after '->'");
+                        return value_void();
+                    }
+                    if (copy_identifier_or_error(p, ivar_name, parser_current(p).text, 64, "ivar")) {
+                        return value_void();
+                    }
+                    parser_advance(p);
+
+                    {
+                        Value *stored = instance_var_get(var->value, ivar_name);
+                        if (stored) return *stored;
+                        return value_from_int(0);
+                    }
                 }
 
                 /* Dot syntax: obj.property → [obj property]
@@ -1735,8 +1758,14 @@ Value parse_primary(Parser *p) {
         parser_advance(p);
         return value_void();
     }
-
-    parser_error(p, "Unexpected token");
+    {
+        char msg[128];
+        msg[0] = '\0';
+        cstr_copy(msg, "Unexpected token: '", 128);
+        cstr_cat(msg, tok.text, 128);
+        cstr_cat(msg, "'", 128);
+        parser_error(p, msg);
+    }
     parser_advance(p);
     return value_void();
 }
