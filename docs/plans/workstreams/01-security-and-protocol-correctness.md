@@ -309,6 +309,25 @@ twice from `PDSDatabaseLRUTests setUp` (22:12, 22:15). Undiagnosed;
 tracked as a follow-up. Possibly related to disk pressure given
 `PDSDatabase`'s use of SQLite, but not yet confirmed.
 
+**Open path hardened (2026-07-23), flake watch continues.** Auditing
+`-[PDSDatabase openWithError:]` for this flake found three concrete
+contract bugs on the same code path, all fixed: (1) a failed
+`sqlite3_open` never closed SQLite's error-holding handle and left `_db`
+non-NULL (documented SQLite contract violation; leak plus a stale handle
+that later close/reopen paths would act on), and would crash boxing
+`sqlite3_errmsg` if open failed with a NULL handle (OOM); (2)
+`createSchema:` failure — the exact `SQLITE_FULL` disk-pressure shape —
+was ignored, so `openWithError:` returned YES with `isOpen = YES` on a
+database with missing tables, failing every later query obscurely; now
+fails closed like the migration branch; (3) `setWalMode:`/
+`setPerformanceOptimizations:` failures wrote `*error` alongside a YES
+return, violating the error-only-on-NO convention; now logged locally and
+non-fatal. New registered suite `PDSDatabaseOpenFailureTests` pins the
+failed-open cleanup (NO + error + NULL handle + safe re-open attempt);
+the database/actor-store suites stay green (72 targeted tests). The
+original 0x0 crash never reproduced, so the flake stays open as a watch
+item — but its most plausible mechanisms on this path are now closed.
+
 **Regression discovered 2026-07-19 (during phase 8), fully root-caused and
 repaired 2026-07-22.** A full `AllTests --gated=run` was no longer clean —
 12 suites failed, roughly 68 individual assertion failures, contradicting
