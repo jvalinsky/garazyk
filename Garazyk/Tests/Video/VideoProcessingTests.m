@@ -832,12 +832,14 @@
 }
 
 - (void)testDefaultBlobProviderIsNil {
-    ATProtoVideoTranscoder *transcoder = [ATProtoVideoTranscoder sharedTranscoder];
+    // Defaults are an initializer property; the shared singleton's state is
+    // process-global and legitimately configured by other components.
+    ATProtoVideoTranscoder *transcoder = [[ATProtoVideoTranscoder alloc] init];
     XCTAssertNil(transcoder.blobProvider);
 }
 
 - (void)testDefaultDelegateIsNil {
-    ATProtoVideoTranscoder *transcoder = [ATProtoVideoTranscoder sharedTranscoder];
+    ATProtoVideoTranscoder *transcoder = [[ATProtoVideoTranscoder alloc] init];
     XCTAssertNil(transcoder.delegate);
 }
 
