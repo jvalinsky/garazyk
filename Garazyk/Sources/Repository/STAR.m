@@ -849,16 +849,18 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
 
         NSMutableArray<CBORValue *> *entries = [entriesVal.array mutableCopy];
         NSUInteger recordCount = 0;
-        NSMutableArray<NSNumber *> *recordEntryIndices = [NSMutableArray array];
-
         for (NSUInteger i = 0; i < entries.count; i++) {
             CBORValue *entry = entries[i];
             if (entry.type != CBORTypeMap) continue;
 
             BOOL entryHasV = entry.map[[CBORValue textString:@"v"]] != nil;
             BOOL entryHasVFlag = entry.map[[CBORValue textString:@"V"]] != nil;
+            BOOL entryHasT = entry.map[[CBORValue textString:@"t"]] != nil;
+            BOOL entryHasTFlag = entry.map[[CBORValue textString:@"T"]] != nil;
 
-            // Spec: V must not be present when v is not present
+            // Spec: V must not be present when v is not present (Slice A).
+            // At layer 0, absence of v IS the archived signal — both v and V are
+            // absent; at non-layer-0, V is present alongside v for archived entries.
             if (entryHasVFlag && !entryHasV) {
                 if (error) *error = STARError(37, @"'V' flag without 'v' CID in entry %lu at offset %lu",
                                               (unsigned long)i, (unsigned long)(offset - blockLen));
@@ -866,17 +868,21 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
             }
 
             // Validate T/t consistency
-            BOOL entryHasT = entry.map[[CBORValue textString:@"t"]] != nil;
-            BOOL entryHasTFlag = entry.map[[CBORValue textString:@"T"]] != nil;
             if (entryHasTFlag && !entryHasT) {
                 if (error) *error = STARError(38, @"'T' flag without 't' CID in entry %lu at offset %lu",
                                               (unsigned long)i, (unsigned long)(offset - blockLen));
                 return NO;
             }
 
-            if (entryHasVFlag) {
+            // Count inline records:
+            // - V flag present: non-layer-0 archived entry (v present, V set)
+            // - v absent: layer-0 archived entry (absence of v IS the signal;
+            //   at layer 0 every entry has a value, so v-absent always means
+            //   archived, regardless of whether t is present)
+            // At non-layer-0, v is always present in the wire format, so
+            // !entryHasV uniquely identifies layer-0 archived entries.
+            if (entryHasVFlag || !entryHasV) {
                 recordCount++;
-                [recordEntryIndices addObject:@(i)];
             }
         }
 
@@ -935,15 +941,19 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
             // p (prefix length) — always present
             repoEntry[[CBORValue textString:@"p"]] = wireMap[[CBORValue textString:@"p"]];
 
-            // v (value CID): from computed record CID if V was set, else from wire format
+            // v (value CID):
+            // - V flag present: non-layer-0 archived → use computed record CID
+            // - v absent in wire format: layer-0 archived (absence IS the signal,
+            //   regardless of t) → use computed record CID
+            // - v present, V absent: non-archived → use wire-format v directly
             if (wireMap[[CBORValue textString:@"V"]]) {
                 CARBlock *recBlock = pendingRecords[recIdx++];
                 EntryMapSetCID(repoEntry, [CBORValue textString:@"v"], recBlock.cid);
+            } else if (!wireMap[[CBORValue textString:@"v"]]) {
+                CARBlock *recBlock = pendingRecords[recIdx++];
+                EntryMapSetCID(repoEntry, [CBORValue textString:@"v"], recBlock.cid);
             } else {
-                CBORValue *wireV = wireMap[[CBORValue textString:@"v"]];
-                if (wireV) {
-                    repoEntry[[CBORValue textString:@"v"]] = wireV;
-                }
+                repoEntry[[CBORValue textString:@"v"]] = wireMap[[CBORValue textString:@"v"]];
             }
 
             // t (tree CID) — optional, preserved from wire format
