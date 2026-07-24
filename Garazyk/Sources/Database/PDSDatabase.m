@@ -145,11 +145,17 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     [self safeExecuteSync:^{
         int rc = sqlite3_open(self.databaseURL.path.fileSystemRepresentation, &_db);
         if (rc != SQLITE_OK) {
+            // SQLite returns an error-holding handle (or NULL on OOM) that the
+            // caller must still close; a stale non-NULL _db would poison later
+            // close/reopen paths.
+            const char *msg = _db ? sqlite3_errmsg(_db) : "out of memory";
             if (error) {
                 *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                              code:PDSDatabaseErrorNotOpen
-                                         userInfo:@{NSLocalizedDescriptionKey: @(sqlite3_errmsg(_db))}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @(msg)}];
             }
+            sqlite3_close_v2(_db);
+            _db = NULL;
             result = NO;
             return;
         }
@@ -160,9 +166,29 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         // can execute. This must be set before running migrations that use executeParameterizedUpdate.
         self.isOpen = YES;
 
-        [self setPerformanceOptimizations:error];
-        [self setWalMode:error];
-        [self createSchema:error];
+        // PRAGMA tuning and WAL are best-effort: failure degrades performance,
+        // not correctness. Log through a local error so *error never carries a
+        // failure alongside a YES return.
+        NSError *tuningError = nil;
+        if (![self setPerformanceOptimizations:&tuningError]) {
+            GZ_LOG_DB_ERROR(@"Performance PRAGMA setup failed (continuing): %@", tuningError);
+        }
+        tuningError = nil;
+        if (![self setWalMode:&tuningError]) {
+            GZ_LOG_DB_ERROR(@"WAL mode setup failed (continuing): %@", tuningError);
+        }
+
+        // Schema creation is not best-effort: an open that returns YES with
+        // missing tables (e.g. SQLITE_FULL under disk pressure) fails every
+        // later query obscurely. Fail closed instead, like migrations below.
+        NSError *schemaError = nil;
+        if (![self createSchema:&schemaError]) {
+            GZ_LOG_DB_ERROR(@"Failed to create schema: %@", schemaError);
+            if (error) *error = schemaError;
+            [self close];
+            result = NO;
+            return;
+        }
 
         // Run pending migrations via PDSMigrationManager
         PDSMigrationManager *migrationManager = [PDSMigrationManager pdsDatabaseMigrationManager];
