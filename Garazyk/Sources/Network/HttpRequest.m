@@ -502,4 +502,12 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
   self.middlewareContext[@"authenticatedDid"] = did;
 }
 
+- (NSArray *)permissionScopes {
+  return self.middlewareContext[@"permissionScopes"];
+}
+
+- (void)setPermissionScopes:(NSArray *)scopes {
+  self.middlewareContext[@"permissionScopes"] = scopes;
+}
+
 @end

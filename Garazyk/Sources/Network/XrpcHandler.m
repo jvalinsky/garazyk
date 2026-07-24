@@ -12,6 +12,8 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
+#import "Security/ATProtoPermissionScope.h"
 
 @interface XrpcDispatcher ()
 
@@ -368,6 +370,30 @@ static XrpcDispatcher *_sharedInstance = nil;
               request:(HttpRequest *)request 
              response:(HttpResponse *)response {
     @try {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (authHeader.length > 0 && !request.permissionScopes) {
+            NSString *token = nil;
+            if ([authHeader hasPrefix:@"Bearer "]) {
+                token = [authHeader substringFromIndex:7];
+            } else if ([authHeader hasPrefix:@"DPoP "]) {
+                token = [authHeader substringFromIndex:5];
+            }
+            if (token.length > 0) {
+                JWT *jwt = [JWT jwtWithToken:token error:nil];
+                if (jwt) {
+                    NSArray *scopes = [ATProtoPermissionScopeEvaluator scopesFromJWT:jwt];
+                    [request setPermissionScopes:scopes];
+                    if (![ATProtoPermissionScopeEvaluator evaluateRPCScopes:scopes forMethod:methodId audience:nil]) {
+                        response.statusCode = HttpStatusForbidden;
+                        [response setJsonBody:@{
+                            @"error": @"InsufficientScope",
+                            @"message": [NSString stringWithFormat:@"Token scope does not authorize method '%@'", methodId]
+                        }];
+                        return;
+                    }
+                }
+            }
+        }
         handler(request, response);
     } @catch (NSException *exception) {
         NSString *name = exception.name ?: @"(null)";
