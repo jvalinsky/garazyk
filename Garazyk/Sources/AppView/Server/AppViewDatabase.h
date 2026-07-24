@@ -26,6 +26,7 @@
 #import <Foundation/Foundation.h>
 #import "AppViewTypes.h"
 #import "Database/PDSQueryDatabase.h"
+#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -562,15 +563,10 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
 #pragma mark - Transactions
 
-/*! Execute a block inside a database transaction (BEGIN IMMEDIATE / COMMIT).
-    If the block returns NO or sets *error, the transaction is rolled back. */
-- (BOOL)performTransaction:(BOOL (^)(AppViewDatabase *db, NSError **error))block error:(NSError **)error;
-
-/*! Execute a block inside a database transaction (BEGIN IMMEDIATE / COMMIT).
-    If the block returns NO or sets *error, the transaction is rolled back.
-    This is useful for batching multiple database operations (e.g., block
-    storage + record materialization) into a single fsync. */
-- (BOOL)inTransaction:(BOOL (^)(NSError **blockError))block error:(NSError **)error;
+/*! Execute a block inside a write transaction (BEGIN IMMEDIATE / COMMIT).
+    If the block returns NO or sets *error, the transaction rolls back. */
+- (BOOL)performWriteTransaction:(BOOL (^)(id<ATProtoDatabaseTransactor> tx, NSError **error))block
+                          error:(NSError **)error;
 
 @end
 
