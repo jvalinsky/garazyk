@@ -1758,14 +1758,10 @@ Value parse_primary(Parser *p) {
         parser_advance(p);
         return value_void();
     }
-    {
-        char msg[128];
-        msg[0] = '\0';
-        cstr_copy(msg, "Unexpected token: '", 128);
-        cstr_cat(msg, tok.text, 128);
-        cstr_cat(msg, "'", 128);
-        parser_error(p, msg);
-    }
+    interp_emit_stream(" <ERROR_TOK:", 12);
+    interp_emit_stream(tok.text, cstr_len(tok.text));
+    interp_emit_stream("> ", 2);
+    parser_error(p, "Unexpected token");
     parser_advance(p);
     return value_void();
 }
