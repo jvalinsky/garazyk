@@ -23,7 +23,9 @@
  * is cached at configure time; an incremental build will not pick up newly
  * added files.
  */
-@interface STARPreorderTests : XCTestCase
+@interface STARPreorderTests : XCTestCase {
+    NSMutableDictionary<NSString *, NSData *> *_cidToRecordData;
+}
 @end
 
 @implementation STARPreorderTests
@@ -45,37 +47,32 @@
 
 #pragma mark - Test data helpers
 
-- (CID *)testCIDForKey:(NSString *)key {
-    return [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
-}
-
-- (NSData *)testRecordDataForCID:(CID *)cid {
-    // Deterministic per-record data so byte-identity checks are stable.
+- (NSData *)testRecordDataForKey:(NSString *)key {
+    // Deterministic per-record data: marker byte + key UTF-8.
+    // CID is SHA-256 of this data — cryptographically consistent round-trip.
     NSMutableData *out = [NSMutableData data];
     uint8_t marker = 0xA1;
     [out appendBytes:&marker length:1];
-    [out appendData:cid.bytes];
+    [out appendData:[key dataUsingEncoding:NSUTF8StringEncoding]];
     return out;
 }
 
 - (MSTBlockProvider)recordProviderForTree:(MST *)tree {
-    // Walk the same MST the writer will see, so the cache is intentionally in
-    // lock-step with the entries the writer will traverse. Deterministic per-CID
-    // payload keeps byte-identity stable across runs.
-    NSMutableDictionary<NSString *, NSData *> *cache = [NSMutableDictionary dictionary];
-    for (MSTEntry *e in [tree allEntries]) {
-        cache[e.valueCID.stringValue] = [self testRecordDataForCID:e.valueCID];
-    }
-    MSTBlockProvider provider = ^NSData *(CID *cid) {
+    // CID→recordData mapping was precomputed in buildSmallDeterministicFixture.
+    NSDictionary<NSString *, NSData *> *cache = [_cidToRecordData copy];
+    return ^NSData *(CID *cid) {
         return cache[cid.stringValue];
     };
-    return provider;
 }
 
 - (MST *)buildSmallDeterministicFixture {
     // Eight TID-format keys; their SHA-256 depths span multiple levels so the
     // MST is multi-level. The exact tree shape is irrelevant — invariants are
     // cross-checked against the MST pre-order walker for these exact keys.
+    //
+    // Record data is computed first, then CIDs are derived from SHA-256(data),
+    // so CID(record) == entry.value — the invariant required for verifying
+    // round-trip through the STAR reader.
     NSArray<NSString *> *keys = @[
         @"app.bsky.feed.post/3jzfcijpj2z2a",
         @"app.bsky.feed.post/3jzfcijpj2z2b",
@@ -86,9 +83,13 @@
         @"app.bsky.feed.post/3jzfcijpj2z2g",
         @"app.bsky.feed.post/3jzfcijpj2z2h"
     ];
+    _cidToRecordData = [NSMutableDictionary dictionary];
     MST *tree = [[MST alloc] init];
     for (NSString *key in keys) {
-        [tree put:key valueCID:[self testCIDForKey:key]];
+        NSData *recordData = [self testRecordDataForKey:key];
+        CID *cid = [CID cidWithDigest:[CID sha256Digest:recordData] codec:0x71];
+        _cidToRecordData[cid.stringValue] = recordData;
+        [tree put:key valueCID:cid];
     }
     return tree;
 }
