@@ -576,5 +576,6 @@ Token lexer_next_token(Lexer *lex) {
         default: tok.type = TOK_UNKNOWN; break;
     }
 
+
     return tok;
 }
