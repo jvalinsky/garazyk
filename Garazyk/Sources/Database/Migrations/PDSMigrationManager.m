@@ -7,6 +7,7 @@
 #import "Database/PDSDatabaseBlock.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import <sqlite3.h>
 
 // Suppress -Wobjc-string-concatenation: multi-line SQL string literals
@@ -2243,6 +2244,318 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 @end
 
+#pragma mark - AppView V1 Initial Schema
+
+@interface AppViewV1InitialSchema : NSObject <PDSMigration>
+@end
+
+@implementation AppViewV1InitialSchema
+
+- (NSInteger)version { return 1; }
+- (NSString *)name { return @"appview_initial"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *schemaSQL =
+        "CREATE TABLE IF NOT EXISTS appview_schema_version (version INTEGER NOT NULL);"
+        "CREATE TABLE IF NOT EXISTS appview_checkpoints (relay_url TEXT NOT NULL PRIMARY KEY, seq INTEGER NOT NULL, saved_at TEXT NOT NULL);"
+        "CREATE TABLE IF NOT EXISTS appview_repo_sync_state (did TEXT NOT NULL PRIMARY KEY, status INTEGER NOT NULL DEFAULT 0, last_rev TEXT, last_backfill_at TEXT, error_count INTEGER NOT NULL DEFAULT 0, last_error TEXT);"
+        "CREATE TABLE IF NOT EXISTS appview_pending_deltas (id INTEGER PRIMARY KEY AUTOINCREMENT, did TEXT NOT NULL, seq INTEGER NOT NULL, commit_cid TEXT NOT NULL, rev TEXT NOT NULL, raw_envelope BLOB NOT NULL, enqueued_at TEXT NOT NULL, UNIQUE(did, seq));"
+        "CREATE INDEX IF NOT EXISTS idx_pending_deltas_did ON appview_pending_deltas(did);"
+        "CREATE INDEX IF NOT EXISTS idx_pending_deltas_seq ON appview_pending_deltas(seq);"
+        "CREATE TABLE IF NOT EXISTS appview_event_log (id INTEGER PRIMARY KEY AUTOINCREMENT, seq INTEGER NOT NULL, did TEXT, rev TEXT, cid TEXT, raw_envelope BLOB NOT NULL, created_at TEXT NOT NULL);"
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_event_log_dedup ON appview_event_log(did, rev, cid);"
+        "CREATE INDEX IF NOT EXISTS idx_event_log_seq ON appview_event_log(seq);"
+        "CREATE INDEX IF NOT EXISTS idx_event_log_created ON appview_event_log(created_at);"
+        "CREATE TABLE IF NOT EXISTS appview_cursor_events (cursor INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL, seq INTEGER NOT NULL, did TEXT, rev TEXT, cid TEXT, raw_envelope BLOB NOT NULL, created_at TEXT NOT NULL);"
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_cursor_events_dedup ON appview_cursor_events(did, rev, cid, event_type);"
+        "CREATE INDEX IF NOT EXISTS idx_cursor_events_seq ON appview_cursor_events(seq);"
+        "CREATE TABLE IF NOT EXISTS appview_relevance (did TEXT NOT NULL PRIMARY KEY, reason INTEGER NOT NULL, expires_at TEXT, added_at TEXT NOT NULL);"
+        "CREATE INDEX IF NOT EXISTS idx_relevance_expires ON appview_relevance(expires_at);"
+        "CREATE TABLE IF NOT EXISTS appview_dead_letter (id INTEGER PRIMARY KEY AUTOINCREMENT, collection TEXT NOT NULL, seq INTEGER NOT NULL, did TEXT NOT NULL, rev TEXT, cid TEXT, raw_record BLOB NOT NULL, validation_error TEXT NOT NULL, created_at TEXT NOT NULL);"
+        "CREATE INDEX IF NOT EXISTS idx_dead_letter_did ON appview_dead_letter(did);"
+        "CREATE INDEX IF NOT EXISTS idx_dead_letter_created ON appview_dead_letter(created_at);"
+        "CREATE TABLE IF NOT EXISTS dead_letter_hooks (id INTEGER PRIMARY KEY AUTOINCREMENT, hook_id TEXT NOT NULL, uri TEXT NOT NULL, did TEXT NOT NULL, collection TEXT NOT NULL, event_type TEXT NOT NULL, error_message TEXT, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));"
+        "CREATE INDEX IF NOT EXISTS idx_dead_letter_hooks_hook_id ON dead_letter_hooks(hook_id);"
+        "CREATE INDEX IF NOT EXISTS idx_dead_letter_hooks_created ON dead_letter_hooks(created_at);"
+        "CREATE TABLE IF NOT EXISTS records (uri TEXT PRIMARY KEY, did TEXT NOT NULL, collection TEXT NOT NULL, rkey TEXT NOT NULL, cid TEXT NOT NULL, handle TEXT, value TEXT, subject_did TEXT, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));"
+        "CREATE INDEX IF NOT EXISTS idx_records_did_collection ON records(did, collection);"
+        "CREATE INDEX IF NOT EXISTS idx_records_did_collection_rkey ON records(did, collection, rkey);"
+        "CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);"
+        "CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);"
+        "CREATE TABLE IF NOT EXISTS blocks (cid BLOB PRIMARY KEY, repo_did TEXT NOT NULL, block_data BLOB, content_type TEXT, size INTEGER, created_at TEXT NOT NULL);"
+        "CREATE INDEX IF NOT EXISTS idx_blocks_repo_did ON blocks(repo_did);"
+        "CREATE TABLE IF NOT EXISTS handles (handle TEXT PRIMARY KEY, did TEXT NOT NULL);"
+        "CREATE INDEX IF NOT EXISTS idx_handles_did ON handles(did);"
+        "CREATE TABLE IF NOT EXISTS bsky_feed_threadgates (uri TEXT UNIQUE, post_uri TEXT PRIMARY KEY, allow_json TEXT, created_at INTEGER, updated_at INTEGER);"
+        "CREATE TABLE IF NOT EXISTS bsky_feed_postgates (post_uri TEXT PRIMARY KEY, embedding_rules_json TEXT, created_at INTEGER, updated_at INTEGER);"
+        "CREATE TABLE IF NOT EXISTS bsky_feed_generators (uri TEXT PRIMARY KEY, did TEXT NOT NULL, display_name TEXT, description TEXT, avatar_cid TEXT, created_at INTEGER, updated_at INTEGER);"
+        "CREATE TABLE IF NOT EXISTS bsky_labeler_services (did TEXT PRIMARY KEY, labeler_did TEXT NOT NULL, created_at INTEGER, updated_at INTEGER);"
+        "CREATE TABLE IF NOT EXISTS bsky_graph_lists (uri TEXT PRIMARY KEY, did TEXT NOT NULL, name TEXT NOT NULL, purpose TEXT NOT NULL, description TEXT, avatar_cid TEXT, created_at INTEGER, updated_at INTEGER);"
+        "CREATE TABLE IF NOT EXISTS bsky_graph_listitems (uri TEXT PRIMARY KEY, list_uri TEXT NOT NULL, subject_did TEXT NOT NULL, created_at INTEGER, FOREIGN KEY (list_uri) REFERENCES bsky_graph_lists(uri) ON DELETE CASCADE);"
+        "CREATE TABLE IF NOT EXISTS bookmarks (id INTEGER PRIMARY KEY AUTOINCREMENT, did TEXT NOT NULL, uri TEXT NOT NULL UNIQUE, subject_uri TEXT NOT NULL, subject_cid TEXT, created_at TEXT NOT NULL, UNIQUE(did, subject_uri));"
+        "CREATE TABLE IF NOT EXISTS starter_packs (uri TEXT PRIMARY KEY, did TEXT NOT NULL, rkey TEXT NOT NULL, cid TEXT NOT NULL, name TEXT NOT NULL, description TEXT, list_uri TEXT, created_at TEXT, updated_at INTEGER);"
+        "CREATE TABLE IF NOT EXISTS groups (uri TEXT PRIMARY KEY, did TEXT NOT NULL, name TEXT NOT NULL, description TEXT, created_at INTEGER, updated_at INTEGER, cid TEXT);"
+        "CREATE TABLE IF NOT EXISTS group_members (group_uri TEXT NOT NULL, did TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member', added_at INTEGER, PRIMARY KEY (group_uri, did), FOREIGN KEY (group_uri) REFERENCES groups(uri) ON DELETE CASCADE);"
+        "CREATE TABLE IF NOT EXISTS accounts (did TEXT PRIMARY KEY, handle TEXT, email TEXT, created_at TEXT);"
+        "CREATE TABLE IF NOT EXISTS actor_preferences (did TEXT PRIMARY KEY, preferences BLOB NOT NULL, created_at REAL NOT NULL, updated_at REAL NOT NULL, FOREIGN KEY (did) REFERENCES accounts(did));"
+        "CREATE TABLE IF NOT EXISTS actor_mutes (id INTEGER PRIMARY KEY AUTOINCREMENT, did TEXT NOT NULL, muted_did TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), UNIQUE(did, muted_did));"
+        "CREATE TABLE IF NOT EXISTS labels (src TEXT NOT NULL, uri TEXT NOT NULL, cid TEXT, val TEXT NOT NULL, neg INTEGER DEFAULT 0, created_at TEXT NOT NULL);"
+        "CREATE INDEX IF NOT EXISTS idx_labels_uri ON labels(uri);"
+        "CREATE TABLE IF NOT EXISTS drafts (id TEXT PRIMARY KEY, did TEXT NOT NULL, content TEXT, created_at INTEGER, updated_at INTEGER);"
+        "CREATE INDEX IF NOT EXISTS idx_drafts_did ON drafts(did);"
+        "CREATE TABLE IF NOT EXISTS phone_verifications (id TEXT PRIMARY KEY, phone TEXT NOT NULL, code TEXT NOT NULL, did TEXT NOT NULL, created_at TEXT, expires_at TEXT);"
+        "CREATE TABLE IF NOT EXISTS contact_tokens (token TEXT PRIMARY KEY, did TEXT NOT NULL, phone TEXT NOT NULL, created_at TEXT);"
+        "CREATE TABLE IF NOT EXISTS contact_hashes (did TEXT NOT NULL, phone_hash TEXT NOT NULL, imported_at TEXT, UNIQUE(did, phone_hash));"
+        "CREATE TABLE IF NOT EXISTS contact_sync_status (did TEXT PRIMARY KEY, synced_at TEXT, matches_count INTEGER);"
+        "CREATE TABLE IF NOT EXISTS contact_matches (did TEXT NOT NULL, match_did TEXT NOT NULL, dismissed_at TEXT, PRIMARY KEY (did, match_did));"
+        "CREATE TABLE IF NOT EXISTS contact_notifications (from_did TEXT NOT NULL, to_did TEXT NOT NULL, created_at TEXT);"
+        "CREATE TABLE IF NOT EXISTS notification_preferences (did TEXT PRIMARY KEY, preferences TEXT);"
+        "CREATE TABLE IF NOT EXISTS age_assurance_states (id TEXT PRIMARY KEY, did TEXT NOT NULL, status TEXT NOT NULL, email TEXT, country_code TEXT, region_code TEXT, language TEXT, token TEXT, created_at INTEGER, updated_at INTEGER);"
+        "CREATE TABLE IF NOT EXISTS search_actors (rowid INTEGER PRIMARY KEY, did TEXT NOT NULL, display_name TEXT, handle TEXT, description TEXT);"
+        "CREATE TABLE IF NOT EXISTS search_posts (rowid INTEGER PRIMARY KEY, uri TEXT NOT NULL, did TEXT NOT NULL, text TEXT);"
+        "CREATE TABLE IF NOT EXISTS search_starter_packs (rowid INTEGER PRIMARY KEY, uri TEXT NOT NULL, did TEXT NOT NULL, name TEXT);"
+        "CREATE VIRTUAL TABLE IF NOT EXISTS fts_actors USING fts5(did, display_name, handle, description, content=search_actors, content_rowid=rowid);"
+        "CREATE VIRTUAL TABLE IF NOT EXISTS fts_posts USING fts5(uri, did, text, content=search_posts, content_rowid=rowid);"
+        "CREATE VIRTUAL TABLE IF NOT EXISTS fts_starter_packs USING fts5(uri, did, name, content=search_starter_packs, content_rowid=rowid);"
+        "CREATE INDEX IF NOT EXISTS idx_search_actors_did ON search_actors(did);"
+        "CREATE INDEX IF NOT EXISTS idx_search_posts_uri ON search_posts(uri);"
+        "CREATE INDEX IF NOT EXISTS idx_search_starter_packs_uri ON search_starter_packs(uri);";
+        
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, schemaSQL, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV1 up failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    NSArray *tables = @[
+        @"appview_schema_version", @"appview_checkpoints", @"appview_repo_sync_state",
+        @"appview_pending_deltas", @"appview_event_log", @"appview_cursor_events",
+        @"appview_relevance", @"appview_dead_letter", @"dead_letter_hooks",
+        @"records", @"blocks", @"handles", @"bsky_feed_threadgates",
+        @"bsky_feed_postgates", @"bsky_feed_generators", @"bsky_labeler_services",
+        @"bsky_graph_lists", @"bsky_graph_listitems", @"bookmarks", @"starter_packs",
+        @"groups", @"group_members", @"accounts", @"actor_preferences", @"actor_mutes",
+        @"labels", @"drafts", @"phone_verifications", @"contact_tokens", @"contact_hashes",
+        @"contact_sync_status", @"contact_matches", @"contact_notifications", @"notification_preferences",
+        @"age_assurance_states", @"search_actors", @"search_posts", @"search_starter_packs",
+        @"fts_actors", @"fts_posts", @"fts_starter_packs"
+    ];
+    for (NSString *table in tables) {
+        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV1 down failed on %@: %s", table, errMsg]}];
+            }
+            sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - AppView V2 Threadgate URI
+
+@interface AppViewV2ThreadgateURI : NSObject <PDSMigration>
+@end
+
+@implementation AppViewV2ThreadgateURI
+
+- (NSInteger)version { return 2; }
+- (NSString *)name { return @"appview_threadgate_uri"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "ALTER TABLE bsky_feed_threadgates ADD COLUMN uri TEXT", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSString *msg = errMsg ? @(errMsg) : @"";
+        if (errMsg) {
+            sqlite3_free(errMsg);
+            errMsg = NULL;
+        }
+        if (![msg containsString:@"duplicate column name"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV2 up failed: %@", msg]}];
+            }
+            return NO;
+        }
+    }
+    
+    rc = sqlite3_exec(db, "CREATE UNIQUE INDEX IF NOT EXISTS idx_bsky_feed_threadgates_uri ON bsky_feed_threadgates(uri)", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV2 up failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "DROP INDEX IF EXISTS idx_bsky_feed_threadgates_uri", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV2 down failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - AppView V3 Pending Index Events
+
+@interface AppViewV3PendingIndexEvents : NSObject <PDSMigration>
+@end
+
+@implementation AppViewV3PendingIndexEvents
+
+- (NSInteger)version { return 3; }
+- (NSString *)name { return @"appview_pending_index_events"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *sql = 
+        "CREATE TABLE IF NOT EXISTS appview_pending_index_events ("
+        "relay_url TEXT NOT NULL, seq INTEGER NOT NULL, event_type TEXT NOT NULL, "
+        "did TEXT, rev TEXT, cid TEXT, raw_envelope BLOB NOT NULL, "
+        "received_at TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, "
+        "lease_owner TEXT, lease_expires_at TEXT, indexed_at TEXT, terminal_error TEXT, "
+        "PRIMARY KEY(relay_url, seq));"
+        "CREATE INDEX IF NOT EXISTS idx_pending_index_events_ready "
+        "ON appview_pending_index_events(indexed_at, terminal_error, lease_expires_at, relay_url, seq);";
+        
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV3 up failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "DROP TABLE IF EXISTS appview_pending_index_events", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV3 down failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - AppView V4 Legacy Schema Bridge
+
+@interface AppViewV4LegacySchemaBridge : NSObject <PDSMigration>
+@end
+
+@implementation AppViewV4LegacySchemaBridge
+
+- (NSInteger)version { return 4; }
+- (NSString *)name { return @"appview_legacy_bridge"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    int hasLegacyTable = 0;
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, "SELECT 1 FROM sqlite_master WHERE type='table' AND name='appview_schema_version'", -1, &stmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            hasLegacyTable = 1;
+        }
+        sqlite3_finalize(stmt);
+    }
+    
+    if (!hasLegacyTable) {
+        return YES;
+    }
+    
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "INSERT OR IGNORE INTO _migrations (version, name, applied_at) SELECT version, 'appview_legacy', strftime('%s', 'now') FROM appview_schema_version", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV4 up failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    
+    rc = sqlite3_exec(db, "DROP TABLE IF EXISTS appview_schema_version", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV4 up failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS appview_schema_version (version INTEGER NOT NULL)", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV4 down failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    
+    rc = sqlite3_exec(db, "INSERT INTO appview_schema_version (version) SELECT version FROM _migrations WHERE version <= 3", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"AppViewV4 down failed: %s", errMsg]}];
+        }
+        sqlite3_free(errMsg);
+        return NO;
+    }
+    return YES;
+}
+
+@end
+
 #pragma mark - Convenience Factory Methods
 
 @implementation PDSMigrationManager (Factory)
@@ -2281,6 +2594,15 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[V10LegacySchemaBridge alloc] init]];
     [manager registerMigration:[[V11AddLegacyColumns alloc] init]];
     [manager registerMigration:[[V12LegacyChatWithoutRowid alloc] init]];
+    return manager;
+}
+
++ (instancetype)appViewDatabaseMigrationManager {
+    PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
+    [manager registerMigration:[[AppViewV1InitialSchema alloc] init]];
+    [manager registerMigration:[[AppViewV2ThreadgateURI alloc] init]];
+    [manager registerMigration:[[AppViewV3PendingIndexEvents alloc] init]];
+    [manager registerMigration:[[AppViewV4LegacySchemaBridge alloc] init]];
     return manager;
 }
 
