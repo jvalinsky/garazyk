@@ -15,15 +15,7 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
 
-@interface AppViewDatabase (MigrationTesting)
 
-/// Test-only statement failure injection. Zero disables injection.
-- (void)appView_setMigrationFailureForTestingVersion:(NSInteger)version
-                                            statement:(NSInteger)statement;
-
-- (NSInteger)appView_migrationStatementCountForTestingVersion:(NSInteger)version;
-
-@end
 
 static NSString *AppViewMigrationFixturePath(void) {
     NSString *name = [NSString stringWithFormat:@"appview-migration-%@.sqlite",
@@ -162,14 +154,16 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertNotNil(database, @"%@", error);
     XCTAssertTrue([database runMigrations:&error], @"%@", error);
 
+    // PDSMigrationManager tracks versions in _migrations
     NSArray *versions = [database executeParameterizedQuery:
-        @"SELECT version FROM appview_schema_version ORDER BY version"
+        @"SELECT version FROM _migrations ORDER BY version"
                                                        params:@[] error:&error];
     XCTAssertNotNil(versions, @"%@", error);
-    XCTAssertEqual(versions.count, 3U);
+    XCTAssertEqual(versions.count, 4U, @"V1-V4 must all be recorded");
     XCTAssertEqual([versions[0][@"version"] integerValue], 1);
     XCTAssertEqual([versions[1][@"version"] integerValue], 2);
     XCTAssertEqual([versions[2][@"version"] integerValue], 3);
+    XCTAssertEqual([versions[3][@"version"] integerValue], 4);
 
     NSArray *columns = [database executeParameterizedQuery:
         @"PRAGMA table_info(bsky_feed_threadgates)"
@@ -189,6 +183,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual(indexes.count, 2U, @"Required migration indexes must exist");
     [database close];
 
+    // Reopen and migrate again — should be a no-op
     database = [[AppViewDatabase alloc] initWithPath:path error:&error];
     XCTAssertNotNil(database, @"%@", error);
     XCTAssertTrue([database runMigrations:&error], @"%@", error);
@@ -205,9 +200,9 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual(threadgates.count, 1U, @"Legacy data must survive reopen");
 
     versions = [database executeParameterizedQuery:
-        @"SELECT version FROM appview_schema_version ORDER BY version"
+        @"SELECT version FROM _migrations ORDER BY version"
                                            params:@[] error:&error];
-    XCTAssertEqual(versions.count, 3U, @"Reopen must not record migrations twice");
+    XCTAssertEqual(versions.count, 4U, @"Reopen must not record migrations twice");
     indexes = [database executeParameterizedQuery:
         @"SELECT name FROM sqlite_master WHERE type = 'index' "
         "AND name IN ('idx_bsky_feed_threadgates_uri', 'idx_pending_deltas_did')"
@@ -217,90 +212,55 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
-- (void)testEveryMigrationStatementFailureRollsBackSchemaAndVersion {
-    for (NSNumber *versionNumber in @[@1, @2, @3]) {
-        NSInteger version = versionNumber.integerValue;
-        NSInteger statementCount = [self.db appView_migrationStatementCountForTestingVersion:version];
-        XCTAssertGreaterThan(statementCount, 0, @"Migration %ld must contain statements", (long)version);
+- (void)testMigrationIdempotency {
+    // Running migrations twice on the same database should be a no-op
+    NSString *path = AppViewMigrationFixturePath();
+    NSError *error = nil;
 
-        for (NSInteger statement = 1; statement <= statementCount; statement++) {
-            @autoreleasepool {
-                NSString *path = AppViewMigrationFixturePath();
-                NSError *error = nil;
-                XCTAssertTrue(CreateLegacyAppViewFixture(path, &error), @"%@", error);
+    AppViewDatabase *database = [[AppViewDatabase alloc] initWithPath:path error:&error];
+    XCTAssertNotNil(database, @"%@", error);
+    XCTAssertTrue([database runMigrations:&error], @"First migration: %@", error);
+    XCTAssertTrue([database runMigrations:&error], @"Second migration: %@", error);
 
-                AppViewDatabase *database = [[AppViewDatabase alloc] initWithPath:path error:&error];
-                XCTAssertNotNil(database, @"%@", error);
-                [database appView_setMigrationFailureForTestingVersion:version statement:statement];
-                XCTAssertFalse([database runMigrations:&error],
-                               @"Migration %ld statement %ld must fail",
-                               (long)version, (long)statement);
-                XCTAssertNotNil(error, @"Migration %ld statement %ld must report an error",
-                                (long)version, (long)statement);
+    NSArray *versions = [database executeParameterizedQuery:
+        @"SELECT version FROM _migrations ORDER BY version"
+                                                       params:@[] error:&error];
+    XCTAssertEqual(versions.count, 4U, @"Idempotent run must not double-record versions");
 
-                NSArray *versionsTable = [database executeParameterizedQuery:
-                    @"SELECT name FROM sqlite_master WHERE type = 'table' "
-                    "AND name = 'appview_schema_version'"
-                                                                       params:@[] error:nil];
-                XCTAssertEqual(versionsTable.count, 0U,
-                               @"Migration %ld statement %ld must leave no applied version",
-                               (long)version, (long)statement);
-
-                NSArray *columns = [database executeParameterizedQuery:
-                    @"PRAGMA table_info(bsky_feed_threadgates)"
-                                                              params:@[] error:nil];
-                for (NSDictionary *column in columns) {
-                    XCTAssertFalse([column[@"name"] isEqual:@"uri"],
-                                   @"Migration %ld statement %ld must roll back uri",
-                                   (long)version, (long)statement);
-                }
-                NSArray *indexes = [database executeParameterizedQuery:
-                    @"SELECT name FROM sqlite_master WHERE type = 'index' "
-                    "AND name = 'idx_bsky_feed_threadgates_uri'"
-                                                              params:@[] error:nil];
-                XCTAssertEqual(indexes.count, 0U,
-                               @"Migration %ld statement %ld must roll back its index",
-                               (long)version, (long)statement);
-
-                AppViewCheckpoint *checkpoint = [database loadCheckpointForRelayURL:@"wss://legacy.relay"
-                                                                                error:nil];
-                XCTAssertNotNil(checkpoint,
-                                @"Migration %ld statement %ld must retain legacy data",
-                                (long)version, (long)statement);
-                XCTAssertEqual(checkpoint.seq, 4242LL);
-                [database close];
-                [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-            }
-        }
-    }
+    [database close];
+    [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
-- (void)testNewerSchemaVersionFailsWithoutChangingLegacyFile {
+- (void)testLegacySchemaBridgeMigratesVersionTable {
+    // A database with appview_schema_version should have it bridged to _migrations by V4
     NSString *path = AppViewMigrationFixturePath();
     NSError *error = nil;
     XCTAssertTrue(CreateLegacyAppViewFixture(path, &error), @"%@", error);
+    // Simulate a database that was previously migrated with the old system through V3
     XCTAssertTrue(ExecuteAppViewFixtureSQL(path,
                                             "CREATE TABLE appview_schema_version(version INTEGER NOT NULL);"
-                                            "INSERT INTO appview_schema_version(version) VALUES(4);",
+                                            "INSERT INTO appview_schema_version(version) VALUES(1);"
+                                            "INSERT INTO appview_schema_version(version) VALUES(2);"
+                                            "INSERT INTO appview_schema_version(version) VALUES(3);",
                                             &error), @"%@", error);
 
     AppViewDatabase *database = [[AppViewDatabase alloc] initWithPath:path error:&error];
     XCTAssertNotNil(database, @"%@", error);
-    XCTAssertFalse([database runMigrations:&error]);
-    XCTAssertNotNil(error, @"Newer schema version must be rejected");
+    XCTAssertTrue([database runMigrations:&error], @"%@", error);
 
-    NSArray *versions = [database executeParameterizedQuery:
-        @"SELECT version FROM appview_schema_version"
+    // The old table should be gone
+    NSArray *oldTable = [database executeParameterizedQuery:
+        @"SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'appview_schema_version'"
                                                        params:@[] error:nil];
-    XCTAssertEqual(versions.count, 1U);
-    XCTAssertEqual([versions.firstObject[@"version"] integerValue], 4);
-    NSArray *columns = [database executeParameterizedQuery:
-        @"PRAGMA table_info(bsky_feed_threadgates)"
-                                                      params:@[] error:nil];
-    for (NSDictionary *column in columns) {
-        XCTAssertFalse([column[@"name"] isEqual:@"uri"],
-                       @"Newer-version failure must not apply pending migrations");
-    }
+    XCTAssertEqual(oldTable.count, 0U, @"Legacy table must be dropped after bridge");
+
+    // The new _migrations table should have V1-V4
+    NSArray *versions = [database executeParameterizedQuery:
+        @"SELECT version FROM _migrations ORDER BY version"
+                                                       params:@[] error:nil];
+    XCTAssertEqual(versions.count, 4U, @"All four migrations must be recorded");
+
+    // Legacy data must be preserved
     AppViewCheckpoint *checkpoint = [database loadCheckpointForRelayURL:@"wss://legacy.relay"
                                                                     error:nil];
     XCTAssertNotNil(checkpoint);

@@ -305,6 +305,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (instancetype)pdsDatabaseMigrationManager;
 
+/*!
+ @method appViewDatabaseMigrationManager
+
+ @abstract Create migration manager for the AppView database.
+
+ @discussion Pre-configured with V1 initial schema, V2 threadgate URI,
+ V3 pending index events, and V4 legacy schema bridge.
+
+ @return Migration manager for AppViewDatabase.
+ */
++ (instancetype)appViewDatabaseMigrationManager;
+
 @end
 
 #pragma mark - Error Domain
