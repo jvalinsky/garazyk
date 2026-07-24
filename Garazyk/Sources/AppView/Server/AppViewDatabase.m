@@ -1617,6 +1617,48 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
     } error:error];
 }
 
+#pragma mark - Takedown Enforcement
+
+- (BOOL)deleteRecordsForDID:(NSString *)did error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:400
+                                            userInfo:@{NSLocalizedDescriptionKey: @"DID must not be nil or empty"}];
+        return NO;
+    }
+
+    return [self performTransaction:^BOOL(AppViewDatabase *db, NSError **innerError) {
+        // Core record and block tables
+        if (![db executeParameterizedUpdate:@"DELETE FROM records WHERE did = ?"
+                                     params:@[did] error:innerError]) return NO;
+        if (![db executeParameterizedUpdate:@"DELETE FROM blocks WHERE repo_did = ?"
+                                     params:@[did] error:innerError]) return NO;
+
+        // Search indexes — actors use DID directly, posts and starter packs use URI
+        [db executeParameterizedUpdate:@"DELETE FROM search_actors WHERE did = ?"
+                                params:@[did] error:nil];
+        [db executeParameterizedUpdate:@"DELETE FROM search_posts WHERE did = ?"
+                                params:@[did] error:nil];
+        [db executeParameterizedUpdate:@"DELETE FROM search_starter_packs WHERE did = ?"
+                                params:@[did] error:nil];
+
+        // Pending deltas and dead-letter rows
+        [db executeParameterizedUpdate:@"DELETE FROM appview_pending_deltas WHERE did = ?"
+                                params:@[did] error:nil];
+        [db executeParameterizedUpdate:@"DELETE FROM appview_dead_letter WHERE did = ?"
+                                params:@[did] error:nil];
+
+        // Tombstone the repo sync state so backfill re-fetches on reinstatement
+        AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:did];
+        state.status = AppViewRepoSyncStatusDirty;
+        state.lastError = @"takendown";
+        state.errorCount = 0;
+        if (![db upsertRepoSyncState:state error:innerError]) return NO;
+
+        GZ_LOG_INFO(@"[AppView] Takedown enforcement: purged all data for %@", did);
+        return YES;
+    } error:error];
+}
+
 #pragma mark - Stats
 
 - (NSInteger)getTotalRecordsCountForCollection:(NSString *)collection error:(NSError **)error {

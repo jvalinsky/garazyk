@@ -14,6 +14,7 @@
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/Relay/EventFormatter.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
 #import "Core/NSDictionary+CID.h"
@@ -211,6 +212,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, assign) int64_t eventsSinceLastFlush;
 @property (nonatomic, copy) NSString *indexWorkerID;
 @property (atomic, assign) BOOL acceptingIndexWork;
+@property (nonatomic, strong) RelayRepoStateManager *repoStateManager;
 
 - (void)_persistDirtyRepairMarkerForDID:(NSString *)did
                                     seq:(int64_t)seq
@@ -249,6 +251,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                                    DISPATCH_QUEUE_SERIAL);
     _indexWorkerID        = [[NSProcessInfo processInfo].globallyUniqueString copy];
     _acceptingIndexWork   = YES;
+    _repoStateManager     = [[RelayRepoStateManager alloc] init];
     _indexQueueHighWatermarkEvents = 100000;
     _indexQueueHighWatermarkBytes = UINT64_C(2) * 1024 * 1024 * 1024;
     _relayHeartbeatTimeout = 10.0;
@@ -991,6 +994,22 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
     GZ_LOG_INFO(@"[AppView Ingest] Account event: did=%@ active=%d status=%@ seq=%lld",
                  event.did, event.active, event.status ?: @"(none)", (long long)event.seq);
+
+    // --- Takedown enforcement: purge all indexed data for the taken-down DID ---
+    BOOL isTakedown = !event.active && [event.status isEqualToString:@"takendown"];
+    BOOL isReinstatement = event.active;
+
+    if (isTakedown) {
+        GZ_LOG_INFO(@"[AppView Ingest] Takedown enforcement: purging records for %@", event.did);
+        NSError *purgeError = nil;
+        if (![_database deleteRecordsForDID:event.did error:&purgeError]) {
+            GZ_LOG_WARN(@"[AppView Ingest] Takedown purge failed for %@: %@",
+                         event.did, purgeError.localizedDescription);
+        }
+        [_repoStateManager handleAccountEventForRepo:event.did status:RelayRepoStatusTombstoned];
+    } else if (isReinstatement) {
+        [_repoStateManager handleAccountEventForRepo:event.did status:RelayRepoStatusActive];
+    }
 
     AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
     ingestEvent.seq        = event.seq;

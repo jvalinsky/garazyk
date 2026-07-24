@@ -23,6 +23,7 @@
 @interface IngestTrackingDelegate : NSObject <AppViewIngestEngineDelegate>
 @property (nonatomic, strong) NSMutableArray<AppViewIngestEvent *> *receivedCommits;
 @property (nonatomic, strong) NSMutableArray<AppViewIngestEvent *> *receivedIdentityChanges;
+@property (nonatomic, strong) NSMutableArray<AppViewIngestEvent *> *receivedAccountEvents;
 @end
 
 @implementation IngestTrackingDelegate
@@ -31,6 +32,7 @@
     self = [super init];
     _receivedCommits = [NSMutableArray array];
     _receivedIdentityChanges = [NSMutableArray array];
+    _receivedAccountEvents = [NSMutableArray array];
     return self;
 }
 
@@ -40,6 +42,10 @@
 
 - (void)ingestEngine:(AppViewIngestEngine *)engine didReceiveIdentityChange:(AppViewIngestEvent *)event {
     @synchronized(self) { [_receivedIdentityChanges addObject:event]; }
+}
+
+- (void)ingestEngine:(AppViewIngestEngine *)engine didReceiveAccountEvent:(AppViewIngestEvent *)event {
+    @synchronized(self) { [_receivedAccountEvents addObject:event]; }
 }
 
 @end
@@ -340,6 +346,127 @@
     // Some might be skipped due to idempotency if we picked overlapping DIDs/revs, 
     // but here we used unique ones.
     XCTAssertGreaterThanOrEqual(events.count, (NSUInteger)(iterations * 2));
+}
+
+// ---------------------------------------------------------------------------
+// Takedown Enforcement
+// ---------------------------------------------------------------------------
+
+- (void)testTakedownEventPurgesRecordsAndBlocks {
+    NSError *err = nil;
+    NSString *did = @"did:plc:takendown";
+
+    // Seed records for the DID
+    XCTAssertTrue([self.db saveRecordWithURI:@"at://did:plc:takendown/app.bsky.feed.post/one"
+                                        did:did collection:@"app.bsky.feed.post" rkey:@"one"
+                                        cid:@"cid1" handle:nil
+                                      value:@"{\"text\":\"hello\"}" subjectDid:nil error:&err]);
+    XCTAssertTrue([self.db saveRecordWithURI:@"at://did:plc:takendown/app.bsky.feed.post/two"
+                                        did:did collection:@"app.bsky.feed.post" rkey:@"two"
+                                        cid:@"cid2" handle:nil
+                                      value:@"{\"text\":\"world\"}" subjectDid:nil error:&err]);
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 2);
+
+    // Seed a block
+    NSData *blockCid = [@"block-cid" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *blockData = [@"block-data" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.db saveBlockWithCid:blockCid repoDid:did blockData:blockData
+                               contentType:@"application/cbor" error:&err]);
+    XCTAssertEqual([self.db getTotalBlocksCountWithError:&err], 1);
+
+    // Seed search_actors
+    [self.db executeParameterizedUpdate:@"INSERT INTO search_actors(did, display_name, handle, description) VALUES (?, ?, ?, ?)"
+                                 params:@[did, @"Test", @"test.bsky.social", @"desc"] error:nil];
+
+    // Simulate a takedown account event
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[@"wss://test.relay"]];
+    engine.delegate = self.delegate;
+
+    FirehoseAccountEvent *takedown = [[FirehoseAccountEvent alloc] init];
+    takedown.seq = 50;
+    takedown.did = did;
+    takedown.active = NO;
+    takedown.status = @"takendown";
+    takedown.time = @"2026-07-23T00:00:00Z";
+
+    [engine _handleAccountEvent:takedown fromRelay:@"wss://test.relay"];
+
+    // Records and blocks should be purged
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 0);
+    XCTAssertEqual([self.db getTotalBlocksCountWithError:&err], 0);
+
+    // Search actors should be purged
+    NSArray *actors = [self.db executeParameterizedQuery:@"SELECT * FROM search_actors WHERE did = ?"
+                                                  params:@[did] error:&err];
+    XCTAssertEqual(actors.count, 0u);
+
+    // Repo sync state should be tombstoned
+    AppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:did error:&err];
+    XCTAssertEqual(state.status, AppViewRepoSyncStatusDirty);
+    XCTAssertEqualObjects(state.lastError, @"takendown");
+
+    // Delegate should have received the account event
+    XCTAssertEqual(self.delegate.receivedAccountEvents.count, 1u);
+    XCTAssertEqualObjects(self.delegate.receivedAccountEvents[0].did, did);
+    XCTAssertEqualObjects(self.delegate.receivedAccountEvents[0].eventType, @"#account");
+
+    // Cursor should be advanced
+    XCTAssertEqual([self.db durableCursorForRelayURL:@"wss://test.relay"], 50LL);
+}
+
+- (void)testReinstatementEventDoesNotPurge {
+    NSError *err = nil;
+    NSString *did = @"did:plc:reinstated";
+
+    // Seed a record
+    XCTAssertTrue([self.db saveRecordWithURI:@"at://did:plc:reinstated/app.bsky.feed.post/one"
+                                        did:did collection:@"app.bsky.feed.post" rkey:@"one"
+                                        cid:@"cid1" handle:nil
+                                      value:@"{\"text\":\"hello\"}" subjectDid:nil error:&err]);
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 1);
+
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[]];
+    engine.delegate = self.delegate;
+
+    FirehoseAccountEvent *reinstatement = [[FirehoseAccountEvent alloc] init];
+    reinstatement.seq = 60;
+    reinstatement.did = did;
+    reinstatement.active = YES;
+    reinstatement.status = nil;
+    reinstatement.time = @"2026-07-23T00:00:00Z";
+
+    [engine _handleAccountEvent:reinstatement fromRelay:@"wss://test.relay"];
+
+    // Record must survive — reinstatement does not purge
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 1);
+}
+
+- (void)testNonTakedownAccountEventDoesNotPurge {
+    NSError *err = nil;
+    NSString *did = @"did:plc:suspended";
+
+    // Seed a record
+    XCTAssertTrue([self.db saveRecordWithURI:@"at://did:plc:suspended/app.bsky.feed.post/one"
+                                        did:did collection:@"app.bsky.feed.post" rkey:@"one"
+                                        cid:@"cid1" handle:nil
+                                      value:@"{}" subjectDid:nil error:&err]);
+
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[]];
+
+    FirehoseAccountEvent *suspended = [[FirehoseAccountEvent alloc] init];
+    suspended.seq = 70;
+    suspended.did = did;
+    suspended.active = NO;
+    suspended.status = @"suspended";  // not "takendown"
+    suspended.time = @"2026-07-23T00:00:00Z";
+
+    [engine _handleAccountEvent:suspended fromRelay:@"wss://test.relay"];
+
+    // Only takendown triggers purge; suspended does not
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 1);
 }
 
 @end
