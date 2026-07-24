@@ -1654,6 +1654,37 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
         if (![tx executeUpdate:@"DELETE FROM appview_dead_letter WHERE did = ?"
                         params:@[did] error:innerError]) return NO;
 
+        // Domain-specific materialized tables
+        NSString *uriPrefix = [NSString stringWithFormat:@"at://%@", did];
+        if (![tx executeUpdate:@"DELETE FROM bsky_feed_generators WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM bsky_graph_lists WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM bsky_graph_listitems WHERE list_uri LIKE ? || '%' ESCAPE '\\'"
+                        params:@[uriPrefix] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM bookmarks WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM starter_packs WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM groups WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM group_members WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM bsky_labeler_services WHERE did = ? OR labeler_did = ?"
+                        params:@[did, did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM accounts WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM actor_preferences WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM actor_mutes WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+
+        // Threadgates and postgates reference records by URI
+        if (![tx executeUpdate:@"DELETE FROM bsky_feed_threadgates WHERE uri LIKE ? || '%' ESCAPE '\\'"
+                        params:@[uriPrefix] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM bsky_feed_postgates WHERE post_uri LIKE ? || '%' ESCAPE '\\'"
+                        params:@[uriPrefix] error:innerError]) return NO;
+
         // Tombstone the repo sync state so backfill re-fetches on reinstatement
         NSString *upsertSQL =
             @"INSERT INTO appview_repo_sync_state(did, status, last_rev, last_backfill_at, error_count, last_error)"
