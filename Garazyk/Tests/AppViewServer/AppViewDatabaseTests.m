@@ -698,4 +698,112 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertTrue(ok, @"Dead letter insert should succeed: %@", err);
 }
 
+// ---------------------------------------------------------------------------
+// Takedown Enforcement
+// ---------------------------------------------------------------------------
+
+- (void)testDeleteRecordsForDIDRemovesRecordsBlocksAndSearchIndexes {
+    NSError *err = nil;
+    NSString *did = @"did:plc:takedown";
+
+    // Seed records
+    XCTAssertTrue([self.db saveRecordWithURI:@"at://did:plc:takedown/app.bsky.feed.post/one"
+                                        did:did collection:@"app.bsky.feed.post" rkey:@"one"
+                                        cid:@"cid1" handle:nil
+                                      value:@"{\"text\":\"hello\"}" subjectDid:nil error:&err]);
+    XCTAssertTrue([self.db saveRecordWithURI:@"at://did:plc:takedown/app.bsky.feed.post/two"
+                                        did:did collection:@"app.bsky.feed.post" rkey:@"two"
+                                        cid:@"cid2" handle:nil
+                                      value:@"{\"text\":\"world\"}" subjectDid:nil error:&err]);
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 2);
+
+    // Seed blocks
+    NSData *blockCid = [@"block-cid" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *blockData = [@"block-data" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.db saveBlockWithCid:blockCid repoDid:did blockData:blockData
+                               contentType:@"application/cbor" error:&err]);
+    XCTAssertEqual([self.db getTotalBlocksCountWithError:&err], 1);
+
+    // Seed search_actors
+    [self.db executeParameterizedUpdate:@"INSERT INTO search_actors(did, display_name, handle, description) VALUES (?, ?, ?, ?)"
+                                 params:@[did, @"Test", @"test.bsky.social", @"desc"] error:nil];
+
+    // Seed search_posts
+    [self.db executeParameterizedUpdate:@"INSERT INTO search_posts(uri, did, text) VALUES (?, ?, ?)"
+                                 params:@[@"at://did:plc:takedown/app.bsky.feed.post/one", did, @"hello"] error:nil];
+
+    // Seed pending delta
+    AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
+        initWithDID:did seq:10 commitCID:@"cid1" rev:@"rev1" rawEnvelope:[NSData data]];
+    [self.db enqueuePendingDelta:delta error:nil];
+
+    // Seed dead letter
+    [self.db recordDeadLetterEvent:@"app.bsky.feed.post" seq:20 did:did rev:@"rev1" cid:@"cid1"
+                        rawRecord:[NSData data] validationError:@"test" error:nil];
+
+    // Seed repo sync state
+    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:did];
+    state.status = AppViewRepoSyncStatusSynced;
+    [self.db upsertRepoSyncState:state error:nil];
+
+    // Execute takedown enforcement
+    XCTAssertTrue([self.db deleteRecordsForDID:did error:&err], @"Takedown purge failed: %@", err);
+
+    // Verify everything is gone
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 0);
+    XCTAssertEqual([self.db getTotalBlocksCountWithError:&err], 0);
+
+    NSArray *actors = [self.db executeParameterizedQuery:@"SELECT * FROM search_actors WHERE did = ?"
+                                                  params:@[did] error:&err];
+    XCTAssertEqual(actors.count, 0u);
+
+    NSArray *posts = [self.db executeParameterizedQuery:@"SELECT * FROM search_posts WHERE did = ?"
+                                                 params:@[did] error:&err];
+    XCTAssertEqual(posts.count, 0u);
+
+    XCTAssertEqual([self.db countPendingDeltasForDID:did error:&err], 0);
+
+    NSArray *dead = [self.db executeParameterizedQuery:@"SELECT * FROM appview_dead_letter WHERE did = ?"
+                                                params:@[did] error:&err];
+    XCTAssertEqual(dead.count, 0u);
+
+    // Repo sync state should be tombstoned (dirty for backfill on reinstatement)
+    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:did error:&err];
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty);
+    XCTAssertEqualObjects(loaded.lastError, @"takendown");
+}
+
+- (void)testDeleteRecordsForDIDIsIdempotent {
+    NSError *err = nil;
+    XCTAssertTrue([self.db deleteRecordsForDID:@"did:plc:empty" error:&err],
+                  @"Deleting from empty DID should succeed: %@", err);
+}
+
+- (void)testDeleteRecordsForDIDRejectsNilOrEmpty {
+    NSError *err = nil;
+    XCTAssertFalse([self.db deleteRecordsForDID:nil error:&err]);
+    XCTAssertFalse([self.db deleteRecordsForDID:@"" error:&err]);
+}
+
+- (void)testDeleteRecordsForDIDDoesNotAffectOtherDIDs {
+    NSError *err = nil;
+    NSString *target = @"did:plc:target";
+    NSString *other = @"did:plc:other";
+
+    [self.db saveRecordWithURI:@"at://did:plc:target/app.bsky.feed.post/a"
+                           did:target collection:@"app.bsky.feed.post" rkey:@"a"
+                           cid:@"c1" handle:nil value:@"{}" subjectDid:nil error:&err];
+    [self.db saveRecordWithURI:@"at://did:plc:other/app.bsky.feed.post/b"
+                           did:other collection:@"app.bsky.feed.post" rkey:@"b"
+                           cid:@"c2" handle:nil value:@"{}" subjectDid:nil error:&err];
+
+    XCTAssertTrue([self.db deleteRecordsForDID:target error:&err]);
+
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 1);
+    NSDictionary *survivor = [self.db getRecordWithURI:@"at://did:plc:other/app.bsky.feed.post/b"
+                                                   did:other collection:@"app.bsky.feed.post"
+                                                 rkey:@"b" error:&err];
+    XCTAssertNotNil(survivor, @"Other DID's records must survive");
+}
+
 @end

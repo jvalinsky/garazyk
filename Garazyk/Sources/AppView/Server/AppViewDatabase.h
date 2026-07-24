@@ -429,6 +429,25 @@ extern NSString * const AppViewDatabaseErrorDomain;
             contentType:(nullable NSString *)contentType
                   error:(NSError **)error;
 
+#pragma mark - Takedown Enforcement
+
+/*!
+ @method deleteRecordsForDID:error:
+
+ @abstract Remove all indexed records, blocks, search-index entries, pending
+ deltas, and dead-letter rows for a taken-down DID.
+
+ @discussion This is the data-layer enforcement for account takedowns. It is
+ called by the ingest engine when an #account firehose event arrives with
+ active=NO and status=takendown. The operation runs inside a single
+ transaction so a failure leaves the data unchanged.
+
+ @param did  The DID whose content should be removed from AppView.
+ @param error  On failure, describes the problem.
+ @return YES if all rows were deleted (or there was nothing to delete).
+ */
+- (BOOL)deleteRecordsForDID:(NSString *)did error:(NSError **)error;
+
 #pragma mark - Stats
 
 /*!
