@@ -240,6 +240,16 @@ Value parse_interface(struct Parser *p) {
         /* Parse ivar declarations: type name; type name; ... */
         while (parser_current(p).type != TOK_CLOSE_BRACE &&
                parser_current(p).type != TOK_EOF) {
+            /* Skip access control keywords: @public, @private, @protected, @package */
+            if (parser_current(p).type == TOK_AT_KEYWORD &&
+                (cstr_eq(parser_current(p).text, "@public") ||
+                 cstr_eq(parser_current(p).text, "@private") ||
+                 cstr_eq(parser_current(p).text, "@protected") ||
+                 cstr_eq(parser_current(p).text, "@package"))) {
+                parser_advance(p);
+                continue;
+            }
+
             /* Read the type name(s) */
             char ivar_type[64];
             ivar_type[0] = '\0';
