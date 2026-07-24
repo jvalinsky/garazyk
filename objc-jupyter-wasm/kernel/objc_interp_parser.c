@@ -1126,6 +1126,34 @@ Value parse_statement(Parser *p) {
         }
         return value_void();
     }
+    /* @synchronized — intentionally unsupported in the WASM kernel (ADR 0010).
+     * Produces a clean diagnostic and skips the mutex expression + body. */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@synchronized")) {
+        parser_error(p, "the @synchronized directive is not supported in the WASM kernel");
+        /* Skip past the mutex expression and body so subsequent code parses. */
+        parser_advance(p);
+        if (parser_current(p).type == TOK_OPEN_PAREN) {
+            int paren_depth = 1;
+            parser_advance(p);
+            while (paren_depth > 0 && parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_OPEN_PAREN) paren_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) paren_depth--;
+                if (paren_depth > 0) parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+        }
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            int brace_depth = 1;
+            parser_advance(p);
+            while (brace_depth > 0 && parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_BRACE) brace_depth--;
+                if (brace_depth > 0) parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        }
+        return value_void();
+    }
     /* C function definition — reuses BlockImpl for the tutorial-shape subset.
      * Stores the function body as a block-backed InterpVar so that calls
      * like func_name(args) resolve through the existing block-invocation path. */
@@ -1154,10 +1182,29 @@ Value parse_statement(Parser *p) {
             paren_depth++;
 
             while (paren_depth > 0 && parser_current(p).type != TOK_EOF && param_count < 8) {
-                /* Skip type tokens for this parameter (int, char, *, etc.) */
+                /* Skip type tokens for this parameter (int, char, *, etc.),
+                 * but use look-ahead to avoid consuming the parameter name
+                 * itself. The last identifier before ',' or ')' is the
+                 * parameter name, not a type token. */
                 while (parser_current(p).type == TOK_IDENTIFIER ||
                        parser_current(p).type == TOK_STAR) {
-                    parser_advance(p);
+                    if (parser_current(p).type == TOK_IDENTIFIER) {
+                        Token saved = p->lex.current;
+                        unsigned int saved_pos = p->lex.pos;
+                        parser_advance(p);
+                        if (parser_current(p).type == TOK_COMMA ||
+                            parser_current(p).type == TOK_CLOSE_PAREN) {
+                            /* Identifier was the parameter name — rewind so
+                             * the name-recording block below captures it. */
+                            p->lex.current = saved;
+                            p->lex.pos = saved_pos;
+                            break;
+                        }
+                        /* This was a type token (e.g., "int", "const").
+                         * Keep going to consume stars and further tokens. */
+                    } else {
+                        parser_advance(p); /* consume * */
+                    }
                 }
                 /* Record parameter name if present */
                 if (parser_current(p).type == TOK_IDENTIFIER) {
