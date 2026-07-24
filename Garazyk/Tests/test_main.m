@@ -888,6 +888,7 @@ int main(int argc, char *argv[]) {
       @"PDSSpaceURIAndScopeTests",
       @"ATProtoPermissionScopeTests",
       @"ATProtoPermissionScopeEvaluatorTests",
+      @"PDSLabelSigningKeyManagerTests",
       @"PDSSpaceStoreTests",
       @"PDSSpaceAppAttestationVerifierTests",
       @"PDSSpaceJWTTests",
