@@ -584,6 +584,14 @@ Value parse_primary(Parser *p) {
         return value_void();
     }
 
+    /* @encode — intentionally unsupported in the WASM kernel (ADR 0010).
+     * Produces a clean diagnostic rather than a confusing parse error. */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@encode")) {
+        parser_advance(p);
+        parser_error(p, "the @encode directive is not supported in the WASM kernel");
+        return value_void();
+    }
+
     /* Integer literal */
     if (tok.type == TOK_INT_LITERAL) {
         unsigned long val = 0;
@@ -1383,6 +1391,17 @@ Value parse_primary(Parser *p) {
                             }
                         }
                     }
+                }
+
+                /* Parser-termination guard (ADR 0010): if '->' is
+                 * still unconsumed after all member-access checks,
+                 * the variable isn't an object or struct pointer.
+                 * Produce a clean error rather than leaving '->'
+                 * unconsumed, which could cause an infinite loop. */
+                if (parser_current(p).type == TOK_ARROW) {
+                    parser_advance(p);
+                    parser_error(p, "'->' operator requires an object or struct pointer");
+                    return value_void();
                 }
 
                 if (var->is_float) return value_from_float(var->float_value);
