@@ -1,7 +1,8 @@
 # ADR 0002 — Defer AppViewDatabase migration to QueryRunner
 
-**Status:** Accepted
+**Status:** Superseded
 **Date:** 2026-07-11
+**Superseded:** 2026-07-24 — both conditions met; see below.
 **Context skill:** raised during the QueryRunner deepening pilot
 (`queryrunner_deepening_pilot_plan.md`).
 
@@ -28,6 +29,21 @@ with its own correctness and performance implications.
 to a deliberate concurrency/pooling decision and is **not** part of the "finish QueryRunner
 adoption" work. It keeps its raw SQLite mechanics and inline schema until that decision is
 made.
+
+## Supersession
+
+Both conditions from the original "Consequences" section are now met:
+
+1. **QueryRunner pattern proven** — the pilot shipped and multiple stores adopted
+   `ATProtoDatabaseQueryRunner` without regressions.
+2. **Pooling migration scoped and completed** — commit `e1f5ee2f` replaced the serial
+   dispatch queue with `ATProtoConnectionPool` (min 1, max 8) +
+   `ATProtoConnectionManagerPooled` + `ATProtoDatabaseQueryRunner`. All 30 AppViewDatabase
+   tests passed.
+
+The inline schema management (`kSchemaV1`, `appview_schema_version` table, hand-rolled
+migration switch) was subsequently migrated to `PDSMigrationManager` classes
+(`AppViewV1InitialSchema` through `AppViewV4LegacySchemaBridge`), completing the adoption.
 
 ## Consequences
 
