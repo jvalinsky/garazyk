@@ -133,6 +133,12 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 /*! Convenience: Sets the authenticated DID in middleware context. */
 - (void)setAuthenticatedDid:(NSString *)did;
 
+/*! Convenience: Returns parsed permission scopes from middleware context. */
+- (nullable NSArray *)permissionScopes;
+
+/*! Convenience: Stores parsed permission scopes in middleware context. */
+- (void)setPermissionScopes:(NSArray *)scopes;
+
 @end
 
 NS_ASSUME_NONNULL_END
