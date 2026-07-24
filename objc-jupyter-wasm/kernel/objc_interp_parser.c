@@ -1126,6 +1126,154 @@ Value parse_statement(Parser *p) {
         }
         return value_void();
     }
+    /* C function definition — reuses BlockImpl for the tutorial-shape subset.
+     * Stores the function body as a block-backed InterpVar so that calls
+     * like func_name(args) resolve through the existing block-invocation path. */
+    if (tok.type == TOK_IDENTIFIER) {
+        Token saved = p->lex.current;
+        unsigned int saved_pos = p->lex.pos;
+        int is_func = 0;
+        char func_name[64];
+        func_name[0] = '\0';
+
+        /* Consume return type tokens; the last identifier before '(' is the
+         * function name. Track it as we go. */
+        while (parser_current(p).type == TOK_IDENTIFIER || parser_current(p).type == TOK_STAR) {
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                cstr_copy(func_name, parser_current(p).text, 64);
+            }
+            parser_advance(p);
+        }
+
+        if (parser_current(p).type == TOK_OPEN_PAREN) {
+            /* Parse parameter list: skip types, record param names */
+            char param_names[8][64];
+            unsigned int param_count = 0;
+            int paren_depth = 0;
+            parser_advance(p); /* consume ( */
+            paren_depth++;
+
+            while (paren_depth > 0 && parser_current(p).type != TOK_EOF && param_count < 8) {
+                /* Skip type tokens for this parameter (int, char, *, etc.) */
+                while (parser_current(p).type == TOK_IDENTIFIER ||
+                       parser_current(p).type == TOK_STAR) {
+                    parser_advance(p);
+                }
+                /* Record parameter name if present */
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    cstr_copy(param_names[param_count], parser_current(p).text, 64);
+                    param_count++;
+                    parser_advance(p);
+                }
+                /* Skip commas between params, close-paren ends the list */
+                if (parser_current(p).type == TOK_COMMA) {
+                    parser_advance(p);
+                } else if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    parser_advance(p);
+                    paren_depth--;
+                } else {
+                    /* Unrecognized token inside parameter list — skip it
+                     * (e.g., @ in NSLog argument position, string literals).
+                     * This prevents infinite loops on unexpected content. */
+                    parser_advance(p);
+                }
+            }
+
+            /* Drain remaining close-parens if we hit the param limit */
+            while (paren_depth > 0 && parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_CLOSE_PAREN) paren_depth--;
+                if (paren_depth > 0) parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+
+            if (parser_current(p).type == TOK_OPEN_BRACE) {
+                is_func = 1;
+
+                /* Register the function as a block-backed variable */
+                if (func_name[0] != '\0' && g_ctx.block_count < MAX_BLOCKS) {
+                    BlockImpl *blk = &g_ctx.blocks[g_ctx.block_count];
+                    unsigned int body_start;
+                    unsigned int ai;
+
+                    blk->block_id = g_ctx.next_block_id++;
+                    blk->arg_count = param_count;
+                    blk->capture_count = 0;
+                    for (ai = 0; ai < param_count && ai < 8; ai++) {
+                        cstr_copy(blk->arg_names[ai], param_names[ai], 64);
+                    }
+
+                    /* Capture body source (without outer braces).
+                     * Capture body_start before consuming '{' so the
+                     * pointer is right after the opening brace, not
+                     * after whatever token follows it. */
+                    body_start = p->lex.token_start + 1; /* right after { */
+                    parser_advance(p); /* consume { */
+
+                    /* Count braces to find the end of the body */
+                    {
+                        int brace_depth = 1;
+                        while (brace_depth > 0 && parser_current(p).type != TOK_EOF) {
+                            if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                            else if (parser_current(p).type == TOK_CLOSE_BRACE) brace_depth--;
+                            if (brace_depth > 0) parser_advance(p);
+                        }
+                        /* parser_advance consumed the closing } */
+                    }
+                    /* body_end is pos-1 (position of the closing '}').
+                     * pos is now at the closing '}' (the loop stops without
+                     * advancing past it). Advance past '}' so the caller
+                     * doesn't see a stray brace. */
+                    {
+                        unsigned int body_end = p->lex.pos - 1;
+                        if (body_start < body_end) {
+                            unsigned int body_len = body_end - body_start;
+                            if (body_len < 2048) {
+                                unsigned int ci;
+                                for (ci = 0; ci < body_len; ci++) {
+                                    blk->source[ci] = p->lex.source[body_start + ci];
+                                }
+                                blk->source[body_len] = '\0';
+                                blk->source_len = body_len;
+                            }
+                        }
+                    }
+                    parser_advance(p); /* consume } */
+                    g_ctx.block_count++;
+
+                    /* Create the variable pointing to the block */
+                    {
+                        ObjId marker = block_make_marker(blk->block_id);
+                        InterpVar *var = interp_get_or_create_var(func_name);
+                        if (var && !g_ctx.suppress_side_effects) {
+                            var->is_id = 1;
+                            var->value = marker;
+                            var->is_int = 0;
+                            var->is_float = 0;
+                            var->is_class = 0;
+                            var->is_sel = 0;
+                        }
+                    }
+                    return value_void();
+                }
+            }
+        }
+
+        if (is_func) {
+            /* Function registration failed (table full). Skip the body
+             * gracefully so surrounding code still runs. */
+            int brace_depth = 0;
+            do {
+                if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_BRACE) brace_depth--;
+                parser_advance(p);
+            } while (brace_depth > 0 && parser_current(p).type != TOK_EOF);
+            return value_void();
+        } else {
+            /* Not a function definition, restore lexer state */
+            p->lex.current = saved;
+            p->lex.pos = saved_pos;
+        }
+    }
 
     /* typedef statement: typedef <type> <name>; or typedef NS_ENUM(...) */
     if (tok.type == TOK_IDENTIFIER && cstr_eq(tok.text, "typedef")) {
