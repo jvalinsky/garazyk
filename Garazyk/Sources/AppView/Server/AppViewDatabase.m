@@ -15,6 +15,9 @@
 #include <string.h>
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Database/Utils/ATProtoDatabaseUtilities.h"
+#import "Database/Pool/ATProtoConnectionPool.h"
+#import "Database/Connection/ATProtoConnectionManagerPooled.h"
+#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 
 NSString * const AppViewDatabaseErrorDomain = @"AppViewDatabaseErrorDomain";
 
@@ -380,8 +383,6 @@ static NSString * const kSchemaV1 = @""
 // Helpers
 // ---------------------------------------------------------------------------
 
-static void * const kAppViewDatabaseQueueKey = (void *)&kAppViewDatabaseQueueKey;
-
 static NSString *iso8601Now(void) {
     return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
@@ -413,30 +414,32 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 // ---------------------------------------------------------------------------
 
 @implementation AppViewDatabase {
-    sqlite3 *_db;
-    dispatch_queue_t _queue;
-    NSMutableSet<NSString *> *_relevanceCache; // in-memory set for fast isDIDRelevant
+    sqlite3 *_migrationDb;
+    ATProtoConnectionPool *_pool;
+    ATProtoConnectionManagerPooled *_connectionManager;
+    ATProtoDatabaseQueryRunner *_queryRunner;
+    NSMutableSet<NSString *> *_relevanceCache;
     NSMutableDictionary<NSString *, NSNumber *> *_durableCursorByRelayURL;
     NSInteger _migrationFailureVersionForTesting;
     NSInteger _migrationFailureStatementForTesting;
-}
-
-- (void)safeExecuteSync:(void(^)(void))block {
-    if (dispatch_get_specific(kAppViewDatabaseQueueKey)) {
-        block();
-    } else {
-        dispatch_sync(_queue, block);
-    }
 }
 
 - (nullable instancetype)initWithPath:(NSString *)path error:(NSError **)error {
     self = [super init];
     if (!self) return nil;
 
-    _queue = dispatch_queue_create("dev.garazyk.appview.db", DISPATCH_QUEUE_SERIAL);
-    dispatch_queue_set_specific(_queue, kAppViewDatabaseQueueKey, (void *)kAppViewDatabaseQueueKey, NULL);
     _relevanceCache = [NSMutableSet set];
     _durableCursorByRelayURL = [NSMutableDictionary dictionary];
+
+    _pool = [[ATProtoConnectionPool alloc] initWithPath:path minConnections:1 maxConnections:8];
+    if (!_pool) {
+        if (error) *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:-1
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to create connection pool"}];
+        return nil;
+    }
+    _connectionManager = [[ATProtoConnectionManagerPooled alloc] initWithPool:_pool];
+    _queryRunner = [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:_connectionManager
+                                                                    errorDomain:AppViewDatabaseErrorDomain];
 
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *dbDir = [path stringByDeletingLastPathComponent];
@@ -454,7 +457,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
         }
     }
 
-    int rc = sqlite3_open_v2(path.UTF8String, &_db,
+    int rc = sqlite3_open_v2(path.UTF8String, &_migrationDb,
                              SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
                              NULL);
     if (rc != SQLITE_OK) {
@@ -462,22 +465,22 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
             *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
                                          code:rc
                                      userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_migrationDb)]}];
         }
-        sqlite3_close_v2(_db);
-        _db = NULL;
+        sqlite3_close_v2(_migrationDb);
+        _migrationDb = NULL;
         return nil;
     }
 
-    if (!ATProtoDBConfigurePragmas(_db, ATProtoDBConfigDefault)) {
+    if (!ATProtoDBConfigurePragmas(_migrationDb, ATProtoDBConfigDefault)) {
         if (error) {
             *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
                                          code:rc
                                      userInfo:@{NSLocalizedDescriptionKey:
                                                     @"Failed to configure SQLite pragmas"}];
         }
-        sqlite3_close_v2(_db);
-        _db = NULL;
+        sqlite3_close_v2(_migrationDb);
+        _migrationDb = NULL;
         return nil;
     }
 
@@ -493,12 +496,11 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 }
 
 - (void)close {
-    dispatch_sync(_queue, ^{
-        if (self->_db) {
-            sqlite3_close_v2(self->_db);
-            self->_db = NULL;
-        }
-    });
+    [_pool closeAllConnections];
+    if (_migrationDb) {
+        sqlite3_close_v2(_migrationDb);
+        _migrationDb = NULL;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -507,10 +509,10 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 
 - (void)appView_setMigrationFailureForTestingVersion:(NSInteger)version
                                             statement:(NSInteger)statement {
-    [self safeExecuteSync:^{
+    @synchronized(self) {
         self->_migrationFailureVersionForTesting = version;
         self->_migrationFailureStatementForTesting = statement;
-    }];
+    }
 }
 
 - (BOOL)appView_executeMigrationSQL:(NSString *)sql
@@ -521,13 +523,13 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
     while (cursor && *cursor != '\0') {
         sqlite3_stmt *stmt = NULL;
         const char *tail = NULL;
-        int rc = sqlite3_prepare_v2(_db, cursor, -1, &stmt, &tail);
+        int rc = sqlite3_prepare_v2(_migrationDb, cursor, -1, &stmt, &tail);
         if (rc != SQLITE_OK) {
             if (error) {
                 *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
                                              code:rc
                                          userInfo:@{NSLocalizedDescriptionKey:
-                                                        [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+                                                        [NSString stringWithUTF8String:sqlite3_errmsg(_migrationDb)]}];
             }
             if (stmt) sqlite3_finalize(stmt);
             return NO;
@@ -547,7 +549,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
                 *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
                                              code:rc
                                          userInfo:@{NSLocalizedDescriptionKey:
-                                                        [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+                                                        [NSString stringWithUTF8String:sqlite3_errmsg(_migrationDb)]}];
             }
             return NO;
         }
@@ -573,7 +575,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 
 - (BOOL)appView_currentMigrationVersion:(NSInteger *)version error:(NSError **)error {
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(_db,
+    int rc = sqlite3_prepare_v2(_migrationDb,
                                 "SELECT COUNT(*) FROM sqlite_master "
                                 "WHERE type = 'table' AND name = 'appview_schema_version'",
                                 -1, &stmt, NULL);
@@ -582,7 +584,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
             *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
                                          code:rc
                                      userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_migrationDb)]}];
         }
         return NO;
     }
@@ -605,7 +607,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 
     sqlite3_finalize(stmt);
     stmt = NULL;
-    rc = sqlite3_prepare_v2(_db,
+    rc = sqlite3_prepare_v2(_migrationDb,
                             "SELECT COALESCE(MAX(version), 0) FROM appview_schema_version",
                             -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
@@ -613,7 +615,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
             *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
                                          code:rc
                                      userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_migrationDb)]}];
         }
         return NO;
     }
@@ -635,13 +637,13 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 
 - (BOOL)appView_threadgatesHaveURIColumn:(BOOL *)hasURI error:(NSError **)error {
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(_db, "PRAGMA table_info(bsky_feed_threadgates)", -1, &stmt, NULL);
+    int rc = sqlite3_prepare_v2(_migrationDb, "PRAGMA table_info(bsky_feed_threadgates)", -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
                                          code:rc
                                      userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
+                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_migrationDb)]}];
         }
         return NO;
     }
@@ -793,17 +795,51 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 
 - (BOOL)runMigrations:(NSError **)error {
     NSError *innerError = nil;
-    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
-        return [database appView_applyPendingMigrations:transactionError];
+    BOOL ok = [self _performRawTransactionOnMigrationDb:^BOOL(NSError **transactionError) {
+        return [self appView_applyPendingMigrations:transactionError];
     } error:&innerError];
     if (!ok) {
         if (error) *error = innerError;
         return NO;
     }
 
-    [self safeExecuteSync:^{
+    @synchronized(self) {
         [self appView_reloadRelevanceCache];
-    }];
+    }
+    return YES;
+}
+
+- (BOOL)_performRawTransactionOnMigrationDb:(BOOL (^)(NSError **error))block
+                                      error:(NSError **)error {
+    char *errmsg = NULL;
+    int rc = sqlite3_exec(_migrationDb, "BEGIN IMMEDIATE", NULL, NULL, &errmsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to begin transaction"}];
+        }
+        if (errmsg) sqlite3_free(errmsg);
+        return NO;
+    }
+
+    NSError *blockError = nil;
+    BOOL ok = block(&blockError);
+    if (!ok) {
+        if (error) *error = blockError;
+        sqlite3_exec(_migrationDb, "ROLLBACK", NULL, NULL, NULL);
+        return NO;
+    }
+
+    rc = sqlite3_exec(_migrationDb, "COMMIT", NULL, NULL, &errmsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to commit transaction"}];
+        }
+        if (errmsg) sqlite3_free(errmsg);
+        sqlite3_exec(_migrationDb, "ROLLBACK", NULL, NULL, NULL);
+        return NO;
+    }
     return YES;
 }
 
@@ -924,13 +960,22 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 }
 
 - (nullable NSArray<NSString *> *)markReposAsProcessing:(NSArray<NSString *> *)dids
-                                                  error:(NSError **)error {
+                                                   error:(NSError **)error {
     if (dids.count == 0) return @[];
 
     __block NSMutableArray<NSString *> *transitioned = [NSMutableArray array];
 
-    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *db, NSError **innerError) {
+    BOOL ok = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
         for (NSString *did in dids) {
+            NSString *selectSQL = @"SELECT did FROM appview_repo_sync_state WHERE did = ? AND status IN (?, ?)";
+            NSArray *rows = [tx executeQuery:selectSQL params:@[
+                did,
+                @(AppViewRepoSyncStatusPending),
+                @(AppViewRepoSyncStatusDirty)
+            ] error:innerError];
+            if (!rows) return NO;
+            if (rows.count == 0) continue;
+
             NSString *sql =
                 @"UPDATE appview_repo_sync_state"
                 " SET status = ?"
@@ -941,11 +986,9 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
                 @(AppViewRepoSyncStatusPending),
                 @(AppViewRepoSyncStatusDirty)
             ];
-            
-            [db executeParameterizedUpdate:sql params:params error:nil];
-            if (sqlite3_changes(db->_db) > 0) {
-                [transitioned addObject:did];
-            }
+
+            if (![tx executeUpdate:sql params:params error:innerError]) return NO;
+            [transitioned addObject:did];
         }
         return YES;
     } error:error];
@@ -998,14 +1041,14 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 }
 
 - (nullable NSArray<AppViewPendingDelta *> *)dequeuePendingDeltasForDID:(NSString *)did
-                                                                  error:(NSError **)error {
+                                                                   error:(NSError **)error {
     __block NSMutableArray<AppViewPendingDelta *> *results = [NSMutableArray array];
 
-    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *db, NSError **innerError) {
+    BOOL ok = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
         NSString *selectSQL =
             @"SELECT seq, commit_cid, rev, raw_envelope FROM appview_pending_deltas"
             " WHERE did = ? ORDER BY seq ASC";
-        NSArray *rows = [db executeParameterizedQuery:selectSQL params:@[did] error:innerError];
+        NSArray *rows = [tx executeQuery:selectSQL params:@[did] error:innerError];
         if (!rows) return NO;
 
         for (NSDictionary *row in rows) {
@@ -1023,7 +1066,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
         }
 
         NSString *deleteSQL = @"DELETE FROM appview_pending_deltas WHERE did = ?";
-        return [db executeParameterizedUpdate:deleteSQL params:@[did] error:innerError];
+        return [tx executeUpdate:deleteSQL params:@[did] error:innerError];
     } error:error];
 
     return ok ? [results copy] : nil;
@@ -1072,13 +1115,8 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 - (NSInteger)pruneEventLogOlderThan:(NSDate *)cutoff error:(NSError **)error {
     NSString *cutoffStr = [NSDateFormatter atproto_stringFromDate:cutoff];
     NSString *sql = @"DELETE FROM appview_event_log WHERE created_at < ?";
-    
-    __block NSInteger deleted = 0;
-    [self safeExecuteSync:^{
-        [self executeParameterizedUpdate:sql params:@[cutoffStr] error:error];
-        deleted = sqlite3_changes(self->_db);
-    }];
-    return deleted;
+    NSInteger deleted = [_queryRunner executeUpdate:sql params:@[cutoffStr] error:error];
+    return deleted >= 0 ? deleted : 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1129,20 +1167,18 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 }
 
 - (int64_t)durableCursorForRelayURL:(NSString *)relayURL {
-    __block int64_t seq = 0;
-    dispatch_sync(_queue, ^{
-        seq = [self->_durableCursorByRelayURL[relayURL] longLongValue];
-    });
-    return seq;
+    @synchronized(self) {
+        return [self->_durableCursorByRelayURL[relayURL] longLongValue];
+    }
 }
 
 - (void)markDurableCursor:(int64_t)seq forRelayURL:(NSString *)relayURL {
-    dispatch_sync(_queue, ^{
+    @synchronized(self) {
         int64_t current = [self->_durableCursorByRelayURL[relayURL] longLongValue];
         if (seq > current) {
             self->_durableCursorByRelayURL[relayURL] = @(seq);
         }
-    });
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1179,11 +1215,22 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
                                    rawEnvelope:(NSData *)rawEnvelope
                                          error:(NSError **)error {
     NSError *innerError = nil;
-    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
-        if (![database appendStoredEventWithType:eventType seq:seq did:did rev:rev cid:cid
-                                      rawEnvelope:rawEnvelope error:transactionError]) return NO;
-        return [database enqueueIndexEventForRelayURL:relayURL seq:seq eventType:eventType did:did rev:rev
-                                                  cid:cid rawEnvelope:rawEnvelope error:transactionError];
+    BOOL ok = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **transactionError) {
+        NSString *storedSQL =
+            @"INSERT OR IGNORE INTO appview_cursor_events(event_type, seq, did, rev, cid, raw_envelope, created_at)"
+            " VALUES(?,?,?,?,?,?,?)";
+        NSArray *storedParams = @[
+            eventType, @(seq), did ?: [NSNull null], rev ?: [NSNull null],
+            cid ?: [NSNull null], rawEnvelope ?: [NSData data], iso8601Now()
+        ];
+        if (![tx executeUpdate:storedSQL params:storedParams error:transactionError]) return NO;
+
+        NSString *pendingSQL = @"INSERT OR IGNORE INTO appview_pending_index_events("
+                               "relay_url, seq, event_type, did, rev, cid, raw_envelope, received_at) VALUES(?,?,?,?,?,?,?,?)";
+        return [tx executeUpdate:pendingSQL params:@[
+            relayURL, @(seq), eventType, did ?: [NSNull null], rev ?: [NSNull null],
+            cid ?: [NSNull null], rawEnvelope, iso8601Now()
+        ] error:transactionError];
     } error:&innerError];
     if (!ok && error) *error = innerError;
     return ok;
@@ -1202,8 +1249,8 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
     NSString *leaseUntil = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSinceNow:leaseDuration]];
     __block NSArray<NSDictionary *> *claimed = nil;
     NSError *innerError = nil;
-    BOOL ok = [self performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
-        NSArray<NSDictionary *> *candidates = [database executeParameterizedQuery:
+    BOOL ok = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **transactionError) {
+        NSArray<NSDictionary *> *candidates = [tx executeQuery:
             @"SELECT relay_url, seq, event_type, did, rev, cid, raw_envelope, attempts "
              "FROM appview_pending_index_events AS candidate "
              "WHERE candidate.indexed_at IS NULL AND candidate.terminal_error IS NULL "
@@ -1219,7 +1266,7 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
         if (!candidates) return NO;
         NSMutableArray<NSDictionary *> *accepted = [NSMutableArray arrayWithCapacity:candidates.count];
         for (NSDictionary *candidate in candidates) {
-            BOOL updated = [database executeParameterizedUpdate:
+            BOOL updated = [tx executeUpdate:
                 @"UPDATE appview_pending_index_events SET lease_owner = ?, lease_expires_at = ?, attempts = attempts + 1 "
                  "WHERE relay_url = ? AND seq = ? AND indexed_at IS NULL AND terminal_error IS NULL "
                  "AND (lease_expires_at IS NULL OR lease_expires_at <= ?)"
@@ -1306,12 +1353,12 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 
     __block BOOL ok = [self executeParameterizedUpdate:sql params:params error:error];
     if (ok) {
-        [self safeExecuteSync:^{
+        @synchronized(self) {
             if (membership.isValid)
                 [self->_relevanceCache addObject:membership.did];
             else
                 [self->_relevanceCache removeObject:membership.did];
-        }];
+        }
     }
     return ok;
 }
@@ -1333,23 +1380,18 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 }
 
 - (BOOL)isDIDRelevant:(NSString *)did {
-    __block BOOL relevant = NO;
-    [self safeExecuteSync:^{
-        relevant = [self->_relevanceCache containsObject:did];
-    }];
-    return relevant;
+    @synchronized(self) {
+        return [self->_relevanceCache containsObject:did];
+    }
 }
 
 - (NSInteger)pruneExpiredRelevanceMemberships:(NSError **)error {
     NSString *now = iso8601Now();
     NSString *sql = @"DELETE FROM appview_relevance WHERE expires_at IS NOT NULL AND expires_at <= ?";
     
-    __block NSInteger deleted = 0;
-    [self safeExecuteSync:^{
-        [self executeParameterizedUpdate:sql params:@[now] error:error];
-        deleted = sqlite3_changes(self->_db);
+    NSInteger deleted = [_queryRunner executeUpdate:sql params:@[now] error:error];
 
-        // Rebuild cache
+    @synchronized(self) {
         [self->_relevanceCache removeAllObjects];
         NSString *sel = @"SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
         NSArray *rows = [self executeParameterizedQuery:sel params:@[now] error:nil];
@@ -1357,8 +1399,8 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
             NSString *did = row[@"did"];
             if (did) [self->_relevanceCache addObject:did];
         }
-    }];
-    return deleted;
+    }
+    return deleted >= 0 ? deleted : 0;
 }
 
 - (nullable NSArray<NSString *> *)loadAllRelevantDIDs:(NSError **)error {
@@ -1409,96 +1451,44 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 - (nullable NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
                                                         params:(NSArray *)params
                                                          error:(NSError **)error {
-    __block NSMutableArray *results = [NSMutableArray array];
-    __block NSError *innerError = nil;
-
-    [self safeExecuteSync:^{
-        if (!self->_db) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:1
-                            userInfo:@{NSLocalizedDescriptionKey: @"Database not open"}];
-            return;
-        }
-
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
-                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(self->_db)]}];
-            return;
-        }
-
-        ATProtoDBBindParams(stmt, params);
-
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            NSMutableDictionary *row = [NSMutableDictionary dictionary];
-            int count = sqlite3_column_count(stmt);
-            for (int i = 0; i < count; i++) {
-                NSString *name = @(sqlite3_column_name(stmt, i));
-                id val = ATProtoDBColumnValue(stmt, i);
-                if (val && val != [NSNull null]) row[name] = val;
-            }
-            [results addObject:row];
-        }
-    }];
-
-    if (innerError && error) *error = innerError;
-    return innerError ? nil : results;
+    NSArray<NSDictionary *> *rows = [_queryRunner executeQuery:sql params:params error:error];
+    NSMutableArray<NSDictionary *> *filtered = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSMutableDictionary *cleaned = [NSMutableDictionary dictionaryWithCapacity:row.count];
+        [row enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+            if (![value isKindOfClass:[NSNull class]]) cleaned[key] = value;
+        }];
+        [filtered addObject:[cleaned copy]];
+    }
+    return [filtered copy];
 }
 
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
-                           params:(NSArray *)params
-                            error:(NSError **)error {
-    __block BOOL ok = YES;
-    __block NSError *innerError = nil;
-
-    [self safeExecuteSync:^{
-        if (!self->_db) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:1
-                            userInfo:@{NSLocalizedDescriptionKey: @"Database not open"}];
-            ok = NO;
-            return;
-        }
-
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
-        if (rc != SQLITE_OK) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
-                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(self->_db)]}];
-            ok = NO;
-            return;
-        }
-
-        ATProtoDBBindParams(stmt, params);
-
-        rc = sqlite3_step(stmt);
-        if (rc != SQLITE_DONE) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
-                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(self->_db)]}];
-            ok = NO;
-        }
-    }];
-
-    if (!ok && error) *error = innerError;
-    return ok;
+                            params:(NSArray *)params
+                             error:(NSError **)error {
+    return [_queryRunner executeUpdate:sql params:params error:error];
 }
 
 - (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error {
-    __block BOOL ok = YES;
-    __block NSError *innerError = nil;
-
-    [self safeExecuteSync:^{
-        char *errmsg = NULL;
-        int rc = sqlite3_exec(self->_db, sql.UTF8String, NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
-                            userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"SQL failed"}];
-            if (errmsg) sqlite3_free(errmsg);
-            ok = NO;
+    sqlite3 *conn = [_pool acquireConnection];
+    if (!conn) {
+        if (error) *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:SQLITE_MISUSE
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to acquire connection"}];
+        return NO;
+    }
+    char *errmsg = NULL;
+    int rc = sqlite3_exec(conn, sql.UTF8String, NULL, NULL, &errmsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"SQL failed"}];
         }
-    }];
-
-    if (!ok && error) *error = innerError;
-    return ok;
+        if (errmsg) sqlite3_free(errmsg);
+        [_pool releaseConnection:conn];
+        return NO;
+    }
+    [_pool releaseConnection:conn];
+    return YES;
 }
 
 - (nullable PDSDatabaseBlock *)getBlockWithCid:(NSData *)cid
@@ -1555,10 +1545,13 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
                        records:(NSArray<NSDictionary *> *)records
                         blocks:(NSArray<NSDictionary *> *)blocks
                          error:(NSError **)error {
-    return [self performTransaction:^BOOL(AppViewDatabase *db, NSError **innerError) {
+    return [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
         // Prepare temp table
-        [db executeUnsafeRawSQL:@"CREATE TEMP TABLE IF NOT EXISTS appview_snapshot_uris(uri TEXT PRIMARY KEY); DELETE FROM appview_snapshot_uris;" error:innerError];
-        
+        if (![tx executeUpdate:@"CREATE TEMP TABLE IF NOT EXISTS appview_snapshot_uris(uri TEXT PRIMARY KEY)"
+                        params:@[] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM appview_snapshot_uris"
+                        params:@[] error:innerError]) return NO;
+
         // Insert blocks
         NSString *insertBlockSQL = @"INSERT OR REPLACE INTO blocks(cid, repo_did, block_data, content_type, size, created_at) VALUES(?,?,?,?,?,?)";
         for (NSDictionary *block in blocks) {
@@ -1566,15 +1559,15 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
             NSData *blockData = block[@"block_data"];
             if (![cidData isKindOfClass:[NSData class]] || ![blockData isKindOfClass:[NSData class]]) continue;
             NSString *contentType = block[@"content_type"] ?: @"application/cbor";
-            
+
             NSArray *params = @[cidData, did, blockData, contentType, @(blockData.length), iso8601Now()];
-            if (![db executeParameterizedUpdate:insertBlockSQL params:params error:innerError]) return NO;
+            if (![tx executeUpdate:insertBlockSQL params:params error:innerError]) return NO;
         }
 
         // Insert records
         NSString *insertRecordSQL = @"INSERT OR REPLACE INTO records(uri, did, collection, rkey, cid, handle, value, subject_did, indexed_at) VALUES(?,?,?,?,?,?,?,?,?)";
         NSString *insertURIToTempSQL = @"INSERT OR IGNORE INTO appview_snapshot_uris(uri) VALUES(?)";
-        
+
         for (NSDictionary *record in records) {
             NSString *uri = record[@"uri"];
             NSString *collection = record[@"collection"];
@@ -1592,28 +1585,42 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
                 subjectDID ?: [NSNull null],
                 iso8601Now()
             ];
-            if (![db executeParameterizedUpdate:insertRecordSQL params:recordParams error:innerError]) return NO;
-            if (![db executeParameterizedUpdate:insertURIToTempSQL params:@[uri] error:innerError]) return NO;
+            if (![tx executeUpdate:insertRecordSQL params:recordParams error:innerError]) return NO;
+            if (![tx executeUpdate:insertURIToTempSQL params:@[uri] error:innerError]) return NO;
         }
 
         // Delete stale records
         NSString *deleteSQL = @"DELETE FROM records WHERE did = ? AND uri NOT IN (SELECT uri FROM appview_snapshot_uris)";
-        if (![db executeParameterizedUpdate:deleteSQL params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:deleteSQL params:@[did] error:innerError]) return NO;
 
         // Log snapshot event
         NSString *eventSQL = @"INSERT OR IGNORE INTO appview_cursor_events(event_type, seq, did, rev, cid, raw_envelope, created_at) VALUES('historical_snapshot', 0, ?, ?, ?, ?, ?)";
         NSData *rawEnvelope = [lastRev dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
         NSArray *eventParams = @[did, lastRev, lastRev, rawEnvelope, iso8601Now()];
-        if (![db executeParameterizedUpdate:eventSQL params:eventParams error:innerError]) return NO;
+        if (![tx executeUpdate:eventSQL params:eventParams error:innerError]) return NO;
 
         // Update sync state
-        AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:did];
-        state.status = AppViewRepoSyncStatusSynced;
-        state.lastRev = lastRev;
-        state.lastBackfillAt = [NSDate date];
-        state.errorCount = 0;
-        state.lastError = nil;
-        return [db upsertRepoSyncState:state error:innerError];
+        NSString *upsertSQL =
+            @"INSERT INTO appview_repo_sync_state(did, status, last_rev, last_backfill_at, error_count, last_error)"
+            " VALUES(?,?,?,?,?,?)"
+            " ON CONFLICT(did) DO UPDATE SET"
+            "   status = excluded.status,"
+            "   last_rev = excluded.last_rev,"
+            "   last_backfill_at = excluded.last_backfill_at,"
+            "   error_count = excluded.error_count,"
+            "   last_error = excluded.last_error";
+        NSArray *upsertParams = @[
+            did,
+            @(AppViewRepoSyncStatusSynced),
+            lastRev,
+            [NSDateFormatter atproto_stringFromDate:[NSDate date]],
+            @0,
+            [NSNull null]
+        ];
+        if (![tx executeUpdate:upsertSQL params:upsertParams error:innerError]) return NO;
+
+        GZ_LOG_INFO(@"[AppView] Snapshot saved for %@", did);
+        return YES;
     } error:error];
 }
 
@@ -1626,33 +1633,46 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
         return NO;
     }
 
-    return [self performTransaction:^BOOL(AppViewDatabase *db, NSError **innerError) {
+    return [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
         // Core record and block tables
-        if (![db executeParameterizedUpdate:@"DELETE FROM records WHERE did = ?"
-                                     params:@[did] error:innerError]) return NO;
-        if (![db executeParameterizedUpdate:@"DELETE FROM blocks WHERE repo_did = ?"
-                                     params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM records WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM blocks WHERE repo_did = ?"
+                        params:@[did] error:innerError]) return NO;
 
         // Search indexes — actors use DID directly, posts and starter packs use URI
-        [db executeParameterizedUpdate:@"DELETE FROM search_actors WHERE did = ?"
-                                params:@[did] error:nil];
-        [db executeParameterizedUpdate:@"DELETE FROM search_posts WHERE did = ?"
-                                params:@[did] error:nil];
-        [db executeParameterizedUpdate:@"DELETE FROM search_starter_packs WHERE did = ?"
-                                params:@[did] error:nil];
+        if (![tx executeUpdate:@"DELETE FROM search_actors WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM search_posts WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM search_starter_packs WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
 
         // Pending deltas and dead-letter rows
-        [db executeParameterizedUpdate:@"DELETE FROM appview_pending_deltas WHERE did = ?"
-                                params:@[did] error:nil];
-        [db executeParameterizedUpdate:@"DELETE FROM appview_dead_letter WHERE did = ?"
-                                params:@[did] error:nil];
+        if (![tx executeUpdate:@"DELETE FROM appview_pending_deltas WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
+        if (![tx executeUpdate:@"DELETE FROM appview_dead_letter WHERE did = ?"
+                        params:@[did] error:innerError]) return NO;
 
         // Tombstone the repo sync state so backfill re-fetches on reinstatement
-        AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:did];
-        state.status = AppViewRepoSyncStatusDirty;
-        state.lastError = @"takendown";
-        state.errorCount = 0;
-        if (![db upsertRepoSyncState:state error:innerError]) return NO;
+        NSString *upsertSQL =
+            @"INSERT INTO appview_repo_sync_state(did, status, last_rev, last_backfill_at, error_count, last_error)"
+            " VALUES(?,?,?,?,?,?)"
+            " ON CONFLICT(did) DO UPDATE SET"
+            "   status = excluded.status,"
+            "   last_rev = excluded.last_rev,"
+            "   last_backfill_at = excluded.last_backfill_at,"
+            "   error_count = excluded.error_count,"
+            "   last_error = excluded.last_error";
+        NSArray *upsertParams = @[
+            did,
+            @(AppViewRepoSyncStatusDirty),
+            [NSNull null],
+            [NSNull null],
+            @0,
+            @"takendown"
+        ];
+        if (![tx executeUpdate:upsertSQL params:upsertParams error:innerError]) return NO;
 
         GZ_LOG_INFO(@"[AppView] Takedown enforcement: purged all data for %@", did);
         return YES;
@@ -1863,45 +1883,9 @@ static NSInteger AppViewMigrationStatementCount(NSString *sql) {
 
 #pragma mark - Transactions
 
-- (BOOL)performTransaction:(BOOL (^)(AppViewDatabase *db, NSError **error))block error:(NSError **)error {
-    __block BOOL ok = NO;
-    __block NSError *innerError = nil;
-    [self safeExecuteSync:^{
-        char *errmsg = NULL;
-        int rc = sqlite3_exec(self->_db, "BEGIN IMMEDIATE", NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
-                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to begin transaction"}];
-            if (errmsg) sqlite3_free(errmsg);
-            ok = NO;
-            return;
-        }
-
-        NSError *blockError = nil;
-        ok = block(self, &blockError);
-        if (!ok) {
-            if (blockError) innerError = blockError;
-            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
-            return;
-        }
-
-        rc = sqlite3_exec(self->_db, "COMMIT", NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
-                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to commit transaction"}];
-            if (errmsg) sqlite3_free(errmsg);
-            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
-            ok = NO;
-        }
-    }];
-    if (!ok && error) *error = innerError;
-    return ok;
-}
-
-- (BOOL)inTransaction:(BOOL (^)(NSError **blockError))block error:(NSError **)error {
-    return [self performTransaction:^BOOL(AppViewDatabase * _Nonnull db, NSError * _Nullable * _Nullable innerError) {
-        return block(innerError);
-    } error:error];
+- (BOOL)performWriteTransaction:(BOOL (^)(id<ATProtoDatabaseTransactor> tx, NSError **error))block
+                          error:(NSError **)error {
+    return [_queryRunner performWriteTransaction:block error:error];
 }
 
 @end

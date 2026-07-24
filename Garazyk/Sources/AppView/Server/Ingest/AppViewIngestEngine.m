@@ -10,6 +10,7 @@
 
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
@@ -565,28 +566,28 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 // them.
                 __block AppViewIngestEvent *capturedIngestEvent = nil;
                 __block NSString *capturedFailureReason = nil;
-                indexed = [self.database performTransaction:^BOOL(AppViewDatabase *database, NSError **transactionError) {
-                    AppViewIngestEvent *localIngestEvent = nil;
-                    NSString *localFailureReason = nil;
-                    if (![self _processCommitEvent:event
-                                          fromRelay:relayURL
-                                       rawEnvelope:stored[@"raw_envelope"]
-                                       outputEvent:&localIngestEvent
-                                     failureReason:&localFailureReason]) {
-                        capturedFailureReason = localFailureReason;
-                        if (transactionError && !*transactionError) {
-                            *transactionError = [NSError errorWithDomain:@"dev.garazyk.appview.ingest"
-                                                                      code:1
-                                                                  userInfo:@{NSLocalizedDescriptionKey: localFailureReason ?: @"Commit materialization did not complete"}];
-                        }
-                        return NO;
-                    }
+                AppViewIngestEvent *localIngestEvent = nil;
+                NSString *localFailureReason = nil;
+                BOOL processed = [self _processCommitEvent:event
+                                                 fromRelay:relayURL
+                                              rawEnvelope:stored[@"raw_envelope"]
+                                              outputEvent:&localIngestEvent
+                                            failureReason:&localFailureReason];
+                if (!processed) {
+                    capturedFailureReason = localFailureReason;
+                    materializeError = [NSError errorWithDomain:@"dev.garazyk.appview.ingest"
+                                                           code:1
+                                                       userInfo:@{NSLocalizedDescriptionKey: localFailureReason ?: @"Commit materialization did not complete"}];
+                    indexed = NO;
+                } else {
                     capturedIngestEvent = localIngestEvent;
-                    return [database markIndexEventIndexedForRelayURL:relayURL
-                                                                    seq:seq
-                                                              workerID:self.indexWorkerID
-                                                                 error:transactionError];
-                } error:&materializeError];
+                    NSError *txErr = nil;
+                    indexed = [self.database markIndexEventIndexedForRelayURL:relayURL
+                                                                        seq:seq
+                                                                  workerID:self.indexWorkerID
+                                                                     error:&txErr];
+                    if (!indexed) materializeError = txErr;
+                }
                 ingestEvent = capturedIngestEvent;
                 failureReason = capturedFailureReason;
             } @catch (NSException *exception) {
