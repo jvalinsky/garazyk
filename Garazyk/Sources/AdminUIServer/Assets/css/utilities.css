@@ -116,6 +116,8 @@
 .font-semibold { font-weight: 600; }
 .font-bold { font-weight: 700; }
 
+.text-mono { font-family: "Monaco", "Menlo", "SF Mono", "Courier New", monospace; }
+
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 .text-right { text-align: right; }

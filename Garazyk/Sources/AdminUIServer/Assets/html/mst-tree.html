@@ -6,11 +6,11 @@
 <div class="alert alert-info">No tree data available.</div>
 {{/emptyTree}}
 {{^emptyTree}}
-<div class="detail-card">
-<div class="detail-row"><span class="detail-label">Root CID</span><span class="text-mono text-sm">{{rootCID}}</span></div>
-<div class="detail-row"><span class="detail-label">Nodes</span><span>{{nodeCount}}</span></div>
-<div class="detail-row"><span class="detail-label">Entries</span><span>{{entryCount}}</span></div>
-<div class="detail-row"><span class="detail-label">Max Depth</span><span>{{maxDepth}}</span></div>
+<div class="card">
+<div class="d-flex justify-content-between align-items-center mb-sm"><span class="font-medium text-secondary">Root CID</span><span class="text-mono text-sm">{{rootCID}}</span></div>
+<div class="d-flex justify-content-between align-items-center mb-sm"><span class="font-medium text-secondary">Nodes</span><span>{{nodeCount}}</span></div>
+<div class="d-flex justify-content-between align-items-center mb-sm"><span class="font-medium text-secondary">Entries</span><span>{{entryCount}}</span></div>
+<div class="d-flex justify-content-between align-items-center"><span class="font-medium text-secondary">Max Depth</span><span>{{maxDepth}}</span></div>
 </div>
 {{#hasNodes}}
 <table class="table mt-sm"><thead><tr><th>CID</th><th>Level</th><th>Kind</th><th>Entries</th></tr></thead><tbody>
