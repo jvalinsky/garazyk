@@ -49,8 +49,8 @@ The canonical entry point for all project documentation. Organized per the
 
 ## TUI
 
-- [TUI README](tui/README.md) — historical reference (deprecated, migrating to
-  @opentui/core)
+- [TUI README](tui/README.md) — historical reference, migrating to
+  @opentui/core (Q3 2026)
 - [Architecture & Event Loop](tui/architecture.md)
 - [Core Primitives](tui/core-primitives.md)
 - [Layout & Components](tui/components.md)
@@ -59,7 +59,7 @@ The canonical entry point for all project documentation. Organized per the
 
 ## Meta
 
-- [Document Registry](repo-index/all-documents.md) — auto-generated, 115
+- [Document Registry](repo-index/all-documents.md) — auto-generated, 133
   documents tracked
 - [Backlinks](repo-index/backlinks.md) — inbound link inventory
 - [Archive](archive/) — historical reference documents

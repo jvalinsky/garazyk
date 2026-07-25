@@ -12,7 +12,6 @@ Repository documents organized by subsystem and type.
 | -------------------- | ---------- | ----------------------------------------------- |
 | `README.md`          | Entrypoint | Project overview, build instructions, licensing |
 | `AGENTS.md`          | Entrypoint | AI assistant operational guidance               |
-| `AGENTS_QUICKREF.md` | Entrypoint | Quick reference for AI assistants               |
 
 ## Core PDS Documentation
 

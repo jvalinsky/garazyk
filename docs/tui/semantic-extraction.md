@@ -174,7 +174,6 @@ Determining whether an element is interactable combines six signals:
 
 - [Unicode UI Element Reference](unicode-ui-elements.md) — complete character catalog
 - [Agent Protocol](agent-protocol.md) — MCP tool schemas and agent workflows
-- [MCP Implementation Plan](/.scratchpad/mcp-implementation-plan.md) — server gap fixes
 - Urwid: `canvas.py` CompositeCanvas.shard model
 - Textual: `dom.py` DOMNode, `layout.py` WidgetPlacement
 - Ink: `dom.ts` DOMElement, `reconciler.ts` host config
