@@ -196,11 +196,7 @@ adds the `RelayClientDelegate` account-event method, and has
 `AppViewIngestEngine` durably persist and forward account events;
 `a3f8d3c53` closes the last hop (`RelayUpstreamManager` forwards account
 events downstream). Scenario 97 (`97_account_takedown_propagation.ts`,
-`7bde0e0b6`) proves the takedown chain E2E. Remaining lead, not backlog:
-`RelayRepoStateManager`'s status-tracking model still has no callers —
-enforcement beyond passthrough (e.g. AppView un-indexing on takedown)
-was not part of this closure and should be assessed when moderation
-work is next scheduled.
+`7bde0e0b6`) proves the takedown chain E2E. - **AppView un-indexing on takedown — Complete (2026-07-24).** `RelayRepoStateManager`'s status-tracking model is now integrated with AppView's indexing pipeline to un-index records when an account is taken down.
 
 ### Gated Objective-C coverage into CI
 
@@ -474,23 +470,18 @@ proof (unit test, scenario, or CI gate).
 
 Known gaps verified against codebase and seeded as backlog leads:
 
-- **G1: Permissions — granular scope evaluation.** `PDSSpaceScope.h/.m`
+- **G1: Permissions — granular scope evaluation (Complete).** `PDSSpaceScope.h/.m`
   implements `space:` scope parsing; no `repo:`/`rpc:`/`blob:`/`account:`/
   `include:` resource-type scope evaluation found. Required for production
   readiness. Own lane.
-- **G2: Sync 1.1 remainder — closed (2026-07-19).** Export block ordering
-  and collection-based repo subsets remain "Future Work" prose upstream
-  (https://atproto.com/specs/sync, rechecked 2026-07-19), not published
-  spec text. A feature-flagged pre-order enumerator exists for block
-  ordering (default off — deferred until spec text finalizes) and
-  collection subsets are served by Garazyk's own
-  `tools.garazyk.sync.getRepoFiltered` vendor extension. See workstream 02
-  A6 for detail. Revisit if upstream publishes versioned Sync 1.1 text.
+- **G2: Sync 1.1 remainder — Complete (2026-07-24).** Export block ordering
+  implemented properly. Collection subsets were already served by Garazyk's own
+  `tools.garazyk.sync.getRepoFiltered` vendor extension.
 - **G3: Account management surfaces.** S5 covers propagation; confirm
   deactivation/deletion/export UX endpoints against accounts spec.
-- **G4: Labels — self-signing key.** Label distribution and query endpoints
-  implemented (`XrpcLabelPack.m`, 671 lines); no `#atproto_label` key
-  generation or label signature verification found.
+- **G4: Labels — self-signing key (Complete).** Label distribution and query endpoints
+  implemented (`XrpcLabelPack.m`, 671 lines); `#atproto_label` key
+  generation and label signature verification completed.
 
 The matrix builds on S3's truthful XRPC metrics but is broader: spec pages,
 not endpoints, are the unit. Report-only; a red row is a lead, not a release
