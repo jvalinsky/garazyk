@@ -66,12 +66,18 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
         return;
     }
 
-    self.firehose = [[Firehose alloc] initWithServerURL:wsURL];
+    self.firehose = [self configuredFirehoseForWebSocketURL:wsURL];
     self.subscription = [self.firehose subscribeWithCursor:self.currentSeq
                                                 collections:nil
                                                   delegate:self];
     GZ_LOG_SYNC_INFO(@"RelayClient: Connecting to %@ (cursor=%lld)", wsURL, (long long)self.currentSeq);
     [self.firehose connect];
+}
+
+- (Firehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL {
+    Firehose *firehose = [[Firehose alloc] initWithServerURL:webSocketURL];
+    firehose.accessToken = self.accessToken;
+    return firehose;
 }
 
 - (NSURL *)buildWebSocketURL {
@@ -133,7 +139,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)setAccessToken:(NSString *)accessToken {
-    self.accessToken = [accessToken copy];
+    _accessToken = [accessToken copy];
 
     if (self.isConnected) {
         [self disconnect];
@@ -151,7 +157,10 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
 - (void)storeCursor:(int64_t)cursor forRepo:(NSString *)repo {
     dispatch_async(self.storageQueue, ^{
-        self.cursorStorage[repo] = @(cursor);
+        NSNumber *storedCursor = self.cursorStorage[repo];
+        if (!storedCursor || cursor > storedCursor.longLongValue) {
+            self.cursorStorage[repo] = @(cursor);
+        }
     });
 }
 
@@ -183,7 +192,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
                        delay, (long long)self.currentSeq);
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        if (!self.isConnected) {
+        if (self->_shouldReconnect && !self.isConnected) {
             [self establishConnection];
         }
     });
@@ -204,9 +213,16 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event {
-    // Phase 5: Use seq as cursor per ATProto spec
+    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic commit sequence %lld (current=%lld)",
+                         (long long)event.seq, (long long)self.currentSeq);
+        return;
+    }
+
     [self storeCursor:event.seq forRepo:event.repo];
-    self.currentSeq = event.seq;
+    if (event.seq > 0) {
+        self.currentSeq = event.seq;
+    }
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -217,7 +233,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
-    self.currentSeq = event.seq;
+    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic identity sequence %lld (current=%lld)",
+                         (long long)event.seq, (long long)self.currentSeq);
+        return;
+    }
+    if (event.seq > 0) {
+        self.currentSeq = event.seq;
+    }
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -228,7 +251,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveAccountEvent:(FirehoseAccountEvent *)event {
-    self.currentSeq = event.seq;
+    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic account sequence %lld (current=%lld)",
+                         (long long)event.seq, (long long)self.currentSeq);
+        return;
+    }
+    if (event.seq > 0) {
+        self.currentSeq = event.seq;
+    }
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -239,7 +269,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event {
-    self.currentSeq = event.seq;
+    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic sync sequence %lld (current=%lld)",
+                         (long long)event.seq, (long long)self.currentSeq);
+        return;
+    }
+    if (event.seq > 0) {
+        self.currentSeq = event.seq;
+    }
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {

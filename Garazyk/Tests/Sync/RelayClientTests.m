@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(NSError * _Nullable)error;
 - (NSURL *)buildWebSocketURL;
+- (Firehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL;
 - (void)scheduleReconnect;
 @end
 
@@ -85,6 +86,23 @@ NS_ASSUME_NONNULL_BEGIN
     RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     [client storeCursor:123 forRepo:@"did:plc:alice"];
     XCTAssertTrue([self waitForCursorInClient:client repo:@"did:plc:alice" expected:123]);
+}
+
+- (void)testSetAccessTokenDoesNotReenterSetter {
+    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    XCTAssertNoThrow([client setAccessToken:@"test-token"]);
+    XCTAssertEqualObjects([client valueForKey:@"accessToken"], @"test-token");
+    Firehose *firehose =
+        [client configuredFirehoseForWebSocketURL:
+            [NSURL URLWithString:@"wss://example.com/xrpc/com.atproto.sync.subscribeRepos"]];
+    XCTAssertEqualObjects(firehose.accessToken, @"test-token");
+}
+
+- (void)testStoredCursorDoesNotRegress {
+    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    [client storeCursor:200 forRepo:@"did:plc:alice"];
+    [client storeCursor:199 forRepo:@"did:plc:alice"];
+    XCTAssertTrue([self waitForCursorInClient:client repo:@"did:plc:alice" expected:200]);
 }
 
 - (void)testBuildWebSocketURLDefaultPortAndPath {
@@ -192,6 +210,28 @@ NS_ASSUME_NONNULL_BEGIN
     // Note: currentCursor might be based on event.rev or seq, not commit CID
     // Just verify we got the event
     XCTAssertNotNil(delegate.commitEvent.commit);
+}
+
+- (void)testOutOfOrderCommitDoesNotRegressReconnectCursor {
+    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    CID *commitCID = [CID cidWithDigest:[@"monotonic" dataUsingEncoding:NSUTF8StringEncoding]
+                                  codec:0x71];
+
+    FirehoseCommitEvent *newer = [FirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+                                                             commit:commitCID
+                                                                ops:@[]];
+    newer.seq = 200;
+    [client firehoseSubscription:subscription didReceiveCommitEvent:newer];
+
+    FirehoseCommitEvent *older = [FirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+                                                             commit:commitCID
+                                                                ops:@[]];
+    older.seq = 199;
+    [client firehoseSubscription:subscription didReceiveCommitEvent:older];
+
+    XCTAssertEqual(client.currentSeq, 200);
+    XCTAssertTrue([self waitForCursorInClient:client repo:@"did:plc:alice" expected:200]);
 }
 #endif
 

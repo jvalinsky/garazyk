@@ -269,6 +269,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
  */
 @interface Firehose : NSObject
 
+/*! Bearer token sent during the WebSocket upgrade request. */
+@property(nonatomic, copy, nullable) NSString *accessToken;
+
 /*! Delegate for receiving events. */
 @property (nonatomic, weak, nullable, readonly) id<FirehoseSubscriptionDelegate> delegate;
 
