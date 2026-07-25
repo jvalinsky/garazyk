@@ -55,7 +55,7 @@ Garazyk/Sources/Database/
 ├── Service/              # Service-level databases
 │   ├── ServiceDatabases.h
 │   └── ServiceDatabases.m
-├── Migration/            # Migration from monolithic
+├── Migrations/           # Migration from monolithic
 │   ├── PDSMigrationManager.h
 │   └── PDSMigrationManager.m
 ├── Monitoring/           # Health checks and monitoring

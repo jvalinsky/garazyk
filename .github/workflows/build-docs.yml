@@ -9,7 +9,7 @@ on:
       - 'Garazyk/Sources/**'
       - 'tooling/**'
       - 'scripts/docs/**'
-      - 'skills/**'
+      - '.agents/skills/**'
       - 'examples/**'
       - '.github/workflows/build-docs.yml'
   pull_request:
@@ -20,7 +20,7 @@ on:
       - 'Garazyk/Sources/**'
       - 'tooling/**'
       - 'scripts/docs/**'
-      - 'skills/**'
+      - '.agents/skills/**'
       - 'examples/**'
   workflow_dispatch:
 
@@ -41,7 +41,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'docs/package-lock.json'
+          cache-dependency-path: 'scripts/docs/package-lock.json'
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2

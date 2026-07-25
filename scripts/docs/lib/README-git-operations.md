@@ -417,4 +417,4 @@ node scripts/docs/examples/git-operations-example.js <example-number>
 
 ## License
 
-Part of the ATProtoPDS project.
+Part of the Garazyk project.

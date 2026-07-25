@@ -20,7 +20,7 @@ Every WebSocket connection on the internet surprisingly starts its life as a sta
 request. It relies on the HTTP `Upgrade` mechanism to seamlessly transition an existing TCP
 connection from text-based HTTP to the binary WebSocket protocol.
 
-In `ATProtoPDS`, when the `HttpRouter` detects an incoming request to
+In `Garazyk PDS`, when the `HttpRouter` detects an incoming request to
 `/xrpc/com.atproto.sync.subscribeRepos` (the primary firehose endpoint), it forwards the underlying
 socket to the `SubscribeReposHandler`. Here, the server rigorously inspects the HTTP headers. If it
 sees `Connection: Upgrade` and `Upgrade: websocket`, it initiates the cryptographic handshake
@@ -70,7 +70,7 @@ connections. The bit-header encodes critical metadata for parser state machines:
   intermediaries (like transparent proxy servers) from cache-poisoning the payload by tricking them
   into reading the payload as if it were a new HTTP request.
 
-Because `ATProtoPDS` implements WebSockets natively in Objective-C without heavy external networking
+Because `Garazyk PDS` implements WebSockets natively in Objective-C without heavy external networking
 libraries, the internal WebSocket implementation must manually unmask incoming client frames. This
 is done using an `XOR` operation byte-by-byte against the provided Masking Key.
 
@@ -87,7 +87,7 @@ Long-lived TCP connections are notoriously fragile. Firewalls, NAT routers, or m
 aggressively drop idle connections silently.
 
 To combat this, the WebSocket specification includes built-in `Ping` and `Pong` control frames.
-`ATProtoPDS` periodically dispatches `Ping` frames downstream. If a Relay or client fails to reply
+`Garazyk PDS` periodically dispatches `Ping` frames downstream. If a Relay or client fails to reply
 with a matching `Pong` frame within a configured timeout window, the server safely assumes the
 connection is dead (a "half-open" connection) and tears down the socket, recovering critical file
 descriptors and memory resources.
@@ -109,7 +109,7 @@ amounts of data efficiently. However, it also means the server must carefully ma
 ### Managing Backpressure
 
 If a Relay consumes data slower than the PDS produces it, the operating system's kernel socket
-buffers will fill up. `ATProtoPDS` tightly monitors these buffer limits. If the pending outbound
+buffers will fill up. `Garazyk PDS` tightly monitors these buffer limits. If the pending outbound
 bytes exceed a configured threshold (e.g., waiting on TCP ACKs from a slow Relay), it gracefully
 yields a `ConsumerTooSlow` Close frame and violently drops the subscriber.
 

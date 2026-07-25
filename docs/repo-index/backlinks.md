@@ -5,13 +5,6 @@ title: Backlinks
 
 Auto-generated inbound link inventory for markdown discoverability.
 
-## `AGENTS_QUICKREF.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/root-entrypoints.md](root-entrypoints.md)
-
 ## `AGENTS.md`
 
 Inbound links: **2**

@@ -13,7 +13,7 @@ need one thread per active connection. This synchronous design is not only memor
 deeply prone to malicious **Slow-Loris attacks** (where an attacker sends just 1 byte every 10
 seconds to deliberately freeze a thread, quickly exhausting the server's thread pool).
 
-To solve this concurrency nightmare and build a truly resilient system, `ATProtoPDS` utilizes a
+To solve this concurrency nightmare and build a truly resilient system, `Garazyk PDS` utilizes a
 strict **Sans-IO Architecture** for its core network parsers, including `Http1Parser` and
 `WebSocketParser`.
 
@@ -80,7 +80,7 @@ endpoint.
 
 ## Defending Against Memory Exhaustion (OOM)
 
-Because `ATProtoPDS` processes potentially unbounded user payloads (such as massively chunked video
+Because `Garazyk PDS` processes potentially unbounded user payloads (such as massively chunked video
 blob uploads via `com.atproto.repo.uploadBlob`), the parser MUST rigidly defend against memory
 exhaustion attacks (`OOM` Out-Of-Memory exceptions) _before_ the request reaches the routing layer
 or touches the SQLite database.
@@ -102,4 +102,4 @@ the state machine execution loop:
   the descriptor, and gracefully saving the server's memory capacity.
 
 By completely separating the _understanding_ of the data from the _retrieval_ of the data,
-`ATProtoPDS` builds an incredibly defensive perimeter right at the edge of the network interface.
+`Garazyk PDS` builds an incredibly defensive perimeter right at the edge of the network interface.

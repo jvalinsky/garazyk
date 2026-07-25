@@ -1,9 +1,9 @@
 # Admin UI — Web Assets
 
-Static CSS and JS served by `PDSAdminUIServer`. Contains the design tokens,
+Static CSS and JS served by `UIServerRuntime`. Contains the design tokens,
 component classes, layout primitives, and two HTMX-flavored JavaScript
 bundles (`lab.js`, `mst-viewer/`) that the server renders the admin
-HTML against. `PDSAdminUIServer` runs HTMX for partial-page interactions,
+HTML against. `UIServerRuntime` runs HTMX for partial-page interactions,
 per the project root README.
 
 The design system is documented in full at
@@ -26,7 +26,7 @@ AdminUIServer/Assets/
 ├── html/
 │   └── demo.html           Interactive showcase mounted at /admin/demo.
 ├── js/
-│   ├── lab.js              Legacy dashboard scripts.
+│   ├── lab.js              OAuth /lab client scripts.
 │   └── mst-viewer/         MST tree inspector and viewer bundles.
 ├── DESIGN_SYSTEM.md        Full design philosophy, tokens, patterns.
 ├── QUICK_REFERENCE.md      Copy-paste component cheat sheet.

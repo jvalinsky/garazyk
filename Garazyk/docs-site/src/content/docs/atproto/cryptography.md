@@ -15,7 +15,7 @@ your secure private key before being ingested into the global state.
 
 ## Keys, Handles, and DIDs
 
-To understand how `ATProtoPDS` secures your data, we must decouple human-readable names from
+To understand how `Garazyk PDS` secures your data, we must decouple human-readable names from
 cryptographic identities.
 
 Your handle (e.g., `@jack.bsky.social`) is merely a domain name alias. It can change at any time
@@ -96,7 +96,7 @@ cause downstream relays to fork the state of the repository, essentially breakin
 
 ### The Canonical Fix
 
-To combat this, the `AuthCryptoECDSA` module inside `ATProtoPDS` explicitly enforces strict
+To combat this, the `AuthCryptoECDSA` module inside `Garazyk PDS` explicitly enforces strict
 mathematical length properties. It strictly parses the ASN.1 tree and strips any invalid sequences
 of leading `0x00` from the integers to mathematically yield a pure, canonically minimized "Raw"
 ECDSA signature format _before_ executing the OpenSSL `EVP_DigestVerifyFinal` operation.
@@ -114,7 +114,7 @@ while (r.length > 0 && ((const uint8_t *)r.bytes)[0] == 0x00) {
 ```
 
 By guaranteeing a strictly canonical signature profile before writing it to SQLite or generating the
-block CID, `ATProtoPDS` robustly secures the Merkle Root from tampering and guarantees deterministic
+block CID, `Garazyk PDS` robustly secures the Merkle Root from tampering and guarantees deterministic
 replication across the AT Protocol ecosystem.
 
 > [!WARNING]

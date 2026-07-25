@@ -59,7 +59,7 @@ Garazyk/Sources/Database/
 ├── Service/              # Service-level databases
 │   ├── ServiceDatabases.h
 │   └── ServiceDatabases.m
-├── Migration/            # Migration from monolithic to single-tenant
+├── Migrations/           # Migration from monolithic to single-tenant
 │   ├── PDSMigrationManager.h
 │   └── PDSMigrationManager.m
 ├── Monitoring/           # Health checks and monitoring

@@ -1,12 +1,12 @@
 ---
 title: Threading with GCD
-description: Dispatch queues, synchronization, and advanced concurrency patterns in ATProtoPDS
+description: Dispatch queues, synchronization, and advanced concurrency patterns in Garazyk PDS
 ---
 
 Grand Central Dispatch (GCD) is an extraordinarily robust, low-level multi-core concurrency API
 provided natively by the C/Objective-C standard system libraries on Apple platforms. Crucially for
 server-side deployments, it has also been fully ported to Linux via `libdispatch`, allowing
-cross-platform Objective-C backend applications like our `ATProtoPDS` to cleanly utilize the exact
+cross-platform Objective-C backend applications like our `Garazyk PDS` to cleanly utilize the exact
 same high-performance concurrency primitives everywhere without conditional compilation spaghetti.
 
 In our specialized Objective-C backend, we heavily utilize GCD to manage thousands of simultaneous
@@ -87,7 +87,7 @@ cores by the OS thread pool. They run simultaneously in parallel. While the task
 dequeued off the queue in FIFO order, their physical execution overlaps globally, and they can
 finish in absolutely any order based on latency.
 
-For every single incoming HTTP network request off the `accept()` socket within the `PDSHttpServer`
+For every single incoming HTTP network request off the `accept()` socket within the `ATProtoHttpServerBuilder`
 (or the XRPC routing dispatcher), we instantly dispatch the raw networking block to a global
 concurrent queue. This prevents the primary listener socket from blocking and allows the server to
 simultaneously handle tens of thousands of requests:
@@ -234,7 +234,7 @@ dispatch_async(globalQueue, ^{
 
 ## Conclusion & Server Best Practices
 
-When architecting complex multi-core logic with GCD in an `ATProtoPDS` deployment, heavily adhere to
+When architecting complex multi-core logic with GCD in an `Garazyk PDS` deployment, heavily adhere to
 these strict infrastructure capabilities:
 
 1. **Avoid Thread Explosion:** Be deeply cautious when rapidly dispatching tens of thousands of
