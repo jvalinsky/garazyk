@@ -744,7 +744,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     NSMutableArray<NSDictionary *> *filtered = [NSMutableArray arrayWithCapacity:rows.count];
     for (NSDictionary *row in rows) {
         NSMutableDictionary *cleaned = [NSMutableDictionary dictionaryWithCapacity:row.count];
-        [row enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+        [row enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
             if (![value isKindOfClass:[NSNull class]]) cleaned[key] = value;
         }];
         [filtered addObject:[cleaned copy]];
