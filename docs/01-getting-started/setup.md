@@ -1,62 +1,66 @@
 ---
-title: Setup Guide
+title: Setup
 ---
 
-# Setup Guide
+# Setup
 
-## Prerequisites
+## Install dependencies
 
-### macOS
+On macOS:
 
-```bash
-brew install cmake xcodegen deno
+```sh
+brew install cmake deno xcodegen
 ```
 
-### Linux (GNUstep)
+On Debian or Ubuntu:
 
-```bash
-apt install clang cmake libsqlite3-dev libssl-dev gnustep-devel
-# Install Deno: https://deno.land/manual/getting_started/installation
+```sh
+sudo apt install clang cmake libobjc-12-dev libsqlite3-dev libssl-dev gnustep-devel
 ```
 
-## Clone & Build
+Install Deno separately if your package manager does not provide it.
 
-```bash
-git clone https://github.com/jack/garazyk.git
+## Get the source
+
+```sh
+git clone https://github.com/jvalinsky/garazyk.git
 cd garazyk
+deno install
 ```
 
-### macOS
+## Build and test
 
-```bash
-xcodegen generate
-xcodebuild -scheme AllTests build
-./build/tests/AllTests
+The CMake build works on macOS and Linux:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --target AllTests --parallel 4
+./build/tests/AllTests --gated=run
 ```
 
-### Linux
+Run `xcodegen generate` before using the Xcode project on macOS.
 
-```bash
-cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-linux -j
-./build-linux/tests/AllTests
+The Deno checks are:
+
+```sh
+deno task check
+deno task lint
+deno task test
 ```
 
-## Run a Scenario
+## Run a scenario
 
-```bash
-# Start Docker services via the local network script
-./scripts/scenarios/setup_local_network.sh
+Docker must be running.
 
-# Run the scenario suite
-deno task hamownia
-
-# Or a single scenario
-deno run -A packages/hamownia/cli.ts run --scenario account_lifecycle
+```sh
+deno task hamownia run --setup 01_account_lifecycle
 ```
 
-## Next Steps
+See the [scenario reference](../11-reference/deno-scenario-framework.md) for
+other commands.
 
-- [Codebase Map](codebase-map.md) — understand the directory layout
-- [Tutorials](../10-tutorials/index.md) — learn by doing
-- [Architecture Overview](../20-explanation/architecture/atproto_pds_architecture.md)
+## Next
+
+- [Codebase map](codebase-map.md)
+- [Architecture](../20-explanation/architecture/atproto_pds_architecture.md)
+- [Deployment](../20-explanation/guides/DEPLOYMENT.md)

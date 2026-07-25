@@ -4,263 +4,116 @@ title: Deno Scenario Framework
 
 # Deno Scenario Framework
 
-The Deno Scenario Framework (`scripts/scenarios/`) runs integration tests against a local
-Docker network to validate federation, OAuth flows, and AT Protocol interactions.
+Hamownia runs integration scenarios against local AT Protocol services. It can
+start a Docker or binary topology, run selected scenarios, and write reports.
 
-## Key Documents
+The implementation is in `packages/hamownia/`. Scenario files and topology
+definitions are under `scripts/scenarios/`.
 
-| File | Description |
-|---|---|
-| `scripts/scenarios/README.md` | Scenario runner overview and quick start |
-| `scripts/scenarios/SCENARIO_STANDARDS.md` | Authoring standards for new scenarios |
-| `scripts/scenarios/topologies/README.md` | Topology definitions and configuration |
+## Install
 
-## Related Packages
-
-| Package | Role |
-|---|---|
-| `@garazyk/hamownia` | Scenario runner engine, assertions, mock Twilio |
-| `@garazyk/schemat` | Topology schema, compilation, presets |
-| `@garazyk/laweta` | Docker orchestration, compose, health checks |
-| `@garazyk/gruszka` | XRPC client generation from lexicons |
-
-## Agent NDJSON Event Pipeline
-
-The `hamownia agent run` command emits NDJSON events on stdout
-for the scenario dashboard and other tools. It sends human-readable
-output to stderr.
-
-### Pipeline Architecture
-
-```
-hamownia agent run  ──stdout(NJSON)──▶  RunManager.parseAgentNdjson()
-                      │                        │
-                      │              mapAgentEventLine(line, runId)
-                      │                        │
-                      │              RunManager.#emit(RunEvent)
-                      │                        │
-                      ▼                        ▼
-                   stderr              Dashboard UI / TUI listeners
-                (human logs)          (via runManager.onEvent())
+```sh
+deno install
 ```
 
-### NDJSON Event Types
+Docker must be running when Hamownia manages a container topology.
 
-| Agent Event | Dashboard RunEvent | Notes |
-|---|---|---|
-| `run_start` | `run_started` | Maps `runId`, `total`, `timestamp` with `typeof` guards |
-| `scenario_start` | `scenario_started` | Uses provided `runId` for the dashboard run |
-| `scenario_complete` | `scenario_finished` | `ok` → `status` ("passed"/"failed"), `durationS` → `durationMs` |
-| `service_failure` | `log_line` | Prepends `[service_failure]` prefix |
-| `run_progress` | *suppressed* | Inline progress, not emitted to dashboard |
-| `run_finished` | `run_completed` / `run_failed` | `ok: true` → completed with totals; `ok: false` → failed |
-| non-JSON line | `log_line` | Raw text forwarded as-is |
-| unknown type | `log_line` | Prefixed with `[agent:<type>]` |
+## Common commands
 
-### Runtime Validation
+```sh
+# List scenarios
+deno task hamownia run --list
 
-`mapAgentEventLine()` uses `typeof` guards (not `as` casts) for all fields.
-Malformed or missing fields fall back to safe defaults:
+# Run one scenario and start its services
+deno task hamownia run --setup 01_account_lifecycle
 
-- Missing `runId` → the dashboard run ID
-- Non-numeric `total`/`passed`/`failed`/`skipped`/`durationS` → 0
-- Non-string `scenarioId` → `"??"`
-- Non-string `name` → `"unknown"`
-- Non-boolean `ok` → `false` (defaults to "failed")
-- Missing `timestamp` → `Date.now()`
-- Missing `message` → `"unknown failure"`
+# Run against services that are already running
+deno task hamownia run --no-setup 01_account_lifecycle
 
-### Testing
+# Leave the services running after the run
+deno task hamownia run --setup --keep-running 01_account_lifecycle
 
-`mapAgentEventLine()` is exported for direct unit testing. Tests cover:
-- All event type mappings
-- Malformed field fallbacks (typeof guard defaults)
-- Stream-based e2e pipeline simulation (TextDecoderStream + TextLineStream)
-
-```bash
-deno test -A scripts/scenario-dashboard/services/run_manager.test.ts
+# Stop managed services
+deno task hamownia run --teardown-only
 ```
 
-## Hamownia CLI Reference
+Run `deno task hamownia help <command>` for current options.
 
-The `hamownia` CLI (`packages/hamownia/cli.ts`) provides Garazyk developer tools.
-All commands accept `--verbose` and `--quiet`.
+## Commands
 
-```bash
-deno run -A packages/hamownia/cli.ts <command> [options] [args]
+| Command        | Use                                                     |
+| -------------- | ------------------------------------------------------- |
+| `run`          | Run scenarios and manage setup or teardown              |
+| `agent list`   | List scenarios as JSON                                  |
+| `agent run`    | Run scenarios with NDJSON events on stdout              |
+| `agent triage` | Read existing reports and summarize failures            |
+| `service`      | Start, stop, inspect, or reseed local services          |
+| `demo`         | Start a seeded local topology                           |
+| `smoke`        | Check basic account and record operations against a PDS |
+| `fuzz`         | List or run native fuzz targets                         |
+| `test`         | Run package tests                                       |
+
+Global `--verbose` and `--quiet` flags control human-readable logging.
+
+## Topologies
+
+`@garazyk/schemat` defines topology manifests. `@garazyk/laweta` controls
+Docker. `@garazyk/gruszka` provides typed XRPC clients.
+
+Topology presets live in `scripts/scenarios/topologies/`. A scenario manifest
+declares the roles and capabilities a scenario needs. Hamownia uses that data to
+decide whether a topology can run the scenario.
+
+The manifest fields are:
+
+| Field          | Meaning                            |
+| -------------- | ---------------------------------- |
+| `requires`     | Required role and capability pairs |
+| `optional`     | Optional role and capability pairs |
+| `needsPds2`    | Whether a second PDS is required   |
+| `browserFlows` | Supported browser test modes       |
+| `timeout`      | Per-scenario timeout               |
+| `parameters`   | Named scenario inputs and defaults |
+
+Manifest entries are defined in `packages/hamownia/scenario_metadata.ts`. Their
+keys match the two-digit scenario IDs.
+
+## Agent output
+
+`agent run` writes one JSON object per line to stdout. Human-readable logs go to
+stderr. Consumers should ignore event types they do not recognize.
+
+Common event types are:
+
+| Event               | Meaning                    |
+| ------------------- | -------------------------- |
+| `run_start`         | A run began                |
+| `scenario_start`    | A scenario began           |
+| `scenario_complete` | A scenario ended           |
+| `service_failure`   | A managed service failed   |
+| `run_progress`      | Aggregate progress changed |
+| `run_finished`      | The run ended              |
+
+The scenario dashboard maps these records to its internal run events in
+`scripts/scenario-dashboard/services/run_manager.ts`.
+
+## Reports and triage
+
+Runs write JSON reports unless `--no-json` is used. Choose a report directory
+with `--reports-dir` and a stable identifier with `--run-id`.
+
+```sh
+deno task hamownia agent triage
+deno task hamownia agent triage --run-id RUN_ID
 ```
 
-### `agent` — Machine-readable interface for AI assistants
+## Authoring
 
-Emits NDJSON events on stdout for tool consumption. Human-readable output
-goes to stderr when `--verbose` is passed.
+Read these files before adding a scenario:
 
-| Subcommand | Description |
-|---|---|
-| `agent list [ids...]` | Discover scenarios as JSON. `--topology` filters by compatibility. |
-| `agent run [ids...]` | Execute scenarios with NDJSON events on stdout. |
-| `agent triage` | Parse existing reports without starting services. |
+- `scripts/scenarios/README.md`
+- `scripts/scenarios/SCENARIO_STANDARDS.md`
+- `scripts/scenarios/topologies/README.md`
 
-**`agent run` options:** `--setup` / `--no-setup`, `--binary`, `--pds2`,
-`--keep-running`, `--teardown`, `--allow-hybrid-network`,
-`--topology <preset>`, `--runner <host|docker>`, `--web-client <preset>`,
-`--client-flow <none|smoke|login|deep>`, `--run-id <id>`, `--timeout <seconds>`
-
-**`agent triage` options:** `--run-id <id>`, `--reports-dir <dir>`
-
-### `run` — Execute e2e scenarios (human-readable)
-
-Runs ATProto scenario tests against a local network topology.
-Supports setup/teardown, binary or Docker service modes, browser-based
-flows, OpenTelemetry, and diagnostic collection.
-
-**Options:** `--list`, `--setup-only`, `--setup`, `--no-setup`, `--teardown`,
-`--teardown-only`, `--binary`, `--pds2`, `--collect-diagnostics`,
-`--allow-hybrid-network`, `--keep-running`, `--no-json`, `--otel`,
-`--run-id <id>`, `--diagnostics-dir <dir>`, `--reports-dir <dir>`,
-`--web-client <preset>`, `--client-flow <none|smoke|login|deep>`,
-`--topology <preset>`, `--runner <host|docker>`, `--timeout <seconds>`
-
-### `service` — Manage local ATProto service lifecycle
-
-Start, stop, restart, and monitor local binary services (PLC, PDS, Relay,
-AppView, Chat, Video).
-
-| Subcommand | Alias | Description |
-|---|---|---|
-| `service start` | `up` | Start services. `-s <name>` targets specific ones. |
-| `service stop` | `down` | Stop services. `-s <name>` targets specific ones. |
-| `service restart` | — | Stop, wait 2s, then start services. |
-| `service status` | — | Show service health status. |
-| `service logs` | — | Follow service logs. `-s <name>` required. |
-| `service reseed` | — | Wipe data and restart with fresh seed. |
-| `service ps` | — | List running service processes. |
-| `service topology` | — | Show current topology configuration. |
-
-### `demo` — Full ATProto stack demo with seed data
-
-Starts PLC, PDS, Relay, AppView, Chat, Video, and the Admin UI. By default
-seeds demo accounts and content.
-
-**Options:** `--skip-seed`, `--keep-running`, `--stop`, `--run-id <id>`,
-`--collect-diagnostics`, `--diagnostics-dir <path>`
-
-### `smoke` — Smoke test against a PDS
-
-Creates an account, posts, reads it back, and reports results.
-
-**Options:** `--pds-url <url>` (default: `http://localhost:2583`)
-
-### `fuzz` — Fuzz Garazyk parsers
-
-Runs libFuzzer-based fuzzers for JWT, CID, and other parsers.
-
-| Subcommand | Description |
-|---|---|
-| `fuzz run` | Run a fuzzer with `-f <name>`, `-c <corpus>`, `-r <runs>`, `-j <jobs>`, `-o <output>`. |
-| `fuzz list` | List available fuzzers from `build/fuzzing/`. |
-
-### `test` — Run package unit tests
-
-Discovers and executes all `*_test.ts` / `*.test.ts` files under `packages/`.
-
-**Options:** `-f, --filter <pattern>`, `-a, --all`
-
-## Quick Start
-
-```bash
-# Run the full scenario suite (with setup)
-deno run -A packages/hamownia/cli.ts run --setup
-
-# Run a specific scenario
-deno run -A packages/hamownia/cli.ts run --setup 01_account_lifecycle
-
-# Run agent mode (NDJSON on stdout for tool consumption)
-deno run -A packages/hamownia/cli.ts agent run 01 --keep-running
-
-# List discoverable scenarios as JSON
-deno run -A packages/hamownia/cli.ts agent list
-
-# Triage the latest run's failures
-deno run -A packages/hamownia/cli.ts agent triage
-
-# Start the full demo stack
-deno run -A packages/hamownia/cli.ts demo
-
-# Smoke-test a running PDS
-deno run -A packages/hamownia/cli.ts smoke --pds-url http://localhost:2583
-
-# Run all package unit tests
-deno run -A packages/hamownia/cli.ts test
-
-# Check boundary violations
-deno task narzedzia
-```
-
-## Scenario Manifests (`SCENARIO_MANIFESTS`)
-
-`SCENARIO_MANIFESTS` (`packages/hamownia/scenario_metadata.ts`) defines
-requirements, capabilities, and parameters for scenarios. The `agent list`
-command merges scenario files with manifest data to output
-`AgentScenarioSummary`.
-
-### Manifest fields and their effect on agent list output
-
-| Manifest Field | Type | Effect on `agent list` output |
-|---|---|---|
-| `requires` | `ScenarioRequirement[]` | Populates `requires` as `"role:capability"` strings. Scenarios where the topology lacks a required capability are excluded from `agent list --topology`. |
-| `optional` | `ScenarioRequirement[]` | Populates `optional` as `"role:capability"` strings. Optional requirements do not affect filtering. |
-| `needsPds2` | `boolean` | Maps to `needsPds2`. If `true` and the topology lacks a PDS2 role, the scenario is filtered out. |
-| `browserFlows` | `BrowserFlow[]` | Maps to `browserFlows`. Documents which browser automation flows the scenario supports (e.g. `["smoke","login"]`). |
-| `timeout` | `number` (seconds) | Maps to `timeout`. Per-scenario override for the default 120s timeout. Only three scenarios set this: `26` (300s), `60` (240s), `92` (420s). |
-| `parameters` | `Record<string, {type, default, description}>` | Maps to `parameters` with each parameter's default value extracted (not the full type descriptor). E.g. `{scale: {type:"number", default:1}}` → `{scale: 1}`. |
-
-### `toSummary()` mapping
-
-The `toSummary()` function in `packages/hamownia/cli/agent.ts` merges
-`ScenarioInfo` with the manifest:
-
-```typescript
-// pseudocode
-export function toSummary(scenario: ScenarioInfo): AgentScenarioSummary {
-  const manifest = SCENARIO_MANIFESTS[scenario.id] ?? {};
-  return {
-    id: scenario.id,
-    name: scenario.name,
-    path: scenario.path,
-    requires: scenario.requires.map(formatRequirement),
-    optional: scenario.optional.map(formatRequirement),
-    needsPds2: scenario.needsPds2,
-    browserFlows: scenario.browserFlows,
-    timeout: manifest.timeout,            // from manifest, not scenario file
-    parameters: /* defaults extracted */,  // from manifest, not scenario file
-  };
-}
-```
-
-Note: `timeout` and `parameters` come only from the manifest,
-not from the scenario file's metadata. The manifest overrides
-the scenario file for these fields.
-
-### Adding a new manifest entry
-
-1. Add a key to `SCENARIO_MANIFESTS` matching the scenario's two-digit ID.
-2. Declare `requires` for all role:capability dependencies the scenario needs.
-3. Set `needsPds2: true` if the scenario spawns a second PDS.
-4. Set `browserFlows` if the scenario includes browser automation steps.
-5. Set `timeout` if the scenario needs longer than 120s.
-6. Declare `parameters` with type, default, and description for any
-   configurable knobs.
-
-```typescript
-// Example manifest entry
-export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
-  "59": {
-    browserFlows: ["smoke", "login", "deep"],
-    parameters: {
-      scale: { type: "number", default: 1, description: "Number of threads/posts to create" },
-      depth: { type: "number", default: 2, description: "Maximum reply depth" },
-    },
-  },
-};
-```
+Add the scenario file, register any manifest requirements, and run it against
+the smallest compatible topology.
