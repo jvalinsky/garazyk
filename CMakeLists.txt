@@ -97,6 +97,17 @@ if(NOT APPLE)
     if(NOT OBJC_LIBRARY)
         find_library(OBJC_LIBRARY NAMES objc)
     endif()
+    if(NOT OBJC_LIBRARY)
+        execute_process(
+            COMMAND "${CMAKE_OBJC_COMPILER}" "-print-file-name=libobjc.so"
+            OUTPUT_VARIABLE OBJC_LIBRARY_FROM_COMPILER
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+        if(EXISTS "${OBJC_LIBRARY_FROM_COMPILER}")
+            set(OBJC_LIBRARY "${OBJC_LIBRARY_FROM_COMPILER}")
+        endif()
+    endif()
     message(STATUS "Using ObjC library: ${OBJC_LIBRARY}")
 
     # Set Objective-C flags for modern runtime with ARC support
