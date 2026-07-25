@@ -10,7 +10,7 @@ name = "garazyk-ptyd"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.103"
 base64 = "0.22"
 portable-pty = "0.9"
 serde = { version = "1.0", features = ["derive"] }
