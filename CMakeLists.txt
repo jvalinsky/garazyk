@@ -122,6 +122,12 @@ if(NOT APPLE)
             endif()
         endif()
     endif()
+    if(OBJC_LIBRARY AND NOT OBJC_LIBRARY MATCHES "-NOTFOUND$")
+        get_filename_component(GNU_OBJC_RUNTIME_DIR "${OBJC_LIBRARY}" DIRECTORY)
+        if(EXISTS "${GNU_OBJC_RUNTIME_DIR}/include/objc/objc.h")
+            include_directories(SYSTEM "${GNU_OBJC_RUNTIME_DIR}/include")
+        endif()
+    endif()
     message(STATUS "Using ObjC library: ${OBJC_LIBRARY}")
 
     # Set Objective-C flags for modern runtime with ARC support
