@@ -215,6 +215,11 @@ typedef NS_ENUM(NSInteger, ATProtoNetworkListenerState) {
 /** Creates an outbound connection to a remote host and port. */
 + (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port;
 
+/** Creates an outbound connection with an explicit TLS policy. */
++ (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host
+                                                    port:(NSUInteger)port
+                                               secureTLS:(BOOL)secureTLS;
+
 @end
 
 NS_ASSUME_NONNULL_END

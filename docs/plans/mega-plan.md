@@ -176,10 +176,10 @@ better-isolated steps.
 | Lexicon generator consolidation               |             5 |               4 |             5 |             4 |      5 | ✓ Complete      |
 | Permissioned spaces multi-PDS acceptance      |             5 |               2 |             5 |             5 |      5 | ✓ Complete      |
 | AppView numbered, atomic migrations           |             5 |               5 |             5 |             3 |      5 | ✓ Complete      |
-| OAuth Permissions spec (granular scopes)      |             4 |               3 |             4 |             3 |      4 | P1              |
+| OAuth Permissions spec (granular scopes)      |             4 |               3 |             4 |             3 |      4 | ✓ Complete      |
 | Replace false-confidence security tests       |             4 |               3 |             5 |             5 |      5 | ✓ Complete      |
 | PLC schema-upgrade atomicity                  |             4 |               4 |             5 |             3 |      4 | ✓ Complete      |
-| Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | Blocked         |
+| Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | ✓ Complete (publication excluded) |
 | Relay product decision and assembly           |             4 |               5 |             4 |             2 |      5 | Decided (ADR 0006) |
 | Admin UI structural and accessibility work    |             4 |               5 |             4 |             3 |      4 | ✓ Complete      |
 | Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | ✓ Complete      |
@@ -348,11 +348,12 @@ scenario 93/94 runtime passes.
    until the maintainer explicitly reopens Phase 5. No package has been
    published; later ATProto package releases and the in-tree deletion (R4)
    remain deferred with it (workstream 03).
-2. Remove the 92 scenario imports through `scripts/lib/deno` and the package
-   back-reference in `packages/hamownia/tasks.ts` before the split deletion.
-   The final form (imports by released package name) is deferred with item 1;
-   a preparatory rewrite onto workspace specifiers is allowed only if the
-   maintainer asks for it — otherwise this waits for the Phase 5 reopening.
+2. **Preparatory rewrite complete (2026-07-25):** no TypeScript source under
+   `scripts/scenarios/` or `packages/` imports `scripts/lib/deno`, and
+   `packages/hamownia/tasks.ts` now imports `XrpcClient` from workspace
+   `@garazyk/gruszka` (Hamownia: type check + 328 tests pass). The final form,
+   package-name imports followed by wrapper deletion, remains deferred with
+   publication and the in-tree deletion.
 3. **Complete (2026-07-18):** plain Objective-C NSID constants are generated
    deterministically (`f46ab5fb8`) and adopted at every call site with a CI
    drift check (`e212288bd`). A Narzedzia guard now rejects direct non-internal
@@ -436,19 +437,21 @@ removals without caller proof.
 
 ### Phase 5: decisions
 
-1. **Complete (2026-07-23): baseline and subset both decided.** The
+1. **Complete (2026-07-25): baseline and ADR 0010 subset implemented.** The
    reproducible capability baseline landed in phase 10 slice 2:
    `objc-jupyter-wasm/scripts/run-capability-baseline.sh` rejects a dirty
    checkout, builds `kernel-wasm` twice, runs smoke/runtime/notebook/
    compatibility probes (91/91 runtime probes, 18/18 compat cases, Chromium
    worker smoke green), and regenerates the capability matrix;
    `kernel/PARSER_STATUS.md` and the gap report now redirect to it. The
-   subset checkpoint is decided in ADR 0010 (operator delegated,
+   subset checkpoint was decided in ADR 0010 (operator delegated,
    2026-07-23): a parser-termination invariant plus `->` member access and
    top-level C function definitions become supported; `@encode`/
-   `@synchronized` become intentionally-unsupported diagnostics; the
-   compiled-cell plane stays deferred. The implementation lane is
-   unscheduled P2 work (workstream 05 E1); nothing blocks on it.
+   `@synchronized` become intentionally-unsupported diagnostics. The
+   clean-checkout baseline now records 97/97 runtime probes, 18/18
+   compatibility cases, and 22 passing demo notebooks (138/152 executed
+   cells); its Nix-built kernel artifact is promoted to JupyterLite. The
+   compiled-cell plane stays deferred by decision.
 2. **Complete (2026-07-22), 5 of 6:** operator approved all six dispositions in
     [the Phase 10 product-surface decision brief](docs/archive/planning/phase-10-product-surface-decision-brief.md).
    Implemented: SMTP removed, S3 blob config now rejected (fails closed), Skylab
@@ -459,13 +462,13 @@ removals without caller proof.
    negotiated public sync export path uses a separate, correct MST-walking
    writer. STAR negotiation is unchanged; see the brief's correction section.
 3. **Complete (2026-07-24):** AppView QueryRunner/pooling and schema migration safety is implemented. `AppViewDatabase` uses the standardized `PDSMigrationManager` with transactional `_migrations` history, replacing the inline schema execution entirely. ADR 0002 has been superseded.
-4. **Complete (2026-07-22):** app attestation for permissioned-spaces
+4. **Complete (2026-07-25):** app attestation for permissioned-spaces
    `appAccess#allowList` is implemented (client metadata, JWKS, key
    identifier, signature, issuer/subject equality, audience, expiry, nonce
    replay, app identity), recorded as an ADR 0004 amendment (workstream 06,
-   P6.3). `policy: managing-app` itself stays rejected by design pending a
-   separate `checkUserAccess` service-auth client, which the original
-   disabled-scope note never described.
+   P6.3). `policy: managing-app` now validates the delegated
+   `checkUserAccess` service-auth response and defaults to deny when no app
+   implements that endpoint.
 5. Track Proposal 0016 upstream drift on a monthly cadence (workstream 06,
    P6.4); re-pin, re-diff, and record impact before adopting any upstream
    change. `permissionedSpacesEnabled` stays off by default until the

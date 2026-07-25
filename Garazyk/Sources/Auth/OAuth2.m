@@ -36,7 +36,8 @@
 #import "Core/DID.h"
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSKeyManagerFactory.h"
-#import "Security/Space/PDSSpaceScope.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
+#import "Security/ATProtoPermissionSetResolver.h"
 #import "Identity/HandleResolver.h"
 #if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonDigest.h>
@@ -57,16 +58,7 @@ NSString * const OAuth2ScopeAtprotoProfile = @"atproto:profile";
 NSString * const OAuth2ErrorDomain = @"com.atproto.pds.oauth2";
 
 static BOOL OAuth2ScopeIsValid(NSString *scope) {
-    BOOL containsAtproto = NO;
-    for (NSString *item in [scope componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
-        if (item.length == 0) continue;
-        if ([item isEqualToString:@"atproto"]) {
-            containsAtproto = YES;
-        } else if ([item hasPrefix:@"space:"] && ![PDSSpaceScope scopeWithString:item error:nil]) {
-            return NO;
-        }
-    }
-    return containsAtproto;
+    return [ATProtoPermissionScopeEvaluator validateOAuthScopeString:scope];
 }
 
 static NSString * const kAuthorizationCodeKey = @"authorization_code";
@@ -920,9 +912,21 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         return;
     }
 
+    NSError *permissionSetError = nil;
+    NSString *effectiveScope = [ATProtoPermissionSetResolver effectiveScopeForScope:scope
+                                                                      configuration:[ATProtoServiceConfiguration sharedConfiguration]
+                                                                              error:&permissionSetError];
+    if (!effectiveScope) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidScope
+                                         userInfo:@{NSLocalizedDescriptionKey: permissionSetError.localizedDescription ?: @"Unable to resolve permission set"}];
+        completion(nil, error);
+        return;
+    }
+
     Session *session = [self createSessionForDID:did
                                           handle:handle
-                                           scope:scope
+                                           scope:effectiveScope
                                dpopKeyThumbprint:request.dpopKeyThumbprint];
 
     // Store refresh token in database (H3)

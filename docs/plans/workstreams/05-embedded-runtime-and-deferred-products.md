@@ -1,34 +1,35 @@
 ---
 title: Embedded Runtime and Deferred Products
 status: active
-last_verified: 2026-07-24
+last_verified: 2026-07-25
 ---
 
 # Embedded Runtime and Deferred Products
 
-## E1. Rebuild the WASM capability baseline — baseline complete (2026-07-22); subset choice open
+## E1. Rebuild the WASM capability baseline — complete (2026-07-25)
 
-**Items 1-5 complete (2026-07-22, phase 10 slice 2).**
+**Items 1-5 complete (last regenerated 2026-07-25, phase 10 slice 2).**
 `objc-jupyter-wasm/scripts/run-capability-baseline.sh` rejects a dirty
 checkout, builds `kernel-wasm` twice, runs the smoke/runtime/notebook/
 compatibility probes from one command, and regenerates the capability matrix
-from test results (91/91 runtime probes, 22 demo notebooks with 138/152
+from test results (97/97 runtime probes, 22 demo notebooks with 138/152
 executed cells and 14 explicit skips, 18/18 compatibility cases, passing
 Chromium worker smoke). `kernel/PARSER_STATUS.md` and
 `docs/runtime-gap-report.md` redirect to the generated matrix, so no
 contradictory hand-maintained tables remain.
 
-**Subset confirmed (2026-07-23, ADR 0010; operator-confirmed).** The next supported subset is the two notebook-relevant
+**Subset implemented and verified (2026-07-25, ADR 0010).** The supported subset is the two notebook-relevant
 language gaps plus a parser-termination invariant: fix the `->`
 infinite-loop hang and support `->` member access; support top-level C
 function definitions with value-typed parameters; `@encode` and
 `@synchronized` become intentionally unsupported with clean diagnostics
-(consistent with the snippet policy's threading exclusion). The compiled
-Emscripten cell plane and Jupyter UX features stay deferred. Acceptance:
-the four skipped cases in `tests/test-runtime-gap-probes.mjs` become
-active probes, the baseline runner regenerates the matrix, and the
-notebooks plus compatibility corpus stay green. The implementation lane
-is unscheduled P2 work; nothing else blocks on it.
+(consistent with the snippet policy's threading exclusion). All four probes
+are active and pass in the regenerated clean-checkout baseline (97/97 runtime
+probes, 18/18 compatibility cases, and 22 demo notebooks with 138/152
+executed cells and 14 explicit skips). The Nix-built kernel was promoted to
+the tracked JupyterLite runtime artifact. The compiled Emscripten cell plane
+and Jupyter UX features remain deferred by decision, rather than as unfinished
+work in this plan.
 
 The historical runtime plans say phases D-G are complete. The runtime feature
 review and gap report still list loop, super-dispatch, protocol, and Foundation

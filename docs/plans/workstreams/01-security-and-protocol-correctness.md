@@ -470,10 +470,15 @@ proof (unit test, scenario, or CI gate).
 
 Known gaps verified against codebase and seeded as backlog leads:
 
-- **G1: Permissions — granular scope evaluation (Complete).** `PDSSpaceScope.h/.m`
-  implements `space:` scope parsing; no `repo:`/`rpc:`/`blob:`/`account:`/
-  `include:` resource-type scope evaluation found. Required for production
-  readiness. Own lane.
+- **G1: Permissions — granular scope evaluation — Complete (2026-07-25).**
+  OAuth validates standard scope syntax and enforces `repo:`, `rpc:`, `blob:`,
+  `account:`, and `identity:` at their owning operation boundaries. `include:`
+  now resolves the authenticated Lexicon permission set before an access token
+  is minted, accepts only its concrete `repo` and `rpc` permissions, and
+  persists only those fixed effective grants in the session. Resolution uses a
+  24-hour in-process cache, permits a verified stale entry for at most 90 days
+  on resolution failure, and otherwise fails closed. The underlying Lexicon
+  resolver persists fetched schemas across process restarts.
 - **G2: Sync 1.1 remainder — Complete (2026-07-24).** Export block ordering
   implemented properly. Collection subsets were already served by Garazyk's own
   `tools.garazyk.sync.getRepoFiltered` vendor extension.

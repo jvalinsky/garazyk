@@ -65,7 +65,9 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 - (void)connect {
     NSString *host = self.serverURL.host ?: @"localhost";
     NSNumber *portNum = self.serverURL.port;
-    uint16_t port = portNum ? (uint16_t)[portNum intValue] : ([self.serverURL.scheme.lowercaseString isEqualToString:@"https"] ? 443 : 80);
+    NSString *scheme = self.serverURL.scheme.lowercaseString ?: @"";
+    BOOL secureTLS = [scheme isEqualToString:@"https"] || [scheme isEqualToString:@"wss"];
+    uint16_t port = portNum ? (uint16_t)[portNum intValue] : (secureTLS ? 443 : 80);
     NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
     
     if (self.cursor > 0) {
@@ -74,7 +76,10 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
     GZ_LOG_SYNC_INFO(@"Firehose: Connecting to %@:%u%@ (scheme: %@)", host, port, path, self.serverURL.scheme);
 
-    self.connection = [[WebSocketConnection alloc] initWithHost:host port:port path:path];
+    self.connection = [[WebSocketConnection alloc] initWithHost:host
+                                                          port:port
+                                                          path:path
+                                                     secureTLS:secureTLS];
     self.connection.delegate = self;
 
     NSError *error = nil;

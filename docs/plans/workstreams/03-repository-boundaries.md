@@ -1,7 +1,7 @@
 ---
 title: Repository Boundaries
 status: active
-last_verified: 2026-07-24
+last_verified: 2026-07-25
 ---
 
 # Repository Boundaries
@@ -19,8 +19,11 @@ form the dependency boundary.
 - The old split branch contains the in-tree deletion and compatibility cleanup.
 - Current `main` differs from the external copies in Gruszka, Hamownia, Laweta,
   Schemat, and TUI.
-- All 92 scenario files still import through `scripts/lib/deno` wrappers.
-- `packages/hamownia/tasks.ts` still imports the wrapper client.
+- **2026-07-25:** no TypeScript file under `scripts/scenarios/` or `packages/`
+  imports through `scripts/lib/deno`; `packages/hamownia/tasks.ts` now imports
+  `XrpcClient` from the workspace `@garazyk/gruszka` package. The package-local
+  Hamownia check and 328-test suite pass. This is the permitted preparatory
+  rewrite, not a released-package boundary.
 - The external package manifests now provide dedicated `fmt`, `lint`, `check`,
   and `test` task sets. A 2026-07-18 read-only R2 audit verified all four for
   `@garazyk/tui@0.1.0` (252 tests), Gruszka (304 passed, 6 intended integration
@@ -69,8 +72,10 @@ Git paths are acceptable only on an explicit, expiring prerelease branch.
 
 ## R3. Remove wrapper dependencies
 
-Rewrite scenario imports to package names and fix the Hamownia back-reference.
-Delete wrappers only after the full scenario and dashboard checks pass. Keep
+**Preparatory rewrite complete (2026-07-25).** Scenario and package source no
+longer use the wrapper path; the final package-name imports still require
+released packages, which the maintainer has explicitly deferred. Delete wrappers
+only after publication and the full scenario and dashboard checks pass. Keep
 `scripts/run_scenarios.ts` as a thin compatibility launcher for one deprecation
 window.
 

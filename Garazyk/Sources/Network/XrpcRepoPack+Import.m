@@ -8,6 +8,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcRoutePackServices.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Network/PDSRepoImportValidator.h"
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSBlobService.h"
@@ -41,6 +42,13 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             }
+            return;
+        }
+        if (![ATProtoPermissionScopeEvaluator evaluateAccountScopes:request.permissionScopes ?: @[]
+                                                        forAttribute:@"repo"
+                                                              action:@"manage"]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{ @"error": @"InsufficientScope", @"message": @"account:repo?action=manage scope is required" }];
             return;
         }
 
