@@ -89,7 +89,8 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 }
 
 - (nullable instancetype)initInMemoryWithError:(NSError **)error {
-    return [self initWithPath:@":memory:" error:error];
+    NSString *uniquePath = [NSString stringWithFormat:@"file:appview_%@?mode=memory&cache=shared", [[NSUUID UUID] UUIDString]];
+    return [self initWithPath:uniquePath error:error];
 }
 
 - (void)dealloc {
@@ -183,7 +184,6 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
         @(state.errorCount),
         state.lastError ?: [NSNull null]
     ];
-
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
@@ -755,7 +755,9 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
                             params:(NSArray *)params
                              error:(NSError **)error {
-    return [_queryRunner executeUpdate:sql params:params error:error] >= 0;
+    return [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **txError) {
+        return [tx executeUpdate:sql params:params error:txError];
+    } error:error];
 }
 
 - (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error {
