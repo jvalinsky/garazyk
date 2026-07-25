@@ -4,9 +4,7 @@ title: Source-Adjacent Documentation
 
 # Source-Adjacent Documentation
 
-Documentation that lives alongside source code rather than in `docs/`. These 32
-files are co-located with the modules they describe and are updated alongside
-code changes.
+Documentation located alongside source code rather than in `docs/`. Update these 32 files alongside the modules they describe.
 
 ## Core Server
 

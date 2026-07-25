@@ -4,7 +4,7 @@ title: Deno Scenario Framework
 
 # Deno Scenario Framework
 
-The Deno Scenario Framework (`scripts/scenarios/`) orchestrates integration tests against a local
+The Deno Scenario Framework (`scripts/scenarios/`) runs integration tests against a local
 Docker network to validate federation, OAuth flows, and AT Protocol interactions.
 
 ## Key Documents
@@ -26,9 +26,9 @@ Docker network to validate federation, OAuth flows, and AT Protocol interactions
 
 ## Agent NDJSON Event Pipeline
 
-The `hamownia agent run` command emits machine-readable NDJSON events on stdout
-for consumption by the scenario dashboard and other tools. Human-readable
-output goes to stderr, keeping stdout clean for parsing.
+The `hamownia agent run` command emits NDJSON events on stdout
+for the scenario dashboard and other tools. It sends human-readable
+output to stderr.
 
 ### Pipeline Architecture
 
@@ -83,8 +83,8 @@ deno test -A scripts/scenario-dashboard/services/run_manager.test.ts
 
 ## Hamownia CLI Reference
 
-The `hamownia` CLI (`packages/hamownia/cli.ts`) provides the developer tooling
-for Garazyk. All commands accept global `--verbose` / `--quiet` flags.
+The `hamownia` CLI (`packages/hamownia/cli.ts`) provides Garazyk developer tools.
+All commands accept `--verbose` and `--quiet`.
 
 ```bash
 deno run -A packages/hamownia/cli.ts <command> [options] [args]
@@ -110,9 +110,9 @@ goes to stderr when `--verbose` is passed.
 
 ### `run` — Execute e2e scenarios (human-readable)
 
-Discovers, selects, and executes ATProto scenario tests against a local
-network topology. Supports setup/teardown lifecycle, binary or Docker service
-modes, browser-based flows, OpenTelemetry tracing, and diagnostic collection.
+Runs ATProto scenario tests against a local network topology.
+Supports setup/teardown, binary or Docker service modes, browser-based
+flows, OpenTelemetry, and diagnostic collection.
 
 **Options:** `--list`, `--setup-only`, `--setup`, `--no-setup`, `--teardown`,
 `--teardown-only`, `--binary`, `--pds2`, `--collect-diagnostics`,
@@ -199,11 +199,10 @@ deno task narzedzia
 
 ## Scenario Manifests (`SCENARIO_MANIFESTS`)
 
-`SCENARIO_MANIFESTS` (`packages/hamownia/scenario_metadata.ts`) is the
-single source of truth for every scenario's requirements,
-capabilities, and configurable parameters. The `agent list` command
-reads discovered scenario files and merges manifest data to produce
-the `AgentScenarioSummary` output.
+`SCENARIO_MANIFESTS` (`packages/hamownia/scenario_metadata.ts`) defines
+requirements, capabilities, and parameters for scenarios. The `agent list`
+command merges scenario files with manifest data to output
+`AgentScenarioSummary`.
 
 ### Manifest fields and their effect on agent list output
 
@@ -218,8 +217,8 @@ the `AgentScenarioSummary` output.
 
 ### `toSummary()` mapping
 
-The `toSummary()` function in `packages/hamownia/cli/agent.ts` performs
-the merge between discovered `ScenarioInfo` and the manifest lookup:
+The `toSummary()` function in `packages/hamownia/cli/agent.ts` merges
+`ScenarioInfo` with the manifest:
 
 ```typescript
 // pseudocode
@@ -239,9 +238,9 @@ export function toSummary(scenario: ScenarioInfo): AgentScenarioSummary {
 }
 ```
 
-Key detail: `timeout` and `parameters` come exclusively from the manifest,
-not from the scenario file's self-declared metadata. This means the manifest
-is authoritative for these fields.
+Note: `timeout` and `parameters` come only from the manifest,
+not from the scenario file's metadata. The manifest overrides
+the scenario file for these fields.
 
 ### Adding a new manifest entry
 

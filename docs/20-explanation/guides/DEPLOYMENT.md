@@ -6,13 +6,13 @@ title: Deployment Guide
 
 ## Local Development
 
-To start the full local ATProto services stack (PLC, PDS, Relay, AppView) inside Docker for local testing or scenario runs, use the provided setup script:
+Start the local ATProto services stack (PLC, PDS, Relay, AppView) inside Docker for local testing:
 
 ```bash
 ./scripts/scenarios/setup_local_network.sh
 ```
 
-Alternatively, you can run the Compose file directly:
+Or run the Compose file directly:
 
 ```bash
 docker compose -f docker/local-network/docker-compose.yml up
@@ -20,7 +20,7 @@ docker compose -f docker/local-network/docker-compose.yml up
 
 ## Standalone PDS Self-Hosting
 
-If you only want to deploy a standalone, self-hosted PDS instance, you can use the Compose configuration under `docker/pds/`:
+For a standalone PDS instance, use the Compose configuration in `docker/pds/`:
 
 ```bash
 docker compose -f docker/pds/docker-compose.yml up -d
@@ -62,9 +62,9 @@ Sample unit file in `ops/deploy/pds.service`.
 
 ### Configurable OAuth Client Policy
 
-Garazyk supports strict operator policies and spoofing protection for AT Protocol OAuth clients. By default, standard dynamic client registration behaves as defined in the ATProto spec (`dynamic`).
+Garazyk enforces operator policies for AT Protocol OAuth clients. The default `dynamic` policy follows the ATProto spec for dynamic client registration.
 
-Under the `oauth` configuration map in JSON configuration:
+Set the `oauth` configuration map in JSON:
 
 ```json
 {
@@ -82,26 +82,26 @@ Under the `oauth` configuration map in JSON configuration:
 
 > [!NOTE]
 > Database-registered clients are implicitly trusted and allowed under both policies.
-> Dynamic untrusted client metadata will automatically have their display names (`client_name`) sanitized to their raw client ID HTTPS URLs to protect against phishing/spoofing attacks.
+> The server sanitizes untrusted `client_name` metadata to the client ID HTTPS URL to prevent spoofing.
 
 ## JSON Configuration
 
-Garazyk services are configured via JSON files (such as `config/production.json`). The system parses these configs strictly with strong-type verification while providing convenient compatibility fallbacks.
+Garazyk uses JSON configuration files (e.g., `config/production.json`). The parser enforces types and supports fallback keys.
 
 ### Key Blocks
 
 #### 1. Remote AppView Block (`appview`)
-The remote AppView query and validation block is defined using lowercase keys:
+The AppView block uses lowercase keys:
 ```json
 "appview": {
   "url": "https://api.bsky.app",
   "did": "did:web:api.bsky.app"
 }
 ```
-* **Fallback compatibility**: The PDS config parser supports lookup compatibility with camelCase `"appView"` should downstream environments define it.
+The parser also accepts the camelCase `appView` key.
 
 #### 2. CORS Block (`cors`)
-Configure CORS headers using native JSON arrays and integers. The type-safe parser extracts arrays and joins elements properly under the hood:
+Set CORS headers using JSON arrays and integers. The parser joins array elements:
 ```json
 "cors": {
   "allowed_origins": ["https://witchsky.app", "*"],
@@ -112,7 +112,7 @@ Configure CORS headers using native JSON arrays and integers. The type-safe pars
 ```
 
 #### 3. PLC Replica Nested Configuration (`plc`)
-To enable local replica lookup, nest the replica configuration block directly inside the `"plc"` block under the `"replica"` key:
+To enable local replica lookup, nest the `replica` block inside the `plc` block:
 ```json
 "plc": {
   "url": "https://plc.directory",
@@ -126,7 +126,7 @@ To enable local replica lookup, nest the replica configuration block directly in
 ```
 
 ### AppView Scenario Key Fallbacks
-In scenario and test configurations, the AppView configuration parser supports both standard **dotted namespace** keys (`plc.url`, `backfill.enabled`, etc.) and flat **snake_case fallbacks** (`plc_url`, `backfill_enabled`, etc.) for seamless configuration of local end-to-end testing topologies.
+The AppView parser accepts both dotted keys (`plc.url`, `backfill.enabled`) and snake_case fallbacks (`plc_url`, `backfill_enabled`) for local testing configurations.
 
 
 ## Database Backups
