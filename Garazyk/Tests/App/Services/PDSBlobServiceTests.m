@@ -188,6 +188,42 @@
     XCTAssertEqual(limitedBlobs.count, 2);
 }
 
+- (void)testListBlobsUsesCursorAsOffset {
+    NSError *error = nil;
+    for (int i = 0; i < 3; i++) {
+        NSData *data = [[NSString stringWithFormat:@"cursor blob %d", i]
+            dataUsingEncoding:NSUTF8StringEncoding];
+        [self.blobService uploadBlob:data
+                             forDid:self.testDID
+                           mimeType:@"text/plain"
+                              error:&error];
+        XCTAssertNil(error);
+    }
+
+    NSArray *firstPage = [self.blobService listBlobsForDID:self.testDID
+                                                     limit:2
+                                                    cursor:nil
+                                                     error:&error];
+    NSArray *secondPage = [self.blobService listBlobsForDID:self.testDID
+                                                      limit:2
+                                                     cursor:@"2"
+                                                      error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual(firstPage.count, 2);
+    XCTAssertEqual(secondPage.count, 1);
+    XCTAssertNotEqualObjects(firstPage.firstObject[@"cid"], secondPage.firstObject[@"cid"]);
+}
+
+- (void)testListBlobsRejectsInvalidCursor {
+    NSError *error = nil;
+    NSArray *blobs = [self.blobService listBlobsForDID:self.testDID
+                                                 limit:10
+                                                cursor:@"1junk"
+                                                 error:&error];
+    XCTAssertNil(blobs);
+    XCTAssertNotNil(error);
+}
+
 - (void)testDeleteBlobSucceeds {
     NSError *error = nil;
     NSDictionary *uploadResult = [self.blobService uploadBlob:self.testData

@@ -70,7 +70,8 @@
     __block NSMutableArray<PDSDatabaseBlob *> *blobs = [NSMutableArray array];
     [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = @"SELECT * FROM blobs WHERE did = ? LIMIT ? OFFSET ?";
+        NSString *sql = @"SELECT * FROM blobs WHERE did = ? "
+                         "ORDER BY created_at ASC, hex(cid) ASC LIMIT ? OFFSET ?";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 
