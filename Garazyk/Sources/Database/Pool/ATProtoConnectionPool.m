@@ -206,7 +206,8 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 
 - (sqlite3 *)createNewConnection {
     sqlite3 *db = NULL;
-    int result = sqlite3_open(self.databasePath.UTF8String, &db);
+    int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_URI | SQLITE_OPEN_SHAREDCACHE;
+    int result = sqlite3_open_v2(self.databasePath.UTF8String, &db, flags, NULL);
 
     if (result != SQLITE_OK) {
         GZ_LOG_DB_ERROR(@"Failed to open database: %s", sqlite3_errmsg(db));
