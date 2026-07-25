@@ -458,8 +458,7 @@ removals without caller proof.
    flagged lossy converter has zero production callers, while the actually
    negotiated public sync export path uses a separate, correct MST-walking
    writer. STAR negotiation is unchanged; see the brief's correction section.
-3. Keep AppView QueryRunner/pooling deferred until migration safety is fixed and
-   measured contention justifies a concurrency change.
+3. **Complete (2026-07-24):** AppView QueryRunner/pooling and schema migration safety is now fully implemented. `AppViewDatabase` uses the standardized `PDSMigrationManager` with transactional `_migrations` history, replacing the inline schema execution entirely. ADR 0002 has been superseded.
 4. **Complete (2026-07-22):** app attestation for permissioned-spaces
    `appAccess#allowList` is fully implemented (client metadata, JWKS, key
    identifier, signature, issuer/subject equality, audience, expiry, nonce
