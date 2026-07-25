@@ -89,7 +89,9 @@ docs/.vitepress/cache/
 # Data, Logs and State
 data/
 demo_data/
+germ-data/
 reports/
+test_run_summary.json
 *.log
 *.pid
 *.db
