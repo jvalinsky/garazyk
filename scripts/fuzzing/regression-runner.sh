@@ -75,7 +75,7 @@ if [ -d "$NEW_CRASH_DIR" ]; then
             cp "$f" "$OUTPUT_DIR/suppressed_$BASENAME"
         else
             NEW_REGRESSIONS=$((NEW_REGRESSIONS + 1))
-            cp "$OUTPUT_DIR/regression_$BASENAME"
+            cp "$f" "$OUTPUT_DIR/regression_$BASENAME"
         fi
     done
 fi
