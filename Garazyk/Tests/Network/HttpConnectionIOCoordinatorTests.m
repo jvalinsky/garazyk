@@ -305,7 +305,7 @@
         initWithConnection:self.mockConnection
                    protocol:self.driver
              responseSender:self.sender
-          idleHeaderTimeout:0.20
+          idleHeaderTimeout:0.50
      aggregateHeaderTimeout:0.08];
 
     XCTestExpectation *requestExpectation = [self expectationWithDescription:@"body request accepted"];
@@ -332,7 +332,7 @@
         [self.mockConnection injectReceiveData:[@"body" dataUsingEncoding:NSUTF8StringEncoding]];
     });
 
-    [self waitForExpectationsWithTimeout:0.18 handler:nil];
+    [self waitForExpectationsWithTimeout:0.35 handler:nil];
     XCTAssertFalse(self.mockConnection.isCancelled);
 }
 

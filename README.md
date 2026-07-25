@@ -5,8 +5,7 @@ services capable of running on macOS (Apple frameworks) and Linux (GNUstep).
 
 ## The Stack
 
-This repository contains core AT Protocol services that can be self-hosted individually or together
-as a local network:
+This repository contains core AT Protocol services. You can self-host them individually or as a local network:
 
 - **PDS (Personal Data Server)**: Handles user repository hosting, blob storage, account management,
   and serves XRPC endpoints.
@@ -21,7 +20,7 @@ as a local network:
 
 ## Deployment & Self-Hosting
 
-Run the Garazyk stack for testing or local development via the included local-network setup script (which orchestrates the services under `docker/local-network/`):
+Run the Garazyk stack for testing or local development using the local-network setup script (`docker/local-network/`):
 
 ```bash
 ./scripts/scenarios/setup_local_network.sh
@@ -29,9 +28,7 @@ Run the Garazyk stack for testing or local development via the included local-ne
 
 ### Production Deployment
 
-Garazyk services speak plain HTTP. **For production use, place the services behind a reverse proxy
-(like Caddy or Nginx) to terminate TLS/HTTPS.** Without HTTPS, the AT Protocol OAuth flow and
-Bluesky federation will refuse connections.
+Garazyk services speak plain HTTP. **For production, terminate TLS behind a reverse proxy like Caddy or Nginx.** AT Protocol OAuth and Bluesky federation require HTTPS.
 
 For instructions on provisioning reverse proxies, configuring environment variables (`PDS_ISSUER`,
 `PDS_ADMIN_PASSWORD`), and managing database backups, read the
@@ -42,13 +39,12 @@ For instructions on provisioning reverse proxies, configuring environment variab
 Garazyk implements the ATProto topology:
 
 - **Sans-I/O Networking:** The HTTP stack separates protocol state (`HttpProtocolDriver`) from
-  connection management (`HttpConnectionIOCoordinator`), enabling the code to run across bare-metal
+  connection management (`HttpConnectionIOCoordinator`). It runs on bare-metal
   sockets or behind WebSocket proxies.
 - **Database Layer:** Storage is managed via SQLite in WAL (Write-Ahead Log) mode.
-- **Media Processing:** Video transcoding utilizes AVFoundation hardware acceleration on macOS and
-  FFmpeg on Linux for H.264/H.265 processing.
-- **WASM execution:** The repository includes a WASM kernel (`objc-jupyter-wasm/`) capable of
-  executing Objective-C in the browser via an integrated C interpreter.
+- **Media Processing:** Video transcoding uses AVFoundation hardware acceleration on macOS and
+  FFmpeg on Linux.
+- **WASM execution:** The `objc-jupyter-wasm/` kernel executes Objective-C in the browser via an integrated C interpreter.
 
 For system design, data models, and request lifecycle, see the
 **[Architecture Overview](docs/20-explanation/architecture/atproto_pds_architecture.md)**.
@@ -79,9 +75,9 @@ cmake --build build-linux -j
 
 ## Testing
 
-Garazyk includes a test suite of over 5,500 tests (Objective-C XCTest cases plus Deno scenario
-assertions). The project features a **Deno Scenario Framework** (`scripts/scenarios/`) that
-orchestrates integration tests against the local Docker network to validate federation and OAuth
+Garazyk includes over 5,500 tests (Objective-C XCTest cases and Deno scenario
+assertions). The **Deno Scenario Framework** (`scripts/scenarios/`) orchestrates
+integration tests against the local Docker network to validate federation and OAuth
 flows.
 
 ## Documentation Directory

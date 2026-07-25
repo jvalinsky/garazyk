@@ -1,9 +1,6 @@
 # Garazyk — Domain & Architecture Glossary
 
-The names for the good seams in this codebase. Architecture vocabulary (module, interface,
-depth, deep, shallow, seam, adapter, leverage, locality) follows the `codebase-design` skill;
-this file names the **domain** concepts those terms attach to. Keep entries short and
-authoritative — an entry exists so reviews and refactors use one name for one concept.
+This file lists the domain concepts and architectural seams in the codebase. Use this vocabulary during reviews and refactors.
 
 > Seeded 2026-07-11 during the QueryRunner deepening pilot
 > (`queryrunner_deepening_pilot_plan.md`). Extend lazily as concepts are named or sharpened.
@@ -18,12 +15,12 @@ runs work against it via `execute:` / `transact:` blocks. **Adapters:**
 its thread-safety rather than hand-rolling a `dispatch_queue`. **Do not flatten.**
 
 ### QueryRunner
-`ATProtoDatabaseQueryRunner` (`Database/Utils/`). The **deep module** that owns SQLite
-statement mechanics — prepare / bind / step / finalize, typed column extraction, pragmas,
-error-domain construction — behind a small interface over a `ConnectionManager`. Callers pass
-SQL + params and get rows or a success flag; they never touch a `sqlite3 *`. Reads
-(`executeQuery:`) and single writes (`executeUpdate:`) manage their own connection;
-multi-statement writes go through `performWriteTransaction:`, which yields a **Transactor**.
+`ATProtoDatabaseQueryRunner` (`Database/Utils/`). The deep module managing SQLite
+statement mechanics—prepare, bind, step, finalize, typed column extraction, pragmas,
+error-domain construction—behind a small interface over a `ConnectionManager`. Callers provide
+SQL and parameters, and receive rows or a success flag. They never touch the raw `sqlite3 *`.
+Reads (`executeQuery:`) and single writes (`executeUpdate:`) manage their own connection.
+Multi-statement writes use `performWriteTransaction:`, yielding a **Transactor**.
 
 ### Transactor
 The seam handed to a `performWriteTransaction:` block: `id<ATProtoDatabaseTransactor>`,

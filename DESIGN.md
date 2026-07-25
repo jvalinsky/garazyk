@@ -118,11 +118,11 @@ components:
 
 **Creative North Star: "Network Flight Deck"**
 
-The dashboard is a dense, tool-native control surface for local ATProto network testing. It should feel like an engineering instrument that keeps topology, service health, run progress, logs, and failures in one readable operational field. Garazyk can be the best-supported implementation, but the design language should describe ATProto roles and capabilities before it describes project-specific names.
+The dashboard is a dense control surface for local ATProto network testing. It functions as an engineering instrument. It displays topology, service health, run progress, logs, and failures in a single view. The design language describes ATProto roles and capabilities before project-specific names.
 
-The current UI already has useful bones: a fixed toolbar, source-list sidebar, status bar, tabular service state, live progress, scenario cards, and log views. The next design direction should reduce ambiguity in controls, collapse scattered status into coherent state language, and move triage from summary counts into cause-first diagnostic flows.
+The UI provides a fixed toolbar, source-list sidebar, status bar, tabular service state, live progress, scenario cards, and log views. The design reduces control ambiguity, consolidates status, and builds diagnostic flows over summary counts.
 
-The system explicitly rejects decorative AppKit imitation, a card-heavy overview that hides relationships, modal-first configuration, status that depends on color alone, and Garazyk-only framing.
+Avoid decorative AppKit imitations, card-heavy overviews, modal-first configurations, color-only status indicators, and Garazyk-specific framing.
 
 **Key Characteristics:**
 
@@ -246,7 +246,7 @@ The dashboard should be flat by default and use tonal layering before shadows. B
 
 ### Run Progress
 
-The run progress panel is the signature live component. It should show run state, elapsed time, total and remaining scenarios, current scenario, activity freshness, and mode badges in one compact area. Stale activity must be textual, not only color.
+The run progress panel shows run state, elapsed time, total and remaining scenarios, current scenario, activity freshness, and mode badges. Stale activity requires text indicators, not just color.
 
 - **Layout & Structure:** Tinted background with a fine border (`var(--separator-color)`) and subtle shadow (`var(--shadow-sm)`). Features a segmented header and body separated by a hairline border (`var(--separator-color-secondary)`).
 - **Progress Track:** A highly precise, fine progress track with a `4px` height and `var(--radius-sm)` curvature.
@@ -256,7 +256,7 @@ The run progress panel is the signature live component. It should show run state
 
 ### Log Viewer
 
-The log viewer is a diagnostic surface, not a decoration. It should use Log Well and Log Text tokens, preserve ANSI rendering, expose copyable text, show source and freshness metadata, and avoid hardcoded black, white, or arbitrary inline borders.
+The log viewer is a diagnostic tool, not a decoration. Use Log Well and Log Text tokens, preserve ANSI rendering, provide copyable text, and show source and freshness metadata. Do not use hardcoded black, white, or inline borders.
 
 ## 6. Do's and Don'ts
 
