@@ -111,7 +111,12 @@ async function ensureDirs() {
 
 async function* walkMarkdown(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
-    if (entry.name.startsWith(".") || SCAN_DIR_SKIP_NAMES.has(entry.name)) {
+    const generatedDocsDirectory = resolve(dir) === DOCS &&
+      ["metadata", "repo-index", "reports"].includes(entry.name);
+    if (
+      entry.name.startsWith(".") || SCAN_DIR_SKIP_NAMES.has(entry.name) ||
+      generatedDocsDirectory
+    ) {
       continue;
     }
     const path = join(dir, entry.name);
