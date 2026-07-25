@@ -184,6 +184,14 @@
   [server addRoute:@"GET"
               path:@"/"
            handler:^(HttpRequest *request, HttpResponse *response) {
+             const char *uiServerURLEnv = getenv("PDS_UI_SERVER_URL");
+             if (uiServerURLEnv != NULL && strlen(uiServerURLEnv) > 0) {
+                 response.statusCode = HttpStatusOK;
+                 response.contentType = @"text/plain; charset=utf-8";
+                 [response setBodyString:@",--.\n|  | Garazyk PDS\n|  | Admin UI is served externally.\n`--'"];
+                 return;
+             }
+
              response.statusCode = HttpStatusOK;
              response.contentType = @"text/html; charset=utf-8";
              

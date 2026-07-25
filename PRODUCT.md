@@ -1,23 +1,23 @@
 # Design Context
 
 ## Users
-Server operators who run their own PDS instances. They're technical users managing AT Protocol infrastructure — typically developers or system administrators who need to monitor health, manage users, configure settings, and diagnose issues.
+Server operators running PDS instances. These developers and system administrators manage AT Protocol infrastructure, monitor health, manage users, configure settings, and diagnose issues.
 
 ## Brand Personality
 Clean & approachable. The UI should feel like **Apple AppKit** — native macOS application feel with toolbar, sidebar, inspectors, and familiar desktop patterns. Professional, polished, and distinctly macOS.
 
 ## Aesthetic Direction
-- **Theme**: Both light and dark mode support (system preference aware)
+- **Theme**: Light and dark mode support via system preference
 - **Visual tone**: AppKit-native — NSToolbar, NSOutlineView sidebar, NSTableView lists, NSVisualEffectView materials
-- **Polish motif**: Subtle strawberry references (our name "garazyk" means "little garage" in Polish) — use strawberry iconography instead of Apple logo, perhaps in the toolbar or as subtle branding elements
-- **Philosophy**: Feels like a native macOS app, not a web admin panel
+- **Polish motif**: Subtle strawberry references ("garazyk" means "little garage" in Polish). Use strawberry iconography instead of the Apple logo.
+- **Philosophy**: Build a native macOS app, not a web admin panel
 
 ## Design Principles
 1. **AppKit fidelity** — Use native macOS visual patterns: toolbar at top, source-list sidebar, content area with inspectors
-2. **Approachable clarity** — Complex information presented simply, not overwhelming
-3. **Progressive disclosure** — Start simple, reveal complexity on demand (show less detail initially, expandable sections)
-4. **System-aware theming** — Respect user's OS preference (light/dark) with NSVisualEffectView
-5. **Polish pride** — Subtle strawberry motifs that only those "in the know" will notice
+2. **Approachable clarity** — Present complex information simply.
+3. **Progressive disclosure** — Start simple. Reveal complexity on demand.
+4. **System-aware theming** — Respect OS preference (light/dark) with NSVisualEffectView.
+5. **Polish pride** — Add subtle strawberry motifs.
 
 ## Design System — COMPLETE ✓
 

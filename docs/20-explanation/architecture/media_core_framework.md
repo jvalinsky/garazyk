@@ -4,10 +4,7 @@ title: ATProtoMediaCore Framework
 
 # ATProtoMediaCore Framework
 
-The **ATProtoMediaCore** framework provides a reusable, configurable foundation
-for building AT Protocol media CDN sidecar services. A new service (video,
-audio, 3D splats, etc.) can be constructed in approximately 50 lines by
-composing the framework's components.
+The **ATProtoMediaCore** framework builds AT Protocol media CDN sidecar services. You can write a new service (video, audio, 3D splats, etc.) in about 50 lines of code.
 
 ## Architecture
 
@@ -36,8 +33,7 @@ composing the framework's components.
 
 ### ATProtoMediaServiceRuntime
 
-The main orchestrator class. It bootstraps all subsystems in `startWithError:`
-and tears them down in `stop`.
+The main orchestrator class. It bootstraps all subsystems in `startWithError:` and tears them down in `stop`.
 
 ```objc
 ATProtoMediaServiceConfiguration *config = [ATProtoMediaServiceConfiguration configurationFromEnvironmentWithPrefix:@"JELCZ"];
@@ -49,7 +45,7 @@ NSError *error = nil;
 [runtime startWithError:&error];
 ```
 
-**Subsystems started automatically:**
+**Subsystems:**
 - SQLite database (`media.db` in `config.dataDirectory`)
 - Blob provider (disk or S3, based on config)
 - Background worker (polls for pending processing jobs)
@@ -58,8 +54,7 @@ NSError *error = nil;
 
 ### ATProtoMediaProcessor Protocol
 
-The domain-specific interface. Implement this protocol to define how your
-media type is transcoded, thumbnailed, and packaged.
+The domain-specific interface. Implement this protocol to define transcoding, thumbnailing, and packaging for a media type.
 
 | Method | Purpose |
 |--------|---------|
@@ -70,20 +65,15 @@ media type is transcoded, thumbnailed, and packaged.
 
 ### ATProtoMediaJobStore
 
-Persistence layer protocol. The default implementation is `ATProtoMediaSQLiteStore`,
-which uses a `media_jobs` table with WAL mode and a `results_json` column for
-domain-specific metadata.
+Persistence layer protocol. `ATProtoMediaSQLiteStore` uses a `media_jobs` table in WAL mode with a `results_json` column for metadata.
 
 ### ATProtoMediaWorker
 
-Concurrent background job processor. Polls the job store on a configurable
-interval, respects `maxConcurrentJobs`, handles retry loops, and transitions
-jobs through `PENDING → PROCESSING → COMPLETED | FAILED`.
+Concurrent background job processor. Polls the job store on a configurable interval, respects `maxConcurrentJobs`, handles retry loops, and transitions jobs through `PENDING → PROCESSING → COMPLETED | FAILED`.
 
 ### ATProtoMediaXrpcPack
 
-Parameterized XRPC route registration. Maps generic upload/job-status/limits
-endpoints to the correct NSID based on the processor's media type.
+Parameterized XRPC route registration. Maps generic upload, job-status, and limits endpoints to the correct NSID based on the processor's media type.
 
 ## Adding a New Media Service
 
@@ -92,7 +82,7 @@ endpoints to the correct NSID based on the processor's media type.
    - Reads config from env vars (prefix convention)
    - Instantiates `ATProtoMediaServiceRuntime` with the processor
    - Calls `startWithError:` and runs the runloop
-   - Registered HLS-style serving routes (optional)
+   - Registers HLS-style serving routes (optional)
 3. Add CMake target linking `ATProtoMediaCore` and domain-specific libraries
 
 ## Configuration
@@ -121,21 +111,18 @@ endpoints to the correct NSID based on the processor's media type.
 
 ### CLI Flag Overrides
 
-CLI flags override environment variables at runtime. Supported flags mirror
-the environment variables (e.g. `--port`, `--pds-url`, `--hls-dir`, `--hls-1080p`).
+CLI flags override environment variables at runtime. Supported flags mirror the environment variables (e.g. `--port`, `--pds-url`, `--hls-dir`, `--hls-1080p`).
 
 ## Example: Jelcz (Video Processing Service)
 
-`Garazyk/Binaries/jelcz/main.m` is the reference implementation, providing:
+`Garazyk/Binaries/jelcz/main.m` provides:
 
-- **serve** — Boots the runtime, registers ATProto video XRPC endpoints,
-  configures HLS serving routes
+- **serve** — Boots the runtime, registers ATProto video XRPC endpoints, configures HLS serving routes
 - **status** — Queries `/_health` on a running instance
 - **version** — Prints version info
 - **help** — Prints usage with all CLI flags
 
-Crash handlers are installed for SIGSEGV, SIGABRT, SIGBUS, SIGFPE, and SIGTRAP
-with backtrace logging to `/tmp/jelcz-crash.log`.
+Jelcz handles SIGSEGV, SIGABRT, SIGBUS, SIGFPE, and SIGTRAP and logs backtraces to `/tmp/jelcz-crash.log`.
 
 ## Testing
 

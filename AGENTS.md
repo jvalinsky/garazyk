@@ -34,10 +34,7 @@ The old `.opencode/workflows/` files are removed. Current sources of truth:
 
 ## Subagent Delegation
 
-The primary agent delegates independent work through the client's built-in subagent tools. Codex
-loads the project roles from `.codex/agents/*.toml`; the Markdown manifests under
-`.agents/agents/` describe the equivalent roles for other supported clients. Use one skill per
-subagent invocation.
+Delegate independent work through the client's built-in subagent tools. Codex loads project roles from `.codex/agents/*.toml`. The Markdown manifests under `.agents/agents/` describe equivalent roles for other supported clients. Use one skill per subagent invocation.
 
 | Codex agent                 | Compatibility manifest        | Responsibility                                                 |
 | --------------------------- | ----------------------------- | -------------------------------------------------------------- |
@@ -94,9 +91,7 @@ Log decisions in the `deciduous` graph during development.
 
 ### Commands
 
-The old `/decision`, `/recover`, `/work`, `/document`, `/build-test`, and `/sync` slash commands
-were removed in `25e72b5a1`. Use the `deciduous` CLI directly; load
-`.agents/skills/using-deciduous` for the workflow.
+Use the `deciduous` CLI directly. The old `/decision`, `/recover`, `/work`, `/document`, `/build-test`, and `/sync` slash commands were removed in `25e72b5a1`. Load `.agents/skills/using-deciduous` for the workflow.
 
 ### Decision Flow
 

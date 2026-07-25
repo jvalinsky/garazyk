@@ -4,8 +4,7 @@ title: ATProto PDS Architecture
 
 # ATProto PDS Architecture
 
-Garazyk implements the AT Protocol Personal Data Server (PDS) specification in Objective-C,
-with a sans-I/O networking layer that decouples protocol logic from transport.
+Garazyk implements the AT Protocol Personal Data Server (PDS) specification in Objective-C, with a sans-I/O networking layer decoupling protocol logic from transport.
 
 ## Service Boundaries
 
@@ -25,31 +24,27 @@ graph TD
 
 ### Sans-I/O Networking
 
-The HTTP stack separates protocol state (`HttpProtocolDriver`) from connection management
-(`HttpConnectionIOCoordinator`). This enables the code to run across bare-metal sockets,
-WebSocket proxies, or test harnesses without modification.
+The HTTP stack separates protocol state (`HttpProtocolDriver`) from connection management (`HttpConnectionIOCoordinator`). The code runs across bare-metal sockets, WebSocket proxies, and test harnesses without modification.
 
 ### SQLite with WAL Mode
 
-All persistent state uses SQLite in Write-Ahead Log mode. Each actor gets an isolated
-database. Connection pooling is managed by `PDSServiceDatabases`.
+SQLite in Write-Ahead Log mode handles all persistent state. Each actor receives an isolated database. `PDSServiceDatabases` manages connection pooling.
 
 ### AVFoundation / FFmpeg Media
 
-Video transcoding uses AVFoundation hardware acceleration on macOS and FFmpeg on Linux
-for H.264/H.265 processing.
+Video transcoding uses AVFoundation hardware acceleration on macOS and FFmpeg on Linux for H.264/H.265 processing.
 
 ## Data Flow
 
 1. Client sends XRPC request over HTTP
-2. `HttpProtocolDriver` parses headers, validates auth
+2. `HttpProtocolDriver` parses headers and validates auth
 3. Route pack dispatches to handler
-4. Handler reads/writes actor store via `PDSActorStore`
-5. Response serialized through the sans-I/O layer
+4. Handler reads and writes to the actor store via `PDSActorStore`
+5. Sans-I/O layer serializes the response
 
 ## Database Layer
 
-See `Garazyk/Sources/Database/ARCHITECTURE.md` for the full database architecture.
+See `Garazyk/Sources/Database/ARCHITECTURE.md` for the database architecture.
 See `Garazyk/docs-site/src/content/docs/core-server/sqlite-persistence.md` for SQLite specifics.
 
 ## More Detail

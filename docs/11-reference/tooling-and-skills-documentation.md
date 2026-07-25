@@ -46,8 +46,9 @@ title: Tooling & Skills Documentation
 
 ## AI Agent Skills
 
-Skills are located in `.agents/skills/`. See `AGENTS.md` for the full subagent delegation table and
-`AGENTS_QUICKREF.md` for quick reference. Key testing and programmatic-related skills:
+Skills are located in `.agents/skills/`. See `AGENTS.md` for the subagent delegation table and `AGENTS_QUICKREF.md` for the quick reference.
+
+Testing and programmatic skills:
 
 | Skill | Purpose |
 |---|---|
@@ -59,4 +60,3 @@ Skills are located in `.agents/skills/`. See `AGENTS.md` for the full subagent d
 | `deslop` | Remove AI writing patterns |
 | `slop-detector` | Detect low-effort generated code |
 | `expand_md_topic` | Expand markdown outlines |
-

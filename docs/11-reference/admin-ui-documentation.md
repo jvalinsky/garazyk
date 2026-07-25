@@ -4,13 +4,9 @@ title: Admin UI Documentation
 
 # Admin UI Documentation
 
-The Admin UI is a browser interface for live monitoring, moderation, and PDS
-administration. Current assets and runtime code live under `AdminUIServer`.
-The delivery-report/integration-status documents that used to live under
-`Garazyk/Sources/Admin/archive/` were retired 2026-07-19 as part of
-rewriting the architecture reference against the current implementation
-(workstream 04 U6) — their content was process/status tracking, fully
-superseded by the rewrite and by git history.
+The Admin UI is a browser interface for live monitoring, moderation, and PDS administration. Current assets and runtime code live under `AdminUIServer`.
+
+We retired the delivery-report and integration-status documents under `Garazyk/Sources/Admin/archive/` on 2026-07-19 during the architecture reference rewrite (workstream 04 U6). The rewrite and git history superseded their process and status tracking content.
 
 | File                                                            | Description                                                                            |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------- |

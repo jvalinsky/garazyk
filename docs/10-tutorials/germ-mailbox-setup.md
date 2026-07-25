@@ -4,16 +4,16 @@ title: Germ E2EE Mailbox Setup Guide
 
 # Germ E2EE Mailbox Setup Guide
 
-This guide describes how to configure, generate key material for, and publish a `com.germnetwork.declaration` record to an AT Protocol Personal Data Server (PDS) to point to a live Germ E2EE Mailbox (such as `germ.garazyk.xyz`).
+This guide covers configuring, generating keys, and publishing a `com.germnetwork.declaration` record to an AT Protocol Personal Data Server (PDS). This points the PDS to a live Germ E2EE Mailbox (like `germ.garazyk.xyz`).
 
 ---
 
 ## 1. Concepts & Architecture
 
-Germ’s end-to-end encrypted (E2EE) messaging protocol uses a cryptographic binding between your AT Protocol identity (DID) and a client-side device key:
+Germ’s end-to-end encrypted (E2EE) messaging protocol cryptographically binds your AT Protocol identity (DID) to a client-side device key:
 
 - **PDS Repository Key**: Held (or authorized) by your PDS to sign standard ATProto repository writes (posts, profiles, follow graphs).
-- **Anchor Key (`currentKey`)**: A separate, device-bound Ed25519 signing key generated on your device. For security, your raw private messaging key **never** leaves your local client.
+- **Anchor Key (`currentKey`)**: A device-bound Ed25519 signing key. Your private messaging key stays on your local client.
 - **Germ Declaration Record (`com.germnetwork.declaration`)**: A record stored in your repository at the path `com.germnetwork.declaration/self`. It contains:
   - Your public **Anchor Key** (`currentKey`), indicating you authorize this key for messaging.
   - A Visibility Policy (`showButtonTo`), indicating who can see your message button.
@@ -23,7 +23,7 @@ Germ’s end-to-end encrypted (E2EE) messaging protocol uses a cryptographic bin
 
 ## 2. Generating & Publishing via Deno Tooling
 
-The project provides an automated Deno script to handle key generation, local storage, PDS authentication (via App Passwords), and record publishing:
+A Deno script handles key generation, local storage, PDS authentication (via App Passwords), and record publishing:
 
 ```bash
 # Script Path
@@ -31,7 +31,7 @@ scripts/generate_germ_record.ts
 ```
 
 ### Dry-Run: Local Generation Only
-Generate a cryptographically secure Ed25519 key pair and construct the corresponding record locally without authenticating with a PDS:
+Generate an Ed25519 key pair and build the record locally without authenticating with a PDS:
 
 ```bash
 deno run -A scripts/generate_germ_record.ts
@@ -44,7 +44,7 @@ This output shows your raw public key, base64-encoded Typed Key Material, and sa
 ---
 
 ### Full Run: Local Generation & PDS Publishing
-To automatically write this record into your active PDS repository using your handle and an App Password (or main password):
+Write this record into your active PDS repository using your handle and an App Password (or main password):
 
 ```bash
 deno run -A scripts/generate_germ_record.ts \
@@ -82,7 +82,7 @@ When run successfully, the script prints:
 
 ## 3. Verifying the Setup
 
-You can verify that the PDS repository has successfully published the record by performing a public `getRecord` query using `curl`:
+You can verify the PDS published the record by running a public `getRecord` query with `curl`:
 
 ```bash
 curl -s "https://pds.garazyk.xyz/xrpc/com.atproto.repo.getRecord?repo=did:plc:<your-did>&collection=com.germnetwork.declaration&rkey=self"
@@ -112,7 +112,7 @@ Expected response containing the lexicon schema:
 
 ## 4. How Clients Interact with your Mailbox
 
-Once your record is published, ATProto clients and AppViews perform the following steps to interact with your live mailbox:
+Once your record is published, ATProto clients and AppViews interact with your live mailbox through these steps:
 
 ### A. Completing the DM Button Link
 When another user (e.g. `did:plc:bob`) views your profile (`did:plc:alice`), their client completes the `messageMeUrl` by appending both DIDs to the hash fragment:
