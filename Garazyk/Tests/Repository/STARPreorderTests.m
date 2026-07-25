@@ -30,6 +30,39 @@
 
 @implementation STARPreorderTests
 
+- (void)testRepoFormatNegotiationHonorsQualityAndFallbacks {
+    XCTAssertEqual(PDSRepoFormatFromAcceptHeader(nil), PDSRepoFormatCAR);
+    XCTAssertEqual(PDSRepoFormatFromAcceptHeader(@"application/vnd.atproto.star"),
+                   PDSRepoFormatSTARL0);
+    XCTAssertEqual(PDSRepoFormatFromAcceptHeader(@"application/vnd.atproto.star-lite"),
+                   PDSRepoFormatSTARLite);
+    XCTAssertEqual(
+        PDSRepoFormatFromAcceptHeader(
+            @"application/vnd.ipld.car, application/vnd.atproto.star;q=0.8"),
+        PDSRepoFormatCAR);
+    XCTAssertEqual(
+        PDSRepoFormatFromAcceptHeader(
+            @"application/vnd.atproto.star, application/vnd.ipld.car;q=0.9"),
+        PDSRepoFormatSTARL0);
+    XCTAssertEqual(
+        PDSRepoFormatFromAcceptHeader(
+            @"application/vnd.atproto.star;q=0, application/vnd.ipld.car;q=0.5"),
+        PDSRepoFormatCAR);
+    XCTAssertEqual(PDSRepoFormatFromAcceptHeader(@"*/*"), PDSRepoFormatCAR);
+}
+
+- (void)testRepoAcceptHeadersAlwaysProvideCompatibleFallbacks {
+    XCTAssertEqualObjects(
+        PDSRepoAcceptHeaderForPreferredFormat(PDSRepoFormatCAR),
+        @"application/vnd.ipld.car");
+    XCTAssertEqualObjects(
+        PDSRepoAcceptHeaderForPreferredFormat(PDSRepoFormatSTARL0),
+        @"application/vnd.atproto.star, application/vnd.ipld.car;q=0.9");
+    XCTAssertEqualObjects(
+        PDSRepoAcceptHeaderForPreferredFormat(PDSRepoFormatSTARLite),
+        @"application/vnd.atproto.star-lite, application/vnd.atproto.star;q=0.9, application/vnd.ipld.car;q=0.8");
+}
+
 #pragma mark - Setup / teardown
 
 - (void)setUp {

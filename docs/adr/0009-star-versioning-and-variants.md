@@ -65,6 +65,20 @@ The `carDataFromSTARData:` method now performs **verifying** conversion:
 5. Rejects sig-less archives (error code 21) — a CAR without a commit
    signature cannot be compliant
 
+### Service integration
+
+- PDS `com.atproto.sync.getRepo` and `com.atproto.sync.getCheckout` negotiate
+  STAR-L0, STAR-lite, or CAR from `Accept`, including quality values. CAR
+  remains the default when the client expresses no preference.
+- AppView backfill and generic federation clients prefer canonical STAR-L0 and
+  advertise CAR as an explicit fallback.
+- Relay `getRepo` remains a redirect to the repository's PDS, preserving the
+  protocol boundary instead of proxying or re-encoding archives.
+- CAR remains the only representation for arbitrary block sets, sparse
+  collection proofs, firehose frames, and the permissioned-space multi-root
+  DRISL archive. Those wire shapes cannot be represented faithfully as
+  canonical STAR-L0.
+
 ## Consequences
 
 - **Positive**: STAR-L0 archives are now fully verifiable on import. Every
