@@ -1,173 +1,80 @@
 ---
-title: Lexicon Resolution Pipeline
+title: Lexicon Resolution
 ---
 
-# Lexicon Resolution Pipeline (`@garazyk/gruszka`)
+# Lexicon Resolution
 
-Resolves an AT Protocol lexicon from an NSID string to a fully-validated
-`LexiconDoc` through the DNS, DID, and record fetch pipeline. The entire
-pipeline is implemented as a sans-IO state machine. All side effects
-(DNS queries, HTTP requests) are injected through port interfaces.
+`@garazyk/gruszka` resolves an NSID by looking up its domain, DID document, PDS
+endpoint, and lexicon record. Network work is supplied through interfaces so the
+resolver state machine can run without direct I/O.
 
-## Package Structure
+## Files
 
-```
-packages/gruszka/lexicon_resolution/
-├── types.ts            Layer 1: Domain types, Result, ResolutionError
-├── core.ts             Layer 2: Pure validation (NSID, domain derivation, DID parsing)
-├── resolver.ts         Layer 2: Sans-IO state machine (init, update, terminal)
-├── ports.ts            Layer 3: IO port interfaces (DnsResolver, DidResolver, RecordFetcher)
-├── adapters.ts         Layer 3: Deno-specific port implementations
-├── cache.ts            Layer 5: Transparent caching layer (InMemoryCache, DiskCache, wrappers)
-├── mod.ts              Layer 4: Orchestration (resolveLexicon wires state machine, ports, and cache)
-```
+| File          | Purpose                          |
+| ------------- | -------------------------------- |
+| `types.ts`    | Domain types and result values   |
+| `core.ts`     | NSID, DID, and record validation |
+| `resolver.ts` | Resolver state machine           |
+| `ports.ts`    | DNS, DID, and record interfaces  |
+| `adapters.ts` | Deno implementations             |
+| `cache.ts`    | Memory and disk caches           |
+| `mod.ts`      | Public orchestration API         |
 
-Tests: `types.test.ts`, `core.test.ts`, `resolver.test.ts`, `adapters.test.ts`, `mod.test.ts`,
-`cache.test.ts`, `integration.test.ts`. This includes 239 unit and 6 integration tests.
+These files are under `packages/gruszka/lexicon_resolution/`.
 
-## Five-Layer Architecture
+## Flow
 
-### Layer 1: Domain Types (`types.ts`)
+1. Validate the NSID and derive its authority.
+2. Read the lexicon TXT record.
+3. Resolve the DID and find its PDS endpoint.
+4. Fetch the lexicon record.
+5. Check that the returned lexicon ID matches the requested NSID.
 
-Branded primitive types (`Nsid`, `Did`, `Domain`) and the `Result<T, E>` discriminated
-union used throughout the pipeline. This layer contains only type definitions and
-branding helpers (`asNsid`, `asDid`, `asDomain`) without I/O or logic.
+The resolver returns `Result<LexiconDoc, ResolutionError>`. Error variants
+identify the failed stage and retain the relevant domain, DID, endpoint, or
+NSID.
 
-### Layer 2: Pure Logic (`core.ts`, `resolver.ts`)
-
-- `core.ts` contains stateless validation and parsing: `isValidNsid()`,
-  `deriveDomain()`, `parseDidFromTxt()`, `buildXrpcUrl()`, `verifyRecordId()`.
-- `resolver.ts` contains the sans-IO state machine. `init(nsid)` bootstraps the
-  state, and `update(state, msg)` advances through DNS, DID, record fetch, and verify.
-  The state machine emits commands (`ResolverCmd`) and consumes messages
-  (`ResolverMsg`). Terminal states are `resolved` (success) or `failed` (error).
-
-### Layer 3: IO Ports + Adapters (`ports.ts`, `adapters.ts`)
-
-- Port interfaces: `DnsResolver.resolveTxt(domain)`, `DidResolver.resolve(did)`,
-  `RecordFetcher.fetch(endpoint)`. Each returns `Result<T, string>`.
-- Deno adapters: `DenoDnsResolver` (wraps `Deno.resolveDns`),
-  `HttpDidResolver` (handles `did:plc` and `did:web`), `HttpRecordFetcher`
-  (extracts `.value` from the AT Protocol `getRecord` envelope).
-
-### Layer 4: Orchestration (`mod.ts`)
-
-The `resolveLexicon(nsid, ports)` function wires everything together:
-
-1. Bootstraps the state machine with `init(nsid)`
-2. Optionally wraps ports with caching decorators via `applyCaches()`
-3. Drives a `while(true)` loop: `executeCommand(cmd, ports)` passes into `update(state, msg)`
-4. Returns `Result<LexiconDoc, ResolutionError>`
-
-### Layer 5: Caching (`cache.ts`)
-
-Transparent caching layer that wraps port implementations:
-
-- `KeyValueCache<T>`: Generic interface with `get`, `set`, `evictExpired`, and `clear`
-- `InMemoryCache<T>`: `Map`-backed with lazy TTL eviction
-- `DiskCache<T>`: Filesystem-backed with djb2-hashed filenames
-- `CachingDnsResolver`, `CachingDidResolver`, `CachingRecordFetcher`:
-  Decorator wrappers that cache successes and pass through errors
-
-Caching is opt-in via `ResolutionPorts.cache`. Each port can be cached independently.
-
-## Usage
-
-### Basic resolution
+## Use
 
 ```ts
-import { DenoDnsResolver, HttpDidResolver, HttpRecordFetcher } from "./adapters.ts";
-import { resolveLexicon } from "./mod.ts";
+import {
+  DenoDnsResolver,
+  HttpDidResolver,
+  HttpRecordFetcher,
+} from "./packages/gruszka/lexicon_resolution/adapters.ts";
+import { resolveLexicon } from "./packages/gruszka/lexicon_resolution/mod.ts";
 
-const ports = {
+const result = await resolveLexicon("app.bsky.feed.post", {
   dns: new DenoDnsResolver(),
   did: new HttpDidResolver(),
   record: new HttpRecordFetcher(),
-};
+});
 
-const result = await resolveLexicon("app.bsky.feed.post", ports);
-if (result.ok) {
-  console.log("Resolved:", result.value.id);
-  // result.value is a fully-validated LexiconDoc ready for code generation
-} else {
-  console.error("Failed:", result.error.type, result.error);
+if (!result.ok) {
+  console.error(result.error);
 }
 ```
 
-### With caching
+Optional cache adapters wrap DNS, DID, and record ports. Only successful values
+are cached, and each cache has its own TTL.
 
-```ts
-import { InMemoryCache, DiskCache } from "./cache.ts";
+## Test
 
-const ports = {
-  dns: new DenoDnsResolver(),
-  did: new HttpDidResolver(),
-  record: new HttpRecordFetcher(),
-  cache: {
-    // Cache DNS results for 1 hour
-    dns: new InMemoryCache<string[][]>({ ttlMs: 3600_000 }),
-    // Cache DID documents for 24 hours on disk
-    did: new DiskCache<DidDocument>({ directory: "/tmp/did-cache", ttlMs: 86_400_000 }),
-    // Cache lexicon records in memory for 24 hours
-    record: new InMemoryCache<LexiconDoc>({ ttlMs: 86_400_000 }),
-  },
-};
-
-// Repeated calls for the same NSID hit the cache without making network requests.
-const r1 = await resolveLexicon("app.bsky.feed.post", ports);
-const r2 = await resolveLexicon("app.bsky.feed.post", ports);
-// r2 returns instantly from cache.
+```sh
+deno test \
+  --allow-read \
+  --allow-env \
+  --allow-write \
+  packages/gruszka/lexicon_resolution/ \
+  --filter '!integration'
 ```
 
-## Error Handling
+Integration tests require network access:
 
-All errors are returned as `Result<T, ResolutionError>`. The
-`ResolutionError` discriminated union covers every failure mode:
-
-| Variant | Stage | Example |
-|---|---|---|
-| `InvalidNsid` | Validation | `"xy"` (too short) |
-| `DnsQueryFailed` | DNS | NXDOMAIN, SERVFAIL, timeout |
-| `NoLexiconDnsRecord` | DNS parsing | No `did=` in TXT records |
-| `DidResolutionFailed` | DID | HTTP 404, network error |
-| `PdsEndpointMissing` | PDS discovery | No `AtprotoPersonalDataServer` service |
-| `RecordFetchFailed` | Record fetch | HTTP 503, connection reset |
-| `RecordVerificationFailed` | Verification | Lexicon `id` does not match NSID |
-
-Each error variant carries contextual fields (e.g. `domain`, `did`, `endpoint`,
-`nsid`) for diagnostics.
-
-## Testing
-
-- Unit tests (239): Each layer tested independently with stub ports
-- Integration tests (6): Full pipeline with real `DenoDnsResolver`,
-  `HttpDidResolver`, `HttpRecordFetcher` against well-known NSIDs
-  (`app.bsky.feed.post`, `com.atproto.repo.createRecord`,
-  `com.atproto.repo.getRecord`). Gated behind `GARAZYK_INTEGRATION=1`.
-
-Run unit tests:
-```bash
-deno test --allow-read --allow-env --allow-write packages/gruszka/lexicon_resolution/ --filter '!integration'
+```sh
+GARAZYK_INTEGRATION=1 deno test \
+  --allow-net \
+  --allow-read \
+  --allow-env \
+  packages/gruszka/lexicon_resolution/integration.test.ts
 ```
-
-Run integration tests:
-```bash
-GARAZYK_INTEGRATION=1 deno test --allow-net --allow-read --allow-env packages/gruszka/lexicon_resolution/integration.test.ts
-```
-
-## Design Principles
-
-1. Sans-IO state machine: Core logic has zero side effects. All I/O is
-   injected through port interfaces, making the state machine fully testable
-   with stubs.
-2. Dependency injection: Ports are passed into `resolveLexicon`, not
-   imported globally. Swap implementations for testing, caching, or
-   platform portability (Deno, Node, browser).
-3. Result type, not exceptions: All fallible operations return
-   `Result<T, string>` or `Result<T, ResolutionError>`. No try/catch in
-   the orchestration layer.
-4. Errors are not cached: Only successful results populate the cache.
-   Transient failures retry on the next call.
-5. Lazy TTL eviction: Expired entries are removed on access or via
-   explicit `evictExpired()`, avoiding background timers.
-

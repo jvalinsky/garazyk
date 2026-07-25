@@ -4,62 +4,33 @@ title: Garazyk Documentation
 
 # Garazyk Documentation
 
-The canonical entry point for all project documentation. Organized per the
-[Diataxis](https://diataxis.fr) framework.
+## Start here
 
-## Getting Started
-
-- [Setup Guide](01-getting-started/setup.md) — prerequisites, build, first run
-- [Codebase Map](01-getting-started/codebase-map.md) — tour of the directory
-  structure
-
-## Tutorials
-
-- [Tutorial Index](10-tutorials/index.md) — scenario authoring, XRPC endpoints,
-  AdminUI usage
+- [Setup](01-getting-started/setup.md)
+- [Codebase map](01-getting-started/codebase-map.md)
+- [Tutorials](10-tutorials/index.md)
 
 ## Reference
 
-- [Documentation Map](11-reference/documentation-map.md) — every document by
-  subsystem
-- [Source-Adjacent Documentation](11-reference/source-adjacent-documentation.md)
-  — AdminUI, Database, docs-site
-- [Tooling & Skills](11-reference/tooling-and-skills-documentation.md) —
-  scripts, Deno packages, AI skills
-- [Admin UI Documentation](11-reference/admin-ui-documentation.md) — AdminUI
-  architecture and integration
-- [Deno Scenario Framework](11-reference/deno-scenario-framework.md) — scenario
-  authoring reference
-- [Deno Packages](11-reference/deno-packages.md) — all 6 Deno packages (gruszka,
-  schemat, laweta, hamownia, narzedzia, tui)
-- [Lexicon Resolution Pipeline](11-reference/lexicon-resolution.md) — 5-layer
-  sans-IO architecture for ATProto lexicon resolution
+- [Documentation map](11-reference/documentation-map.md)
+- [Deno scenario framework](11-reference/deno-scenario-framework.md)
+- [Deno packages](11-reference/deno-packages.md)
+- [Lexicon resolution](11-reference/lexicon-resolution.md)
+- [Admin UI](11-reference/admin-ui-documentation.md)
+- [Source-adjacent documentation](11-reference/source-adjacent-documentation.md)
+- [Tooling and skills](11-reference/tooling-and-skills-documentation.md)
 
-## Explanation
+## Operations and design
 
-- [ATProto PDS Architecture](20-explanation/architecture/atproto_pds_architecture.md)
-- [Deployment Guide](20-explanation/guides/DEPLOYMENT.md)
+- [Architecture](20-explanation/architecture/atproto_pds_architecture.md)
+- [Deployment](20-explanation/guides/DEPLOYMENT.md)
+- [Decision records](adr/)
 
-## Plans
+## Project planning
 
-- [Mega Plan](plans/mega-plan.md) — canonical repository roadmap
-- [Plan Structure](plans/README.md) — workstream index and planning rules
-- [Retired Plan Ledger](plans/retired-plans.md) — disposition and recovery
-  references
+- [Current plans](plans/README.md)
+- [Mega plan](plans/mega-plan.md)
+- [Retired plans](plans/retired-plans.md)
 
-## TUI
-
-- [TUI README](tui/README.md) — historical reference, migrating to
-  @opentui/core (Q3 2026)
-- [Architecture & Event Loop](tui/architecture.md)
-- [Core Primitives](tui/core-primitives.md)
-- [Layout & Components](tui/components.md)
-- [Theme Architecture](tui/theme-architecture.md)
-- [Runtime & State Bridge](tui/runtime.md)
-
-## Meta
-
-- [Document Registry](repo-index/all-documents.md) — auto-generated, 133
-  documents tracked
-- [Backlinks](repo-index/backlinks.md) — inbound link inventory
-- [Archive](archive/) — historical reference documents
+The [document registry](repo-index/all-documents.md) lists the rest of the
+repository documentation. Older material is kept in [the archive](archive/).

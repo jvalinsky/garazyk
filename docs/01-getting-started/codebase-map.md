@@ -4,59 +4,53 @@ title: Codebase Map
 
 # Codebase Map
 
-A tour of the Garazyk directory structure.
+## Main directories
 
-## Top Level
+| Path                | Contents                                                 |
+| ------------------- | -------------------------------------------------------- |
+| `Garazyk/Sources/`  | Objective-C services and shared libraries                |
+| `Garazyk/Tests/`    | Objective-C tests                                        |
+| `Garazyk/Binaries/` | Service and command-line entry points                    |
+| `packages/`         | Deno and TypeScript packages                             |
+| `scripts/`          | Development, test, documentation, and operations scripts |
+| `docker/`           | Container builds and local topologies                    |
+| `config/`           | Example service configuration                            |
+| `ops/`              | Deployment examples                                      |
+| `docs/`             | Project documentation                                    |
+| `lexicons/`         | AT Protocol lexicons                                     |
 
-| Directory | Purpose |
-|---|---|
-| `Garazyk/` | Objective-C PDS server (sources, tests, Xcode project) |
-| `Garazyk/Sources/` | Core server, Database, Network, Admin, Blob, Chat, AppView, Services |
-| `Garazyk/Tests/` | Unit and integration tests (2,600+) |
-| `Garazyk/docs-site/` | Astro-based documentation site |
-| `packages/` | Deno/TypeScript packages (6 packages) |
-| `scripts/` | Build scripts, scenario runner, doc tooling |
-| `docs/` | Repository documentation (this tree) |
-| `ops/` | Deployment configs (Caddy, nginx, systemd) |
-| `docker/` | Dockerfiles for GNUstep and UI builds |
-| `cmake/` | CMake toolchain files |
-| `config/` | Production configuration and service files |
-| `vendor/` | Vendored third-party code (secp256k1, reference impls) |
+## Objective-C source
 
-## Objective-C (`Garazyk/Sources/`)
+The main source areas are:
 
-| Directory | Responsibility |
-|---|---|
-| `Core/` | XRPC server, routing, auth, AT Protocol primitives |
-| `Database/` | SQLite layer, actor store, connection pooling |
-| `Network/` | HTTP server, WebSocket, sans-I/O networking |
-| `Admin/` | AdminUI HTMX web interface |
-| `AdminUIServer/` | AdminUI server and static assets |
-| `Blob/` | Blob storage and serving |
-| `Chat/` | Chat protocol support |
-| `AppView/` | AppView indexing and query serving |
-| `Services/` | PLC, relay, firehose services |
+| Path                                | Contents                                         |
+| ----------------------------------- | ------------------------------------------------ |
+| `App/` and `CLI/`                   | PDS startup and command handling                 |
+| `Network/`                          | HTTP, XRPC, routing, and transport code          |
+| `Database/` and `Repository/`       | SQLite storage, actor stores, MST, CAR, and CBOR |
+| `Sync/`                             | Firehose, WebSocket, and relay code              |
+| `PLC/` and `Identity/`              | DID operations and resolution                    |
+| `AppView/`                          | AppView ingestion and queries                    |
+| `Admin/` and `AdminUIServer/`       | Administration APIs and web UI                   |
+| `Auth/` and `Security/`             | Sessions, OAuth, DPoP, and security checks       |
+| `Compat/`                           | Linux compatibility code                         |
+| `Chat/`, `Video/`, and `MediaCore/` | Optional service implementations                 |
 
-## Deno Packages (`packages/`)
+`Garazyk/Binaries/` contains the executable entry points. The main ones are
+`kaszlak` for the PDS, `zuk` for the relay, `campagnola` for PLC, and `syrena`
+for AppView. Other binaries cover administration, chat, media processing,
+indexing, and caches.
 
-| Package | Purpose |
-|---|---|
-| `gruszka/` | XRPC client generation from ATProto lexicons |
-| `schemat/` | Topology schema, compilation, presets |
-| `laweta/` | Docker Engine API client and orchestration |
-| `hamownia/` | Scenario runner with assertions and mocks |
-| `narzedzia/` | Developer tooling (boundary check, doc coverage) |
-| `tui/` | Terminal UI framework (screen buffer, focus, theme) |
+## Deno packages
 
-## Scripts (`scripts/`)
+| Package     | Purpose                           |
+| ----------- | --------------------------------- |
+| `gruszka`   | XRPC clients and lexicon handling |
+| `hamownia`  | Scenario runner                   |
+| `laweta`    | Docker control                    |
+| `schemat`   | Topology definitions              |
+| `narzedzia` | Repository checks                 |
+| `tui`       | Terminal UI components            |
+| `dashboard` | Scenario dashboard code           |
 
-| Path | Purpose |
-|---|---|
-| `scripts/scenarios/` | Scenario definitions and authoring standards |
-| `scripts/docs/` | Documentation tooling (coverage, repo index, link graph) |
-| `scripts/plc/` | PLC test utilities |
-| `scripts/build-all.sh` | Build ObjC binaries |
-
-## Documentation (`docs/`)
-
-See the [Documentation Hub](../index.md) for the full index.
+The [documentation index](../index.md) links to the subsystem references.
