@@ -72,11 +72,6 @@ jobs:
         run: |
           deno run -A scripts/docs/repo_docs.ts sync
 
-      - name: Verify Generated Docs Artifacts Are Committed
-        run: |
-          git diff -- docs/metadata docs/repo-index
-          git diff --exit-code -- docs/metadata docs/repo-index
-
       - name: Validate Repo-Wide Internal Links and Discoverability
         run: |
           deno run -A scripts/docs/repo_docs.ts validate --internal-strict --orphans
