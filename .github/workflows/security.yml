@@ -191,23 +191,15 @@ jobs:
 
   dependency-scan:
     name: Dependency Scan (OSV)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-
     permissions:
+      actions: read
       contents: read
       security-events: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v2.3.1
-        with:
-          scan-args: |-
-            --recursive
-            ./
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.1
+    with:
+      scan-args: |-
+        -r
+        ./
 
   secret-scan:
     name: Secret Scanning (TruffleHog)
@@ -221,7 +213,9 @@ jobs:
           fetch-depth: 0
 
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3.96.0
         with:
           path: ./
-          extra_args: --no-update
+          base: ${{ github.event.before }}
+          head: ${{ github.event.after }}
+          version: v3.96.0

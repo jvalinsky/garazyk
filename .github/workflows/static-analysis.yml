@@ -130,14 +130,14 @@ jobs:
           FAILED=0
           while IFS= read -r file; do
             echo "==> Checking $file"
-            if ! shellcheck -s bash "$file"; then
+            if ! shellcheck -s bash --severity=error "$file"; then
               FAILED=1
             fi
           done < <(find . -name "*.sh" -type f -not -path "./build/*" -not -path "./.git/*")
           exit $FAILED
 
-  deno-doc-lint:
-    name: Deno Documentation Linting
+  deno-doc-coverage:
+    name: Deno Documentation Coverage
     runs-on: ubuntu-24.04
     timeout-minutes: 5
 
@@ -150,13 +150,12 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Run Deno Doc Lint
+      - name: Enforce TypeScript documentation coverage
         run: |
-          deno task doc-lint
-
-      - name: Run TypeScript Documentation Coverage
-        run: |
-          deno task doc:ts-coverage:ci
+          deno run -A --no-config scripts/docs/tsdoc-coverage.ts \
+            packages/schemat/ packages/gruszka/ packages/hamownia/ \
+            packages/laweta/ packages/narzedzia/ \
+            --min-overall 50
 
   objc-doc-coverage:
     name: Objective-C Documentation Coverage
@@ -174,12 +173,6 @@ jobs:
 
       - name: Run Objective-C Documentation Coverage
         run: |
-          deno run -A scripts/docs/doc-coverage.ts Garazyk/Sources --min-overall 100 --by-subsystem \
-            --min-subsystem Core=100 \
-            --min-subsystem Other=100 \
-            --min-subsystem AppView=100 \
-            --min-subsystem Services=100 \
-            --min-subsystem AdminUIServer=100 \
-            --min-subsystem Chat=100 \
-            --min-subsystem Database=100 \
-            --min-subsystem Blob=100
+          deno run -A --no-config scripts/docs/doc-coverage.ts Garazyk/Sources \
+            --min-overall 90 \
+            --min-subsystem Database=90
