@@ -3,7 +3,8 @@
 /*!
  @file AppViewBackfillWorker.h
 
- @abstract Single-repo backfill worker: fetches repo CAR, parses, indexes.
+ @abstract Single-repo backfill worker: fetches a repo archive, verifies it,
+ and indexes its records.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */

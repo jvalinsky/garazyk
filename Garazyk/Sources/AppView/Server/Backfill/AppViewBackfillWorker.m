@@ -109,33 +109,20 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
         return;
     }
 
-    // Build the getRepo URL
-    NSString *urlStr = [NSString stringWithFormat:@"%@/xrpc/com.atproto.sync.getRepo?did=%@",
-                        pdsEndpoint,
-                        [did stringByAddingPercentEncodingWithAllowedCharacters:
-                            [NSCharacterSet URLQueryAllowedCharacterSet]]];
-    if (sinceRev.length > 0) {
-        urlStr = [urlStr stringByAppendingFormat:@"&since=%@",
-                  [sinceRev stringByAddingPercentEncodingWithAllowedCharacters:
-                      [NSCharacterSet URLQueryAllowedCharacterSet]]];
-    }
-
-    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
-    req.timeoutInterval = 120.0;
-    [req setValue:@"application/vnd.ipld.car" forHTTPHeaderField:@"Accept"];
-    [req setValue:@"garazyk-appview/1.0" forHTTPHeaderField:@"User-Agent"];
+    NSMutableURLRequest *req =
+        [self _repoRequestForPDSEndpoint:pdsEndpoint did:did sinceRev:sinceRev];
 
     // Synchronous fetch via NSURLSession (we're already on a background queue)
     __block NSHTTPURLResponse *httpResp = nil;
     __block NSError *fetchErr = nil;
-    __block NSData *carData = nil;
+    __block NSData *archiveData = nil;
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     NSURLSession *session = [NSURLSession sharedSession];
     NSURLSessionDataTask *task = [session dataTaskWithRequest:req
                                            completionHandler:^(NSData *data,
                                                                 NSURLResponse *resp,
                                                                 NSError *err) {
-        carData   = data;
+        archiveData = data;
         httpResp  = (NSHTTPURLResponse *)resp;
         fetchErr  = err;
         dispatch_semaphore_signal(sema);
@@ -174,14 +161,17 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
         return;
     }
 
-    if (!carData || carData.length == 0) {
-        [self _failWithMessage:@"Empty CAR response" statusCode:statusCode];
+    if (!archiveData || archiveData.length == 0) {
+        [self _failWithMessage:@"Empty repository archive response"
+                    statusCode:statusCode];
         return;
     }
 
-    // Parse and index the CAR
+    // Verify and index the negotiated repository archive.
     NSError *parseErr = nil;
-    NSString *lastRev = [self _parseCARAndIndex:carData forDID:did error:&parseErr];
+    NSString *lastRev = [self _parseRepoArchiveAndIndex:archiveData
+                                                 forDID:did
+                                                  error:&parseErr];
 
     if (parseErr) {
         [self _failWithError:parseErr rateLimitedUntil:nil];
@@ -190,6 +180,31 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
 
     GZ_LOG_INFO(@"[AppView BackfillWorker] Completed backfill for %@ (rev=%@)", did, lastRev);
     [_delegate worker:self didCompleteForDID:did lastRev:lastRev ?: @""];
+}
+
+- (NSMutableURLRequest *)_repoRequestForPDSEndpoint:(NSString *)pdsEndpoint
+                                                did:(NSString *)did
+                                           sinceRev:(nullable NSString *)sinceRev {
+    NSString *urlStr =
+        [NSString stringWithFormat:@"%@/xrpc/com.atproto.sync.getRepo?did=%@",
+                                   pdsEndpoint,
+                                   [did stringByAddingPercentEncodingWithAllowedCharacters:
+                                            [NSCharacterSet URLQueryAllowedCharacterSet]]];
+    if (sinceRev.length > 0) {
+        urlStr = [urlStr
+            stringByAppendingFormat:@"&since=%@",
+                                    [sinceRev stringByAddingPercentEncodingWithAllowedCharacters:
+                                                  [NSCharacterSet URLQueryAllowedCharacterSet]]];
+    }
+
+    NSMutableURLRequest *request =
+        [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
+    request.timeoutInterval = 120.0;
+    [request setValue:PDSRepoAcceptHeaderForPreferredFormat(PDSRepoFormatSTARL0)
+   forHTTPHeaderField:@"Accept"];
+    [request setValue:@"garazyk-appview/1.0"
+   forHTTPHeaderField:@"User-Agent"];
+    return request;
 }
 
 // ---------------------------------------------------------------------------
@@ -264,17 +279,17 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
 }
 
 // ---------------------------------------------------------------------------
-// CAR parsing and indexing
+// Repository archive verification and indexing
 // ---------------------------------------------------------------------------
 
-- (nullable NSString *)_parseCARAndIndex:(NSData *)carData
-                                  forDID:(NSString *)did
-                                   error:(NSError **)error {
+- (nullable NSString *)_parseRepoArchiveAndIndex:(NSData *)archiveData
+                                          forDID:(NSString *)did
+                                           error:(NSError **)error {
     // File-based debug logging
     static NSString *debugLogPath = @"/tmp/debug-logs/backfill.log";
     [[NSFileManager defaultManager] createDirectoryAtPath:@"/tmp/debug-logs" withIntermediateDirectories:YES attributes:nil error:nil];
     NSString *logMsg = [NSString stringWithFormat:@"[%@] PARSE START did=%@ len=%lu\n",
-                     [NSDate date], did, (unsigned long)carData.length];
+                     [NSDate date], did, (unsigned long)archiveData.length];
     NSFileHandle *fh = [NSFileHandle fileHandleForWritingAtPath:debugLogPath];
     if (!fh) {
         [[NSData data] writeToFile:debugLogPath atomically:YES];
@@ -284,22 +299,25 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
     [fh synchronizeFile];
     [fh closeFile];
 
-    GZ_LOG_DEBUG(@"[AppView BackfillWorker] _parseCARAndIndex called for %@", did);
-    GZ_LOG_DEBUG(@"[AppView BackfillWorker] Data length: %lu", (unsigned long)carData.length);
+    GZ_LOG_DEBUG(@"[AppView BackfillWorker] Parsing repo archive for %@", did);
+    GZ_LOG_DEBUG(@"[AppView BackfillWorker] Data length: %lu",
+                 (unsigned long)archiveData.length);
 
     CARReader *reader = nil;
-    if (STARDetectFormatFromData(carData)) {
+    if (STARDetectFormatFromData(archiveData)) {
         // STAR format detected — convert to CAR for downstream processing
         GZ_LOG_DEBUG(@"[AppView BackfillWorker] Detected STAR format, converting to CAR");
-        NSData *carBytes = [STARConverter carDataFromSTARData:carData error:error];
+        NSData *carBytes =
+            [STARConverter carDataFromSTARData:archiveData error:error];
         if (carBytes) {
             reader = [CARReader readFromData:carBytes error:error];
         }
     } else {
-        reader = [CARReader readFromData:carData error:error];
+        reader = [CARReader readFromData:archiveData error:error];
     }
     if (!reader) {
-        GZ_LOG_ERROR(@"[AppView BackfillWorker] Failed to read repo data: %@", *error);
+        GZ_LOG_ERROR(@"[AppView BackfillWorker] Failed to read repo data: %@",
+                     error ? *error : nil);
         return nil;
     }
 
@@ -437,7 +455,8 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
         }
     }
 
-    GZ_LOG_INFO(@"[AppView BackfillWorker] Found %lu records in CAR for %@", (unsigned long)records.count, did);
+    GZ_LOG_INFO(@"[AppView BackfillWorker] Found %lu records in repo archive for %@",
+                (unsigned long)records.count, did);
     NSError *snapshotError = nil;
     if (![_database saveRepoSnapshotForDID:did
                                    lastRev:lastRev ?: @""
