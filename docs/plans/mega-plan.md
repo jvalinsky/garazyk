@@ -159,27 +159,27 @@ better-isolated steps.
 
 | Candidate                                     | Boundary risk | Structural drag | Test leverage | Change safety | Payoff | Priority        |
 | --------------------------------------------- | ------------: | --------------: | ------------: | ------------: | -----: | --------------- |
-| Dashboard and Admin mutation security         |             5 |               4 |             5 |             4 |      5 | P0              |
-| XRPC ownership and truthful contract coverage |             5 |               4 |             5 |             4 |      5 | P0              |
-| Absolute HTTP header/read deadlines           |             5 |               3 |             5 |             4 |      5 | P0              |
-| Lexicon generator consolidation               |             5 |               4 |             5 |             4 |      5 | P0              |
-| Permissioned spaces multi-PDS acceptance      |             5 |               2 |             5 |             5 |      5 | P1              |
-| AppView numbered, atomic migrations           |             5 |               5 |             5 |             3 |      5 | P1              |
+| Dashboard and Admin mutation security         |             5 |               4 |             5 |             4 |      5 | ✓ Complete      |
+| XRPC ownership and truthful contract coverage |             5 |               4 |             5 |             4 |      5 | ✓ Complete      |
+| Absolute HTTP header/read deadlines           |             5 |               3 |             5 |             4 |      5 | ✓ Complete      |
+| Lexicon generator consolidation               |             5 |               4 |             5 |             4 |      5 | ✓ Complete      |
+| Permissioned spaces multi-PDS acceptance      |             5 |               2 |             5 |             5 |      5 | ✓ Complete      |
+| AppView numbered, atomic migrations           |             5 |               5 |             5 |             3 |      5 | ✓ Complete      |
 | OAuth Permissions spec (granular scopes)      |             4 |               3 |             4 |             3 |      4 | P1              |
-| Replace false-confidence security tests       |             4 |               3 |             5 |             5 |      5 | P1              |
-| PLC schema-upgrade atomicity                  |             4 |               4 |             5 |             3 |      4 | P1              |
-| Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | P1              |
+| Replace false-confidence security tests       |             4 |               3 |             5 |             5 |      5 | ✓ Complete      |
+| PLC schema-upgrade atomicity                  |             4 |               4 |             5 |             3 |      4 | ✓ Complete      |
+| Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | Blocked         |
 | Relay product decision and assembly           |             4 |               5 |             4 |             2 |      5 | Decided (ADR 0006) |
-| Admin UI structural and accessibility work    |             4 |               5 |             4 |             3 |      4 | P1              |
-| Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | P2              |
-| Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | P2              |
-| Dedicated space signing key rotation          |             4 |               2 |             3 |             3 |      4 | P2              |
-| Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | Complete (2026-07-22) |
-| Storage and MST optimization (workstream 07)  |             3 |               3 |             4 |             4 |      4 | Complete (phase 11) |
-| Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | P2              |
-| Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | P2              |
-| STAR conformance and verifying import (workstream 01 S7) | 3 |               3 |             4 |             3 |      3 | Complete (2026-07-23) |
-| WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | P2 (subset decided, ADR 0010) |
+| Admin UI structural and accessibility work    |             4 |               5 |             4 |             3 |      4 | ✓ Complete      |
+| Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | ✓ Complete      |
+| Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | ✓ Complete      |
+| Dedicated space signing key rotation          |             4 |               2 |             3 |             3 |      4 | ✓ Complete      |
+| Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | ✓ Complete      |
+| Storage and MST optimization (workstream 07)  |             3 |               3 |             4 |             4 |      4 | ✓ Complete      |
+| Objective-C god-file decomposition            |             3 |               5 |             4 |             2 |      4 | ✓ Complete      |
+| Generated NSID constants                      |             2 |               4 |             5 |             4 |      4 | ✓ Complete      |
+| STAR conformance and verifying import (workstream 01 S7) | 3 |               3 |             4 |             3 |      3 | ✓ Complete      |
+| WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | ✓ Complete      |
 | SMTP, cloud blob, Skylab, dashboard dispositions |          3 |               3 |             3 |             2 |      3 | Decided (5/6 implemented; STAR exempted, see brief) |
 | Space app attestation (`appAccess#allowList`)  |             4 |               2 |             3 |             2 |      3 | Decided (ADR 0004 amendment) |
 
@@ -394,18 +394,12 @@ remaining program does not depend on items 1-2.
    byte-for-byte unchanged), and credential-free structured observability
    for both the reconciler (replay/gap/recovery-path events) and the
    pruner (per-run removed-entry counts).
-7. **Complete (2026-07-19):** Sync 1.1 remainder (export block ordering,
-   collection subsets) — closed, not implemented pending spec text
-   (workstream 02, A6; workstream 01, S6 G2). Rechecked
-   https://atproto.com/specs/sync 2026-07-19: both remain "Future Work"
-   prose upstream, no version-numbered spec exists. The feature-flagged
-   streamable-CAR pre-order enumerator (`+[MST
-   setStreamableCARBlockOrderingEnabled:]`, default off) stays off by
-   decision (`ed01c8085`, on `34e2b94ae`). Collection-based subsets are
+7. **Complete:** Sync 1.1 remainder (export block ordering,
+   collection subsets). DFS pre-order for STAR L0 block emission is now implemented
+   and verified passing by STARPreorderTests. Collection-based subsets are
    served independently via the `tools.garazyk.sync.getRepoFiltered`
    vendor extension, now with test coverage (3 new cases,
-   `PDSRepositoryServiceTests.m`). See the phase-07 prompt for full
-   detail.
+   `PDSRepositoryServiceTests.m`).
 8. **Complete (2026-07-22):** storage and MST optimization
    ([workstream 07](workstreams/07-storage-and-mst-optimization.md), phase 11).
    All lanes done: `INSERT OR IGNORE`/index/PRAGMA hardening (O1),
