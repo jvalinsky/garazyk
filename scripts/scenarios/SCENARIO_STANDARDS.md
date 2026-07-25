@@ -1,46 +1,32 @@
-# Scenario Documentation Standards
+# Scenario Standards
 
-All scenarios in `scripts/scenarios/scenarios/*.ts` must follow this documentation template to
-ensure clarity for developers and automated consistency.
+Scenario files live in `scripts/scenarios/scenarios/`.
 
-## Required Structure
+Each file should:
 
-Each scenario file must start with a module header and a single JSDoc block for the `run` function.
+1. Start with a module comment that names the behavior and expected result.
+2. Export `run(): Promise<ScenarioResult>`.
+3. Use the shared assertion helpers.
+4. Wrap major network operations with `timedCall`.
+5. Import shared clients and configuration from `scripts/lib/deno/`.
 
-### Example Template
-
-```typescript
+```ts
 /**
- * @module scenarios/<name>
+ * @module scenarios/example
  *
- * Scenario: <Brief description of what is being tested>
- *
- * Behavior:
- * - <Describe step 1>
- * - <Describe step 2>
- *
- * Expectations:
- * - <Describe successful outcome>
+ * Checks that a created record can be read from the PDS.
  */
 
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 
 /**
- * Executes the scenario logic.
- * @returns A promise that resolves to the scenario result
+ * Runs the scenario.
  */
 export async function run(): Promise<ScenarioResult> {
   // ...
 }
 ```
 
-## Implementation Checklist
-
-1. **Module Header:** Top-level comment block with `@module`, a brief scenario description, the
-   behavioral steps, and expectations.
-2. **Function Documentation:** Exactly one JSDoc block immediately before the exported `run`
-   function.
-3. **Assertions:** Use the `assert` helper from `../../lib/deno/assertions.ts` for all test checks.
-4. **Timed Calls:** All major operations must be wrapped in `timedCall` for performance tracking.
-5. **Imports:** Ensure relative imports are consistent with `scripts/lib/deno/` libraries.
-6. **Return Type:** Use `Promise<ScenarioResult>` for `run`; do not use `Promise<any>`.
+Use a two-digit filename prefix. Add manifest requirements in
+`packages/hamownia/scenario_metadata.ts` when the scenario depends on a specific
+role, capability, second PDS, browser flow, or timeout.
