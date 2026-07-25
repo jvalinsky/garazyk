@@ -510,7 +510,7 @@ Primary sources:
 **Status: complete (2026-07-23).** All three slices landed (V-flag fix,
 verifying `parseL0Body`, dead converter deletion + ADR 0009). 6 new test
 methods; all 20 STARPreorderTests pass. Evidence in
-[the STAR conformance plan](../archive/planning/star-conformance-plan.md)
+[the STAR conformance plan](../../archive/planning/star-conformance-plan.md)
 and mega-plan Phase 4 item 9.
 
 Evidence: `Garazyk/Sources/Repository/STAR.m` — the export writer
