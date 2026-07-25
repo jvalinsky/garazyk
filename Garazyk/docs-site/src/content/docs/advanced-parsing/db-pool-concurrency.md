@@ -4,7 +4,7 @@ description: Preventing TOCTOU bugs, managing LRU eviction, and scaling perfectl
 ---
 
 The `DatabasePool` is widely considered the single most complex and critical concurrency
-coordination bottleneck in the entire `ATProtoPDS` architecture.
+coordination bottleneck in the entire `Garazyk PDS` architecture.
 
 In a traditional web application, you typically have one giant PostgreSQL database. In an AT
 Protocol Personal Data Server (PDS), the architecture is fundamentally decentralized: potentially
@@ -36,7 +36,7 @@ This deeply unsafe behavior immediately corrupts the OS POSIX byte-range locks, 
 
 ### The Serial Dispatch Queue Lock
 
-To fundamentally and completely prevent this, connection instantiation inside `ATProtoPDS` is forced
+To fundamentally and completely prevent this, connection instantiation inside `Garazyk PDS` is forced
 onto a strictly serial, deeply synchronized Grand Central Dispatch (GCD) queue named
 `com.atproto.pds.databasepool`. This queue effectively acts as a granular, high-performance,
 immutable mutex lock.
@@ -170,5 +170,5 @@ concurrency-safe singular data store.
 
 By strategically funneling file instantiations through a serial GCD memory lock, strictly bounding
 RAM/kernel resources via mathematical LRU eviction, and physically isolating files structurally with
-prefix sharding, `ATProtoPDS` avoids the catastrophic, system-crashing pitfalls of raw scale on
+prefix sharding, `Garazyk PDS` avoids the catastrophic, system-crashing pitfalls of raw scale on
 local standard filesystems.

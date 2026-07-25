@@ -23,7 +23,7 @@ immediately, violently crashing the server under moderate concurrent load.
 
 ## Byte-by-Byte Scanning
 
-`ATProtoPDS` combats this elegantly right at the network edge.
+`Garazyk PDS` combats this elegantly right at the network edge.
 
 The custom `HttpChunkedBodyParser` avoids high-level string reallocation entirely. Instead, it
 operates strictly down on the metal, using native `NSData` by algorithmically scanning raw `uint8_t`

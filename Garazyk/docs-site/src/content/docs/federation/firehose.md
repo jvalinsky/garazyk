@@ -30,7 +30,7 @@ instances to present a unified chronological timeline to users.
 
 ### Event Kinds
 
-There are three primary Event Kinds emitted over the `ATProtoPDS` firehose. Each serves a distinct
+There are three primary Event Kinds emitted over the `Garazyk PDS` firehose. Each serves a distinct
 purpose in keeping external consumers synchronized with the PDS's internal state:
 
 - **`FirehoseEventKindCommit`**: A user updated their repository (e.g., liked, posted, deleted).

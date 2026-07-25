@@ -1,11 +1,11 @@
 ---
 title: WebAuthn & Hardware Security
-description: Comprehensive guide to embedding FIDO2, Passkeys, and YubiKey support natively in Objective-C for ATProtoPDS
+description: Comprehensive guide to embedding FIDO2, Passkeys, and YubiKey support natively in Objective-C for Garazyk PDS
 ---
 
 To fundamentally secure the PDS (Personal Data Server) administrative routes or highly sensitive
 identity-mutation endpoints (such as actively migrating a Decentralized Identifier (DID) to a new
-host or rotating a master recovery key), `ATProtoPDS` provides deep, native integrations with
+host or rotating a master recovery key), `Garazyk PDS` provides deep, native integrations with
 cryptographic hardware tokens directly in Objective-C.
 
 Relying solely on traditional passwords or emailed static codes for a decentralized identity server
@@ -31,7 +31,7 @@ Standard authentication mechanisms, such as passwords, magic links, or SMS-based
   breaches.
 - **Keyloggers and Malware:** Capturing manual keyboard input on user-compromised desktop devices.
 
-To decisively mitigate these systemic risks, `ATProtoPDS` prioritizes un-phishable cryptographic
+To decisively mitigate these systemic risks, `Garazyk PDS` prioritizes un-phishable cryptographic
 proofs of identity via hardware authenticators.
 
 ---
@@ -58,8 +58,8 @@ fresh, strictly bound to the correct domain, and actively authorized by the phys
 sequenceDiagram
     participant User
     participant Browser as Authenticator (Browser/Secure Enclave)
-    participant PDS as ATProtoPDS Server
-    participant DB as SQLite SQLite Database
+    participant PDS as Garazyk PDS Server
+    participant DB as SQLite Database
 
     User->>PDS: Request sensitive action (e.g., rotate recovery key)
     PDS->>PDS: Generate cryptographically secure `challenge` buffer
@@ -128,7 +128,7 @@ if (!isValid) {
 ## YubiKeyOATH: Hardware-Backed TOTP Fallback
 
 As an incredibly robust fallback for headless API clients, automated CLI deployment scripts, or
-older hardware devices that fundamentally do not support the WebAuthn API, `ATProtoPDS` natively
+older hardware devices that fundamentally do not support the WebAuthn API, `Garazyk PDS` natively
 handles standard Time-Based One Time Passwords (TOTP).
 
 However, standard TOTP requires the user to open a 2FA app (like Apple Passwords or Google
@@ -175,7 +175,7 @@ Securing a Decentralized Identifier and the hard administrative boundaries of a 
 Data Server requires moving drastically beyond basic shared secrets.
 
 By comprehensively supporting both WebAuthn (Passkeys) for seamless browser-based flows and physical
-YubiKey challenge-responses for programmatic headless scenarios, `ATProtoPDS` enables true
+YubiKey challenge-responses for programmatic headless scenarios, `Garazyk PDS` enables true
 enterprise-grade security for user data. This strict defense-in-depth approach is deeply and
 natively integrated into the Objective-C networking and application layers, ensuring that sensitive
 identity-mutation endpoints remain impenetrable to global remote phishing and credential theft

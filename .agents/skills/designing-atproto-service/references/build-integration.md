@@ -192,11 +192,11 @@ RUN cmake --build . --target kaszlak --target campagnola --target zuk --target s
 COPY --from=builder /src/build/bin/<service-name> /usr/local/bin/<service-name>
 ```
 
-### 2. `scripts/stage-docker-binaries.sh`
+### 2. `scripts/stage_binaries.ts`
 
 Add to the `BINARIES` array:
-```bash
-BINARIES=(kaszlak campagnola zuk syrena garazyk-ui jelcz syrena-chat germ <service-name>)
+```typescript
+const BINARIES = [
 ```
 
 ### 3. `docker/local-network/Dockerfile.local`
@@ -264,7 +264,7 @@ When adding a new service, edit these files:
 - [ ] `CMakeLists.txt` — add_executable + link libs
 - [ ] `project.yml` — XcodeGen tool target
 - [ ] `docker/Dockerfile.gnustep` — build target + COPY
-- [ ] `scripts/stage-docker-binaries.sh` — BINARIES array
+- [ ] `scripts/stage_binaries.ts` — BINARIES array
 - [ ] `docker/local-network/Dockerfile.local` — COPY
 - [ ] `docker/local-network/docker-compose.yml` — service container (if local)
 - [ ] `scripts/lib/common.sh` — service port/URL/binary variables

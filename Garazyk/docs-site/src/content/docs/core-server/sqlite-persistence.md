@@ -1,6 +1,6 @@
 ---
 title: SQLite Persistence
-description: WAL mode, Connection Pooling, and maximizing concurrent disk I/O in ATProtoPDS
+description: WAL mode, Connection Pooling, and maximizing concurrent disk I/O in Garazyk PDS
 ---
 
 The ATProtocol is fundamentally a massively replicated, cryptographically authenticated data store.
@@ -9,7 +9,7 @@ remote binary blobs they actively sync must be stored securely and persistently 
 the PDS.
 
 To achieve maximum absolute performance and minimum memory footprint without the massive GC overhead
-of a high-level ORM mapping abstraction, `ATProtoPDS` deliberately utilizes raw C-level SQLite
+of a high-level ORM mapping abstraction, `Garazyk PDS` deliberately utilizes raw C-level SQLite
 (`#include <sqlite3.h>`) mapped directly to a custom, heavily-optimized thread-safe Objective-C
 `DatabasePool`.
 
@@ -24,7 +24,7 @@ reads to violently block until the write gracefully finishes. In a PDS where tho
 clients might be aggressively polling the database, a single slow write block will catastrophically
 stall the entire read queue, taking the server offline.
 
-To aggressively defeat this, `ATProtoPDS` boots absolutely all `ActorStore`, `PLCPersistentStore`,
+To aggressively defeat this, `Garazyk PDS` boots absolutely all `ActorStore`, `PLCPersistentStore`,
 and `Session` SQLite databases into strictly mandated **Write-Ahead Logging** mode immediately upon
 physical instantiation:
 
