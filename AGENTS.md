@@ -11,7 +11,7 @@ The project uses the **WAT (Workflows, Agents, Tools)** framework:
   removed in `25e72b5a1`.
 - **Agents**: Codex custom agents are defined in `.codex/agents/`; compatibility manifests for
   Claude Code and opencode remain in `.agents/agents/`.
-- **Tools**: Human-invoked runners in `scripts/` and AI-invoked wrappers in `.opencode/tools/`.
+- **Tools**: Human-invoked runners in `scripts/`.
 - **Skills**: Domain knowledge in `.agents/skills/`.
 
 ### Tool Configuration
