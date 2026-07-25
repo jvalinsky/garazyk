@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-/*!
- @file PDSAccountService.h
-
- @abstract Account management service layer.
-
- @discussion Provides high-level account operations including creation,
- authentication, token refresh, and deletion. Coordinates between
- database pool and JWT minting.
-
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+/**
+ * @file PDSAccountService.h
+ *
+ * @abstract Account management service layer.
+ *
+ * @discussion Provides high-level account operations including creation,
+ * authentication, token refresh, and deletion. Coordinates between
+ * database pool and JWT minting.
+ *
+ * @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
@@ -25,51 +25,103 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol PDSAccountRepository;
 @protocol PDSSessionRepository;
 
-/*!
- @protocol PDSAccountService
- @abstract Protocol defining the account service public interface.
+/**
+ * @abstract Protocol defining the account service public interface.
  */
 @protocol PDSAccountService <NSObject>
 
 @property (nonatomic, strong, readonly, nullable) id<PDSSessionRepository> sessionRepository;
 
-/*! Creates a new account with email, password, and handle. */
+/**
+ * @abstract Creates a new account with email, password, and handle.
+ * @param email The account email address.
+ * @param password The account password.
+ * @param handle The account handle.
+ * @param did Optional decentralized identifier for the account.
+ * @param error Receives validation or database errors.
+ * @return The account dictionary, or nil if creation fails.
+ */
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
                                         password:(NSString *)password
                                          handle:(NSString *)handle
                                              did:(nullable NSString *)did
                                           error:(NSError **)error;
 
-/*! Authenticates a user by handle and password. */
+/**
+ * @abstract Authenticates a user by handle and password.
+ * @param handle The user handle.
+ * @param password The user password.
+ * @param error Receives validation or database errors.
+ * @return The session dictionary, or nil if authentication fails.
+ */
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle
                                  password:(NSString *)password
                                     error:(NSError **)error;
 
-/*! Authenticates a user by handle or email and password. */
+/**
+ * @abstract Authenticates a user by handle or email and password.
+ * @param identifier The user handle or email address.
+ * @param password The user password.
+ * @param error Receives validation or database errors.
+ * @return The session dictionary, or nil if authentication fails.
+ */
 - (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
                                      password:(NSString *)password
                                         error:(NSError **)error;
 
-/*! Authenticates a user by handle or email, password, and optional second-factor proof. */
+/**
+ * @abstract Authenticates a user by handle or email, password, and optional second-factor proof.
+ * @param identifier The user handle or email address.
+ * @param password The user password.
+ * @param authFactorToken The second-factor authentication token.
+ * @param error Receives validation or database errors.
+ * @return The session dictionary, or nil if authentication fails.
+ */
 - (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
                                       password:(NSString *)password
                                authFactorToken:(nullable NSString *)authFactorToken
                                          error:(NSError **)error;
 
-/*! Gets account info by DID. */
+/**
+ * @abstract Retrieves account information by DID.
+ * @param did The decentralized identifier.
+ * @param error Receives validation or database errors.
+ * @return The account dictionary, or nil if the account is not found.
+ */
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
 
-/*! Gets storage usage for an account by DID. Returns dict with blobBytes, blobCount, repoBytes, recordCount. */
+/**
+ * @abstract Retrieves storage usage for an account by DID.
+ * @discussion Returns a dictionary containing blobBytes, blobCount, repoBytes, and recordCount.
+ * @param did The decentralized identifier.
+ * @param error Receives validation or database errors.
+ * @return The usage dictionary, or nil if the account is not found.
+ */
 - (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error;
 
-/*! Gets all accounts. */
+/**
+ * @abstract Retrieves all accounts.
+ * @param error Receives database errors.
+ * @return An array of account dictionaries, or nil if retrieval fails.
+ */
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error;
 
-/*! Refreshes an access token using a refresh token. */
+/**
+ * @abstract Refreshes an access token using a refresh token.
+ * @param refreshToken The refresh token.
+ * @param error Receives validation or database errors.
+ * @return The new session dictionary, or nil if refresh fails.
+ */
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
                                        error:(NSError **)error;
 
-/*! Deletes an account after password verification. */
+/**
+ * @abstract Deletes an account after password verification.
+ * @param did The decentralized identifier.
+ * @param password The user password.
+ * @param error Receives validation or database errors.
+ * @return YES if deletion succeeded, NO otherwise.
+ */
 - (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error;
 
 @end
@@ -79,30 +131,48 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @protocol PDSEmailProvider;
 
-/*!
- @class PDSAccountService
-
- @abstract Service for account management operations.
+/**
+ * @abstract Service for account management operations.
  */
 @interface PDSAccountService : NSObject <PDSAccountService>
 
-/*! Database pool - owner (PDSController) must outlive this service. */
+/**
+ * @abstract Database pool.
+ * @discussion The owner (PDSController) must outlive this service.
+ */
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 
-/*! Repositories for data access. */
+/**
+ * @abstract Repository for account data access.
+ */
 @property (nonatomic, strong, nullable) id<PDSAccountRepository> accountRepository;
+
+/**
+ * @abstract Repository for session data access.
+ */
 @property (nonatomic, strong, nullable) id<PDSSessionRepository> sessionRepository;
 
-/*! JWT minter for token generation. */
+/**
+ * @abstract JWT minter for token generation.
+ */
 @property (nonatomic, strong, nullable) JWTMinter *minter;
 
-/*! Pluggable email provider for sending verification codes and alerts. */
+/**
+ * @abstract Pluggable email provider for sending verification codes and alerts.
+ */
 @property (nonatomic, strong, nullable) id<PDSEmailProvider> emailProvider;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
-/*! New DI initializer. */
+/**
+ * @abstract Initializes the service with dependencies.
+ * @param accountRepository Repository for account operations.
+ * @param sessionRepository Repository for session operations.
+ * @param minter JWT minter for tokens.
+ * @param emailProvider Email provider for alerts and verification.
+ * @return An initialized instance.
+ */
 - (instancetype)initWithAccountRepository:(nullable id<PDSAccountRepository>)accountRepository
                         sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
                                    minter:(nullable JWTMinter *)minter
@@ -110,18 +180,40 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Account Operations
 
-/*! Generates a random did:plc identifier (for testing). */
+/**
+ * @abstract Generates a random did:plc identifier.
+ * @return A new decentralized identifier.
+ */
 - (NSString *)generatePlcIdentifier;
 
-/*! Gets storage usage for an account by DID. Returns dict with blobBytes, blobCount, repoBytes, recordCount. */
+/**
+ * @abstract Retrieves storage usage for an account by DID.
+ * @discussion Returns a dictionary containing blobBytes, blobCount, repoBytes, and recordCount.
+ * @param did The decentralized identifier.
+ * @param error Receives validation or database errors.
+ * @return The usage dictionary, or nil if the account is not found.
+ */
 - (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error;
 
-/*! Begins WebAuthn second-factor login after password verification. */
+/**
+ * @abstract Begins WebAuthn second-factor login after password verification.
+ * @param identifier The user handle or email address.
+ * @param password The user password.
+ * @param error Receives validation or database errors.
+ * @return The WebAuthn challenge dictionary, or nil if initiation fails.
+ */
 - (nullable NSDictionary *)beginWebAuthnSecondFactorForIdentifier:(NSString *)identifier
                                                          password:(NSString *)password
                                                             error:(NSError **)error;
 
-/*! Completes WebAuthn second-factor login and returns an authFactorToken for createSession. */
+/**
+ * @abstract Completes WebAuthn second-factor login.
+ * @param identifier The user handle or email address.
+ * @param sessionID The session identifier.
+ * @param assertion The WebAuthn assertion dictionary.
+ * @param error Receives validation or database errors.
+ * @return An auth factor token, or nil if completion fails.
+ */
 - (nullable NSString *)completeWebAuthnSecondFactorForIdentifier:(NSString *)identifier
                                                        sessionID:(NSString *)sessionID
                                                        assertion:(NSDictionary *)assertion

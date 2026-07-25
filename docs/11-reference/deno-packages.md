@@ -4,8 +4,7 @@ title: Deno Packages
 
 # Deno Packages
 
-Six Deno/TypeScript packages providing tooling, testing, and terminal UI
-capabilities.
+This repository contains six Deno/TypeScript packages for tooling, testing, and terminal UI.
 
 | Package              | Path                  | Tests | JSR | Description                                            |
 | -------------------- | --------------------- | ----- | --- | ------------------------------------------------------ |
@@ -18,16 +17,8 @@ capabilities.
 
 ## Architecture
 
-All packages follow a Sans-I/O pattern: core logic is pure TypeScript with zero
-terminal or network I/O. Side effects are pushed to the boundary (CLI entry
-points, runtime handles).
+Core logic is pure TypeScript with no terminal or network I/O. The design pushes side effects to CLI entry points and runtime handles.
 
-For the full lexicon resolution pipeline architecture (5-layer sans-IO design),
-see [Lexicon Resolution Pipeline](lexicon-resolution.md).
-
-For the package extraction, release boundary, and compatibility sequence, see
-[Repository Boundaries](../plans/workstreams/03-repository-boundaries.md).
-
-For programmatic integration and AI agent automated test execution, see the
-`agent-scenario-testing` skill and the
-[Deno Scenario Framework](deno-scenario-framework.md).
+- [Lexicon Resolution Pipeline](lexicon-resolution.md): 5-layer sans-IO architecture.
+- [Repository Boundaries](../plans/workstreams/03-repository-boundaries.md): Extraction, release, and compatibility.
+- [Deno Scenario Framework](deno-scenario-framework.md) (and `agent-scenario-testing` skill): Programmatic integration and automated testing.

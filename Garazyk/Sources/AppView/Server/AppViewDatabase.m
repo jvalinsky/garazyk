@@ -755,7 +755,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
                             params:(NSArray *)params
                              error:(NSError **)error {
-    return [_queryRunner executeUpdate:sql params:params error:error];
+    return [_queryRunner executeUpdate:sql params:params error:error] >= 0;
 }
 
 - (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error {

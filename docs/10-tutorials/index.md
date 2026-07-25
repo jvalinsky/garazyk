@@ -4,7 +4,7 @@ title: Tutorials
 
 # Tutorials
 
-Learn by doing. These resources walk through specific tasks.
+These resources cover specific tasks.
 
 ## Scenario Authoring
 
@@ -16,9 +16,7 @@ Start by reading an existing scenario in `scripts/scenarios/` to see the pattern
 
 ## Adding an XRPC Endpoint
 
-See the `designing-atproto-service` skill (`.agents/skills/designing-atproto-service/`) for
-step-by-step guidance on scaffolding a new service binary with XRPC handlers, CMake integration,
-and database wiring.
+The `designing-atproto-service` skill (`.agents/skills/designing-atproto-service/`) explains how to scaffold a new service binary with XRPC handlers, CMake integration, and database wiring.
 
 ## Working with the TUI
 
@@ -33,7 +31,7 @@ multi-PDS AT Protocol federation.
 
 ## Germ E2EE Mailbox Setup
 
-The [Germ E2EE Mailbox Setup Guide](germ-mailbox-setup.md) shows how to generate secure device-bound Ed25519 Anchor keys and automatically publish a `com.germnetwork.declaration` record to a PDS using Deno.
+The [Germ E2EE Mailbox Setup Guide](germ-mailbox-setup.md) covers generating device-bound Ed25519 Anchor keys and publishing a `com.germnetwork.declaration` record to a PDS via Deno.
 
 ## Deno Package Development
 
