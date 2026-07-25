@@ -1,15 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-/*!
- @file GZAuthzManager.h
-
- @abstract Authorization management for ATProto PDS operations.
-
- @discussion Enforces access control policies for repository access, record
- operations (create, read, update, delete), and admin endpoints. Validates
- ownership, session validity, and administrative privileges.
-
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+/**
+ * @abstract Authorization management for ATProto PDS operations.
+ *
+ * @discussion Enforces access control policies for repository access, record
+ * operations (create, read, update, delete), and admin endpoints. Validates
+ * ownership, session validity, and administrative privileges.
  */
 
 #import <Foundation/Foundation.h>

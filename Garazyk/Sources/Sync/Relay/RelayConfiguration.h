@@ -45,9 +45,6 @@ typedef NS_ENUM(NSInteger, RelayValidationMode) {
 @property (nonatomic, copy, readonly, nullable) NSString *adminPassword;
 @property (nonatomic, assign, readonly) BOOL logLevelDebug;
 
-/**
- * @abstract Performs the initWithUpstreamURLs operation.
- */
 - (instancetype)initWithUpstreamURLs:(NSArray<NSString *> *)upstreamURLs
                     downstreamPort:(uint16_t)port
                      retentionHours:(NSUInteger)hours
@@ -62,9 +59,6 @@ typedef NS_ENUM(NSInteger, RelayValidationMode) {
  */
 + (instancetype)configuration NS_UNAVAILABLE;
 
-/**
- * @abstract Performs the configurationFromFile operation.
- */
 + (nullable instancetype)configurationFromFile:(NSString *)path error:(NSError **)error;
 /**
  * @abstract Returns the configuration from environment result.

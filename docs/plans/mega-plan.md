@@ -87,7 +87,7 @@ documentation, TUI, package, and refactor plans.
   SQLite storage, fail-closed URI/scope/credential parsing, delegation,
   membership policy, private blobs, and notification fan-out, all behind
   `permissionedSpacesEnabled` (off by default). The ADR 0005 reconciliation
-  protocol is fully implemented in source — CAR multi-root reading, full-CAR
+  protocol is implemented in source — CAR multi-root reading, full-CAR
   import, lightweight record-diff recovery, incremental ops, oplog pruning
   with a background timer, and `listRecords`/`listRepoOps` cursor fixes —
   with space test suites registered and green. Scenarios 93 and 94 plus PDS3
@@ -106,7 +106,7 @@ documentation, TUI, package, and refactor plans.
   workstream 01 S5), a full `AllTests --gated=run` pass on 2026-07-17 is
   green (3455 tests, 0 failures, re-confirmed 2026-07-17), and
   `ctest`/`scripts/test/run-tests.sh`/`run-asan-tests.sh` all run with
-  `--gated=run` again. Phase 4 has since fully closed: deterministic
+  `--gated=run` again. Phase 4 has since closed: deterministic
   firehose backpressure and adversarial ingress landed (scenarios 33/95),
   gap-free cursor resume is proven live (scenario 96, `6387245a8`, with
   the `closeForUpgrade` handoff fix `80f5a56e6`), and the once-missing
@@ -116,7 +116,7 @@ documentation, TUI, package, and refactor plans.
   (`28641e671`, `a3f8d3c53`), proven E2E by scenario 97 (`7bde0e0b6`).
   Scenarios 93-97 all exist beyond the original 92 discovered in May.
   Evidence in workstream 01 S5. A later regression (discovered 2026-07-19,
-  12 suites/~68 failures, unrelated to phase 8's own changes) is now fully
+  12 suites/~68 failures, unrelated to phase 8's own changes) is now
   root-caused and repaired (2026-07-22): stale/mismatched test fixtures
   across seven suites, plus three real product bugs found along the
   way — `PDSAdminService.createLabel:` could insert a NOT NULL `cts`
@@ -150,15 +150,15 @@ documentation, TUI, package, and refactor plans.
   Workstream global gates remain open only on the repository-wide lint
   baseline before Phase 11 can close. A dedicated skill exists at
   `.agents/skills/sqlite-performance-optimization`.
-- The Admin UI decoupling phase is progressing well: all 34 HTML partials have
-  been successfully extracted from `UIServerRuntime+Renderers.m` into separate
+- The Admin UI decoupling phase is complete: all 34 HTML partials have
+  been extracted from `UIServerRuntime+Renderers.m` into separate
   template files in `Garazyk/Sources/AdminUIServer/Assets/html/`. The
-  `UITemplateEngine` now securely handles dynamic interpolation with its new
+  `UITemplateEngine` now handles dynamic interpolation with its new
   `EscapeHTML` utility to prevent XSS.
 - The 2026-07-24 Technical Debt Audit (`docs/audits/tech-debt-2026-07-24/`)
   completed its scan for concurrency, SQL injection, and cryptographic vulnerabilities.
-  Crucially, manual verification confirmed that the automated high-priority findings
-  (e.g., `IN (%@)`, `isEqualToString:`, and unbalanced locks) were all **False Positives**.
+  Manual verification confirmed that the automated high-priority findings
+  (e.g., `IN (%@)`, `isEqualToString:`, and unbalanced locks) were false positives.
   The codebase's SQL bindings, string comparisons, and backpressure mechanisms
   are already hardened.
 
@@ -458,9 +458,9 @@ removals without caller proof.
    flagged lossy converter has zero production callers, while the actually
    negotiated public sync export path uses a separate, correct MST-walking
    writer. STAR negotiation is unchanged; see the brief's correction section.
-3. **Complete (2026-07-24):** AppView QueryRunner/pooling and schema migration safety is now fully implemented. `AppViewDatabase` uses the standardized `PDSMigrationManager` with transactional `_migrations` history, replacing the inline schema execution entirely. ADR 0002 has been superseded.
+3. **Complete (2026-07-24):** AppView QueryRunner/pooling and schema migration safety is implemented. `AppViewDatabase` uses the standardized `PDSMigrationManager` with transactional `_migrations` history, replacing the inline schema execution entirely. ADR 0002 has been superseded.
 4. **Complete (2026-07-22):** app attestation for permissioned-spaces
-   `appAccess#allowList` is fully implemented (client metadata, JWKS, key
+   `appAccess#allowList` is implemented (client metadata, JWKS, key
    identifier, signature, issuer/subject equality, audience, expiry, nonce
    replay, app identity), recorded as an ADR 0004 amendment (workstream 06,
    P6.3). `policy: managing-app` itself stays rejected by design pending a

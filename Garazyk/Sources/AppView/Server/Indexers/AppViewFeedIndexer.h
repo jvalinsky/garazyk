@@ -25,9 +25,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AppViewFeedIndexer : NSObject <AppViewIndexer>
 
-/**
- * @abstract Performs the initWithDatabase operation.
- */
 - (instancetype)initWithDatabase:(AppViewDatabase *)database;
 
 @end

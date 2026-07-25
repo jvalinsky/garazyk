@@ -174,9 +174,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @return YES if indexing succeeds; otherwise NO.
  */
 - (BOOL)indexListitem:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
-/**
- * @abstract Performs the unindexListitemWithURI operation.
- */
 - (BOOL)unindexListitemWithURI:(NSString *)uri error:(NSError **)error;
 
 @end
