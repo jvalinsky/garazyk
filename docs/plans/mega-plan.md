@@ -453,7 +453,7 @@ removals without caller proof.
    cells); its Nix-built kernel artifact is promoted to JupyterLite. The
    compiled-cell plane stays deferred by decision.
 2. **Complete (2026-07-22), 5 of 6:** operator approved all six dispositions in
-    [the Phase 10 product-surface decision brief](docs/archive/planning/phase-10-product-surface-decision-brief.md).
+    [the Phase 10 product-surface decision brief](../archive/planning/phase-10-product-surface-decision-brief.md).
    Implemented: SMTP removed, S3 blob config now rejected (fails closed), Skylab
    repost button removed, Skylab Germ E2EE selector removed, scenario-dashboard
    manifest health probes added. **STAR CAR reconstruction was not removed** —
