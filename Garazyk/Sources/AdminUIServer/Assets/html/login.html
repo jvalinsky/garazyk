@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Garazyk UI Login</title>
+    <link rel="stylesheet" href="/css/system.css">
+    <meta name="csrf-nonce" content="{{csrfNonce}}">
+    <style nonce="{{nonce}}">
+        :root {
+            --mesh-bg-1: oklch(35% 0.1 255);
+            --mesh-bg-2: oklch(25% 0.1 230);
+            --mesh-bg-3: oklch(30% 0.15 280);
+        }
+        
+        @media (prefers-color-scheme: light) {
+            :root {
+                --mesh-bg-1: oklch(90% 0.05 255);
+                --mesh-bg-2: oklch(85% 0.05 230);
+                --mesh-bg-3: oklch(92% 0.08 280);
+            }
+        }
+        
+        @keyframes floatBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes cardEntry {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .login-shell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* Animated mesh gradient background */
+            background: linear-gradient(-45deg, var(--mesh-bg-1), var(--mesh-bg-2), var(--mesh-bg-3), var(--mesh-bg-1));
+            background-size: 400% 400%;
+            animation: floatBg 15s ease infinite;
+        }
+        .login-card {
+            background: color-mix(in srgb, var(--color-bg-secondary) 85%, transparent);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--separator-color);
+            border-top: 1px solid color-mix(in srgb, var(--separator-color) 40%, white);
+            border-radius: var(--radius-lg);
+            padding: var(--space-2xl);
+            width: 360px;
+            box-shadow: 
+                0 4px 24px -1px oklch(0% 0 0 / 0.1),
+                0 1px 3px -1px oklch(0% 0 0 / 0.2);
+            animation: cardEntry 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .login-card-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+        
+        .login-card h1 { 
+            font-size: var(--font-size-2xl);
+            letter-spacing: -0.5px;
+            margin-bottom: var(--space-xs);
+            background: linear-gradient(135deg, var(--color-text-primary), var(--color-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .login-card p.subtitle {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        .login-card input {
+            width: 100%;
+            margin-bottom: var(--space-md);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            background: color-mix(in srgb, var(--color-bg-primary) 60%, transparent);
+            transition: all 0.2s ease;
+        }
+        .login-card input:focus {
+            background: var(--color-bg-primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
+            transform: translateY(-1px);
+        }
+        .login-card button { 
+            width: 100%; 
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            height: 40px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .login-card button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--color-accent) 30%, transparent);
+        }
+        .login-card button:active {
+            transform: translateY(0);
+        }
+        .login-error {
+            color: var(--color-destructive);
+            margin-top: var(--space-md);
+            font-size: var(--font-size-sm);
+            text-align: center;
+            background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+            padding: var(--space-sm);
+            border-radius: var(--radius-sm);
+            display: none;
+        }
+        .login-error:not(:empty) {
+            display: block;
+            animation: cardEntry 0.3s ease forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-shell">
+        <div class="login-card">
+            <div class="login-card-header">
+                <h1>Garazyk</h1>
+                <p class="subtitle">Admin Control Panel</p>
+            </div>
+            <form id="login-form" data-ui-form="login">
+                <input id="password" type="password" placeholder="Enter admin password" required autocomplete="current-password" spellcheck="false"/>
+                <button type="submit" class="btn btn-primary">Sign in</button>
+            </form>
+            <p id="error" class="login-error" role="alert"></p>
+        </div>
+    </div>
+    <script type="module" src="/js/admin-ui.js"></script>
+</body>
+</html>

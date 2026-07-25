@@ -1,0 +1,16 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>Subject</th><th>Reason</th><th>Reported By</th><th>Resolved At</th></tr></thead><tbody>
+{{#reports}}
+<tr><td class="text-mono text-xs">{{subject}}</td><td>{{reason}}</td><td class="text-mono text-xs">{{reportedBy}}</td><td>{{resolvedAt}}</td></tr>
+{{/reports}}
+{{^reports}}
+<tr><td colspan="4" class="text-center text-secondary p-lg">No moderation reports found.</td></tr>
+{{/reports}}
+</tbody></table>
+{{#cursor}}
+<div class="mt-sm"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/ozone-reports?cursor={{cursor}}" hx-target="#ozone-reports">Load More</button></div>
+{{/cursor}}
+{{/error}}

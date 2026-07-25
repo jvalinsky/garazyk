@@ -1041,6 +1041,7 @@ add_executable(garazyk-ui
   Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m
+  Garazyk/Sources/AdminUIServer/UITemplateEngine.m
 )
 
 target_include_directories(garazyk-ui PRIVATE
@@ -1574,6 +1575,7 @@ if(BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UITemplateEngine.m"
   )
 
   # Exclude problematic tests (preserved from original)

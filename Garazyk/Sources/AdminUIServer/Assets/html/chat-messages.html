@@ -1,0 +1,13 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="chat-messages">
+{{#messages}}
+<div class="message"><div class="message-header"><span class="message-sender">{{senderName}}</span><span class="message-time text-xs text-secondary">{{time}}</span></div><div class="message-body">{{{lockIcon}}}{{{text}}}</div></div>
+{{/messages}}
+{{^messages}}
+<div class="text-center text-secondary p-lg">No messages found.</div>
+{{/messages}}
+</div>
+{{/error}}

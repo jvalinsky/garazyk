@@ -1,0 +1,14 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="mb-lg"><form class="form" data-ui-form="add-safelink-rule"><div class="form-group"><label for="add-safelink-url">URL:</label><input type="text" id="add-safelink-url" class="form-input" placeholder="https://example.com"/></div><div class="form-group"><label for="add-safelink-pattern">Pattern Type:</label><select id="add-safelink-pattern" class="form-input"><option value="domain">Domain</option><option value="url">URL</option></select></div><div class="form-group"><label for="add-safelink-action">Action:</label><select id="add-safelink-action" class="form-input"><option value="block">Block</option><option value="warn">Warn</option><option value="whitelist">Whitelist</option></select></div><div class="form-group"><label for="add-safelink-reason">Reason:</label><select id="add-safelink-reason" class="form-input"><option value="csam">CSAM</option><option value="spam">Spam</option><option value="phishing">Phishing</option><option value="none">None</option></select></div><div class="form-group"><label for="add-safelink-comment">Comment (optional):</label><input type="text" id="add-safelink-comment" class="form-input"/></div><button type="submit" class="btn btn-primary btn-sm">Add Rule</button></form></div>
+<table class="table"><thead><tr><th>URL</th><th>Pattern</th><th>Action</th><th>Reason</th><th>Actions</th></tr></thead><tbody>
+{{#rules}}
+<tr><td class="text-mono text-xs">{{url}}</td><td>{{pattern}}</td><td>{{action}}</td><td>{{reason}}</td><td><button class="btn btn-sm btn-destructive" data-ui-action="remove-safelink-rule" data-ui-url="{{url}}" data-ui-pattern="{{pattern}}">Remove</button></td></tr>
+{{/rules}}
+{{^rules}}
+<tr><td colspan="5" class="text-center text-secondary p-lg">No safelink rules.</td></tr>
+{{/rules}}
+</tbody></table>
+{{/error}}

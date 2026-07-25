@@ -1,0 +1,10 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>DID</th><th>Handle</th></tr></thead><tbody>
+{{#accounts}}
+<tr><td class="text-mono text-sm">{{did}}</td><td>{{handle}}</td></tr>
+{{/accounts}}
+</tbody></table>
+{{/error}}

@@ -1,0 +1,14 @@
+<div class="mb-lg"><form class="d-flex gap-sm" data-ui-form="load-hosting-history"><input type="text" id="hosting-did-input" class="form-input flex-1" placeholder="did:plc:..." value="{{did}}"/><button type="submit" class="btn btn-primary btn-sm">Load History</button></form></div>
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>PDS</th><th>Status</th><th>Created At</th></tr></thead><tbody>
+{{#entries}}
+<tr><td class="text-mono text-xs">{{pds}}</td><td>{{status}}</td><td class="text-xs">{{createdAt}}</td></tr>
+{{/entries}}
+{{^entries}}
+<tr><td colspan="3" class="text-center text-secondary p-lg">No hosting history found.</td></tr>
+{{/entries}}
+</tbody></table>
+{{/error}}
