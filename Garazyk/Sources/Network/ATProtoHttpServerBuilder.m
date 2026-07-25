@@ -179,6 +179,7 @@
   }
 
   PDSApplication *app = self.application;
+  id<PDSAccountService> capturedAccountService = app.accountService ?: self.controller.accountService;
   NSString *issuer = self.issuer ?: @"pds.garazyk.xyz";
   [server addRoute:@"GET"
               path:@"/"
@@ -193,8 +194,7 @@
                  return;
              }
              
-             id<PDSAccountService> accountService = app.accountService;
-             NSArray *accounts = [accountService getAllAccountsWithError:nil] ?: @[];
+             NSArray *accounts = [capturedAccountService getAllAccountsWithError:nil] ?: @[];
              NSUInteger count = accounts.count;
              
              NSTimeInterval uptime = [[NSProcessInfo processInfo] systemUptime];
