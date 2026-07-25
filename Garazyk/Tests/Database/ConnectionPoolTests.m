@@ -12,6 +12,7 @@
 - (BOOL)testPoolCreation;
 - (BOOL)testAcquireRelease;
 - (BOOL)testMaxConnections;
+- (BOOL)testConcurrentFileWritersWaitForTransaction;
 - (void)logPass:(NSString *)testName;
 - (void)logFail:(NSString *)testName message:(NSString *)message;
 @end
@@ -42,6 +43,10 @@
 
     @autoreleasepool {
         if (![self testMaxConnections]) return NO;
+    }
+
+    @autoreleasepool {
+        if (![self testConcurrentFileWritersWaitForTransaction]) return NO;
     }
 
     NSLog(@"\n=== Test Results ===");
@@ -197,6 +202,78 @@
     [pool releaseConnection:conn4];
     [pool closeAllConnections];
     [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+
+    [self logPass:testName];
+    return YES;
+}
+
+- (BOOL)testConcurrentFileWritersWaitForTransaction {
+    NSString *testName = @"testConcurrentFileWritersWaitForTransaction";
+    NSLog(@"\nRunning %@...", testName);
+
+    NSString *filename = [NSString stringWithFormat:@"test_pool_%@.db", NSUUID.UUID.UUIDString];
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:filename];
+    ATProtoConnectionPool *pool = [[ATProtoConnectionPool alloc] initWithPath:tempPath
+                                                               minConnections:2
+                                                               maxConnections:2];
+    sqlite3 *conn1 = [pool acquireConnectionWithTimeout:1.0];
+    sqlite3 *conn2 = [pool acquireConnectionWithTimeout:1.0];
+    if (!conn1 || !conn2) {
+        [self logFail:testName message:@"Failed to acquire two connections"];
+        if (conn1) [pool releaseConnection:conn1];
+        if (conn2) [pool releaseConnection:conn2];
+        [pool closeAllConnections];
+        return NO;
+    }
+
+    int createResult = sqlite3_exec(conn1,
+                                    "CREATE TABLE concurrent_writes (value INTEGER)",
+                                    NULL, NULL, NULL);
+    int beginResult = sqlite3_exec(conn1, "BEGIN IMMEDIATE", NULL, NULL, NULL);
+    int firstInsertResult = sqlite3_exec(conn1,
+                                         "INSERT INTO concurrent_writes VALUES (1)",
+                                         NULL, NULL, NULL);
+
+    __block int secondInsertResult = SQLITE_ERROR;
+    dispatch_semaphore_t finished = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        secondInsertResult = sqlite3_exec(conn2,
+                                          "INSERT INTO concurrent_writes VALUES (2)",
+                                          NULL, NULL, NULL);
+        dispatch_semaphore_signal(finished);
+    });
+
+    [NSThread sleepForTimeInterval:0.1];
+    int commitResult = sqlite3_exec(conn1, "COMMIT", NULL, NULL, NULL);
+    long waitResult = dispatch_semaphore_wait(
+        finished, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)));
+    if (waitResult != 0) {
+        // busy_timeout bounds this wait; keep conn2 alive until its write exits.
+        dispatch_semaphore_wait(finished, DISPATCH_TIME_FOREVER);
+    }
+
+    [pool releaseConnection:conn1];
+    [pool releaseConnection:conn2];
+    [pool closeAllConnections];
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:[tempPath stringByAppendingString:@"-wal"] error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:[tempPath stringByAppendingString:@"-shm"] error:nil];
+
+    if (createResult != SQLITE_OK || beginResult != SQLITE_OK ||
+        firstInsertResult != SQLITE_OK || commitResult != SQLITE_OK) {
+        [self logFail:testName message:@"Failed to prepare the first write transaction"];
+        return NO;
+    }
+    if (waitResult != 0) {
+        [self logFail:testName message:@"Second writer did not finish after the first committed"];
+        return NO;
+    }
+    if (secondInsertResult != SQLITE_OK) {
+        [self logFail:testName
+               message:[NSString stringWithFormat:@"Second writer returned SQLite code %d",
+                                                   secondInsertResult]];
+        return NO;
+    }
 
     [self logPass:testName];
     return YES;
