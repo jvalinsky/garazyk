@@ -218,4 +218,3 @@ jobs:
           path: ./
           base: ${{ github.event.before }}
           head: ${{ github.event.after }}
-          version: v3.96.0
