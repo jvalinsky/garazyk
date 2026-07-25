@@ -1490,6 +1490,8 @@ if(BUILD_FUZZERS)
       target_link_options(${name} PRIVATE ${FUZZER_LDFLAGS})
       set_target_properties(${name} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing"
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED YES
         LINK_FLAGS "-ObjC"
       )
     endif()
@@ -1520,6 +1522,8 @@ if(BUILD_FUZZERS)
       target_link_options(${name} PRIVATE ${FUZZER_LDFLAGS})
       set_target_properties(${name} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing"
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED YES
         LINK_FLAGS "-ObjC"
       )
     endif()
