@@ -212,9 +212,30 @@
              html = [html stringByReplacingOccurrencesOfString:@"{{account_count}}" withString:[@(count) stringValue]];
              
              NSMutableString *accountsHtml = [NSMutableString string];
-             for (NSDictionary *acc in accounts) {
+             for (id accObj in accounts) {
+                 NSString *handle = @"Unknown";
+                 NSString *did = @"Unknown";
+                 NSString *createdAtStr = @"N/A";
+                 
+                 if ([accObj respondsToSelector:@selector(handle)]) {
+                     handle = [accObj handle] ?: @"Unknown";
+                 }
+                 if ([accObj respondsToSelector:@selector(did)]) {
+                     did = [accObj did] ?: @"Unknown";
+                 }
+                 if ([accObj respondsToSelector:@selector(createdAt)]) {
+                     NSTimeInterval createdAt = [accObj createdAt];
+                     if (createdAt > 0) {
+                         NSDate *date = [NSDate dateWithTimeIntervalSince1970:createdAt];
+                         NSDateFormatter *df = [[NSDateFormatter alloc] init];
+                         df.dateStyle = NSDateFormatterMediumStyle;
+                         df.timeStyle = NSDateFormatterShortStyle;
+                         createdAtStr = [df stringFromDate:date];
+                     }
+                 }
+                 
                  [accountsHtml appendFormat:@"<li><details open><summary><strong>%@</strong></summary><ul><li>DID: %@</li><li>Created: %@</li><li>Status: Active</li></ul></details></li>",
-                     acc[@"handle"] ?: @"Unknown", acc[@"did"] ?: @"Unknown", acc[@"createdAt"] ?: @"N/A"];
+                     handle, did, createdAtStr];
              }
              
              NSRange startRange = [html rangeOfString:@"<!-- {{#each accounts}} -->"];
