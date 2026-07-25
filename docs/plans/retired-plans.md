@@ -1,6 +1,6 @@
 ---
 title: Retired Plan Ledger
-last_verified: 2026-07-16
+last_verified: 2026-07-25
 ---
 
 # Retired Plan Ledger
@@ -26,14 +26,18 @@ own active work and where unresolved acceptance criteria moved.
 | `queryrunner_deepening_pilot_plan.md` (repo root)                                     | Implementation diary for the completed QueryRunner deepening arc; all stores migrated, outcomes in deciduous goal 1187 and ADR 0002. Deleted 2026-07-16; last text at `6f8921ab6`.        |
 | `space-reconciliation-implementation.md`                                              | Every phase implemented and verified in source on 2026-07-16 (CAR multi-root, import, pruning + timer, record index, inbound sync, cursor fixes, scenarios 93/94). Design is ADR 0005. Residual runtime acceptance moved to workstream 06 (P6.1). |
 | `phase12-route-pack-slice-1-plan.md`                                                  | Implementation diary for the completed phase-12 route-pack decomposition (all 4 god files → 31 category files; `c85b1bed8`, `72a059eae`, `cbe62f84e`). Outcomes in workstream 02 A3, mega-plan Phase 4 item 3, and deciduous `#1362`-`#1374`. Deleted 2026-07-23. |
+| `star-conformance-plan.md`                                                            | All three slices landed (2026-07-23). Mega-plan Phase 4 item 9 records completion. Archived to `docs/archive/planning/` 2026-07-25. |
+| `phase-10-product-surface-decision-brief.md`                                         | Operator approved all dispositions; mega-plan Phase 5 item 2 records completion. Archived to `docs/archive/planning/` 2026-07-25. |
+| `linux_shim_refactor.md` + `docs/audits/linux_shim_research_*.md`                     | All four defects fixed in `b11649515`. Archived to `docs/archive/planning/` 2026-07-25. |
 
 ## Preserved noncanonical records
 
 - Dated audit directories under `scratchpads/`, `.agents/scratchpad/`, and
   `.deciduous/scratch/` remain research and decision-history inputs. They do not
   set priority.
-- `refactor_opportunity_audit_report.md` remains a dated report, not backlog.
-- ADRs 0001-0005 remain authoritative decisions.
+- `refactor_opportunity_audit_report.md` was removed 2026-07-25; its lineage
+  lives on in `docs/audits/tech-debt-2026-07-24/`.
+- ADRs 0001-0011 remain authoritative decisions.
 
 ## Branch-only records
 
