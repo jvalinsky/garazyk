@@ -61,7 +61,7 @@ Do not reopen the completed 200-app corpus plan in this repository.
 ## E3. Decide incomplete product surfaces — complete, with one correction (2026-07-22)
 
 The operator approved all six dispositions recommended in
-[the Phase 10 product-surface decision brief](../archive/planning/phase-10-product-surface-decision-brief.md).
+[the Phase 10 product-surface decision brief](../../archive/planning/phase-10-product-surface-decision-brief.md).
 Five are implemented:
 
 - SMTP delivery removed (`PDSEmailProviderFactory` now rejects `smtp`; use `resend` or `mock`).

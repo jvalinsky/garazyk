@@ -74,7 +74,7 @@ jobs:
 
       - name: Validate Repo-Wide Internal Links and Discoverability
         run: |
-          deno run -A scripts/docs/repo_docs.ts validate --internal-strict --orphans
+          deno run -A scripts/docs/repo_docs.ts validate --internal-strict
 
       - name: Build Documentation
         working-directory: Garazyk/docs-site

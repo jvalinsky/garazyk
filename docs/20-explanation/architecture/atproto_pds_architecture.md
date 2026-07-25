@@ -333,8 +333,8 @@ Thread-safe via `NSRecursiveLock`. Route packs receive dependencies through `Xrp
 ## Further Reading
 
 - [AT Protocol specification](https://atproto.com/specs/atp)
-- [SQLite persistence](../../Garazyk/docs-site/src/content/docs/core-server/sqlite-persistence.md)
-- [Sans-I/O architecture](../../Garazyk/docs-site/src/content/docs/advanced-parsing/sans-io-architecture.md)
-- [Firehose protocol](../../Garazyk/docs-site/src/content/docs/federation/firehose.md)
-- [Database layer](../../Garazyk/Sources/Database/ARCHITECTURE.md)
-- [Admin UI architecture](../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md)
+- [SQLite persistence](../../../Garazyk/docs-site/src/content/docs/core-server/sqlite-persistence.md)
+- [Sans-I/O architecture](../../../Garazyk/docs-site/src/content/docs/advanced-parsing/sans-io-architecture.md)
+- [Firehose protocol](../../../Garazyk/docs-site/src/content/docs/federation/firehose.md)
+- [Database layer](../../../Garazyk/Sources/Database/ARCHITECTURE.md)
+- [Admin UI architecture](../../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md)
