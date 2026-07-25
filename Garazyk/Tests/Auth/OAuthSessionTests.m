@@ -77,6 +77,38 @@
     XCTAssertTrue([req validateWithError:&error]);
 }
 
+- (void)testPARRequestValidationAcceptsStandardPermissionScopes {
+    OAuthPARRequest *req = [[OAuthPARRequest alloc] init];
+    req.clientId = @"client-id";
+    req.responseType = @"code";
+    req.codeChallenge = @"challenge";
+    req.codeChallengeMethod = @"S256";
+    req.state = @"state";
+    req.redirectUri = @"https://client.com/cb";
+    req.scope = @"atproto repo:app.bsky.feed.post?action=create blob:image/png account:email identity:handle";
+
+    NSError *error = nil;
+    XCTAssertTrue([req validateWithError:&error]);
+    XCTAssertNil(error);
+}
+
+- (void)testPARRequestValidationRejectsUnknownOrMalformedPermissionScopes {
+    OAuthPARRequest *req = [[OAuthPARRequest alloc] init];
+    req.clientId = @"client-id";
+    req.responseType = @"code";
+    req.codeChallenge = @"challenge";
+    req.codeChallengeMethod = @"S256";
+    req.state = @"state";
+    req.redirectUri = @"https://client.com/cb";
+
+    req.scope = @"atproto unknown:permission";
+    XCTAssertFalse([req validateWithError:nil]);
+    req.scope = @"atproto repo:?action=create";
+    XCTAssertFalse([req validateWithError:nil]);
+    req.scope = @"atproto include:app.example.permissions";
+    XCTAssertTrue([req validateWithError:nil]);
+}
+
 - (void)testTokenRequestValidationAuthorizationCode {
     OAuthTokenRequest *req = [[OAuthTokenRequest alloc] init];
     req.grantType = @"authorization_code";

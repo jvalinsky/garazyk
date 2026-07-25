@@ -553,7 +553,8 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     // policy=managing-app delegates membership to the managing app's
     // checkUserAccess endpoint; appAccess#allowList is client attestation.
     if (config[@"managingApp"] && ![policy isEqualToString:@"managing-app"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managingApp requires policy=managing-app"); return; }
-    if ([policy isEqualToString:@"managing-app"] && ![config[@"managingApp"] isKindOfClass:[NSString class]]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app policy requires a managingApp DID"); return; }
+    if ([policy isEqualToString:@"managing-app"] &&
+        ![ATProtoValidator validateDID:SpaceString(config[@"managingApp"]) error:nil]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app policy requires a valid managingApp DID"); return; }
     NSArray *allowedClients = allowList ? access[@"allowed"] : @[];
     if (allowList && (![allowedClients isKindOfClass:[NSArray class]] || allowedClients.count == 0)) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"appAccess#allowList requires a non-empty allowed array"); return; }
     for (id client in allowedClients) { if (!SpaceIsValidAppClientID(client)) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Every allowed client_id must be an https URL"); return; } }
@@ -719,7 +720,8 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     // policy=managing-app delegates membership to the managing app's
     // checkUserAccess endpoint; appAccess#allowList is client attestation.
     if (policy && ![policy isEqualToString:@"public"] && ![policy isEqualToString:@"member-list"] && ![policy isEqualToString:@"managing-app"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"policy must be public, member-list, or managing-app"); return; }
-    if ([policy isEqualToString:@"managing-app"] && ![body[@"managingApp"] isKindOfClass:[NSString class]]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app policy requires a managingApp DID"); return; }
+    if ([policy isEqualToString:@"managing-app"] &&
+        ![ATProtoValidator validateDID:SpaceString(body[@"managingApp"]) error:nil]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"managing-app policy requires a valid managingApp DID"); return; }
     if (appAccess && [appType isEqualToString:@"invalid"]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"appAccess must be #open or #allowList"); return; }
     NSString *managingApp = [policy isEqualToString:@"managing-app"] ? SpaceString(body[@"managingApp"]) : nil;
     if (![store updateSpace:space.spaceURI policy:policy managingApp:managingApp appAccessType:appType appAllowed:allowedClients error:nil]) { SpaceError(response, HttpStatusNotFound, @"SpaceNotFound", @"Space not found"); return; }

@@ -8,7 +8,7 @@
  */
 
 import type { Actor } from "./actor.ts";
-import type { XrpcClient } from "../../scripts/lib/deno/client.ts";
+import type { XrpcClient } from "@garazyk/gruszka";
 import type { LexiconDefs } from "@garazyk/gruszka/lexicons.ts";
 import type { ProcedureOutput } from "@garazyk/gruszka";
 

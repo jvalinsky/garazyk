@@ -49,6 +49,13 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (instancetype)initWithHost:(NSString *)host
                         port:(uint16_t)port
                         path:(NSString *)path {
+  return [self initWithHost:host port:port path:path secureTLS:NO];
+}
+
+- (instancetype)initWithHost:(NSString *)host
+                        port:(uint16_t)port
+                        path:(NSString *)path
+                   secureTLS:(BOOL)secureTLS {
   self = [super init];
   if (self) {
     [self commonInit];
@@ -56,6 +63,8 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     _remoteAddress = [host copy];
     _port = port;
     _path = [path copy];
+    _secureTLS = secureTLS;
+    self.session.codec.maskOutgoingFrames = YES;
     _state = WebSocketConnectionStateConnecting;
 
     NSRange queryRange = [path rangeOfString:@"?"];
@@ -196,7 +205,8 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
   self.connection =
       [ATProtoNetworkTransportFactory createConnectionWithHost:self.host
-                                                      port:self.port];
+                                                          port:self.port
+                                                     secureTLS:self.secureTLS];
 
   [self setupInitialState];
 

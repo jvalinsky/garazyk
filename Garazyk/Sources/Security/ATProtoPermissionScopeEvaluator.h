@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param scopeString The JWT scope claim value (space-separated).
  * @return Array of parsed ATProtoPermissionScope objects. Empty if none found.
  */
-+ (NSArray<ATProtoPermissionScope *> *)scopesFromScopeString:(NSString *)scopeString;
++ (NSArray<ATProtoPermissionScope *> *)scopesFromScopeString:(nullable NSString *)scopeString;
 
 /**
  * Extract and parse permission scopes from a verified JWT.
@@ -38,6 +38,16 @@ NS_ASSUME_NONNULL_BEGIN
  * @return Array of parsed ATProtoPermissionScope objects. Empty if none found.
  */
 + (NSArray<ATProtoPermissionScope *> *)scopesFromJWT:(JWT *)jwt;
+
+/**
+ * Validate the complete OAuth scope string accepted by this PDS.
+ *
+ * The AT Protocol base `atproto` scope remains mandatory. Every additional
+ * token must be either a supported transition scope, a valid `space:` scope,
+ * or a syntactically valid standard permission scope. This keeps malformed
+ * scopes from being persisted and later interpreted inconsistently.
+ */
++ (BOOL)validateOAuthScopeString:(nullable NSString *)scopeString;
 
 #pragma mark - RPC Scope Evaluation
 
@@ -50,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @return YES if at least one rpc: scope matches, or if no rpc: scopes exist (fail-open).
  */
 + (BOOL)evaluateRPCScopes:(NSArray<ATProtoPermissionScope *> *)scopes
-                forMethod:(NSString *)methodNSID
+                forMethod:(nullable NSString *)methodNSID
                   audience:(nullable NSString *)audience;
 
 #pragma mark - Repo Scope Evaluation

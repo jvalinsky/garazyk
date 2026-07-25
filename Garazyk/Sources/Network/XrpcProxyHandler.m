@@ -7,6 +7,7 @@
 #import "Auth/JWT.h"
 #import "Auth/PDSActorKeyManagerProtocol.h"
 #import "App/ATProtoServiceConfiguration.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Debug/GZLogger.h"
 
 @implementation XrpcProxyHandler
@@ -63,10 +64,28 @@
         return;
     }
 
+    NSString *methodNSID = request.pathParameters[@"method"] ?: @"";
+    if (methodNSID.length == 0 && [request.path hasPrefix:@"/xrpc/"]) {
+        methodNSID = [request.path substringFromIndex:@"/xrpc/".length];
+    }
+    JWT *accessToken = [JWT jwtWithToken:([authHeader hasPrefix:@"Bearer "] ? [authHeader substringFromIndex:7] :
+                                           [authHeader hasPrefix:@"DPoP "] ? [authHeader substringFromIndex:5] : nil)
+                                      error:nil];
+    NSArray *permissionScopes = [ATProtoPermissionScopeEvaluator scopesFromJWT:accessToken];
+    if (![ATProtoPermissionScopeEvaluator evaluateRPCScopes:permissionScopes
+                                                   forMethod:methodNSID
+                                                    audience:upstreamDID]) {
+        response.statusCode = HttpStatusForbidden;
+        [response setJsonBody:@{
+            @"error": @"InsufficientScope",
+            @"message": @"Token scope does not permit this proxied service request"
+        }];
+        return;
+    }
+
     // 2. Mint Service-to-Service JWT per AT Protocol spec.
     //    iss = user DID, aud = service DID (with fragment), lxm = method NSID,
     //    signed with user's repo signing key, exp = 60s, jti = random nonce.
-    NSString *methodNSID = request.pathParameters[@"method"] ?: @"";
     NSString *token = nil;
     NSError *mintError = nil;
 

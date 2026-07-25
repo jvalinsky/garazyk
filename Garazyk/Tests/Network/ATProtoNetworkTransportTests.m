@@ -11,7 +11,7 @@
 - (void)testStartWithQueue {
 #if defined(__APPLE__)
     XCTSkip(@"ATProtoNetworkListenerLinux requires Linux socket permissions on macOS.");
-#endif
+#else
     // Note: This test is designed to fail initially according to the TDD plan
     // We explicitly use the Linux implementation even on Mac for testing purposes
     ATProtoNetworkListenerLinux *listener = [[ATProtoNetworkListenerLinux alloc] initWithPort:8080];
@@ -39,6 +39,7 @@
     XCTAssertEqual(finalState, ATProtoNetworkListenerStateReady, @"Should succeed after implementation");
     
     [listener cancel];
+#endif
 }
 
 @end

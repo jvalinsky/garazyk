@@ -59,6 +59,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port;
 
+/** Creates an outbound connection with an explicit TLS policy. */
+- (instancetype)initWithHost:(NSString *)host
+                        port:(NSUInteger)port
+                   secureTLS:(BOOL)secureTLS;
+
 @end
 
 /*!
