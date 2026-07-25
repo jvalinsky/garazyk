@@ -32,6 +32,8 @@ static const char *kCrashLogPathPrefix = "/tmp/";
 /// Currently active executable name (set during install).
 static const char *gExecutableName = "unknown";
 
+static volatile sig_atomic_t gHandlingCrash = 0;
+
 #pragma mark - Crash Signal Handler
 
 /*!
@@ -43,6 +45,11 @@ static const char *gExecutableName = "unknown";
  to produce a core dump.
  */
 static void GZCrashSignalHandler(int sig, siginfo_t *si, void *ctx) {
+    if (gHandlingCrash) {
+        _exit(1);
+    }
+    gHandlingCrash = 1;
+
     const char *signame = (sig == SIGSEGV) ? "SIGSEGV" :
                           (sig == SIGABRT) ? "SIGABRT" :
                           (sig == SIGBUS)  ? "SIGBUS"  :
@@ -131,13 +138,15 @@ static void GZCrashSignalHandler(int sig, siginfo_t *si, void *ctx) {
             write(fd, buf, (size_t)len);
         }
 
-        // Backtrace (try — may crash if heap is corrupted)
+        // Backtrace
         void *frames[32];
         int frame_count = (int)backtrace(frames, 32);
         // Replace frame 1 with the actual crash PC if available
         if (pc != 0 && frame_count > 1) {
             frames[1] = (void *)pc;
         }
+        
+        // Write raw addresses to fd first (in case symbolization fails)
         for (int i = 0; i < frame_count; i++) {
             char frame_buf[64];
             int flen = snprintf(frame_buf, sizeof(frame_buf),
@@ -145,16 +154,8 @@ static void GZCrashSignalHandler(int sig, siginfo_t *si, void *ctx) {
             write(fd, frame_buf, (size_t)flen);
         }
 
-        char **symbols = backtrace_symbols(frames, frame_count);
-        if (symbols) {
-            for (int i = 0; i < frame_count; i++) {
-                char sym_buf[256];
-                int slen = snprintf(sym_buf, sizeof(sym_buf),
-                                    "  #%d %s\n", i, symbols[i] ?: "?");
-                write(fd, sym_buf, (size_t)slen);
-            }
-            free(symbols);
-        }
+        // Write symbolized backtrace directly to fd (async-signal-safe)
+        backtrace_symbols_fd(frames, frame_count, fd);
 
         close(fd);
     }

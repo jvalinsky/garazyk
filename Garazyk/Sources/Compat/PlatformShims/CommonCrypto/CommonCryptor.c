@@ -35,6 +35,27 @@ CCCryptorStatus CCCrypt(
         return kCCParamError;
     }
     
+    size_t blockSize = 16;
+    size_t requiredSize = 0;
+    
+    if (options & kCCOptionPKCS7Padding) {
+        if (__builtin_add_overflow(dataInLength, blockSize, &requiredSize)) {
+            return kCCParamError;
+        }
+    } else {
+        if (dataInLength % blockSize != 0) {
+            return kCCAlignmentError;
+        }
+        requiredSize = dataInLength;
+    }
+
+    if (dataOutAvailable < requiredSize) {
+        if (dataOutMoved) {
+            *dataOutMoved = requiredSize;
+        }
+        return kCCBufferTooSmall;
+    }
+    
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx) {
         return kCCMemoryFailure;
@@ -75,10 +96,6 @@ CCCryptorStatus CCCrypt(
     
     if (ret != 1) {
         return kCCDecodeError;
-    }
-    
-    if ((size_t)(outlen + tmplen) > dataOutAvailable) {
-        return kCCBufferTooSmall;
     }
     
     if (dataOutMoved) {
