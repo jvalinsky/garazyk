@@ -144,6 +144,36 @@
     XCTAssertEqual(response.statusCode, 200);
 }
 
+- (void)testListReposRejectsLimitWithTrailingCharacters {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/xrpc/com.atproto.sync.listRepos"
+                                                   queryString:@"limit=10junk"
+                                                    queryParams:@{@"limit": @"10junk"}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [self.server dispatchRequest:request];
+    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testListReposRejectsCursorWithTrailingCharacters {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/xrpc/com.atproto.sync.listRepos"
+                                                   queryString:@"cursor=1junk"
+                                                    queryParams:@{@"cursor": @"1junk"}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:[NSData data]
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [self.server dispatchRequest:request];
+    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
 - (void)testGetRepoStatusReturnsActiveFalseForUnknownRepo {
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"

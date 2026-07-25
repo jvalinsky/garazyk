@@ -8,6 +8,7 @@
 #import "Network/XrpcRepoPack+Describe.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpResponse.h"
+#import "Core/ATProtoValidator.h"
 #import "Database/PDSDatabase.h"
 #import "Database/PDSDatabaseAccount.h"
 #import "App/PDSController.h"
@@ -169,6 +170,39 @@ NSError *repoPackValidationError(PDSRepoPackValidationErrorCode code, NSString *
                            userInfo:@{NSLocalizedDescriptionKey: message ?: @"Invalid request"}];
 }
 
+NSString *normalizedApplyWriteAction(NSDictionary *write) {
+    static NSDictionary<NSString *, NSString *> *actionsByType;
+    static NSSet<NSString *> *validActions;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        actionsByType = @{
+            @"com.atproto.repo.applyWrites#create": @"create",
+            @"com.atproto.repo.applyWrites#update": @"update",
+            @"com.atproto.repo.applyWrites#delete": @"delete",
+        };
+        validActions = [NSSet setWithArray:@[@"create", @"update", @"delete"]];
+    });
+
+    NSString *type = [write[@"$type"] isKindOfClass:[NSString class]]
+        ? write[@"$type"]
+        : nil;
+    NSString *typeAction = type.length > 0 ? actionsByType[type] : nil;
+    if (type.length > 0 && !typeAction) {
+        return nil;
+    }
+
+    NSString *legacyAction = [write[@"action"] isKindOfClass:[NSString class]]
+        ? write[@"action"]
+        : nil;
+    if (legacyAction.length > 0 && ![validActions containsObject:legacyAction]) {
+        return nil;
+    }
+    if (typeAction && legacyAction && ![typeAction isEqualToString:legacyAction]) {
+        return nil;
+    }
+    return typeAction ?: legacyAction;
+}
+
 BOOL validateApplyWritesPayload(id writes, NSError **error) {
     static const NSUInteger kPDSApplyWritesMaxCount = 200;
     static const NSUInteger kPDSApplyWritesMaxRecordBytes = 256 * 1024;
@@ -192,12 +226,78 @@ BOOL validateApplyWritesPayload(id writes, NSError **error) {
             return NO;
         }
 
-        id value = ((NSDictionary *)write)[@"value"];
+        NSDictionary *writeObject = (NSDictionary *)write;
+        NSString *action = normalizedApplyWriteAction(writeObject);
+        if (action.length == 0) {
+            if (error) {
+                *error = repoPackValidationError(
+                    PDSRepoPackValidationErrorInvalidRequest,
+                    @"Each write must have a valid applyWrites $type discriminator");
+            }
+            return NO;
+        }
+
+        NSString *collection = [writeObject[@"collection"] isKindOfClass:[NSString class]]
+            ? writeObject[@"collection"]
+            : nil;
+        NSError *collectionError = nil;
+        if (collection.length == 0 ||
+            ![ATProtoValidator validateNSID:collection error:&collectionError]) {
+            if (error) {
+                *error = repoPackValidationError(
+                    PDSRepoPackValidationErrorInvalidRequest,
+                    collectionError.localizedDescription ?: @"Each write must have a valid collection NSID");
+            }
+            return NO;
+        }
+
+        NSString *rkey = [writeObject[@"rkey"] isKindOfClass:[NSString class]]
+            ? writeObject[@"rkey"]
+            : nil;
+        if (([action isEqualToString:@"update"] || [action isEqualToString:@"delete"]) &&
+            rkey.length == 0) {
+            if (error) {
+                *error = repoPackValidationError(
+                    PDSRepoPackValidationErrorInvalidRequest,
+                    [NSString stringWithFormat:@"%@ writes require rkey", action]);
+            }
+            return NO;
+        }
+        if (rkey.length > 0) {
+            NSError *rkeyError = nil;
+            if (![ATProtoValidator validateRkey:rkey error:&rkeyError] ||
+                ([action isEqualToString:@"create"] && rkey.length > 15)) {
+                if (error) {
+                    *error = repoPackValidationError(
+                        PDSRepoPackValidationErrorInvalidRequest,
+                        rkeyError.localizedDescription ?: @"Invalid record key");
+                }
+                return NO;
+            }
+        }
+
+        id value = writeObject[@"value"];
         if (!value || value == (id)[NSNull null]) {
-            value = ((NSDictionary *)write)[@"record"];
+            value = writeObject[@"record"];
         }
         if (!value || value == (id)[NSNull null]) {
+            if (![action isEqualToString:@"delete"]) {
+                if (error) {
+                    *error = repoPackValidationError(
+                        PDSRepoPackValidationErrorInvalidRequest,
+                        [NSString stringWithFormat:@"%@ writes require a record value", action]);
+                }
+                return NO;
+            }
             continue;
+        }
+        if (![value isKindOfClass:[NSDictionary class]]) {
+            if (error) {
+                *error = repoPackValidationError(
+                    PDSRepoPackValidationErrorInvalidRequest,
+                    @"Write record value must be an object");
+            }
+            return NO;
         }
         if (![NSJSONSerialization isValidJSONObject:value]) {
             if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Write record value must be JSON-serializable");

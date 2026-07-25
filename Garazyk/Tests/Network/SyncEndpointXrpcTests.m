@@ -133,17 +133,34 @@
 #pragma mark - listBlobs
 
 - (void)testListBlobsReturnsBlobsForDID {
-    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
                                               queryParams:@{@"did": self.userDid}
-                                                  headers:@{@"authorization": authHeader}];
-    // May return 200 with empty list or 400 if DID is invalid
-    XCTAssertTrue(response.statusCode == 200 || response.statusCode == 400,
-                  @"listBlobs should return 200 or 400, got %ld", (long)response.statusCode);
-    if (response.statusCode == 200) {
-        NSDictionary *json = response.jsonBody;
-        XCTAssertTrue([json isKindOfClass:[NSDictionary class]]);
-    }
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertTrue([response.jsonBody[@"cids"] isKindOfClass:[NSArray class]]);
+    XCTAssertNil(response.jsonBody[@"blobs"]);
+}
+
+- (void)testListBlobsRequiresDID {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
+                                              queryParams:@{}
+                                                  headers:@{}];
+    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testListBlobsRejectsMalformedPagination {
+    HttpResponse *limitResponse =
+        [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
+                         queryParams:@{@"did": self.userDid, @"limit": @"10junk"}
+                             headers:@{}];
+    XCTAssertEqual(limitResponse.statusCode, HttpStatusBadRequest);
+
+    HttpResponse *cursorResponse =
+        [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
+                         queryParams:@{@"did": self.userDid, @"cursor": @"-1"}
+                             headers:@{}];
+    XCTAssertEqual(cursorResponse.statusCode, HttpStatusBadRequest);
 }
 
 #pragma mark - getCheckout

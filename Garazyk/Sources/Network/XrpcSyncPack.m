@@ -304,6 +304,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
       response.statusCode = HttpStatusOK;
       response.contentType = ContentTypeForPDSRepoFormat(format);
+      [response setHeader:@"Accept" forKey:@"Vary"];
       [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
       return;
     }
@@ -333,6 +334,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     response.statusCode = HttpStatusOK;
     response.contentType = @"application/vnd.ipld.car";
+    [response setHeader:@"Accept" forKey:@"Vary"];
     [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
   }];
 
@@ -365,6 +367,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
       response.statusCode = HttpStatusOK;
       response.contentType = ContentTypeForPDSRepoFormat(format);
+      [response setHeader:@"Accept" forKey:@"Vary"];
       [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
       return;
     }
@@ -384,6 +387,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     response.statusCode = HttpStatusOK;
     response.contentType = @"application/vnd.ipld.car";
+    [response setHeader:@"Accept" forKey:@"Vary"];
     [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
   }];
 
@@ -805,42 +809,79 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   // com.atproto.sync.listBlobs
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listBlobs handler:^(HttpRequest *request,
                                                 HttpResponse *response) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
-    if (!did) {
-      if (response.statusCode == HttpStatusOK) {
-        response.statusCode = HttpStatusUnauthorized;
-        [response setJsonBody:@{
-          @"error" : @"AuthRequired",
-          @"message" : @"Valid authorization required"
-        }];
-      }
+    NSString *did = [request queryParamForKey:@"did"];
+    if (!validateSyncDIDParam(did, response)) {
+      return;
+    }
+    if (rejectUnavailableSyncDid(did, serviceDatabases, adminController, response)) {
       return;
     }
 
     NSString *limitStr = [request queryParamForKey:@"limit"];
     NSString *cursor = [request queryParamForKey:@"cursor"];
-    NSUInteger limit = limitStr ? [limitStr integerValue] : 500;
-    if (limit > 1000) {
-      limit = 1000;
-    }
-
-    NSError *error = nil;
-    NSArray *blobs = [blobService listBlobsForDID:did
-                                            limit:limit
-                                           cursor:cursor
-                                            error:&error];
-    if (error) {
-      response.statusCode = 400;
+    NSInteger parsedLimit = 500;
+    if (limitStr.length > 0 &&
+        (!parseStrictIntegerString(limitStr, &parsedLimit) ||
+         parsedLimit < 1 || parsedLimit > 1000)) {
+      response.statusCode = HttpStatusBadRequest;
       [response setJsonBody:@{
-        @"error" : @"ListBlobsFailed",
-        @"message" : error.localizedDescription
+        @"error" : @"InvalidRequest",
+        @"message" : @"limit must be an integer between 1 and 1000"
       }];
       return;
     }
 
+    NSInteger parsedCursor = 0;
+    if (cursor.length > 0 &&
+        (!parseStrictIntegerString(cursor, &parsedCursor) || parsedCursor < 0)) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"cursor must be a non-negative integer"
+      }];
+      return;
+    }
+
+    NSError *error = nil;
+    NSUInteger fetchLimit = (NSUInteger)parsedLimit + 1;
+    NSString *normalizedCursor =
+        cursor.length > 0
+            ? [NSString stringWithFormat:@"%ld", (long)parsedCursor]
+            : nil;
+    NSArray<NSDictionary<NSString *, id> *> *blobs =
+        [blobService listBlobsForDID:did
+                                            limit:fetchLimit
+                                           cursor:normalizedCursor
+                                            error:&error];
+    if (!blobs) {
+      response.statusCode = HttpStatusInternalServerError;
+      [response setJsonBody:@{
+        @"error" : @"InternalServerError",
+        @"message" : error.localizedDescription ?: @"Unable to list blobs"
+      }];
+      return;
+    }
+
+    BOOL hasMore = blobs.count > (NSUInteger)parsedLimit;
+    NSUInteger resultCount = MIN(blobs.count, (NSUInteger)parsedLimit);
+    NSMutableArray<NSString *> *cids =
+        [NSMutableArray arrayWithCapacity:resultCount];
+    for (NSUInteger index = 0; index < resultCount; index++) {
+      NSString *cid = blobs[index][@"cid"];
+      if (cid.length > 0) {
+        [cids addObject:cid];
+      }
+    }
+
+    NSMutableDictionary<NSString *, id> *result =
+        [NSMutableDictionary dictionaryWithObject:cids forKey:@"cids"];
+    if (hasMore) {
+      result[@"cursor"] =
+          [NSString stringWithFormat:@"%ld", (long)(parsedCursor + resultCount)];
+    }
+
     response.statusCode = HttpStatusOK;
-    [response setJsonBody:@{@"blobs" : blobs ?: @[]}];
+    [response setJsonBody:result];
   }];
 
   // com.atproto.sync.getBlob
