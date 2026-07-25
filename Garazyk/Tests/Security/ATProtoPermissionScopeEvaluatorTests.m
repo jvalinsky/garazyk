@@ -4,6 +4,7 @@
 #import <XCTest/XCTest.h>
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Security/ATProtoPermissionScope.h"
+#import "Security/ATProtoPermissionSetResolver.h"
 
 @interface ATProtoPermissionScopeEvaluatorTests : XCTestCase
 @end
@@ -48,6 +49,42 @@
   XCTAssertEqual(scopes.count, 2);
 }
 
+#pragma mark - Permission-set expansion
+
+- (void)testExpandsPermissionSetIntoConcreteRepoAndRPCScopes {
+  NSDictionary *schema = @{
+    @"defs" : @{ @"main" : @{
+      @"type" : @"permission-set",
+      @"permissions" : @[
+        @{ @"type" : @"permission", @"resource" : @"repo",
+           @"collection" : @[ @"com.example.calendar.event" ],
+           @"action" : @[ @"create", @"delete" ] },
+        @{ @"type" : @"permission", @"resource" : @"rpc",
+           @"lxm" : @[ @"com.example.calendar.listEvents" ], @"inheritAud" : @YES },
+      ]
+    } }
+  };
+  NSError *error = nil;
+  NSString *effective = [ATProtoPermissionSetResolver effectiveScopeForScope:@"atproto include:example.lexicon.perms?aud=did:web:api.example.com%23calendar"
+                                                         permissionSetSchemas:@{ @"example.lexicon.perms" : schema }
+                                                                        error:&error];
+  XCTAssertNil(error);
+  XCTAssertTrue([effective containsString:@"repo?collection=com.example.calendar.event&action=create&action=delete"]);
+  XCTAssertTrue([effective containsString:@"rpc?lxm=com.example.calendar.listEvents&aud=did:web:api.example.com%23calendar"]);
+}
+
+- (void)testRejectsPermissionSetWithUnsupportedResource {
+  NSDictionary *schema = @{
+    @"defs" : @{ @"main" : @{
+      @"type" : @"permission-set",
+      @"permissions" : @[ @{ @"type" : @"permission", @"resource" : @"blob", @"accept" : @[ @"image/png" ] } ]
+    } }
+  };
+  XCTAssertNil([ATProtoPermissionSetResolver effectiveScopeForScope:@"atproto include:example.lexicon.perms"
+                                               permissionSetSchemas:@{ @"example.lexicon.perms" : schema }
+                                                              error:nil]);
+}
+
 #pragma mark - RPC Scope Evaluation
 
 - (void)testRPCScopeAllowsMatchingMethod {
@@ -78,6 +115,11 @@
 
 - (void)testEmptyScopesFailOpen {
   XCTAssertTrue([ATProtoPermissionScopeEvaluator evaluateRPCScopes:@[] forMethod:@"any.method" audience:nil]);
+}
+
+- (void)testRPCScopeRejectsServiceAuthWithoutMethod {
+  NSArray *scopes = [ATProtoPermissionScopeEvaluator scopesFromScopeString:@"rpc:app.bsky.actor.getProfile?aud=did:web:api.example.com%23appview"];
+  XCTAssertFalse([ATProtoPermissionScopeEvaluator evaluateRPCScopes:scopes forMethod:nil audience:@"did:web:api.example.com#appview"]);
 }
 
 #pragma mark - Repo Scope Evaluation

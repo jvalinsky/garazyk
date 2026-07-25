@@ -169,16 +169,13 @@ upstream spec defines one). `PDSSpaceAppAttestationVerifierTests` covers the
 claim/signature machinery directly plus one real client-metadata-and-JWKS
 network fetch.
 
-**Still deferred, by design: `policy: managing-app`.** Reading the
-`com.atproto.simplespace` lexicons during implementation found that
-`managing-app` is two separable mechanisms: `appAccess#allowList` (client
-attestation, done above) and `policy: managing-app` (delegates membership
-authorization to the managing app's own `checkUserAccess` service-auth XRPC
-endpoint — a service-to-service call, not client attestation, and never
-described by the original disabled-scope note). `policy: managing-app` and
-the bare `managingApp` field remain rejected; enabling them needs a
-`checkUserAccess` client implementation, which is its own separate decision
-and its own scoped work, not blocked by anything here.
+**Complete (2026-07-25): `policy: managing-app`.** The PDS validates the
+`managingApp` DID, resolves its PDS endpoint, mints a service-auth JWT bound
+to `com.atproto.simplespace.checkUserAccess`, and accepts a credential only
+when that endpoint returns `authorized: true`. The generic PDS implementation
+returns a verified default deny, so applications must explicitly implement the
+managing-app endpoint. This is independent from, and layered with,
+`appAccess#allowList` attestation.
 
 ## P6.4 Upstream drift tracking (ongoing)
 

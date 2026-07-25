@@ -8,6 +8,7 @@
 //
 
 #import "Network/XrpcIdentityPack.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcAuthHelper.h"
@@ -42,6 +43,18 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     return [plcUrl isEqualToString:@"mock"] ||
            [plcUrl isEqualToString:@"skip"] ||
            plcUrl.length == 0;
+}
+
+static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
+                               NSString *attribute) {
+    if ([ATProtoPermissionScopeEvaluator evaluateIdentityScopes:request.permissionScopes ?: @[]
+                                                    forAttribute:attribute]) {
+        return YES;
+    }
+    response.statusCode = HttpStatusForbidden;
+    [response setJsonBody:@{ @"error": @"InsufficientScope",
+                             @"message": [NSString stringWithFormat:@"identity:%@ scope is required", attribute] }];
+    return NO;
 }
 
 @implementation XrpcIdentityPack
@@ -263,6 +276,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
             }
             return;
         }
+        if (!XrpcIdentityAllows(request, response, @"*")) return;
 
         PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
         if (!account) {
@@ -310,6 +324,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
             }
             return;
         }
+        if (!XrpcIdentityAllows(request, response, @"*")) return;
 
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *token = body[@"token"];
@@ -502,6 +517,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
             }
             return;
         }
+        if (!XrpcIdentityAllows(request, response, @"*")) return;
 
         NSDictionary *body = request.jsonBody ?: @{};
         NSDictionary *operation = body[@"operation"];
@@ -683,6 +699,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
             }
             return;
         }
+        if (!XrpcIdentityAllows(request, response, @"handle")) return;
 
         // Rate Limiting: configurable via env vars
         RateLimiter *limiter = [RateLimiter sharedLimiter];

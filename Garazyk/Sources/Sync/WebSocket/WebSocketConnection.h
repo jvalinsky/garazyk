@@ -105,6 +105,9 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 /*! WebSocket path. */
 @property(nonatomic, readonly) NSString *path;
 
+/*! Whether the outbound connection uses TLS. */
+@property(nonatomic, readonly, getter=isSecureTLS) BOOL secureTLS;
+
 /*! Query string from the URL. */
 @property(nonatomic, readonly, copy) NSString *queryString;
 
@@ -155,6 +158,10 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 - (instancetype)initWithHost:(NSString *)host
                         port:(uint16_t)port
                         path:(NSString *)path;
+- (instancetype)initWithHost:(NSString *)host
+                        port:(uint16_t)port
+                        path:(NSString *)path
+                   secureTLS:(BOOL)secureTLS;
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection;
 
 /*! Establishes the WebSocket connection. */

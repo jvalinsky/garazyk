@@ -18,6 +18,17 @@
     XCTAssertEqualObjects(connection.path, @"/xrpc/com.atproto.sync.subscribeRepos");
     XCTAssertEqualObjects(connection.queryString, @"");
     XCTAssertNil(connection.queryParams);
+    XCTAssertFalse(connection.secureTLS);
+}
+
+- (void)testSecureConnectionPreservesTLSPolicy {
+    WebSocketConnection *connection =
+        [[WebSocketConnection alloc] initWithHost:@"selfhosted.social"
+                                             port:443
+                                             path:@"/xrpc/com.atproto.sync.subscribeRepos"
+                                        secureTLS:YES];
+
+    XCTAssertTrue(connection.secureTLS);
 }
 
 - (void)testInitWithPathWithCursorQuery {

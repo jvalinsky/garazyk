@@ -16,6 +16,7 @@
 #import "Auth/PDSSecondFactorService.h"
 #import "Auth/Secp256k1.h"
 #import "Core/ATProtoValidator.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
@@ -25,6 +26,18 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
+
+static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse *response) {
+    if ([ATProtoPermissionScopeEvaluator evaluateAccountScopes:request.permissionScopes ?: @[]
+                                                  forAttribute:@"email"
+                                                        action:@"manage"]) {
+        return YES;
+    }
+    response.statusCode = HttpStatusForbidden;
+    [response setJsonBody:@{ @"error": @"InsufficientScope",
+                             @"message": @"account:email?action=manage scope is required" }];
+    return NO;
+}
 
 @implementation XrpcServerPack (AccountManagement)
 
@@ -47,6 +60,7 @@
             }
             return;
         }
+        if (!XrpcAccountAllowsEmailManagement(request, response)) return;
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
@@ -62,6 +76,7 @@
             }
             return;
         }
+        if (!XrpcAccountAllowsEmailManagement(request, response)) return;
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"tokenRequired": @NO}];
@@ -77,6 +92,7 @@
             }
             return;
         }
+        if (!XrpcAccountAllowsEmailManagement(request, response)) return;
 
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *email = body[@"email"];
@@ -115,6 +131,7 @@
             }
             return;
         }
+        if (!XrpcAccountAllowsEmailManagement(request, response)) return;
 
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *email = body[@"email"];
@@ -320,6 +337,17 @@
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Missing or invalid authorization token"}];
             }
+            return;
+        }
+
+        if (![ATProtoPermissionScopeEvaluator evaluateRPCScopes:request.permissionScopes ?: @[]
+                                                       forMethod:lxm
+                                                        audience:aud]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{
+                @"error": @"InsufficientScope",
+                @"message": @"Token scope does not permit the requested service authentication"
+            }];
             return;
         }
 

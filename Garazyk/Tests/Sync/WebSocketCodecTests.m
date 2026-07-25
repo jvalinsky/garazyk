@@ -28,6 +28,19 @@
     XCTAssertEqualObjects(events.firstObject.text, @"Hello");
 }
 
+- (void)testClientFrameIsMaskedAndRoundTrips {
+    self.codec.maskOutgoingFrames = YES;
+
+    NSData *frame = [self.codec textFrame:@"masked"];
+    const uint8_t *bytes = frame.bytes;
+    XCTAssertEqual(bytes[0], 0x81);
+    XCTAssertEqual(bytes[1] & 0x80, 0x80);
+
+    NSArray<WSCodecEvent *> *events = [self.codec feedData:frame];
+    XCTAssertEqual(events.count, 1);
+    XCTAssertEqualObjects(events.firstObject.text, @"masked");
+}
+
 - (void)testBinaryFrame {
     NSData *payload = [@"Binary" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *frame = [self.codec binaryFrame:payload];

@@ -5,11 +5,75 @@
 #import "Network/RateLimiter.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
+#import "Auth/JWT.h"
 
 @interface RepoAuthRepoTests : RepoAuthXrpcTestBase
 @end
 
 @implementation RepoAuthRepoTests
+
+- (NSString *)scopedAccessTokenWithScopes:(NSArray<NSString *> *)scopes {
+    NSError *error = nil;
+    JWT *token = [self.controller.jwtMinter mintAccessTokenForDID:self.did1
+                                                           handle:@"repoauth1.test"
+                                                          scopes:scopes
+                                               dpopKeyThumbprint:nil
+                                                           error:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+    return token.encodedToken;
+}
+
+- (void)testCreateRecordRejectsSignedTokenOutsideRepoScope {
+    NSString *token = [self scopedAccessTokenWithScopes:@[
+        @"atproto", @"repo:app.bsky.graph.follow?action=create",
+    ]];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+                                                      body:@{
+                                                          @"repo": self.did1,
+                                                          @"collection": @"app.bsky.feed.post",
+                                                          @"record": @{
+                                                              @"$type": @"app.bsky.feed.post",
+                                                              @"text": @"outside the granted collection",
+                                                              @"createdAt": [self iso8601String],
+                                                          },
+                                                      }
+                                                   headers:@{ @"authorization": [@"Bearer " stringByAppendingString:token] }];
+    XCTAssertEqual(response.statusCode, HttpStatusForbidden);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InsufficientScope");
+}
+
+- (void)testCreateRecordAcceptsSignedTokenInsideRepoScope {
+    NSString *token = [self scopedAccessTokenWithScopes:@[
+        @"atproto", @"repo:app.bsky.feed.post?action=create",
+    ]];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+                                                      body:@{
+                                                          @"repo": self.did1,
+                                                          @"collection": @"app.bsky.feed.post",
+                                                          @"record": @{
+                                                              @"$type": @"app.bsky.feed.post",
+                                                              @"text": @"inside the granted collection",
+                                                              @"createdAt": [self iso8601String],
+                                                          },
+                                                      }
+                                                   headers:@{ @"authorization": [@"Bearer " stringByAppendingString:token] }];
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+}
+
+- (void)testUploadBlobRejectsSignedTokenOutsideBlobScope {
+    NSString *token = [self scopedAccessTokenWithScopes:@[
+        @"atproto", @"blob:image/png",
+    ]];
+    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.uploadBlob"
+                                                     bodyData:[@"plain text" dataUsingEncoding:NSUTF8StringEncoding]
+                                                      headers:@{
+                                                          @"authorization": [@"Bearer " stringByAppendingString:token],
+                                                          @"content-type": @"text/plain",
+                                                      }];
+    XCTAssertEqual(response.statusCode, HttpStatusForbidden);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InsufficientScope");
+}
 
 - (void)testDeleteRecordReturns401WithoutAuth {
     NSDictionary *record = @{

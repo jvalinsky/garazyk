@@ -5,21 +5,12 @@
 #import "Auth/DPoPUtil.h"
 #import "Compat/PDSTypes.h"
 #import "Security/PDSSecurityCompare.h"
-#import "Security/Space/PDSSpaceScope.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 
 NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
 
 static BOOL OAuthScopeIsValid(NSString *scope) {
-    BOOL containsAtproto = NO;
-    for (NSString *item in [scope componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
-        if (item.length == 0) continue;
-        if ([item isEqualToString:@"atproto"]) {
-            containsAtproto = YES;
-        } else if ([item hasPrefix:@"space:"] && ![PDSSpaceScope scopeWithString:item error:nil]) {
-            return NO;
-        }
-    }
-    return containsAtproto;
+    return [ATProtoPermissionScopeEvaluator validateOAuthScopeString:scope];
 }
 
 @implementation OAuthSession

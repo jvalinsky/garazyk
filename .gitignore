@@ -1,4 +1,4 @@
-# Secrets — never commit real credentials
+# ─── Secrets ──────────────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
@@ -11,40 +11,38 @@ secrets/
 docker/local-network/secrets/
 keys/
 
-# JupyterLite build output
-_output/
-
-# Nix build results
-result/
-
-# Build directories
+# ─── Build Directories ────────────────────────────────────────────────────────
 build/
 build-*/
 build_data/
 DerivedData/
-node_modules/
+compile_commands.json
+static/
 
-# CMake in-source configure artifacts
+# ─── CMake In-Source Artifacts ────────────────────────────────────────────────
 CMakeFiles/
 __cmake_systeminformation/
 cmake_install.cmake
 CMakeCache.txt
+/Testing/
 
-# IDE
-.DS_Store
-.idea/
-*.swp
-*.swo
-*~
-*.tmp
-*.temp
-.ruff_cache/
+# ─── Node / Deno ─────────────────────────────────────────────────────────────
+node_modules/
+deno_compile/
+.cache/deno/
+.pnpm-store/
 
-#tmp_*
+# ─── TypeScript Build ─────────────────────────────────────────────────────────
+*.tsbuildinfo
 
-letta.js
-indigo_research
-# Xcode
+# ─── Python ───────────────────────────────────────────────────────────────────
+search_venv/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+
+# ─── Xcode / Apple ───────────────────────────────────────────────────────────
 *.xcodeproj/
 *.xcworkspace/
 xcuserdata/
@@ -52,48 +50,39 @@ xcuserdata/
 *.pbxuser
 *.mode1v3
 *.mode2v3
-*.mode2v3
 *.perspectivev3
 *.hmap
 *.ipa
 *.dSYM.zip
 *.dSYM
 
-# Cache & Worktrees
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+.DS_Store
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sw[a-p]
+*~
+*.tmp
+*.temp
+tags
+cscope.*
+
+# ─── Build Caches ─────────────────────────────────────────────────────────────
 .cache/
-.worktrees/
-.vitepress/
-docs/.vitepress/dist/
-docs/.vitepress/cache/
+.turbo/
+.swc/
+.parcel-cache/
+.ruff_cache/
 
-# AI / Agentic Development Tools
-# Per github/gitignore PR #4719: ignore user-local config, keep project-level config
-.antigravitycli/
-
-# Claude Code — local user settings only (project commands/skills/hooks are committed)
-.claude/settings.local.json
-.claude/**/*.log
-
-# OpenCode — local caches only (project skills/plans are committed)
-.opencode/node_modules/
-.opencode/package-lock.json
-.opencode/bun.lock
-
-# Agent scratch directories (ephemeral session output)
-.scratch/
-.scratchpad/
-scratchpads/
-.agents/scratchpad/
-matrix_reports/
-
-# Deciduous local state
-.deciduous/deciduous.db
-
-# Data, Logs and State
+# ─── Data, Logs, Runtime State ───────────────────────────────────────────────
 data/
 demo_data/
 germ-data/
 reports/
+report_*/
 test_run_summary.json
 *.log
 *.pid
@@ -105,48 +94,30 @@ config.json
 :memory:-shm
 :memory:-wal
 localdb.sqlite*
-docs/tutorial-site.tar.gz
+blobs/
+reports_out/
+pico.save
 
-# Python virtual environments
-search_venv/
-*.egg-info/
-__pycache__/
-
-# Runtime cache directories
-cache/
-
-# Runtime service databases
+# ─── Runtime Service Databases ───────────────────────────────────────────────
 did_cache/
 sequencer/
 /service/
-# service/ was too broad, ignored Garazyk/Sources/Database/Service/
+plc/
+plc_data/
 
-
-# Docker staging
-docker/local-network/staging/
-
-# Temp files
-health.html
-plan_*.txt
-scratchpad_*.md
-
-# CTest artifacts
-/Testing/
-
-Garazyk/Tests/Blob/debug_blob_test.txt
-
-com.apple.DeveloperTools/
-
-# Coverage files
+# ─── Coverage / Profiling ────────────────────────────────────────────────────
 *.profdata
 *.profraw
 coverage/
 coverage.json
 
-# Agent skill lock file
-skills-lock.json
-
-# Test logs
+# ─── Test Artifacts ───────────────────────────────────────────────────────────
+simulation_data/
+test_data/
+tmp_atproto/
+tmp_social_app/
+scripts/test-results/
+scripts/scenario-dashboard/test-results/
 testing_*_logs.txt
 testing_*_log.txt
 test_output_log_*.txt
@@ -154,48 +125,30 @@ test_*.txt
 tests_*.txt
 *_log.txt
 
-# Test artifacts
-simulation_data/
-test_data/
-tmp_atproto/
-scripts/test-results/
-scripts/scenario-dashboard/test-results/
-tmp_social_app/
-source.tar.gz
+# ─── Fuzzing ──────────────────────────────────────────────────────────────────
+fuzzing/results/
+fuzzing/regression_results/
 
-# Docs generated artifacts
-docs/git-history.json
-docs/graph-data.json
-docs/migration-mapping.json
-docs/metadata/
-docs/node_modules/
-
-# Cadmus build data
-.cadmus/
-
-# Build artifacts
-build_output.txt
-buildServer.json
-*.vsix
-*.bak
-
-# Compiled tutorial binaries
-examples/tutorial-*/tutorial-*
-
-# TypeScript build output
-tooling/vscode-objective-j/out/
-
-# objc-jupyter-wasm build artifacts
+# ─── JupyterLite / WASM ─────────────────────────────────────────────────────
+_output/
 objc-jupyter-wasm/lib/
 objc-jupyter-wasm/dist/
 objc-jupyter-wasm/objc_jupyter_wasm/labextension/
 objc-jupyter-wasm/kernel/*.wasm
 objc-jupyter-wasm/compiler/*.wasm
 
-# Generated docs
+# ─── Docker Staging ───────────────────────────────────────────────────────────
+docker/local-network/staging/
+docker/local-network/sources_cache/
+docker/local-network/oauth-client/dist/
+
+# ─── Documentation Generated ─────────────────────────────────────────────────
 docs/api/
-scripts/docs/api/
-.cache/m.css/
+docs/git-history.json
+docs/graph-data.json
+docs/migration-mapping.json
+docs/metadata/
+docs/node_modules/
 docs/*.html
 docs/*.css
 docs/*.js
@@ -203,32 +156,72 @@ docs/*.ts/
 docs/*.test.ts/
 docs/clients/
 docs/jsr.json/
+docs/tutorial-site.tar.gz
+scripts/docs/api/
 
-# Fuzzing generated output
-fuzzing/results/
-fuzzing/regression_results/
+# ─── AI / Agentic Development Tools ──────────────────────────────────────────
+# Per github/gitignore PR #4719: ignore user-local config, keep project-level
+.antigravitycli/
 
-# Deciduous scratch/state
-.deciduous/scratch/
-.deciduous/plugin.log
+# Claude Code — local user settings only (project commands/skills/hooks are committed)
+.claude/settings.local.json
+.claude/**/*.log
 
-# Runtime test artifacts
-blobs/
-reports_out/
-pico.save
-*.sw[a-p]
-scripts/mcp-pty/corpus/installed.json
-scripts/mcp-pty/corpus/e2e_report*.json
-scripts/mcp-pty/corpus/batch_report.json
-scripts/mcp-pty/corpus/sidecar_batch_report.json
+# OpenCode — local caches only (project skills/plans are committed)
+.opencode/node_modules/
+.opencode/package-lock.json
+.opencode/bun.lock
 
-# Generated audit/result JSON artifacts
+# Pi — agent extensions (local tooling)
+.pi/
+
+# Playwright MCP — session snapshots
+.playwright-mcp/
+
+# Letta — agent memory
+.letta/
+
+# Agent scratch directories (ephemeral session output)
+.scratch/
+.scratchpad/
+scratchpads/
+.agents/scratchpad/
+
+# Deciduous — local state and scratch
+.deciduous/
+
+# ─── Cadmus ───────────────────────────────────────────────────────────────────
+.cadmus/
+
+# ─── Beads ────────────────────────────────────────────────────────────────────
+.beads/
+
+# ─── Temp / Misc ─────────────────────────────────────────────────────────────
+health.html
+plan_*.txt
+scratchpad_*.md
+source.tar.gz
+build_output.txt
+buildServer.json
+*.vsix
+*.bak
+
+# ─── Nix ──────────────────────────────────────────────────────────────────────
+result
+result/
+
+# ─── Compiled Tutorial Binaries ──────────────────────────────────────────────
+examples/tutorial-*/tutorial-*
+
+# ─── VS Code Extension Build ─────────────────────────────────────────────────
+tooling/vscode-objective-j/out/
+
+# ─── Generated Audit / Report Artifacts ───────────────────────────────────────
+matrix_reports/
 Garazyk/audit_results*.json
 Garazyk/batch*_report.json
 tooling/test-audit-validator/batch*_*.json
 tooling/test-audit-validator/repo_scan*.json
-
-# Generated test-audit artifacts
 tooling/test-audit-validator/test-audit-validator
 tooling/test-audit-validator/audit-report.md
 tooling/test-audit-validator/auth_report.md
@@ -237,24 +230,15 @@ tooling/test-audit-validator/batch*_fixes.txt
 tooling/test-audit-validator/batch*_remaining.txt
 tooling/test-audit-validator/.artifacts/
 
-# Deciduous database (local)
-.deciduous/
-plc/
-plc_data/
-!Garazyk/Sources/PLC/
-!Garazyk/Sources/PLC/**
-!Garazyk/Tests/PLC/
-!Garazyk/Tests/PLC/**
-.letta/
+# ─── Script Artifacts ────────────────────────────────────────────────────────
+scripts/mcp-pty/corpus/installed.json
+scripts/mcp-pty/corpus/e2e_report*.json
+scripts/mcp-pty/corpus/batch_report.json
+scripts/mcp-pty/corpus/sidecar_batch_report.json
 
-# OAuth client Vite build output (built in Dockerfile)
-docker/local-network/oauth-client/dist/
-objc-jupyter-wasm/.letta/
-objc-jupyter-wasm/result
-result
-docker/local-network/sources_cache/
-build/
-.beads/
+# ─── Skill Lock ──────────────────────────────────────────────────────────────
+skills-lock.json
 
-# Git worktrees
-.worktrees/
+# ─── Agent Scratchpad / Compat ───────────────────────────────────────────────
+letta.js
+indigo_research
