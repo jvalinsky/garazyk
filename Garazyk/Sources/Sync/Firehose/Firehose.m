@@ -80,6 +80,10 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
                                                           port:port
                                                           path:path
                                                      secureTLS:secureTLS];
+    if (self.accessToken.length > 0) {
+        self.connection.authorizationHeader =
+            [@"Bearer " stringByAppendingString:self.accessToken];
+    }
     self.connection.delegate = self;
 
     NSError *error = nil;

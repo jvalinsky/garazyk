@@ -4,6 +4,7 @@
 #import "Sync/Relay/EventFormatter.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
+#import "Core/ATProtoDagCBOR.h"
 
 @interface EventFormatterTests : XCTestCase
 @property (nonatomic, strong) EventFormatter *formatter;
@@ -237,6 +238,88 @@
     XCTAssertEqualObjects(EventFormatterErrorDomain, @"com.atproto.pds.eventformatter");
     XCTAssertEqual(EventFormatterErrorCodeEncodingFailed, 5000);
     XCTAssertEqual(EventFormatterErrorCodeDecodingFailed, 5001);
+}
+
+- (void)testDecodeRejectsOversizedFrame {
+    NSMutableData *data = [NSMutableData dataWithLength:(1024 * 1024) + 1];
+    NSError *error = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:data
+                                                             op:nil
+                                                        msgType:nil
+                                                           error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, EventFormatterErrorCodeDecodingFailed);
+}
+
+- (void)testDecodeRejectsHeaderWithUnboundedMapLength {
+    const uint8_t bytes[] = {0xBA, 0x00, 0x00, 0x13, 0x89};
+    NSData *data = [NSData dataWithBytes:bytes length:sizeof(bytes)];
+    NSError *error = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:data
+                                                             op:nil
+                                                        msgType:nil
+                                                           error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+}
+
+- (void)testDecodeRejectsExcessiveHeaderNesting {
+    NSMutableData *data = [NSMutableData data];
+    const uint8_t mapStart[] = {0xA1, 0x61, 0x78};
+    [data appendBytes:mapStart length:sizeof(mapStart)];
+    uint8_t arrayStart = 0x81;
+    for (NSUInteger index = 0; index < 34; index++) {
+        [data appendBytes:&arrayStart length:1];
+    }
+    uint8_t nullValue = 0xF6;
+    [data appendBytes:&nullValue length:1];
+
+    NSError *error = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:data
+                                                             op:nil
+                                                        msgType:nil
+                                                           error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+}
+
+- (void)testDecodeRejectsUnboundedPayloadContainer {
+    NSError *error = nil;
+    NSData *header = [ATProtoDagCBOR encodeObject:@{
+        @"op": @1,
+        @"t": @"#commit",
+    } error:&error];
+    XCTAssertNotNil(header);
+
+    NSMutableData *frame = [header mutableCopy];
+    const uint8_t oversizedArray[] = {0x9A, 0x00, 0x00, 0x13, 0x89};
+    [frame appendBytes:oversizedArray length:sizeof(oversizedArray)];
+
+    NSDictionary *decoded = [self.formatter decodeEventFromData:frame
+                                                             op:nil
+                                                        msgType:nil
+                                                           error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+}
+
+- (void)testDecodeRejectsNonMapPayload {
+    NSError *error = nil;
+    NSData *header = [ATProtoDagCBOR encodeObject:@{
+        @"op": @1,
+        @"t": @"#commit",
+    } error:&error];
+    NSMutableData *frame = [header mutableCopy];
+    uint8_t emptyArray = 0x80;
+    [frame appendBytes:&emptyArray length:1];
+
+    NSDictionary *decoded = [self.formatter decodeEventFromData:frame
+                                                             op:nil
+                                                        msgType:nil
+                                                           error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
 }
 
 #pragma mark - Seq Round-Trip Tests
