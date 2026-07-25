@@ -8,6 +8,9 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #import "GZCrashReporter.h"
 #import <signal.h>
 #import <unistd.h>
