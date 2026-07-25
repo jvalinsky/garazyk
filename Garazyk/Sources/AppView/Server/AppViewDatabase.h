@@ -321,9 +321,6 @@ extern NSString * const AppViewDatabaseErrorDomain;
  @param cid          Commit CID (may be nil for non-commit events).
  @param rawEnvelope  Raw CBOR envelope bytes.
  */
-/**
- * @abstract Performs the logEvent operation.
- */
 - (BOOL)logEvent:(int64_t)seq
               did:(nullable NSString *)did
               rev:(nullable NSString *)rev
@@ -478,9 +475,6 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
  @return Dictionary with uri, cid, value, did, collection, rkey; or nil if not found.
  */
-/**
- * @abstract Performs the getRecordWithURI operation.
- */
 - (nullable NSDictionary *)getRecordWithURI:(NSString *)uri
                                        did:(NSString *)did
                                 collection:(NSString *)collection
@@ -499,9 +493,6 @@ extern NSString * const AppViewDatabaseErrorDomain;
  @param error     On failure, describes the problem.
 
  @return Dictionary with "records" array and optional "cursor" for next page.
- */
-/**
- * @abstract Performs the listRecordsForCollection operation.
  */
 - (nullable NSDictionary *)listRecordsForCollection:(NSString *)collection
                                                 did:(nullable NSString *)did

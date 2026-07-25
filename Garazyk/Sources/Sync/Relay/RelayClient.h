@@ -43,13 +43,7 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 - (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event;
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event;
 - (void)relayClientDidConnect:(RelayClient *)client;
-/**
- * @abstract Performs the relayClient operation.
- */
 - (void)relayClient:(RelayClient *)client didDisconnectWithError:(nullable NSError *)error;
-/**
- * @abstract Performs the relayClient operation.
- */
 - (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor;
 @end
 

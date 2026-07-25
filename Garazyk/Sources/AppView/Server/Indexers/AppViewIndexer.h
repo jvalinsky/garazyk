@@ -53,9 +53,6 @@ NS_ASSUME_NONNULL_BEGIN
  @param error       On validation failure, describes the problem.
  @return YES if indexed successfully, NO on validation or storage failure.
  */
-/**
- * @abstract Performs the indexRecord operation.
- */
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection

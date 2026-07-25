@@ -92,9 +92,6 @@ typedef id<ATProtoNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUI
  */
 - (instancetype)initWithPort:(NSUInteger)port;
 
-/**
- * @abstract Performs the initWithPort operation.
- */
 - (instancetype)initWithPort:(NSUInteger)port
              listenerFactory:(PDSWebSocketListenerFactory)listenerFactory;
 
@@ -110,9 +107,6 @@ typedef id<ATProtoNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUI
  @discussion After calling this method, the server listens on its port and
  invokes connectionHandler for each accepted connection. The port property
  is valid after success.
- */
-/**
- * @abstract Performs the startWithError operation.
  */
 - (BOOL)startWithError:(NSError **)error;
 
@@ -138,9 +132,6 @@ typedef id<ATProtoNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUI
  @discussion Called by HttpServer when an HTTP upgrade request is received.
  The transport is wrapped in a PDSWebSocketNetworkAdapter if needed, then
  passed to the connectionHandler.
- */
-/**
- * @abstract Performs the delegateNewTransport operation.
  */
 - (void)delegateNewTransport:(id<PDSWebSocketTransport>)transport forPath:(NSString *)path;
 
