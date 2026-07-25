@@ -82,6 +82,9 @@ docs/.vitepress/cache/
 # Agent scratch directories (ephemeral session output)
 .scratch/
 .scratchpad/
+scratchpads/
+.agents/scratchpad/
+matrix_reports/
 
 # Deciduous local state
 .deciduous/deciduous.db
