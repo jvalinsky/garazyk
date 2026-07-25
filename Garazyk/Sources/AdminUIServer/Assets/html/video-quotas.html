@@ -1,0 +1,13 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>DID</th><th>Usage</th><th>Limit</th></tr></thead><tbody>
+{{#quotas}}
+<tr><td class="text-mono text-sm">{{did}}</td><td>{{usage}}</td><td>{{limit}}</td></tr>
+{{/quotas}}
+{{^quotas}}
+<tr><td colspan="3" class="text-center text-secondary p-lg">No quota usage data.</td></tr>
+{{/quotas}}
+</tbody></table>
+{{/error}}

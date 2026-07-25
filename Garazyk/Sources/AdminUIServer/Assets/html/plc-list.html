@@ -1,0 +1,16 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>DID</th></tr></thead><tbody>
+{{#mappedDids}}
+<tr><td class="text-mono text-xs">{{did}}</td></tr>
+{{/mappedDids}}
+{{^mappedDids}}
+<tr><td class="text-center text-secondary p-lg">No DIDs found.</td></tr>
+{{/mappedDids}}
+</tbody></table>
+{{#cursor}}
+<div class="mt-sm"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/plc-list?cursor={{cursor}}" hx-target="#plc-list">Load More</button></div>
+{{/cursor}}
+{{/error}}

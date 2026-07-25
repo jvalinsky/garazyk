@@ -1,0 +1,11 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<form class="form mb-lg" data-ui-form="upsert-ozone-set"><div class="form-group"><label for="create-set-name">Set Name:</label><input type="text" id="create-set-name" class="form-input" placeholder="Enter set name"></div><div class="form-group"><label for="create-set-desc">Description:</label><input type="text" id="create-set-desc" class="form-input" placeholder="Enter description"></div><button type="submit" class="btn btn-primary btn-sm">Create Set</button></form>
+<table class="table"><thead><tr><th>Name</th><th>Description</th><th>Size</th><th>Actions</th></tr></thead><tbody>
+{{#sets}}
+<tr><td>{{name}}</td><td>{{description}}</td><td>{{size}}</td><td><button class="btn btn-destructive btn-sm" data-ui-action="delete-ozone-set" data-ui-name="{{name}}">Delete</button></td></tr>
+{{/sets}}
+</tbody></table>
+{{/error}}

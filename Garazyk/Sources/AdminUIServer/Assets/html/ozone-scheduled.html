@@ -1,0 +1,17 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="mb-lg"><form class="form" data-ui-form="schedule-ozone-action"><div class="form-group"><label for="schedule-subject-did">Subject DID(s):</label><input type="text" id="schedule-subject-did" class="form-input" placeholder="did:plc:..."/></div><div class="form-group"><label for="schedule-action-type">Action Type:</label><select id="schedule-action-type" class="form-input"><option value="takedown">Takedown</option></select></div><button type="submit" class="btn btn-primary btn-sm">Schedule Action</button></form></div>
+<table class="table"><thead><tr><th>Subject</th><th>Action</th><th>Status</th><th>Execute At</th><th>Actions</th></tr></thead><tbody>
+{{#actions}}
+<tr><td class="text-mono text-xs">{{subject}}</td><td>{{action}}</td><td><span class="badge">{{status}}</span></td><td>{{executeAt}}</td><td><button class="btn btn-sm btn-destructive" data-ui-action="cancel-scheduled-action" data-ui-subject="{{subject}}">Cancel</button></td></tr>
+{{/actions}}
+{{^actions}}
+<tr><td colspan="5" class="text-center text-secondary p-lg">No scheduled actions.</td></tr>
+{{/actions}}
+</tbody></table>
+{{#cursor}}
+<div class="mt-sm"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/ozone-scheduled?cursor={{cursor}}" hx-target="#ozone-scheduled">Load More</button></div>
+{{/cursor}}
+{{/error}}

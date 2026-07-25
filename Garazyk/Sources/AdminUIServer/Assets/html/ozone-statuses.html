@@ -1,0 +1,13 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>DID</th><th>Status</th><th>Updated</th></tr></thead><tbody>
+{{#subjectStatuses}}
+<tr><td class="text-mono text-sm">{{did}}</td><td>{{reviewState}}</td><td class="text-sm">{{updatedAt}}</td></tr>
+{{/subjectStatuses}}
+</tbody></table>
+{{#cursor}}
+<div class="mt-sm"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/ozone-statuses?cursor={{cursor}}" hx-target="#ozone-statuses">Load more</button></div>
+{{/cursor}}
+{{/error}}

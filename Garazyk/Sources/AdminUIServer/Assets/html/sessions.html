@@ -1,0 +1,10 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>ID</th><th>Device</th><th>Created</th><th>Actions</th></tr></thead><tbody>
+{{#sessions}}
+<tr><td class="text-mono text-sm">{{id}}</td><td>{{deviceInfo}}</td><td class="text-sm">{{createdAt}}</td><td><button class="btn btn-destructive btn-sm" data-ui-action="revoke-session" data-ui-did="{{did}}" data-ui-session-id="{{id}}">Revoke</button></td></tr>
+{{/sessions}}
+</tbody></table>
+{{/error}}
