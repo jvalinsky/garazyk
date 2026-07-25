@@ -16,8 +16,12 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
+
+static const NSUInteger kRelayInventoryPageLimit = 1000;
+static const NSUInteger kRelayInventoryMaximumPages = 10000;
 
 @interface RelayDownstreamHandler ()
 @property (nonatomic, strong) RelayEventBuffer *eventBuffer;
@@ -25,6 +29,8 @@
 @property (nonatomic, assign) int64_t currentSequence;
 @property (nonatomic, strong) NSMutableArray<id<ATProtoNetworkConnection>> *downstreamConnections;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t handlerQueue;
+@property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
+@property (nonatomic, strong) NSMutableSet<NSString *> *bootstrappingUpstreams;
 @end
 
 @implementation RelayDownstreamHandler
@@ -49,6 +55,8 @@
         _currentSequence = 0;
         _downstreamConnections = [NSMutableArray array];
         _handlerQueue = dispatch_queue_create("com.atproto.relay.downstream", DISPATCH_QUEUE_SERIAL);
+        _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
+        _bootstrappingUpstreams = [NSMutableSet set];
         GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler initialized %p", self);
     }
     return self;
@@ -69,6 +77,14 @@
         GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event of class %@", NSStringFromClass([event class]));
         if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
             FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
+
+            NSString *rootCID = commitEvent.commit.stringValue;
+            if (self.repoStateManager && commitEvent.repo.length > 0 && rootCID.length > 0) {
+                [self.repoStateManager handleCommitForRepo:commitEvent.repo
+                                                      root:rootCID
+                                                        rev:commitEvent.rev ?: @""
+                                                        seq:(int64_t)commitEvent.seq];
+            }
             
             // Just broadcast. Re-sequencing happens in SubscribeReposHandler/Session.
             if (self.subscribeReposHandler) {
@@ -132,6 +148,13 @@
 - (void)upstreamManager:(RelayUpstreamManager *)manager
     didConnectToUpstream:(NSString *)url {
     GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Connected to upstream %@", url);
+    dispatch_async(self.handlerQueue, ^{
+        if (!self.repoStateManager || url.length == 0 || [self.bootstrappingUpstreams containsObject:url]) {
+            return;
+        }
+        [self.bootstrappingUpstreams addObject:url];
+        [self fetchRepoInventoryFromUpstream:url cursor:nil pageNumber:1 seenCursors:[NSMutableSet set]];
+    });
 }
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
@@ -155,6 +178,147 @@
         return self.subscribeReposHandler.attachedConnections.count;
     }
     return 0;
+}
+
+#pragma mark - Repository Inventory Bootstrap
+
+- (nullable NSURL *)repoInventoryURLForUpstream:(NSString *)upstreamURL
+                                          cursor:(nullable NSString *)cursor {
+    NSURLComponents *components = [NSURLComponents componentsWithString:upstreamURL];
+    NSString *scheme = components.scheme.lowercaseString;
+    if ([scheme isEqualToString:@"wss"]) {
+        components.scheme = @"https";
+    } else if ([scheme isEqualToString:@"ws"]) {
+        components.scheme = @"http";
+    }
+
+    if (components.host.length == 0 || components.scheme.length == 0) {
+        return nil;
+    }
+
+    components.path = @"/xrpc/com.atproto.sync.listRepos";
+    NSMutableArray<NSURLQueryItem *> *queryItems = [NSMutableArray arrayWithObject:
+        [NSURLQueryItem queryItemWithName:@"limit"
+                                     value:[NSString stringWithFormat:@"%lu", (unsigned long)kRelayInventoryPageLimit]]];
+    if (cursor.length > 0) {
+        [queryItems addObject:[NSURLQueryItem queryItemWithName:@"cursor" value:cursor]];
+    }
+    components.queryItems = queryItems;
+    return components.URL;
+}
+
+- (void)fetchRepoInventoryFromUpstream:(NSString *)upstreamURL
+                                cursor:(nullable NSString *)cursor
+                            pageNumber:(NSUInteger)pageNumber
+                           seenCursors:(NSMutableSet<NSString *> *)seenCursors {
+    NSURL *inventoryURL = [self repoInventoryURLForUpstream:upstreamURL cursor:cursor];
+    if (!inventoryURL) {
+        GZ_LOG_SYNC_WARN(@"Relay inventory: invalid upstream URL %@", upstreamURL);
+        [self.bootstrappingUpstreams removeObject:upstreamURL];
+        return;
+    }
+
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:inventoryURL];
+    request.HTTPMethod = @"GET";
+    request.timeoutInterval = 15.0;
+
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.timeout = 15.0;
+    options.maxResponseBytes = 2 * 1024 * 1024;
+    options.allowHTTP = [inventoryURL.scheme.lowercaseString isEqualToString:@"http"];
+    options.followRedirects = NO;
+
+    __weak typeof(self) weakSelf = self;
+    [self.safeHTTPClient performSafeDataTaskWithRequest:request
+                                                options:options
+                                             completion:^(NSData * _Nullable data,
+                                                          NSHTTPURLResponse * _Nullable response,
+                                                          NSError * _Nullable error) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) {
+            return;
+        }
+
+        dispatch_async(strongSelf.handlerQueue, ^{
+            if (error || response.statusCode != 200 || data.length == 0) {
+                GZ_LOG_SYNC_WARN(@"Relay inventory: failed to fetch %@ (status=%ld, error=%@)",
+                                 inventoryURL.absoluteString,
+                                 (long)response.statusCode,
+                                 error.localizedDescription ?: @"none");
+                [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
+                return;
+            }
+
+            NSError *parseError = nil;
+            id decoded = [NSJSONSerialization JSONObjectWithData:data options:0 error:&parseError];
+            if (![decoded isKindOfClass:[NSDictionary class]]) {
+                GZ_LOG_SYNC_WARN(@"Relay inventory: invalid response from %@: %@",
+                                 inventoryURL.absoluteString,
+                                 parseError.localizedDescription ?: @"expected JSON object");
+                [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
+                return;
+            }
+
+            NSDictionary *inventory = (NSDictionary *)decoded;
+            NSUInteger applied = [strongSelf applyRepoInventoryPage:inventory];
+            NSString *nextCursor = [inventory[@"cursor"] isKindOfClass:[NSString class]] ? inventory[@"cursor"] : nil;
+            if (nextCursor.length == 0) {
+                GZ_LOG_SYNC_INFO(@"Relay inventory: completed %@ after %lu page(s)",
+                                 upstreamURL,
+                                 (unsigned long)pageNumber);
+                [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
+                return;
+            }
+
+            if (pageNumber >= kRelayInventoryMaximumPages || [seenCursors containsObject:nextCursor]) {
+                GZ_LOG_SYNC_WARN(@"Relay inventory: stopped %@ at page %lu due to invalid pagination",
+                                 upstreamURL,
+                                 (unsigned long)pageNumber);
+                [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
+                return;
+            }
+
+            [seenCursors addObject:nextCursor];
+            GZ_LOG_SYNC_INFO(@"Relay inventory: loaded %lu repo(s) from %@ page %lu",
+                             (unsigned long)applied,
+                             upstreamURL,
+                             (unsigned long)pageNumber);
+            [strongSelf fetchRepoInventoryFromUpstream:upstreamURL
+                                                cursor:nextCursor
+                                            pageNumber:pageNumber + 1
+                                           seenCursors:seenCursors];
+        });
+    }];
+}
+
+- (NSUInteger)applyRepoInventoryPage:(NSDictionary *)inventory {
+    NSArray *repos = [inventory[@"repos"] isKindOfClass:[NSArray class]] ? inventory[@"repos"] : nil;
+    if (!repos || !self.repoStateManager) {
+        return 0;
+    }
+
+    NSUInteger applied = 0;
+    for (id item in repos) {
+        if (![item isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+
+        NSDictionary *repo = (NSDictionary *)item;
+        NSString *did = [repo[@"did"] isKindOfClass:[NSString class]] ? repo[@"did"] : nil;
+        NSString *head = [repo[@"head"] isKindOfClass:[NSString class]] ? repo[@"head"] : nil;
+        NSString *rev = [repo[@"rev"] isKindOfClass:[NSString class]] ? repo[@"rev"] : @"";
+        if (did.length == 0 || head.length == 0) {
+            continue;
+        }
+
+        [self.repoStateManager handleCommitForRepo:did root:head rev:rev seq:0];
+        NSNumber *active = [repo[@"active"] isKindOfClass:[NSNumber class]] ? repo[@"active"] : nil;
+        if (active && !active.boolValue) {
+            [self.repoStateManager handleAccountEventForRepo:did status:RelayRepoStatusDesynchronized];
+        }
+        applied++;
+    }
+    return applied;
 }
 
 @end
