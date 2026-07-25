@@ -6,7 +6,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Default session TTL in seconds (8 hours)
+/**
+ * @abstract Default session TTL in seconds (8 hours).
+ */
 extern const NSTimeInterval kUIAuthDefaultSessionTTL;
 
 /**
@@ -14,60 +16,76 @@ extern const NSTimeInterval kUIAuthDefaultSessionTTL;
  */
 @interface UIAuthManager : NSObject
 
-/// Session TTL in seconds. Default is 8 hours (28800).
+/**
+ * @abstract Session TTL in seconds. Default is 8 hours (28800).
+ */
 @property (nonatomic, assign) NSTimeInterval sessionTTL;
 
 - (instancetype)initWithPassword:(NSString *)password;
 
-/// Validate a password against the stored PBKDF2 hash. Uses constant-time comparison.
 /**
- * @abstract Validate password.
+ * @abstract Validate a password against the stored PBKDF2 hash using constant-time comparison.
  * @param password Plaintext password to verify.
  * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)validatePassword:(NSString *)password;
 
-/// Create a cryptographically random session token. The token itself is returned
-/// (for the cookie), but only its SHA-256 hash is stored in memory.
+/**
+ * @abstract Create a cryptographically random session token.
+ * @discussion The token itself is returned (for the cookie), but only its SHA-256 hash is stored in memory.
+ * @return The plaintext session token.
+ */
 - (NSString *)createSessionToken;
 
-/// Invalidate a session token by its plaintext value.
 /**
- * @abstract Invalidate session token.
+ * @abstract Invalidate a session token by its plaintext value.
  * @param token Session token.
  */
 - (void)invalidateSessionToken:(NSString *)token;
 
-/// Check if a request carries a valid, non-expired session token.
+/**
+ * @abstract Check if a request carries a valid, non-expired session token.
+ * @param request The HTTP request to check.
+ * @return YES if authorized; otherwise NO.
+ */
 - (BOOL)isAuthorizedRequest:(HttpRequest *)request;
 
-/// Extract token from Authorization header or ui_admin_token cookie.
+/**
+ * @abstract Extract token from Authorization header or ui_admin_token cookie.
+ * @param request The HTTP request.
+ * @return The extracted token, or nil.
+ */
 - (nullable NSString *)extractTokenFromRequest:(HttpRequest *)request;
 
-/// Build a Set-Cookie header value for the session token with security attributes.
-/// @param token The plaintext session token
-/// @param secure Whether to set the Secure flag (should be YES when behind TLS)
 /**
- * @abstract Cookie header value for token.
- * @param token Session token.
- * @param secure Whether the cookie should use the Secure attribute.
+ * @abstract Build a Set-Cookie header value for the session token with security attributes.
+ * @param token The plaintext session token.
+ * @param secure Whether the cookie should use the Secure attribute (should be YES when behind TLS).
  * @return The requested string, or nil when unavailable.
  */
 - (NSString *)cookieHeaderValueForToken:(NSString *)token secure:(BOOL)secure;
 
-/// Validate CSRF nonce: the X-UI-Admin-Nonce header must match the nonce
-/// cookie value. Returns YES if the check passes or if no nonce is present.
+/**
+ * @abstract Validate CSRF nonce.
+ * @discussion The X-UI-Admin-Nonce header must match the nonce cookie value. Returns YES if the check passes or if no nonce is present.
+ * @param request The HTTP request.
+ * @return YES if valid or absent; otherwise NO.
+ */
 - (BOOL)validateCSRFForRequest:(HttpRequest *)request;
 
-/// Generate a new CSRF nonce and return the Set-Cookie header value.
 /**
- * @abstract Create csrfnonce cookie.
+ * @abstract Generate a new CSRF nonce and return the Set-Cookie header value.
  * @param secure Whether the cookie should use the Secure attribute.
  * @return The requested string, or nil when unavailable.
  */
 - (NSString *)createCSRFNonceCookie:(BOOL)secure;
 
-/// Generate a new CSRF nonce and return both the raw value and the Set-Cookie header.
+/**
+ * @abstract Generate a new CSRF nonce and return both the raw value and the Set-Cookie header.
+ * @param outNonce Pointer to receive the raw nonce.
+ * @param outCookie Pointer to receive the Set-Cookie header.
+ * @param secure Whether the cookie should use the Secure attribute.
+ */
 - (void)createCSRFNonce:(NSString * _Nonnull * _Nonnull)outNonce
                  cookie:(NSString * _Nonnull * _Nonnull)outCookie
                  secure:(BOOL)secure;

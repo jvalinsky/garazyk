@@ -64,9 +64,6 @@ extern NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain;
  @param error Output parameter for registration errors.
  @return YES if all routes registered successfully, NO on failure.
  */
-/**
- * @abstract Performs the registerDynamicEndpointsWithError operation.
- */
 - (BOOL)registerDynamicEndpointsWithError:(NSError **)error;
 
 /*!

@@ -30,9 +30,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AppViewGraphIndexer : NSObject <AppViewIndexer>
 
-/**
- * @abstract Performs the initWithDatabase operation.
- */
 - (instancetype)initWithDatabase:(AppViewDatabase *)database
                     relevanceSet:(nullable AppViewRelevanceSet *)relevanceSet
                     graphService:(nullable GraphService *)graphService;

@@ -211,21 +211,12 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
 // Internal methods (for delegate callbacks)
 // ---------------------------------------------------------------------------
 
-/**
- * @abstract Performs the _handleCommitEvent operation.
- */
 - (void)_handleCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL;
-/**
- * @abstract Performs the _handleIdentityEvent operation.
- */
 - (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL;
 /**
  * @abstract Handles an account event from the relay firehose.
  */
 - (void)_handleAccountEvent:(FirehoseAccountEvent *)event fromRelay:(NSString *)relayURL;
-/**
- * @abstract Performs the _relayConnection operation.
- */
 - (void)_relayConnection:(id)connection didConnectAtSeq:(int64_t)seq;
 
 @end

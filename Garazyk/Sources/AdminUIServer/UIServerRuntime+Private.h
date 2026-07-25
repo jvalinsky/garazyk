@@ -13,7 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 #define AUTH_GUARD(weakSelf, req, res) \
     if (![weakSelf ensureAuthorized:(req) response:(res)]) return;
 
-/// Shared helpers used across UIServerRuntime's implementation files.
+/**
+ * @abstract Shared helpers used across UIServerRuntime's implementation files.
+ */
 NSString *UIEscaped(NSString *value);
 NSString * _Nullable UIStringFromDict(NSDictionary *dict, NSString *key);
 NSString *UISafe(id value, NSString *fallback);
@@ -35,14 +37,18 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 
 @end
 
-/// Static browser asset serving. Implemented in UIServerRuntime+StaticAssets.m.
+/**
+ * @abstract Static browser asset serving. Implemented in UIServerRuntime+StaticAssets.m.
+ */
 @interface UIServerRuntime (StaticAssets)
 
 - (void)serveStaticAssetForPath:(NSString *)path response:(HttpResponse *)response;
 
 @end
 
-/// Admin-panel HTML partial renderers. Implemented in UIServerRuntime+Renderers.m.
+/**
+ * @abstract Admin-panel HTML partial renderers. Implemented in UIServerRuntime+Renderers.m.
+ */
 @interface UIServerRuntime (Renderers)
 - (NSString *)renderAccountsPartial:(NSDictionary *)result;
 - (NSString *)renderInvitesPartial:(NSDictionary *)result;

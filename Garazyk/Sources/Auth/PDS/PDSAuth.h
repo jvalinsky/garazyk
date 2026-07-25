@@ -1,15 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-/*!
- @file PDSAuth.h
-
- @abstract PDS-specific adapters for OAuthProvider and AuthVerifier.
-
- @discussion This module provides PDS-specific implementations of the protocols
- required by OAuthProvider and AuthVerifier. It bridges the generic interfaces
- to PDSDatabase, PDSAccountService, JWTMinter, etc.
-
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+/**
+ * @abstract PDS-specific adapters for OAuthProvider and AuthVerifier.
+ *
+ * @discussion This module provides PDS-specific implementations of the protocols
+ * required by OAuthProvider and AuthVerifier. It bridges the generic interfaces
+ * to PDSDatabase, PDSAccountService, JWTMinter, etc.
  */
 
 #import <Foundation/Foundation.h>
@@ -21,91 +17,81 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSAccountService;
 @class JWTMinter;
 
-/*!
- @class PDSAuthStorage
- 
- @abstract PDS implementation of OAuthProviderStorage.
- 
- @discussion Uses PDSDatabase for persistence of PAR, authorization codes,
- refresh tokens, and user consents.
+/**
+ * @abstract PDS implementation of OAuthProviderStorage.
+ *
+ * @discussion Uses PDSDatabase for persistence of PAR, authorization codes,
+ * refresh tokens, and user consents.
  */
 @interface PDSAuthStorage : NSObject <OAuthProviderStorage>
 
-/*!
- @brief Initialize with PDS database.
+/**
+ * @abstract Initialize with PDS database.
  */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
 @end
 
 
-/*!
- @class PDSAuthClientRegistry
- 
- @abstract PDS implementation of OAuthProviderClientRegistry.
- 
- @discussion Looks up clients in PDSDatabase and validates redirect URIs.
+/**
+ * @abstract PDS implementation of OAuthProviderClientRegistry.
+ *
+ * @discussion Looks up clients in PDSDatabase and validates redirect URIs.
  */
 @interface PDSAuthClientRegistry : NSObject <OAuthProviderClientRegistry>
 
-/*!
- @brief Initialize with PDS database.
+/**
+ * @abstract Initialize with PDS database.
  */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
 @end
 
 
-/*!
- @class PDSAuthTokenSigner
- 
- @abstract PDS implementation of OAuthProviderTokenSigner.
- 
- @discussion Uses JWTMinter for JWT signing and provides JWKS.
+/**
+ * @abstract PDS implementation of OAuthProviderTokenSigner.
+ *
+ * @discussion Uses JWTMinter for JWT signing and provides JWKS.
  */
 @interface PDSAuthTokenSigner : NSObject <OAuthProviderTokenSigner>
 
-/*!
- @brief Initialize with JWT minter.
+/**
+ * @abstract Initialize with JWT minter.
  */
 - (instancetype)initWithJWTMinter:(JWTMinter *)minter issuer:(NSString *)issuer;
 
 @end
 
 
-/*!
- @class PDSAuthUserAuthenticator
- 
- @abstract PDS implementation of OAuthProviderUserAuthenticator.
- 
- @discussion Uses PDSAccountService for password/2FA verification.
+/**
+ * @abstract PDS implementation of OAuthProviderUserAuthenticator.
+ *
+ * @discussion Uses PDSAccountService for password/2FA verification.
  */
 @interface PDSAuthUserAuthenticator : NSObject <OAuthProviderUserAuthenticator>
 
-/*!
- @brief Initialize with account service.
+/**
+ * @abstract Initialize with account service.
  */
 - (instancetype)initWithAccountService:(PDSAccountService *)accountService;
 
 @end
 
 
-/*!
- @class PDSAccountPolicy
- 
- @abstract PDS implementation of AccountPolicy.
- 
- @discussion Checks account takedown status and admin privileges via PDSAdminController.
+/**
+ * @abstract PDS implementation of AccountPolicy.
+ *
+ * @discussion Checks account takedown status and admin privileges via PDSAdminController.
  */
 @interface PDSAccountPolicy : NSObject <AccountPolicy>
 
-/*!
- @brief Initialize with PDS database.
+/**
+ * @abstract Initialize with PDS database.
  */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
-/*!
- @brief Set the admin controller for admin checks.
+/**
+ * @abstract Set the admin controller for admin checks.
  */
 - (void)setAdminController:(id)adminController;
 

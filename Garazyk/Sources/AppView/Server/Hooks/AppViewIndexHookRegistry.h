@@ -70,9 +70,6 @@ NS_ASSUME_NONNULL_BEGIN
  @param did        The DID of the repo.
  @param collection The collection NSID.
  */
-/**
- * @abstract Performs the fireDidIndexRecord operation.
- */
 - (void)fireDidIndexRecord:(NSDictionary *)record
                        uri:(NSString *)uri
                         did:(NSString *)did

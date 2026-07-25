@@ -66,9 +66,6 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
 
  @return YES if the request is authenticated, NO otherwise.
  */
-/**
- * @abstract Performs the validateRequest operation.
- */
 - (BOOL)validateRequest:(HttpRequest *)request
               callerDID:(NSString *_Nullable *_Nullable)callerDID
                    error:(NSError **)error;
@@ -101,9 +98,6 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
  @param error         Output parameter for validation errors.
 
  @return YES if the DPoP proof is valid and binding matches, NO otherwise.
- */
-/**
- * @abstract Performs the validateDPoPProof operation.
  */
 - (BOOL)validateDPoPProof:(HttpRequest *)request
                     token:(NSString *)token
