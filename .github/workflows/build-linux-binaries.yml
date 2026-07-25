@@ -8,49 +8,35 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [kaszlak, campagnola, zuk, syrena]
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install dependencies
+      - name: Build against the supported GNUstep runtime
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            pkg-config \
-            libcurl4-openssl-dev \
-            libssl-dev \
-            libsqlite3-dev \
-            libxml2-dev \
-            libxslt1-dev \
-            libqrencode-dev \
-            libffi-dev \
-            libblocksruntime-dev \
-            libobjc-12-dev \
-            libgnustep-base-dev \
-            gnustep-devel \
-            clang
-          sudo install -d /usr/local/include/objc
-          sudo ln -sf /usr/include/Block.h /usr/local/include/objc/blocks_runtime.h
+          docker build \
+            --file docker/Dockerfile.gnustep \
+            --target builder \
+            --tag garazyk-linux-builder \
+            .
 
-      - name: Configure and build ${{ matrix.target }}
+      - name: Extract release binaries
         run: |
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Release ..
-          make ${{ matrix.target }} -j$(nproc)
+          container_id="$(docker create garazyk-linux-builder)"
+          trap 'docker rm -f "$container_id" >/dev/null 2>&1 || true' EXIT
+          mkdir binaries
+          for target in kaszlak campagnola zuk syrena; do
+            docker cp "$container_id:/src/build/bin/$target" "binaries/$target"
+          done
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-binary-${{ matrix.target }}
-          path: build/bin/${{ matrix.target }}
+          name: linux-binaries
+          path: binaries
           retention-days: 30
 
   create-release:
@@ -64,9 +50,8 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: linux-binary-*
+          name: linux-binaries
           path: binaries
-          merge-multiple: true
 
       - name: Create Release
         uses: actions/create-release@v1
@@ -74,9 +59,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: linux-binaries-${{ github.run_number }}
-          release_name: Linux ARM64 Binaries (Build #${{ github.run_number }})
+          release_name: Linux Binaries (Build #${{ github.run_number }})
           body: |
-            Linux ARM64 binaries for:
+            Linux binaries for:
             - kaszlak (PDS with AdminUI)
             - campagnola (PLC Directory)
             - zuk (Relay/BGS)
