@@ -1,5 +1,8 @@
 # Deep Dives
 
+> **Note:** Manual verification on 2026-07-24 determined all scanner findings
+> were false positives. These dives are retained for methodology reference only.
+
 ## Candidate 1: PDSAdminService SQL Queries
 
 **Evidence:**

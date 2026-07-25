@@ -1,5 +1,8 @@
 # Inventory Matrix
 
+> **Note:** Manual verification on 2026-07-24 determined all three scanner
+> findings were false positives. See `00-methodology.md` for details.
+
 This matrix contains a high-level inventory of major surfaces flagged by the automated tools.
 
 | Candidate File / Component | Identified Issues | Categories |

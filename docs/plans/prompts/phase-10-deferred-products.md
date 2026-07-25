@@ -36,7 +36,7 @@ worker smoke. `kernel/PARSER_STATUS.md` and `docs/runtime-gap-report.md` now
 redirect to the generated matrix.
 
 **Slice 3 complete (2026-07-22): E3 decision brief.**
-See [the product-surface decision brief](../phase-10-product-surface-decision-brief.md).
+See [the product-surface decision brief](../archive/planning/phase-10-product-surface-decision-brief.md).
 It corrects the stale cloud-blob description and records a support,
 experimental, or remove choice for every incomplete surface.
 
@@ -52,7 +52,7 @@ executed" section. No code changed for STAR; negotiation remains as-is.
 ## Read first
 
 - `docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md`
-  (E1, E3 authoritative; E4 stays deferred under ADR 0002)
+  (E1, E3 authoritative; E4 now complete — ADR 0002 superseded)
 - `docs/plans/workstreams/06-permissioned-spaces.md` (P6.4)
 - `objc-jupyter-wasm/kernel/PARSER_STATUS.md` and the conflicting gap
   reports E1 describes

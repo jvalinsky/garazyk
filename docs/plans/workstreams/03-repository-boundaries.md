@@ -1,7 +1,7 @@
 ---
 title: Repository Boundaries
 status: active
-last_verified: 2026-07-18
+last_verified: 2026-07-24
 ---
 
 # Repository Boundaries

@@ -1,6 +1,6 @@
 ---
 title: Phase Execution Prompts
-last_verified: 2026-07-19
+last_verified: 2026-07-24
 ---
 
 # Phase Execution Prompts
