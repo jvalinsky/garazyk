@@ -364,6 +364,12 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     if (self.subprotocol) {
         [handshake appendFormat:@"Sec-WebSocket-Protocol: %@\r\n", self.subprotocol];
     }
+    if (self.authorizationHeader.length > 0 &&
+        [self.authorizationHeader rangeOfCharacterFromSet:
+            [NSCharacterSet newlineCharacterSet]].location == NSNotFound) {
+        [handshake appendFormat:@"Authorization: %@\r\n",
+                                self.authorizationHeader];
+    }
     [handshake appendString:@"\r\n"];
     
     GZ_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);

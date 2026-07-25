@@ -50,6 +50,17 @@
     
     NSArray *repos = [manager allRepos];
     XCTAssertEqual(repos.count, 2);
+    XCTAssertEqualObjects(repos, (@[@"did:plc:a", @"did:plc:b"]));
+}
+
+- (void)testOlderCommitDoesNotRegressRepoState {
+    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    [manager handleCommitForRepo:@"did:plc:test" root:@"bafyre-new" rev:@"4" seq:101];
+    [manager handleCommitForRepo:@"did:plc:test" root:@"bafyre-old" rev:@"3" seq:100];
+
+    XCTAssertEqualObjects([manager rootCIDForRepo:@"did:plc:test"], @"bafyre-new");
+    XCTAssertEqualObjects([manager revForRepo:@"did:plc:test"], @"4");
+    XCTAssertEqual([manager cursorForRepo:@"did:plc:test"], 101);
 }
 
 @end
