@@ -32,6 +32,7 @@ jobs:
             libqrencode-dev \
             libffi-dev \
             libobjc-12-dev \
+            libgnustep-base-dev \
             gnustep-devel \
             clang
 
