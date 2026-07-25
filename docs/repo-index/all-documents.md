@@ -9,9 +9,8 @@ Total documents in this view: **133**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
-| [AGENTS_QUICKREF.md](../../AGENTS_QUICKREF.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
 | [AGENTS.md](../../AGENTS.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
-| [CONTEXT.md](../../CONTEXT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/11-reference/glossary.md](../11-reference/glossary.md) | `canonical` | [docs/11-reference/glossary.md](../11-reference/glossary.md) | `docs` | `active` |
 | [DESIGN.md](../../DESIGN.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `canonical` | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `docs` | `active` |
 | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `canonical` | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `docs` | `active` |
