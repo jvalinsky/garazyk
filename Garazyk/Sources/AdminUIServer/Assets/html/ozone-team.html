@@ -1,0 +1,11 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<form class="form mb-lg" data-ui-form="add-ozone-team-member"><div class="form-group"><label for="add-member-did">DID:</label><input type="text" id="add-member-did" class="form-input" placeholder="Enter DID"></div><div class="form-group"><label for="add-member-role">Role:</label><select id="add-member-role" class="form-input"><option value="moderator">Moderator</option><option value="admin">Admin</option></select></div><button type="submit" class="btn btn-primary btn-sm">Add Member</button></form>
+<table class="table"><thead><tr><th>DID</th><th>Role</th><th>Actions</th></tr></thead><tbody>
+{{#members}}
+<tr><td class="text-mono text-sm">{{did}}</td><td>{{role}}</td><td><button class="btn btn-destructive btn-sm" data-ui-action="remove-team-member" data-ui-did="{{did}}">Remove</button></td></tr>
+{{/members}}
+</tbody></table>
+{{/error}}

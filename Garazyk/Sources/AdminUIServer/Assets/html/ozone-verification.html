@@ -1,0 +1,14 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="mb-lg"><form class="form" data-ui-form="grant-ozone-verification"><div class="form-group"><label for="grant-verification-did">DID:</label><input type="text" id="grant-verification-did" class="form-input" placeholder="did:plc:..."/></div><div class="form-group"><label for="grant-verification-name">Display Name:</label><input type="text" id="grant-verification-name" class="form-input" placeholder="Account display name"/></div><button type="submit" class="btn btn-primary btn-sm">Grant Verification</button></form></div>
+<table class="table"><thead><tr><th>DID</th><th>Display Name</th><th>Issuer</th><th>Created</th><th>Actions</th></tr></thead><tbody>
+{{#verifications}}
+<tr><td class="text-mono text-xs">{{did}}</td><td>{{displayName}}</td><td class="text-xs">{{issuer}}</td><td class="text-xs">{{createdAt}}</td><td><button class="btn btn-sm btn-destructive" data-ui-action="revoke-ozone-verification" data-ui-did="{{did}}">Revoke</button></td></tr>
+{{/verifications}}
+{{^verifications}}
+<tr><td colspan="5" class="text-center text-secondary p-lg">No verified accounts.</td></tr>
+{{/verifications}}
+</tbody></table>
+{{/error}}

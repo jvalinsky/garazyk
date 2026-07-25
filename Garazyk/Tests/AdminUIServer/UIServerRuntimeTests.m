@@ -718,6 +718,7 @@
                                                 jsonBody:nil];
 
     HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    NSLog(@"BODY_STRING: %@", response.bodyString);
 
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertTrue([response.bodyString containsString:@"data-ui-action=\"revoke-session\""]);

@@ -1,0 +1,10 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div id="ozone-config-result" aria-live="polite"></div><form class="form mb-lg" data-ui-form="update-ozone-config"><div class="form-group"><label for="config-json">Config (JSON):</label><textarea id="config-json" class="form-input" placeholder="Enter config as JSON">{{jsonStr}}</textarea></div><button type="submit" class="btn btn-primary btn-sm">Update Config</button></form><div class="detail-card">
+{{#configPairs}}
+<div class="detail-row"><span class="detail-label">{{key}}</span><span class="text-sm">{{value}}</span></div>
+{{/configPairs}}
+</div>
+{{/error}}

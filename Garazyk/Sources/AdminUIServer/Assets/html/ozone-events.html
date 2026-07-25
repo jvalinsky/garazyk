@@ -1,0 +1,13 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>Type</th><th>Subject</th><th>Created By</th><th>At</th></tr></thead><tbody>
+{{#events}}
+<tr><td>{{event}}</td><td class="text-mono text-sm">{{subject_did}}</td><td class="text-mono text-sm">{{createdBy}}</td><td class="text-sm">{{createdAt}}</td></tr>
+{{/events}}
+</tbody></table>
+{{#cursor}}
+<div class="mt-sm"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/ozone-events?cursor={{cursor}}" hx-target="#ozone-events">Load more</button></div>
+{{/cursor}}
+{{/error}}

@@ -1,0 +1,11 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="mb-lg"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/video-jobs" hx-target="#video-jobs-container">&larr; Back to Jobs</button></div>
+<div class="detail-card">
+{{#detailPairs}}
+<div class="detail-row"><span class="detail-label">{{key}}</span><span>{{value}}</span></div>
+{{/detailPairs}}
+</div>
+{{/error}}

@@ -1,0 +1,16 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>Conversation ID</th><th>Mode</th><th>Members</th><th>Last Message</th><th>Actions</th></tr></thead><tbody>
+{{#convos}}
+<tr><td class="text-mono text-sm">{{id}}</td><td>{{{modeDisplay}}}</td><td>{{memberCountStr}}</td><td class="text-sm">{{{lastMsg}}}</td><td><button class="btn btn-secondary btn-sm" data-ui-action="lock-chat-convo" data-ui-convo-id="{{id}}">Lock</button></td></tr>
+{{/convos}}
+{{^convos}}
+<tr><td colspan="5" class="text-center text-secondary p-lg">No conversations found.</td></tr>
+{{/convos}}
+</tbody></table>
+{{#cursor}}
+<div class="d-flex justify-between mt-sm"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/chat-convos?cursor={{cursor}}" hx-target="#chat-convos">Load more</button></div>
+{{/cursor}}
+{{/error}}

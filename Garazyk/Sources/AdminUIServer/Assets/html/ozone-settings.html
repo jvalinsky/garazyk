@@ -1,0 +1,13 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<table class="table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+{{#options}}
+<tr><td class="text-mono">{{key}}</td><td>{{value}}</td></tr>
+{{/options}}
+{{^options}}
+<tr><td colspan="2" class="text-center text-secondary p-lg">No settings configured.</td></tr>
+{{/options}}
+</tbody></table>
+{{/error}}

@@ -1,0 +1,11 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="detail-card">
+<div class="detail-row"><span class="detail-label">Related Accounts</span></div><ul>
+{{#related}}
+<li class="text-mono text-xs">{{did}}</li>
+{{/related}}
+</ul></div>
+{{/error}}
