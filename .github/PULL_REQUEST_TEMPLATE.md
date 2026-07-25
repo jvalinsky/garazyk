@@ -20,7 +20,7 @@ Please describe the tests that you ran to verify your changes.
 - [ ] New and existing unit tests pass locally with my changes
 
 ### Documentation Checklist (if applicable):
-Complete this section if your changes affect documentation. See `docs/DOCUMENTATION_UPDATE_CHECKLIST.md` for detailed guidance.
+Complete this section if your changes affect documentation. See `AGENTS.md` for detailed guidance.
 
 #### Documentation Changes Required?
 - [ ] No documentation changes needed (skip rest of this section)
@@ -30,14 +30,14 @@ Complete this section if your changes affect documentation. See `docs/DOCUMENTAT
 - [ ] Updated relevant documentation files (list below)
 - [ ] Verified code examples still compile and run
 - [ ] Updated diagrams if architecture changed
-- [ ] Ran docs validation (`cd docs && npx ts-node scripts/validate-docs.ts`)
+- [ ] Ran docs validation (`deno task check && deno task lint && deno task test`)
 - [ ] Reviewed changes for technical accuracy
 
 #### Documentation files updated:
 <!-- List the documentation files you modified, e.g.:
-- docs/04-network-layer/method-registry.md
-- docs/11-reference/api-reference.md
-- docs/12-diagrams/system-architecture.svg
+- docs/11-reference/deno-scenario-framework.md
+- docs/20-explanation/architecture/atproto_pds_architecture.md
+- Garazyk/docs-site/src/content/docs/fundamentals/at-protocol.md
 -->
 
 #### Documentation review notes:

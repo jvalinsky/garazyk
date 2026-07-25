@@ -48,7 +48,7 @@ PDS 2 uses `available_user_domains: ["second.test", "test"]` and a separate `mas
 
 ### Docker vs Binary
 
-- **Docker**: builds Linux binaries via `scripts/stage-docker-binaries.sh`, runs in containers. Matches production topology. Use `docker compose -f docker/local-network/docker-compose.yml -f docker/local-network/docker-compose.scenarios.yml up -d`.
+- **Docker**: builds Linux binaries via `scripts/stage_binaries.ts`, runs in containers. Matches production topology. Use `docker compose -f docker/local-network/docker-compose.yml -f docker/local-network/docker-compose.scenarios.yml up -d`.
 - **Binary**: runs `build/bin/kaszlak` etc. directly on host. Disposes data on each start. Set `PDS_RUNNING_TESTS=true` to disable secure storage. Use for testing uncommitted code.
 
 ### Health Checks

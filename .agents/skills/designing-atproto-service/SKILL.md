@@ -124,7 +124,7 @@ Key files to update:
 - `CMakeLists.txt` — add `add_executable`, link static libs, set output dir
 - `project.yml` — add XcodeGen tool target
 - `docker/Dockerfile.gnustep` — add to build targets and COPY
-- `scripts/stage-docker-binaries.sh` — add to `BINARIES` array
+- `scripts/stage_binaries.ts` — add to `BINARIES` array
 - `docker/local-network/Dockerfile.local` — add COPY
 - `docker/local-network/docker-compose.yml` — add service container (if used locally)
 

@@ -6,7 +6,7 @@ description: Clang, GNUstep, ARC memory management, and natively building high-p
 Why explicitly choose to build a highly modern, globally federated decentralized protocol server
 natively in a programming language originally conceived in the 1980s?
 
-If you are exploring the `ATProtoPDS` backend source code for the first time, you will immediately
+If you are exploring the `Garazyk PDS` backend source code for the first time, you will immediately
 notice the distinct absence of high-level, heavy web frameworks like Node.js Express, Swift's Vapor,
 or Java's Spring Boot. In this architecture, we are working as close to the bare metal as possible,
 deliberately opting out of massive, opaque dependency trees that completely obscure network
@@ -53,7 +53,7 @@ By structurally engineering the server in Objective-C, the codebase instantly ac
 
 While Objective-C is practically culturally synonymous with Apple platforms exclusively via Xcode,
 it can be seamlessly and natively compiled for headless Linux operating systems directly from the
-terminal shell. `ATProtoPDS` is rigidly designed to be effortlessly deployed via Docker to standard
+terminal shell. `Garazyk PDS` is rigidly designed to be effortlessly deployed via Docker to standard
 Debian/Ubuntu Linux servers, utilizing `clang` and the GNUstep open-source libraries.
 
 To compile a heavy PDS instance natively on Linux, we statically link against several core

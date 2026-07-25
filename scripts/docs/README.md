@@ -78,41 +78,6 @@ npm run validate-config configs/plan-consolidation.json
 - Detailed error reporting
 - Configuration summary display
 
-### Validation Tool (`validate.js`)
-
-Validates documentation quality and correctness.
-
-**Features:**
-
-- Markdown linting
-- Link validation (internal and anchors)
-- Code block language tag verification
-- Mermaid diagram syntax validation
-- API documentation structure validation
-
-**Usage:**
-
-```bash
-npm run validate
-```
-
-### Archive Manager (`archive.js`)
-
-Manages outdated documentation archival.
-
-**Features:**
-
-- Moves outdated docs to `docs/archive/` with timestamp
-- Generates archive metadata
-- Maintains archive index
-- Quarterly review scheduling
-
-**Usage:**
-
-```bash
-npm run archive
-```
-
 ### Repo-Wide Registry and Validation (`repo_docs.ts`)
 
 Generates canonical metadata and enforces strict internal link/discoverability checks across
@@ -133,7 +98,7 @@ deno run -A scripts/docs/repo_docs.ts validate --external-report
 
 ### Deno/TypeScript API Documentation
 
-The scenario harness API is documented from `scripts/lib/deno/mod.ts`.
+The scenario harness API is documented across `scripts/lib/deno/` (individual modules: `config.ts`, `runner.ts`, `client.ts`, `assertions.ts`).
 
 ```bash
 # Install or refresh the docs package dependencies after package metadata changes

@@ -16,7 +16,7 @@ Implementing a Personal Data Server (PDS) from scratch in Objective-C requires a
 mathematical understanding of exactly how identity is resolved globally, how data schemas are
 strictly defined over the wire, and how discrete APIs communicate securely within this massive
 distributed ecosystem. This guide explores the foundational pillars of the AT Protocol and how they
-are practically implemented in the `ATProtoPDS` architecture.
+are practically implemented in the `Garazyk PDS` architecture.
 
 ## Identity: DIDs and Handles
 
@@ -51,7 +51,7 @@ with that identity.
 
 ### Resolving Handles Securely (`HandleResolver`)
 
-In `ATProtoPDS`, all dynamic identity resolution is managed centrally by the Objective-C
+In `Garazyk PDS`, all dynamic identity resolution is managed centrally by the Objective-C
 `HandleResolver`. When a remote user provides a handle string, the internet-facing server absolutely
 cannot blindly make an HTTP `GET` request to that domain without catastrophically exposing itself to
 severe security risks, explicitly Server-Side Request Forgery (SSRF) vulnerabilities.
@@ -113,14 +113,14 @@ application routing logic.
 
 ### The `XrpcDispatcher` Architecture
 
-In the `ATProtoPDS` architecture, dynamically routing these incoming HTTP calls is the core
+In the `Garazyk PDS` architecture, dynamically routing these incoming HTTP calls is the core
 responsibility of the highly optimized `XrpcDispatcher` and the `XrpcMethodRegistry`. They elegantly
 bridge the gap between the raw, untyped HTTP byte layer and the strongly typed ATProto Lexicon
 schemas.
 
 ```mermaid
 flowchart TD
-    Client[Client App/Relay] -->|HTTP TCP Request| HttpServer[PDSHttpServer]
+    Client[Client App/Relay] -->|HTTP TCP Request| HttpServer[ATProtoHttpServerBuilder]
     HttpServer -->|NSID String & Payload| XrpcDispatcher[XrpcDispatcher]
     XrpcDispatcher -->|O(1) Hash Lookup Method| XrpcMethodRegistry[XrpcMethodRegistry]
     
@@ -172,6 +172,6 @@ Deeply understanding these two absolute core pillars—Identity (DIDs and verifi
 Communication (strict XRPC and strongly typed Lexicons)—is fundamentally essential before safely
 diving into the lower-level socket architectures, concurrent SQLite database migrations, or the
 complexities of the ATProto binary WebSocket firehose. By rigorously validating both mathematical
-identity domains and raw XRPC payloads natively in C/Objective-C, `ATProtoPDS` provides an
+identity domains and raw XRPC payloads natively in C/Objective-C, `Garazyk PDS` provides an
 incredibly secure, violently robust foundation for fully participating in the decentralized social
 web.
