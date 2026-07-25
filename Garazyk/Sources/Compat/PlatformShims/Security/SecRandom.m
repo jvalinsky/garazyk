@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/syscall.h>
+#include <stdlib.h>
 
 // Linux >= 3.17 has getrandom(2); older systems use /dev/urandom fallback
 #ifdef SYS_getrandom
@@ -15,6 +16,11 @@
 #else
 #define HAS_GETRANDOM 0
 #endif
+
+static void _arc4random_abort(const char *msg) {
+    write(STDERR_FILENO, msg, strlen(msg));
+    abort();
+}
 
 // Internal random byte function using getrandom(2) or /dev/urandom
 static void _arc4random_buf_impl(void *buf, size_t nbytes) {
@@ -41,8 +47,7 @@ static void _arc4random_buf_impl(void *buf, size_t nbytes) {
     // Fallback to /dev/urandom
     int fd = open("/dev/urandom", O_RDONLY);
     if (fd < 0) {
-        memset(buf, 0, nbytes);
-        return;
+        _arc4random_abort("arc4random: entropy source failure\n");
     }
 
     while (nbytes > 0) {
@@ -54,9 +59,8 @@ static void _arc4random_buf_impl(void *buf, size_t nbytes) {
             // Retry on interrupt
             continue;
         } else {
-            // Read failed, zero remaining buffer
-            memset(buf, 0, nbytes);
-            break;
+            // Read failed, abort
+            _arc4random_abort("arc4random: entropy source read failure\n");
         }
     }
 
