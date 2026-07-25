@@ -16,27 +16,27 @@ export default defineConfig({
       sidebar: [
         {
           label: "1. Fundamentals",
-          autogenerate: { directory: "fundamentals" },
+          items: [{ autogenerate: { directory: "fundamentals" } }],
         },
         {
           label: "2. Core Server Infrastructure",
-          autogenerate: { directory: "core-server" },
+          items: [{ autogenerate: { directory: "core-server" } }],
         },
         {
           label: "3. Advanced Architecture & Defenses",
-          autogenerate: { directory: "advanced-parsing" },
+          items: [{ autogenerate: { directory: "advanced-parsing" } }],
         },
         {
           label: "4. Implementing ATProto",
-          autogenerate: { directory: "atproto" },
+          items: [{ autogenerate: { directory: "atproto" } }],
         },
         {
           label: "5. Authentication & Keys",
-          autogenerate: { directory: "auth" },
+          items: [{ autogenerate: { directory: "auth" } }],
         },
         {
           label: "6. Federation & Realtime",
-          autogenerate: { directory: "federation" },
+          items: [{ autogenerate: { directory: "federation" } }],
         },
       ],
     }),
