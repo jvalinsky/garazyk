@@ -439,10 +439,11 @@ typedef NS_ENUM(NSUInteger, PDSRepoFormat) {
 /*!
  @function PDSRepoFormatFromAcceptHeader
 
- @abstract Determine the desired repo format from an HTTP Accept header.
+ @abstract Negotiate the desired repo format from an HTTP Accept header.
 
  @param acceptHeader The value of the Accept header (may be nil).
- @return The negotiated format. Defaults to CAR if no STAR type is specified.
+ @return The highest-quality supported format. Defaults to CAR when no
+ supported representation has a positive quality.
  */
 FOUNDATION_EXPORT PDSRepoFormat PDSRepoFormatFromAcceptHeader(NSString * _Nullable acceptHeader);
 
@@ -455,5 +456,18 @@ FOUNDATION_EXPORT PDSRepoFormat PDSRepoFormatFromAcceptHeader(NSString * _Nullab
  @return The MIME type string.
  */
 FOUNDATION_EXPORT NSString *ContentTypeForPDSRepoFormat(PDSRepoFormat format);
+
+/*!
+ @function PDSRepoAcceptHeaderForPreferredFormat
+
+ @abstract Build an HTTP Accept header for a preferred repository format.
+
+ @discussion STAR preferences include compatible fallbacks so callers can
+ interoperate with services that only produce CAR.
+
+ @param format The preferred repository format.
+ @return An Accept header value ordered by preference.
+ */
+FOUNDATION_EXPORT NSString *PDSRepoAcceptHeaderForPreferredFormat(PDSRepoFormat format);
 
 NS_ASSUME_NONNULL_END

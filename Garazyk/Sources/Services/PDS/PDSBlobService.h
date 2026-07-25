@@ -97,9 +97,12 @@ NS_ASSUME_NONNULL_BEGIN
  * @param limit Maximum number of blobs to return.
  * @param cursor Pagination cursor.
  * @param error Error pointer for listing failures.
- * @return Array of blob dictionaries, or nil if listing fails.
+ * @return Array of blob metadata dictionaries, or nil if listing fails.
+ * @discussion The cursor is an opaque decimal offset issued by the sync
+ * endpoint. Invalid cursors fail with an error rather than restarting at the
+ * first page.
  */
-- (nullable NSArray *)listBlobsForDID:(NSString *)did
+- (nullable NSArray<NSDictionary<NSString *, id> *> *)listBlobsForDID:(NSString *)did
                                 limit:(NSUInteger)limit
                                cursor:(nullable NSString *)cursor
                                 error:(NSError **)error;

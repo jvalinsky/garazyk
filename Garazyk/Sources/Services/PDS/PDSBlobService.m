@@ -122,15 +122,38 @@
     };
 }
 
-- (nullable NSArray *)listBlobsForDID:(NSString *)did
+- (nullable NSArray<NSDictionary<NSString *, id> *> *)listBlobsForDID:(NSString *)did
                                 limit:(NSUInteger)limit
                                cursor:(nullable NSString *)cursor
                                 error:(NSError **)error {
 
-    NSArray<PDSDatabaseBlob *> *blobs = [self.blobRepository blobsForDid:did limit:limit offset:0 error:error];
-    if (!blobs) return @[];
+    NSInteger offset = 0;
+    if (cursor.length > 0) {
+        NSScanner *scanner = [NSScanner scannerWithString:cursor];
+        scanner.charactersToBeSkipped = nil;
+        if (![scanner scanInteger:&offset] || !scanner.isAtEnd || offset < 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PDSBlobService"
+                                             code:1
+                                         userInfo:@{
+                                             NSLocalizedDescriptionKey:
+                                                 @"Invalid blob pagination cursor"
+                                         }];
+            }
+            return nil;
+        }
+    }
 
-    NSMutableArray *result = [NSMutableArray array];
+    NSArray<PDSDatabaseBlob *> *blobs =
+        [self.blobRepository blobsForDid:did
+                                   limit:(NSInteger)limit
+                                  offset:offset
+                                   error:error];
+    if (!blobs) {
+        return nil;
+    }
+
+    NSMutableArray<NSDictionary<NSString *, id> *> *result = [NSMutableArray array];
     for (PDSDatabaseBlob *blob in blobs) {
         
         CID *cid = [CID cidFromBytes:blob.cid];
