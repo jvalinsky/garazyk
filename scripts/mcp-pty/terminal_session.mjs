@@ -1,6 +1,6 @@
 import os from "node:os";
 import path from "node:path";
-import pty from "node-pty-prebuilt-multiarch";
+import pty from "node-pty";
 import xtermHeadless from "@xterm/headless";
 import { buildSemanticSnapshot, diffSnapshots } from "./semantic.mjs";
 
