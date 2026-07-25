@@ -5,6 +5,8 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 
+static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
+
 @interface RelayUpstreamManager () <RelayClientDelegate>
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RelayClient *> *upstreamClients;
@@ -39,6 +41,10 @@
         _upstreamClients = [NSMutableDictionary dictionary];
         _connectedUpstreams = [NSMutableSet set];
         _managerQueue = dispatch_queue_create("com.atproto.relay.upstream", DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_managerQueue,
+                                    RelayUpstreamManagerQueueKey,
+                                    (__bridge void *)self,
+                                    NULL);
         _maxReconnectAttempts = 10;
         _baseReconnectInterval = 5.0;
         _autoReconnectEnabled = YES;
@@ -55,6 +61,15 @@
         }
     }
     return self;
+}
+
+- (void)performSynchronouslyOnManagerQueue:(dispatch_block_t)block {
+    if (dispatch_get_specific(RelayUpstreamManagerQueueKey) ==
+        (__bridge void *)self) {
+        block();
+    } else {
+        dispatch_sync(_managerQueue, block);
+    }
 }
 
 - (void)createClientForUpstream:(NSString *)url {
@@ -135,17 +150,18 @@
 
 - (NSArray<NSString *> *)activeUpstreams {
     __block NSArray *result;
-    dispatch_sync(_managerQueue, ^{
-        result = [self.connectedUpstreams allObjects];
-    });
+    [self performSynchronouslyOnManagerQueue:^{
+        result = [[self.connectedUpstreams allObjects]
+            sortedArrayUsingSelector:@selector(compare:)];
+    }];
     return result;
 }
 
 - (NSArray<NSString *> *)allUpstreams {
     __block NSArray *result;
-    dispatch_sync(_managerQueue, ^{
-        result = self.upstreamClients.allKeys;
-    });
+    [self performSynchronouslyOnManagerQueue:^{
+        result = [self.upstreamClients.allKeys sortedArrayUsingSelector:@selector(compare:)];
+    }];
     return result;
 }
 
@@ -167,20 +183,24 @@
 }
 
 - (void)connectToUpstream:(NSString *)url {
-    RelayClient *client = self.upstreamClients[url];
-    if (client) {
-        GZ_LOG_SYNC_INFO(@"RelayUpstreamManager: Connecting to %@", url);
-        [client connect];
-    } else {
-        GZ_LOG_SYNC_ERROR(@"RelayUpstreamManager: No client found for %@", url);
-    }
+    [self performSynchronouslyOnManagerQueue:^{
+        RelayClient *client = self.upstreamClients[url];
+        if (client) {
+            GZ_LOG_SYNC_INFO(@"RelayUpstreamManager: Connecting to %@", url);
+            [client connect];
+        } else {
+            GZ_LOG_SYNC_ERROR(@"RelayUpstreamManager: No client found for %@", url);
+        }
+    }];
 }
 
 - (void)disconnectFromUpstream:(NSString *)url {
-    RelayClient *client = self.upstreamClients[url];
-    if (client) {
-        [client disconnect];
-    }
+    [self performSynchronouslyOnManagerQueue:^{
+        RelayClient *client = self.upstreamClients[url];
+        if (client) {
+            [client disconnect];
+        }
+    }];
 }
 
 - (void)validateHost:(NSString *)hostname completion:(void (^)(BOOL reachable, NSError * _Nullable error))completion {
@@ -245,14 +265,18 @@
 }
 
 - (BOOL)isConnected {
-    return self.connectedUpstreams.count > 0;
+    __block BOOL connected = NO;
+    [self performSynchronouslyOnManagerQueue:^{
+        connected = self.connectedUpstreams.count > 0;
+    }];
+    return connected;
 }
 
 - (BOOL)isConnectedToUpstream:(NSString *)url {
     __block BOOL connected;
-    dispatch_sync(_managerQueue, ^{
+    [self performSynchronouslyOnManagerQueue:^{
         connected = [self.connectedUpstreams containsObject:url];
-    });
+    }];
     return connected;
 }
 
@@ -320,7 +344,7 @@
         if (delegate) {
             [delegate upstreamManager:self didDisconnectFromUpstream:url error:error];
         }
-        if (self.autoReconnectEnabled && !self.isPaused) {
+        if (error) {
             [self scheduleReconnectForUpstream:url];
         }
     }
@@ -343,49 +367,68 @@
 #pragma mark - Reconnection
 
 - (void)scheduleReconnectForUpstream:(NSString *)url {
-    NSNumber *attempts = self.reconnectAttempts[url];
-    if (attempts.integerValue >= self.maxReconnectAttempts) {
-        GZ_LOG_SYNC_WARN(@"Max reconnect attempts reached for upstream %@", url);
-        return;
-    }
+    dispatch_async(_managerQueue, ^{
+        if (!self.autoReconnectEnabled || self.isPaused ||
+            !self.upstreamClients[url]) {
+            return;
+        }
+        NSNumber *attempts = self.reconnectAttempts[url] ?: @0;
+        if (attempts.integerValue >= self.maxReconnectAttempts) {
+            GZ_LOG_SYNC_WARN(@"Max reconnect attempts reached for upstream %@", url);
+            return;
+        }
 
-    NSTimeInterval delay = [self.reconnectDelays[url] doubleValue];
-    GZ_LOG_SYNC_INFO(@"Scheduling reconnect for %@ in %.1fs (attempt %ld)", url, delay, (long)attempts.integerValue + 1);
+        NSTimeInterval delay =
+            self.reconnectDelays[url] != nil
+                ? self.reconnectDelays[url].doubleValue
+                : self.baseReconnectInterval;
+        GZ_LOG_SYNC_INFO(@"Scheduling reconnect for %@ in %.1fs (attempt %ld)",
+                         url, delay, (long)attempts.integerValue + 1);
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), _managerQueue, ^{
-        self.reconnectAttempts[url] = @(attempts.integerValue + 1);
-        double nextDelay = MIN(delay * 1.5, 60.0);
-        self.reconnectDelays[url] = @(nextDelay);
-        [self connectToUpstream:url];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                     (int64_t)(delay * NSEC_PER_SEC)),
+                       self->_managerQueue, ^{
+            if (!self.autoReconnectEnabled || self.isPaused ||
+                !self.upstreamClients[url]) {
+                return;
+            }
+            self.reconnectAttempts[url] = @(attempts.integerValue + 1);
+            self.reconnectDelays[url] = @(MIN(delay * 1.5, 60.0));
+            [self connectToUpstream:url];
+        });
     });
 }
 
 #pragma mark - Helpers
 
 - (NSString *)urlForClient:(RelayClient *)client {
-    for (NSString *url in self.upstreamClients) {
-        if (self.upstreamClients[url] == client) {
-            return url;
+    __block NSString *matchedURL = nil;
+    [self performSynchronouslyOnManagerQueue:^{
+        for (NSString *url in self.upstreamClients) {
+            if (self.upstreamClients[url] == client) {
+                matchedURL = url;
+                break;
+            }
         }
-    }
-    return nil;
+    }];
+    return matchedURL;
 }
 
 #pragma mark - Status Tracking
 
 - (int64_t)seqForUpstream:(NSString *)url {
     __block int64_t seq = 0;
-    dispatch_sync(_managerQueue, ^{
+    [self performSynchronouslyOnManagerQueue:^{
         seq = [self.hostSeqs[url] longLongValue];
-    });
+    }];
     return seq;
 }
 
 - (NSUInteger)accountCountForUpstream:(NSString *)url {
     __block NSUInteger count = 0;
-    dispatch_sync(_managerQueue, ^{
+    [self performSynchronouslyOnManagerQueue:^{
         count = [self.hostAccountCounts[url] unsignedIntegerValue];
-    });
+    }];
     return count;
 }
 
@@ -397,9 +440,9 @@
 
 - (RelayHostStatus)statusForUpstream:(NSString *)url {
     __block RelayHostStatus status = RelayHostStatusDisconnected;
-    dispatch_sync(_managerQueue, ^{
+    [self performSynchronouslyOnManagerQueue:^{
         status = (RelayHostStatus)[self.hostStatuses[url] integerValue];
-    });
+    }];
     return status;
 }
 

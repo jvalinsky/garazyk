@@ -140,6 +140,9 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 /*! Negotiated subprotocol. */
 @property(nonatomic, copy, nullable) NSString *subprotocol;
 
+/*! Authorization value sent during the client upgrade handshake. */
+@property(nonatomic, copy, nullable) NSString *authorizationHeader;
+
 /*! Unique connection identifier. */
 @property(nonatomic, readonly) NSUUID *identifier;
 

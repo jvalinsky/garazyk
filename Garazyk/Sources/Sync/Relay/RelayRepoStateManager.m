@@ -32,6 +32,10 @@
                            rev:(NSString *)rev
                            seq:(int64_t)seq {
     dispatch_async(_stateQueue, ^{
+        NSNumber *currentSequence = self.repoSeqs[repoDID];
+        if (currentSequence && seq <= currentSequence.longLongValue) {
+            return;
+        }
         self.repoRoots[repoDID] = rootCID;
         self.repoRevs[repoDID] = rev;
         self.repoSeqs[repoDID] = @(seq);
@@ -101,7 +105,7 @@
 - (NSArray<NSString *> *)allRepos {
     __block NSArray *repos;
     dispatch_sync(_stateQueue, ^{
-        repos = [self.repoRoots allKeys];
+        repos = [[self.repoRoots allKeys] sortedArrayUsingSelector:@selector(compare:)];
     });
     return repos;
 }
