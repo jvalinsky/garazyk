@@ -352,6 +352,44 @@
     // Some might be skipped due to idempotency if we picked overlapping DIDs/revs, 
     // but here we used unique ones.
     XCTAssertGreaterThanOrEqual(events.count, (NSUInteger)(iterations * 2));
+
+    NSDictionary<NSString *, NSNumber *> *relay1Metrics =
+        [self.db pendingIndexQueueMetricsForRelayURL:@"wss://relay1" error:&err];
+    XCTAssertNil(err);
+    XCTAssertEqual([relay1Metrics[@"event_count"] unsignedIntegerValue], 0U);
+    NSDictionary<NSString *, NSNumber *> *relay2Metrics =
+        [self.db pendingIndexQueueMetricsForRelayURL:@"wss://relay2" error:&err];
+    XCTAssertNil(err);
+    XCTAssertEqual([relay2Metrics[@"event_count"] unsignedIntegerValue], 0U);
+}
+
+- (void)testBackpressureLagIsScopedToEachRelay {
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[]];
+    engine.maxLagForBackpressure = 100;
+
+    FirehoseCommitEvent *highSequenceEvent = [[FirehoseCommitEvent alloc] init];
+    highSequenceEvent.seq = 5000;
+    highSequenceEvent.repo = @"did:plc:high-sequence";
+    highSequenceEvent.rev = @"rev1";
+    highSequenceEvent.ops = @[];
+    [engine _handleCommitEvent:highSequenceEvent fromRelay:@"wss://relay2"];
+
+    FirehoseCommitEvent *lowSequenceEvent = [[FirehoseCommitEvent alloc] init];
+    lowSequenceEvent.seq = 10;
+    lowSequenceEvent.repo = @"did:plc:low-sequence";
+    lowSequenceEvent.rev = @"rev1";
+    lowSequenceEvent.ops = @[];
+    [engine _handleCommitEvent:lowSequenceEvent fromRelay:@"wss://relay1"];
+    [engine waitForIndexQueueDrainForTesting];
+
+    NSError *error = nil;
+    NSArray<NSDictionary *> *rows = [self.db executeParameterizedQuery:
+        @"SELECT event_type FROM appview_cursor_events WHERE did = ? AND seq = ?"
+        params:@[@"did:plc:low-sequence", @10] error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual(rows.count, 1U);
+    XCTAssertEqualObjects(rows.firstObject[@"event_type"], @"live_commit");
 }
 
 // ---------------------------------------------------------------------------

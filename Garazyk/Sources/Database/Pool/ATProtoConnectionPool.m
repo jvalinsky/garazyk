@@ -206,7 +206,11 @@ static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
 
 - (sqlite3 *)createNewConnection {
     sqlite3 *db = NULL;
-    int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_URI | SQLITE_OPEN_SHAREDCACHE;
+    // Keep file-backed pools on SQLite's default private page cache. Shared
+    // cache uses table-level locks, which return SQLITE_LOCKED immediately
+    // instead of honoring busy_timeout when pooled writers overlap. In-memory
+    // databases that need shared state opt in with cache=shared in their URI.
+    int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_URI;
     int result = sqlite3_open_v2(self.databasePath.UTF8String, &db, flags, NULL);
 
     if (result != SQLITE_OK) {
