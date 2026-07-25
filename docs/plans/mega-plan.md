@@ -150,6 +150,17 @@ documentation, TUI, package, and refactor plans.
   Workstream global gates remain open only on the repository-wide lint
   baseline before Phase 11 can close. A dedicated skill exists at
   `.agents/skills/sqlite-performance-optimization`.
+- The Admin UI decoupling phase is progressing well: all 34 HTML partials have
+  been successfully extracted from `UIServerRuntime+Renderers.m` into separate
+  template files in `Garazyk/Sources/AdminUIServer/Assets/html/`. The
+  `UITemplateEngine` now securely handles dynamic interpolation with its new
+  `EscapeHTML` utility to prevent XSS.
+- The 2026-07-24 Technical Debt Audit (`docs/audits/tech-debt-2026-07-24/`)
+  completed its scan for concurrency, SQL injection, and cryptographic vulnerabilities.
+  Crucially, manual verification confirmed that the automated high-priority findings
+  (e.g., `IN (%@)`, `isEqualToString:`, and unbalanced locks) were all **False Positives**.
+  The codebase's SQL bindings, string comparisons, and backpressure mechanisms
+  are already hardened.
 
 ## Priority model
 
