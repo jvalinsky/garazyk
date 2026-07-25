@@ -1,62 +1,36 @@
 ---
-title: Tooling & Skills Documentation
+title: Tooling and Skills
 ---
 
-# Tooling & Skills Documentation
+# Tooling and Skills
+
+## Deno tasks
+
+| Task                      | Purpose                |
+| ------------------------- | ---------------------- |
+| `deno task check`         | Type-check packages    |
+| `deno task lint`          | Lint packages          |
+| `deno task test`          | Test packages          |
+| `deno task hamownia`      | Run scenario tooling   |
+| `deno task narzedzia`     | Run repository tools   |
+| `deno task dashboard:tui` | Start the scenario TUI |
+
+Task definitions live in `deno.json`.
 
 ## Scripts
 
-| File | Description |
-|---|---|
-| `scripts/API_README.md` | Scripts API overview |
-| `scripts/docs/README.md` | Documentation tooling overview |
-| `scripts/docs/configs/README.md` | Doc tooling configuration |
-| `scripts/docs/lib/README-content-updater.md` | Content updater library |
-| `scripts/docs/lib/README-git-operations.md` | Git operations library |
-| `scripts/docs/lib/README-link-parser.md` | Link parser library |
-| `scripts/docs/lib/README-migration-mapping.md` | Migration mapping library |
-| `scripts/docs/lib/README-path-resolver.md` | Path resolver library |
-| `scripts/plc/README.md` | PLC test utilities |
-| `scripts/REVIEW-e2e-harness.md` | E2E harness review |
-| `scripts/scenarios/README.md` | Scenario runner overview |
-| `scripts/scenarios/SCENARIO_STANDARDS.md` | Scenario authoring standards |
-| `scripts/scenarios/topologies/README.md` | Topology definitions |
+| Path                 | Purpose                               |
+| -------------------- | ------------------------------------- |
+| `scripts/dev/`       | Development checks and local commands |
+| `scripts/test/`      | Test runners                          |
+| `scripts/scenarios/` | Integration scenarios                 |
+| `scripts/docs/`      | Documentation indexing and validation |
+| `scripts/ops/`       | Backup and production operations      |
+| `scripts/plc/`       | PLC utilities                         |
+| `scripts/fuzzing/`   | Fuzzer helpers                        |
 
-## Deno Tasks
+## Repository skills
 
-| Task | Description |
-|---|---|
-| `deno task test` | Run all package tests |
-| `deno task check` | Typecheck all packages |
-| `deno task hamownia` | Run scenario suite |
-| `deno task narzedzia` | Run boundary check |
-| `deno task dashboard:tui` | Launch scenario dashboard TUI |
-| `deno task hamownia agent` | Programmatic agent-first scenarios interface (list, run, triage) |
-
-## Deno Packages
-
-| Package | Tests | JSR | Description |
-|---|---|---|---|
-| `gruszka` | 321 | ✅ | XRPC client generation |
-| `schemat` | 191 | ✅ | Topology schema & compilation |
-| `laweta` | 85 | ✅ | Docker orchestration |
-| `hamownia` | 329 | ❌ | Scenario runner |
-| `narzedzia` | 85 | ❌ | Developer tooling |
-| `tui` | 252 | ❌ | Terminal UI framework |
-
-## AI Agent Skills
-
-Skills are located in `.agents/skills/`. See `AGENTS.md` for the subagent delegation table.
-
-Testing and programmatic skills:
-
-| Skill | Purpose |
-|---|---|
-| `agent-scenario-testing` | [Programmatic Testing Guide](/.agents/skills/agent-scenario-testing/SKILL.md) — programmatic execution & triage |
-| `garazyk-scenario-triage` | [Scenario Triage](/.agents/skills/garazyk-scenario-triage/SKILL.md) — manual/automatic triage protocols |
-| `garazyk-testing` | [General Testing Patterns](/.agents/skills/garazyk-testing/SKILL.md) — PDS XCTest/Deno test suite |
-| `technical-writer` | API docs, READMEs, ADRs |
-| `rewriting-code-comments` | ObjC HeaderDoc conventions |
-| `deslop` | Remove AI writing patterns |
-| `slop-detector` | Detect low-effort generated code |
-| `expand_md_topic` | Expand markdown outlines |
+Task instructions live under `.agents/skills/`. `AGENTS.md` lists the project
+roles and required workflows. Load the skill that matches the current task
+before changing code.

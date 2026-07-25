@@ -1,206 +1,94 @@
 # Admin UI Architecture
 
-This describes the current, dedicated `garazyk-ui` service — `AdminUIServer` —
-not the earlier `PDSAdminHandler`-embedded admin panel. Source of truth is
-always `Garazyk/Sources/AdminUIServer/` and its tests; if this document and
-the code disagree, the code wins and this document should be corrected.
+`garazyk-ui` is a separate HTTP service. It calls the PDS, PLC, relay, AppView,
+Ozone, chat, and video APIs through `UIBackendClient`. It does not open their
+databases.
 
-## System overview
+## Source
 
-`garazyk-ui` is a standalone HTTP server that renders a browser-based admin
-console for the AT Protocol services in this repo: PDS, PLC, Relay, AppView,
-Ozone (moderation), Chat, and Video. It talks to those services as an admin
-client over their own XRPC/HTTP APIs (via `UIBackendClient`) — it holds no
-direct database access of its own. It also hosts `/lab`, a minimal AT Protocol
-OAuth client used to exercise the real sign-in → consent → callback flow
-end to end.
-
-## Technology stack
-
-- **Backend**: Objective-C, built as the `garazyk-ui` CMake target
-  (`Garazyk/Binaries/garazyk-ui/main.m`).
-- **HTML generation**: server-rendered `NSString` templates with manual
-  escaping (`UIEscaped()`), not a template engine. Every partial is a plain
-  Objective-C method that builds an HTML string.
-- **Client interactivity**: [htmx](https://htmx.org) 1.9.12 (loaded from
-  `unpkg.com`, pinned by [SRI](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)
-  hash) drives tab-content loading (`hx-get`/`hx-trigger`); a small vanilla-JS
-  file (`Assets/js/admin-ui.js`) handles everything htmx doesn't — CSRF-aware
-  fetch wrapper, form submission, tab keyboard navigation, DID-autofill.
-- **Styling**: a single generated CSS bundle, `Assets/css/system.css` (see
-  "CSS system" below).
-- **Auth**: single shared admin password (`UIAuthManager`), session cookie +
-  double-submit CSRF cookie/header pair.
-
-## Source layout
-
-```
+```text
 Garazyk/Sources/AdminUIServer/
-├── UIServerRuntime.h/.m           # Route registration/dispatch, auth,
-│                                    login page, admin shell page
-├── UIServerRuntime+Private.h      # Shared private @property list + the two
-│                                    categories' method declarations
-├── UIServerRuntime+StaticAssets.m # StaticAssets category: /css/*, /js/*,
-│                                    /img/* serving
-├── UIServerRuntime+Renderers.m    # Renderers category: 34 HTML-partial
-│                                    render methods (one per tab/section)
-├── UIAuthManager.h/.m             # Session tokens, CSRF nonces, cookies
-├── UIBackendClient.h/.m           # Admin HTTP client for PDS/PLC/Relay/
-│                                    AppView/Ozone/Chat/Video
-├── UIServiceConfig.h/.m           # Backend URLs/tokens, host/port config
-└── Assets/
-    ├── css/                      # system.css (served) + its modular
-    │                                sources (tokens/reset/components/
-    │                                layout/utilities.css)
-    └── js/
-        ├── admin-ui.js           # Admin shell interactivity
-        ├── lab.js                # /lab OAuth client
-        └── mst-viewer/           # MST tree/stats explorer (its own JS module)
+  UIServerRuntime.m
+  UIServerRuntime+StaticAssets.m
+  UIServerRuntime+Renderers.m
+  UIServerRuntime+Private.h
+  UIAuthManager.m
+  UIBackendClient.m
+  UIServiceConfig.m
+  Assets/
 ```
 
-`UIServerRuntime.m`, `+StaticAssets.m`, and `+Renderers.m` are three files
-implementing **one class** via Objective-C categories — not three separate
-services. All three are listed explicitly in `CMakeLists.txt`, in both the
-`garazyk-ui` executable target and the `AllTests` source list; a new file
-split like this needs both updated.
+The runtime files implement one class with Objective-C categories. Add new
+source files to both the `garazyk-ui` and `AllTests` CMake source lists.
 
-## Data flow
+## Request flow
 
-### Login
+`UIServerRuntime` serves the login page, admin shell, partial routes, and static
+assets.
 
-```
-GET /admin/login  →  loginPageHTML (UIServerRuntime.m)
-POST /admin/login  →  UIAuthManager validates password
-                    →  Set-Cookie: session token + CSRF nonce cookie
-                    →  redirect to /admin
-```
+After login, `UIAuthManager` issues a session cookie and CSRF nonce. The shell
+loads tab content from `/admin/partials/*`. Mutations pass through
+`admin-ui.js`, which sends the nonce in `X-UI-Admin-Nonce`.
 
-### Admin shell + tabs
+`UIBackendClient` converts UI actions into calls to the configured services.
+Returned HTML is inserted into the relevant result container.
 
-```
-GET /admin  →  adminShellHTML (UIServerRuntime.m): one <h1>, a 12-item
-               role="tablist" nav, 12 role="tabpanel" <div>s (all but the
-               active one `hidden`)
-Tab click (admin-ui.js switchTab)
-  →  toggles aria-selected / roving tabindex / .active / `hidden`
-  →  htmx hx-get on the newly-visible pane's placeholder
-  →  GET /admin/partials/<name>  →  a render*Partial method in
-     UIServerRuntime+Renderers.m
-  →  htmx swaps the returned HTML into the pane
-```
+The `/lab` page is a small OAuth client used to exercise the PDS authorization
+flow. Its OAuth session is separate from admin authentication.
 
-Keyboard: `ArrowLeft/Right/Up/Down`/`Home`/`End` move focus and selection
-between tabs (`admin-ui.js`, WAI-ARIA APG tabs pattern); the previously-
-selected tab drops out of the Tab order (roving `tabindex`).
+## Rendering and assets
 
-### Mutations
+Renderers build HTML strings in Objective-C. Escape dynamic HTML values with
+`UIEscaped()`.
 
-```
-Form submit / button click (data-ui-form / data-ui-action)
-  →  admin-ui.js reads the CSRF nonce from <meta name="csrf-nonce">
-  →  POST with X-UI-Admin-Nonce header
-  →  UIServerRuntime validates session cookie + CSRF nonce
-     (UIAuthManager) before touching any backend
-  →  UIBackendClient calls the real PDS/PLC/Relay/AppView/Ozone/Chat/
-     Video admin API
-  →  response HTML swapped into a `*-result` container
-     (aria-live="polite", so screen readers hear the outcome)
+The admin shell loads `Assets/css/system.css`. Its token and reset sections are
+generated from:
+
+- `Assets/css/tokens.css`
+- `Assets/css/reset.css`
+
+Regenerate the bundle after changing those files:
+
+```sh
+deno run -A scripts/admin-ui-build/generate_css_bundle.ts
 ```
 
-### `/lab` OAuth flow
-
-`/lab` is a separate, self-contained page (`labShellHTML`, `lab.js`) that
-drives the real AT Protocol OAuth flow against the configured PDS: PAR →
-`/oauth/authorize` (password or WebAuthn passkey sign-in) → consent →
-`/lab/callback`. It exists to exercise `Garazyk/Sources/Auth/`'s OAuth
-implementation end to end, independent of the admin shell's own
-password+CSRF auth.
-
-## CSS system
-
-`Assets/css/system.css` is the one stylesheet the admin shell and login page
-load (`<link rel="stylesheet" href="/css/system.css">`). It's not hand-authored
-top to bottom:
-
-- Its `tokens.css` and `reset.css` sections are **generated** from the
-  standalone `Assets/css/tokens.css`/`reset.css` files —
-  `scripts/admin-ui-build/generate_css_bundle.ts` (with a `deno test`
-  drift check in `generate_css_bundle_test.ts`). Edit the standalone files
-  and re-run the generator; don't hand-edit those two sections in
-  `system.css` directly, or they'll drift again (as they had before
-  2026-07-19 — see workstream 04 U6).
-- Its `components.css`/`layout.css`/`utilities.css` sections are
-  hand-curated **subsets** of the correspondingly-named standalone files
-  (marked `(selected)` in the section comments) — deliberately not a full
-  mirror, and not currently generated.
-
-Colors are OKLCH custom properties (`--color-bg-primary`, `--color-accent`,
-etc.) with a `@media (prefers-color-scheme: dark)` override block; spacing is
-a `--space-{xs,sm,md,lg,xl,2xl,3xl,4xl}` scale. Both are defined once in
-`tokens.css`.
-
-`Garazyk/Sources/Shared/DesignSystem/css/` is a **separate**, independently-
-maintained copy of the same modular file set that serves the OAuth
-`authorize.html`/`/lab` pages via `OAuth2Handler.m`'s `sharedCSSPath`. It has
-its own drift from `AdminUIServer/Assets/css/` — reconciling the two would
-mean picking a winner between legitimately different per-product designs
-and is out of scope here; see workstream 04 U6 for the current state.
-
-## Accessibility
-
-- One `<h1>` per page (login, shell); `admin-section-title` headings are
-  `<h2>`, with one nested `<h3>` for MST node detail — no skipped levels.
-- Every `<label>` is bound to its control via `for`/`id`, including the
-  per-service Connections form (label text is static, `for`/`id` are
-  interpolated with the service ID).
-- The tab nav is a full WAI-ARIA APG tabs pattern:
-  `role="tablist"`/`"tab"`/`"tabpanel"`, `aria-selected`,
-  `aria-controls`/`aria-labelledby`, roving `tabindex`, arrow-key/`Home`/`End`
-  navigation.
-- ~19 status/error containers (`*-result` divs, the connection test-result
-  span, the login error `<p>`) are `aria-live="polite"` or `role="alert"` so
-  async outcomes are announced.
-- OAuth sign-in → consent (`authorize.html`) moves focus into the consent
-  step's heading on both the password and passkey paths, instead of
-  stranding focus on the now-hidden sign-in button.
-
-Automated coverage: `scripts/admin_ui_browser_smoke_test.ts` drives the real
-binary through a real headless browser (CSP, CSRF, keyboard order, the ARIA
-tab structure, label binding, the `/lab` OAuth flow) — see its own header
-comment for the full checklist.
+Client behavior lives in `Assets/js/admin-ui.js`. `/lab` and the MST viewer have
+separate scripts.
 
 ## Security
 
-- **CSP**: a per-request nonce (`UIGenerateNonce`) on `<script>`/`<style>`,
-  `script-src-attr 'none'` (blocks inline event-handler attributes
-  entirely — this is why every interactive element uses `data-ui-action`/
-  `data-ui-form` plus a delegated listener in `admin-ui.js`, never
-  `onclick="..."`), `default-src 'self'`.
-- **CSRF**: double-submit cookie pattern — a `ui_admin_nonce` cookie plus a
-  required `X-UI-Admin-Nonce` request header that must match; nonce rotates
-  on each authenticated response (`X-UI-Admin-Nonce` in the response,
-  read by `admin-ui.js`'s `refreshCSRFNonce`).
-- **Session**: a random token, SHA-256-hashed before being held in memory
-  (`UIAuthManager`), 8-hour default TTL, `Secure`/`HttpOnly` cookie
-  attributes.
-- **XSS**: all server-rendered dynamic values go through `UIEscaped()`;
-  verified against a real hostile identifier (an email containing a raw
-  `<script>` tag) in `admin_ui_browser_smoke_test.ts`'s Area 1.
+The UI uses:
 
-## Extending the admin shell
+- a session cookie managed by `UIAuthManager`
+- a double-submit CSRF cookie and request header
+- per-response CSP nonces
+- `script-src-attr 'none'`
+- HTML escaping for server-rendered values
 
-1. Add a render method to `UIServerRuntime+Renderers.m`, declare it in
-   `UIServerRuntime+Private.h`'s `Renderers` category.
-2. Register its route (`/admin/partials/<name>`) alongside the others in
-   `UIServerRuntime.m`.
-3. Add the tab button + pane to `adminShellHTML` — copy an existing tab's
-   `role="tab"`/`role="tabpanel"`/`aria-*` attributes exactly (see
-   "Accessibility" above); `admin-ui.js`'s `switchTab` and the keyboard
-   handler work off the `.service-segment`/`.tab-pane` classes generically,
-   no per-tab JS needed.
-4. If the section needs new labeled form controls, bind every `<label>`
-   via `for`/`id` from the start.
-5. Reconfigure and rebuild (`cmake --build build --target garazyk-ui
-   AllTests --parallel 4`) — CMake's source list is explicit, not a glob.
-6. Extend `admin_ui_browser_smoke_test.ts` (or add a `UIServerRuntimeTests`
-   case) rather than relying on manual verification alone.
+Do not add inline event handlers. Use `data-ui-action` or `data-ui-form` with
+the delegated handlers in `admin-ui.js`.
+
+Keep backend tokens and passwords in the service environment or secret files.
+
+## Accessibility
+
+The shell uses ARIA tabs with roving `tabindex` and keyboard navigation. Labels
+must reference their controls with `for` and `id`. Async result regions use
+`aria-live` or `role="alert"`.
+
+When adding a tab, preserve the existing tab and panel relationships and keep
+the page heading order intact.
+
+## Add a section
+
+1. Add a renderer and declaration.
+2. Register its partial route.
+3. Add the tab and panel markup.
+4. Add delegated JavaScript only when the shared behavior is insufficient.
+5. Build `garazyk-ui` and `AllTests`.
+6. Extend the browser smoke test or `UIServerRuntimeTests`.
+
+```sh
+cmake --build build --target garazyk-ui AllTests --parallel 4
+```
