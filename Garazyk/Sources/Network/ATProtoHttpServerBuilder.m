@@ -10,6 +10,7 @@
 
 #import "ATProtoHttpServerBuilder.h"
 #import "App/PDSApplication.h"
+#import "Services/PDS/PDSAccountService.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Network/ATProtoHttpMetricsRoutePack.h"
@@ -176,12 +177,54 @@
                                              controller:self.controller];
   }
 
+  PDSApplication *app = self.application;
+  NSString *issuer = self.issuer ?: @"pds.garazyk.xyz";
   [server addRoute:@"GET"
               path:@"/"
            handler:^(HttpRequest *request, HttpResponse *response) {
              response.statusCode = HttpStatusOK;
-             response.contentType = @"text/plain; charset=utf-8";
-[response setBodyString:@",--.                                                                     \n   ,--/  /|                                       ,--,                     ,-.  \n',---,': / '                                     ,--.'|                 ,--/ /|  \n:   : '/ /                                ,----,|  | :               ,--. :/ |  \n|   '   ,                .--.--.        .'   .`|:  : '               :  : ' /   \n'   |  /     ,--.--.    /  /    '    .'   .'  .'|  ' |     ,--.--.   |  '  /    \n|   ;  ;    /       \\  |  :  /`./  ,---, '   ./ '  | |    /       \\  '  |  :    \n:   '   \\  .--.  .-. | |  :  ;_    ;   | .'  /  |  | :   .--.  .-. | |  |   \\   \n|   |    '  \\__\\/: . .  \\  \\    `. `---' /  ;--,'  : |__  \\__\\/: . . '  : |. \\  \n'   : |.  \\ ,\" .--.; |   \\`----.   \\  /  /  / .`||  | '.'| ,\" .--.; | |  | ' \\ \\ \n|   | '_\\.'/  /  ,.  |  /  /\\`--'  /./__;     .' ;  :    ;/  /  ,.  | '  : |--'  \n'   : |   ;  :   .'   \\'--'.     / ;   |  .'    |  ,   /;  :   .'   \\;  |,'     \n;   |,'   |  ,     .-./  \\`--'---'  \\`---'         ---\\`-' |  ,     .-./'--'       \n'---'      \\`--\\`---'                                      \\`--\\`---' \n"];
+             response.contentType = @"text/html; charset=utf-8";
+             
+             NSError *readErr = nil;
+             NSString *html = [NSString stringWithContentsOfFile:@"index.html" encoding:NSUTF8StringEncoding error:&readErr];
+             if (!html) {
+                 [response setBodyString:[NSString stringWithFormat:@"Failed to read index.html: %@", readErr]];
+                 return;
+             }
+             
+             id<PDSAccountService> accountService = app.accountService;
+             NSArray *accounts = [accountService getAllAccountsWithError:nil] ?: @[];
+             NSUInteger count = accounts.count;
+             
+             NSTimeInterval uptime = [[NSProcessInfo processInfo] systemUptime];
+             int hours = (int)(uptime / 3600);
+             int mins = (int)((uptime - hours * 3600) / 60);
+             NSString *uptimeStr = [NSString stringWithFormat:@"%dh %dm", hours, mins];
+             
+             unsigned long long physicalMem = [[NSProcessInfo processInfo] physicalMemory];
+             NSString *memTotal = [NSString stringWithFormat:@"%llu MB", physicalMem / 1024 / 1024];
+             
+             html = [html stringByReplacingOccurrencesOfString:@"{{server_hostname}}" withString:issuer];
+             html = [html stringByReplacingOccurrencesOfString:@"{{server_uptime}}" withString:uptimeStr];
+             html = [html stringByReplacingOccurrencesOfString:@"{{memory_total}}" withString:memTotal];
+             html = [html stringByReplacingOccurrencesOfString:@"{{memory_used}}" withString:@"N/A"];
+             html = [html stringByReplacingOccurrencesOfString:@"{{memory_free}}" withString:@"N/A"];
+             html = [html stringByReplacingOccurrencesOfString:@"{{account_count}}" withString:[@(count) stringValue]];
+             
+             NSMutableString *accountsHtml = [NSMutableString string];
+             for (NSDictionary *acc in accounts) {
+                 [accountsHtml appendFormat:@"<li><details open><summary><strong>%@</strong></summary><ul><li>DID: %@</li><li>Created: %@</li><li>Status: Active</li></ul></details></li>",
+                     acc[@"handle"] ?: @"Unknown", acc[@"did"] ?: @"Unknown", acc[@"createdAt"] ?: @"N/A"];
+             }
+             
+             NSRange startRange = [html rangeOfString:@"<!-- {{#each accounts}} -->"];
+             NSRange endRange = [html rangeOfString:@"<!-- {{/each}} -->"];
+             if (startRange.location != NSNotFound && endRange.location != NSNotFound) {
+                 NSRange replaceRange = NSMakeRange(startRange.location, endRange.location + endRange.length - startRange.location);
+                 html = [html stringByReplacingCharactersInRange:replaceRange withString:accountsHtml];
+             }
+             
+             [response setBodyString:html];
            }];
 
   // Suppress browser console noise for favicon probes when no icon asset is
