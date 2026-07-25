@@ -93,10 +93,10 @@ AGE_HOURS=$((AGE / 3600))
 AGE_DAYS=$((AGE / 86400))
 
 if [ "$AGE" -gt "$MAX_AGE_SECONDS" ]; then
-    log_error "Backup is too old: ${AGE_HOURS}h ${((AGE%3600)/60)}m (max: 24h)"
+    log_error "Backup is too old: ${AGE_HOURS}h $(( (AGE % 3600) / 60 ))m (max: 24h)"
     exit 1
 fi
-log_success "Backup age: ${AGE_HOURS}h ${((AGE%3600)/60)}m old"
+log_success "Backup age: ${AGE_HOURS}h $(( (AGE % 3600) / 60 ))m old"
 
 # 4. Verify tar.gz archive integrity
 log_info "Checking archive integrity..."
@@ -164,7 +164,7 @@ log_success "========================================="
 echo ""
 log_info "Summary:"
 log_info "  File: $BACKUP_FILE"
-log_info "  Age: ${AGE_HOURS}h ${((AGE%3600)/60)}m"
+log_info "  Age: ${AGE_HOURS}h $(( (AGE % 3600) / 60 ))m"
 log_info "  Size: ${FILE_SIZE_MB}MB"
 log_info "  Databases checked: $DB_COUNT"
 log_info "  Databases OK: $((DB_COUNT - DB_FAILED))"

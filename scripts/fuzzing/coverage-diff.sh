@@ -39,12 +39,15 @@ MUTATOR_NUM=${MUTATOR_EDGES:-0}
 if [ "$MUTATOR_NUM" -gt "$BASELINE_NUM" ]; then
     DIFF=$((MUTATOR_NUM - BASELINE_NUM))
     DIFF_PCT=$(echo "scale=1; ($DIFF * 100) / $BASELINE_NUM" | bc 2>/dev/null || echo 0)
+    STATUS_CLASS="improved"
     STATUS="✅ Mutator improved coverage by +$DIFF ($DIFF_PCT%)"
 elif [ "$MUTATOR_NUM" -lt "$BASELINE_NUM" ]; then
     DIFF=$((BASELINE_NUM - MUTATOR_NUM))
     DIFF_PCT=$(echo "scale=1; ($DIFF * 100) / $BASELINE_NUM" | bc 2>/dev/null || echo 0)
+    STATUS_CLASS="regressed"
     STATUS="⚠️  Baseline better by -$DIFF ($DIFF_PCT%)"
 else
+    STATUS_CLASS="equal"
     STATUS="➖ Equal coverage"
 fi
 
@@ -136,7 +139,7 @@ cat > "$REPORT" << EOF
       </div>
     </div>
 
-    <div class="status $([ "$MUTATOR_NUM" -gt "$BASELINE_NUM" ] && echo 'improved' || ([ "$MUTATOR_NUM" -lt "$BASELINE_NUM" ] && echo 'regressed' || echo 'equal')">
+    <div class="status $STATUS_CLASS">
       $STATUS
     </div>
 
