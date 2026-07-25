@@ -112,7 +112,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           brew update
-          brew install ninja cmake clang-tools-extra
+          brew install llvm@18 ninja cmake || true
 
       - name: Configure (CMake)
         run: |
@@ -123,6 +123,8 @@ jobs:
 
       - name: Run Clang-Tidy
         run: |
+          LLVM_BIN="$(brew --prefix llvm@18)/bin"
+          CLANG_TIDY="$LLVM_BIN/clang-tidy"
           cd build
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           cd ..
@@ -131,7 +133,7 @@ jobs:
             echo "Changed files detected"
           fi
           # Run on all Objective-C sources
-          find Garazyk/Sources -name "*.m" -exec clang-tidy -p build {} \; 2>&1 | tee clang-tidy-report.txt || true
+          find Garazyk/Sources -name "*.m" -exec "$CLANG_TIDY" -p build {} \; 2>&1 | tee clang-tidy-report.txt || true
         continue-on-error: true
 
       - name: Upload Clang-Tidy Report
