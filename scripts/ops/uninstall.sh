@@ -21,7 +21,7 @@ log_error() {
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         log_error "This operation requires root privileges."
-        log_info "Run with sudo: sudo $0 $@"
+        log_info "Run with sudo: sudo $0 $*"
         exit 1
     fi
 }
