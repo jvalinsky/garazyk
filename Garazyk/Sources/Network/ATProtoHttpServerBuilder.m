@@ -11,6 +11,7 @@
 #import "ATProtoHttpServerBuilder.h"
 #import "App/PDSApplication.h"
 #import "Services/PDS/PDSAccountService.h"
+#import "Database/PDSDatabaseAccount.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Network/ATProtoHttpMetricsRoutePack.h"
@@ -212,26 +213,18 @@
              html = [html stringByReplacingOccurrencesOfString:@"{{account_count}}" withString:[@(count) stringValue]];
              
              NSMutableString *accountsHtml = [NSMutableString string];
-             for (id accObj in accounts) {
-                 NSString *handle = @"Unknown";
-                 NSString *did = @"Unknown";
+             for (PDSDatabaseAccount *acc in accounts) {
+                 NSString *handle = acc.handle ?: @"Unknown";
+                 NSString *did = acc.did ?: @"Unknown";
                  NSString *createdAtStr = @"N/A";
                  
-                 if ([accObj respondsToSelector:@selector(handle)]) {
-                     handle = [accObj handle] ?: @"Unknown";
-                 }
-                 if ([accObj respondsToSelector:@selector(did)]) {
-                     did = [accObj did] ?: @"Unknown";
-                 }
-                 if ([accObj respondsToSelector:@selector(createdAt)]) {
-                     NSTimeInterval createdAt = [accObj createdAt];
-                     if (createdAt > 0) {
-                         NSDate *date = [NSDate dateWithTimeIntervalSince1970:createdAt];
-                         NSDateFormatter *df = [[NSDateFormatter alloc] init];
-                         df.dateStyle = NSDateFormatterMediumStyle;
-                         df.timeStyle = NSDateFormatterShortStyle;
-                         createdAtStr = [df stringFromDate:date];
-                     }
+                 NSTimeInterval createdAt = acc.createdAt;
+                 if (createdAt > 0) {
+                     NSDate *date = [NSDate dateWithTimeIntervalSince1970:createdAt];
+                     NSDateFormatter *df = [[NSDateFormatter alloc] init];
+                     df.dateStyle = NSDateFormatterMediumStyle;
+                     df.timeStyle = NSDateFormatterShortStyle;
+                     createdAtStr = [df stringFromDate:date];
                  }
                  
                  [accountsHtml appendFormat:@"<li><details open><summary><strong>%@</strong></summary><ul><li>DID: %@</li><li>Created: %@</li><li>Status: Active</li></ul></details></li>",
