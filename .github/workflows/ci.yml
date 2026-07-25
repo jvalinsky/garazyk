@@ -105,7 +105,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build --parallel 4 --target atprotopds-cli AllTests
+          cmake --build build --parallel 4 --target kaszlak AllTests
 
       - name: Run Tests
         run: |
@@ -248,7 +248,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build --parallel 4 --target atprotopds-cli AllTests
+          cmake --build build --parallel 4 --target kaszlak AllTests
 
       - name: Run PLC-specific tests
         run: |
@@ -256,7 +256,7 @@ jobs:
 
       - name: Verify PLC binary
         run: |
-          ./build/bin/atprotopds-cli --help
+          ./build/bin/kaszlak --help
 
   pty-sidecar-tests:
     name: PTY Sidecar Tests
