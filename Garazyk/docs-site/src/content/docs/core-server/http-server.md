@@ -9,7 +9,7 @@ simultaneously.
 
 Instead of relying on a massively complex, high-level third-party web framework (like Node's Express
 or Swift's Vapor) that might critically obscure internal performance metrics, bloat binary sizes, or
-dangerously inflate memory footprints, the `ATProtoPDS` HTTP logic is powered identically by a
+dangerously inflate memory footprints, the `Garazyk PDS` HTTP logic is powered identically by a
 custom, highly-optimized, completely non-blocking HTTP server written directly in Objective-C.
 
 ## Socket Programming on the Metal
@@ -45,7 +45,7 @@ iterate through a massive, flat array of complex Regular Expressions to find a r
 evaluates mathematically to $O(N)$ time complexity, meaning the routing engine heavily degrades and
 slows down proportionally as the API inevitably grows over months of development.
 
-Instead of Regex, `ATProtoPDS` structurally utilizes a highly-optimized **Trie (Prefix Tree)** data
+Instead of Regex, `Garazyk PDS` structurally utilizes a highly-optimized **Trie (Prefix Tree)** data
 structure. The incoming URL path string is physically split by `/` components. Every single discrete
 string segment becomes a physical node mapped inside the Trie memory map.
 
@@ -72,7 +72,7 @@ synchronously over a 30-minute slow mobile connection, nor can the PDS architect
 afford to allow the server kernel to cache massive 50MB payloads arbitrarily in RAM waiting for the
 upload to gracefully finish.
 
-To solve this fatal memory leak vector, `ATProtoPDS` rigorously, natively parses HTTP/1.1
+To solve this fatal memory leak vector, `Garazyk PDS` rigorously, natively parses HTTP/1.1
 `Transfer-Encoding: chunked` streams via the custom `HttpChunkedBodyParser`.
 
 A chunked HTTP payload legally streams data blindly in pieces, completely omitting a
@@ -100,5 +100,5 @@ disk, and instantly yield execution control right back to the GCD runloop.
 
 Once the final, definitive `0\r\n\r\n` terminator socket bytes legally arrive, the fully-assembled,
 entirely on-disk filepath string is eagerly forwarded to the application routing handler. This
-allows `ATProtoPDS` to natively support infinite $O(\infty)$ sized blob uploads while utilizing
+allows `Garazyk PDS` to natively support infinite $O(\infty)$ sized blob uploads while utilizing
 strictly $O(1)$ constant, unmoving RAM overhead.

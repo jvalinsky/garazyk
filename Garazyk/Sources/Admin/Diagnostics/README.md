@@ -449,7 +449,7 @@ Comprehensive integration tests are provided:
 Run tests with:
 
 ```bash
-xcodebuild test -scheme Garazyk -testPlan DiagnosticsTests
+cmake --build build --target AllTests --parallel 4 && ./build/tests/AllTests
 ```
 
 ## Monitoring and Observability
@@ -551,6 +551,6 @@ All diagnostics endpoints are prefixed with `/admin/api/diagnostics/`:
 ## References
 
 - Database Schema: See PDSSchemaManager.h
-- Migration: See PDSMigrationManager.m (V3DiagnosticsSchema)
-- API Routing: See AdminUIHandler.m (handlePartialPath:)
-- Frontend: See admin-diagnostics.js
+- Migration: See PDSMigrationManager.m (V3DiagnosticsSchema) in `Database/Migrations/`
+- API Routing: See UIServerRuntime.m (handlePartialPath:)
+- Frontend: See AdminUIServer/Assets/

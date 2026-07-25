@@ -27,7 +27,7 @@ For example, the `app.bsky.feed.post` lexicon defines exactly what a globally re
   - E.g., `createdAt` must be a datetime formatted precisely as an ISO8601 string.
   - E.g., `embed` can optionally contain a specific union of an image object or a quoted post.
 
-If you are implementing a server like `ATProtoPDS`, you must enforce these schemas rigidly on
+If you are implementing a server like `Garazyk PDS`, you must enforce these schemas rigidly on
 _every_ incoming HTTP request before passing any data to your underlying database or business
 routing layer. Failing to validate Lexicons means you risk storing malformed data that will break
 downstream Relays (AppViews) and corrupt the user's Merkle Search Tree (MST).
@@ -38,7 +38,7 @@ In a high-level JavaScript or TypeScript runtime environment, developers typical
 runtime libraries like `Zod` or `AJV` to elegantly validate incoming JSON payloads against defined
 schemas.
 
-Because `ATProtoPDS` is written in low-level, high-performance Objective-C, we cannot rely on
+Because `Garazyk PDS` is written in low-level, high-performance Objective-C, we cannot rely on
 Node.js luxuries. Instead, we use the iOS/macOS Foundation framework's rigorously battle-tested
 `NSJSONSerialization` to parse incoming HTTP/1.1 body bytes securely into raw `NSDictionary` or
 `NSArray` heaps. _Then_, we manually algorithmically validate them against our custom Lexicon parser
@@ -102,5 +102,5 @@ The lifecycle of an incoming repository mutation travels through a strict sieve:
    JSON or raw DAG-CBOR (Content Addressable aRchives) bytes, based entirely on the Lexicon's
    rigidly defined return response types.
 
-By front-loading incredibly aggressive validation, `ATProtoPDS` protects the wider Bluesky network
+By front-loading incredibly aggressive validation, `Garazyk PDS` protects the wider Bluesky network
 from data pollution.

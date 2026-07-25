@@ -9,7 +9,7 @@ or post spam. In a decentralized ATProtocol network, if a malicious actor gains 
 administrative scope to your PDS, they can mathematically and permanently destroy or irrevocably
 hijack the user's entire digital presence across the federation.
 
-To rigorously defend against this catastrophic scenario, `ATProtoPDS` deliberately does _not_ rely
+To rigorously defend against this catastrophic scenario, `Garazyk PDS` deliberately does _not_ rely
 on standard, bare HTTP Bearer tokens for sensitive client-to-server API requests. Instead, it
 implements a highly secure, full-fledged **OAuth 2.0 Authorization Server** deeply integrated with
 **PKCE** (Proof Key for Code Exchange) and **DPoP** (Demonstrating Proof-of-Possession) precisely
@@ -27,7 +27,7 @@ vulnerability, the attacker instantly gains full, unmitigated access. They can i
 read entirely private data, and perform wildly destructive actions completely without needing the
 user's actual password credentials.
 
-By implementing PKCE and DPoP flows natively inside the Objective-C networking stack, `ATProtoPDS`
+By implementing PKCE and DPoP flows natively inside the Objective-C networking stack, `Garazyk PDS`
 mathematically and continuously binds the issued access token exactly to the physical hardware
 client device that originally requested it, definitively neutralizing remote token theft.
 
@@ -99,7 +99,7 @@ containing the requested HTTP Method, the exact URL, and a continuously rotating
 nonce. They attach this freshly computed JWT as the `DPoP` HTTP Header right alongside the standard
 `Authorization: DPoP <token>` header.
 
-The highly optimized `AuthCryptoDPoP` module in `ATProtoPDS` rigorously enforces strict multi-stage
+The highly optimized `AuthCryptoDPoP` module in `Garazyk PDS` rigorously enforces strict multi-stage
 verification to entirely prevent interception and dangerous replay attacks:
 
 1. **Signature Verification**: Validates the JWT signature curve mathematically against the embedded
@@ -154,7 +154,7 @@ if (![expectedAthHash isEqualToString:actualAthHash]) {
 ### The Strict Nonce Mechanism
 
 To further structurally prevent intelligent attackers from maliciously pre-generating hundreds of
-mathematically valid DPoP proofs for future predicted requests and storing them, `ATProtoPDS`
+mathematically valid DPoP proofs for future predicted requests and storing them, `Garazyk PDS`
 heavily relies on DPoP Nonces.
 
 1. The server seamlessly includes a `DPoP-Nonce` HTTP header in its standard API responses.
@@ -170,7 +170,7 @@ heavily relies on DPoP Nonces.
 ## Conclusion
 
 By strictly enforcing both PKCE during the initial OAuth authorization graph and DPoP for absolutely
-all proceeding live API requests, `ATProtoPDS` architecturally guarantees that even if a Bearer
+all proceeding live API requests, `Garazyk PDS` architecturally guarantees that even if a Bearer
 token is stolen or leaked publicly on Pastebin, the attacker cannot execute a single API request on
 behalf of the user without also somehow physically stealing the user's silicon private key from
 their phone. This extreme, multi-layered defensive strategy provides the incredibly robust,
