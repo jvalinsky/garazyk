@@ -211,7 +211,7 @@ backup/restore drill with LtHash verification, disabled-mode retention
 unchanged), and credential-free structured observability for both the
 reconciler and the pruner. With P6.1-P6.3 and P6.5 closed, this
 workstream's only ongoing work is the P6.4 monthly drift cadence (next
-check due ~2026-08-22) and the separately-scoped `policy: managing-app`
+check due ~2026-08-23) and the separately-scoped `policy: managing-app`
 decision recorded under P6.3.
 
 1. Backup/restore drill: back up the space SQLite database plus WAL

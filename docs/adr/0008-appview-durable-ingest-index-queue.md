@@ -18,7 +18,7 @@ The queue must preserve AT Protocol cursor ordering, be safe to replay after a
 crash, and put a finite bound on disk growth. It must not acknowledge an event
 to the relay before the raw envelope and its cursor are durable.
 
-## Proposed decision
+## Decision
 
 Introduce a versioned AppView database table, `appview_pending_index_events`,
 as the only handoff between relay ingestion and materialization. Do not change

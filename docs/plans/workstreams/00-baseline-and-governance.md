@@ -1,7 +1,7 @@
 ---
 title: Baseline and Plan Governance
 status: active
-last_verified: 2026-07-17
+last_verified: 2026-07-24
 ---
 
 # Baseline and Plan Governance

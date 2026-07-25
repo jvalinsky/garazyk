@@ -300,8 +300,6 @@ Stop recording and export as HTML.
 
 | Approach                         | Scope          | Reusability                                   | State Model          |
 | -------------------------------- | -------------- | --------------------------------------------- | -------------------- |
-| Custom tool (.opencode/tools/)   | opencode only  | Low                                           | Stateless (one-shot) |
-| Full plugin (.opencode/plugins/) | opencode only  | Low                                           | Stateful             |
 | MCP server                       | Any MCP client | High — works with Claude Code, opencode, etc. | Stateful process     |
 
 MCP servers are spawned as subprocesses, communicate via stdin/stdout JSON-RPC,

@@ -8,12 +8,12 @@ This repository contains six Deno/TypeScript packages for tooling, testing, and 
 
 | Package              | Path                  | Tests | JSR | Description                                            |
 | -------------------- | --------------------- | ----- | --- | ------------------------------------------------------ |
-| `@garazyk/gruszka`   | `packages/gruszka/`   | 240   | ✅  | XRPC client generation from ATProto lexicons           |
-| `@garazyk/schemat`   | `packages/schemat/`   | 67    | ✅  | Topology schema, compilation, and presets              |
-| `@garazyk/laweta`    | `packages/laweta/`    | 63    | ✅  | Docker Engine API client and orchestration             |
-| `@garazyk/hamownia`  | `packages/hamownia/`  | 73    | ❌  | Scenario runner with assertions and mock services      |
-| `@garazyk/narzedzia` | `packages/narzedzia/` | 11    | ❌  | Developer tooling (boundary check, doc coverage, SPDX) |
-| `@garazyk/tui`       | `packages/tui/`       | 227   | ❌  | Terminal UI framework (screen buffer, focus, theme)    |
+| `@garazyk/gruszka`   | `packages/gruszka/`   | 321   | ✅  | XRPC client generation from ATProto lexicons           |
+| `@garazyk/schemat`   | `packages/schemat/`   | 191   | ✅  | Topology schema, compilation, and presets              |
+| `@garazyk/laweta`    | `packages/laweta/`    | 85    | ✅  | Docker Engine API client and orchestration             |
+| `@garazyk/hamownia`  | `packages/hamownia/`  | 329   | ❌  | Scenario runner with assertions and mock services      |
+| `@garazyk/narzedzia` | `packages/narzedzia/` | 85    | ❌  | Developer tooling (boundary check, doc coverage, SPDX) |
+| `@garazyk/tui`       | `packages/tui/`       | 252   | ❌  | Terminal UI framework (screen buffer, focus, theme)    |
 
 ## Architecture
 

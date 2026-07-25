@@ -37,16 +37,16 @@ title: Tooling & Skills Documentation
 
 | Package | Tests | JSR | Description |
 |---|---|---|---|
-| `gruszka` | 35 | ✅ | XRPC client generation |
-| `schemat` | 67 | ✅ | Topology schema & compilation |
-| `laweta` | 63 | ✅ | Docker orchestration |
-| `hamownia` | 73 | ❌ | Scenario runner |
-| `narzedzia` | 11 | ❌ | Developer tooling |
-| `tui` | 227 | ❌ | Terminal UI framework |
+| `gruszka` | 321 | ✅ | XRPC client generation |
+| `schemat` | 191 | ✅ | Topology schema & compilation |
+| `laweta` | 85 | ✅ | Docker orchestration |
+| `hamownia` | 329 | ❌ | Scenario runner |
+| `narzedzia` | 85 | ❌ | Developer tooling |
+| `tui` | 252 | ❌ | Terminal UI framework |
 
 ## AI Agent Skills
 
-Skills are located in `.agents/skills/`. See `AGENTS.md` for the subagent delegation table and `AGENTS_QUICKREF.md` for the quick reference.
+Skills are located in `.agents/skills/`. See `AGENTS.md` for the subagent delegation table.
 
 Testing and programmatic skills:
 

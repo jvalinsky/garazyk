@@ -43,14 +43,17 @@ For slight divergence, the proposal also describes a lightweight path:
 - `SpaceRepoCAR` produces a correct two-root CAR (commit + DRISL index,
   then records in lexicographic order).
 - `PDSSpaceReconciler` handles **outbound** notification replay (writer to authority). It does not do **inbound** sync (reader to authority).
-- `PDSSpaceStore` has no method to import a CAR, no oplog pruning method,
-  and no local record index method for diffing.
-- `CARReader` only exposes the first root (`rootCID`). The space CAR has
-  two roots; the second (DRISL index) is not accessible via the reader API.
-- `listRecords` and `listRepoOps` handlers do not return `cursor` in their
-  responses, despite the lexicons defining the field. This makes
-  pagination impossible for clients. This is a bug that must be fixed for
-  the lightweight recovery path to work.
+- ~~`PDSSpaceStore` has no method to import a CAR, no oplog pruning method,
+  and no local record index method for diffing.~~ **Resolved:** `PDSSpaceStore`
+  now has `importRepoFromCAR:space:author:commitPublicKey:error:`,
+  `pruneOplogForSpace:author:keepingRevisions:error:`,
+  `pruneAllOplogsKeepingRevisions:error:`, and `recordIndexForSpace:author:error:`.
+- ~~`CARReader` only exposes the first root (`rootCID`).~~ **Resolved:**
+  `CARReader` has a `roots` property (`NSArray<CID *>`); `rootCID` is
+  `roots.firstObject`.
+- ~~`listRecords` and `listRepoOps` handlers do not return `cursor` in their
+  responses~~ **Resolved:** Both handlers return `cursor` when results hit
+  the limit.
 - Scenario 93 does not exercise full-state recovery after oplog pruning.
 - The compatibility gate states: "remote state-import/full-CAR
   reconciliation pending."

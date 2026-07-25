@@ -1,7 +1,7 @@
 ---
 title: Embedded Runtime and Deferred Products
 status: active
-last_verified: 2026-07-22
+last_verified: 2026-07-24
 ---
 
 # Embedded Runtime and Deferred Products
@@ -60,7 +60,7 @@ Do not reopen the completed 200-app corpus plan in this repository.
 ## E3. Decide incomplete product surfaces — complete, with one correction (2026-07-22)
 
 The operator approved all six dispositions recommended in
-[the Phase 10 product-surface decision brief](../phase-10-product-surface-decision-brief.md).
+[the Phase 10 product-surface decision brief](../archive/planning/phase-10-product-surface-decision-brief.md).
 Five are implemented:
 
 - SMTP delivery removed (`PDSEmailProviderFactory` now rejects `smtp`; use `resend` or `mock`).
@@ -79,11 +79,7 @@ correct `STARL0Writer` that genuinely walks the live MST. See the brief's "Corre
 disposition not executed" section for the full evidence trail. STAR negotiation is unchanged and
 remains supported.
 
-## E4. Deferred AppView pooling
+## E4. AppView pooling — complete (2026-07-24)
 
-ADR 0002 remains authoritative. Revisit pooling only after:
-
-- numbered migration safety is complete;
-- concurrent read/write characterization exists;
-- production measurements show serialized access is a bottleneck;
-- rollback can restore the serial manager without schema changes.
+ADR 0002 is superseded. AppView pooling and migration safety are implemented
+(mega-plan Phase 5 item 3). This section is retained for historical context.

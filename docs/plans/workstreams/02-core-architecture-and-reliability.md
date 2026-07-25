@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-19
+last_verified: 2026-07-24
 ---
 
 # Core Architecture and Reliability
@@ -166,4 +166,6 @@ After generator and coverage work:
   literal in favor of generated constants. Six focused Deno tests and the
   read-only scan run in the existing NSID CI job; tests and indirect
   test-control constants are deliberately outside this narrow boundary;
-- keep AppView pooling deferred under ADR 0002.
+- ~~keep AppView pooling deferred under ADR 0002~~ — done (2026-07-24):
+  ADR 0002 superseded; AppView pooling and migration safety implemented
+  (mega-plan Phase 5 item 3).
