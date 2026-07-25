@@ -31,6 +31,7 @@ jobs:
             libxslt1-dev \
             libqrencode-dev \
             libffi-dev \
+            libobjc-12-dev \
             gnustep-devel \
             clang
 

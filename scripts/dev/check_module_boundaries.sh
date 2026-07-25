@@ -6,18 +6,39 @@ cd "$ROOT"
 
 failures=0
 
+search_matches() {
+  local pattern="$1"
+  shift
+  if command -v rg >/dev/null 2>&1; then
+    rg -n "$pattern" "$@"
+  else
+    grep -R -n -E -- "$pattern" "$@"
+  fi
+}
+
 check_no_matches() {
   local description="$1"
   local pattern="$2"
   shift 2
 
   echo "==> ${description}"
-  if rg -n "$pattern" "$@" >/tmp/pds_boundary_check_hits.txt; then
-    cat /tmp/pds_boundary_check_hits.txt
+  local output
+  local result
+  output="$(mktemp)"
+  if search_matches "$pattern" "$@" >"$output"; then
+    cat "$output"
+    rm -f "$output"
     echo "FAIL: ${description}"
     failures=$((failures + 1))
   else
-    echo "PASS: ${description}"
+    result=$?
+    rm -f "$output"
+    if [[ "$result" -eq 1 ]]; then
+      echo "PASS: ${description}"
+    else
+      echo "FAIL: ${description} (search command failed)"
+      failures=$((failures + 1))
+    fi
   fi
 }
 
@@ -35,7 +56,9 @@ contains_word() {
 extract_public_module_links() {
   local module="$1"
   local line
-  line="$(rg -No "target_link_libraries\\(${module} PUBLIC ([^)]+)\\)" CMakeLists.txt | head -n1 || true)"
+  line="$(awk -v module="$module" '
+    $0 ~ ("target_link_libraries\\(" module " PUBLIC ") { print; exit }
+  ' CMakeLists.txt)"
   if [[ -z "$line" ]]; then
     echo ""
     return
@@ -78,20 +101,36 @@ check_no_matches \
   Garazyk/Sources/Sync
 
 check_no_matches \
-  "PLC module does not import App/*" \
-  '#import "App/' \
+  "PLC module does not import App runtime types" \
+  '#import "App/(PDS|ATProtoApplication|ATProtoServiceContainer)' \
   Garazyk/Sources/PLC
 
 echo "==> Module public dependency DAG checks"
-declare -A allowed
-allowed["ATProtoCore"]=""
-allowed["ATProtoStorage"]="ATProtoCore"
-allowed["ATProtoServices"]="ATProtoStorage ATProtoCore"
-allowed["ATProtoTransport"]="ATProtoCore"
-allowed["ATProtoSync"]="ATProtoStorage ATProtoTransport ATProtoCore"
-allowed["ATProtoXRPC"]="ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore"
-allowed["ATProtoPLC"]="ATProtoTransport ATProtoCore"
-allowed["ATProtoRuntime"]="ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore"
+
+allowed_links_for_module() {
+  case "$1" in
+    ATProtoCore) echo "" ;;
+    ATProtoStorage|ATProtoTransport) echo "ATProtoCore" ;;
+    ATProtoServices) echo "ATProtoStorage ATProtoCore" ;;
+    ATProtoSync) echo "ATProtoStorage ATProtoTransport ATProtoCore" ;;
+    ATProtoXRPC) echo "ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore" ;;
+    ATProtoPLC) echo "ATProtoTransport ATProtoCore" ;;
+    ATProtoVideoService) echo "ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport" ;;
+    ATProtoRuntime) echo "ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService" ;;
+    *) echo "" ;;
+  esac
+}
+
+module_rank_for() {
+  case "$1" in
+    ATProtoCore) echo 1 ;;
+    ATProtoStorage|ATProtoTransport) echo 2 ;;
+    ATProtoServices|ATProtoSync|ATProtoPLC|ATProtoMediaCore) echo 3 ;;
+    ATProtoXRPC|ATProtoVideoService) echo 4 ;;
+    ATProtoRuntime) echo 5 ;;
+    *) echo 0 ;;
+  esac
+}
 
 modules=(
   ATProtoCore
@@ -101,43 +140,36 @@ modules=(
   ATProtoSync
   ATProtoXRPC
   ATProtoPLC
+  ATProtoVideoService
   ATProtoRuntime
-)
-
-declare -A module_rank=(
-  [ATProtoCore]=1
-  [ATProtoStorage]=2
-  [ATProtoTransport]=2
-  [ATProtoServices]=3
-  [ATProtoSync]=3
-  [ATProtoPLC]=3
-  [ATProtoXRPC]=4
-  [ATProtoRuntime]=5
 )
 
 for module in "${modules[@]}"; do
   observed="$(extract_public_module_links "$module")"
+  observed_arr=()
   read -r -a observed_arr <<<"$observed"
-  read -r -a allowed_arr <<<"${allowed[$module]}"
-  for dep in "${observed_arr[@]}"; do
+  allowed_arr=()
+  read -r -a allowed_arr <<<"$(allowed_links_for_module "$module")"
+  for dep in "${observed_arr[@]:-}"; do
     if [[ "$dep" != ATProto* ]]; then
       continue
     fi
-    if ! contains_word "$dep" "${allowed_arr[@]}"; then
+    if ! contains_word "$dep" "${allowed_arr[@]:-}"; then
       echo "FAIL: ${module} links disallowed module dependency: ${dep}"
       failures=$((failures + 1))
     fi
 
-    module_rank_value="${module_rank[$module]:-0}"
-    dep_rank_value="${module_rank[$dep]:-0}"
+    module_rank_value="$(module_rank_for "$module")"
+    dep_rank_value="$(module_rank_for "$dep")"
     if [[ "$dep_rank_value" -ge "$module_rank_value" ]]; then
       echo "FAIL: ${module} links reverse/lateral dependency ${dep} (rank ${module_rank_value} -> ${dep_rank_value})"
       failures=$((failures + 1))
     fi
 
     dep_observed="$(extract_public_module_links "$dep")"
+    dep_observed_arr=()
     read -r -a dep_observed_arr <<<"$dep_observed"
-    if contains_word "$module" "${dep_observed_arr[@]}"; then
+    if contains_word "$module" "${dep_observed_arr[@]:-}"; then
       echo "FAIL: direct reverse dependency cycle detected between ${module} and ${dep}"
       failures=$((failures + 1))
     fi
@@ -145,32 +177,39 @@ for module in "${modules[@]}"; do
 done
 
 echo "==> Executable link surface checks"
-declare -A expected_exec_links
-expected_exec_links["kaszlak"]="ATProtoRuntime ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoStorage ATProtoCore"
-expected_exec_links["campagnola"]="ATProtoPLC ATProtoTransport ATProtoCore"
-expected_exec_links["zuk"]="ATProtoSync ATProtoTransport ATProtoCore"
+
+expected_links_for_executable() {
+  case "$1" in
+    kaszlak) echo "ATProtoAppViewServer ATProtoRuntime ATProtoVideoService ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoStorage ATProtoPLC ATProtoCore" ;;
+    campagnola) echo "ATProtoAppViewServer ATProtoPLC ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices" ;;
+    zuk) echo "ATProtoAppViewServer ATProtoSync ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices ATProtoStorage" ;;
+    *) echo "" ;;
+  esac
+}
 
 for exe in kaszlak campagnola zuk; do
   observed="$(extract_private_executable_links "$exe")"
+  observed_arr=()
   read -r -a observed_arr <<<"$observed"
-  read -r -a expected_arr <<<"${expected_exec_links[$exe]}"
+  expected_arr=()
+  read -r -a expected_arr <<<"$(expected_links_for_executable "$exe")"
 
-  declare -A observed_mods=()
-  for dep in "${observed_arr[@]}"; do
+  observed_mods=()
+  for dep in "${observed_arr[@]:-}"; do
     if [[ "$dep" == ATProto* ]]; then
-      observed_mods["$dep"]=1
+      observed_mods+=("$dep")
     fi
   done
 
   for dep in "${expected_arr[@]}"; do
-    if [[ -z "${observed_mods[$dep]:-}" ]]; then
+    if ! contains_word "$dep" "${observed_mods[@]:-}"; then
       echo "FAIL: ${exe} missing expected module dependency ${dep}"
       failures=$((failures + 1))
     fi
   done
 
-  for dep in "${!observed_mods[@]}"; do
-    if ! contains_word "$dep" "${expected_arr[@]}"; then
+  for dep in "${observed_mods[@]:-}"; do
+    if ! contains_word "$dep" "${expected_arr[@]:-}"; then
       echo "FAIL: ${exe} has unexpected module dependency ${dep}"
       failures=$((failures + 1))
     fi

@@ -26,6 +26,10 @@ steps:
     maxMs: 500
     label: Verify content changed after typing
   - type: press_key
+    value: enter
+    maxMs: 500
+    label: Submit text to cat
+  - type: press_key
     value: ctrl+d
     maxMs: 500
     label: Send EOF to cat
