@@ -34,12 +34,19 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy, nullable) NSString *chatAdminToken;
 @property(nonatomic, copy, nullable) NSString *videoAdminToken;
 
-/*! Directory containing static assets (CSS, JS, images). Defaults to Assets/ next to the binary. */
+/**
+ * @abstract Directory containing static assets (CSS, JS, images). Defaults to Assets/ next to the binary.
+ */
 @property(nonatomic, copy, nullable) NSString *assetsDirectory;
 
 + (instancetype)configurationFromEnvironment;
 
-/*! Update service URLs and tokens from the given dictionary. Keys: pdsURL, plcURL, relayURL, appViewURL, chatURL, videoURL, pdsToken, plcToken, relayToken, appViewToken, chatToken, videoToken. Returns YES if all URLs were valid. */
+/**
+ * @abstract Update service URLs and tokens from the given dictionary.
+ * @discussion Keys: pdsURL, plcURL, relayURL, appViewURL, chatURL, videoURL, pdsToken, plcToken, relayToken, appViewToken, chatToken, videoToken.
+ * @param updates The dictionary of updates.
+ * @return YES if all URLs were valid; otherwise NO.
+ */
 - (BOOL)updateWithDictionary:(NSDictionary<NSString *, NSString *> *)updates;
 
 @end

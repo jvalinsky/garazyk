@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for implementation. The feature is disabled unless explicitly enabled.
+Accepted for implementation. The feature requires explicit enabling.
 
 ## Sources
 
@@ -12,7 +12,7 @@ Accepted for implementation. The feature is disabled unless explicitly enabled.
 
 ## Decision
 
-Permissioned data is a separate protocol subsystem. It is never represented as
+Permissioned data operates as a separate protocol subsystem. It never appears as
 a public repository record, a public sync event, a search document, a
 moderation-feed item, or an ordinary `com.atproto.repo.*` URI. Its storage is
 an isolated SQLite database with a forward-only schema migration table and
@@ -22,8 +22,8 @@ credential-replay row.
 The PDS implements the repo-host and space-host roles as distinct service
 operations. A local user PDS hosts that user's repository; a space host owns
 policy, membership, delegation-token exchange, writer discovery, and
-notification fan-out. This separation permits an account PDS and a space host
-to be different services.
+notification fan-out. This separation allows an account PDS and a space host
+to run as different services.
 
 The protocol uses the exact `com.atproto.space.*` and
 `com.atproto.simplespace.*` Lexicons from the pinned reference. Space URI,
@@ -47,8 +47,7 @@ filesystem namespace, or public blob metadata. Because Proposal 0016 defines
 `com.atproto.repo.uploadBlob` binary endpoint only when all three experimental
 headers are present: `X-Atproto-Space`, `X-Atproto-Space-Collection`, and
 `X-Atproto-Space-Action` (`create` or `update`). The verified OAuth token must
-permit that exact space action and collection. This binding is deliberately
-explicit, documented, and private to the experimental implementation until an
+permit that exact space action and collection. This binding remains explicit and private to the experimental implementation until an
 upstream upload lexicon is standardized.
 
 ## Revocation and credential lifetime
@@ -56,38 +55,25 @@ upstream upload lexicon is standardized.
 Membership changes take effect before every new credential mint and every
 OAuth-authorized request. A protocol space credential contains no member DID
 and is designed for offline verification by any repo host, so it cannot be
-retroactively tied to a removed member without changing the protocol. Existing
-credentials remain valid only until their bounded expiration; the default and
-maximum implemented lifetime is two hours. The space host records every issued
-credential recipient for audit and notification purposes but does not use that
-record as an unverifiable remote-host revocation oracle.
+retroactively tied to a removed member without changing the protocol. Credentials expire after a maximum of two hours. The space host records credential recipients for audits and notifications. It does not use this record as a revocation oracle.
 
-Delegation tokens are single-use, recorded atomically before exchange, and
-kept until expiration. Credentials and delegation tokens are never logged.
+Delegation tokens are single-use and recorded atomically before exchange. The system does not log credentials or delegation tokens.
 
 ## Deliberately disabled scope
 
-The `managing-app` policy and `appAccess#allowList` are disabled until the PDS
-can validate a client attestation end-to-end: resolved client metadata, JWKS,
-key identifier, signature, issuer/subject equality, audience, expiry, nonce
-replay, and app identity. Their configuration is rejected instead of falling
-back to `open`. This is required because accepting a merely structural
-attestation would weaken the privacy boundary.
+The PDS disables the `managing-app` policy and `appAccess#allowList` until it can validate a client attestation end-to-end. It rejects their configuration rather than falling back to `open`. Accepting a structural attestation weakens the privacy boundary.
 
 ## Operations
 
 Backups must include the permissioned-space database and its WAL sidecars.
-Rollback means disabling the feature and retaining that database; downgrades
-do not delete permissioned records. The space signing key initially falls back
+To roll back, disable the feature and retain the database. Downgrades do not delete permissioned records. The space signing key initially falls back
 to the account `#atproto` key as Proposal 0016 permits. A future dedicated
 `#atproto_space` key requires a key-rotation migration and is not silently
 emulated.
 
 When enabled, newly created account and server DID documents explicitly publish
 `#atproto_space` with the existing account signing key and
-`#atproto_space_host` with the PDS endpoint. This is the allowed explicit
-same-value form from Proposal 0016, not a claim that an independent space key
-exists. Operators may set `permissionedSpacesHostEndpoint` to a validated
+`#atproto_space_host` with the PDS endpoint. This uses the same-value form from Proposal 0016. It does not claim an independent space key exists. Operators may set `permissionedSpacesHostEndpoint` to a validated
 HTTP(S) URL when the endpoint that PDS peers resolve differs from the public
 issuer (for example, a Docker network alias). Existing `did:plc` accounts need
 an ordinary PLC rotation to acquire these entries; the PDS never rewrites a
@@ -98,8 +84,7 @@ user's DID document implicitly.
 ### Context
 
 The current `#atproto_space` entry can intentionally reuse `#atproto`, but
-credential minting therefore uses the account signing key. Relabeling that
-signature as a dedicated space key would make the DID document lie. A real
+credential minting therefore uses the account signing key. Relabeling the signature as a dedicated space key makes the DID document lie. A real
 migration needs a separate private key, an ordinary operator-authorized PLC
 operation, and a bounded overlap in which existing credentials continue to
 verify.
@@ -116,19 +101,19 @@ delegation token is accepted as a CLI argument or emitted in logs.
 The workflow has four durable states, recorded separately from the public
 space database:
 
-1. **Fallback** — only `#atproto` is authoritative. New credentials carry
+1. **Fallback**: only `#atproto` is authoritative. New credentials carry
    `kid: "#atproto"` and are signed by the account signer.
-2. **Prepared** — the operator generated and durably stored the dedicated
+2. **Prepared**: the operator generated and durably stored the dedicated
    signer, but no DID operation has been accepted. This state cannot mint a
    `#atproto_space` credential.
-3. **Overlap** — an operator-submitted PLC operation has published the
+3. **Overlap**: an operator-submitted PLC operation has published the
    dedicated public key at the exact `#atproto_space` fragment, preserving the
    account key at `#atproto`. New credentials use the dedicated signer and
    `kid: "#atproto_space"`; verifiers accept either exact fragment according
    to the token `kid`. The old account signer remains available only through
    the maximum existing credential lifetime (currently two hours) plus DID
    cache propagation time.
-4. **Cut over** — after that deadline, account-key credentials are rejected
+4. **Cut over**: after that deadline, account-key credentials are rejected
    as expired and only the dedicated signer mints credentials. The account
    key remains unchanged for ordinary repository signing.
 
@@ -141,8 +126,7 @@ same command. A failed or abandoned PLC operation leaves the persisted
 dedicated signer unused and the DID in **Fallback**; it cannot change minted
 credential headers.
 
-Rollback during **Overlap** means stopping dedicated-key minting and allowing
-already-issued credentials to expire naturally. A second ordinary PLC
+To roll back during **Overlap**, stop dedicated-key minting and let issued credentials expire. A second ordinary PLC
 operation may restore the same-value fallback entry only after no unexpired
 dedicated-key credential can be presented. No rotation removes the account
 key, rewrites public repository signatures, or deletes permissioned data.
@@ -165,15 +149,9 @@ unrelated signer. It must additionally prove, in a two-PDS topology, that:
 
 ### Context
 
-The original decision deliberately disabled `managing-app` and
-`appAccess#allowList` "until the PDS can validate a client attestation
-end-to-end." No upstream AT Protocol spec defines an attestation wire format
-— Proposal 0016 names the `managing-app` policy without specifying one — so
-enabling this required Garazyk to define its own minimal scheme rather than
-implement an existing standard.
+The original decision disabled `managing-app` and `appAccess#allowList` until the PDS could validate a client attestation end-to-end. Since no upstream AT Protocol spec defines an attestation wire format, Garazyk defines its own minimal scheme.
 
-Reading the vendored `com.atproto.simplespace` lexicons during implementation
-surfaced that "managing-app" is actually two separable mechanisms, not one:
+The vendored `com.atproto.simplespace` lexicons split "managing-app" into two separable mechanisms:
 
 - `appAccess#allowList` gates *app-mediated access* to an already-authorized
   user's credential request. Its own lexicon doc comment says exactly what
@@ -187,14 +165,9 @@ surfaced that "managing-app" is actually two separable mechanisms, not one:
 
 ### Decision
 
-Implement full client attestation for `appAccess#allowList` only. Leave
-`policy: managing-app` (and the bare `managingApp` field, which is only
-meaningful under that policy) rejected, since `checkUserAccess` calling is a
-separate, unimplemented feature and enabling the field without it would
-promise behavior the code does not provide.
+Implement client attestation for `appAccess#allowList` only. Reject `policy: managing-app` and the `managingApp` field. Calling `checkUserAccess` remains unimplemented, and enabling the field promises missing behavior.
 
-Attestation scheme (`PDSSpaceAppAttestationVerifier`, no upstream spec to
-follow, so recorded here as the source of truth): an app's `client_id` is an
+Garazyk implements the attestation scheme in `PDSSpaceAppAttestationVerifier` as follows: an app's `client_id` is an
 `https://` URL serving a JSON client metadata document, mirroring the
 existing ATProto OAuth dynamic-client convention this codebase already uses.
 The app must present a compact JWT (`typ:
@@ -202,8 +175,7 @@ The app must present a compact JWT (`typ:
 published in that document's JWKS (`jwks` inline or fetched from `jwks_uri`),
 satisfying every requirement the original disabled-scope note listed:
 
-- `iss` and `sub` both equal the `client_id` (self-asserted app identity —
-  there is no third party being identified, unlike a delegation JWT);
+- `iss` and `sub` both equal the `client_id` (the app asserts its own identity without identifying a third party);
 - `aud` equals this PDS's `#atproto_space_host` service identifier, so an
   attestation minted for one PDS cannot be replayed against another;
 - the client metadata's own `client_id` field must equal the URL it was
@@ -213,16 +185,9 @@ satisfying every requirement the original disabled-scope note listed:
 - `exp`/`iat` must be present, bound to a maximum 5-minute lifetime (this is
   minted fresh per request, not a long-lived credential); and
 - the `jti` must not have been seen before, tracked in its own
-  `space_app_attestation_replay` table (kept separate from
-  `space_delegation_replay` — an app's own key is an independent trust domain
-  from delegation tokens this PDS mints itself, so a jti collision between
-  the two can never be mistaken for a real replay).
+  `space_app_attestation_replay` table (kept separate from `space_delegation_replay` because the app's key operates in an independent trust domain from delegation tokens).
 
-A structural-only check remains explicitly not an option, matching the
-original decision: every successful verification proves the caller controls
-the private key published at the client_id's own metadata endpoint, via a
-real signature check against a key fetched over the network at verification
-time.
+Every successful verification proves the caller controls the private key published at the client_id's metadata endpoint. The PDS checks the signature against a key fetched over the network during verification. Structural-only checks remain unsupported.
 
 ### Consequences and verification
 

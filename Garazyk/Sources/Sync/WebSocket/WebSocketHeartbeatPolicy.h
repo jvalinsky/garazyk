@@ -25,21 +25,12 @@ typedef NS_ENUM(NSInteger, WSHeartbeatAction) {
 @property (nonatomic, assign) NSTimeInterval heartbeatTimeout;  // default 10.0
 
 // Called by the adapter at regular intervals (e.g., timer tick)
-/**
- * @abstract Performs the tick operation.
- */
 - (WSHeartbeatAction)tick:(NSTimeInterval)now;
 
 // Called when a pong is received
-/**
- * @abstract Performs the pongReceived operation.
- */
 - (void)pongReceived:(NSTimeInterval)now;
 
 // Called when a ping is sent
-/**
- * @abstract Performs the pingSent operation.
- */
 - (void)pingSent:(NSTimeInterval)now;
 
 @end

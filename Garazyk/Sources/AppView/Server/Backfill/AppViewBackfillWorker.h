@@ -31,9 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
 didCompleteForDID:(NSString *)did
        lastRev:(NSString *)lastRev;
 
-/**
- * @abstract Performs the worker operation.
- */
 - (void)worker:(AppViewBackfillWorker *)worker
  didFailForDID:(NSString *)did
          error:(NSError *)error

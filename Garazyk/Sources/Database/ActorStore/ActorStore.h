@@ -45,9 +45,7 @@ extern NSString * const PDSActorStoreErrorDomain;
  @constant PDSActorStoreErrorAccessControlCreationFailed Failed to create access control.
  @constant PDSActorStoreErrorKeychainUpgradeRequired Keychain upgrade required.
  */
-/**
- * @abstract Defines PDSActorStoreError values exposed by this API.
- */
+
 typedef NS_ENUM(NSInteger, PDSActorStoreError) {
     PDSActorStoreErrorNotFound = 1000,
     PDSActorStoreErrorAlreadyExists,
@@ -74,9 +72,9 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (nullable NSData *)getRepoRootForDid:(NSString *)did error:(NSError **)error;
 - (nullable NSString *)getRepoRevisionForDid:(NSString *)did error:(NSError **)error;
 /**
- * @abstract Latest mutation revision with error.
+ * @abstract Retrieves the latest mutation revision.
  * @param error Receives details when the operation fails.
- * @return The requested string, or nil when unavailable.
+ * @return The latest revision string, or nil if none exists.
  */
 - (nullable NSString *)latestMutationRevisionWithError:(NSError **)error;
 - (BOOL)repoRevisionExists:(NSString *)rev error:(NSError **)error;
@@ -88,7 +86,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                                                      limit:(NSUInteger)limit
                                                                      error:(NSError **)error;
 /**
- * @abstract List records for did.
+ * @abstract Lists records for an actor.
  * @param did Actor DID for the request.
  * @param collection Repository collection NSID.
  * @param limit Maximum number of records to return.
@@ -116,7 +114,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                                      offset:(NSUInteger)offset
                                                       error:(NSError **)error;
 /**
- * @abstract List block cids since rev.
+ * @abstract Lists block CIDs since a revision.
  * @param rev Repository revision.
  * @param limit Maximum number of records to return.
  * @param error Receives details when the operation fails.
@@ -129,7 +127,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                            limit:(NSUInteger)limit
                                            error:(NSError **)error;
 /**
- * @abstract Get block for cid.
+ * @abstract Retrieves a block by CID.
  * @param cid Content identifier for the blob or block.
  * @param did Actor DID for the request.
  * @param error Receives details when the operation fails.
@@ -141,7 +139,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                            offset:(NSUInteger)offset
                                             error:(NSError **)error;
 /**
- * @abstract Get record count for did.
+ * @abstract Retrieves the record count for an actor.
  * @param did Actor DID for the request.
  * @param collection Repository collection NSID.
  * @param error Receives details when the operation fails.
@@ -149,7 +147,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
  */
 - (NSInteger)getRecordCountForDid:(NSString *)did collection:(nullable NSString *)collection error:(NSError **)error;
 /**
- * @abstract Check if did has any records in collection using a fast LIMIT 1 probe.
+ * @abstract Checks if an actor has any records in a collection.
  * @param collection Repository collection NSID.
  * @param error Receives details when the operation fails.
  * @return YES when at least one record exists for the collection.
@@ -160,7 +158,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 #pragma mark - Blob Operations
 
 /**
- * @abstract Save blob.
+ * @abstract Saves a blob.
  * @param blob Blob metadata to persist.
  * @param error Receives details when the operation fails.
  * @return YES when the operation succeeds; otherwise NO.
@@ -172,7 +170,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                          cursor:(nullable NSString *)cursor
                                           error:(NSError **)error;
 /**
- * @abstract Delete blob for cid.
+ * @abstract Deletes a blob by CID.
  * @param cid Content identifier for the blob or block.
  * @param did Actor DID for the request.
  * @param error Receives details when the operation fails.
@@ -194,7 +192,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
 
 /**
- * @abstract Create repo.
+ * @abstract Creates a repository.
  * @param repo Repository metadata to persist.
  * @param error Receives details when the operation fails.
  * @return YES when the operation succeeds; otherwise NO.
@@ -205,7 +203,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)deleteRepo:(NSString *)did error:(NSError **)error;
 
 /**
- * @abstract Put record.
+ * @abstract Puts a record.
  * @param record Repository record to persist.
  * @param did Actor DID for the request.
  * @param error Receives details when the operation fails.
@@ -216,7 +214,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)updateRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)deleteRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
 /**
- * @abstract Add record tombstone uri.
+ * @abstract Adds a record tombstone.
  * @param uri AT URI identifying the record.
  * @param did Actor DID for the request.
  * @param collection Repository collection NSID.
@@ -232,7 +230,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                            rev:(NSString *)rev
                          error:(NSError **)error;
 /**
- * @abstract Put records.
+ * @abstract Puts multiple records.
  * @param records Repository records to persist.
  * @param did Actor DID for the request.
  * @param error Receives details when the operation fails.
@@ -243,7 +241,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)putBlocks:(NSArray<PDSDatabaseBlock *> *)blocks forDid:(NSString *)did error:(NSError **)error;
 /**
- * @abstract Delete block.
+ * @abstract Deletes a block.
  * @param cid Content identifier for the blob or block.
  * @param did Actor DID for the request.
  * @param error Receives details when the operation fails.

@@ -89,65 +89,31 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  */
 - (nullable sqlite3_stmt *)preparedStatementForQuery:(NSString *)query;
 
-/*!
- @method executeUnsafeRawSQL:error:
- 
- @abstract Executes a raw SQL statement.
- 
- @discussion DANGEROUS: Does not support parameter binding. Use only for
- internal schema setup or when the SQL string is a compile-time constant.
- 
- @param sql The SQL statement to execute.
- @param error On return, contains an error if the operation failed.
- @return YES if the statement executed successfully, NO otherwise.
- */
 /**
- * @abstract Execute unsafe raw sql.
- * @param sql SQL statement to execute.
+ * @abstract Executes a raw SQL statement.
+ * @discussion DANGEROUS: Does not support parameter binding. Use only for internal schema setup or when the SQL string is a compile-time constant.
+ * @param sql The SQL statement to execute.
  * @param error Receives details when the operation fails.
  * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error;
 
-/*!
- @method executeUnsafeRawQuery:error:
- 
- @abstract Executes a SQL query and returns results.
- 
- @discussion DANGEROUS: Does not support parameter binding. Prefer
- executeParameterizedQuery:params:error: instead.
- 
- @param sql The SQL query to execute.
- @param error On return, contains an error if the query failed.
- @return An array of dictionaries representing query results, or nil on failure.
- */
 /**
- * @abstract Execute unsafe raw query.
- * @param sql SQL statement to execute.
+ * @abstract Executes a SQL query and returns results.
+ * @discussion DANGEROUS: Does not support parameter binding. Prefer executeParameterizedQuery:params:error: instead.
+ * @param sql The SQL query to execute.
  * @param error Receives details when the operation fails.
- * @return The response array, or nil when the request fails.
+ * @return An array of dictionaries representing query results, or nil on failure.
  */
 - (NSArray<NSDictionary *> *)executeUnsafeRawQuery:(NSString *)sql error:(NSError **)error;
 
-/*!
- @method executeParameterizedQuery:params:error:
- 
- @abstract Executes a SQL query with parameterized values.
- 
- @discussion This is the RECOMMENDED method for executing queries with user-provided
- values. It uses SQLite parameter binding to prevent SQL injection attacks.
- 
- @param sql The SQL query with ? placeholders for parameters.
- @param params An array of parameter values to bind to the query.
- @param error On return, contains an error if the query failed.
- @return An array of dictionaries representing query results, or nil on failure.
- */
 /**
- * @abstract Execute parameterized query.
- * @param sql SQL statement to execute.
- * @param params Bound SQL parameter values.
+ * @abstract Executes a SQL query with parameterized values.
+ * @discussion This is the RECOMMENDED method for executing queries with user-provided values. It uses SQLite parameter binding to prevent SQL injection attacks.
+ * @param sql The SQL query with ? placeholders for parameters.
+ * @param params An array of parameter values to bind to the query.
  * @param error Receives details when the operation fails.
- * @return The response array, or nil when the request fails.
+ * @return An array of dictionaries representing query results, or nil on failure.
  */
 - (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
                                                 params:(NSArray *)params
