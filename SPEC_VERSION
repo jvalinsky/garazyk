@@ -1,8 +1,0 @@
-AT Protocol Lexicons:
-- Source: github.com/bluesky-social/atproto
-- Version: main (Synced as of initial import)
-- Application Lexicons: whitewind (Local)
-
-Compliance Goals:
-- Full Lexicon Coverage (Verified via scripts/docs/generate_xrpc_coverage_report.cjs)
-- Full Conformance Test Pass (Verified via tests/AllTests)
