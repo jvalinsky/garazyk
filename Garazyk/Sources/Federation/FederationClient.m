@@ -46,7 +46,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 
         _didResolver = [[DIDResolver alloc] init];
         ((DIDResolver *)_didResolver).plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
-        _preferredRepoFormat = PDSRepoFormatCAR;
+        _preferredRepoFormat = PDSRepoFormatSTARL0;
     }
     return self;
 }
@@ -317,8 +317,9 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     // Use preferred repo format for sync methods that return repo data
     BOOL isRepoSyncMethod = [method hasPrefix:@"com.atproto.sync.getRepo"] ||
                             [method hasPrefix:@"com.atproto.sync.getCheckout"];
-    if (isRepoSyncMethod && _preferredRepoFormat != PDSRepoFormatCAR) {
-        [request setValue:ContentTypeForPDSRepoFormat(_preferredRepoFormat) forHTTPHeaderField:@"Accept"];
+    if (isRepoSyncMethod) {
+        [request setValue:PDSRepoAcceptHeaderForPreferredFormat(_preferredRepoFormat)
+       forHTTPHeaderField:@"Accept"];
     } else {
         [request setValue:@"application/octet-stream" forHTTPHeaderField:@"Accept"];
     }

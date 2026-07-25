@@ -21,6 +21,15 @@ NS_ASSUME_NONNULL_BEGIN
 #ifndef GNUSTEP
 @implementation FederationClientTests
 
+- (void)testDefaultsToSTARL0WithCARFallback {
+    FederationClient *client = [[FederationClient alloc] init];
+
+    XCTAssertEqual(client.preferredRepoFormat, PDSRepoFormatSTARL0);
+    XCTAssertEqualObjects(
+        PDSRepoAcceptHeaderForPreferredFormat(client.preferredRepoFormat),
+        @"application/vnd.atproto.star, application/vnd.ipld.car;q=0.9");
+}
+
 - (void)testForwardXrpcRequestFailsWhenDIDResolutionFails {
     FederationClient *client = [[FederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
