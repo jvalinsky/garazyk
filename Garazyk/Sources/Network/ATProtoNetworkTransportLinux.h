@@ -46,6 +46,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port;
 
+/** Creates an outbound connection, optionally negotiating and verifying TLS. */
+- (instancetype)initWithHost:(NSString *)host
+                        port:(NSUInteger)port
+                   secureTLS:(BOOL)secureTLS;
+
 /*!
  @method initWithSocket:address:
 

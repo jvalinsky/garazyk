@@ -36,6 +36,14 @@ static BOOL ATProtoNetworkTransportMacUsesPlainTCP(NSUInteger port) {
     return [[ATProtoNetworkConnectionMac alloc] initWithHost:host port:port];
 }
 
++ (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host
+                                                    port:(NSUInteger)port
+                                               secureTLS:(BOOL)secureTLS {
+    return [[ATProtoNetworkConnectionMac alloc] initWithHost:host
+                                                       port:port
+                                                  secureTLS:secureTLS];
+}
+
 @end
 
 @implementation ATProtoNetworkConnectionMac {
@@ -54,17 +62,22 @@ static BOOL ATProtoNetworkTransportMacUsesPlainTCP(NSUInteger port) {
 }
 
 - (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port {
+    BOOL isLoopback = [host isEqualToString:@"127.0.0.1"] ||
+                      [host isEqualToString:@"::1"] ||
+                      [host isEqualToString:@"localhost"];
+    BOOL secureTLS = !isLoopback && !ATProtoNetworkTransportMacUsesPlainTCP(port);
+    return [self initWithHost:host port:port secureTLS:secureTLS];
+}
+
+- (instancetype)initWithHost:(NSString *)host
+                        port:(NSUInteger)port
+                   secureTLS:(BOOL)secureTLS {
     self = [super init];
     if (self) {
         nw_endpoint_t endpoint = nw_endpoint_create_host(host.UTF8String, [[NSString stringWithFormat:@"%lu", (unsigned long)port] UTF8String]);
         nw_parameters_t parameters;
-        
-        BOOL isLoopback = [host isEqualToString:@"127.0.0.1"] || 
-                          [host isEqualToString:@"::1"] || 
-                          [host isEqualToString:@"localhost"];
-        
-        // Use plain TCP for loopback or known plain ports
-        if (isLoopback || ATProtoNetworkTransportMacUsesPlainTCP(port)) {
+
+        if (!secureTLS) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);

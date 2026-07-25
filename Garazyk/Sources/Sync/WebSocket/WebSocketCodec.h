@@ -59,6 +59,12 @@ typedef NS_ENUM(NSInteger, WSCodecEventType) {
 @property (nonatomic, assign) uint64_t maxFrameSize; // default 16MB
 
 /**
+ * Whether outbound frames are masked. RFC 6455 requires masking for clients
+ * and forbids it for servers.
+ */
+@property (nonatomic, assign) BOOL maskOutgoingFrames;
+
+/**
  * @abstract Parses inbound bytes into zero or more WebSocket events.
  * @param data Raw bytes read from the transport.
  * @return Parsed events, including protocol errors when framing is invalid.

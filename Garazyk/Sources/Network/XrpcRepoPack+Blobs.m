@@ -17,6 +17,7 @@
 #import "Security/Space/PDSSpaceScope.h"
 #import "Security/Space/PDSSpaceURI.h"
 #import "Auth/JWT.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
 static const NSUInteger kPDSUploadBlobDefaultMaxBytes = 1024 * 1024;
@@ -106,6 +107,20 @@ static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *respons
     return NO;
 }
 
+static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *response,
+                                          NSString *mimeType) {
+    if ([ATProtoPermissionScopeEvaluator evaluateBlobScopes:request.permissionScopes ?: @[]
+                                                     forMIME:mimeType]) {
+        return YES;
+    }
+    response.statusCode = HttpStatusForbidden;
+    [response setJsonBody:@{
+        @"error": @"InsufficientScope",
+        @"message": @"Token scope does not permit uploading this blob MIME type"
+    }];
+    return NO;
+}
+
 @implementation XrpcRepoPack (Blobs)
 
 + (void)registerBlobRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -152,6 +167,8 @@ static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *respons
             [response setJsonBody:@{@"error": @"UnsupportedMediaType", @"message": @"Forbidden MIME type"}];
             return;
         }
+        NSString *mimeType = normalizedMimeType(contentType) ?: @"application/octet-stream";
+        if (!authorizeRepositoryBlobUpload(request, response, mimeType)) return;
 
         RateLimitResult *blobRateLimit = [rateLimiter checkBlobUploadRateLimitForDid:did];
         if (!blobRateLimit.allowed) {
@@ -190,7 +207,7 @@ static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *respons
             }
             NSError *spaceBlobError = nil;
             NSDictionary *spaceBlob = [spaceStore storeBlobData:blobData
-                                                        mimeType:normalizedMimeType(contentType) ?: @"application/octet-stream"
+                                                        mimeType:mimeType
                                                          toSpace:space.spaceURI
                                                           author:did
                                                            error:&spaceBlobError];
@@ -213,7 +230,7 @@ static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *respons
         NSError *error = nil;
         NSDictionary *result = [blobService uploadBlob:blobData
                                                 forDid:did
-                                              mimeType:contentType ?: @"application/octet-stream"
+                                              mimeType:mimeType
                                                  error:&error];
         if (error) {
             response.statusCode = HttpStatusBadRequest;

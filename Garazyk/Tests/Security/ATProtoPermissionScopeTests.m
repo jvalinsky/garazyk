@@ -158,6 +158,19 @@
   XCTAssertTrue([scope matchesIdentityAttr:@"did"]);
 }
 
+- (void)testIdentityScopeRejectsUnknownAttribute {
+  XCTAssertNil([ATProtoPermissionScope scopeWithString:@"identity:did" error:nil]);
+}
+
+- (void)testIncludeScopeRejectsWildcardAndDuplicateAudience {
+  XCTAssertNil([ATProtoPermissionScope scopeWithString:@"include:*" error:nil]);
+  XCTAssertNil([ATProtoPermissionScope scopeWithString:@"include:app.example.permissions?aud=one&aud=two" error:nil]);
+}
+
+- (void)testAccountScopeRejectsDuplicateAction {
+  XCTAssertNil([ATProtoPermissionScope scopeWithString:@"account:email?action=read&action=manage" error:nil]);
+}
+
 #pragma mark - Include scope
 
 - (void)testIncludeScope {
@@ -191,6 +204,18 @@
 - (void)testInvalidCollectionNSIDRejected {
   NSError *error = nil;
   XCTAssertNil([ATProtoPermissionScope scopeWithString:@"repo:not a valid nsid" error:&error]);
+}
+
+- (void)testScopeResourceTypesAreCaseSensitive {
+  XCTAssertNil([ATProtoPermissionScope scopeWithString:@"Repo:app.bsky.feed.post" error:nil]);
+}
+
+- (void)testDuplicatePositionalParameterIsRejected {
+  XCTAssertNil([ATProtoPermissionScope scopeWithString:@"repo:app.bsky.feed.post?collection=app.bsky.actor.profile" error:nil]);
+}
+
+- (void)testUnsupportedParameterIsRejected {
+  XCTAssertNil([ATProtoPermissionScope scopeWithString:@"repo:app.bsky.feed.post?unexpected=value" error:nil]);
 }
 
 - (void)testTypeStringRepresentation {

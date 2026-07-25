@@ -8,7 +8,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "App/ATProtoServiceConfiguration.h"
-#import "Security/Space/PDSSpaceScope.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Debug/GZLogger.h"
 
 #import "Auth/OAuth2Handler+Helpers.h"
@@ -43,17 +43,7 @@ static dispatch_once_t sPasskeyChallengeOnceToken;
 static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
 BOOL OAuthHandlerScopeIsValid(NSString *scope) {
-  BOOL containsAtproto = NO;
-  for (NSString *item in [scope componentsSeparatedByCharactersInSet:
-          [NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
-    if (item.length == 0) continue;
-    if ([item isEqualToString:@"atproto"]) {
-      containsAtproto = YES;
-    } else if ([item hasPrefix:@"space:"] && ![PDSSpaceScope scopeWithString:item error:nil]) {
-      return NO;
-    }
-  }
-  return containsAtproto;
+  return [ATProtoPermissionScopeEvaluator validateOAuthScopeString:scope];
 }
 
 @implementation OAuth2Handler {

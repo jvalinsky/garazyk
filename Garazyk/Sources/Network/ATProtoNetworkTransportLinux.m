@@ -19,6 +19,10 @@
 #import <stdio.h>
 #import <unistd.h>
 #import <fcntl.h>
+#ifndef __APPLE__
+#import <openssl/err.h>
+#import <openssl/ssl.h>
+#endif
 
 #ifndef __APPLE__
 @implementation ATProtoNetworkTransportFactory
@@ -36,9 +40,18 @@
     return [[ATProtoNetworkConnectionLinux alloc] initWithHost:host port:port];
 }
 
++ (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host
+                                                    port:(NSUInteger)port
+                                               secureTLS:(BOOL)secureTLS {
+    return [[ATProtoNetworkConnectionLinux alloc] initWithHost:host
+                                                         port:port
+                                                    secureTLS:secureTLS];
+}
+
 @end
 #endif
 
+#ifndef __APPLE__
 @interface PDSReadRequest : NSObject
 @property (nonatomic, assign) NSUInteger minLength;
 @property (nonatomic, assign) NSUInteger maxLength;
@@ -86,12 +99,21 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     int _connectLastError;
     NSUInteger _connectTimeoutMilliseconds;
     BOOL _isCancelled;
+    BOOL _secureTLS;
+    SSL_CTX *_sslContext;
+    SSL *_ssl;
 }
 
 @synthesize stateChangedHandler = _stateChangedHandler;
 @synthesize remoteAddress = _remoteAddress;
 
 - (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port {
+    return [self initWithHost:host port:port secureTLS:NO];
+}
+
+- (instancetype)initWithHost:(NSString *)host
+                        port:(NSUInteger)port
+                   secureTLS:(BOOL)secureTLS {
     self = [super init];
     if (self) {
         _sockfd = -1;
@@ -106,6 +128,9 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         _connectFailures = [NSMutableArray array];
         _writeOffset = 0;
         _isCancelled = NO;
+        _secureTLS = secureTLS;
+        _sslContext = NULL;
+        _ssl = NULL;
     }
     return self;
 }
@@ -123,11 +148,136 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         _writeOffset = 0;
         _connectTimeoutMilliseconds = connectTimeoutMillisecondsFromEnvironment();
         _isCancelled = NO;
+        _secureTLS = NO;
+        _sslContext = NULL;
+        _ssl = NULL;
         
         int flags = fcntl(_sockfd, F_GETFL, 0);
         fcntl(_sockfd, F_SETFL, flags | O_NONBLOCK);
     }
     return self;
+}
+
+- (NSError *)tlsErrorWithDescription:(NSString *)description {
+    unsigned long code = ERR_get_error();
+    char buffer[256] = {0};
+    if (code != 0) {
+        ERR_error_string_n(code, buffer, sizeof(buffer));
+    }
+    NSString *detail = code != 0 ? [NSString stringWithUTF8String:buffer] : @"TLS negotiation failed";
+    return [NSError errorWithDomain:@"ATProtoNetworkTransportTLS"
+                               code:(NSInteger)code
+                           userInfo:@{
+                               NSLocalizedDescriptionKey:
+                                   [NSString stringWithFormat:@"%@: %@", description, detail]
+                           }];
+}
+
+- (void)cleanupTLS {
+    if (_ssl) {
+        SSL_free(_ssl);
+        _ssl = NULL;
+    }
+    if (_sslContext) {
+        SSL_CTX_free(_sslContext);
+        _sslContext = NULL;
+    }
+}
+
+- (NSError * _Nullable)negotiateTLS {
+    _sslContext = SSL_CTX_new(TLS_client_method());
+    if (!_sslContext) {
+        return [self tlsErrorWithDescription:@"Failed to create TLS context"];
+    }
+
+    SSL_CTX_set_verify(_sslContext, SSL_VERIFY_PEER, NULL);
+    if (SSL_CTX_set_default_verify_paths(_sslContext) != 1) {
+        return [self tlsErrorWithDescription:@"Failed to load system trust roots"];
+    }
+
+    _ssl = SSL_new(_sslContext);
+    if (!_ssl) {
+        return [self tlsErrorWithDescription:@"Failed to create TLS session"];
+    }
+
+    SSL_set_mode(_ssl, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+    if (SSL_set_tlsext_host_name(_ssl, _host.UTF8String) != 1) {
+        return [self tlsErrorWithDescription:@"Failed to configure TLS server name"];
+    }
+
+    X509_VERIFY_PARAM *verifyParameters = SSL_get0_param(_ssl);
+    struct in_addr ipv4;
+    struct in6_addr ipv6;
+    int configuredIdentity = 0;
+    if (inet_pton(AF_INET, _host.UTF8String, &ipv4) == 1 ||
+        inet_pton(AF_INET6, _host.UTF8String, &ipv6) == 1) {
+        configuredIdentity = X509_VERIFY_PARAM_set1_ip_asc(verifyParameters, _host.UTF8String);
+    } else {
+        configuredIdentity = X509_VERIFY_PARAM_set1_host(verifyParameters, _host.UTF8String, 0);
+    }
+    if (configuredIdentity != 1 || SSL_set_fd(_ssl, _sockfd) != 1) {
+        return [self tlsErrorWithDescription:@"Failed to configure TLS peer verification"];
+    }
+
+    int originalFlags = fcntl(_sockfd, F_GETFL, 0);
+    if (originalFlags < 0 || fcntl(_sockfd, F_SETFL, originalFlags & ~O_NONBLOCK) != 0) {
+        return [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+    }
+
+    struct timeval timeout = {
+        .tv_sec = (time_t)(_connectTimeoutMilliseconds / 1000),
+        .tv_usec = (suseconds_t)((_connectTimeoutMilliseconds % 1000) * 1000)
+    };
+    setsockopt(_sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    setsockopt(_sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+
+    int result = SSL_connect(_ssl);
+    int handshakeError = result == 1 ? SSL_ERROR_NONE : SSL_get_error(_ssl, result);
+
+    struct timeval noTimeout = {0};
+    setsockopt(_sockfd, SOL_SOCKET, SO_RCVTIMEO, &noTimeout, sizeof(noTimeout));
+    setsockopt(_sockfd, SOL_SOCKET, SO_SNDTIMEO, &noTimeout, sizeof(noTimeout));
+    fcntl(_sockfd, F_SETFL, originalFlags);
+
+    if (result != 1) {
+        return [self tlsErrorWithDescription:
+            [NSString stringWithFormat:@"TLS handshake failed (SSL error %d)", handshakeError]];
+    }
+    if (SSL_get_verify_result(_ssl) != X509_V_OK) {
+        return [NSError errorWithDomain:@"ATProtoNetworkTransportTLS"
+                                   code:SSL_get_verify_result(_ssl)
+                               userInfo:@{
+                                   NSLocalizedDescriptionKey:
+                                       [NSString stringWithFormat:@"TLS certificate verification failed: %s",
+                                           X509_verify_cert_error_string(SSL_get_verify_result(_ssl))]
+                               }];
+    }
+
+    return nil;
+}
+
+- (void)finishConnectedSocket {
+    if (_secureTLS) {
+        NSError *tlsError = [self negotiateTLS];
+        if (tlsError) {
+            [self cleanupTLS];
+            [self cleanupConnectState];
+            if (_sockfd != -1) {
+                close(_sockfd);
+                _sockfd = -1;
+            }
+            if (self.stateChangedHandler && !_isCancelled) {
+                self.stateChangedHandler(ATProtoNetworkConnectionStateFailed, tlsError);
+            }
+            return;
+        }
+    }
+
+    [self cleanupConnectState];
+    [self setupSources];
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
+    }
 }
 
 - (BOOL)isOnTransportQueue {
@@ -336,11 +486,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         int result = connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
         if (result == 0) {
             _sockfd = fd;
-            [self cleanupConnectState];
-            [self setupSources];
-            if (self.stateChangedHandler) {
-                self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
-            }
+            [self finishConnectedSocket];
             return;
         }
 
@@ -413,11 +559,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         return;
     }
 
-    [self cleanupConnectState];
-    [self setupSources];
-    if (self.stateChangedHandler) {
-        self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
-    }
+    [self finishConnectedSocket];
 }
 
 - (void)setupSources {
@@ -434,22 +576,41 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
 
 - (void)handleRead {
     uint8_t buffer[4096];
-    ssize_t received = recv(_sockfd, buffer, sizeof(buffer), 0);
-    
-    if (received > 0) {
-        [_inputBuffer appendBytes:buffer length:received];
-        [self processReadRequests:NO error:nil];
-    } else if (received == 0) {
-        [self processReadRequests:YES error:nil];
-        [self cancel];
-    } else {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    do {
+        ssize_t received;
+        int tlsReadError = SSL_ERROR_NONE;
+        if (_ssl) {
+            received = SSL_read(_ssl, buffer, (int)sizeof(buffer));
+            if (received <= 0) {
+                tlsReadError = SSL_get_error(_ssl, (int)received);
+            }
+        } else {
+            received = recv(_sockfd, buffer, sizeof(buffer), 0);
+        }
+
+        if (received > 0) {
+            [_inputBuffer appendBytes:buffer length:(NSUInteger)received];
+            [self processReadRequests:NO error:nil];
+            continue;
+        }
+        if (_ssl && (tlsReadError == SSL_ERROR_WANT_READ || tlsReadError == SSL_ERROR_WANT_WRITE)) {
             return;
         }
-        NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        if ((_ssl && tlsReadError == SSL_ERROR_ZERO_RETURN) || (!_ssl && received == 0)) {
+            [self processReadRequests:YES error:nil];
+            [self cancel];
+            return;
+        }
+        if (!_ssl && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            return;
+        }
+        NSError *error = _ssl
+            ? [self tlsErrorWithDescription:@"TLS read failed"]
+            : [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
         [self processReadRequests:YES error:error];
         [self cancel];
-    }
+        return;
+    } while (_ssl && SSL_pending(_ssl) > 0);
 }
 
 - (void)handleWrite {
@@ -460,7 +621,30 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         return;
     }
     
-    ssize_t sent = send(_sockfd, _writeBuffer.bytes + _writeOffset, _writeBuffer.length - _writeOffset, 0);
+    ssize_t sent;
+    if (_ssl) {
+        sent = SSL_write(_ssl,
+                         _writeBuffer.bytes + _writeOffset,
+                         (int)(_writeBuffer.length - _writeOffset));
+        if (sent <= 0) {
+            int tlsWriteError = SSL_get_error(_ssl, (int)sent);
+            if (tlsWriteError == SSL_ERROR_WANT_READ || tlsWriteError == SSL_ERROR_WANT_WRITE) {
+                sent = -1;
+                errno = EAGAIN;
+            } else {
+                NSError *error = [self tlsErrorWithDescription:@"TLS write failed"];
+                [_writeBuffer setLength:0];
+                _writeOffset = 0;
+                [self flushPendingSendCompletionsWithError:error];
+                if (self.stateChangedHandler) {
+                    self.stateChangedHandler(ATProtoNetworkConnectionStateFailed, error);
+                }
+                return;
+            }
+        }
+    } else {
+        sent = send(_sockfd, _writeBuffer.bytes + _writeOffset, _writeBuffer.length - _writeOffset, 0);
+    }
     
     if (sent == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -568,6 +752,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         _writeSource = nil;
     }
     if (_sockfd != -1) {
+        [self cleanupTLS];
         close(_sockfd);
         _sockfd = -1;
     }
@@ -620,7 +805,28 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         return;
     }
 
-    ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
+    ssize_t sent;
+    if (_ssl) {
+        sent = SSL_write(_ssl, data.bytes, (int)data.length);
+        if (sent <= 0) {
+            int tlsWriteError = SSL_get_error(_ssl, (int)sent);
+            if (tlsWriteError == SSL_ERROR_WANT_READ || tlsWriteError == SSL_ERROR_WANT_WRITE) {
+                sent = -1;
+                errno = EAGAIN;
+            } else {
+                NSError *sendError = [self tlsErrorWithDescription:@"TLS write failed"];
+                [_writeBuffer setLength:0];
+                _writeOffset = 0;
+                [self flushPendingSendCompletionsWithError:sendError];
+                if (self.stateChangedHandler) {
+                    self.stateChangedHandler(ATProtoNetworkConnectionStateFailed, sendError);
+                }
+                return;
+            }
+        }
+    } else {
+        sent = send(_sockfd, data.bytes, data.length, 0);
+    }
     if (sent == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             [_writeBuffer setData:data];
@@ -818,3 +1024,5 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
 }
 
 @end
+
+#endif

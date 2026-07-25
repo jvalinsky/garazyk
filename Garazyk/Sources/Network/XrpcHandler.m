@@ -383,14 +383,6 @@ static XrpcDispatcher *_sharedInstance = nil;
                 if (jwt) {
                     NSArray *scopes = [ATProtoPermissionScopeEvaluator scopesFromJWT:jwt];
                     [request setPermissionScopes:scopes];
-                    if (![ATProtoPermissionScopeEvaluator evaluateRPCScopes:scopes forMethod:methodId audience:nil]) {
-                        response.statusCode = HttpStatusForbidden;
-                        [response setJsonBody:@{
-                            @"error": @"InsufficientScope",
-                            @"message": [NSString stringWithFormat:@"Token scope does not authorize method '%@'", methodId]
-                        }];
-                        return;
-                    }
                 }
             }
         }

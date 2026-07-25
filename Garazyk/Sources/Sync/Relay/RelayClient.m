@@ -86,7 +86,8 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     }
 
     NSString *host = self.serverURL.host;
-    uint16_t port = self.serverURL.port ? [self.serverURL.port intValue] : 443;
+    BOOL secureTLS = [scheme isEqualToString:@"wss"];
+    uint16_t port = self.serverURL.port ? [self.serverURL.port intValue] : (secureTLS ? 443 : 80);
 
     NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
 

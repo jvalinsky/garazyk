@@ -3,6 +3,7 @@
 
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Security/ATProtoPermissionScope.h"
+#import "Security/Space/PDSSpaceScope.h"
 #import "Auth/JWT.h"
 
 @implementation ATProtoPermissionScopeEvaluator
@@ -33,16 +34,45 @@
   return [self scopesFromScopeString:scopeString];
 }
 
++ (BOOL)validateOAuthScopeString:(NSString *)scopeString {
+  if (![scopeString isKindOfClass:[NSString class]] || scopeString.length == 0) {
+    return NO;
+  }
+
+  BOOL containsAtproto = NO;
+  NSCharacterSet *whitespace = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+  NSSet<NSString *> *transitionScopes = [NSSet setWithArray:@[
+      @"transition:generic", @"transition:chat.bsky", @"transition:email",
+  ]];
+  for (NSString *scope in [scopeString componentsSeparatedByCharactersInSet:whitespace]) {
+    if (scope.length == 0) continue;
+    if ([scope isEqualToString:@"atproto"]) {
+      containsAtproto = YES;
+      continue;
+    }
+    if ([transitionScopes containsObject:scope]) continue;
+    if ([scope hasPrefix:@"space:"]) {
+      if (![PDSSpaceScope scopeWithString:scope error:nil]) return NO;
+      continue;
+    }
+    ATProtoPermissionScope *parsed = [ATProtoPermissionScope scopeWithString:scope error:nil];
+    if (!parsed) return NO;
+    /* `include:` is syntactically valid here. OAuth token issuance resolves it
+       through ATProtoPermissionSetResolver before minting an access token. */
+  }
+  return containsAtproto;
+}
+
 #pragma mark - RPC Scope Evaluation
 
 + (BOOL)evaluateRPCScopes:(NSArray<ATProtoPermissionScope *> *)scopes
                 forMethod:(NSString *)methodNSID
                   audience:(nullable NSString *)audience {
-  if (scopes.count == 0 || methodNSID.length == 0) return YES;
+  if (scopes.count == 0) return YES;
 
   for (ATProtoPermissionScope *scope in scopes) {
     if (scope.resourceType == ATProtoPermissionScopeResourceRPC) {
-      if ([scope matchesMethod:methodNSID aud:audience]) return YES;
+      if (methodNSID.length > 0 && [scope matchesMethod:methodNSID aud:audience]) return YES;
     }
   }
 

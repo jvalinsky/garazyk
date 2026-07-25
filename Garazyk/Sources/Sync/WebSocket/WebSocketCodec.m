@@ -44,6 +44,7 @@ static const uint8_t WS_MASK = 0x80;
     self = [super init];
     if (self) {
         _maxFrameSize = 16 * 1024 * 1024; // 16MB default
+        _maskOutgoingFrames = NO;
         _readBuffer = [NSMutableData data];
         _fragments = [NSMutableArray array];
         _fragmentOpcode = 0;
@@ -233,16 +234,16 @@ static const uint8_t WS_MASK = 0x80;
 
     uint64_t length = payload.length;
     if (length < 126) {
-        uint8_t secondByte = (uint8_t)length;
+        uint8_t secondByte = (uint8_t)length | (self.maskOutgoingFrames ? WS_MASK : 0);
         [frame appendBytes:&secondByte length:1];
     } else if (length < 65536) {
-        uint8_t secondByte = 126;
+        uint8_t secondByte = 126 | (self.maskOutgoingFrames ? WS_MASK : 0);
         uint8_t lengthBytes[2] = {(uint8_t)((length >> 8) & 0xFF),
                                   (uint8_t)(length & 0xFF)};
         [frame appendBytes:&secondByte length:1];
         [frame appendBytes:lengthBytes length:2];
     } else {
-        uint8_t secondByte = 127;
+        uint8_t secondByte = 127 | (self.maskOutgoingFrames ? WS_MASK : 0);
         uint8_t lengthBytes[8];
         for (int i = 7; i >= 0; i--) {
             lengthBytes[i] = (uint8_t)(length & 0xFF);
@@ -252,7 +253,21 @@ static const uint8_t WS_MASK = 0x80;
         [frame appendBytes:lengthBytes length:8];
     }
 
-    [frame appendData:payload];
+    if (self.maskOutgoingFrames) {
+        uint8_t mask[4];
+        arc4random_buf(mask, sizeof(mask));
+        [frame appendBytes:mask length:sizeof(mask)];
+
+        NSMutableData *maskedPayload = [NSMutableData dataWithLength:payload.length];
+        const uint8_t *source = payload.bytes;
+        uint8_t *destination = maskedPayload.mutableBytes;
+        for (NSUInteger index = 0; index < payload.length; index++) {
+            destination[index] = source[index] ^ mask[index % sizeof(mask)];
+        }
+        [frame appendData:maskedPayload];
+    } else {
+        [frame appendData:payload];
+    }
 
     return frame;
 }

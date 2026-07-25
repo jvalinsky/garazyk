@@ -54,7 +54,7 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
     }
   }
 
-  NSString *resourceTypeKey = [resourceStr lowercaseString];
+  NSString *resourceTypeKey = resourceStr;
   ATProtoPermissionScopeResourceType rtype;
   if ([resourceTypeKey isEqualToString:@"repo"]) {
     rtype = ATProtoPermissionScopeResourceRepo;
@@ -118,6 +118,12 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
 - (nullable instancetype)parseRepo:(NSString *)positional
                             params:(NSDictionary<NSString *, NSMutableArray *> *)params
                              error:(NSError **)error {
+  if (![self validateParameters:params allowed:@[ @"collection", @"action" ] error:error] ||
+      (positional != nil && params[@"collection"] != nil)) {
+    return [ATProtoPermissionScope error:@"repo scope has unsupported or duplicate parameters"
+                                   code:ATProtoPermissionScopeErrorInvalidSyntax
+                                  error:error];
+  }
   NSMutableArray<NSString *> *collections = [NSMutableArray array];
   if (positional.length > 0) {
     [collections addObject:positional];
@@ -163,6 +169,13 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
 - (nullable instancetype)parseRPC:(NSString *)positional
                            params:(NSDictionary<NSString *, NSMutableArray *> *)params
                             error:(NSError **)error {
+  if (![self validateParameters:params allowed:@[ @"lxm", @"aud" ] error:error] ||
+      (positional != nil && params[@"lxm"] != nil) ||
+      ![self validateSingleValueParameter:params[@"aud"] name:@"aud" error:error]) {
+    return [ATProtoPermissionScope error:@"rpc scope has unsupported or duplicate parameters"
+                                   code:ATProtoPermissionScopeErrorInvalidSyntax
+                                  error:error];
+  }
   NSMutableArray<NSString *> *methods = [NSMutableArray array];
   if (positional.length > 0) {
     [methods addObject:positional];
@@ -204,6 +217,12 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
 - (nullable instancetype)parseBlob:(NSString *)positional
                             params:(NSDictionary<NSString *, NSMutableArray *> *)params
                              error:(NSError **)error {
+  if (![self validateParameters:params allowed:@[ @"accept" ] error:error] ||
+      (positional != nil && params[@"accept"] != nil)) {
+    return [ATProtoPermissionScope error:@"blob scope has unsupported or duplicate parameters"
+                                   code:ATProtoPermissionScopeErrorInvalidSyntax
+                                  error:error];
+  }
   NSMutableArray<NSString *> *types = [NSMutableArray array];
   if (positional.length > 0) {
     [types addObject:positional];
@@ -225,6 +244,14 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
 - (nullable instancetype)parseAccount:(NSString *)positional
                                params:(NSDictionary<NSString *, NSMutableArray *> *)params
                                 error:(NSError **)error {
+  if (![self validateParameters:params allowed:@[ @"attr", @"action" ] error:error] ||
+      (positional != nil && params[@"attr"] != nil) ||
+      ![self validateSingleValueParameter:params[@"attr"] name:@"attr" error:error] ||
+      ![self validateSingleValueParameter:params[@"action"] name:@"action" error:error]) {
+    return [ATProtoPermissionScope error:@"account scope has unsupported or duplicate parameters"
+                                   code:ATProtoPermissionScopeErrorInvalidSyntax
+                                  error:error];
+  }
   NSString *attrVal = positional ?: params[@"attr"] ? params[@"attr"].firstObject : nil;
   if (attrVal.length == 0) {
     return [ATProtoPermissionScope error:@"account scope requires an attr parameter"
@@ -253,10 +280,22 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
 - (nullable instancetype)parseIdentity:(NSString *)positional
                                 params:(NSDictionary<NSString *, NSMutableArray *> *)params
                                  error:(NSError **)error {
+  if (![self validateParameters:params allowed:@[ @"attr" ] error:error] ||
+      (positional != nil && params[@"attr"] != nil) ||
+      ![self validateSingleValueParameter:params[@"attr"] name:@"attr" error:error]) {
+    return [ATProtoPermissionScope error:@"identity scope has unsupported or duplicate parameters"
+                                   code:ATProtoPermissionScopeErrorInvalidSyntax
+                                  error:error];
+  }
   NSString *attrVal = positional ?: params[@"attr"] ? params[@"attr"].firstObject : nil;
   if (attrVal.length == 0) {
     return [ATProtoPermissionScope error:@"identity scope requires an attr parameter"
                                    code:ATProtoPermissionScopeErrorInvalidSyntax
+                                  error:error];
+  }
+  if (!([attrVal isEqualToString:@"handle"] || [attrVal isEqualToString:@"*"])) {
+    return [ATProtoPermissionScope error:[NSString stringWithFormat:@"Unknown identity attr: %@", attrVal]
+                                   code:ATProtoPermissionScopeErrorInvalidValue
                                   error:error];
   }
   self.identityAttr = attrVal;
@@ -268,8 +307,16 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
 - (nullable instancetype)parseInclude:(NSString *)positional
                                params:(NSDictionary<NSString *, NSMutableArray *> *)params
                                 error:(NSError **)error {
+  if (![self validateParameters:params allowed:@[ @"set", @"aud" ] error:error] ||
+      (positional != nil && params[@"set"] != nil) ||
+      ![self validateSingleValueParameter:params[@"set"] name:@"set" error:error] ||
+      ![self validateSingleValueParameter:params[@"aud"] name:@"aud" error:error]) {
+    return [ATProtoPermissionScope error:@"include scope has unsupported or duplicate parameters"
+                                   code:ATProtoPermissionScopeErrorInvalidSyntax
+                                  error:error];
+  }
   NSString *nsid = positional ?: params[@"set"] ? params[@"set"].firstObject : nil;
-  if (nsid.length == 0 || (![nsid isEqualToString:@"*"] && ![ATProtoValidator validateNSID:nsid error:nil])) {
+  if (nsid.length == 0 || ![ATProtoValidator validateNSID:nsid error:nil]) {
     return [ATProtoPermissionScope error:@"include scope requires a valid permission set NSID"
                                    code:ATProtoPermissionScopeErrorInvalidSyntax
                                   error:error];
@@ -278,6 +325,31 @@ NSString *const ATProtoPermissionScopeErrorDomain = @"com.garazyk.permission.sco
   NSString *audVal = params[@"aud"] ? params[@"aud"].firstObject : nil;
   if (audVal.length > 0) self.aud = audVal;
   return self;
+}
+
+- (BOOL)validateParameters:(NSDictionary<NSString *, NSMutableArray *> *)params
+                    allowed:(NSArray<NSString *> *)allowed
+                      error:(NSError **)error {
+  NSSet<NSString *> *allowedParameters = [NSSet setWithArray:allowed];
+  for (NSString *key in params) {
+    if (key.length == 0 || ![allowedParameters containsObject:key]) {
+      [ATProtoPermissionScope error:[NSString stringWithFormat:@"Unsupported scope parameter: %@", key]
+                               code:ATProtoPermissionScopeErrorInvalidSyntax
+                              error:error];
+      return NO;
+    }
+  }
+  return YES;
+}
+
+- (BOOL)validateSingleValueParameter:(NSArray<NSString *> *)values
+                                 name:(NSString *)name
+                                error:(NSError **)error {
+  if (values.count <= 1) return YES;
+  [ATProtoPermissionScope error:[NSString stringWithFormat:@"Scope parameter %@ may occur only once", name]
+                           code:ATProtoPermissionScopeErrorInvalidSyntax
+                          error:error];
+  return NO;
 }
 
 #pragma mark - Matching

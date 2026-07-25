@@ -13,10 +13,26 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabaseAccount.h"
 #import "Identity/HandleResolver.h"
+#import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcRepoPack (Records)
+
+static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *response,
+                                     NSString *collection, NSString *action) {
+    if ([ATProtoPermissionScopeEvaluator evaluateRepoScopes:request.permissionScopes ?: @[]
+                                               forCollection:collection
+                                                      action:action]) {
+        return YES;
+    }
+    response.statusCode = HttpStatusForbidden;
+    [response setJsonBody:@{
+        @"error": @"InsufficientScope",
+        @"message": @"Token scope does not permit this repository write"
+    }];
+    return NO;
+}
 
 + (void)registerRecordRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
                                   services:(id<XrpcRoutePackServices>)services {
@@ -192,6 +208,7 @@
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or record"}];
             return;
         }
+        if (!authorizeRepositoryWrite(request, response, collection, @"create")) return;
 
         NSDictionary *write = @{
             @"action": @"create",
@@ -263,6 +280,7 @@
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey"}];
             return;
         }
+        if (!authorizeRepositoryWrite(request, response, collection, @"delete")) return;
 
         NSDictionary *write = @{
             @"action": @"delete",
@@ -326,6 +344,7 @@
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection, rkey, or record"}];
             return;
         }
+        if (!authorizeRepositoryWrite(request, response, collection, @"update")) return;
 
         // putRecord is an upsert per ATProto spec: create the record if it
         // doesn't exist, or update it if it does.  We try "update" first;
@@ -355,6 +374,7 @@
                     @"rkey": rkey,
                     @"value": record,
                 };
+                if (!authorizeRepositoryWrite(request, response, collection, @"create")) return;
                 NSError *createError = nil;
                 result = [recordService applyWrites:@[createWrite]
                                              forDid:did
@@ -453,6 +473,9 @@
                 @"message": writeValidationError.localizedDescription ?: @"Invalid writes array"
             }];
             return;
+        }
+        for (NSDictionary *write in writes) {
+            if (!authorizeRepositoryWrite(request, response, write[@"collection"], write[@"action"])) return;
         }
 
         NSError *error = nil;

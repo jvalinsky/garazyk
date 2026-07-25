@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayUpstreamManager.h"
 #import "Sync/Relay/RelayMetrics.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 
 @interface RelayUpstreamManager () <RelayClientDelegate>
@@ -19,6 +20,7 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostSeqs;           // url -> seq
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostAccountCounts; // url -> count
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostStatuses;      // url -> @ RelayHostStatus
+@property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
 
 @end
 
@@ -46,6 +48,7 @@
         _hostSeqs = [NSMutableDictionary dictionary];
         _hostAccountCounts = [NSMutableDictionary dictionary];
         _hostStatuses = [NSMutableDictionary dictionary];
+        _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
 
         for (NSString *url in urls) {
             [self createClientForUpstream:url];
@@ -190,26 +193,37 @@
         }
     }
     
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/xrpc/com.atproto.server.describeServer", urlString]];
+    NSURL *baseURL = [NSURL URLWithString:urlString];
+    NSURL *url = [NSURL URLWithString:@"/xrpc/com.atproto.server.describeServer" relativeToURL:baseURL].absoluteURL;
     if (!url) {
         completion(NO, [NSError errorWithDomain:@"com.atproto.relay.upstream" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Invalid hostname"}]);
         return;
     }
-    
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"GET";
+    request.timeoutInterval = 4.0;
+
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.timeout = 4.0;
+    options.maxResponseBytes = 64 * 1024;
+    options.allowHTTP = [url.scheme.lowercaseString isEqualToString:@"http"];
+    options.followRedirects = NO;
+
+    [self.safeHTTPClient performSafeDataTaskWithRequest:request
+                                               options:options
+                                            completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
             completion(NO, error);
             return;
         }
-        
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        if (httpResponse.statusCode == 200) {
+
+        if (response.statusCode == 200) {
             completion(YES, nil);
         } else {
-            completion(NO, [NSError errorWithDomain:@"com.atproto.relay.upstream" code:2 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unexpected status code: %ld", (long)httpResponse.statusCode]}]);
+            completion(NO, [NSError errorWithDomain:@"com.atproto.relay.upstream" code:2 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unexpected status code: %ld", (long)response.statusCode]}]);
         }
     }];
-    [task resume];
 }
 
 - (void)pause {
