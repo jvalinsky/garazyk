@@ -61,12 +61,17 @@ static dispatch_once_t gKeychainOnce = 0;
     if (![[NSFileManager defaultManager] fileExistsAtPath:pdsDir]) {
         [[NSFileManager defaultManager] createDirectoryAtPath:pdsDir
                                    withIntermediateDirectories:YES
-                                                    attributes:nil
+                                                    attributes:@{ NSFilePosixPermissions: @0700 }
                                                          error:&dirError];
         if (dirError) {
             GZ_LOG_ERROR(@"SecItemLinuxStore: Failed to create .pds directory: %@", dirError);
             return;
         }
+    }
+
+    // Set strict permissions on database file
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
+        [[NSFileManager defaultManager] createFileAtPath:dbPath contents:nil attributes:@{ NSFilePosixPermissions: @0600 }];
     }
 
     // Open database
@@ -127,13 +132,16 @@ static dispatch_once_t gKeychainOnce = 0;
             return;
         }
 
-        // Serialize attributes to JSON
-        NSError *jsonError = nil;
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:attributes options:0 error:&jsonError];
-        if (!jsonData) {
-            blockError = jsonError ?: [NSError errorWithDomain:SecItemLinuxStoreErrorDomain
-                                                          code:-50
-                                                      userInfo:nil];
+        // Serialize attributes to PLIST
+        NSError *plistError = nil;
+        NSData *plistData = [NSPropertyListSerialization dataWithPropertyList:attributes
+                                                                       format:NSPropertyListBinaryFormat_v1_0
+                                                                      options:0
+                                                                        error:&plistError];
+        if (!plistData) {
+            blockError = plistError ?: [NSError errorWithDomain:SecItemLinuxStoreErrorDomain
+                                                           code:-50
+                                                       userInfo:nil];
             return;
         }
 
@@ -158,7 +166,7 @@ static dispatch_once_t gKeychainOnce = 0;
         } else {
             sqlite3_bind_null(stmt, 3);
         }
-        sqlite3_bind_blob(stmt, 4, [jsonData bytes], (int)[jsonData length], SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 4, [plistData bytes], (int)[plistData length], SQLITE_TRANSIENT);
 
         rc = sqlite3_step(stmt);
         if (rc == SQLITE_DONE) {
@@ -210,9 +218,14 @@ static dispatch_once_t gKeychainOnce = 0;
             int attrLen = sqlite3_column_bytes(stmt, 1);
 
             if (attrBytes && attrLen > 0) {
-                NSData *jsonData = [NSData dataWithBytes:attrBytes length:attrLen];
-                NSError *jsonError = nil;
-                result = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+                NSData *plistData = [NSData dataWithBytes:attrBytes length:attrLen];
+                NSError *decodeError = nil;
+                result = [NSPropertyListSerialization propertyListWithData:plistData options:0 format:NULL error:&decodeError];
+                
+                if (!result) {
+                    // Fallback to legacy JSON format for migration
+                    result = [NSJSONSerialization JSONObjectWithData:plistData options:0 error:nil];
+                }
 
                 // Add back the value data if present
                 const void *dataBytes = sqlite3_column_blob(stmt, 0);
@@ -264,11 +277,14 @@ static dispatch_once_t gKeychainOnce = 0;
         NSMutableDictionary *updated = [existing mutableCopy];
         [updated addEntriesFromDictionary:attributesToUpdate];
 
-        // Serialize to JSON
-        NSError *jsonError = nil;
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:updated options:0 error:&jsonError];
-        if (!jsonData) {
-            blockError = jsonError;
+        // Serialize to PLIST
+        NSError *plistError = nil;
+        NSData *plistData = [NSPropertyListSerialization dataWithPropertyList:updated
+                                                                       format:NSPropertyListBinaryFormat_v1_0
+                                                                      options:0
+                                                                        error:&plistError];
+        if (!plistData) {
+            blockError = plistError;
             return;
         }
 
@@ -288,7 +304,7 @@ static dispatch_once_t gKeychainOnce = 0;
         } else {
             sqlite3_bind_null(stmt, 1);
         }
-        sqlite3_bind_blob(stmt, 2, [jsonData bytes], (int)[jsonData length], SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 2, [plistData bytes], (int)[plistData length], SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 3, [service UTF8String], -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 4, [account UTF8String], -1, SQLITE_TRANSIENT);
 
