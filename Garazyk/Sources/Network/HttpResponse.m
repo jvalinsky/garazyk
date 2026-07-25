@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Security header values */
 static NSString *const kXContentTypeOptions = @"nosniff";
 static NSString *const kXFrameOptions = @"DENY";
-static NSString *const kContentSecurityPolicy = @"default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:;";
+static NSString *const kContentSecurityPolicy = @"default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' https://unpkg.com data:; img-src 'self' data:;";
 static NSString *_defaultServerHeader = nil;
 
 static NSDateFormatter *HttpResponseDateFormatter(void) {
