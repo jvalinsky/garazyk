@@ -1,40 +1,167 @@
-Weather report: rochester, new york, us
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garazyk PDS Status</title>
+    <link rel="stylesheet" href="https://unpkg.com/@sakun/system.css" />
+    <style>
+        body {
+            background-color: #AAAAAA; /* Classic Mac desktop gray */
+            background-image: url('data:image/svg+xml;utf8,<svg width="2" height="2" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" fill="%23000"/><rect width="1" height="1" x="1" y="1" fill="%23000"/></svg>');
+            background-repeat: repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: 'Chicago', sans-serif;
+        }
 
-                Overcast
-  [38;5;240;1m     .--.    [0m [38;5;082m+51[0m([38;5;046m46[0m) °F[0m
-  [38;5;240;1m  .-(    ).  [0m [1m↖[0m [38;5;208m16[0m mph[0m
-  [38;5;240;1m (___.__)__) [0m 9 mi[0m
-                0.1 in[0m
-                                                       ┌─────────────┐
-┌──────────────────────────────┬───────────────────────┤  Sun 24 May ├───────────────────────┬──────────────────────────────┐
-│            Morning           │             Noon      └──────┬──────┘     Evening           │             Night            │
-├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ [38;5;226m    \   /    [0m Sunny          │ [38;5;226m _`/""[38;5;250m.-.    [0m Patchy rain ne…│               Cloudy         │               Cloudy         │
-│ [38;5;226m     .-.     [0m [38;5;118m+57[0m([38;5;118m55[0m) °F[0m     │ [38;5;226m  ,\_[38;5;250m(   ).  [0m [38;5;154m+62[0m([38;5;154m60[0m) °F[0m     │ [38;5;250m     .--.    [0m [38;5;154m62[0m °F[0m          │ [38;5;250m     .--.    [0m [38;5;118m+57[0m([38;5;118m55[0m) °F[0m     │
-│ [38;5;226m  ― (   ) ―  [0m [1m↖[0m [38;5;208m14[0m-[38;5;196m24[0m mph[0m    │ [38;5;226m   /[38;5;250m(___(__) [0m [1m↖[0m [38;5;214m14[0m-[38;5;196m22[0m mph[0m    │ [38;5;250m  .-(    ).  [0m [1m↖[0m [38;5;220m11[0m-[38;5;202m19[0m mph[0m    │ [38;5;250m  .-(    ).  [0m [1m↖[0m [38;5;220m9[0m-[38;5;202m17[0m mph[0m     │
-│ [38;5;226m     `-’     [0m 1 mi[0m           │ [38;5;111m     ‘ ‘ ‘ ‘ [0m 6 mi[0m           │ [38;5;250m (___.__)__) [0m 6 mi[0m           │ [38;5;250m (___.__)__) [0m 6 mi[0m           │
-│ [38;5;226m    /   \    [0m 0.0 in | 0%[0m    │ [38;5;111m    ‘ ‘ ‘ ‘  [0m 0.0 in | 100%[0m  │               0.0 in | 0%[0m    │               0.0 in | 0%[0m    │
-└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
-                                                       ┌─────────────┐
-┌──────────────────────────────┬───────────────────────┤  Mon 25 May ├───────────────────────┬──────────────────────────────┐
-│            Morning           │             Noon      └──────┬──────┘     Evening           │             Night            │
-├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤
-│               Fog            │ [38;5;226m _`/""[38;5;250m.-.    [0m Patchy rain ne…│ [38;5;226m    \   /    [0m Sunny          │ [38;5;226m    \   /    [0m Clear          │
-│ [38;5;251m _ - _ - _ - [0m [38;5;118m+55[0m([38;5;082m53[0m) °F[0m     │ [38;5;226m  ,\_[38;5;250m(   ).  [0m [38;5;118m+59[0m([38;5;118m57[0m) °F[0m     │ [38;5;226m     .-.     [0m [38;5;154m62[0m °F[0m          │ [38;5;226m     .-.     [0m [38;5;118m59[0m °F[0m          │
-│ [38;5;251m  _ - _ - _  [0m [1m→[0m [38;5;190m7[0m-[38;5;220m11[0m mph[0m     │ [38;5;226m   /[38;5;250m(___(__) [0m [1m↘[0m [38;5;190m6[0m-[38;5;226m8[0m mph[0m      │ [38;5;226m  ― (   ) ―  [0m [1m↘[0m [38;5;082m1[0m-[38;5;118m2[0m mph[0m      │ [38;5;226m  ― (   ) ―  [0m [1m↗[0m [38;5;118m3[0m-[38;5;226m8[0m mph[0m      │
-│ [38;5;251m _ - _ - _ - [0m 0 mi[0m           │ [38;5;111m     ‘ ‘ ‘ ‘ [0m 6 mi[0m           │ [38;5;226m     `-’     [0m 6 mi[0m           │ [38;5;226m     `-’     [0m 6 mi[0m           │
-│               0.0 in | 73%[0m   │ [38;5;111m    ‘ ‘ ‘ ‘  [0m 0.0 in | 73%[0m   │ [38;5;226m    /   \    [0m 0.0 in | 0%[0m    │ [38;5;226m    /   \    [0m 0.0 in | 0%[0m    │
-└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
-                                                       ┌─────────────┐
-┌──────────────────────────────┬───────────────────────┤  Tue 26 May ├───────────────────────┬──────────────────────────────┐
-│            Morning           │             Noon      └──────┬──────┘     Evening           │             Night            │
-├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ [38;5;226m    \   /    [0m Sunny          │ [38;5;226m    \   /    [0m Sunny          │ [38;5;226m    \   /    [0m Sunny          │ [38;5;226m    \   /    [0m Clear          │
-│ [38;5;226m     .-.     [0m [38;5;154m64[0m °F[0m          │ [38;5;226m     .-.     [0m [38;5;190m69[0m °F[0m          │ [38;5;226m     .-.     [0m [38;5;190m69[0m °F[0m          │ [38;5;226m     .-.     [0m [38;5;154m64[0m °F[0m          │
-│ [38;5;226m  ― (   ) ―  [0m [1m↗[0m [38;5;190m6[0m-[38;5;220m9[0m mph[0m      │ [38;5;226m  ― (   ) ―  [0m [1m↗[0m [38;5;190m6[0m-[38;5;220m10[0m mph[0m     │ [38;5;226m  ― (   ) ―  [0m [1m↗[0m [38;5;220m11[0m-[38;5;196m19[0m mph[0m    │ [38;5;226m  ― (   ) ―  [0m [1m↗[0m [38;5;220m11[0m-[38;5;196m23[0m mph[0m    │
-│ [38;5;226m     `-’     [0m 6 mi[0m           │ [38;5;226m     `-’     [0m 6 mi[0m           │ [38;5;226m     `-’     [0m 6 mi[0m           │ [38;5;226m     `-’     [0m 6 mi[0m           │
-│ [38;5;226m    /   \    [0m 0.0 in | 0%[0m    │ [38;5;226m    /   \    [0m 0.0 in | 0%[0m    │ [38;5;226m    /   \    [0m 0.0 in | 0%[0m    │ [38;5;226m    /   \    [0m 0.0 in | 0%[0m    │
-└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
-Location: City of Rochester, New York, United States of America [43.157285,-77.615214]
+        .desktop-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1000px;
+        }
 
-Follow [46m[30m@igor_chubin[0m for wttr.in updates
+        .window {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+        }
+
+        /* Menu bar at the top of the screen */
+        .system-menu-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-bottom: 2px solid black;
+            padding: 2px 10px;
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        .system-menu-bar-item {
+            cursor: default;
+        }
+
+        .system-menu-bar-item:hover {
+            background: black;
+            color: white;
+        }
+
+        ul.tree-view {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        ul.tree-view li {
+            margin-bottom: 5px;
+        }
+
+        .disk-icon {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="none" stroke="black" stroke-width="2" d="M4,4 L28,4 L28,28 L4,28 Z"/><path fill="black" d="M10,4 L22,4 L22,12 L10,12 Z"/><rect fill="none" stroke="black" x="8" y="18" width="16" height="10"/></svg>');
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Classic Mac Menu Bar -->
+    <div class="system-menu-bar">
+        <div class="system-menu-bar-item" style="font-weight: bold;"></div>
+        <div class="system-menu-bar-item">File</div>
+        <div class="system-menu-bar-item">Edit</div>
+        <div class="system-menu-bar-item">View</div>
+        <div class="system-menu-bar-item">Special</div>
+    </div>
+
+    <div class="desktop-container">
+        
+        <!-- Server Info Window -->
+        <div class="window">
+            <div class="title-bar">
+                <button aria-label="Close" class="close"></button>
+                <h1 class="title">Garazyk PDS Control Panel</h1>
+                <button aria-label="Resize" class="resize"></button>
+            </div>
+            <div class="separator"></div>
+            <div class="window-pane">
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <div class="disk-icon"></div>
+                    <h2>Server Info</h2>
+                </div>
+                
+                <p><strong>Hostname:</strong> {{server_hostname}}</p>
+                <p><strong>Version:</strong> System 1.0.0 (Kaszlak)</p>
+                <p><strong>Uptime:</strong> {{server_uptime}}</p>
+                <p><strong>Status:</strong> <span style="color: green; font-weight: bold;">● Online</span></p>
+
+                <fieldset>
+                    <legend>Memory Usage</legend>
+                    <div class="standard-dialog">
+                        <p>Total Memory: {{memory_total}}</p>
+                        <p>Used: {{memory_used}}</p>
+                        <p>Free: {{memory_free}}</p>
+                    </div>
+                </fieldset>
+
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="btn">Diagnostics</button>
+                    <button class="btn btn-default">Restart</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Window -->
+        <div class="window">
+            <div class="title-bar">
+                <button aria-label="Close" class="close"></button>
+                <h1 class="title">Active Accounts</h1>
+                <button aria-label="Resize" class="resize"></button>
+            </div>
+            <div class="separator"></div>
+            <div class="window-pane">
+                <p>Total Registered Accounts: <strong>{{account_count}}</strong></p>
+                
+                <div class="standard-dialog" style="height: 200px; overflow-y: scroll; background: white; padding: 10px;">
+                    <ul class="tree-view">
+                        <!-- {{#each accounts}} -->
+                        <li>
+                            <details open>
+                                <summary><strong>{{this.handle}}</strong></summary>
+                                <ul>
+                                    <li>DID: {{this.did}}</li>
+                                    <li>Created: {{this.createdAt}}</li>
+                                    <li>Status: Active</li>
+                                </ul>
+                            </details>
+                        </li>
+                        <!-- {{/each}} -->
+                    </ul>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button class="btn">Add New User...</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
