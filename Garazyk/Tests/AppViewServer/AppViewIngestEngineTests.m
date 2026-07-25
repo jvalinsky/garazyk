@@ -54,6 +54,7 @@
 
 @interface AppViewIngestEngineTests : XCTestCase
 @property (nonatomic, strong) AppViewDatabase *db;
+@property (nonatomic, strong) NSString *testDbPath;
 @property (nonatomic, strong) IngestTrackingDelegate *delegate;
 @end
 
@@ -62,14 +63,19 @@
 - (void)setUp {
     [super setUp];
     NSError *err = nil;
-    self.db = [[AppViewDatabase alloc] initInMemoryWithError:&err];
+    self.testDbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    self.db = [[AppViewDatabase alloc] initWithPath:self.testDbPath error:&err];
     XCTAssertNotNil(self.db);
     [self.db runMigrations:&err];
     self.delegate = [[IngestTrackingDelegate alloc] init];
 }
 
 - (void)tearDown {
+    NSString *dbPath = self.testDbPath;
     [self.db close];
+    [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:[dbPath stringByAppendingString:@"-wal"] error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:[dbPath stringByAppendingString:@"-shm"] error:nil];
     [super tearDown];
 }
 
