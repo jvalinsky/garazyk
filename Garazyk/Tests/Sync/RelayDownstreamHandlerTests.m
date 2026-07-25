@@ -6,7 +6,48 @@
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Sync/Relay/RelayMetrics.h"
 #import "Sync/Relay/RelayUpstreamManager.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
 #import "Sync/Firehose/Firehose.h"
+#import "Core/CID.h"
+#import "Network/ATProtoSafeHTTPClient.h"
+
+@interface RelayDownstreamHandler (RepoInventoryTesting)
+@property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
+@end
+
+@interface RelayInventoryHTTPClient : ATProtoSafeHTTPClient
+@property (nonatomic, strong) NSMutableArray<NSDictionary *> *pages;
+@property (nonatomic, strong) NSMutableArray<NSURLRequest *> *requests;
+@end
+
+@implementation RelayInventoryHTTPClient
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _pages = [NSMutableArray array];
+        _requests = [NSMutableArray array];
+    }
+    return self;
+}
+
+- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
+                               options:(ATProtoSafeHTTPClientOptions *)options
+                            completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
+    [self.requests addObject:request];
+    NSDictionary *page = self.pages.count > 0 ? self.pages.firstObject : @{};
+    if (self.pages.count > 0) {
+        [self.pages removeObjectAtIndex:0];
+    }
+    NSData *data = [NSJSONSerialization dataWithJSONObject:page options:0 error:nil];
+    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL
+                                                               statusCode:200
+                                                              HTTPVersion:@"HTTP/1.1"
+                                                             headerFields:@{}];
+    completion(data, response, nil);
+}
+
+@end
 
 @interface RelayDownstreamHandlerTests : XCTestCase
 
@@ -147,6 +188,89 @@
     // Should not crash when event is received
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didReceiveEvent:commitEvent fromUpstream:@"test.pds.com"],
                      @"Should handle commit event without crash");
+}
+
+- (void)testCommitEventUpdatesRepoStateManager {
+    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
+    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    downstreamHandler.repoStateManager = repoStateManager;
+
+    FirehoseCommitEvent *commitEvent = [[FirehoseCommitEvent alloc] init];
+    commitEvent.repo = @"did:plc:relay-state-test";
+    commitEvent.commit = [CID sha256:[@"relay state test commit" dataUsingEncoding:NSUTF8StringEncoding]];
+    commitEvent.rev = @"3mrelaystate";
+    commitEvent.seq = 42;
+
+    NSString *expectedRootCID = commitEvent.commit.stringValue;
+    NSString *expectedRev = commitEvent.rev;
+    int64_t expectedUpstreamSeq = commitEvent.seq;
+
+    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    [downstreamHandler upstreamManager:manager
+                       didReceiveEvent:commitEvent
+                          fromUpstream:@"test.pds.com"];
+
+    XCTestExpectation *stateUpdated = [self expectationWithDescription:@"commit state is recorded"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        XCTAssertEqualObjects([repoStateManager rootCIDForRepo:commitEvent.repo],
+                              expectedRootCID);
+        XCTAssertEqualObjects([repoStateManager revForRepo:commitEvent.repo], expectedRev);
+        XCTAssertEqual([repoStateManager cursorForRepo:commitEvent.repo], expectedUpstreamSeq);
+        XCTAssertEqual([repoStateManager statusForRepo:commitEvent.repo], RelayRepoStatusActive);
+        [stateUpdated fulfill];
+    });
+    [self waitForExpectations:@[stateUpdated] timeout:1.0];
+}
+
+- (void)testUpstreamConnectionBootstrapsPaginatedRepoInventory {
+    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
+    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    downstreamHandler.repoStateManager = repoStateManager;
+
+    RelayInventoryHTTPClient *client = [[RelayInventoryHTTPClient alloc] init];
+    [client.pages addObject:@{
+        @"cursor": @"next::did:plc:two",
+        @"repos": @[
+            @{@"did": @"did:plc:one", @"head": @"bafyreone", @"rev": @"3mone", @"active": @YES}
+        ]
+    }];
+    [client.pages addObject:@{
+        @"repos": @[
+            @{@"did": @"did:plc:two", @"head": @"bafryetwo", @"rev": @"3mtwo", @"active": @NO}
+        ]
+    }];
+    downstreamHandler.safeHTTPClient = client;
+
+    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
+    [downstreamHandler upstreamManager:manager didConnectToUpstream:@"https://inventory.test"];
+
+    XCTestExpectation *bootstrapCompleted = [self expectationWithDescription:@"inventory bootstrap completes"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        XCTAssertEqual(client.requests.count, 2);
+        XCTAssertEqualObjects(client.requests[0].URL.absoluteString,
+                              @"https://inventory.test/xrpc/com.atproto.sync.listRepos?limit=1000");
+        NSURLComponents *secondRequestComponents =
+            [NSURLComponents componentsWithURL:client.requests[1].URL resolvingAgainstBaseURL:NO];
+        XCTAssertEqualObjects(secondRequestComponents.queryItems[1].value,
+                              @"next::did:plc:two");
+        XCTAssertEqualObjects([repoStateManager rootCIDForRepo:@"did:plc:one"], @"bafyreone");
+        XCTAssertEqualObjects([repoStateManager revForRepo:@"did:plc:one"], @"3mone");
+        XCTAssertEqual([repoStateManager statusForRepo:@"did:plc:one"], RelayRepoStatusActive);
+        XCTAssertEqualObjects([repoStateManager rootCIDForRepo:@"did:plc:two"], @"bafryetwo");
+        XCTAssertEqual([repoStateManager statusForRepo:@"did:plc:two"], RelayRepoStatusDesynchronized);
+        [bootstrapCompleted fulfill];
+    });
+    [self waitForExpectations:@[bootstrapCompleted] timeout:1.0];
 }
 
 - (void)testUpstreamManagerDidReceiveEventIdentity {
