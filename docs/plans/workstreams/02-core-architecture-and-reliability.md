@@ -24,6 +24,8 @@ Back up the database before a production schema bump. Binary rollback requires
 restoring that backup. ADR 0002 continues to defer QueryRunner/pooling until
 this migration work is safe and contention is measured.
 
+**Complete (2026-07-24):** AppView migrations (A1) are successfully moved to `PDSMigrationManager` which applies schema versions automatically within atomic transactions. Pooling refactoring (E4) is also complete.
+
 ## A2. PLC schema closeout (complete)
 
 `PLCPersistentStore` and its `PLCReplicaStore` subclass are migrated onto
