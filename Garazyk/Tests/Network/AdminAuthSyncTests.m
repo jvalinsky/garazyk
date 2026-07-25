@@ -7,6 +7,7 @@
 #import "PDSHttpTestUtilities.h"
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
+#import "Repository/STAR.h"
 
 @interface AdminAuthSyncTests : AdminAuthXrpcTestBase
 @end
@@ -131,6 +132,61 @@
     [[NSFileManager defaultManager] removeItemAtPath:response.bodyFilePath
                                                error:nil];
   }
+}
+
+- (void)testApplicationSyncGetRepoNegotiatesSTARL0WithoutAuth {
+  NSDictionary *record = @{
+    @"$type" : @"app.bsky.feed.post",
+    @"text" : @"application sync STAR getRepo",
+    @"createdAt" : [self iso8601String]
+  };
+  NSDictionary *created = [self.application.legacyController
+      createRecordForDid:self.userDid
+              collection:@"app.bsky.feed.post"
+                  record:record
+          validationMode:PDSValidationModeOff
+                   error:nil];
+  XCTAssertNotNil(created);
+
+  NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
+  HttpResponse *response =
+      [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                       queryString:query
+                       queryParams:@{@"did" : self.userDid}
+                           headers:@{
+                             @"accept" :
+                                 PDSRepoAcceptHeaderForPreferredFormat(
+                                     PDSRepoFormatSTARL0)
+                           }];
+
+  XCTAssertEqual(response.statusCode, HttpStatusOK);
+  XCTAssertEqualObjects(response.contentType, STARContentTypeL0);
+  XCTAssertEqualObjects([response headerForKey:@"Vary"], @"Accept");
+  XCTAssertTrue(STARDetectFormatFromData(response.body));
+
+  NSError *parseError = nil;
+  STARReader *reader = [STARReader readFromData:response.body error:&parseError];
+  XCTAssertNil(parseError);
+  XCTAssertNotNil(reader);
+  XCTAssertEqual(reader.variant, STARVariantL0);
+  XCTAssertTrue(reader.blocks.count > 0);
+}
+
+- (void)testApplicationSyncGetRepoPrefersHigherQualityCAR {
+  NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
+  HttpResponse *response =
+      [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+                       queryString:query
+                       queryParams:@{@"did" : self.userDid}
+                           headers:@{
+                             @"accept" :
+                                 @"application/vnd.atproto.star;q=0.5, application/vnd.ipld.car"
+                           }];
+
+  XCTAssertEqual(response.statusCode, HttpStatusOK);
+  XCTAssertEqualObjects(response.contentType, CARContentType);
+  XCTAssertEqualObjects([response headerForKey:@"Vary"], @"Accept");
+  XCTAssertFalse(STARDetectFormatFromData(response.body));
 }
 
 - (void)testApplicationSyncGetRepoSinceCurrentRevReturnsEmptyDelta {

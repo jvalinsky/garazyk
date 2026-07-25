@@ -11,10 +11,31 @@
 #import "Network/ATProtoHttpRelayAPIRoutePack.h"
 
 #import "Debug/GZLogger.h"
+#import "Admin/PDSAdminAuth.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "Sync/Relay/RelayAPIHandler.h"
+
+static BOOL RelayAPIAuthorizeMutation(HttpRequest *request,
+                                      HttpResponse *response) {
+  NSError *authError = nil;
+  if ([[PDSAdminAuth sharedAuth] authenticateHeaders:request.headers
+                                               error:&authError]) {
+    return YES;
+  }
+
+  NSInteger statusCode = authError.code;
+  if (statusCode < 400 || statusCode > 599) {
+    statusCode = HttpStatusUnauthorized;
+  }
+  response.statusCode = statusCode;
+  [response setJsonBody:@{
+    @"error": statusCode == HttpStatusForbidden ? @"Forbidden" : @"Unauthorized",
+    @"message": authError.localizedDescription ?: @"Admin authentication required"
+  }];
+  return NO;
+}
 
 @implementation ATProtoHttpRelayAPIRoutePack
 
@@ -42,30 +63,21 @@
   [server addRoute:@"POST"
               path:@"/api/relay/upstreams"
            handler:^(HttpRequest *request, HttpResponse *response) {
-              [relayAPIHandler handleRequest:request response:response];
-            }];
-
-  [server addRoute:@"GET"
-              path:@"/api/relay/upstreams/reconnect-all"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+              if (!RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"POST"
               path:@"/api/relay/upstreams/reconnect-all"
            handler:^(HttpRequest *request, HttpResponse *response) {
-              [relayAPIHandler handleRequest:request response:response];
-            }];
-
-  [server addRoute:@"GET"
-              path:@"/api/relay/upstreams/disconnect-all"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+              if (!RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"POST"
               path:@"/api/relay/upstreams/disconnect-all"
            handler:^(HttpRequest *request, HttpResponse *response) {
+              if (!RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 
@@ -75,9 +87,18 @@
               [relayAPIHandler handleRequest:request response:response];
             }];
 
+  [server addRoute:@"POST"
+              path:@"/api/relay/requestCrawl"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+              if (!RelayAPIAuthorizeMutation(request, response)) return;
+              [relayAPIHandler handleRequest:request response:response];
+            }];
+
   [server addRoute:@"*"
               path:@"/api/relay/upstreams/*"
            handler:^(HttpRequest *request, HttpResponse *response) {
+              if (request.method != HttpMethodGET &&
+                  !RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 

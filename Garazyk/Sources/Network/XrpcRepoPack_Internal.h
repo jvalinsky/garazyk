@@ -14,7 +14,7 @@ typedef NS_ENUM(NSInteger, PDSRepoPackValidationErrorCode) {
     PDSRepoPackValidationErrorPayloadTooLarge = 2,
 };
 
-extern NSString * const PDSRepoPackValidationErrorDomain;
+extern NSString * const _Nonnull PDSRepoPackValidationErrorDomain;
 
 BOOL isReplyNotAllowedError(NSError * _Nonnull error);
 BOOL rejectUnavailableRepoDid(NSString * _Nonnull did,
@@ -33,5 +33,6 @@ NSString * _Nonnull normalizedMimeType(NSString * _Nullable contentType);
 BOOL isActiveUploadMimeType(NSString * _Nullable contentType);
 void applyRepoBlobDownloadHeaders(NSString * _Nonnull mimeType, HttpResponse * _Nonnull response);
 BOOL validateApplyWritesPayload(id _Nullable writes, NSError * _Nullable * _Nullable error);
+NSString * _Nullable normalizedApplyWriteAction(NSDictionary * _Nonnull write);
 NSError * _Nonnull repoPackValidationError(PDSRepoPackValidationErrorCode code, NSString * _Nullable message);
 NSString * _Nullable normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> * _Nullable alsoKnownAs);

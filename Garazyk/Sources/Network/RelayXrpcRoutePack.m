@@ -7,13 +7,81 @@
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "PLC/DIDPLCResolver.h"
 #import "Network/XrpcLexiconResolver.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Core/DID.h"
+#import "Core/ATURI.h"
 #import "Debug/GZLogger.h"
+
+static BOOL parseStrictNonNegativeInteger(NSString *value, NSInteger *result) {
+    if (![value isKindOfClass:[NSString class]] || value.length == 0)
+    {
+        return NO;
+    }
+
+    NSScanner *scanner = [NSScanner scannerWithString:value];
+    scanner.charactersToBeSkipped = nil;
+    NSInteger parsedValue = 0;
+    if (![scanner scanInteger:&parsedValue] || !scanner.isAtEnd || parsedValue < 0)
+    {
+        return NO;
+    }
+
+    if (result)
+    {
+        *result = parsedValue;
+    }
+    return YES;
+}
 
 // DID validation helper
 static BOOL isValidDID(NSString *did) {
-    if (!did || did.length < 7) return NO;
-    return [did hasPrefix:@"did:plc:"] || [did hasPrefix:@"did:web:"];
+    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    return parsedDID != nil &&
+        ([parsedDID.method isEqualToString:@"plc"] ||
+         [parsedDID.method isEqualToString:@"web"]);
+}
+
+static NSURL *didWebDocumentURL(NSString *did) {
+    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    if (![parsedDID.method isEqualToString:@"web"]) {
+        return nil;
+    }
+
+    NSArray<NSString *> *identifierParts =
+        [parsedDID.identifier componentsSeparatedByString:@":"];
+    NSString *authority =
+        [identifierParts.firstObject stringByRemovingPercentEncoding];
+    if (authority.length == 0) {
+        return nil;
+    }
+
+    NSURLComponents *components = [NSURLComponents
+        componentsWithString:[@"https://" stringByAppendingString:authority]];
+    if (components.host.length == 0 || components.user.length > 0 ||
+        components.password.length > 0 || components.query.length > 0 ||
+        components.fragment.length > 0 ||
+        (components.path.length > 0 && ![components.path isEqualToString:@"/"])) {
+        return nil;
+    }
+
+    if (identifierParts.count == 1) {
+        components.path = @"/.well-known/did.json";
+    } else {
+        NSMutableArray<NSString *> *pathParts =
+            [NSMutableArray arrayWithCapacity:identifierParts.count];
+        for (NSUInteger index = 1; index < identifierParts.count; index++) {
+            NSString *part =
+                [identifierParts[index] stringByRemovingPercentEncoding];
+            if (part.length == 0 || [part containsString:@"/"]) {
+                return nil;
+            }
+            [pathParts addObject:part];
+        }
+        [pathParts addObject:@"did.json"];
+        components.path =
+            [@"/" stringByAppendingString:[pathParts componentsJoinedByString:@"/"]];
+    }
+    return components.URL;
 }
 
 @implementation RelayXrpcRoutePack
@@ -129,10 +197,10 @@ static BOOL isValidDID(NSString *did) {
 - (void)handleListRepos:(HttpRequest *)request response:(HttpResponse *)response
 {
     NSString *limitParam = [request queryParamForKey:@"limit"];
-    NSInteger limit = 100;
+    NSInteger limit = 500;
     if (limitParam.length > 0)
     {
-        if (![[NSScanner scannerWithString:limitParam] scanInteger:&limit] || limit < 1 || limit > 1000)
+        if (!parseStrictNonNegativeInteger(limitParam, &limit) || limit < 1 || limit > 1000)
         {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
@@ -147,7 +215,7 @@ static BOOL isValidDID(NSString *did) {
     NSInteger startIndex = 0;
     if (cursorParam.length > 0)
     {
-        if (![[NSScanner scannerWithString:cursorParam] scanInteger:&startIndex] || startIndex < 0)
+        if (!parseStrictNonNegativeInteger(cursorParam, &startIndex))
         {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
@@ -489,7 +557,7 @@ static BOOL isValidDID(NSString *did) {
     NSInteger limit = 200; // default per lexicon
     if (limitParam.length > 0)
     {
-        if (![[NSScanner scannerWithString:limitParam] scanInteger:&limit] || limit < 1 || limit > 1000)
+        if (!parseStrictNonNegativeInteger(limitParam, &limit) || limit < 1 || limit > 1000)
         {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
@@ -505,7 +573,7 @@ static BOOL isValidDID(NSString *did) {
     NSInteger startIndex = 0;
     if (cursorParam.length > 0)
     {
-        if (![[NSScanner scannerWithString:cursorParam] scanInteger:&startIndex] || startIndex < 0)
+        if (!parseStrictNonNegativeInteger(cursorParam, &startIndex))
         {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
@@ -878,13 +946,42 @@ static BOOL isValidDID(NSString *did) {
     else if ([didParam hasPrefix:@"did:web:"])
     {
         // For did:web, fetch the DID document from the web endpoint
-        NSString *domain = [didParam substringFromIndex:8]; // Remove "did:web:"
-        NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/did.json", domain];
-        NSURL *url = [NSURL URLWithString:urlString];
-        NSData *data = [NSData dataWithContentsOfURL:url options:0 error:&resolveError];
-        if (data)
+        NSURL *url = didWebDocumentURL(didParam);
+        if (!url)
+        {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": @"Invalid did:web identifier"
+            }];
+            return;
+        }
+        NSMutableURLRequest *didRequest = [NSMutableURLRequest requestWithURL:url];
+        didRequest.timeoutInterval = 5.0;
+        ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+        options.timeout = 5.0;
+        options.maxResponseBytes = 1024 * 1024;
+        options.allowHTTP = NO;
+        options.allowPrivateHosts = NO;
+        options.followRedirects = YES;
+        NSHTTPURLResponse *httpResponse = nil;
+        NSData *data = [[ATProtoSafeHTTPClient sharedClient]
+            sendSynchronousRequest:didRequest
+                           options:options
+                          response:&httpResponse
+                             error:&resolveError];
+        if (data && httpResponse.statusCode >= 200 && httpResponse.statusCode < 300)
         {
             didDoc = [NSJSONSerialization JSONObjectWithData:data options:0 error:&resolveError];
+        }
+        else if (data && !resolveError)
+        {
+            resolveError = [NSError errorWithDomain:@"RelayXrpcRoutePack"
+                                               code:httpResponse.statusCode
+                                           userInfo:@{
+                                               NSLocalizedDescriptionKey:
+                                                   @"DID document endpoint returned an error"
+                                           }];
         }
     }
     else
@@ -911,7 +1008,7 @@ static BOOL isValidDID(NSString *did) {
 
     // Wrap as DIDDocument for endpoint extraction
     DIDDocument *didDocument = [DIDDocument documentWithJSON:didDoc error:&resolveError];
-    if (!didDocument)
+    if (!didDocument || ![didDocument.id isEqualToString:didParam])
     {
         GZ_LOG_WARN(@"Relay getRepo: Invalid DID document for %@: %@", didParam,
                      resolveError.localizedDescription ?: @"unknown error");
@@ -946,7 +1043,10 @@ static BOOL isValidDID(NSString *did) {
 
     // Build redirect URL to PDS's getRepo endpoint
     NSURLComponents *redirectComponents = [NSURLComponents componentsWithString:pdsEndpoint];
-    if (!redirectComponents)
+    NSString *redirectScheme = redirectComponents.scheme.lowercaseString;
+    if (!redirectComponents || redirectComponents.host.length == 0 ||
+        (![redirectScheme isEqualToString:@"https"] &&
+         ![redirectScheme isEqualToString:@"http"]))
     {
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{
