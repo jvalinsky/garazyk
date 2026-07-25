@@ -7,6 +7,7 @@
 @property (nonatomic, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, readwrite, copy) NSString *databasePath;
 @property (nonatomic, strong) ATProtoConnectionPool *pool;
+@property (nonatomic, strong) NSLock *transactionLock;
 @end
 
 @implementation ATProtoConnectionManagerPooled
@@ -15,6 +16,7 @@
     if ((self = [super init])) {
         _pool = pool;
         _databasePath = [pool.databasePath copy];
+        _transactionLock = [[NSLock alloc] init];
         _open = YES;
     }
     return self;
@@ -75,54 +77,62 @@
         return NO;
     }
 
-    sqlite3 *db = [self.pool acquireConnection];
-    if (!db) {
-        if (error) {
-            *error = ATProtoDBError(ATProtoDBErrorDomain,
-                                @"Failed to acquire connection from pool",
-                                ATProtoDBErrorNotOpen);
+    // SQLite permits one write transaction at a time. Queue pooled writers
+    // here so a burst cannot occupy every connection waiting in
+    // BEGIN IMMEDIATE until busy_timeout expires.
+    [self.transactionLock lock];
+    @try {
+        sqlite3 *db = [self.pool acquireConnection];
+        if (!db) {
+            if (error) {
+                *error = ATProtoDBError(ATProtoDBErrorDomain,
+                                    @"Failed to acquire connection from pool",
+                                    ATProtoDBErrorNotOpen);
+            }
+            return NO;
         }
-        return NO;
-    }
 
-    char *errMsg = NULL;
-    int rc = sqlite3_exec(db, "BEGIN IMMEDIATE", NULL, NULL, &errMsg);
-    if (rc != SQLITE_OK) {
-        if (error) {
-            *error = ATProtoDBSQLError(ATProtoDBErrorDomain, db, ATProtoDBErrorQueryFailed);
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, "BEGIN IMMEDIATE", NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            if (error) {
+                *error = ATProtoDBSQLError(ATProtoDBErrorDomain, db, ATProtoDBErrorQueryFailed);
+            }
+            sqlite3_free(errMsg);
+            [self.pool releaseConnection:db];
+            return NO;
         }
-        sqlite3_free(errMsg);
+
+        BOOL rollback = NO;
+        block(db, &rollback);
+
+        if (rollback) {
+            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+            [self.pool releaseConnection:db];
+            if (error) {
+                *error = ATProtoDBError(ATProtoDBErrorDomain,
+                                    @"Transaction rolled back",
+                                    ATProtoDBErrorQueryFailed);
+            }
+            return NO;
+        }
+
+        rc = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            if (error) {
+                *error = ATProtoDBSQLError(ATProtoDBErrorDomain, db, ATProtoDBErrorQueryFailed);
+            }
+            sqlite3_free(errMsg);
+            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+            [self.pool releaseConnection:db];
+            return NO;
+        }
+
         [self.pool releaseConnection:db];
-        return NO;
+        return YES;
+    } @finally {
+        [self.transactionLock unlock];
     }
-
-    BOOL rollback = NO;
-    block(db, &rollback);
-
-    if (rollback) {
-        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
-        [self.pool releaseConnection:db];
-        if (error) {
-            *error = ATProtoDBError(ATProtoDBErrorDomain,
-                                @"Transaction rolled back",
-                                ATProtoDBErrorQueryFailed);
-        }
-        return NO;
-    }
-
-    rc = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
-    if (rc != SQLITE_OK) {
-        if (error) {
-            *error = ATProtoDBSQLError(ATProtoDBErrorDomain, db, ATProtoDBErrorQueryFailed);
-        }
-        sqlite3_free(errMsg);
-        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
-        [self.pool releaseConnection:db];
-        return NO;
-    }
-
-    [self.pool releaseConnection:db];
-    return YES;
 }
 
 @end

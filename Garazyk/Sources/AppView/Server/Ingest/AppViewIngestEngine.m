@@ -201,6 +201,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, strong) AppViewDatabase *database;
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;
 @property (nonatomic, strong) NSMutableArray<AppViewRelayConnection *> *connections;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t ingestQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t checkpointQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t processingQueue;
@@ -209,8 +210,10 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *lagByRelay;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *backpressureStateByRelay;
-@property (nonatomic, assign) int64_t highestSeenSeq;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *highestSeenSeqByRelay;
 @property (nonatomic, assign) int64_t eventsSinceLastFlush;
+@property (nonatomic, assign) BOOL indexDrainScheduled;
+@property (nonatomic, assign) BOOL indexDrainRequested;
 @property (nonatomic, copy) NSString *indexWorkerID;
 @property (atomic, assign) BOOL acceptingIndexWork;
 @property (nonatomic, strong) RelayRepoStateManager *repoStateManager;
@@ -226,6 +229,8 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 rawEnvelope:(NSData *)rawEnvelope
                 outputEvent:(AppViewIngestEvent **)outputEvent
               failureReason:(NSString **)failureReason;
+- (void)_handleCommitEventOnIngestQueue:(FirehoseCommitEvent *)event
+                              fromRelay:(NSString *)relayURL;
 @end
 
 @implementation AppViewIngestEngine
@@ -242,6 +247,9 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     _isRunning             = NO;
     _lagByRelay            = [NSMutableDictionary dictionary];
     _backpressureStateByRelay = [NSMutableDictionary dictionary];
+    _highestSeenSeqByRelay = [NSMutableDictionary dictionary];
+    _ingestQueue           = dispatch_queue_create("dev.garazyk.appview.ingest.persistence",
+                                                   DISPATCH_QUEUE_SERIAL);
     _eventQueue            = dispatch_queue_create("dev.garazyk.appview.ingest.events",
                                                    DISPATCH_QUEUE_SERIAL);
     _checkpointQueue       = dispatch_queue_create("dev.garazyk.appview.ingest.checkpoint",
@@ -265,7 +273,6 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             _maxLagForBackpressure = 5000;
         }
     }
-    _highestSeenSeq        = 0;
     return self;
 }
 
@@ -348,11 +355,11 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
         // Check if we can resume a paused relay (hysteresis: resume
         // when lag drops below half the backpressure threshold).
-        int64_t lag = _highestSeenSeq - conn.lastCheckpointSeq;
-        
         [_stateLock lock];
+        int64_t highestSeenSeq = [self.highestSeenSeqByRelay[conn.relayURL] longLongValue];
         BOOL isPaused = [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1;
         [_stateLock unlock];
+        int64_t lag = MAX(INT64_C(0), highestSeenSeq - conn.lastCheckpointSeq);
 
         NSDictionary<NSString *, NSNumber *> *metrics = [self.database pendingIndexQueueMetricsForRelayURL:conn.relayURL
                                                                                                       error:nil];
@@ -381,17 +388,25 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 }
 
 - (void)waitForIndexQueueDrainForTesting {
-    // _processingQueue is serial, so a sync block submitted now only runs
-    // after every block already enqueued (including an in-flight
-    // _drainIndexQueue) has finished.
-    dispatch_sync(_processingQueue, ^{});
+    // First wait for event persistence, then follow every drain batch spawned
+    // by an earlier batch until the scheduler becomes idle.
+    dispatch_sync(_ingestQueue, ^{});
+    while (YES) {
+        dispatch_sync(_processingQueue, ^{});
+        [_stateLock lock];
+        BOOL drainScheduled = _indexDrainScheduled;
+        [_stateLock unlock];
+        if (!drainScheduled) break;
+    }
 }
 
 // Returns YES if backpressure is active (lag exceeds threshold)
 - (BOOL)_shouldApplyBackpressure:(int64_t)incomingSeq fromRelay:(NSString *)relayURL {
     [_stateLock lock];
-    if (incomingSeq > _highestSeenSeq) {
-        _highestSeenSeq = incomingSeq;
+    int64_t highestSeenSeq = [self.highestSeenSeqByRelay[relayURL] longLongValue];
+    if (incomingSeq > highestSeenSeq) {
+        highestSeenSeq = incomingSeq;
+        self.highestSeenSeqByRelay[relayURL] = @(incomingSeq);
     }
     [_stateLock unlock];
 
@@ -401,7 +416,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     // checkpointIntervalMs seconds stale.
     int64_t durableSeq = [_database durableCursorForRelayURL:relayURL];
 
-    int64_t lag = _highestSeenSeq - durableSeq;
+    int64_t lag = MAX(INT64_C(0), highestSeenSeq - durableSeq);
     NSError *metricsError = nil;
     NSDictionary<NSString *, NSNumber *> *metrics = [_database pendingIndexQueueMetricsForRelayURL:relayURL error:&metricsError];
     if (metrics && ([metrics[@"event_count"] unsignedIntegerValue] >= self.indexQueueHighWatermarkEvents ||
@@ -445,6 +460,16 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 // ---------------------------------------------------------------------------
 
 - (void)_handleCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL {
+    // Relay callbacks can arrive concurrently. Serialize persistence before
+    // touching SQLite instead of making every callback contend for the
+    // database's single writer slot.
+    dispatch_sync(_ingestQueue, ^{
+        [self _handleCommitEventOnIngestQueue:event fromRelay:relayURL];
+    });
+}
+
+- (void)_handleCommitEventOnIngestQueue:(FirehoseCommitEvent *)event
+                              fromRelay:(NSString *)relayURL {
     @autoreleasepool {
     NSString *did = event.repo;
     NSString *rev = event.rev;
@@ -468,7 +493,8 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             [conn.client pauseReading];
             [_stateLock lock];
             self.backpressureStateByRelay[relayURL] = @1;
-            int64_t lag = _highestSeenSeq - conn.lastCheckpointSeq;
+            int64_t highestSeenSeq = [self.highestSeenSeqByRelay[relayURL] longLongValue];
+            int64_t lag = MAX(INT64_C(0), highestSeenSeq - conn.lastCheckpointSeq);
             [_stateLock unlock];
             GZ_LOG_WARN(@"[AppView Ingest] Backpressure: PAUSING relay %@ (lag=%lld)",
                          relayURL, (long long)lag);
@@ -507,15 +533,47 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 }
 
 - (void)_drainIndexQueue {
+    [_stateLock lock];
+    if (_indexDrainScheduled) {
+        _indexDrainRequested = YES;
+        [_stateLock unlock];
+        return;
+    }
+    if (!self.acceptingIndexWork) {
+        [_stateLock unlock];
+        return;
+    }
+    _indexDrainScheduled = YES;
+    _indexDrainRequested = NO;
+    [_stateLock unlock];
+
     dispatch_async(_processingQueue, ^{
-        if (!self.acceptingIndexWork) return;
+        void (^finishDrain)(NSUInteger) = ^(NSUInteger claimedCount) {
+            [_stateLock lock];
+            BOOL shouldContinue = self.acceptingIndexWork &&
+                (_indexDrainRequested || claimedCount == 100);
+            _indexDrainScheduled = NO;
+            _indexDrainRequested = NO;
+            [_stateLock unlock];
+            if (shouldContinue) {
+                // Clear the scheduled flag before requesting the next batch.
+                // Calls that raced with cleanup either set indexDrainRequested
+                // above or schedule their own block after the flag is cleared.
+                [self _drainIndexQueue];
+            }
+        };
+        if (!self.acceptingIndexWork) {
+            finishDrain(0);
+            return;
+        }
         NSError *claimError = nil;
         NSArray<NSDictionary *> *events = [self.database claimIndexEventsForWorker:self.indexWorkerID
-                                                                               limit:100
-                                                                       leaseDuration:60
-                                                                               error:&claimError];
+                                                                              limit:100
+                                                                      leaseDuration:60
+                                                                              error:&claimError];
         if (!events) {
             GZ_LOG_WARN(@"[AppView Ingest] Failed to claim index queue: %@", claimError.localizedDescription);
+            finishDrain(0);
             return;
         }
         EventFormatter *formatter = [[EventFormatter alloc] init];
@@ -634,9 +692,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 }
             }
         }
-        if (events.count == 100 && self.acceptingIndexWork) {
-            [self _drainIndexQueue];
-        }
+        finishDrain(events.count);
     });
 }
 
