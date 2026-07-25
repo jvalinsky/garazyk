@@ -6,6 +6,7 @@
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Auth/JWT.h"
+#import "Core/PDSRecordEvents.h"
 
 @interface RepoAuthRepoTests : RepoAuthXrpcTestBase
 @end
@@ -141,6 +142,125 @@
                                                                             @"record": record}]}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testApplyWritesUsesUnionTypeForActionScope {
+    NSString *token = [self scopedAccessTokenWithScopes:@[
+        @"atproto", @"repo:app.bsky.feed.post?action=create",
+    ]];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+                                                      body:@{
+                                                          @"repo": self.did1,
+                                                          @"writes": @[
+                                                              @{
+                                                                  @"$type": @"com.atproto.repo.applyWrites#update",
+                                                                  @"collection": @"app.bsky.feed.post",
+                                                                  @"rkey": @"scoped-update",
+                                                                  @"value": @{
+                                                                      @"$type": @"app.bsky.feed.post",
+                                                                      @"text": @"must not pass create-only scope",
+                                                                      @"createdAt": [self iso8601String],
+                                                                  },
+                                                              },
+                                                          ],
+                                                      }
+                                                   headers:@{
+                                                       @"authorization": [@"Bearer " stringByAppendingString:token]
+                                                   }];
+    XCTAssertEqual(response.statusCode, HttpStatusForbidden);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InsufficientScope");
+}
+
+- (void)testApplyWritesUnionUpdateEmitsUpdateAction {
+    NSDictionary *created = [self.controller
+        createRecordForDid:self.did1
+                collection:@"app.bsky.feed.post"
+                   record:@{
+                       @"$type": @"app.bsky.feed.post",
+                       @"text": @"before union update",
+                       @"createdAt": [self iso8601String],
+                   }
+           validationMode:PDSValidationModeRequired
+                    error:nil];
+    NSString *rkey = [created[@"uri"] lastPathComponent];
+    XCTAssertTrue(rkey.length > 0);
+
+    XCTestExpectation *notificationExpectation =
+        [self expectationWithDescription:@"union update notification"];
+    __block NSString *notifiedAction = nil;
+    id observer = [[NSNotificationCenter defaultCenter]
+        addObserverForName:PDSRecordDidChangeNotification
+                    object:nil
+                     queue:nil
+                usingBlock:^(NSNotification *note) {
+        if ([note.userInfo[@"did"] isEqualToString:self.did1] &&
+            [note.userInfo[@"rkey"] isEqualToString:rkey]) {
+            notifiedAction = note.userInfo[@"action"];
+            [notificationExpectation fulfill];
+        }
+    }];
+
+    NSString *authHeader =
+        [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self
+        sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+                          body:@{
+                              @"repo": self.did1,
+                              @"writes": @[
+                                  @{
+                                      @"$type": @"com.atproto.repo.applyWrites#update",
+                                      @"collection": @"app.bsky.feed.post",
+                                      @"rkey": rkey,
+                                      @"value": @{
+                                          @"$type": @"app.bsky.feed.post",
+                                          @"text": @"after union update",
+                                          @"createdAt": [self iso8601String],
+                                      },
+                                  },
+                              ],
+                          }
+                       headers:@{@"authorization": authHeader}];
+    [self waitForExpectations:@[notificationExpectation] timeout:1.0];
+    [[NSNotificationCenter defaultCenter] removeObserver:observer];
+
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(notifiedAction, @"update");
+}
+
+- (void)testApplyWritesRejectsUnknownUnionType {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+                                                      body:@{
+                                                          @"repo": self.did1,
+                                                          @"writes": @[
+                                                              @{
+                                                                  @"$type": @"com.atproto.repo.applyWrites#replace",
+                                                                  @"collection": @"app.bsky.feed.post",
+                                                                  @"rkey": @"unknown-write",
+                                                                  @"value": @{},
+                                                              },
+                                                          ],
+                                                      }
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testApplyWritesRequiresRepo {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+                                                      body:@{
+                                                          @"writes": @[
+                                                              @{
+                                                                  @"$type": @"com.atproto.repo.applyWrites#delete",
+                                                                  @"collection": @"app.bsky.feed.post",
+                                                                  @"rkey": @"missing-repo",
+                                                              },
+                                                          ],
+                                                      }
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
 - (void)testPutRecordRepoMismatchForbidden {

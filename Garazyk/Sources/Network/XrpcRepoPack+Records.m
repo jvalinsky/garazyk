@@ -453,7 +453,16 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
                     (unsigned long)([writes isKindOfClass:[NSArray class]] ? [(NSArray *)writes count] : 0),
                     (long)mode);
 
-        if (repo && ![repo isEqualToString:did]) {
+        if (![repo isKindOfClass:[NSString class]] || repo.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": @"Missing repo"
+            }];
+            return;
+        }
+
+        if (![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
             [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot apply writes for another user"}];
             return;
@@ -474,12 +483,18 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             }];
             return;
         }
+        NSMutableArray<NSDictionary *> *normalizedWrites =
+            [NSMutableArray arrayWithCapacity:writes.count];
         for (NSDictionary *write in writes) {
-            if (!authorizeRepositoryWrite(request, response, write[@"collection"], write[@"action"])) return;
+            NSString *action = normalizedApplyWriteAction(write);
+            if (!authorizeRepositoryWrite(request, response, write[@"collection"], action)) return;
+            NSMutableDictionary *normalizedWrite = [write mutableCopy];
+            normalizedWrite[@"action"] = action;
+            [normalizedWrites addObject:normalizedWrite];
         }
 
         NSError *error = nil;
-        NSDictionary *result = [recordService applyWrites:writes
+        NSDictionary *result = [recordService applyWrites:normalizedWrites
                                                    forDid:did
                                           validationMode:mode
                                                swapCommit:swapCommit
