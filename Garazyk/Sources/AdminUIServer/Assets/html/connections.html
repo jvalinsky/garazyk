@@ -1,0 +1,13 @@
+<form class="form" data-ui-form="save-connections">
+<div class="grid-2">
+{{#services}}
+<div class="card">
+<div class="card-title mb-md">{{label}} Service</div>
+<div class="form-group"><label class="form-label" for="conn-{{id}}-url">Base URL</label><input id="conn-{{id}}-url" type="text" name="{{urlKey}}" value="{{urlVal}}" class="form-input"/></div>
+<div class="form-group"><label class="form-label" for="conn-{{id}}-token">Admin Token</label><input id="conn-{{id}}-token" type="password" name="{{tokenKey}}" value="" data-original-token="{{tokenVal}}" class="form-input" placeholder="Current token set, type to change"/></div>
+<div class="d-flex align-center gap-sm"><button type="button" class="btn btn-secondary btn-sm" data-ui-action="test-connection" data-ui-service="{{id}}">Test</button><span id="conn-{{id}}-test-result" class="text-sm text-secondary" aria-live="polite"></span></div>
+</div>
+{{/services}}
+</div>
+<div id="connections-save-result" class="mt-md" aria-live="polite"></div>
+<div class="mt-lg d-flex justify-end"><button type="submit" class="btn btn-primary">Save Cluster Configuration</button></div></form>

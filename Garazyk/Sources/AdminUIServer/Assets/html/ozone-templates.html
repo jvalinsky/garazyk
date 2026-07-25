@@ -1,0 +1,11 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<form class="form mb-lg" data-ui-form="create-ozone-template"><div class="form-group"><label for="create-template-name">Template Name:</label><input type="text" id="create-template-name" class="form-input" placeholder="Enter template name"></div><div class="form-group"><label for="create-template-subject">Subject:</label><input type="text" id="create-template-subject" class="form-input" placeholder="Enter subject"></div><div class="form-group"><label for="create-template-content">Content (Markdown):</label><textarea id="create-template-content" class="form-input" placeholder="Enter template content"></textarea></div><button type="submit" class="btn btn-primary btn-sm">Create Template</button></form>
+<table class="table"><thead><tr><th>Name</th><th>Subject</th><th>Content</th><th>Actions</th></tr></thead><tbody>
+{{#templates}}
+<tr><td>{{name}}</td><td>{{subject}}</td><td class="text-sm">{{contentMarkdownShort}}</td><td><button class="btn btn-destructive btn-sm" data-ui-action="delete-ozone-template" data-ui-name="{{name}}">Delete</button></td></tr>
+{{/templates}}
+</tbody></table>
+{{/error}}

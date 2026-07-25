@@ -1,0 +1,10 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="detail-card">
+{{#statsPairs}}
+<div class="detail-row"><span class="detail-label">{{key}}</span><span>{{value}}</span></div>
+{{/statsPairs}}
+</div>
+{{/error}}

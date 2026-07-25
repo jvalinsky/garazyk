@@ -1,0 +1,10 @@
+{{#error}}
+<div class="alert alert-destructive">{{message}}</div>
+{{/error}}
+{{^error}}
+<div class="detail-card">
+<div class="detail-row"><span class="detail-label">DID</span><span class="text-mono text-sm">{{did}}</span></div>
+<div class="detail-row"><span class="detail-label">Review State</span><span>{{reviewState}}</span></div>
+<div class="detail-row"><span class="detail-label">Updated</span><span>{{updatedAt}}</span></div>
+</div>
+{{/error}}
