@@ -108,6 +108,20 @@ if(NOT APPLE)
             set(OBJC_LIBRARY "${OBJC_LIBRARY_FROM_COMPILER}")
         endif()
     endif()
+    if(NOT OBJC_LIBRARY)
+        find_program(GCC_COMPILER NAMES gcc)
+        if(GCC_COMPILER)
+            execute_process(
+                COMMAND "${GCC_COMPILER}" "-print-file-name=libobjc.so"
+                OUTPUT_VARIABLE OBJC_LIBRARY_FROM_GCC
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+            if(EXISTS "${OBJC_LIBRARY_FROM_GCC}")
+                set(OBJC_LIBRARY "${OBJC_LIBRARY_FROM_GCC}")
+            endif()
+        endif()
+    endif()
     message(STATUS "Using ObjC library: ${OBJC_LIBRARY}")
 
     # Set Objective-C flags for modern runtime with ARC support
