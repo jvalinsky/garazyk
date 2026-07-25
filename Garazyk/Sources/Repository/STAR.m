@@ -1113,24 +1113,88 @@ NSString *const STARContentTypeL0 = @"application/vnd.atproto.star";
 NSString *const STARContentTypeLite = @"application/vnd.atproto.star-lite";
 NSString *const CARContentType = @"application/vnd.ipld.car";
 
+static double PDSRepoQualityForMediaType(NSString *mediaType,
+                                         NSArray<NSString *> *ranges) {
+    double selectedQuality = -1.0;
+    NSInteger selectedSpecificity = -1;
+
+    NSArray<NSString *> *mediaComponents = [mediaType componentsSeparatedByString:@"/"];
+    if (mediaComponents.count != 2) return selectedQuality;
+
+    NSString *mediaTypeComponent = mediaComponents[0];
+    for (NSString *range in ranges) {
+        NSArray<NSString *> *parts = [range componentsSeparatedByString:@";"];
+        NSString *candidate = [parts.firstObject
+            stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        NSArray<NSString *> *candidateComponents = [candidate componentsSeparatedByString:@"/"];
+        if (candidateComponents.count != 2) continue;
+
+        NSInteger specificity = -1;
+        if ([candidate isEqualToString:mediaType]) {
+            specificity = 2;
+        } else if ([candidateComponents[0] isEqualToString:mediaTypeComponent] &&
+                   [candidateComponents[1] isEqualToString:@"*"]) {
+            specificity = 1;
+        } else if ([candidate isEqualToString:@"*/*"]) {
+            specificity = 0;
+        }
+        if (specificity < 0) continue;
+
+        double quality = 1.0;
+        for (NSUInteger index = 1; index < parts.count; index++) {
+            NSString *parameter = [parts[index]
+                stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            NSRange equalsRange = [parameter rangeOfString:@"="];
+            if (equalsRange.location == NSNotFound) continue;
+
+            NSString *name = [[parameter substringToIndex:equalsRange.location] lowercaseString];
+            if (![name isEqualToString:@"q"]) continue;
+
+            NSString *value = [parameter substringFromIndex:NSMaxRange(equalsRange)];
+            NSScanner *scanner = [NSScanner scannerWithString:value];
+            scanner.charactersToBeSkipped = nil;
+            double parsedQuality = 0.0;
+            if (![scanner scanDouble:&parsedQuality] || !scanner.isAtEnd ||
+                parsedQuality < 0.0 || parsedQuality > 1.0) {
+                quality = 0.0;
+            } else {
+                quality = parsedQuality;
+            }
+        }
+
+        if (specificity > selectedSpecificity) {
+            selectedSpecificity = specificity;
+            selectedQuality = quality;
+        }
+    }
+
+    return selectedQuality;
+}
+
 PDSRepoFormat PDSRepoFormatFromAcceptHeader(NSString * _Nullable acceptHeader) {
     if (!acceptHeader || acceptHeader.length == 0) {
         return PDSRepoFormatCAR;
     }
 
-    NSString *lowerAccept = [acceptHeader lowercaseString];
-    
-    // Check for STAR-lite first (more specific)
-    if ([lowerAccept containsString:[STARContentTypeLite lowercaseString]]) {
-        return PDSRepoFormatSTARLite;
+    NSArray<NSString *> *ranges =
+        [[acceptHeader lowercaseString] componentsSeparatedByString:@","];
+    NSArray<NSString *> *mediaTypes = @[
+        CARContentType,
+        STARContentTypeL0,
+        STARContentTypeLite
+    ];
+
+    PDSRepoFormat selectedFormat = PDSRepoFormatCAR;
+    double selectedQuality = -1.0;
+    for (NSUInteger index = 0; index < mediaTypes.count; index++) {
+        double quality = PDSRepoQualityForMediaType(mediaTypes[index], ranges);
+        if (quality > selectedQuality) {
+            selectedFormat = (PDSRepoFormat)index;
+            selectedQuality = quality;
+        }
     }
 
-    // Check for STAR-L0
-    if ([lowerAccept containsString:[STARContentTypeL0 lowercaseString]]) {
-        return PDSRepoFormatSTARL0;
-    }
-
-    return PDSRepoFormatCAR;
+    return selectedQuality > 0.0 ? selectedFormat : PDSRepoFormatCAR;
 }
 
 NSString *ContentTypeForPDSRepoFormat(PDSRepoFormat format) {
@@ -1139,6 +1203,20 @@ NSString *ContentTypeForPDSRepoFormat(PDSRepoFormat format) {
             return STARContentTypeL0;
         case PDSRepoFormatSTARLite:
             return STARContentTypeLite;
+        case PDSRepoFormatCAR:
+        default:
+            return CARContentType;
+    }
+}
+
+NSString *PDSRepoAcceptHeaderForPreferredFormat(PDSRepoFormat format) {
+    switch (format) {
+        case PDSRepoFormatSTARL0:
+            return [NSString stringWithFormat:@"%@, %@;q=0.9",
+                    STARContentTypeL0, CARContentType];
+        case PDSRepoFormatSTARLite:
+            return [NSString stringWithFormat:@"%@, %@;q=0.9, %@;q=0.8",
+                    STARContentTypeLite, STARContentTypeL0, CARContentType];
         case PDSRepoFormatCAR:
         default:
             return CARContentType;
