@@ -128,6 +128,13 @@ if(NOT APPLE)
     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fblocks -fobjc-runtime=gnustep-2.2 -fobjc-arc")
     
     # Include Directories
+    find_path(GNUSTEP_FOUNDATION_INCLUDE_DIR
+        Foundation/Foundation.h
+        PATHS "/usr/include/GNUstep" "${GNUSTEP_PREFIX}/include"
+    )
+    if(GNUSTEP_FOUNDATION_INCLUDE_DIR)
+        include_directories(SYSTEM "${GNUSTEP_FOUNDATION_INCLUDE_DIR}")
+    endif()
     include_directories(SYSTEM "/usr/local/include")
     include_directories(SYSTEM "${GNUSTEP_PREFIX}/include")
     include_directories(SYSTEM "${GNUSTEP_PREFIX}/Library/Headers")
