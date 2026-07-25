@@ -5,6 +5,7 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Indexers/AppViewIndexer.h"
 #import "Repository/CAR.h"
+#import "Repository/STAR.h"
 #import "Repository/MST.h"
 #import "Core/CID.h"
 #import "Core/ATProtoDagCBOR.h"
@@ -31,8 +32,13 @@
 @end
 
 @interface AppViewBackfillWorker (Test)
-- (nullable NSString *)_parseCARAndIndex:(NSData *)carData forDID:(NSString *)did error:(NSError **)error;
+- (nullable NSString *)_parseRepoArchiveAndIndex:(NSData *)archiveData
+                                          forDID:(NSString *)did
+                                           error:(NSError **)error;
 - (nullable NSString *)_resolvePDSEndpointForDID:(NSString *)did;
+- (NSMutableURLRequest *)_repoRequestForPDSEndpoint:(NSString *)pdsEndpoint
+                                                did:(NSString *)did
+                                           sinceRev:(nullable NSString *)sinceRev;
 @end
 
 @interface AppViewBackfillWorkerTests : XCTestCase
@@ -108,7 +114,9 @@
     NSData *carData = [writer serialize];
 
     NSError *error = nil;
-    NSString *rev = [self.worker _parseCARAndIndex:carData forDID:@"did:plc:test" error:&error];
+    NSString *rev = [self.worker _parseRepoArchiveAndIndex:carData
+                                                    forDID:@"did:plc:test"
+                                                     error:&error];
 
     XCTAssertNil(error, @"CAR parsing should not fail: %@", error);
     XCTAssertEqualObjects(rev, @"3jzf7asdf", @"Revision should match commit rev");
@@ -123,6 +131,62 @@
     
     endpoint = [self.worker _resolvePDSEndpointForDID:@"did:web:127.0.0.1%3A2583"];
     XCTAssertEqualObjects(endpoint, @"http://127.0.0.1:2583");
+}
+
+- (void)testRepoRequestPrefersSTARL0WithCARFallback {
+    NSMutableURLRequest *request =
+        [self.worker _repoRequestForPDSEndpoint:@"https://pds.example"
+                                           did:@"did:plc:test"
+                                      sinceRev:@"3jzf7asdf"];
+
+    XCTAssertEqualObjects(
+        [request valueForHTTPHeaderField:@"Accept"],
+        @"application/vnd.atproto.star, application/vnd.ipld.car;q=0.9");
+    XCTAssertTrue([request.URL.query containsString:@"since=3jzf7asdf"]);
+}
+
+- (void)testParseSTARL0AndIndex {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Hello STAR"
+    };
+    NSData *recordData = [ATProtoDagCBOR encodeObject:record error:nil];
+    CID *recordCID =
+        [CID cidWithDigest:[CID sha256Digest:recordData] codec:0x71];
+
+    MST *mst = [[MST alloc] init];
+    [mst put:@"app.bsky.feed.post/3jzf7star" valueCID:recordCID];
+
+    STARCommit *commit =
+        [STARCommit commitWithDid:@"did:plc:test"
+                          version:3
+                             data:mst.rootCID
+                              rev:@"3jzf7starrev"
+                             prev:nil
+                              sig:[@"test-signature"
+                                  dataUsingEncoding:NSUTF8StringEncoding]];
+    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+    NSError *writeError = nil;
+    BOOL wrote = [writer writeFromMST:mst
+                        blockProvider:^NSData * _Nullable(CID *cid) {
+        return [cid.stringValue isEqualToString:recordCID.stringValue]
+            ? recordData
+            : nil;
+    }
+                                 error:&writeError];
+    XCTAssertTrue(wrote, @"STAR write failed: %@", writeError);
+
+    NSData *starData = [writer serialize];
+    NSError *parseError = nil;
+    NSString *rev = [self.worker _parseRepoArchiveAndIndex:starData
+                                                    forDID:@"did:plc:test"
+                                                     error:&parseError];
+
+    XCTAssertNil(parseError, @"STAR parsing should not fail: %@", parseError);
+    XCTAssertEqualObjects(rev, @"3jzf7starrev");
+    XCTAssertEqual(self.indexer.indexedRecords.count, 1U);
+    XCTAssertEqualObjects(self.indexer.indexedRecords[0][@"record"][@"text"],
+                          @"Hello STAR");
 }
 
 @end
