@@ -47,10 +47,12 @@ migration switch) was subsequently migrated to `PDSMigrationManager` classes
 
 ## Consequences
 
-- AppView retains raw `sqlite3_*` and 39 inline `CREATE TABLE` statements with no migration
-  path (see also the separate migration-engine adoption opportunity, report candidate 6).
-- Revisit only when **both** hold: (a) the QueryRunner pilot has proven the mechanics-routing
+- **Superseded.** The conditions listed below were met and `AppViewDatabase` was migrated
+  to `ATProtoDatabaseQueryRunner` + `ATProtoConnectionManagerPooled` (commit `e1f5ee2f`).
+  Inline schema was migrated to `PDSMigrationManager` classes. This ADR is retained for
+  historical context only.
+- ~~Revisit only when **both** hold: (a) the QueryRunner pilot has proven the mechanics-routing
   pattern, and (b) a concurrency/pooling migration for AppView has been scoped as its own
-  effort (likely involving `ATProtoConnectionManagerPooled`).
-- Future architecture reviews should treat AppView as a **concurrency migration**, not a
-  simple "finish adoption" item, and not re-raise it as low-hanging fruit.
+  effort (likely involving `ATProtoConnectionManagerPooled`).~~
+- ~~Future architecture reviews should treat AppView as a **concurrency migration**, not a
+  simple "finish adoption" item, and not re-raise it as low-hanging fruit.~~

@@ -42,4 +42,4 @@ We will implement the compiled-cell plane in phased slices to minimize disruptio
 *   **Build Complexity:** The build shifts from raw LLVM/WASI to the Emscripten SDK. Nix derivations will need to use `pkgs.emscripten`.
 *   **Artifact Size:** Emscripten main modules are larger due to the JS glue code.
 *   **Memory:** `dlopen` requires memory growth (`ALLOW_MEMORY_GROWTH=1`) and function pointer table adjustments.
-*   **Interop:** We can drop the custom `wasm_stubs.c` WASI shims in favor of Emscripten's POSIX support.
+*   **Interop:** Emscripten's POSIX support replaces the custom WASI shims that were in `wasm_stubs.c` (now removed).

@@ -23,7 +23,7 @@ packages/gruszka/lexicon_resolution/
 ```
 
 Tests: `types.test.ts`, `core.test.ts`, `resolver.test.ts`, `adapters.test.ts`, `mod.test.ts`,
-`cache.test.ts`, `integration.test.ts`. This includes 236 unit and 6 integration tests.
+`cache.test.ts`, `integration.test.ts`. This includes 239 unit and 6 integration tests.
 
 ## Five-Layer Architecture
 
@@ -139,7 +139,7 @@ Each error variant carries contextual fields (e.g. `domain`, `did`, `endpoint`,
 
 ## Testing
 
-- Unit tests (236): Each layer tested independently with stub ports
+- Unit tests (239): Each layer tested independently with stub ports
 - Integration tests (6): Full pipeline with real `DenoDnsResolver`,
   `HttpDidResolver`, `HttpRecordFetcher` against well-known NSIDs
   (`app.bsky.feed.post`, `com.atproto.repo.createRecord`,

@@ -1,7 +1,7 @@
 ---
 title: Security and Protocol Correctness
 status: active
-last_verified: 2026-07-19
+last_verified: 2026-07-24
 ---
 
 # Security and Protocol Correctness
@@ -502,8 +502,11 @@ Primary sources:
 
 ## S7. STAR conformance and verifying import
 
-**Status: audited, not started.** Audit 2026-07-22 (deciduous `#1368`);
-execution detail in [the STAR conformance plan](../star-conformance-plan.md).
+**Status: complete (2026-07-23).** All three slices landed (V-flag fix,
+verifying `parseL0Body`, dead converter deletion + ADR 0009). 6 new test
+methods; all 20 STARPreorderTests pass. Evidence in
+[the STAR conformance plan](../archive/planning/star-conformance-plan.md)
+and mega-plan Phase 4 item 9.
 
 Evidence: `Garazyk/Sources/Repository/STAR.m` — the export writer
 (`STARL0Writer`) is correct and fixture-tested and the negotiated public
