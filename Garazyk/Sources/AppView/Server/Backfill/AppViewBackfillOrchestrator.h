@@ -20,7 +20,7 @@
  Worker flow per DID:
   1. Mark repo `processing`.
   2. Fetch `com.atproto.sync.getRepo(did, since=lastRev)`.
-  3. Parse CAR blocks.
+  3. Verify the negotiated STAR-L0 or CAR archive and parse its blocks.
   4. Dispatch decoded ops through registered indexers.
   5. On success: mark repo `synced`, dequeue and replay pending deltas.
   6. On failure: increment error count, exponential backoff, re-enqueue.
