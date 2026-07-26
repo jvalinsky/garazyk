@@ -158,6 +158,16 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
                                        handle:(NSString *)handle
                                     sessionID:(nullable NSString *)sessionID
                                         error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DID for token minting"}];
+        }
+        return nil;
+    }
+    if (!handle) {
+        handle = @"";
+    }
     NSError *primaryMintError = nil;
     if (self.minter) {
         JWT *jwt = [self.minter mintAccessTokenForDID:did

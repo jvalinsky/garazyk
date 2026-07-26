@@ -52,6 +52,9 @@
 }
 
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection {
+    if (!connection) {
+        return nil;
+    }
     self = [super init];
     if (self) {
         _connection = connection;
@@ -186,7 +189,7 @@
         }
 
         self.isClosed = YES;
-        NSData *closeFrame = [self.codec closeFrame:code reason:reason];
+        NSData *closeFrame = [self.codec closeFrame:code reason:reason ?: @""];
         [self.connection sendData:closeFrame completion:completion];
     });
 }

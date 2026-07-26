@@ -260,7 +260,11 @@
                          subjectURI:(nullable NSString *)subjectURI
                          subjectCID:(nullable NSString *)subjectCID
                               error:(NSError **)error {
-    if (!actorDID || !reason || !authorDID) {
+    if (!actorDID || actorDID.length == 0 || !authorDID || authorDID.length == 0 || !reason || reason.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"NotificationService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required notification parameters"}];
+        }
         return NO;
     }
 
@@ -278,7 +282,7 @@
 }
 
 - (NSInteger)getUnreadCountForActor:(NSString *)actorDID error:(NSError **)error {
-    if (!actorDID) return 0;
+    if (!actorDID || actorDID.length == 0) return 0;
 
     NSString *sql = @"SELECT COUNT(*) as count FROM notifications WHERE did = ? AND is_read = 0";
     NSArray *rows = [self.database executeParameterizedQuery:sql params:@[actorDID] error:error];
@@ -289,7 +293,7 @@
 }
 
 - (BOOL)deleteNotificationsForSubjectURI:(NSString *)subjectURI error:(NSError **)error {
-    if (!subjectURI) return YES;
+    if (!subjectURI || subjectURI.length == 0) return YES;
 
     NSString *sql = @"DELETE FROM notifications WHERE subject_uri = ?";
     return [self.database executeParameterizedUpdate:sql params:@[subjectURI] error:error];
@@ -404,6 +408,13 @@
 - (BOOL)putPreferencesForActor:(NSString *)actorDID
                    preferences:(NSArray *)preferences
                         error:(NSError **)error {
+    if (!actorDID || actorDID.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"NotificationService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID"}];
+        }
+        return NO;
+    }
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:preferences ?: @[]
                                                        options:0
                                                          error:error];
