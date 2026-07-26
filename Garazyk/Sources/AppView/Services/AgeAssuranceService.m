@@ -27,6 +27,13 @@
                                countryCode:(nullable NSString *)countryCode
                                 regionCode:(nullable NSString *)regionCode
                                      error:(NSError **)error {
+    if (!did || did.length == 0 || !email || email.length == 0 || !language || language.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"AgeAssuranceService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required age assurance parameters"}];
+        }
+        return nil;
+    }
     // Basic implementation: Generate a token and insert a record
     NSString *tokenId = [NSString stringWithFormat:@"%06u", arc4random_uniform(1000000)];
     NSString *assuranceId = [[NSUUID UUID] UUIDString];
@@ -88,6 +95,13 @@
                                     countryCode:(nullable NSString *)countryCode
                                      regionCode:(nullable NSString *)regionCode
                                           error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"AgeAssuranceService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DID"}];
+        }
+        return nil;
+    }
     NSString *sql = @"SELECT * FROM age_assurance_states WHERE did = ? ORDER BY created_at DESC LIMIT 1";
     NSArray *results = [self.database executeParameterizedQuery:sql params:@[did] error:error];
     
@@ -108,6 +122,13 @@
 
 - (BOOL)confirmAgeAssuranceWithToken:(NSString *)token
                                error:(NSError **)error {
+    if (!token || token.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"AgeAssuranceService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing verification token"}];
+        }
+        return NO;
+    }
     // Find the state associated with this token
     NSString *querySql = @"SELECT * FROM age_assurance_states WHERE token = ? AND status = 'pending'";
     NSArray *results = [self.database executeParameterizedQuery:querySql params:@[token] error:error];

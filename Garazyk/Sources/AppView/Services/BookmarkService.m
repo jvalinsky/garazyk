@@ -30,6 +30,13 @@
                                            limit:(NSInteger)limit
                                           cursor:(nullable NSString *)cursor
                                            error:(NSError **)error {
+    if (!actorDID || actorDID.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"BookmarkService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID"}];
+        }
+        return nil;
+    }
     limit = MIN(MAX(limit, 1), 100);
 
     NSString *query = @"SELECT subject_uri, subject_cid, created_at FROM bookmarks WHERE did = ?";
@@ -84,6 +91,13 @@
                   uri:(NSString *)uri
                   cid:(nullable NSString *)cid
                 error:(NSError **)error {
+    if (!did || did.length == 0 || !uri || uri.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"BookmarkService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required bookmark parameters"}];
+        }
+        return NO;
+    }
     // Record schema: { subject: { uri: "...", cid: "..." }, createdAt: "..." }
     NSDictionary *subject = record[@"subject"];
     if (![subject isKindOfClass:[NSDictionary class]]) return NO;
@@ -103,7 +117,13 @@
                 subjectCID:(nullable NSString *)subjectCID
                  createdAt:(NSString *)createdAt
                      error:(NSError **)error {
-    
+    if (!did || did.length == 0 || !subjectURI || subjectURI.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"BookmarkService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required bookmark parameters"}];
+        }
+        return NO;
+    }
     // For XRPC-based bookmarks, we use subject_uri as both 'uri' and 'subject_uri'
     NSString *sql = @"INSERT OR REPLACE INTO bookmarks (did, uri, subject_uri, subject_cid, created_at) VALUES (?, ?, ?, ?, ?)";
     return [self.database executeParameterizedUpdate:sql 
@@ -114,6 +134,13 @@
 - (BOOL)unindexBookmarkWithURI:(NSString *)uri
                            did:(NSString *)did
                          error:(NSError **)error {
+    if (!did || did.length == 0 || !uri || uri.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"BookmarkService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required bookmark parameters"}];
+        }
+        return NO;
+    }
     return [self.database executeParameterizedUpdate:@"DELETE FROM bookmarks WHERE did = ? AND uri = ?"
                                               params:@[did, uri]
                                                error:error];
@@ -122,6 +149,13 @@
 - (BOOL)unindexBookmarkWithSubjectURI:(NSString *)subjectURI
                                  did:(NSString *)did
                                error:(NSError **)error {
+    if (!did || did.length == 0 || !subjectURI || subjectURI.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"BookmarkService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required bookmark parameters"}];
+        }
+        return NO;
+    }
     return [self.database executeParameterizedUpdate:@"DELETE FROM bookmarks WHERE did = ? AND subject_uri = ?"
                                               params:@[did, subjectURI]
                                                error:error];
