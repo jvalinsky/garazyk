@@ -128,6 +128,8 @@ tests_*.txt
 # ─── Fuzzing ──────────────────────────────────────────────────────────────────
 fuzzing/results/
 fuzzing/regression_results/
+fuzzing/corpus/
+fuzzing/fuzz_*
 
 # ─── JupyterLite / WASM ─────────────────────────────────────────────────────
 _output/
