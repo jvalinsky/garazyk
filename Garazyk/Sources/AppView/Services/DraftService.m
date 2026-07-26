@@ -69,7 +69,7 @@
                   draftID:(NSString *)draftID
                   content:(NSDictionary *)content
                     error:(NSError **)error {
-    if (!actorDID || !draftID) {
+    if (!actorDID || actorDID.length == 0 || !draftID || draftID.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"DraftService" code:400
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID or draft ID"}];
@@ -138,7 +138,7 @@
 - (BOOL)deleteDraftForDID:(NSString *)actorDID
                   draftID:(NSString *)draftID
                     error:(NSError **)error {
-    if (!actorDID || !draftID) {
+    if (!actorDID || actorDID.length == 0 || !draftID || draftID.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"DraftService" code:400
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID or draft ID"}];
