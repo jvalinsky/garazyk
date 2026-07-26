@@ -42,6 +42,7 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
     HttpStatusTooManyRequests = 429,
     HttpStatusInternalServerError = 500,
     HttpStatusNotImplemented = 501,
+    HttpStatusBadGateway = 502,
     HttpStatusServiceUnavailable = 503,
     HttpStatusGatewayTimeout = 504
 };
