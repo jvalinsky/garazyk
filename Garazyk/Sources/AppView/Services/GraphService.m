@@ -617,6 +617,13 @@
                     rkey:(NSString *)rkey
                      cid:(NSString *)cid
                    error:(NSError **)error {
+    if (!did || did.length == 0 || !rkey || rkey.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GraphService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required starter pack parameters"}];
+        }
+        return NO;
+    }
     NSString *name = record[@"name"] ?: @"";
     NSString *createdAt = record[@"createdAt"] ?: @"";
     NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.starterpack/%@", did, rkey];
@@ -628,6 +635,13 @@
 - (BOOL)unindexStarterPackWithRKey:(NSString *)rkey
                                did:(NSString *)did
                              error:(NSError **)error {
+    if (!did || did.length == 0 || !rkey || rkey.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GraphService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required starter pack parameters"}];
+        }
+        return NO;
+    }
     NSString *sql = @"DELETE FROM starter_packs WHERE did = ? AND rkey = ?";
     return [self.database executeParameterizedUpdate:sql params:@[did, rkey] error:error];
 }
@@ -635,6 +649,13 @@
 #pragma mark - Indexing
 
 - (BOOL)indexList:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
+    if (!did || did.length == 0 || !uri || uri.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GraphService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required list parameters"}];
+        }
+        return NO;
+    }
     NSString *name = record[@"name"];
     NSString *purpose = record[@"purpose"];
     NSString *description = record[@"description"];
@@ -647,11 +668,25 @@
 }
 
 - (BOOL)unindexListWithURI:(NSString *)uri error:(NSError **)error {
+    if (!uri || uri.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GraphService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing list URI"}];
+        }
+        return NO;
+    }
     NSString *sql = @"DELETE FROM bsky_graph_lists WHERE uri = ?";
     return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
 }
 
 - (BOOL)indexListitem:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
+    if (!did || did.length == 0 || !uri || uri.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GraphService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required listitem parameters"}];
+        }
+        return NO;
+    }
     NSString *listUri = record[@"list"];
     NSString *subjectDid = record[@"subject"];
     
@@ -662,6 +697,13 @@
 }
 
 - (BOOL)unindexListitemWithURI:(NSString *)uri error:(NSError **)error {
+    if (!uri || uri.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GraphService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing listitem URI"}];
+        }
+        return NO;
+    }
     NSString *sql = @"DELETE FROM bsky_graph_listitems WHERE uri = ?";
     return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
 }
