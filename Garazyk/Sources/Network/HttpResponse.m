@@ -94,6 +94,7 @@ NS_ASSUME_NONNULL_END
         case 429: return @"Too Many Requests";
         case HttpStatusInternalServerError: return @"Internal Server Error";
         case HttpStatusNotImplemented: return @"Not Implemented";
+        case HttpStatusBadGateway: return @"Bad Gateway";
         case HttpStatusServiceUnavailable: return @"Service Unavailable";
         default: return @"Unknown";
     }
