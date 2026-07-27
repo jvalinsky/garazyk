@@ -55,6 +55,7 @@
     if (configuration) {
       _port = configuration.serverPort > 0 ? configuration.serverPort : 2583;
       _enableNodeInfo = configuration.nodeinfoEnabled;
+      _enableMSTViewer = configuration.mstViewerEnabled;
       _issuer = [configuration canonicalIssuerWithPortHint:_port];
     }
   }
