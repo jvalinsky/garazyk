@@ -104,6 +104,73 @@
                   @"Non-sensitive message should be preserved");
 }
 
+- (void)testLogRedactorRedactsMasterSecret {
+    // The PDS master secret encrypts every account's PLC rotation key; leaking
+    // it grants permanent identity takeover. Pin that the redactor catches it
+    // in all three forms the logger might emit.
+    NSString *keyValue = @"master_secret=s3krit-rotation-key-abc123";
+    NSString *redactedKV = [GZLogRedactor redactString:keyValue];
+    XCTAssertFalse([redactedKV containsString:@"s3krit-rotation-key-abc123"],
+                   @"master_secret=value should be redacted");
+    XCTAssertTrue([redactedKV containsString:@"<redacted>"],
+                  @"Redacted placeholder should appear");
+
+    NSString *jsonForm = @"{\"master_secret\": \"s3krit-rotation-key-abc123\"}";
+    NSString *redactedJSON = [GZLogRedactor redactString:jsonForm];
+    XCTAssertFalse([redactedJSON containsString:@"s3krit-rotation-key-abc123"],
+                   @"JSON \"master_secret\": value should be redacted");
+
+    NSString *colonForm = @"master_secret: s3krit-rotation-key-abc123";
+    NSString *redactedColon = [GZLogRedactor redactString:colonForm];
+    XCTAssertFalse([redactedColon containsString:@"s3krit-rotation-key-abc123"],
+                   @"master_secret: value should be redacted");
+}
+
+- (void)testLogRedactorRedactsBareSecretKeyword {
+    // `secret` as a standalone keyword mirrors the existing broad `token`
+    // keyword. Verify it catches the bare form without breaking prefixed
+    // forms like client_secret (already covered above).
+    NSString *log = @"secret=hunter2-only-known-to-ops";
+    NSString *redacted = [GZLogRedactor redactString:log];
+    XCTAssertFalse([redacted containsString:@"hunter2-only-known-to-ops"],
+                   @"bare secret=value should be redacted");
+}
+
+- (void)testLogRedactorRedactsS3AndCaptchaSecrets {
+    // S3 and captcha secret keys are read from config but defense-in-depth
+    // requires the redactor to catch them if ever logged.
+    NSString *s3Log = @"s3_secret_access_key=AKIAIOSFODNN7EXAMPLE";
+    NSString *s3Redacted = [GZLogRedactor redactString:s3Log];
+    XCTAssertFalse([s3Redacted containsString:@"AKIAIOSFODNN7EXAMPLE"],
+                   @"s3_secret_access_key value should be redacted");
+
+    NSString *captchaLog = @"captcha_secret_key=0xABCDEF-secret-captcha";
+    NSString *captchaRedacted = [GZLogRedactor redactString:captchaLog];
+    XCTAssertFalse([captchaRedacted containsString:@"0xABCDEF-secret-captcha"],
+                   @"captcha_secret_key value should be redacted");
+}
+
+- (void)testLogRedactorRedactsSecretInURLQuery {
+    // URL query-param redaction (redactURLString) must also cover the new
+    // keywords so a logged URL like ?master_secret=... is safe.
+    NSString *url = @"https://pds.example.com/cfg?master_secret=leaked-via-url";
+    NSString *redacted = [GZLogRedactor redactURLString:url];
+    XCTAssertFalse([redacted containsString:@"leaked-via-url"],
+                   @"master_secret in URL query should be redacted");
+}
+
+- (void)testLogRedactorDoesNotMangleLengthOnlyLogLines {
+    // The kept INFO log lines in ATProtoServiceConfiguration.m log only the
+    // secret length, not the value. Verify the redactor leaves them intact so
+    // operators still see the diagnostic without a mangled message.
+    NSString *log = @"applyConfig: master_secret overridden by PDS_MASTER_SECRET env (length: 32)";
+    NSString *redacted = [GZLogRedactor redactString:log];
+    XCTAssertTrue([redacted containsString:@"(length: 32)"],
+                  @"Length-only log line should preserve the length value");
+    XCTAssertTrue([redacted containsString:@"PDS_MASTER_SECRET"],
+                  @"The env-var name in a length-only log should be preserved");
+}
+
 #pragma mark - OAuthClientAuthPolicy Integration
 
 - (void)testClientAuthPolicySupportedMethods {

@@ -12,10 +12,10 @@
             @"(?i)(authorization\\s*[:=]\\s*bearer\\s+)[^\\s,;\\]\\)]+",
             @"(?i)(cookie\\s*[:=]\\s*)[^\\n\\r]+",
             @"(?i)(set-cookie\\s*[:=]\\s*)[^\\n\\r]+",
-            @"(?i)(ui_admin_token=)[^;\\s]+",
-            @"(?i)(access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token)\\s*=\\s*[^&\\s,;\\]\\)]+",
-            @"(?i)(\\\"(?:access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token)\\\"\\s*:\\s*\\\")[^\\\"]+",
-            @"(?i)((?:access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token)\\s*[:=]\\s*)[^\\s,;\\]\\)]+"
+        @"(?i)(ui_admin_token=)[^;\\s]+",
+        @"(?i)(access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token|master_secret|s3_secret_access_key|captcha_secret_key|secret)\\s*=\\s*[^&\\s,;\\]\\)]+",
+        @"(?i)(\\\"(?:access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token|master_secret|s3_secret_access_key|captcha_secret_key|secret)\\\"\\s*:\\s*\\\")[^\\\"]+",
+        @"(?i)((?:access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token|master_secret|s3_secret_access_key|captcha_secret_key|secret)\\s*[:=]\\s*)[^\\s,;\\]\\)]+"
         ];
         NSMutableArray *compiled = [NSMutableArray arrayWithCapacity:patternStrings.count];
         for (NSString *pattern in patternStrings) {
@@ -73,7 +73,8 @@
     NSMutableArray<NSURLQueryItem *> *safeItems = [NSMutableArray array];
     NSSet<NSString *> *sensitiveNames = [NSSet setWithArray:@[
         @"access_token", @"refresh_token", @"client_secret", @"client_assertion",
-        @"code", @"password", @"token", @"session", @"ui_admin_token"
+        @"code", @"password", @"token", @"session", @"ui_admin_token",
+        @"master_secret", @"s3_secret_access_key", @"captcha_secret_key", @"secret"
     ]];
     for (NSURLQueryItem *item in components.queryItems ?: @[]) {
         NSString *name = item.name.lowercaseString ?: @"";
