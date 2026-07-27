@@ -3,6 +3,7 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/GZLogger.h"
 #import "PDSCLIInputHelper.h"
+#import "Core/ATProtoDataPaths.h"
 
 #pragma mark - Nuke Command
 
@@ -88,56 +89,43 @@
     NSFileManager *fm = [NSFileManager defaultManager];
     NSError *error = nil;
 
-    // List what we're about to delete
-    NSArray<NSString *> *dataFiles = @[
-        @"di",           // Per-user databases
-        @"blobs",        // Blob storage
-        @"service",      // Service database directory
-        @"sequencer",    // Sequencer database directory
-        @"did_cache"     // DID cache database directory
-    ];
-
     NSUInteger deletedCount = 0;
     NSUInteger failedCount = 0;
-
-    for (NSString *file in dataFiles) {
-        NSString *fullPath = [context.dataDir stringByAppendingPathComponent:file];
-        BOOL isDirectory = NO;
-        
-        if ([fm fileExistsAtPath:fullPath isDirectory:&isDirectory]) {
-            printf("  Deleting: %s", [file UTF8String]);
-            
-            if ([fm removeItemAtPath:fullPath error:&error]) {
-                printf(" ✓\n");
-                deletedCount++;
-            } else {
-                printf(" ✗ (%s)\n", [error.localizedDescription UTF8String]);
-                failedCount++;
-            }
-        }
+    NSArray<NSString *> *entries = [fm contentsOfDirectoryAtPath:context.dataDir error:&error];
+    if (!entries) {
+        [context printError:[NSString stringWithFormat:@"Unable to enumerate data directory: %@", error.localizedDescription]];
+        return 1;
     }
 
-    // Handle sqlite directories that might contain their own db files
-    NSArray<NSString *> *dirs = [fm contentsOfDirectoryAtPath:context.dataDir error:nil];
-    for (NSString *item in dirs) {
-        // Skip config files if requested
+    // DatabasePool writes actor stores below {dataDir}/{method}/{prefix}/{did}.
+    // Removing each non-config top-level entry recursively follows that layout
+    // without guessing DID methods or file suffixes.
+    for (NSString *item in entries) {
         if (keepConfig && ([item hasSuffix:@".json"] || [item hasSuffix:@".yaml"] || [item hasSuffix:@".yml"])) {
             printf("  Keeping config: %s\n", [item UTF8String]);
             continue;
         }
-        
-        // Delete any remaining database files
-        if ([item hasSuffix:@".db"] || [item hasSuffix:@".sqlite"] || 
-            [item hasSuffix:@"-shm"] || [item hasSuffix:@"-wal"] || [item hasSuffix:@"-journal"]) {
-            NSString *fullPath = [context.dataDir stringByAppendingPathComponent:item];
-            printf("  Deleting: %s", [item UTF8String]);
-            
-            if ([fm removeItemAtPath:fullPath error:&error]) {
-                printf(" ✓\n");
-                deletedCount++;
-            } else {
-                printf(" ✗ (%s)\n", [error.localizedDescription UTF8String]);
+        NSString *fullPath = [context.dataDir stringByAppendingPathComponent:item];
+        printf("  Deleting: %s", [item UTF8String]);
+        if ([fm removeItemAtPath:fullPath error:&error]) {
+            printf(" ✓\n");
+            deletedCount++;
+        } else {
+            printf(" ✗ (%s)\n", [error.localizedDescription UTF8String]);
+            failedCount++;
+        }
+    }
+
+    NSArray<NSString *> *remaining = [fm contentsOfDirectoryAtPath:context.dataDir error:&error];
+    if (!remaining) {
+        failedCount++;
+        [context printError:[NSString stringWithFormat:@"Unable to verify data directory after nuke: %@", error.localizedDescription]];
+    } else {
+        for (NSString *item in remaining) {
+            BOOL isKeptConfig = keepConfig && ([item hasSuffix:@".json"] || [item hasSuffix:@".yaml"] || [item hasSuffix:@".yml"]);
+            if (!isKeptConfig) {
                 failedCount++;
+                [context printError:[NSString stringWithFormat:@"Data remains after nuke: %@", item]];
             }
         }
     }
@@ -155,7 +143,7 @@
     } else {
         printf("⚠️  Some items could not be deleted. Check permissions.\n");
     }
-    return 0;
+    return failedCount == 0 ? 0 : 1;
 }
 
 @end

@@ -5,6 +5,23 @@
 #import <unistd.h>
 #import <stdio.h>
 #import <string.h>
+#import <signal.h>
+
+static struct termios gPasswordPromptTermios;
+static volatile sig_atomic_t gPasswordPromptHasTermios = 0;
+
+static void PDSRestorePasswordPromptTerminal(void) {
+    if (gPasswordPromptHasTermios) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &gPasswordPromptTermios);
+        gPasswordPromptHasTermios = 0;
+    }
+}
+
+static void PDSHandlePasswordPromptSignal(int signalNumber) {
+    PDSRestorePasswordPromptTerminal();
+    signal(signalNumber, SIG_DFL);
+    raise(signalNumber);
+}
 
 @implementation PDSCLIInputHelper
 
@@ -58,18 +75,29 @@
     newt = oldt;
     newt.c_lflag &= ~(ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    gPasswordPromptTermios = oldt;
+    gPasswordPromptHasTermios = 1;
+    void (*oldINT)(int) = signal(SIGINT, PDSHandlePasswordPromptSignal);
+    void (*oldTERM)(int) = signal(SIGTERM, PDSHandlePasswordPromptSignal);
+    void (*oldHUP)(int) = signal(SIGHUP, PDSHandlePasswordPromptSignal);
 
-    char buffer[1024];
+    char buffer[1024] = {0};
     char *result = fgets(buffer, sizeof(buffer), stdin);
 
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    PDSRestorePasswordPromptTerminal();
+    signal(SIGINT, oldINT);
+    signal(SIGTERM, oldTERM);
+    signal(SIGHUP, oldHUP);
     printf("\n");
 
     if (result == NULL) {
+        memset(buffer, 0, sizeof(buffer));
         return nil;
     }
 
-    return [[NSString stringWithUTF8String:buffer] stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    NSString *password = [[NSString stringWithUTF8String:buffer] stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    memset(buffer, 0, sizeof(buffer));
+    return password;
 }
 
 + (nullable NSString *)promptForPasswordWithConfirmation:(NSString *)prompt

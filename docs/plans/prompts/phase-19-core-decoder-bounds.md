@@ -1,12 +1,29 @@
 ---
 phase: 19
 title: Core decoder bounds and encoder cost
-status: pending
+status: complete
 agent: worker
 depends_on: []
+completed_at: 2026-07-27
+commit: cd6530b2
 ---
 
 # Phase 19: Core decoder bounds and encoder cost
+
+## Progress
+
+Executed in worktree `../garazyk-core` on branch `phase-19-20`, one commit per
+slice per the loop protocol:
+
+- Slice 1 (width defects in `ATProtoDagCBOR`): `2f21358e`
+- Slice 2 (Base58 UTF-8 indexing + calloc checks): `727370e9`
+- Slice 3 (base32/base58 encoder buffer construction): `cd6530b2`
+
+All required rejection cases pass; golden CAR/STAR/MST/Interop fixtures
+verified byte-identical (164 tests, 0 failures) confirming slice 3 is
+behaviour-neutral. The global gates subsequently passed: `deno task check`,
+`deno task lint`, `deno task test`, and the full `AllTests` binary. See
+workstream 01 § S11 gate notes for detail.
 
 ## Mission
 

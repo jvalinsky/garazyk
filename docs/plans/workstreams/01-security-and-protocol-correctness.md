@@ -1222,7 +1222,7 @@ release.
 
 ## S11. Core decoder bounds, platform secret storage, and destructive CLI
 
-**Status: not started (identified 2026-07-26).** A review of Core, Compat, and
+**Status: complete 2026-07-27.** A review of Core, Compat, and
 CLI found two width-related defects in the DAG-CBOR decoder reachable from
 every untrusted-input path, a platform shim that silently provides far weaker
 guarantees than the API it emulates, and a destructive CLI command that
@@ -1307,30 +1307,32 @@ CLI:
 
 ### Slices
 
-Core decoders (phase 19):
+Core decoders (phase 19) — complete, commits on `phase-19-20`:
 
 1. **Fix the width defects in `ATProtoDagCBOR`**: compare against remaining
    bytes rather than summing (`:585`), clamp the collection capacity hint to
    what the remaining input can encode (`:617`, `:640`), and reject
-   out-of-int64-range integers instead of wrapping (`:577`).
+   out-of-int64-range integers instead of wrapping (`:577`). Commit
+   `2f21358e`.
 2. **Harden `Base58`**: index the UTF-8 buffer with its own byte length, and
-   check `calloc`.
+   check `calloc`. Commit `727370e9`.
 3. **Replace per-character `appendFormat:`** in the base32 and base58
-   encoders with direct buffer construction.
+   encoders with direct buffer construction. Commit `cd6530b2`; existing
+   golden CAR/STAR/MST/Interop fixtures remained byte-identical.
 
-Platform and CLI (phase 20):
+Platform and CLI (phase 20) — complete, commits on `phase-19-20`:
 
 4. **Encrypt the Linux secret store at rest** with an operator-supplied key,
    including a migration path for existing plaintext stores and a startup
-   failure when the key is absent but a store exists.
+   failure when the key is absent but a store exists. Commit `194a2580`.
 5. **Make `nuke-data` actually delete what it claims**: enumerate the shard
    layout the pool writes, delete recursively, and — critically — report
-   honestly. It must not print success when items remain.
+   honestly. It must not print success when items remain. Commit `0572e133`.
 6. **Remove `--password` from the documented path.** Keep an automation-safe
    input (stdin, environment, or file) and stop demonstrating argv passwords
-   in help text.
+   in help text. Commit `84cb8ce3`.
 7. **Restore terminal echo on signal** and clear the password buffer after
-   use.
+   use. Commit `52cda6ea`.
 
 ### Owner boundary
 
@@ -1357,6 +1359,17 @@ supplied; `nuke-data` on a populated data directory leaves **zero** account
 databases and reports accurately when it cannot delete something; and no
 command path accepts a password in a way that lands in `ps` output without an
 explicit warning.
+
+**Phase 19 gate result (2026-07-27):** all required decoder rejection cases
+pass, with the nine-byte overflow fixture stored under
+`Garazyk/Tests/fixtures/cbor/`. The global `deno` and `AllTests` gates passed.
+
+**Phase 20 gate result (2026-07-27):** the Linux Docker
+`SecItemLinuxStoreTests` target passed all 10 tests, including legacy
+plaintext migration and encrypted round-trip coverage. Scratch-only
+`PDSCLINukeCommandTests` cover recursive deletion and permission-denied
+reporting. Account and admin CLI suites pass with environment-password input
+and legacy-argv warnings. The global `deno` and `AllTests` gates passed.
 
 New suites need registration in `Garazyk/Tests/test_main.m` plus a cmake
 reconfigure, then the mega-plan global gates with bounded `--parallel 4`. Run
