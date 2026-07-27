@@ -37,6 +37,7 @@ static const uint8_t WS_MASK = 0x80;
 @property (nonatomic, strong) NSMutableArray<NSData *> *fragments;
 @property (nonatomic, assign) uint8_t fragmentOpcode;
 @property (nonatomic, assign) uint64_t fragmentsTotalLength;
+@property (nonatomic, assign) NSUInteger readOffset;
 @end
 
 @implementation WebSocketCodec
@@ -51,6 +52,7 @@ static const uint8_t WS_MASK = 0x80;
         _fragments = [NSMutableArray array];
         _fragmentOpcode = 0;
         _fragmentsTotalLength = 0;
+        _readOffset = 0;
     }
     return self;
 }
@@ -75,6 +77,7 @@ static const uint8_t WS_MASK = 0x80;
 
 - (void)resetConnectionState {
     [self.readBuffer setLength:0];
+    self.readOffset = 0;
     [self.fragments removeAllObjects];
     self.fragmentOpcode = 0;
     self.fragmentsTotalLength = 0;
@@ -86,7 +89,7 @@ static const uint8_t WS_MASK = 0x80;
     }
 
     NSMutableArray<WSCodecEvent *> *events = [NSMutableArray array];
-    NSUInteger offset = 0;
+    NSUInteger offset = self.readOffset;
 
     while (self.readBuffer.length - offset >= 2) {
         const uint8_t *bytes = self.readBuffer.bytes + offset;
@@ -169,7 +172,19 @@ static const uint8_t WS_MASK = 0x80;
         NSUInteger maskOffset = 2 + extendedLengthOffset;
         NSUInteger dataOffset = headerLength;
 
-        if (self.readBuffer.length - offset < headerLength + payloadLength) {
+        // Guard the header+payload addition independently of maxFrameSize,
+        // which is a public settable property: a caller could raise it high
+        // enough that this sum wraps and the length check below passes
+        // spuriously, reading past the buffer.
+        uint64_t totalFrameLength = (uint64_t)headerLength + payloadLength;
+        if (totalFrameLength < payloadLength) {
+            [events addObject:[self protocolErrorEventWithCloseCode:1009
+                                                          closeReason:@"Frame too large"]];
+            [self resetConnectionState];
+            return events;
+        }
+
+        if ((uint64_t)(self.readBuffer.length - offset) < totalFrameLength) {
             break;
         }
 
@@ -188,7 +203,7 @@ static const uint8_t WS_MASK = 0x80;
             }
         }
 
-        offset += headerLength + payloadLength;
+        offset += (NSUInteger)totalFrameLength;
 
         if (opcode >= WS_OPCODE_CLOSE) {
             // Control frames can be interleaved and are always complete
@@ -259,12 +274,19 @@ static const uint8_t WS_MASK = 0x80;
         }
     }
 
-    if (offset > 0) {
-        if (offset == self.readBuffer.length) {
-            [self.readBuffer setLength:0];
-        } else {
-            [self.readBuffer replaceBytesInRange:NSMakeRange(0, offset) withBytes:NULL length:0];
-        }
+    if (offset == self.readBuffer.length) {
+        [self.readBuffer setLength:0];
+        self.readOffset = 0;
+    } else if (offset > 0 && offset >= self.readBuffer.length / 2) {
+        // Amortized compaction: only shift the residual tail down when the
+        // consumed prefix is at least half the buffer, so a stream of small
+        // frames doesn't pay an O(buffer) memmove on every read. Otherwise
+        // just remember how far we've consumed and resume from there next
+        // time -- the buffer keeps growing at the tail via appendData.
+        [self.readBuffer replaceBytesInRange:NSMakeRange(0, offset) withBytes:NULL length:0];
+        self.readOffset = 0;
+    } else {
+        self.readOffset = offset;
     }
 
     return events;

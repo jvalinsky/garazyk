@@ -249,4 +249,73 @@
     XCTAssertEqual(events.firstObject.closeCode, 1002);
 }
 
+#pragma mark - Slice 3: overflow guard and read-offset buffer
+
+- (void)testHeaderPlusPayloadOverflowGuardedIndependentlyOfMaxFrameSize {
+    // maxFrameSize is a public settable property; raising it must not
+    // reopen the headerLength+payloadLength addition to wraparound.
+    self.codec.maxFrameSize = UINT64_MAX;
+
+    NSMutableData *frame = [NSMutableData data];
+    uint8_t firstByte = 0x82; // FIN=1, opcode=2 (binary)
+    [frame appendBytes:&firstByte length:1];
+    uint8_t lenByte = 127; // extended 64-bit length follows, unmasked
+    [frame appendBytes:&lenByte length:1];
+    uint64_t declaredLength = UINT64_MAX - 5; // headerLength (10) added wraps
+    uint64_t netLen = CFSwapInt64HostToBig(declaredLength);
+    [frame appendBytes:&netLen length:8];
+
+    NSArray<WSCodecEvent *> *events = [self.codec feedData:frame];
+
+    XCTAssertEqual(events.count, 1);
+    XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
+    XCTAssertEqual(events.firstObject.closeCode, 1009);
+}
+
+- (void)testReadOffsetPersistsAcrossPartialReads {
+    // Two complete frames plus a partial third frame's header arrive in one
+    // chunk; the rest of the third frame arrives in a later call. This
+    // exercises resuming from a persisted read offset (slice 3) rather than
+    // compacting the buffer to zero on every call.
+    NSData *frame1 = [self frameWithFin:YES opcode:0x1 payload:[@"one" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSData *frame2 = [self frameWithFin:YES opcode:0x1 payload:[@"two" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSData *frame3 = [self frameWithFin:YES opcode:0x1 payload:[@"three" dataUsingEncoding:NSUTF8StringEncoding]];
+
+    NSMutableData *chunk1 = [NSMutableData dataWithData:frame1];
+    [chunk1 appendData:frame2];
+    [chunk1 appendData:[frame3 subdataWithRange:NSMakeRange(0, 2)]];
+
+    NSArray<WSCodecEvent *> *events1 = [self.codec feedData:chunk1];
+    XCTAssertEqual(events1.count, (NSUInteger)2);
+    XCTAssertEqualObjects(events1[0].text, @"one");
+    XCTAssertEqualObjects(events1[1].text, @"two");
+
+    NSData *rest = [frame3 subdataWithRange:NSMakeRange(2, frame3.length - 2)];
+    NSArray<WSCodecEvent *> *events2 = [self.codec feedData:rest];
+    XCTAssertEqual(events2.count, (NSUInteger)1);
+    XCTAssertEqualObjects(events2.firstObject.text, @"three");
+}
+
+- (void)testManySmallFramesAcrossManyReadsDecodeInOrder {
+    NSMutableArray<NSString *> *received = [NSMutableArray array];
+    for (NSUInteger i = 0; i < 500; i++) {
+        NSString *text = [NSString stringWithFormat:@"m%lu", (unsigned long)i];
+        NSData *frame = [self frameWithFin:YES opcode:0x1 payload:[text dataUsingEncoding:NSUTF8StringEncoding]];
+        // Split each frame across two reads to keep exercising the
+        // persisted-offset path rather than always landing on a clean
+        // buffer boundary.
+        NSData *head = [frame subdataWithRange:NSMakeRange(0, 1)];
+        NSData *tail = [frame subdataWithRange:NSMakeRange(1, frame.length - 1)];
+
+        XCTAssertEqual([self.codec feedData:head].count, (NSUInteger)0);
+        NSArray<WSCodecEvent *> *events = [self.codec feedData:tail];
+        XCTAssertEqual(events.count, (NSUInteger)1);
+        [received addObject:events.firstObject.text];
+    }
+
+    for (NSUInteger i = 0; i < 500; i++) {
+        XCTAssertEqualObjects(received[i], ([NSString stringWithFormat:@"m%lu", (unsigned long)i]));
+    }
+}
+
 @end
