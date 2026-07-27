@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSRecordService+BatchWrites.h"
+#import "PDSRecordService+BlobLifecycle.h"
 #import "PDSRecordService+Validation.h"
 #import "Debug/GZLogger.h"
 #import "Core/ATProtoValidator.h"
@@ -259,6 +260,7 @@
             [preparedOps addObject:@{
                 @"action": action,
                 @"record": dbRecord,
+                @"recordValue": record,
                 @"recordCBOR": cborData,
                 @"previousRecordCID": [NSNull null]
             }];
@@ -414,6 +416,7 @@
             [preparedOps addObject:@{
                 @"action": action,
                 @"record": dbRecord,
+                @"recordValue": record,
                 @"recordCBOR": cborData,
                 @"previousRecordCID": previousRecordCID ?: [NSNull null]
             }];
@@ -550,6 +553,29 @@
                     }
                 }
                 if (![transactor deleteRecord:uri forDid:did error:blockError]) {
+                    success = NO;
+                    return;
+                }
+            }
+        }
+
+        for (NSDictionary *op in preparedOps) {
+            NSString *action = op[@"action"];
+            if ([action isEqualToString:@"delete"]) {
+                if (![self removeBlobReferencesForRecordURI:op[@"uri"]
+                                                      forDid:did
+                                                 transactor:transactor
+                                                      error:blockError]) {
+                    success = NO;
+                    return;
+                }
+            } else {
+                PDSDatabaseRecord *record = op[@"record"];
+                if (![self syncBlobReferencesForRecordURI:record.uri
+                                              recordValue:op[@"recordValue"]
+                                                   forDid:did
+                                              transactor:transactor
+                                                   error:blockError]) {
                     success = NO;
                     return;
                 }
