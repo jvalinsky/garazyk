@@ -15,6 +15,8 @@
 #import "Auth/OAuth2.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/CryptoUtils.h"
+#import "Auth/PDS/PDSAuth.h"
+#import "Auth/Verifier/AuthVerifier.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Services/PDS/PDSAccountService.h"
@@ -24,6 +26,59 @@
 #import "Database/PDSDatabase.h"
 #import "Core/Repositories/PDSSessionRepository.h"
 #import "Debug/GZLogger.h"
+
+/*!
+ @abstract Whether the new AuthVerifier cluster should be used instead of the
+    legacy XrpcAuthHelper path. Controlled by the PDS_USE_AUTH_VERIFIER env var.
+    When enabled, authentication routes through AuthVerifier/PDSAccountPolicy.
+    When disabled (default), the legacy XrpcAuthHelper path is used.
+    This switch allows safe cutover with zero-rebuild rollback.
+ */
+static BOOL XrpcAuthUseAuthVerifier(void) {
+    static BOOL checked = NO;
+    static BOOL useVerifier = NO;
+    if (!checked) {
+        NSString *value = [[[NSProcessInfo processInfo] environment][@"PDS_USE_AUTH_VERIFIER"] lowercaseString];
+        useVerifier = [value isEqualToString:@"1"] || [value isEqualToString:@"true"] || [value isEqualToString:@"yes"];
+        if (useVerifier) {
+            GZ_LOG_AUTH_INFO(@"AuthVerifier cluster enabled via PDS_USE_AUTH_VERIFIER");
+        }
+        checked = YES;
+    }
+    return useVerifier;
+}
+
+/*!
+ @abstract Constructs and returns the shared AuthVerifier instance.
+ @discussion The verifier is lazily initialized on first use. It creates
+    a PDSAccountPolicy with the admin controller from the shared PDSController.
+    This is thread-safe via dispatch_once.
+ */
+static AuthVerifier *XrpcAuthSharedVerifier(void) {
+    static AuthVerifier *verifier = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        PDSController *controller = [PDSController sharedController];
+        if (!controller || !controller.jwtMinter || !controller.adminController) {
+            GZ_LOG_CORE_ERROR(@"AuthVerifier: PDSController not fully initialized — cannot construct verifier");
+            return;
+        }
+
+        PDSAccountPolicy *policy = [[PDSAccountPolicy alloc] initWithDatabase:controller.database
+                                                              adminController:controller.adminController];
+
+        verifier = [[AuthVerifier alloc] initWithKeyResolver:nil
+                                               accountPolicy:(id<AccountPolicy>)policy
+                                                  nonceStore:[PDSNonceManager sharedManager]];
+        [verifier setLocalPublicKey:controller.jwtMinter.publicKey];
+        [verifier setLocalIssuer:controller.jwtMinter.issuer ?: @""];
+        verifier.expectedAudience = controller.jwtMinter.issuer ?: @"";
+        verifier.requireDPoP = [ATProtoServiceConfiguration sharedConfiguration].requireDPoPNonce;
+        GZ_LOG_AUTH_INFO(@"AuthVerifier cluster constructed (issuer=%@, requireDPoP=%d)",
+                          verifier.localIssuer, verifier.requireDPoP);
+    });
+    return verifier;
+}
 
 static BOOL XrpcAuthEnvBool(NSString *value) {
     if (value.length == 0) {
@@ -386,6 +441,45 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                             controller:(PDSController *)controller
                                request:(HttpRequest *)request
                               response:(HttpResponse *)response {
+    // When the AuthVerifier switch is on, delegate to the new cluster.
+    if (XrpcAuthUseAuthVerifier()) {
+        AuthVerifier *verifier = XrpcAuthSharedVerifier();
+        if (!verifier) {
+            GZ_LOG_CORE_ERROR(@"AuthVerifier requested but not available — falling back to legacy path");
+        } else {
+            NSError *verifierError = nil;
+            AuthVerifierPrincipal *principal = [verifier verifyRequest:request
+                                                              response:response
+                                                                 error:&verifierError];
+            if (principal) {
+                GZ_LOG_AUTH_DEBUG(@"AuthVerifier: authenticated %@ (admin=%d, dpop=%d)",
+                                   principal.did, principal.isAdmin, principal.usedDPoP);
+                return principal.did;
+            }
+            // AuthVerifier rejected — fall through to legacy path for parity comparison
+            GZ_LOG_AUTH_WARN(@"AuthVerifier rejected (%@) — checking legacy path",
+                              XrpcAuthSanitizedErrorSummary(verifierError));
+        }
+    }
+
+    // Legacy path
+    id<PDSSessionRepository> sessionRepo = nil;
+    if ([controller.accountService respondsToSelector:@selector(sessionRepository)]) {
+        sessionRepo = controller.accountService.sessionRepository;
+    }
+    
+    return [self extractDIDFromAuthHeader:authHeader
+                               jwtMinter:controller.jwtMinter
+                         adminController:controller.adminController
+                       sessionRepository:sessionRepo
+                                 request:request
+                                response:response];
+}
+
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                            controller:(PDSController *)controller
+                               request:(HttpRequest *)request
+                              response:(HttpResponse *)response {
     // Attempt to get session repository from controller's account service
     id<PDSSessionRepository> sessionRepo = nil;
     if ([controller.accountService respondsToSelector:@selector(sessionRepository)]) {
@@ -404,6 +498,24 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                               services:(id<XrpcRoutePackServices>)services
                                request:(HttpRequest *)request
                               response:(nullable HttpResponse *)response {
+    // When the AuthVerifier switch is on, delegate to the new cluster.
+    if (XrpcAuthUseAuthVerifier()) {
+        AuthVerifier *verifier = XrpcAuthSharedVerifier();
+        if (verifier) {
+            NSError *verifierError = nil;
+            AuthVerifierPrincipal *principal = [verifier verifyRequest:request
+                                                              response:response
+                                                                 error:&verifierError];
+            if (principal) {
+                GZ_LOG_AUTH_DEBUG(@"AuthVerifier (services): authenticated %@ (admin=%d, dpop=%d)",
+                                   principal.did, principal.isAdmin, principal.usedDPoP);
+                return principal.did;
+            }
+            GZ_LOG_AUTH_WARN(@"AuthVerifier (services) rejected (%@) — checking legacy path",
+                              XrpcAuthSanitizedErrorSummary(verifierError));
+        }
+    }
+
     id<PDSSessionRepository> sessionRepo = nil;
     if ([services.accountService respondsToSelector:@selector(sessionRepository)]) {
         sessionRepo = services.accountService.sessionRepository;
