@@ -1,12 +1,19 @@
 ---
 phase: 17
 title: WebSocket RFC conformance and HTTP framing
-status: pending
+status: in-progress
 agent: worker
 depends_on: []
 ---
 
 # Phase 17: WebSocket RFC conformance and HTTP framing
+
+## Progress
+
+Recovery started 2026-07-27: four isolated implementation commits were
+rebased onto current `main`. The recovered work is being reread and verified
+against S10, the named RFC sections, registered XCTest execution, and the
+four firehose regression scenarios before it can be marked complete.
 
 ## Mission
 

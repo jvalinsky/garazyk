@@ -163,6 +163,33 @@
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
+- (void)testOversizedPingFailsConnectionWithoutPong {
+    XCTestExpectation *closeExpectation = [self expectationWithDescription:@"protocol close sent"];
+
+    self.adapter.closeHandler = ^(NSInteger code, NSString *reason) {
+        XCTAssertEqual(code, 1002);
+        [closeExpectation fulfill];
+    };
+
+    // A control frame may not use an extended payload length. Declaring a
+    // 16 MB ping is enough to reject it before a payload is buffered, which
+    // proves this path cannot echo a 16 MB pong.
+    uint8_t malformedPing[] = {
+        0x89, 0xFF, 0x11, 0x22, 0x33, 0x44,
+        0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+    };
+
+    [self.adapter start];
+    [self.mockConnection injectReceiveData:[NSData dataWithBytes:malformedPing
+                                                           length:sizeof(malformedPing)]];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertGreaterThan(self.mockConnection.sentData.length, (NSUInteger)2);
+    const uint8_t *response = self.mockConnection.sentData.bytes;
+    XCTAssertEqual(response[0], (uint8_t)0x88, @"must send Close, not Pong");
+    XCTAssertNotEqual(response[0], (uint8_t)0x8A);
+}
+
 - (void)testCloseFrameInvokesCloseHandler {
     XCTestExpectation *closeExpectation = [self expectationWithDescription:@"Close handler called"];
 
