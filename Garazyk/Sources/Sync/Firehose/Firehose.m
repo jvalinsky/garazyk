@@ -84,6 +84,10 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         self.connection.authorizationHeader =
             [@"Bearer " stringByAppendingString:self.accessToken];
     }
+    // Set heartbeat so network partition is detected within ~5s
+    // instead of relying on OS-level TCP keepalive (default 60-120s).
+    self.connection.heartbeatInterval = 5.0;
+    self.connection.heartbeatTimeout = 5.0;
     self.connection.delegate = self;
 
     NSError *error = nil;
