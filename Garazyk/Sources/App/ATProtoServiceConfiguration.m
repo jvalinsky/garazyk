@@ -4,6 +4,8 @@
 #import "Compat/Foundation/NSDataCompat.h"
 #import "Core/ATProtoDataPaths.h"
 #import "Debug/GZLogger.h"
+#include <errno.h>
+#include <stdlib.h>
 
 NSString *const ATProtoServiceConfigErrorDomain = @"com.atproto.pds.config";
 
@@ -14,6 +16,26 @@ static NSString *ATProtoServiceConfigTrimmed(NSString *value) {
   return [value
       stringByTrimmingCharactersInSet:[NSCharacterSet
                                           whitespaceAndNewlineCharacterSet]];
+}
+
+static BOOL ATProtoServiceConfigParseUnsignedLongLong(NSString *value,
+                                                       unsigned long long *result) {
+  NSString *trimmed = ATProtoServiceConfigTrimmed(value);
+  if (trimmed.length == 0) {
+    return NO;
+  }
+
+  errno = 0;
+  char *end = NULL;
+  unsigned long long parsed = strtoull(trimmed.UTF8String, &end, 10);
+  if (errno != 0 || !end || end == trimmed.UTF8String || *end != '\0') {
+    return NO;
+  }
+
+  if (result) {
+    *result = parsed;
+  }
+  return YES;
 }
 
 static BOOL ATProtoServiceConfigHostLooksLocal(NSString *host) {
@@ -99,6 +121,7 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
 @property (nonatomic, assign) unsigned long long softQuotaBlobBytes;
 @property (nonatomic, assign) NSUInteger softQuotaRecordCount;
 @property (nonatomic, assign) unsigned long long softQuotaRepoBytes;
+@property (nonatomic, assign) unsigned long long blobStorageQuotaBytes;
 @property (nonatomic, assign) BOOL metricsPerAccountLabels;
 @end
 
@@ -222,6 +245,7 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _softQuotaBlobBytes = 0;
     _softQuotaRecordCount = 0;
     _softQuotaRepoBytes = 0;
+    _blobStorageQuotaBytes = 10ULL * 1024ULL * 1024ULL * 1024ULL;
     _metricsPerAccountLabels = NO;
 
     _blobStorageType = @"disk"; // Default to disk storage
@@ -1052,6 +1076,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _softQuotaRecordCount = [config[@"softQuotaRecordCount"] unsignedIntegerValue];
   if ([self dictionary:config hasValueForKey:@"softQuotaRepoBytes"])
     _softQuotaRepoBytes = [config[@"softQuotaRepoBytes"] unsignedLongLongValue];
+  if ([self dictionary:config hasValueForKey:@"blobStorageQuotaBytes"])
+    _blobStorageQuotaBytes = [config[@"blobStorageQuotaBytes"] unsignedLongLongValue];
   if ([self dictionary:config hasValueForKey:@"metricsPerAccountLabels"])
     _metricsPerAccountLabels = [config[@"metricsPerAccountLabels"] boolValue];
 
@@ -1059,6 +1085,11 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
   NSString *envBlobStorageType = [self resolveEnvOverrideForKey:@"PDS_BLOB_STORAGE_TYPE" default:nil];
   if (envBlobStorageType.length > 0)
     _blobStorageType = envBlobStorageType;
+
+  NSString *envBlobStorageQuota = [self resolveEnvOverrideForKey:@"PDS_BLOB_STORAGE_QUOTA_BYTES" default:nil];
+  unsigned long long envBlobStorageQuotaBytes = 0;
+  if (ATProtoServiceConfigParseUnsignedLongLong(envBlobStorageQuota, &envBlobStorageQuotaBytes))
+    _blobStorageQuotaBytes = envBlobStorageQuotaBytes;
 
   NSString *envVideoMode = [self resolveEnvOverrideForKey:@"PDS_VIDEO_MODE" default:nil];
   if (envVideoMode.length > 0)
