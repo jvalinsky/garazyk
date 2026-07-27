@@ -333,7 +333,20 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error {
-    if (self.allowedAlgorithms && ![self.allowedAlgorithms containsObject:jwt.header.alg ?: @""]) {
+    // Fail closed: allowedAlgorithms must be set by the caller. An unset
+    // list means no algorithm is accepted, preventing alg-confusion where
+    // an attacker-controlled header alg selects the verification path.
+    if (!self.allowedAlgorithms) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidAlgorithm
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No allowed algorithms configured"}];
+        }
+        return NO;
+    }
+
+    NSString *alg = jwt.header.alg ?: @"";
+    if (![self.allowedAlgorithms containsObject:alg]) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
                                          code:JWTErrorInvalidAlgorithm
@@ -347,55 +360,37 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (!signatureData) return NO;
 
     BOOL verified = NO;
-    NSString *alg = jwt.header.alg ?: @"";
-    if ([alg isEqualToString:@"ES256K"]) {
-        if (self.publicKey) {
-            Secp256k1 *secp = [Secp256k1 shared];
-            unsigned char hash[32];
-            CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
-            NSData *hashData = [NSData dataWithBytes:hash length:32];
-            verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
-        } else if (self.keyManager) {
-            NSString *kid = jwt.header.kid;
-            if (kid) {
-                verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
-            } else {
-                // Legacy path for ES256K without kid (standard for actor keys)
-                // Use the first available key if no kid is present
-                id<PDSKeyPair> active = [self.keyManager getActiveKeyPair:error];
-                if (active) {
-                    verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:active.keyID error:error];
-                }
-            }
+
+    // Derive the verification path from the key material, not from the
+    // attacker-controlled header alg. The allowedAlgorithms check above
+    // validates the declared alg; the actual crypto path is selected by
+    // which key is configured.
+    if (self.publicKey) {
+        // self.publicKey is always a secp256k1 public key.
+        Secp256k1 *secp = [Secp256k1 shared];
+        unsigned char hash[32];
+        CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+        NSData *hashData = [NSData dataWithBytes:hash length:32];
+        verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+    } else if (self.keyManager) {
+        NSString *kid = jwt.header.kid;
+        if (kid) {
+            verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
         } else {
-            if (error) {
-                *error = [NSError errorWithDomain:JWTErrorDomain
-                                             code:JWTErrorNoPublicKey
-                                         userInfo:@{NSLocalizedDescriptionKey: @"No public key or key manager configured for ES256K signature verification"}];
+            // Legacy path for ES256K without kid (standard for actor keys)
+            // Use the first available key if no kid is present
+            id<PDSKeyPair> active = [self.keyManager getActiveKeyPair:error];
+            if (active) {
+                verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:active.keyID error:error];
             }
-            return NO;
         }
     } else {
-        if (!self.keyManager) {
-            if (error) {
-                *error = [NSError errorWithDomain:JWTErrorDomain
-                                             code:JWTErrorNoPublicKey
-                                         userInfo:@{NSLocalizedDescriptionKey: @"No key manager configured for signature verification"}];
-            }
-            return NO;
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorNoPublicKey
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No public key or key manager configured for signature verification"}];
         }
-        // Extract kid from header
-        NSString *kid = jwt.header.kid;
-        if (!kid) {
-             if (error) {
-                *error = [NSError errorWithDomain:JWTErrorDomain
-                                             code:JWTErrorInvalidHeader
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing 'kid' in header"}];
-            }
-            return NO;
-        }
-        
-        verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
+        return NO;
     }
 
     if (!verified) {
@@ -417,9 +412,25 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error {
-    NSDate *now = [NSDate date];
+    // Use clockOffset as the reference time if set; otherwise use now.
+    // clockOffset is initialized to [NSDate date] in -init, so by default
+    // this is the current time. Tests can override it to simulate fixed
+    // time for deterministic expiry/nbf checks.
+    NSDate *now = self.clockOffset ?: [NSDate date];
 
-    if (payload.exp && [payload.exp compare:now] == NSOrderedAscending) {
+    // exp is mandatory: a token without an expiration must never be
+    // accepted. All self-issued tokens (mintAccessTokenForDID:,
+    // mintRefreshTokenForDID:, mintServiceAuthJWTForDID:) always set exp.
+    if (!payload.exp) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorMissingRequiredClaim
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required 'exp' claim"}];
+        }
+        return NO;
+    }
+
+    if ([payload.exp compare:now] == NSOrderedAscending) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
                                          code:JWTErrorTokenExpired
@@ -437,22 +448,55 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         return NO;
     }
 
-    if (self.expectedIssuer && payload.iss && ![PDSSecurityCompare constantTimeEqualString:payload.iss string:self.expectedIssuer]) {
-        if (error) {
-            *error = [NSError errorWithDomain:JWTErrorDomain
-                                         code:JWTErrorInvalidIssuer
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid issuer"}];
+    // iss mandatory when expectedIssuer is set: a nil iss must not
+    // silently bypass the issuer check.
+    if (self.expectedIssuer) {
+        if (!payload.iss) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorMissingRequiredClaim
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing required 'iss' claim"}];
+            }
+            return NO;
         }
-        return NO;
+        if (![PDSSecurityCompare constantTimeEqualString:payload.iss string:self.expectedIssuer]) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidIssuer
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid issuer"}];
+            }
+            return NO;
+        }
     }
 
-    if (self.expectedAudience && payload.aud && ![PDSSecurityCompare constantTimeEqualString:payload.aud string:self.expectedAudience]) {
-        if (error) {
-            *error = [NSError errorWithDomain:JWTErrorDomain
-                                         code:JWTErrorInvalidAudience
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid audience"}];
+    // aud mandatory when expectedAudience is set: a nil aud must not
+    // silently bypass the audience check. Per RFC 7519 §4.1.3, match
+    // if any element of the normalized audiences array equals the
+    // expected audience.
+    if (self.expectedAudience) {
+        if (!payload.audiences || payload.audiences.count == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorMissingRequiredClaim
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing required 'aud' claim"}];
+            }
+            return NO;
         }
-        return NO;
+        BOOL matched = NO;
+        for (NSString *audience in payload.audiences) {
+            if ([PDSSecurityCompare constantTimeEqualString:audience string:self.expectedAudience]) {
+                matched = YES;
+                break;
+            }
+        }
+        if (!matched) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidAudience
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid audience"}];
+            }
+            return NO;
+        }
     }
 
     if (!payload.sub && !payload.did && !self.allowMissingSubject) {
