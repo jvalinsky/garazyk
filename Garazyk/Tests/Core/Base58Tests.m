@@ -68,6 +68,20 @@
     XCTAssertNil([Base58 decode:largeString], @"Should reject string > 64KB");
 }
 
+- (void)testMultiByteUTF8Rejected {
+    // Multi-byte UTF-8 must be rejected on its own actual byte length, not
+    // because of an accidental interaction between string.length (UTF-16
+    // units) and the buffer's real UTF-8 byte count.
+    XCTAssertNil([Base58 decode:@"€"], @"Standalone BMP multi-byte char should be rejected"); // '€', 1 UTF-16 unit, 3 UTF-8 bytes
+    XCTAssertNil([Base58 decode:@"\U0001F600"], @"Supplementary-plane char should be rejected"); // emoji, 2 UTF-16 units, 4 UTF-8 bytes
+
+    // A multi-byte character trailing a long valid-looking ASCII prefix:
+    // exercises the tail of the buffer, not just the first byte.
+    NSMutableString *prefixed = [NSMutableString stringWithString:@"StV1DL6CwTryKyV"];
+    [prefixed appendString:@"€"];
+    XCTAssertNil([Base58 decode:prefixed], @"Trailing multi-byte char should be rejected");
+}
+
 - (void)testMaxValidInput {
     // Use a reasonable size that completes quickly (Base58 is O(n²) in worst case)
     NSMutableData *maxData = [NSMutableData dataWithLength:1024];
