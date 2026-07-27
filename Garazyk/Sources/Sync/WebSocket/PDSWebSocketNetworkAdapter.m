@@ -153,6 +153,22 @@
             break;
 
         case WSCodecEventProtocolError:
+            // RFC 6455 requires a protocol violation to fail the connection.
+            // Do not merely notify the caller: emit the codec's RFC close
+            // code, transition this transport to closed, and stop receiving.
+            self.isClosed = YES;
+            if (self.closeHandler) {
+                self.closeHandler(event.closeCode, event.closeReason ?: @"");
+            }
+            {
+                NSData *closeFrame = [self.codec closeFrame:event.closeCode
+                                                     reason:event.closeReason ?: @""];
+                [self.connection sendData:closeFrame completion:^(NSError * _Nullable error) {
+                    if (error && self.errorHandler) {
+                        self.errorHandler(error);
+                    }
+                }];
+            }
             if (self.errorHandler) {
                 NSError *error = [NSError errorWithDomain:@"WebSocketCodec"
                                                      code:-1
