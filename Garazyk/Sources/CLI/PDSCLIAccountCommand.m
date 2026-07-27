@@ -38,7 +38,7 @@
            @"Subcommands:\n"
            @"  list                   List all accounts\n"
            @"  info <did|handle>      Show account details\n"
-           @"  create --email <email> --handle <handle> [--password <pw>]  Create a new account\n"
+           @"  create --email <email> --handle <handle>  Create a new account\n"
            @"  deactivate <did>       Deactivate an account\n"
            @"  reactivate <did>       Reactivate a deactivated account\n"
            @"  delete <did>           Permanently delete an account\n"
@@ -52,7 +52,7 @@
            @"Examples:\n"
            @"  kaszlak account list                      # List all accounts\n"
            @"  kaszlak account list --limit 10           # List first 10 accounts\n"
-           @"  kaszlak account create --email a@b.com --handle test.mypds.xyz --password secret\n"
+           @"  PDS_ACCOUNT_PASSWORD=... kaszlak account create --email a@b.com --handle test.mypds.xyz\n"
            @"  kaszlak account info did:plc:abc123       # Show account details";
 }
 
@@ -215,6 +215,11 @@
     NSString *password = @"";
 
     BOOL passwordProvided = NO;
+    const char *environmentPassword = getenv("PDS_ACCOUNT_PASSWORD");
+    if (environmentPassword && environmentPassword[0] != '\0') {
+        password = [NSString stringWithUTF8String:environmentPassword];
+        passwordProvided = YES;
+    }
 
     for (NSUInteger i = 0; i < args.count; i++) {
         NSString *arg = args[i];
@@ -226,6 +231,7 @@
             if (i + 1 < args.count) {
                 password = args[++i];
                 passwordProvided = YES;
+                fprintf(stderr, "Warning: --password exposes secrets through process arguments; use PDS_ACCOUNT_PASSWORD or the interactive prompt instead.\n");
             }
         } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
             context.verbose = YES;
@@ -255,10 +261,10 @@
         } else if (email.length == 0 || handle.length == 0 || !passwordProvided) {
             [context printError:@"Missing required arguments: --email and --handle"];
             NSString *hostname = [PDSCLIAccountManager pdsHostnameForContext:context];
-            [context printInfo:@"\nUsage: kaszlak account create --email <email> --handle <handle> [--password <pw>]"];
+            [context printInfo:@"\nUsage: kaszlak account create --email <email> --handle <handle>"];
             [context printInfo:[NSString stringWithFormat:@"\nExamples:"]];
             [context printInfo:[NSString stringWithFormat:@"  kaszlak account create --email alice@example.com --handle alice.%@", hostname]];
-            [context printInfo:@"  kaszlak account create -e bob@test.com -h bob.test -p secret123"];
+            [context printInfo:@"  PDS_ACCOUNT_PASSWORD=... kaszlak account create -e bob@test.com -h bob.test"];
             return 1;
         }
     }
