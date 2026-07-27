@@ -5,6 +5,13 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 
+@interface PDSDatabasePool (DatabasePoolTesting)
+- (instancetype)initWithDbDirectory:(NSString *)dbDirectory
+                            maxSize:(NSUInteger)maxSize
+                   evictionInterval:(NSTimeInterval)evictionInterval
+                      idleThreshold:(NSTimeInterval)idleThreshold;
+@end
+
 @interface DatabasePoolTests : XCTestCase
 
 @property (nonatomic, strong) NSString *testDirectory;
@@ -299,6 +306,32 @@
 }
 
 #ifndef GNUSTEP
+- (void)testDispatchTimerEvictsPoolConstructedWithoutRunLoop {
+    __block PDSDatabasePool *backgroundPool = nil;
+    dispatch_semaphore_t constructed = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        backgroundPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory
+                                                               maxSize:1
+                                                      evictionInterval:0.02
+                                                         idleThreshold:0.01];
+        dispatch_semaphore_signal(constructed);
+    });
+    XCTAssertEqual(dispatch_semaphore_wait(constructed, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC)), 0);
+
+    NSString *did = @"did:plc:cccccccccccccccccccccccc";
+    XCTAssertNotNil([backgroundPool storeForDid:did error:nil]);
+    NSMutableDictionary<NSString *, NSDate *> *lastAccessTime = [backgroundPool valueForKey:@"lastAccessTime"];
+    lastAccessTime[did] = [NSDate distantPast];
+
+    dispatch_group_t waitForTimer = dispatch_group_create();
+    dispatch_group_async(waitForTimer, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        usleep(250000);
+    });
+    XCTAssertEqual(dispatch_group_wait(waitForTimer, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC)), 0);
+    XCTAssertEqual(backgroundPool.currentSize, 0, @"Dispatch timer must evict without a constructing-thread run loop");
+    [backgroundPool closeAll];
+}
+
 - (void)testEvictionSkipsActiveTransactionAndDoesNotBlockMetrics {
     PDSDatabasePool *smallPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:1];
     NSString *activeDID = @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa";
