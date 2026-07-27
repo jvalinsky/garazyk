@@ -29,4 +29,12 @@
     XCTAssertEqual(configuration.blobStorageQuotaBytes, 12345ULL);
 }
 
+- (void)testBlobTemporaryGracePeriodDefaultsAndClampsToOneHour {
+    ATProtoServiceConfiguration *configuration = [[ATProtoServiceConfiguration alloc] init];
+    XCTAssertEqual(configuration.blobTemporaryGracePeriodSeconds, 6 * 60 * 60);
+
+    [configuration applyConfig:@{ @"blobTemporaryGracePeriodSeconds": @1 }];
+    XCTAssertEqual(configuration.blobTemporaryGracePeriodSeconds, 60 * 60);
+}
+
 @end

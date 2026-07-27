@@ -97,6 +97,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     blob.state = PDSDatabaseBlobStateTemporary;
 
     __block BOOL savedMetadata = NO;
+    __block BOOL providerDataStored = NO;
     __block NSError *dbError = nil;
     [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
@@ -145,14 +146,20 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
                                                           NSUnderlyingErrorKey: providerError ?: [NSNull null]}];
                 return;
             }
+            providerDataStored = YES;
         }
 
         savedMetadata = [store saveBlob:blob error:blockError];
     } error:&dbError];
 
     if (!savedMetadata) {
-        // Slice 5 supplies provider cleanup for metadata-save failures. A quota
-        // rejection reaches this branch before the provider is ever written.
+        if (providerDataStored) {
+            NSError *cleanupError = nil;
+            if (![_provider deleteBlobDataForCID:cid error:&cleanupError]) {
+                GZ_LOG_ERROR(@"Failed to remove blob provider data after metadata save failure: %@", cleanupError);
+            }
+        }
+        // A quota rejection reaches this branch before the provider is written.
         if (error) {
             if (dbError) {
                 *error = dbError;
