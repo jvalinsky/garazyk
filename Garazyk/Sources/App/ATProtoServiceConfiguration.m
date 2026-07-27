@@ -451,21 +451,18 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
   }
 
   NSDictionary *auth = config[@"auth"];
-  GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: auth class: %@, auth dictionary: %@", NSStringFromClass([auth class]), auth);
   if (auth && [auth isKindOfClass:[NSDictionary class]]) {
     NSString *secretVal = auth[@"master_secret"];
-    GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: master_secret: %@", secretVal);
     if ([secretVal isKindOfClass:[NSString class]]) {
       _masterSecret = [self resolveSecretValue:secretVal];
-      GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: _masterSecret set to length: %lu", (unsigned long)_masterSecret.length);
+      GZ_LOG_INFO_C(GZLogComponentCore, @"applyConfig: master_secret set from auth section (length: %lu)", (unsigned long)_masterSecret.length);
     }
   }
 
   NSString *envMasterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
-  GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: envMasterSecret: %@", envMasterSecret);
   if (envMasterSecret.length > 0) {
     _masterSecret = envMasterSecret;
-    GZ_LOG_INFO_C(GZLogComponentCore, @"[DEBUG] applyConfig: env override set _masterSecret to length: %lu", (unsigned long)_masterSecret.length);
+    GZ_LOG_INFO_C(GZLogComponentCore, @"applyConfig: master_secret overridden by PDS_MASTER_SECRET env (length: %lu)", (unsigned long)_masterSecret.length);
   }
 
   if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
