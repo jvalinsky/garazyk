@@ -11,6 +11,7 @@
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Auth/PDSKeyProtocol.h"
 #import "Debug/GZLogger.h"
 #import "Security/PDSSecurityCompare.h"
@@ -97,8 +98,8 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     NSError *headerError = nil;
-    NSDictionary *header = [NSJSONSerialization JSONObjectWithData:headerData options:0 error:&headerError];
-    if (!header || headerError) {
+    id headerObject = [NSJSONSerialization JSONObjectWithData:headerData options:0 error:&headerError];
+    if (![headerObject isKindOfClass:[NSDictionary class]] || headerError) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-3
@@ -106,9 +107,27 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         }
         return NO;
     }
+    NSDictionary *header = (NSDictionary *)headerObject;
 
-    // Validate header
-    if (![header[@"typ"] isEqualToString:@"dpop+jwt"]) {
+    // Validate header. Every value read from `header` must be type-checked
+    // before use: NSDictionary/NSArray implement -copyWithZone:, so an
+    // attacker-controlled value of the wrong type can silently masquerade as
+    // the expected type and crash later at the first type-specific message
+    // send (e.g. -isEqualToString: on an NSArray).
+    BOOL headerTypeMismatch = NO;
+    NSString *headerTyp = AuthTypedValue(header, @"typ", [NSString class], &headerTypeMismatch);
+    NSString *headerAlg = AuthTypedValue(header, @"alg", [NSString class], &headerTypeMismatch);
+    NSDictionary *jwk = AuthTypedValue(header, @"jwk", [NSDictionary class], &headerTypeMismatch);
+    if (headerTypeMismatch) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                         code:-17
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP header claim has unexpected type"}];
+        }
+        return NO;
+    }
+
+    if (![headerTyp isEqualToString:@"dpop+jwt"]) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-4
@@ -117,7 +136,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         return NO;
     }
 
-    if (![header[@"alg"] isEqualToString:@"ES256"]) {
+    if (![headerAlg isEqualToString:@"ES256"]) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-4
@@ -126,7 +145,6 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         return NO;
     }
 
-    NSDictionary *jwk = header[@"jwk"];
     if (!jwk) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
@@ -158,8 +176,8 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     NSError *payloadError = nil;
-    NSDictionary *payload = [NSJSONSerialization JSONObjectWithData:payloadData options:0 error:&payloadError];
-    if (!payload || payloadError) {
+    id payloadObject = [NSJSONSerialization JSONObjectWithData:payloadData options:0 error:&payloadError];
+    if (![payloadObject isKindOfClass:[NSDictionary class]] || payloadError) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-6
@@ -167,13 +185,23 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         }
         return NO;
     }
+    NSDictionary *payload = (NSDictionary *)payloadObject;
 
     // Validate payload claims
-    NSString *proofHtm = payload[@"htm"];
-    NSString *proofHtu = payload[@"htu"];
-    NSNumber *iat = payload[@"iat"];
-    NSString *jti = payload[@"jti"];
-    NSString *proofNonce = payload[@"nonce"];
+    BOOL payloadTypeMismatch = NO;
+    NSString *proofHtm = AuthTypedValue(payload, @"htm", [NSString class], &payloadTypeMismatch);
+    NSString *proofHtu = AuthTypedValue(payload, @"htu", [NSString class], &payloadTypeMismatch);
+    NSNumber *iat = AuthTypedValue(payload, @"iat", [NSNumber class], &payloadTypeMismatch);
+    NSString *jti = AuthTypedValue(payload, @"jti", [NSString class], &payloadTypeMismatch);
+    NSString *proofNonce = AuthTypedValue(payload, @"nonce", [NSString class], &payloadTypeMismatch);
+    if (payloadTypeMismatch) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                         code:-17
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP payload claim has unexpected type"}];
+        }
+        return NO;
+    }
 
     if (![proofHtm isEqualToString:[method uppercaseString]]) {
         if (error) {

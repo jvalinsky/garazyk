@@ -13,6 +13,7 @@
  */
 
 #import "Auth/JWT.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSActorKeyManagerProtocol.h"
@@ -37,10 +38,19 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 + (nullable instancetype)headerFromDictionary:(NSDictionary *)dictionary error:(NSError **)error {
     JWTHeader *header = [[JWTHeader alloc] init];
-    header.alg = dictionary[@"alg"];
-    header.typ = dictionary[@"typ"];
-    header.kid = dictionary[@"kid"];
-    header.cty = dictionary[@"cty"];
+    BOOL typeMismatch = NO;
+    header.alg = AuthTypedValue(dictionary, @"alg", [NSString class], &typeMismatch);
+    header.typ = AuthTypedValue(dictionary, @"typ", [NSString class], &typeMismatch);
+    header.kid = AuthTypedValue(dictionary, @"kid", [NSString class], &typeMismatch);
+    header.cty = AuthTypedValue(dictionary, @"cty", [NSString class], &typeMismatch);
+    if (typeMismatch) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidHeader
+                                     userInfo:@{NSLocalizedDescriptionKey: @"JWT header claim has unexpected type"}];
+        }
+        return nil;
+    }
     return header;
 }
 
@@ -59,30 +69,91 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 + (nullable instancetype)payloadFromDictionary:(NSDictionary *)dictionary error:(NSError **)error {
     JWTPayload *payload = [[JWTPayload alloc] init];
-    payload.iss = dictionary[@"iss"];
-    payload.sub = dictionary[@"sub"];
-    payload.aud = dictionary[@"aud"];
-    payload.jti = dictionary[@"jti"];
-    payload.sid = dictionary[@"sid"];
-    payload.did = dictionary[@"did"];
-    payload.handle = dictionary[@"handle"];
-    payload.scope = dictionary[@"scope"];
-    payload.lxm = dictionary[@"lxm"];
-    payload.token_use = dictionary[@"token_use"];
-    payload.cnf = dictionary[@"cnf"];
+    BOOL typeMismatch = NO;
+    payload.iss = AuthTypedValue(dictionary, @"iss", [NSString class], &typeMismatch);
+    payload.sub = AuthTypedValue(dictionary, @"sub", [NSString class], &typeMismatch);
+    payload.jti = AuthTypedValue(dictionary, @"jti", [NSString class], &typeMismatch);
+    payload.sid = AuthTypedValue(dictionary, @"sid", [NSString class], &typeMismatch);
+    payload.did = AuthTypedValue(dictionary, @"did", [NSString class], &typeMismatch);
+    payload.handle = AuthTypedValue(dictionary, @"handle", [NSString class], &typeMismatch);
+    payload.scope = AuthTypedValue(dictionary, @"scope", [NSString class], &typeMismatch);
+    payload.lxm = AuthTypedValue(dictionary, @"lxm", [NSString class], &typeMismatch);
+    payload.token_use = AuthTypedValue(dictionary, @"token_use", [NSString class], &typeMismatch);
+    payload.cnf = AuthTypedValue(dictionary, @"cnf", [NSDictionary class], &typeMismatch);
+
+    // RFC 7519 §4.1.3: 'aud' is a single StringOrURI, or an array of them.
+    // Normalize to an array; keep 'aud' as the first element for existing
+    // single-value consumers.
+    id audValue = dictionary[@"aud"];
+    if (audValue != nil) {
+        if ([audValue isKindOfClass:[NSString class]]) {
+            payload.aud = audValue;
+            payload.audiences = @[audValue];
+        } else if ([audValue isKindOfClass:[NSArray class]]) {
+            BOOL allStrings = YES;
+            for (id element in (NSArray *)audValue) {
+                if (![element isKindOfClass:[NSString class]]) {
+                    allStrings = NO;
+                    break;
+                }
+            }
+            if (allStrings) {
+                NSArray<NSString *> *audArray = [(NSArray *)audValue copy];
+                payload.audiences = audArray;
+                payload.aud = audArray.firstObject;
+            } else {
+                typeMismatch = YES;
+            }
+        } else {
+            typeMismatch = YES;
+        }
+    }
+
+    if (typeMismatch) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidPayload
+                                     userInfo:@{NSLocalizedDescriptionKey: @"JWT payload claim has unexpected type"}];
+        }
+        return nil;
+    }
 
     id expValue = dictionary[@"exp"];
-    if ([expValue isKindOfClass:[NSNumber class]]) {
+    if (expValue != nil) {
+        if (![expValue isKindOfClass:[NSNumber class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidPayload
+                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT 'exp' claim must be a number"}];
+            }
+            return nil;
+        }
         payload.exp = [NSDate dateWithTimeIntervalSince1970:[expValue doubleValue]];
     }
 
     id iatValue = dictionary[@"iat"];
-    if ([iatValue isKindOfClass:[NSNumber class]]) {
+    if (iatValue != nil) {
+        if (![iatValue isKindOfClass:[NSNumber class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidPayload
+                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT 'iat' claim must be a number"}];
+            }
+            return nil;
+        }
         payload.iat = [NSDate dateWithTimeIntervalSince1970:[iatValue doubleValue]];
     }
 
     id nbfValue = dictionary[@"nbf"];
-    if ([nbfValue isKindOfClass:[NSNumber class]]) {
+    if (nbfValue != nil) {
+        if (![nbfValue isKindOfClass:[NSNumber class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidPayload
+                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT 'nbf' claim must be a number"}];
+            }
+            return nil;
+        }
         payload.nbf = [NSDate dateWithTimeIntervalSince1970:[nbfValue doubleValue]];
     }
 
