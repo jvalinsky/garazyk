@@ -165,6 +165,14 @@
 
 - (void)sendMessage:(NSData *)data completion:(void (^)(NSError * _Nullable))completion {
     dispatch_async(_eventQueue, ^{
+        if (!data) {
+            if (completion) {
+                NSError *error = [NSError errorWithDomain:@"WebSocket" code:-1
+                                                  userInfo:@{NSLocalizedDescriptionKey: @"Cannot send nil data"}];
+                completion(error);
+            }
+            return;
+        }
         if (self.isClosed) {
             if (completion) {
                 NSError *error = [NSError errorWithDomain:@"WebSocket" code:-1
