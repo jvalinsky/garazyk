@@ -1,12 +1,38 @@
 ---
 phase: 14
 title: Wire the auth verification cluster
-status: pending
+status: complete
 agent: worker
 depends_on: [13]
 ---
 
 # Phase 14: Wire the auth verification cluster
+
+## Progress
+
+- 2026-07-27: **Steps 1–6 complete.**
+  - Step 1: Self-recursive setters fixed in `AuthVerifier.m`
+    (`-setLocalPublicKey:`, `-setLocalIssuer:`) and `PDSAuth.m`
+    (`-setAdminController:`). Direct ivar assignment replaces property access.
+    Committed as `ee358663`.
+  - Steps 2–3: `PDSAccountPolicy.adminController` made strong +
+    constructor-injected; `isAccountAllowed:` fails closed (denies) when nil.
+    `GZAuthzManager`: removed broken mute check in `validateReadAccess:` that
+    denied owners reading their own posts; removed discarded query from
+    `isAuthorizedForAdminOperation:`; updated test. Committed as `713b4490`.
+  - Steps 4–5: `GZInputValidator` regex accepts `.` and `%` for `did:web`.
+    `AuthVerifier`: DPoP with nil request now rejected (not silently skipped);
+    audience check fails when `expectedAudience` set but `aud` missing.
+    Committed as `91848d5e`.
+  - Step 6: Auth cluster wired behind `PDS_USE_AUTH_VERIFIER` env-var switch.
+    `XrpcAuthHelper` delegates to `AuthVerifier` + `PDSAccountPolicy` when
+    switch is on, falls back to legacy path on rejection. `AuthVerifier`
+    lazily constructed from `PDSController` dependencies on first use.
+    Switch requires zero rebuild. Committed as `a58df71b` + build fix
+    `cd420966`. ADR 0015 written.
+  - Global gates: `deno task check` green, `deno task lint` (6 pre-existing
+    failures in `generate_test.ts`, not introduced), `cmake --build --target
+    AllTests --parallel 4` passes.
 
 ## Mission
 
@@ -122,7 +148,5 @@ in the ADR before enabling it. Do not delete the incumbent path in this phase.
 
 ## On completion
 
-Write the ADR recording the auth-path architecture: why the cluster was wired
-rather than deleted, the parity strategy, the cutover switch, and the rollback
-trigger. Update S8 slice 7 status in workstream 01 with commit hashes, then set
-`status: complete` here.
+ADR 0015 (auth-path architecture) written. Workstream 01 S8 updated with
+commit hashes. Status set to complete.
