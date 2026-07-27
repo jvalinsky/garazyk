@@ -138,7 +138,9 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 // ---------------------------------------------------------------------------
 
 - (BOOL)saveCheckpoint:(AppViewCheckpoint *)checkpoint error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO appview_checkpoints(relay_url, seq, saved_at) VALUES(?,?,?)";
+    NSString *sql = @"INSERT INTO appview_checkpoints(relay_url, seq, saved_at) VALUES(?,?,?) "
+                    @"ON CONFLICT(relay_url) DO UPDATE SET seq = excluded.seq, saved_at = excluded.saved_at "
+                    @"WHERE excluded.seq > appview_checkpoints.seq";
     NSArray *params = @[checkpoint.relayURL, @(checkpoint.seq), iso8601Now()];
     return [self executeParameterizedUpdate:sql params:params error:error];
 }

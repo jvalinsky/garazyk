@@ -134,6 +134,13 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual(loaded.seq, 200LL, @"Upsert should update to latest seq");
 }
 
+- (void)testCheckpointDoesNotMoveBackward {
+    NSError *err = nil;
+    XCTAssertTrue([self.db saveCheckpoint:[[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:200] error:&err]);
+    XCTAssertTrue([self.db saveCheckpoint:[[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:100] error:&err]);
+    AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
+    XCTAssertEqual(loaded.seq, 200LL);
+}
 
 - (void)testActorCountsTrackReplaceAndDelete {
     NSError *err = nil;
