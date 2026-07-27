@@ -417,6 +417,112 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     return [self verifyOperation:op proposedDate:[NSDate date] nullifiedCIDs:&nullified error:error];
 }
 
++ (BOOL)verifyChain:(NSArray<PLCOperation *> *)operations did:(NSString *)did error:(NSError **)error {
+    if (operations.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty operation chain"}];
+        }
+        return NO;
+    }
+
+    // Create a temporary auditor with a nil store. The instance methods
+    // called below (verifySignatureForOperation:, normalizedDataForOperation:)
+    // operate on the operation data directly and do not access self.store.
+    PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:nil];
+
+    PLCOperation *first = operations.firstObject;
+    // Genesis must have null prev
+    if (first.prev != nil) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                         code:3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Genesis operation must have null prev"}];
+        }
+        return NO;
+    }
+
+    NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[first toDictionary]];
+    if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                         code:4
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Genesis DID does not match expected DID"}];
+        }
+        return NO;
+    }
+
+    NSError *localError = nil;
+    NSDictionary *normalized = [self normalizedDataForOperation:first error:&localError];
+    if (!normalized) {
+        if (error) *error = localError;
+        return NO;
+    }
+
+    NSArray<NSString *> *rotationKeys = normalized[@"rotationKeys"];
+    if (![auditor verifySignatureForOperation:first allowedKeys:rotationKeys error:&localError]) {
+        if (error) *error = localError;
+        return NO;
+    }
+
+    NSString *prevCid = [PLCOperation calculateCIDForOperation:[first toDictionary] error:&localError];
+    if (!prevCid) {
+        if (error) *error = localError;
+        return NO;
+    }
+
+    for (NSUInteger idx = 1; idx < operations.count; idx++) {
+        PLCOperation *op = operations[idx];
+
+        // Verify prev chain
+        if (op.prev == nil || ![op.prev isKindOfClass:[NSString class]] || ![op.prev isEqualToString:prevCid]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                             code:5
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Operation prev does not match chain"}];
+            }
+            return NO;
+        }
+
+        BOOL isTombstone = [[op.data objectForKey:@"type"] isEqualToString:@"plc_tombstone"];
+        if (isTombstone) {
+            if (idx != operations.count - 1) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
+                                                 code:6
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Tombstone must be last"}];
+                }
+                return NO;
+            }
+            // Tombstone is valid — no need to verify further operations
+            return YES;
+        }
+
+        // Verify signature against current rotation keys
+        if (![auditor verifySignatureForOperation:op allowedKeys:rotationKeys error:&localError]) {
+            if (error) *error = localError;
+            return NO;
+        }
+
+        // Update rotation keys and prev CID for next iteration
+        normalized = [self normalizedDataForOperation:op error:&localError];
+        if (!normalized) {
+            if (error) *error = localError;
+            return NO;
+        }
+        rotationKeys = normalized[@"rotationKeys"];
+
+        prevCid = [PLCOperation calculateCIDForOperation:[op toDictionary] error:&localError];
+        if (!prevCid) {
+            if (error) *error = localError;
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
 - (NSData *)hashForOperationData:(NSDictionary *)data {
     NSError *error = nil;
     NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
@@ -435,7 +541,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     return [op.data[@"type"] isEqualToString:@"plc_tombstone"];
 }
 
-- (nullable NSDictionary *)normalizedDataForOperation:(PLCOperation *)op error:(NSError **)error {
++ (nullable NSDictionary *)normalizedDataForOperation:(PLCOperation *)op error:(NSError **)error {
     NSString *type = op.data[@"type"];
     if ([type isEqualToString:@"plc_operation"]) {
         NSArray *rotationKeys = op.data[@"rotationKeys"];
@@ -492,6 +598,10 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                  userInfo:@{NSLocalizedDescriptionKey: @"Unsupported operation type"}];
     }
     return nil;
+}
+
+- (nullable NSDictionary *)normalizedDataForOperation:(PLCOperation *)op error:(NSError **)error {
+    return [[self class] normalizedDataForOperation:op error:error];
 }
 
 - (nullable NSString *)cidStringForOperation:(PLCOperation *)op error:(NSError **)error {
