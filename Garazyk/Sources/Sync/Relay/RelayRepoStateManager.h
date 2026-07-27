@@ -45,9 +45,17 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
 @interface RelayRepoStateManager : NSObject
 
 /**
- * @abstract Creates an empty repository state manager.
+ * @abstract Creates an empty in-memory repository state manager.
  */
-- (instancetype)init NS_DESIGNATED_INITIALIZER;
+- (instancetype)init;
+
+/**
+ * @abstract Creates a repository state manager backed by an on-disk SQLite database.
+ * @param dataDir The directory in which the relay state database is stored.
+ * @param error   Receives database-open failures.
+ */
+- (nullable instancetype)initWithDataDir:(NSString *)dataDir
+                                   error:(NSError **)error NS_DESIGNATED_INITIALIZER;
 
 /**
  * @abstract Records the latest commit state for a repository.
@@ -119,14 +127,32 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
 - (NSUInteger)repoCount;
 
 /**
- * @abstract Persists the in-memory repository state.
+ * @abstract Returns the previous data CID for a repository (the root CID before the
+ *           most recent commit).  Used by chain verification to link consecutive
+ *           commits via ``prev`` in the CAR header.
+ * @param repoDID The repository DID to query.
+ * @return The previous root CID, or nil when unknown or unchanged.
+ */
+- (nullable NSString *)prevDataCIDForRepo:(NSString *)repoDID;
+
+/**
+ * @abstract Synchronizes the in-memory state to the on-disk database.
+ *
+ *  When the manager was initialised with ``initWithDataDir:error:`` this writes
+ *  all tracked repository records to SQLite.  For an in-memory manager created
+ *  via ``init`` this is a no-op.
  */
 - (void)persistState;
 
 /**
- * @abstract Loads previously persisted repository state.
- * @param error Receives load or decode failures.
- * @return YES when persisted state was loaded.
+ * @abstract Loads previously persisted repository state from the on-disk database.
+ *
+ *  When the manager was initialised with ``initWithDataDir:error:`` this reads
+ *  all stored records into the in-memory dictionaries.  For an in-memory manager
+ *  this is a no-op returning YES.
+ *
+ * @param error Receives database-read failures.
+ * @return YES when the state was loaded (or when operating in-memory).
  */
 - (BOOL)loadState:(NSError **)error;
 
