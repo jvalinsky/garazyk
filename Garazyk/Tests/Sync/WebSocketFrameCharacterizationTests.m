@@ -103,8 +103,11 @@
 }
 
 - (void)testMaskedClientServerFrameMatchesLastObject {
+    // "Hello", unmasked -- this connection is a bare `init`, which dials out
+    // as a client (RFC 6455 §5.1: a client MUST fail the connection on a
+    // masked frame from a server, so a legitimate server frame is unmasked).
     uint8_t frameBytes[] = {
-        0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D, 0x7F, 0x9F, 0x4D, 0x51, 0x58
+        0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F
     };
     [self.connection handleReceivedData:[NSData dataWithBytes:frameBytes length:sizeof(frameBytes)]];
     [self waitForMainQueue];
@@ -194,8 +197,9 @@
 }
 
 - (void)testPartialFrameDeliveryMatchesLastObject {
+    // "Hello", unmasked -- see testMaskedClientServerFrameMatchesLastObject.
     uint8_t frameBytes[] = {
-        0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D, 0x7F, 0x9F, 0x4D, 0x51, 0x58
+        0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F
     };
     for (int i=0; i<sizeof(frameBytes); i++) {
         [self.connection handleReceivedData:[NSData dataWithBytes:&frameBytes[i] length:1]];
