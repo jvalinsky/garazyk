@@ -152,32 +152,11 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
 }
 
 - (BOOL)isAuthorizedForAdminOperation:(NSString *)requestingDID error:(NSError **)error {
-    // Admin access is granted only from JWT scope validation in XrpcMethodRegistry.
-    // This method validates the requesting DID exists, but authorization must be verified
-    // through the JWT scope claim ("admin") to prevent privilege escalation.
-
-    if (!requestingDID) {
-        if (error) {
-            *error = [NSError errorWithDomain:GZAuthzErrorDomain
-                                         code:GZAuthzErrorAdminRequired
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Admin authentication required"}];
-        }
-        return NO;
-    }
-
-    PDSDatabaseAccount *account = [self.database getAccountByDid:requestingDID error:nil];
-    if (!account) {
-        if (error) {
-            *error = [NSError errorWithDomain:GZAuthzErrorDomain
-                                         code:GZAuthzErrorUnauthorized
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
-        }
-        return NO;
-    }
-
-    // Account exists. Authorization is verified through JWT scope validation.
-    // Caller must check JWT "admin" scope before calling this method.
-    // Deny-by-default to prevent accidental privilege escalation.
+    // Admin authorization is determined by JWT scope validation in the XRPC
+    // handler layer (XrpcAuthHelper / XrpcMethodRegistry). This method exists
+    // only for backward compatibility and always returns NO as a safe default.
+    // The discarded getAccountByDid: query has been removed per workstream 01
+    // S8 slice 7. Do not add grant logic here — wire it through the auth cluster.
     if (error) {
         *error = [NSError errorWithDomain:GZAuthzErrorDomain
                                      code:GZAuthzErrorAdminRequired
@@ -213,15 +192,11 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
         return NO;
     }
 
-    if (collection && ![collection isEqualToString:@"app.bsky.actor.profile"]) {
-        NSArray *mutedCollections = @[@"app.bsky.feed.post", @"app.bsky.feed.repost", @"app.bsky.feed.like"];
-        if ([mutedCollections containsObject:collection]) {
-            PDSDatabaseAccount *account = [self.database getAccountByDid:repoDID error:nil];
-            if (account) {
-                return NO;
-            }
-        }
-    }
+    // Mute/block enforcement is handled by AuthVerifier and the XRPC handler
+    // layer, not by this basic repo-access check. The previous branch here
+    // checked for account existence (which always succeeds for the owner) and
+    // then returned NO, effectively denying owners reading their own posts.
+    // That branch has been removed per workstream 01 S8 slice 7.
 
     return YES;
 }
