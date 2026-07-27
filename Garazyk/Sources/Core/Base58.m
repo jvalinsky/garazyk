@@ -57,16 +57,28 @@ static const int8_t kBase58Map[128] = {
         j++;
     }
     
-    NSMutableString *result = [NSMutableString stringWithCapacity:zeros + (size - j)];
+    // Build into a C buffer and construct the string once, instead of
+    // parsing a format string per character via -appendFormat:.
+    NSUInteger outLength = zeros + (size - j);
+    char *out = malloc(outLength > 0 ? outLength : 1);
+    if (!out) {
+        free(buf);
+        return nil;
+    }
+    NSUInteger outIndex = 0;
     for (NSUInteger k = 0; k < zeros; k++) {
-        [result appendFormat:@"%c", kBase58Alphabet[0]];
+        out[outIndex++] = kBase58Alphabet[0];
     }
     while (j < size) {
-        [result appendFormat:@"%c", kBase58Alphabet[buf[j]]];
+        out[outIndex++] = kBase58Alphabet[buf[j]];
         j++;
     }
-
     free(buf);
+
+    NSString *result = [[NSString alloc] initWithBytesNoCopy:out
+                                                        length:outLength
+                                                      encoding:NSASCIIStringEncoding
+                                                  freeWhenDone:YES];
     return result;
 }
 
