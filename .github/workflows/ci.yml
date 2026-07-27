@@ -89,6 +89,10 @@ jobs:
         run: |
           node scripts/docs/generate_xrpc_coverage_report.cjs --source-only --fail-on-duplicates
 
+      - name: Check Recursive Objective-C Setters
+        run: |
+          ./scripts/check-recursive-setters.sh
+
       - name: Check Module Boundaries
         run: |
           ./scripts/dev/check_module_boundaries.sh .

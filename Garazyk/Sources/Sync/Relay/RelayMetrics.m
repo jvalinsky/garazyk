@@ -141,7 +141,7 @@
 
 - (void)setCurrentSequence:(int64_t)seq {
     dispatch_async(_metricsQueue, ^{
-        self.currentSequence = seq;
+        _currentSequence = seq;
     });
 }
 
