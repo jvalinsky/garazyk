@@ -5,12 +5,11 @@ import { generateLexicons } from "./generate.ts";
 const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = dirname(dirname(dirname(SCRIPT_DIR)));
 
-// Check whether the Garazyk lexicon directory (from the main monorepo) exists.
-// This test is designed for the full garazyk monorepo and should be skipped
-// automatically in standalone checkouts (e.g., the external npm/atproto-testing repo).
 function defaultLexiconsExist(): boolean {
   try {
-    const info = Deno.statSync(join(REPO_ROOT, "Garazyk", "Resources", "lexicons"));
+    const info = Deno.statSync(
+      join(REPO_ROOT, "Garazyk", "Resources", "lexicons"),
+    );
     return info.isDirectory;
   } catch {
     return false;
@@ -317,28 +316,24 @@ Deno.test("generateLexicons has deterministic output independent of discovery or
   );
 });
 
-Deno.test("generateLexicons default output matches the checked-in artifact", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const outFile = join(tempDir, "lexicons.ts");
+Deno.test({
+  name: "generateLexicons default output matches the checked-in artifact",
+  ignore: !defaultLexiconsExist(),
+  fn: async () => {
+    const tempDir = await Deno.makeTempDir();
+    const outFile = join(tempDir, "lexicons.ts");
 
-  let result;
-  try {
-    result = await generateLexicons({ outFile });
-  } catch {
-    // Lexicon directory not available (external repo checkout).
-    // This test compares against the checked-in artifact which only exists
-    // in the full garazyk monorepo with the Garazyk/Resources/lexicons.
-    return;
-  }
+    const result = await generateLexicons({ outFile });
 
-  assert(result.lexiconCount > 0);
-  assert(result.endpointCount > 0);
-  assertEquals(
-    await Deno.readTextFile(outFile),
-    await Deno.readTextFile(
-      join(REPO_ROOT, "packages", "gruszka", "lexicons.ts"),
-    ),
-  );
+    assert(result.lexiconCount > 0);
+    assert(result.endpointCount > 0);
+    assertEquals(
+      await Deno.readTextFile(outFile),
+      await Deno.readTextFile(
+        join(REPO_ROOT, "packages", "gruszka", "lexicons.ts"),
+      ),
+    );
+  },
 });
 
 Deno.test("generateLexicons resolves local and external refs", async () => {
