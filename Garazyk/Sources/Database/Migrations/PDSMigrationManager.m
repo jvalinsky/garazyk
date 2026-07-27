@@ -619,6 +619,45 @@ static BOOL PDSMigrationTableExists(sqlite3 *db, const char *tableName) {
     return exists;
 }
 
+// Builds a scalar SQL expression resolving the shard's owning DID, preferring
+// the per-DID key singletons (written at account creation) over `records`,
+// which is still empty for an account that has only its initial commit block.
+// Returns nil when nothing in this database can identify an owner. Note
+// SQLite's COALESCE requires at least two arguments, so a single source is
+// emitted bare.
+static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db);
+
+// PRAGMA table_info does not accept a bound parameter, so the table name is
+// interpolated. Every caller passes a compile-time literal.
+static BOOL PDSMigrationColumnExists(sqlite3 *db, const char *tableName, const char *columnName) {
+    NSString *pragma = [NSString stringWithFormat:@"PRAGMA table_info(%s)", tableName];
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(db, pragma.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
+        return NO;
+    }
+    BOOL found = NO;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *name = sqlite3_column_text(stmt, 1);
+        if (name && strcmp((const char *)name, columnName) == 0) {
+            found = YES;
+            break;
+        }
+    }
+    sqlite3_finalize(stmt);
+    return found;
+}
+
+static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
+    NSMutableArray<NSString *> *sources = [NSMutableArray array];
+    if (PDSMigrationTableExists(db, "rotation_keys")) [sources addObject:@"(SELECT did FROM rotation_keys LIMIT 1)"];
+    if (PDSMigrationTableExists(db, "signing_keys"))  [sources addObject:@"(SELECT did FROM signing_keys LIMIT 1)"];
+    if (PDSMigrationTableExists(db, "records"))       [sources addObject:@"(SELECT did FROM records LIMIT 1)"];
+
+    if (sources.count == 0) return nil;
+    if (sources.count == 1) return sources.firstObject;
+    return [NSString stringWithFormat:@"COALESCE(%@)", [sources componentsJoinedByString:@", "]];
+}
+
 - (BOOL)up:(sqlite3 *)db error:(NSError **)error {
     NSMutableArray<NSString *> *statements = [NSMutableArray array];
 
@@ -929,15 +968,19 @@ static BOOL PDSMigrationTableExists(sqlite3 *db, const char *tableName) {
 // account_usage row so consumers (XrpcVendorPack, XrpcAdminPack+AccountInfo,
 // PDSAccountService) see non-zero values immediately after migration.
 - (BOOL)backfillAccountUsageFromExistingDataInDatabase:(sqlite3 *)db error:(NSError **)error {
-    // Each actor-store shard is per-DID. Reuse the same owner lookup as the
-    // installed block triggers, so the backfill and live accounting share
-    // one source of truth.
-    if (!PDSMigrationTableExists(db, "records")) {
-        return YES; // no records table — nothing to attribute usage to
+    // Each actor-store shard is per-DID. Resolve the owner from the shard's
+    // own per-DID singletons before falling back to `records`: the key rows
+    // are written at account creation, whereas an account that has only its
+    // initial commit block has no record row yet. Keying solely off `records`
+    // silently skipped the backfill for exactly those shards.
+    NSString *ownerExpr = PDSMigrationOwnerDIDExpression(db);
+    if (!ownerExpr) {
+        return YES; // nothing in this database identifies an owner
     }
+    NSString *ownerQuery = [NSString stringWithFormat:@"SELECT %@", ownerExpr];
 
     sqlite3_stmt *didStmt = NULL;
-    if (sqlite3_prepare_v2(db, "SELECT did FROM records LIMIT 1", -1, &didStmt, NULL) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, ownerQuery.UTF8String, -1, &didStmt, NULL) != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                          code:PDSMigrationErrorMigrationFailed
@@ -1052,6 +1095,154 @@ static BOOL PDSMigrationTableExists(sqlite3 *db, const char *tableName) {
             if (errMsg) sqlite3_free(errMsg);
             return NO;
         }
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - V8 Block Usage Attribution (Actor Store)
+
+@interface V8BlockUsageAttribution : NSObject <PDSMigration>
+@end
+
+@implementation V8BlockUsageAttribution
+
+- (NSInteger)version { return 8; }
+- (NSString *)name { return @"block_usage_attribution"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    if (!PDSMigrationTableExists(db, "ipld_blocks")) {
+        // Nothing to attribute; V7 already skipped installing the block
+        // triggers on such a database.
+        return YES;
+    }
+
+    NSMutableArray<NSString *> *statements = [NSMutableArray array];
+
+    // 1. Add the owning DID to ipld_blocks. Nullable so the ALTER is cheap on
+    //    large shards; the backfill below populates every existing row.
+    if (!PDSMigrationColumnExists(db, "ipld_blocks", "did")) {
+        [statements addObject:@"ALTER TABLE ipld_blocks ADD COLUMN did TEXT"];
+    }
+
+    // 2. Backfill from the shard's own per-DID singletons. These are written
+    //    at account creation, before repo init stores the first commit block,
+    //    so they are populated even when `records` is still empty — which is
+    //    precisely the case the old trigger could not handle.
+    NSString *ownerExpr = PDSMigrationOwnerDIDExpression(db);
+
+    if (ownerExpr) {
+        [statements addObject:[NSString stringWithFormat:
+            @"UPDATE ipld_blocks SET did = %@ WHERE did IS NULL", ownerExpr]];
+    }
+
+    [statements addObject:@"CREATE INDEX IF NOT EXISTS idx_ipld_blocks_did ON ipld_blocks(did)"];
+
+    // 3. Reinstall the two block triggers against the new column. They are
+    //    CREATE TRIGGER IF NOT EXISTS, so the stale definitions must go first.
+    [statements addObjectsFromArray:@[
+        @"DROP TRIGGER IF EXISTS trg_account_usage_block_insert",
+        @"DROP TRIGGER IF EXISTS trg_account_usage_block_delete",
+        kPDSAccountUsageTriggerBlockInsertSQL,
+        kPDSAccountUsageTriggerBlockDeleteSQL,
+    ]];
+
+    // 4. Repair account_usage. Every block written before the shard's first
+    //    record produced its own orphan row keyed on NULL (SQLite treats NULL
+    //    as distinct from NULL, so ON CONFLICT(did) could not merge them).
+    //
+    //    Rather than fold those totals arithmetically, recompute `repo_bytes`
+    //    from `ipld_blocks`, which is now authoritative and makes this step
+    //    idempotent. It also covers shards V7's backfill skipped entirely:
+    //    that backfill keys off `records`, so an account that had only its
+    //    initial commit block — the exact case this migration exists to fix —
+    //    got no usage row at all. Only `repo_bytes` needs this treatment; the
+    //    blob and record triggers always had a NOT NULL `NEW.did`, so orphan
+    //    rows can never carry blob or record totals.
+    //
+    //    Ordering matters: this runs after the triggers are swapped, so the
+    //    DELETE cannot re-fire the old attribution logic.
+    if (ownerExpr && PDSMigrationTableExists(db, "account_usage")) {
+        [statements addObjectsFromArray:@[
+            @"DELETE FROM account_usage WHERE did IS NULL",
+
+            [NSString stringWithFormat:
+                @"INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+                @"SELECT %@, 0, 0, 0, 0, strftime('%%Y-%%m-%%dT%%H:%%M:%%fZ','now') "
+                @"WHERE %@ IS NOT NULL "
+                @"AND EXISTS (SELECT 1 FROM ipld_blocks) "
+                @"ON CONFLICT(did) DO NOTHING", ownerExpr, ownerExpr],
+
+            [NSString stringWithFormat:
+                @"UPDATE account_usage SET "
+                @"repo_bytes = COALESCE((SELECT SUM(size) FROM ipld_blocks WHERE did = account_usage.did), 0), "
+                @"updated_at = strftime('%%Y-%%m-%%dT%%H:%%M:%%fZ','now') "
+                @"WHERE did = %@", ownerExpr],
+        ]];
+    }
+
+    for (NSUInteger i = 0; i < statements.count; i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, statements[i].UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V8 up failed (statement %lu): %@", (unsigned long)i, message]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+        if (errMsg) sqlite3_free(errMsg);
+    }
+
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    // Restore the pre-V8 trigger definitions. The `did` column is left in
+    // place: dropping it would require a full table rebuild, and an unused
+    // nullable column is harmless to the older triggers, which never read it.
+    NSArray<NSString *> *statements = @[
+        @"DROP TRIGGER IF EXISTS trg_account_usage_block_insert",
+        @"DROP TRIGGER IF EXISTS trg_account_usage_block_delete",
+
+        @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_block_insert "
+        @"AFTER INSERT ON ipld_blocks "
+        @"BEGIN "
+        @"INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+        @"VALUES ((SELECT did FROM records LIMIT 1), 0, 0, NEW.size, 0, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+        @"ON CONFLICT(did) DO UPDATE SET "
+        @"repo_bytes = repo_bytes + NEW.size, "
+        @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'); "
+        @"END",
+
+        @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_block_delete "
+        @"AFTER DELETE ON ipld_blocks "
+        @"BEGIN "
+        @"UPDATE account_usage SET "
+        @"repo_bytes = MAX(repo_bytes - OLD.size, 0), "
+        @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') "
+        @"WHERE did = (SELECT did FROM records LIMIT 1); "
+        @"END",
+    ];
+
+    if (!PDSMigrationTableExists(db, "ipld_blocks")) return YES;
+
+    for (NSUInteger i = 0; i < statements.count; i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, statements[i].UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V8 down failed (statement %lu): %@", (unsigned long)i, message]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+        if (errMsg) sqlite3_free(errMsg);
     }
     return YES;
 }
@@ -3077,6 +3268,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[V5RecordsRevisionCoveringIndex alloc] init]];
     [manager registerMigration:[[V6BlobLifecycleSchema alloc] init]];
     [manager registerMigration:[[V7AccountUsageTriggers alloc] init]];
+    [manager registerMigration:[[V8BlockUsageAttribution alloc] init]];
     return manager;
 }
 
