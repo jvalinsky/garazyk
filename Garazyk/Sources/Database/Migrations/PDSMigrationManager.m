@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSMigrationManager.h"
+#import "Database/Schema.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
@@ -803,6 +804,173 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                              code:PDSMigrationErrorMigrationFailed
                                          userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V6 down failed (statement %zu): %@", i, message]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - V7 Account Usage Triggers + Backfill
+
+@interface V7AccountUsageTriggers : NSObject <PDSMigration>
+@end
+
+@implementation V7AccountUsageTriggers
+
+- (NSInteger)version { return 7; }
+- (NSString *)name { return @"account_usage_triggers"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    NSArray<NSString *> *statements = @[
+        kPDSAccountUsageTableCreateSQL,
+        kPDSAccountUsageTriggerBlobInsertSQL,
+        kPDSAccountUsageTriggerBlobDeleteSQL,
+        kPDSAccountUsageTriggerBlockInsertSQL,
+        kPDSAccountUsageTriggerBlockDeleteSQL,
+        kPDSAccountUsageTriggerRecordInsertSQL,
+        kPDSAccountUsageTriggerRecordDeleteSQL,
+    ];
+
+    for (NSUInteger i = 0; i < statements.count; i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, statements[i].UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V7 up failed (statement %lu): %@", (unsigned long)i, message]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+
+    return [self backfillAccountUsageFromExistingDataInDatabase:db error:error];
+}
+
+// Aggregate existing blobs, ipld_blocks, and records into a single
+// account_usage row so consumers (XrpcVendorPack, XrpcAdminPack+AccountInfo,
+// PDSAccountService) see non-zero values immediately after migration.
+- (BOOL)backfillAccountUsageFromExistingDataInDatabase:(sqlite3 *)db error:(NSError **)error {
+    // Each actor-store shard is per-DID. Reuse the same owner lookup as the
+    // installed block triggers, so the backfill and live accounting share
+    // one source of truth.
+    sqlite3_stmt *didStmt = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT did FROM records LIMIT 1", -1, &didStmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V7 up failed: could not prepare did lookup"}];
+        }
+        return NO;
+    }
+
+    NSString *did = nil;
+    if (sqlite3_step(didStmt) == SQLITE_ROW) {
+        const unsigned char *didText = sqlite3_column_text(didStmt, 0);
+        if (didText) did = [NSString stringWithUTF8String:(const char *)didText];
+    }
+    sqlite3_finalize(didStmt);
+
+    if (!did) return YES; // empty shard — nothing to backfill
+
+    // Aggregate blob metrics
+    sqlite3_stmt *blobStmt = NULL;
+    long long blobBytes = 0;
+    long long blobCount = 0;
+    if (sqlite3_prepare_v2(db, "SELECT COALESCE(SUM(size), 0), COUNT(*) FROM blobs", -1, &blobStmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(blobStmt) == SQLITE_ROW) {
+            blobBytes = sqlite3_column_int64(blobStmt, 0);
+            blobCount = sqlite3_column_int64(blobStmt, 1);
+        }
+        sqlite3_finalize(blobStmt);
+    }
+
+    // Aggregate repo block metrics
+    sqlite3_stmt *blockStmt = NULL;
+    long long repoBytes = 0;
+    if (sqlite3_prepare_v2(db, "SELECT COALESCE(SUM(size), 0) FROM ipld_blocks", -1, &blockStmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(blockStmt) == SQLITE_ROW) {
+            repoBytes = sqlite3_column_int64(blockStmt, 0);
+        }
+        sqlite3_finalize(blockStmt);
+    }
+
+    // Aggregate record count
+    sqlite3_stmt *recordStmt = NULL;
+    long long recordCount = 0;
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM records", -1, &recordStmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(recordStmt) == SQLITE_ROW) {
+            recordCount = sqlite3_column_int64(recordStmt, 0);
+        }
+        sqlite3_finalize(recordStmt);
+    }
+
+    // Upsert the aggregated row
+    const char *upsertSQL =
+        "INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+        "ON CONFLICT(did) DO UPDATE SET "
+        "blob_bytes = ?, blob_count = ?, repo_bytes = ?, record_count = ?, "
+        "updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')";
+
+    sqlite3_stmt *upsertStmt = NULL;
+    if (sqlite3_prepare_v2(db, upsertSQL, -1, &upsertStmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V7 up failed: could not prepare upsert"}];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(upsertStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(upsertStmt, 2, blobBytes);
+    sqlite3_bind_int64(upsertStmt, 3, blobCount);
+    sqlite3_bind_int64(upsertStmt, 4, repoBytes);
+    sqlite3_bind_int64(upsertStmt, 5, recordCount);
+    // ON CONFLICT parameters (bind after the excluded/old values)
+    sqlite3_bind_int64(upsertStmt, 6, blobBytes);
+    sqlite3_bind_int64(upsertStmt, 7, blobCount);
+    sqlite3_bind_int64(upsertStmt, 8, repoBytes);
+    sqlite3_bind_int64(upsertStmt, 9, recordCount);
+
+    int rc = sqlite3_step(upsertStmt);
+    sqlite3_finalize(upsertStmt);
+
+    if (rc != SQLITE_DONE) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V7 up failed: account_usage backfill step failed"}];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    static const char *statements[] = {
+        "DROP TRIGGER IF EXISTS trg_account_usage_blob_insert",
+        "DROP TRIGGER IF EXISTS trg_account_usage_blob_delete",
+        "DROP TRIGGER IF EXISTS trg_account_usage_block_insert",
+        "DROP TRIGGER IF EXISTS trg_account_usage_block_delete",
+        "DROP TRIGGER IF EXISTS trg_account_usage_record_insert",
+        "DROP TRIGGER IF EXISTS trg_account_usage_record_delete",
+    };
+
+    for (size_t i = 0; i < sizeof(statements) / sizeof(statements[0]); i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, statements[i], NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V7 down failed (statement %zu): %@", i, message]}];
             }
             if (errMsg) sqlite3_free(errMsg);
             return NO;
@@ -2809,6 +2977,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[V4DedicatedSpaceSigningKeySchema alloc] init]];
     [manager registerMigration:[[V5RecordsRevisionCoveringIndex alloc] init]];
     [manager registerMigration:[[V6BlobLifecycleSchema alloc] init]];
+    [manager registerMigration:[[V7AccountUsageTriggers alloc] init]];
     return manager;
 }
 
