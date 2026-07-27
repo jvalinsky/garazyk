@@ -34,12 +34,12 @@
            @"  list                   List all administrator DIDs\n"
            @"  add <did|handle>       Grant administrator privileges to an account\n"
            @"  remove <did>           Revoke administrator privileges from an account\n"
-           @"  create --email <e> --handle <h> [--password <p>]  Create a new admin account\n\n"
+           @"  create --email <e> --handle <h>  Create a new admin account\n\n"
            @"Note: Administrative privileges allow access to the PDS dashboard and admin XRPC endpoints.\n\n"
            @"Examples:\n"
            @"  kaszlak admin list                         # List all admins\n"
            @"  kaszlak admin add did:plc:abc123           # Grant admin to account\n"
-           @"  kaszlak admin create --email admin@test.com --handle admin.mypds.xyz --password secret";
+           @"  PDS_ACCOUNT_PASSWORD=... kaszlak admin create --email admin@test.com --handle admin.mypds.xyz";
 }
 
 - (NSArray<NSString *> *)subcommands {
@@ -140,6 +140,11 @@
     NSString *handle = @"";
     NSString *password = @"";
     BOOL passwordProvided = NO;
+    const char *environmentPassword = getenv("PDS_ACCOUNT_PASSWORD");
+    if (environmentPassword && environmentPassword[0] != '\0') {
+        password = [NSString stringWithUTF8String:environmentPassword];
+        passwordProvided = YES;
+    }
 
     for (NSUInteger i = 0; i < args.count; i++) {
         NSString *arg = args[i];
@@ -151,6 +156,7 @@
             if (i + 1 < args.count) {
                 password = args[++i];
                 passwordProvided = YES;
+                fprintf(stderr, "Warning: --password exposes secrets through process arguments; use PDS_ACCOUNT_PASSWORD or the interactive prompt instead.\n");
             }
         }
     }
