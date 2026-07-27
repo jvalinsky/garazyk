@@ -1,9 +1,11 @@
 ---
 phase: 15
 title: Blob lifecycle conformance
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
+completed_at: 2026-07-27
+commit: 1b8a04f5
 ---
 
 # Phase 15: Blob lifecycle conformance
@@ -31,6 +33,10 @@ checked. Upload metadata-save failures now remove newly stored provider bytes.
 Completed slice 6: blob reads, file paths, and listings now require referenced
 metadata and fail closed without an owner store. XCTest coverage exercises the
 XRPC upload → record reference → fetch flow and excludes temporary blobs.
+
+Completed 2026-07-27: all acceptance and global gates passed. Evidence and
+commit hashes are recorded in workstream 01 § S9; ADR 0013 records the
+lifecycle policy and compatibility impact.
 
 ## Mission
 
