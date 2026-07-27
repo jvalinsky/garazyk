@@ -33,7 +33,8 @@ static const int8_t kBase58Map[128] = {
     // Allocate enough space
     NSUInteger size = (length - zeros) * 138 / 100 + 1;
     uint8_t *buf = calloc(size, sizeof(uint8_t));
-    
+    if (!buf) return nil;
+
     // Process the bytes
     NSUInteger i = zeros, high = size - 1;
     while (i < length) {
@@ -64,7 +65,7 @@ static const int8_t kBase58Map[128] = {
         [result appendFormat:@"%c", kBase58Alphabet[buf[j]]];
         j++;
     }
-    
+
     free(buf);
     return result;
 }
@@ -74,8 +75,10 @@ static const int8_t kBase58Map[128] = {
     if (string.length > 64 * 1024) return nil;
     
     const char *chars = string.UTF8String;
-    NSUInteger length = string.length;
-    
+    // Index the UTF-8 byte buffer with its own byte length, not `string.length`
+    // (UTF-16 code units). The two only coincide for pure-ASCII input.
+    NSUInteger length = [string lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+
     // Check characters
     for (NSUInteger i = 0; i < length; i++) {
         if (chars[i] & 0x80) return nil; // Not ASCII
@@ -91,6 +94,7 @@ static const int8_t kBase58Map[128] = {
     // Allocate enough space
     NSUInteger size = (length - zeros) * 733 / 1000 + 1;
     uint8_t *buf = calloc(size, sizeof(uint8_t));
+    if (!buf) return nil;
     NSUInteger high = size - 1;
     
     NSUInteger i = zeros;
