@@ -1,12 +1,23 @@
 ---
 phase: 18
 title: Outbound egress pinning and SSRF gaps
-status: pending
+status: complete
 agent: worker
 depends_on: []
 ---
 
 # Phase 18: Outbound egress pinning and SSRF gaps
+
+## Progress
+
+Recovery started 2026-07-27 after Phase 17 completed. The previously stashed
+draft is recovery input only: both client implementations, bounded resolver
+behavior, narrow IPv6 classification gaps, registered tests, the Linux gate,
+and S10 evidence will be independently verified before completion.
+
+Completed 2026-07-27. The pinned curl and Network.framework transports,
+vetted-set resolver, IPv6 cases, bounded resolution, Linux Docker build, and
+normal plus gated global test coverage passed. Evidence is recorded in S10.
 
 ## Mission
 
