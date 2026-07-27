@@ -190,6 +190,17 @@
         RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                               error:&error];
         [mgr handleCommitForRepo:@"did:plc:test" root:@"bafyre" rev:@"1" seq:1];
+
+        // handleCommitForRepo: applies the write via dispatch_async on the
+        // manager's serial state queue. Reading through any dispatch_sync
+        // accessor (as below) is a FIFO barrier that guarantees the write
+        // has completed before this scope exits and releases `mgr` --
+        // without it, this test races: if the async write is still pending
+        // when the autoreleasepool closes, the state queue (not this
+        // thread) ends up dropping the last reference and running -dealloc
+        // asynchronously, after this scope has already moved on to opening
+        // the same database file in `mgr2` below.
+        XCTAssertEqualObjects([mgr rootCIDForRepo:@"did:plc:test"], @"bafyre");
     }
 
     RelayRepoStateManager *mgr2 = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
