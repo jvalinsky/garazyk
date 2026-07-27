@@ -259,6 +259,16 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)actorStoreBlobsTableSchema;
 
 /*!
+ @method actorStoreBlobRefsTableSchema
+
+ @abstract Schema for blob_refs table (record_uri, blob_cid, did).
+
+ @return CREATE TABLE SQL for the record-to-blob reference join table used
+ by the blob lifecycle (temporary vs. referenced state).
+ */
+- (NSString *)actorStoreBlobRefsTableSchema;
+
+/*!
  @method actorStoreAccountUsageTableSchema
  @abstract Schema for account_usage table (per-actor storage metrics).
  @return CREATE TABLE SQL for account usage tracking.

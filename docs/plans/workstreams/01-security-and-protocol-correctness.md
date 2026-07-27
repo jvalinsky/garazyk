@@ -783,3 +783,210 @@ Derived prompts live in `../prompts/`:
 
 - `phase-13-auth-json-typing.md` — slices 1-6, no architecture change.
 - `phase-14-wire-auth-cluster.md` — slice 7, `depends_on: [13]`.
+
+## S9. Blob lifecycle and storage-pool correctness
+
+**Status: not started (identified 2026-07-26).** A review of Repository,
+Database, and Blob found that the blob subsystem implements neither half of
+the published blob lifecycle, and that a complete usage-accounting design
+exists in the tree but was never installed. Separately, the actor-store pool
+returns silently partial results from its enumeration API and evicts stores
+out from under live callers.
+
+### The specification contract
+
+Two `atproto.com` pages define the lifecycle Garazyk is missing:
+
+- Uploaded blobs enter **temporary storage** and are "not accessible for
+  download or distribution while in this state", and are excluded from
+  `listBlobs`. They become publicly accessible only once a record referencing
+  them is successfully created.
+- Servers **should garbage collect un-referenced temporary blobs** after a
+  grace period — "at least one hour a firm lower bound", several hours
+  recommended, to tolerate apps that upload well before referencing.
+- On record deletion the server "checks if any other current records **from
+  the same repository** reference the blob. If not, the blob is deleted along
+  with the record." Account deletion removes all hosted blobs.
+- On limits, the spec recommends prioritising "limits on overall account
+  resource consumption" over per-blob size caps.
+
+This means the reclamation question is not a choice between a sweeper and
+reference counting: the spec requires **both** — an immediate per-repository
+reference check on record delete, and a time-based sweep for blobs that were
+uploaded but never referenced. Garazyk currently implements neither, and also
+lacks the temporary/referenced distinction the rest of the contract rests on.
+
+Sources: <https://atproto.com/specs/blob>,
+<https://atproto.com/guides/blob-lifecycle>.
+
+### Evidence
+
+Blob lifecycle:
+
+- `Blob/BlobStorage.m:130-132` leaves provider bytes behind when metadata
+  save fails, and `:266-268` deletes only metadata on
+  `deleteBlobWithCID:`. Both defer to a garbage collector in comments. No
+  collector exists: `Admin/Diagnostics/BlobAudit/PDSBlobReferenceScanOperation.m`
+  builds an `unreferencedBlobs` report and contains no delete or remove call,
+  and no other reclamation path exists in `Garazyk/Sources`.
+- The `blobs` table (`Database/Schema/PDSSchemaManager.m:512`,
+  `Database/Schema.m:108`) has no temporary/referenced state column, and there
+  is no record→blob join table. `getBlobWithCID:did:`
+  (`Blob/BlobStorage.m:146-162`) therefore serves any blob the provider holds,
+  so an uploaded-but-unreferenced blob is world-readable by CID — contrary to
+  the temporary-state rule above.
+- The same method's ownership check runs only `if (did)` and only
+  `if (store)`, then falls through to the provider regardless. A nil `did`
+  or a transient `storeForDid:` failure skips authorization and still serves
+  the bytes. `blobFilePathWithCID:did:` (`:195-210`) repeats it.
+- The two `blobs` schema definitions above disagree: `Schema.m` carries
+  `FOREIGN KEY (did) REFERENCES accounts(did)`, `PDSSchemaManager.m` does not.
+
+Usage accounting and quotas:
+
+- `Database/Schema.m:129-195` defines six complete, correct-looking SQLite
+  triggers (`trg_account_usage_blob_insert/delete`, `..._block_...`,
+  `..._record_...`) that maintain `account_usage` with upserts and clamped
+  decrements. **Every one of the eight `kPDSAccountUsage*` constants has zero
+  references outside `Database/Schema*`** — the triggers are never created on
+  any database, so `account_usage` is never written.
+- Consequently every consumer reads zeros: the soft-quota checks at
+  `Network/XrpcVendorPack.m:253-266` compare `blob_bytes`/`record_count`/
+  `repo_bytes` against `config.softQuota*` and can never fire;
+  `metrics incrementQuotaExceeded:` is unreachable; and the reporting paths
+  at `Services/PDS/PDSAccountService.m:585` and
+  `Network/XrpcAdminPack+AccountInfo.m:93` report zero usage for every
+  account. Nothing gates `uploadBlob` on quota at all.
+
+Storage pool:
+
+- `Database/Pool/DatabasePool.m:342-358` documents `knownDids` as a cache of
+  all DIDs and walks the filesystem "only when the set is empty", but `:170`
+  adds on store open and `:235` removes on eviction, so it tracks
+  currently-open stores. After a single `storeForDid:` call the set is
+  non-empty and incomplete, so `getAllReposWithError:`/`getAllAccountsWithError:`
+  silently return only that subset. Live via
+  `Core/Repositories/PDSSQLiteRepoRepository.m:55`.
+- `evictLRUStore` (`:202`) fires whenever `stores.count >= maxSize` (`:149`)
+  and closes a store other threads hold; `ActorStore.m:201` `close` is not
+  serialized on the store's own `transactionQueue`. This is not memory-unsafe
+  — `PDSDatabase close` serializes on `dbQueue` and every statement path
+  rechecks `isOpen`/`_db` (hardened in `b4d178c6`) — so the symptom is
+  spurious "database not open" failures under load.
+- Eviction runs on the serial `poolQueue` and calls `close`, which does
+  `dispatch_sync(dbQueue)`, so evicting a busy store stalls all pool traffic
+  for the length of the in-flight transaction. Any transaction block that
+  re-enters the pool would complete a `poolQueue → dbQueue → poolQueue` cycle;
+  no such caller exists today, so this is a landmine rather than a live bug.
+- `storeForDid:` holds `poolQueue` across two filesystem syscalls in
+  `dbPathForDid:` (`:128-131`) plus a full SQLite open and migration run, so
+  every cold-DID request serializes the pool.
+- `:72` schedules eviction with `NSTimer scheduledTimerWithTimeInterval:`,
+  which needs a live run loop on the constructing thread; off a run-loop
+  thread, time-based eviction silently never runs. `PDSReplayCache` already
+  uses a `dispatch_source_t` timer for the same job.
+
+Repository:
+
+- `Repository/MST.m` `nodeFromCBOR` silently `continue`s past malformed
+  entries (`:1027,1046,1052`) and clamps an over-long `p` prefix (`:1035`)
+  instead of rejecting, so malformed bytes decode to a different valid-looking
+  tree. It also infers node level from the first key's depth (`:1079-1082`,
+  the comment calls it an approximation), so a node whose entries were partly
+  skipped gets a wrong level and an empty node always gets level 0.
+- `Database/Migrations/PDSMigrationManager.m:1020-1087` passes `&errMsg` to
+  `sqlite3_exec` for BEGIN and COMMIT and never calls `sqlite3_free` in the
+  method, leaking the message on failure — it logs it at `:1054`, proving
+  allocation. Other methods in the file free correctly.
+
+### Decisions taken (2026-07-26)
+
+- **Reclamation follows the spec: both mechanisms.** Delete-on-last-reference
+  scoped per repository at record delete, plus a grace-period sweep for
+  never-referenced temporary blobs. The grace period is configurable with a
+  floor of one hour and a default of several hours.
+- **Per-account quota is configurable and enabled by default**, enforced at
+  upload and returning a quota-exceeded error. This matches the spec's
+  preference for account-wide resource limits over per-blob caps.
+- **The MST decoder rejects malformed nodes** rather than silently repairing
+  them, per the requirements of a canonical content-addressed format.
+
+### Slices
+
+Blob lifecycle (phase 15):
+
+1. **Model the lifecycle.** Add the referenced/temporary state and a
+   record→blob reference table, reconciling the two divergent `blobs` schemas
+   into one definition as part of the migration.
+2. **Install the usage triggers.** Create the six existing
+   `kPDSAccountUsage*` triggers during migration and backfill `account_usage`
+   for existing rows, so the already-wired soft-quota checks and reporting
+   endpoints stop reading zeros.
+3. **Enforce quota at upload** in `uploadBlob`, using the now-live counters.
+4. **Reference extraction on write and delete.** Extract blob references when
+   records are created and removed; on delete, drop the blob when no other
+   current record in the same repository references it.
+5. **Grace-period sweep** for temporary blobs, plus provider cleanup on the
+   metadata-save failure path at `BlobStorage.m:130`.
+6. **Serve only what is servable.** Restrict `getBlobWithCID:did:` and
+   `blobFilePathWithCID:did:` to referenced blobs, make the ownership check
+   fail closed on both nil `did` and store-lookup failure, and exclude
+   temporary blobs from `listBlobs`.
+
+Storage pool and decoder (phase 16):
+
+7. **Fix pool enumeration**: either make `knownDids` a real on-disk index or
+   drop the cache and always walk. Silent partial results are the defect;
+   pick whichever keeps `getAllRepos`/`getAllAccounts` complete.
+8. **Make eviction safe and non-blocking**: do not close stores that have
+   in-flight work, move `close` off `poolQueue`, and move SQLite open out of
+   the pool's critical section. Replace the `NSTimer` with a
+   `dispatch_source_t`.
+9. **Strict MST decode** per the decision above.
+10. **Low-severity cleanup**: the `sqlite3_free` leak, the
+    `performSelector:` bounce at `DatabasePool.m:22`, and the unsigned
+    `openFileHandleCount` decrement at `:236`.
+
+### Owner boundary
+
+Phase 15 owns `Garazyk/Sources/Blob/`, the `blobs`/`account_usage` schema and
+its migration, and the record write/delete call sites that must emit blob
+references. Phase 16 owns `Database/Pool/`, `Repository/MST.m` decode, and the
+named low-severity sites. Neither phase touches `Auth/`, which phases 13-14
+hold.
+
+### Gate
+
+Phase 15 is conformance-shaped, so the gate is behavioural: an uploaded blob
+is not retrievable and not listed until referenced; it becomes retrievable
+after the referencing record is created; it is deleted when the last
+referencing record in that repo is deleted but retained while another record
+still references it; a never-referenced blob survives inside the grace window
+and is swept after it; an upload past quota is rejected with a quota error and
+leaves no provider bytes; and a blob request with a nil `did` or a failing
+store lookup is denied rather than served.
+
+Phase 16's gate is a pool test that opens one store and then asserts
+`getAllRepos` returns every on-disk repo, an eviction test under
+`maxSize` pressure with concurrent readers, and MST decode rejection cases for
+malformed entries, over-long prefixes, and empty nodes. Migration round-trip
+(apply/rollback/re-apply) coverage is required for every schema change in both
+phases, per the O2 phase B lesson in workstream 07.
+
+New suites need registration in `Garazyk/Tests/test_main.m` plus a cmake
+reconfigure, then the mega-plan global gates with bounded `--parallel 4`.
+
+### Rollback
+
+Each slice is a single-commit revert. Slice 6 is the visible behaviour change
+— blobs that are currently readable become unreadable until referenced — so it
+lands last in phase 15 and after the backfill in slice 2, and should be
+verified against a real client upload flow before release. Schema changes
+carry apply/rollback/re-apply tests. Phase 16 slices are independent of each
+other and of phase 15.
+
+### Execution phases
+
+- `../prompts/phase-15-blob-lifecycle.md` — slices 1-6.
+- `../prompts/phase-16-storage-pool-and-decoder.md` — slices 7-10,
+  `depends_on: []`.
