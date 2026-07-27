@@ -120,6 +120,31 @@
     XCTAssertTrue([SSRFValidator isPrivateIPv6Address:ip6]);
 }
 
+- (void)testPrivateIPv6_Unspecified {
+    struct in6_addr ip6 = {};
+    XCTAssertTrue([SSRFValidator isPrivateIPv6Address:ip6]);
+}
+
+- (void)testPrivateIPv6_NAT64EmbeddedPrivateIPv4 {
+    struct in6_addr ip6 = {};
+    const uint8_t prefix[] = { 0x00, 0x64, 0xFF, 0x9B };
+    memcpy(ip6.s6_addr, prefix, sizeof(prefix));
+    ip6.s6_addr[12] = 10;
+    ip6.s6_addr[15] = 1;
+    XCTAssertTrue([SSRFValidator isPrivateIPv6Address:ip6]);
+}
+
+- (void)testPrivateIPv6_6to4EmbeddedPrivateIPv4 {
+    struct in6_addr ip6 = {};
+    ip6.s6_addr[0] = 0x20;
+    ip6.s6_addr[1] = 0x02;
+    ip6.s6_addr[2] = 192;
+    ip6.s6_addr[3] = 168;
+    ip6.s6_addr[4] = 1;
+    ip6.s6_addr[5] = 1;
+    XCTAssertTrue([SSRFValidator isPrivateIPv6Address:ip6]);
+}
+
 - (void)testPrivateIPv6_ULA {
     struct in6_addr ip6 = {};
     ip6.s6_addr[0] = 0xFC;
