@@ -37,6 +37,7 @@
 
 - (void)testSignatureStrippingFailsVerification {
     JWTVerifier *verifierWithKey = [[JWTVerifier alloc] init];
+    verifierWithKey.allowedAlgorithms = @[@"ES256"];
     NSData *dummyKey = [NSMutableData dataWithLength:65];
     verifierWithKey.publicKey = dummyKey;
 
@@ -51,6 +52,7 @@
 
 - (void)testFailClosedWhenNoKeyConfigured {
     JWTVerifier *verifierWithoutKey = [[JWTVerifier alloc] init];
+    verifierWithoutKey.allowedAlgorithms = @[@"ES256"];
 
     NSString *header = @"{\"alg\":\"ES256\",\"typ\":\"JWT\"}";
     NSString *payload = @"{\"sub\":\"123\",\"iat\":1516239022}";

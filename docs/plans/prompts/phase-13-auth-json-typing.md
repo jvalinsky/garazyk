@@ -18,9 +18,14 @@ depends_on: []
   `AuthTypedValue` static-inline helper. Applied at JWTHeader/JWTPayload
   construction and `AuthCryptoDPoP verifyProof:`. `aud` array form
   normalized per RFC 7519 §4.1.3. 14 new JWT negative tests + 3 new
-  DPoP negative tests, all green. Deno check/lint pass (lint has 6
-  pre-existing failures in generate_test.ts, not introduced here).
-  Committed as `<hash>`.
+  DPoP negative tests, all green. Committed as `d8ba0644`.
+- 2026-07-27: Slice 2 complete. JWTVerifier now fails closed on missing
+  `allowedAlgorithms`, mandatory `exp`/`iss`/`aud` when expected* is set,
+  key-derived verification path (not header alg), and `clockOffset` for
+  time comparisons. `VideoJWTAuthProvider` and `OAuth2Handler` verifier
+  sites patched to set `allowedAlgorithms`. 7 new JWTTests, all suites
+  green (JWTTests 33, OAuthDPoPTests 16, JWTSecurityTests 4,
+  SessionStoreTests 24, ATProtoCoreTests 33, AdminAuthXrpcTests 37).
 
 ## Mission
 

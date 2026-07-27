@@ -399,6 +399,7 @@
 
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
+    verifier.allowedAlgorithms = @[@"ES256K"];
     verifier.publicKey = publicKey;
 
     NSString *token = [minter signPayload:@{
@@ -422,6 +423,7 @@
 
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
+    verifier.allowedAlgorithms = @[@"ES256K"];
     verifier.publicKey = publicKey;
 
     NSString *token = [minter signPayload:@{

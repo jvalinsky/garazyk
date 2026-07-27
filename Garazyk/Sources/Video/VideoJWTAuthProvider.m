@@ -180,6 +180,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
     } else if (self.signingKeyJWK) {
         // Legacy path: verify with a pre-configured JWK
         JWTVerifier *verifier = [[JWTVerifier alloc] init];
+        verifier.allowedAlgorithms = @[@"ES256K"];
         if (![verifier verifyJWT:jwt error:&error]) {
             GZ_LOG_WARN(@"Service Auth JWT verification failed (JWK): %@", error);
             response.statusCode = HttpStatusUnauthorized;
@@ -268,6 +269,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
 
     // Verify the JWT signature using the resolved public key
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    verifier.allowedAlgorithms = @[@"ES256K"];
     verifier.publicKey = signingKeyBytes;
     return [verifier verifyJWT:jwt error:error];
 }

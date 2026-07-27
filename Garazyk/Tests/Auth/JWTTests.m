@@ -29,6 +29,7 @@
     self.verifier = [[JWTVerifier alloc] init];
     self.verifier.expectedIssuer = @"test.issuer";
     self.verifier.expectedAudience = @"test.audience";
+    self.verifier.allowedAlgorithms = @[@"ES256K"];
     
     // Set public key for verification
     self.verifier.publicKey = keyPair.publicKey;
@@ -462,6 +463,164 @@
 
 - (void)testCnfNonObjectShapeIsRejected {
     [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"cnf": @"not-an-object"} claim:@"cnf (string)"];
+}
+
+#pragma mark - Required Claims and Algorithm Binding (workstream 01 S8 slice 2)
+
+- (void)testAbsentExpIsRejected {
+    // exp is mandatory: a token without exp must never be accepted.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @"test.audience",
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    XCTAssertNotNil(token);
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"Token without exp must be rejected");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, JWTErrorMissingRequiredClaim);
+}
+
+- (void)testAbsentIssIsRejectedWhenExpectedIssuerIsSet {
+    // iss mandatory when expectedIssuer is set: nil iss must not
+    // silently bypass the issuer check.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"aud": @"test.audience",
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    XCTAssertNotNil(token);
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"Token without iss must be rejected when expectedIssuer is set");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, JWTErrorMissingRequiredClaim);
+}
+
+- (void)testAbsentAudIsRejectedWhenExpectedAudienceIsSet {
+    // aud mandatory when expectedAudience is set: nil aud must not
+    // silently bypass the audience check.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    XCTAssertNotNil(token);
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"Token without aud must be rejected when expectedAudience is set");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, JWTErrorMissingRequiredClaim);
+}
+
+- (void)testAllowedAlgorithmsUnsetFailsClosed {
+    // If allowedAlgorithms is nil, verification must fail closed rather
+    // than silently accepting any algorithm.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @"test.audience",
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+
+    JWTVerifier *unrestrictedVerifier = [[JWTVerifier alloc] init];
+    unrestrictedVerifier.expectedIssuer = @"test.issuer";
+    unrestrictedVerifier.expectedAudience = @"test.audience";
+    unrestrictedVerifier.publicKey = self.verifier.publicKey;
+    // allowedAlgorithms deliberately left nil
+
+    BOOL verified = [unrestrictedVerifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"Verifier with no allowedAlgorithms must fail closed");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, JWTErrorInvalidAlgorithm);
+}
+
+- (void)testAudienceArrayAnyElementMatches {
+    // Per RFC 7519 §4.1.3, a token is intended for a principal if any
+    // element of the aud array matches. The expected audience is
+    // "test.audience"; the token's aud array contains it as the second
+    // element.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @[@"other.audience", @"test.audience"],
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    XCTAssertNotNil(token);
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+    XCTAssertEqualObjects(jwt.payload.audiences, (@[@"other.audience", @"test.audience"]));
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertTrue(verified, @"Token with matching audience in array should verify");
+    XCTAssertNil(error);
+}
+
+- (void)testAudienceArrayNoMatchIsRejected {
+    // None of the aud array elements match the expected audience.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @[@"other.audience", @"another.audience"],
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"Token with no matching audience in array should be rejected");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, JWTErrorInvalidAudience);
+}
+
+- (void)testClockOffsetUsedForTimeComparison {
+    // clockOffset allows tests to set a fixed time for deterministic
+    // expiry checks. Set clockOffset to the past so a token that is
+    // valid now appears expired.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @"test.audience",
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+
+    // Set clockOffset 2 hours in the future: the token's exp (1 hour
+    // from now) is in the past relative to clockOffset.
+    self.verifier.clockOffset = [[NSDate date] dateByAddingTimeInterval:7200];
+
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"Token should be expired relative to clockOffset");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, JWTErrorTokenExpired);
 }
 
 @end
