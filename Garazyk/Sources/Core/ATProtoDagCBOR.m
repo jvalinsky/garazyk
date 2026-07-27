@@ -568,13 +568,27 @@ static const NSUInteger kMaxDecodeDepth = 64;
 }
 
 + (nullable NSNumber *)_decodeUnsignedInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
-    return [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+    NSNumber *unsignedValue = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
+    if (!unsignedValue) return nil;
+    if (unsignedValue.unsignedLongLongValue > (uint64_t)INT64_MAX) {
+        [self _setDecodingError:error message:@"Unsigned integer exceeds int64 range"];
+        return nil;
+    }
+    return unsignedValue;
 }
 
 + (nullable NSNumber *)_decodeNegativeInteger:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
     NSNumber *unsignedValue = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
     if (!unsignedValue) return nil;
-    return @(-(int64_t)(unsignedValue.unsignedLongLongValue + 1));
+    uint64_t value = unsignedValue.unsignedLongLongValue;
+    // DAG-CBOR negative integers decode to -(value+1); value must stay within
+    // [0, INT64_MAX] so the result stays within [INT64_MIN, -1]. Above that,
+    // value+1 either overflows int64 or wraps uint64_t to 0 (at 2^64-1).
+    if (value > (uint64_t)INT64_MAX) {
+        [self _setDecodingError:error message:@"Negative integer exceeds int64 range"];
+        return nil;
+    }
+    return @(-(int64_t)(value + 1));
 }
 
 + (nullable NSData *)_decodeByteString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
@@ -582,7 +596,9 @@ static const NSUInteger kMaxDecodeDepth = 64;
     if (!byteLength) return nil;
     
     uint64_t len = byteLength.unsignedLongLongValue;
-    if (*index > length || *index + len > length) {
+    // Compare against remaining bytes rather than summing *index + len, which
+    // can wrap NSUInteger for an attacker-controlled 64-bit len.
+    if (*index > length || len > length - *index) {
         if (error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                          code:ATProtoDagCBORErrorCodeDecodingFailed
@@ -614,8 +630,16 @@ static const NSUInteger kMaxDecodeDepth = 64;
     if (!arrayLength) return nil;
     
     uint64_t count = arrayLength.unsignedLongLongValue;
+    // Every array item needs at least one byte, so a declared count larger
+    // than the remaining input is never valid — reject before allocating a
+    // capacity hint sized from attacker-controlled input.
+    NSUInteger remaining = (*index <= length) ? (length - *index) : 0;
+    if (count > remaining) {
+        [self _setDecodingError:error message:@"Array count exceeds remaining data"];
+        return nil;
+    }
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:count];
-    
+
     for (uint64_t i = 0; i < count; i++) {
         id item = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
         if (!item) {
@@ -637,8 +661,17 @@ static const NSUInteger kMaxDecodeDepth = 64;
     if (!mapLength) return nil;
     
     uint64_t count = mapLength.unsignedLongLongValue;
+    // Every map entry needs at least one byte for its key and one for its
+    // value, so a declared count larger than half the remaining input is
+    // never valid — reject before allocating a capacity hint sized from
+    // attacker-controlled input. Dividing first avoids overflowing 2*count.
+    NSUInteger remaining = (*index <= length) ? (length - *index) : 0;
+    if (count > remaining / 2) {
+        [self _setDecodingError:error message:@"Map count exceeds remaining data"];
+        return nil;
+    }
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:count];
-    
+
     for (uint64_t i = 0; i < count; i++) {
         id key = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
         if (!key) {
