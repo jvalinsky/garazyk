@@ -23,6 +23,9 @@ static const NSTimeInterval PDSSpaceOplogPrunerMinimumInterval = 300.0;
 - (instancetype)initWithSpaceStore:(PDSSpaceStore *)spaceStore
                 retentionRevisions:(NSUInteger)retentionRevisions
       intervalInSeconds:(NSTimeInterval)interval {
+  if (!spaceStore) {
+    return nil;
+  }
   self = [super init];
   if (!self) return nil;
   _spaceStore = spaceStore;

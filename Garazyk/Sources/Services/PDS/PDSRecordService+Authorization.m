@@ -36,6 +36,14 @@
 - (nullable NSDictionary *)threadgateRecordForPostURI:(NSString *)postURI
                                             authorDID:(NSString *)authorDID
                                                 error:(NSError **)error {
+    if (!postURI || postURI.length == 0 || !authorDID || authorDID.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSRecordServiceErrorDomain
+                                          code:400
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing required threadgate parameters"}];
+        }
+        return nil;
+    }
     NSArray<PDSDatabaseRecord *> *threadgates =
         [self.recordRepository recordsForDid:authorDID
                                   collection:@"app.bsky.feed.threadgate"
