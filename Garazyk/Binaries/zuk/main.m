@@ -45,6 +45,7 @@ static const char *executable_name = "zuk";
 @property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
 @property (nonatomic, strong) NSArray<NSString *> *upstreamURLs;
 @property (nonatomic, assign) BOOL noUpstream;
+@property (nonatomic, strong, nullable) RelayRepoStateManager *repoStateManager;
 @end
 
 @implementation ZukRuntimeComposite
@@ -65,6 +66,7 @@ static const char *executable_name = "zuk";
     if (self.upstreamManager) {
         [self.upstreamManager disconnectAll];
     }
+    [self.repoStateManager persistState];
     [self.server stop];
 }
 @end
@@ -296,8 +298,21 @@ int main(int argc, const char * argv[]) {
             subscribeReposHandler:subscribeReposHandler];
         downstreamHandler.metrics = metrics;
 
-        // Initialize repo state manager for XRPC queries
-        RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+        // Initialize repo state manager for XRPC queries (with SQLite persistence)
+        NSString *relayStatePath = [dataDir stringByAppendingPathComponent:@"relay_state.db"];
+        NSError *relayStateError = nil;
+        RelayRepoStateManager *repoStateManager =
+            [[RelayRepoStateManager alloc] initWithDataDir:relayStatePath
+                                                    error:&relayStateError];
+        if (!repoStateManager) {
+            GZ_LOG_CORE_ERROR(@"Failed to open relay state database: %@",
+                              relayStateError.localizedDescription);
+            return 1;
+        }
+        if (![repoStateManager loadState:&relayStateError]) {
+            GZ_LOG_CORE_ERROR(@"Failed to load relay state: %@",
+                              relayStateError.localizedDescription);
+        }
         downstreamHandler.repoStateManager = repoStateManager;
 
         // Initialize upstream manager with configured upstreams
@@ -424,6 +439,7 @@ int main(int argc, const char * argv[]) {
         composite.upstreamManager = upstreamManager;
         composite.upstreamURLs = upstreamURLs;
         composite.noUpstream = noUpstream;
+        composite.repoStateManager = repoStateManager;
 
         return [GZServiceLifecycle runServiceWithRuntime:composite
                                              serviceName:@"Zuk relay server"
