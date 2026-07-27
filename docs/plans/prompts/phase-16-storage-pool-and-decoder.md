@@ -19,6 +19,12 @@ rather than treating its open-store cache as a complete inventory. The
 regression test seeds three actor databases, opens only one in a fresh pool,
 and verifies account and repository enumeration returns all three.
 
+Completed slice 8: pool-mediated reads, transactions, and convenience lookups
+retain their store while in flight. Eviction skips those retained stores,
+removes idle stores under `poolQueue`, and schedules their close on the
+eviction queue. `DatabasePoolTests` passed 17 tests, including the new
+long-transaction eviction and metrics responsiveness regression.
+
 ## Mission
 
 Execute workstream 01 § S9 slices 7-10: fix the actor-store pool's silently
