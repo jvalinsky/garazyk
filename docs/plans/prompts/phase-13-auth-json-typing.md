@@ -1,7 +1,7 @@
 ---
 phase: 13
 title: Untyped JSON at auth trust boundaries
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
 ---
@@ -27,6 +27,31 @@ depends_on: []
   green (JWTTests 33, OAuthDPoPTests 16, JWTSecurityTests 4,
   SessionStoreTests 24, ATProtoCoreTests 33, AdminAuthXrpcTests 37).
   Committed as `a80e91b5`.
+- 2026-07-27: **Slice 3 complete.** `PDSReplayCache.sharedCache` now tries
+  `PDS_DATA_DIR/replay_cache.db` first (persistent across restart), falls
+  back to `:memory:` on failure (never nil). `replayChecker` parameter made
+  non-optional in `verifyProof:`. Live call sites pass `sharedCache`.
+  4 new OAuthDPoPTests for durability + double-spend. All suites green.
+  ADR 0014 written. Committed as `f079278b`.
+- 2026-07-27: **Slice 4 complete.** `PLCOperation.operationFromDictionary:`
+  rejects non-string `op.did`. `PLCStateReplayer.replayHistory:` routes
+  through `PLCAuditor normalizedDataForOperation:` to reject nil/invalid
+  elements before collection literals. `PLCAuditor` gains
+  `+verifyChain:did:error:` class method validates operation chain without
+  needing a `PLCStore`. `XrpcIdentityPack` runs `verifyChain:` on remote
+  audit log before `replayHistory:`. 3 new PLCOperationTests + 3 new
+  PLCAuditorTests. ADR 0013 written. Committed as `77defcb7`.
+- 2026-07-27: **Slice 5 complete.** `GZInputValidator.isValidTID:` changed
+  `char c` to `unichar c` with a `>0x7F` rejection gate before the base32
+  alphabet check. Prevents U+0132 truncating to `'2'` (valid base32 digit).
+  Inherited by `isValidRecordKey:` (fast path). 2 new
+  ValidatorCharacterizationTests. Committed as `a04c03ea`.
+- 2026-07-27: **Slice 6 complete.** `GZ_LOG_DEBUG` and `GZ_LOG_DEBUG_C`
+  macros gated on `[GZLogger sharedLogger].logLevel` using `do/while(0)`
+  pattern. Component shorthand macros (`GZ_LOG_CORE_DEBUG`, etc.) inherit
+  the gate. Zero-cost when DEBUG is not the active level. Measurable
+  improvement on DID derivation and signature verification paths.
+  Committed as `b0b6754d`.
 
 ## Mission
 
@@ -153,7 +178,5 @@ actual payload shape as a test case first. Slice 6 is behavior-neutral.
 
 ## On completion
 
-Write the two ADRs this phase settles (claim-type rejection including the
-`aud` array contract; DPoP replay durability including disk budget). Update
-S8 status in workstream 01 with commit hashes, then set `status: complete`
-here.
+ADRs 0013 (claim-type rejection) and 0014 (DPoP replay durability) written.
+Workstream 01 S8 updated with commit hashes. Status set to complete.
