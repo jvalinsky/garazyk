@@ -9,6 +9,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Core/CID.h"
 #import "App/ATProtoServiceConfiguration.h"
+#import "Services/PDS/PDSRecordService.h"
 
 @interface BlobStorageTests : XCTestCase
 
@@ -117,16 +118,18 @@
     XCTAssertEqualObjects(duplicateCID.stringValue, self.uploadedCID.stringValue, @"Duplicate should return same CID");
 }
 
-- (void)testBlobRetrieval {
+- (void)testTemporaryBlobIsNotRetrievableOrListed {
     NSError *error = nil;
     self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
     NSData *retrievedData = [self.blobStorage getBlobWithCID:self.uploadedCID did:self.testDID error:&error];
 
-    XCTAssertNotNil(retrievedData, @"Retrieved data should not be nil");
-    XCTAssertEqualObjects(retrievedData, self.testData, @"Retrieved data should match original");
-    XCTAssertNil(error, @"No error should occur during retrieval");
+    XCTAssertNil(retrievedData, @"Temporary blobs must not be retrievable");
+    XCTAssertEqual(error.code, BlobStorageErrorBlobNotFound);
+
+    NSArray *blobList = [self.blobStorage listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
+    XCTAssertEqual(blobList.count, 0, @"Temporary blobs must not be listed");
 }
 
 - (void)testBlobRetrievalNotFound {
@@ -139,20 +142,49 @@
     XCTAssertNil(wrongData, @"Non-existent blob should return nil data");
 }
 
-- (void)testBlobListing {
+- (void)testReferencedBlobIsRetrievableListedAndHasFilePath {
     NSError *error = nil;
     self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
-    NSArray *blobList = [self.blobStorage listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
+    uint8_t privateKey[32] = {0};
+    memset(privateKey, 1, sizeof(privateKey));
+    PDSActorStore *store = [self.databasePool storeForDid:self.testDID error:&error];
+    XCTAssertTrue([store importSigningKey:[NSData dataWithBytes:privateKey length:sizeof(privateKey)] error:&error]);
+    PDSRecordService *recordService = [[PDSRecordService alloc] initWithDatabasePool:self.databasePool];
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"references a blob",
+        @"embed": @{ @"$type": @"blob", @"ref": @{ @"$link": self.uploadedCID.stringValue } }
+    };
+    XCTAssertTrue([recordService putRecord:@"app.bsky.feed.post"
+                                      rkey:@"referenced-blob"
+                                     value:record
+                                    forDid:self.testDID
+                            validationMode:PDSValidationModeOff
+                                     error:&error], @"%@", error);
 
-    XCTAssertNotNil(blobList, @"Blob list should not be nil");
-    XCTAssertEqual(blobList.count, 1, @"Should have exactly 1 blob listed");
+    NSData *retrievedData = [self.blobStorage getBlobWithCID:self.uploadedCID did:self.testDID error:&error];
+    XCTAssertEqualObjects(retrievedData, self.testData);
+    NSArray *blobList = [self.blobStorage listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
+    XCTAssertEqual(blobList.count, 1, @"Referenced blob should be listed");
 
     PDSDatabaseBlob *blobInfo = blobList.firstObject;
     XCTAssertEqualObjects(blobInfo.cid, [self.uploadedCID bytes], @"CID should match");
     XCTAssertEqualObjects(blobInfo.mimeType, @"text/plain", @"MIME type should match");
     XCTAssertEqual(blobInfo.size, self.testData.length, @"Size should match");
+    XCTAssertNotNil([self.blobStorage blobFilePathWithCID:self.uploadedCID did:self.testDID error:&error]);
+}
+
+- (void)testBlobReadRejectsNilOrInvalidOwnerDID {
+    NSError *error = nil;
+    self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
+    XCTAssertNotNil(self.uploadedCID);
+
+    XCTAssertNil([self.blobStorage getBlobWithCID:self.uploadedCID did:nil error:&error]);
+    XCTAssertEqual(error.code, BlobStorageErrorBlobNotFound);
+    XCTAssertNil([self.blobStorage blobFilePathWithCID:self.uploadedCID did:@"did:plc:invalid" error:&error]);
+    XCTAssertNotNil(error);
 }
 
 - (void)testBlobListingEmptyDID {
@@ -218,8 +250,8 @@
     NSArray *testDIDList = [self.blobStorage listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
     NSArray *otherDIDList = [self.blobStorage listBlobsForDID:otherDID limit:10 cursor:nil error:&error];
 
-    XCTAssertEqual(testDIDList.count, 1, @"Test DID should have 1 blob");
-    XCTAssertEqual(otherDIDList.count, 1, @"Other DID should have 1 blob");
+    XCTAssertEqual(testDIDList.count, 0, @"Temporary blobs should be hidden");
+    XCTAssertEqual(otherDIDList.count, 0, @"Temporary blobs should be hidden");
 }
 
 
@@ -292,7 +324,7 @@
     // So the test should verify the DATA is still there (because DID2 has it).
     
     NSData *remainingData = [self.blobStorage getBlobWithCID:cid1 did:did2 error:&error];
-    XCTAssertNotNil(remainingData, @"Data should persist because DID2 still references it");
+    XCTAssertNil(remainingData, @"Temporary blobs must remain inaccessible without a record reference");
     
     // Delete for DID2
     BOOL deleted2 = [self.blobStorage deleteBlobWithCID:cid2 did:did2 error:&error];
