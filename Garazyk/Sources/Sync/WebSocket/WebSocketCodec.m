@@ -36,6 +36,7 @@ static const uint8_t WS_MASK = 0x80;
 @property (nonatomic, strong) NSMutableData *readBuffer;
 @property (nonatomic, strong) NSMutableArray<NSData *> *fragments;
 @property (nonatomic, assign) uint8_t fragmentOpcode;
+@property (nonatomic, assign) uint64_t fragmentsTotalLength;
 @end
 
 @implementation WebSocketCodec
@@ -44,12 +45,39 @@ static const uint8_t WS_MASK = 0x80;
     self = [super init];
     if (self) {
         _maxFrameSize = 16 * 1024 * 1024; // 16MB default
+        _maxAggregateMessageSize = 16 * 1024 * 1024; // 16MB default
         _maskOutgoingFrames = NO;
         _readBuffer = [NSMutableData data];
         _fragments = [NSMutableArray array];
         _fragmentOpcode = 0;
+        _fragmentsTotalLength = 0;
     }
     return self;
+}
+
+- (BOOL)appendFragment:(NSData *)payload {
+    uint64_t newTotal = self.fragmentsTotalLength + (uint64_t)payload.length;
+    if (newTotal < self.fragmentsTotalLength || newTotal > self.maxAggregateMessageSize) {
+        return NO;
+    }
+    self.fragmentsTotalLength = newTotal;
+    [self.fragments addObject:payload];
+    return YES;
+}
+
+- (WSCodecEvent *)protocolErrorEventWithCloseCode:(NSInteger)closeCode closeReason:(NSString *)closeReason {
+    return [[WSCodecEvent alloc] initWithType:WSCodecEventProtocolError
+                                       payload:nil
+                                     closeCode:closeCode
+                                   closeReason:closeReason
+                                          text:nil];
+}
+
+- (void)resetConnectionState {
+    [self.readBuffer setLength:0];
+    [self.fragments removeAllObjects];
+    self.fragmentOpcode = 0;
+    self.fragmentsTotalLength = 0;
 }
 
 - (NSArray<WSCodecEvent *> *)feedData:(NSData *)data {
@@ -71,6 +99,18 @@ static const uint8_t WS_MASK = 0x80;
         uint64_t payloadLength = secondByte & 0x7F;
         NSUInteger extendedLengthOffset = 0;
 
+        BOOL isControlFrame = opcode >= WS_OPCODE_CLOSE;
+        if (isControlFrame && (!fin || payloadLength > 125)) {
+            // RFC 6455 §5.5: control frames are never fragmented and carry
+            // at most a 125-byte payload. A raw 7-bit length of 126/127 is
+            // the extended-length sentinel, which a control frame can never
+            // legitimately need.
+            [events addObject:[self protocolErrorEventWithCloseCode:1002
+                                                          closeReason:@"Control frame must not be fragmented or exceed 125 bytes"]];
+            [self resetConnectionState];
+            return events;
+        }
+
         if (payloadLength == 126) {
             if (self.readBuffer.length - offset < 4) break;
             payloadLength = (uint64_t)bytes[2] << 8 | bytes[3];
@@ -85,12 +125,9 @@ static const uint8_t WS_MASK = 0x80;
         }
 
         if (payloadLength > self.maxFrameSize) {
-            [events addObject:[[WSCodecEvent alloc] initWithType:WSCodecEventProtocolError
-                                                         payload:nil
-                                                       closeCode:1009
-                                                     closeReason:@"Frame too large"
-                                                            text:nil]];
-            [self.readBuffer setLength:0];
+            [events addObject:[self protocolErrorEventWithCloseCode:1009
+                                                          closeReason:@"Frame too large"]];
+            [self resetConnectionState];
             return events;
         }
 
@@ -130,7 +167,13 @@ static const uint8_t WS_MASK = 0x80;
             if (opcode != WS_OPCODE_CONTINUE) {
                 if (!fin) {
                     self.fragmentOpcode = opcode;
-                    [self.fragments addObject:payload];
+                    self.fragmentsTotalLength = 0;
+                    if (![self appendFragment:payload]) {
+                        [events addObject:[self protocolErrorEventWithCloseCode:1009
+                                                                      closeReason:@"Aggregate message size exceeds limit"]];
+                        [self resetConnectionState];
+                        return events;
+                    }
                 } else {
                     WSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
                     if (event) {
@@ -138,7 +181,12 @@ static const uint8_t WS_MASK = 0x80;
                     }
                 }
             } else {
-                [self.fragments addObject:payload];
+                if (![self appendFragment:payload]) {
+                    [events addObject:[self protocolErrorEventWithCloseCode:1009
+                                                                  closeReason:@"Aggregate message size exceeds limit"]];
+                    [self resetConnectionState];
+                    return events;
+                }
                 if (fin) {
                     // Reassemble
                     NSUInteger totalLength = 0;
@@ -155,6 +203,7 @@ static const uint8_t WS_MASK = 0x80;
                     }
                     [self.fragments removeAllObjects];
                     self.fragmentOpcode = 0;
+                    self.fragmentsTotalLength = 0;
                 }
             }
         }

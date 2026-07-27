@@ -59,6 +59,13 @@ typedef NS_ENUM(NSInteger, WSCodecEventType) {
 @property (nonatomic, assign) uint64_t maxFrameSize; // default 16MB
 
 /**
+ * Maximum accepted total size across all fragments of a single reassembled
+ * message (RFC 6455 §5.4). Enforced as fragments accumulate, not only when
+ * FIN arrives. Defaults to 16 MB.
+ */
+@property (nonatomic, assign) uint64_t maxAggregateMessageSize; // default 16MB
+
+/**
  * Whether outbound frames are masked. RFC 6455 requires masking for clients
  * and forbids it for servers.
  */
