@@ -783,3 +783,552 @@ Derived prompts live in `../prompts/`:
 
 - `phase-13-auth-json-typing.md` — slices 1-6, no architecture change.
 - `phase-14-wire-auth-cluster.md` — slice 7, `depends_on: [13]`.
+
+## S9. Blob lifecycle and storage-pool correctness
+
+**Status: not started (identified 2026-07-26).** A review of Repository,
+Database, and Blob found that the blob subsystem implements neither half of
+the published blob lifecycle, and that a complete usage-accounting design
+exists in the tree but was never installed. Separately, the actor-store pool
+returns silently partial results from its enumeration API and evicts stores
+out from under live callers.
+
+### The specification contract
+
+Two `atproto.com` pages define the lifecycle Garazyk is missing:
+
+- Uploaded blobs enter **temporary storage** and are "not accessible for
+  download or distribution while in this state", and are excluded from
+  `listBlobs`. They become publicly accessible only once a record referencing
+  them is successfully created.
+- Servers **should garbage collect un-referenced temporary blobs** after a
+  grace period — "at least one hour a firm lower bound", several hours
+  recommended, to tolerate apps that upload well before referencing.
+- On record deletion the server "checks if any other current records **from
+  the same repository** reference the blob. If not, the blob is deleted along
+  with the record." Account deletion removes all hosted blobs.
+- On limits, the spec recommends prioritising "limits on overall account
+  resource consumption" over per-blob size caps.
+
+This means the reclamation question is not a choice between a sweeper and
+reference counting: the spec requires **both** — an immediate per-repository
+reference check on record delete, and a time-based sweep for blobs that were
+uploaded but never referenced. Garazyk currently implements neither, and also
+lacks the temporary/referenced distinction the rest of the contract rests on.
+
+Sources: <https://atproto.com/specs/blob>,
+<https://atproto.com/guides/blob-lifecycle>.
+
+### Evidence
+
+Blob lifecycle:
+
+- `Blob/BlobStorage.m:130-132` leaves provider bytes behind when metadata
+  save fails, and `:266-268` deletes only metadata on
+  `deleteBlobWithCID:`. Both defer to a garbage collector in comments. No
+  collector exists: `Admin/Diagnostics/BlobAudit/PDSBlobReferenceScanOperation.m`
+  builds an `unreferencedBlobs` report and contains no delete or remove call,
+  and no other reclamation path exists in `Garazyk/Sources`.
+- The `blobs` table (`Database/Schema/PDSSchemaManager.m:512`,
+  `Database/Schema.m:108`) has no temporary/referenced state column, and there
+  is no record→blob join table. `getBlobWithCID:did:`
+  (`Blob/BlobStorage.m:146-162`) therefore serves any blob the provider holds,
+  so an uploaded-but-unreferenced blob is world-readable by CID — contrary to
+  the temporary-state rule above.
+- The same method's ownership check runs only `if (did)` and only
+  `if (store)`, then falls through to the provider regardless. A nil `did`
+  or a transient `storeForDid:` failure skips authorization and still serves
+  the bytes. `blobFilePathWithCID:did:` (`:195-210`) repeats it.
+- The two `blobs` schema definitions above disagree: `Schema.m` carries
+  `FOREIGN KEY (did) REFERENCES accounts(did)`, `PDSSchemaManager.m` does not.
+
+Usage accounting and quotas:
+
+- `Database/Schema.m:129-195` defines six complete, correct-looking SQLite
+  triggers (`trg_account_usage_blob_insert/delete`, `..._block_...`,
+  `..._record_...`) that maintain `account_usage` with upserts and clamped
+  decrements. **Every one of the eight `kPDSAccountUsage*` constants has zero
+  references outside `Database/Schema*`** — the triggers are never created on
+  any database, so `account_usage` is never written.
+- Consequently every consumer reads zeros: the soft-quota checks at
+  `Network/XrpcVendorPack.m:253-266` compare `blob_bytes`/`record_count`/
+  `repo_bytes` against `config.softQuota*` and can never fire;
+  `metrics incrementQuotaExceeded:` is unreachable; and the reporting paths
+  at `Services/PDS/PDSAccountService.m:585` and
+  `Network/XrpcAdminPack+AccountInfo.m:93` report zero usage for every
+  account. Nothing gates `uploadBlob` on quota at all.
+
+Storage pool:
+
+- `Database/Pool/DatabasePool.m:342-358` documents `knownDids` as a cache of
+  all DIDs and walks the filesystem "only when the set is empty", but `:170`
+  adds on store open and `:235` removes on eviction, so it tracks
+  currently-open stores. After a single `storeForDid:` call the set is
+  non-empty and incomplete, so `getAllReposWithError:`/`getAllAccountsWithError:`
+  silently return only that subset. Live via
+  `Core/Repositories/PDSSQLiteRepoRepository.m:55`.
+- `evictLRUStore` (`:202`) fires whenever `stores.count >= maxSize` (`:149`)
+  and closes a store other threads hold; `ActorStore.m:201` `close` is not
+  serialized on the store's own `transactionQueue`. This is not memory-unsafe
+  — `PDSDatabase close` serializes on `dbQueue` and every statement path
+  rechecks `isOpen`/`_db` (hardened in `b4d178c6`) — so the symptom is
+  spurious "database not open" failures under load.
+- Eviction runs on the serial `poolQueue` and calls `close`, which does
+  `dispatch_sync(dbQueue)`, so evicting a busy store stalls all pool traffic
+  for the length of the in-flight transaction. Any transaction block that
+  re-enters the pool would complete a `poolQueue → dbQueue → poolQueue` cycle;
+  no such caller exists today, so this is a landmine rather than a live bug.
+- `storeForDid:` holds `poolQueue` across two filesystem syscalls in
+  `dbPathForDid:` (`:128-131`) plus a full SQLite open and migration run, so
+  every cold-DID request serializes the pool.
+- `:72` schedules eviction with `NSTimer scheduledTimerWithTimeInterval:`,
+  which needs a live run loop on the constructing thread; off a run-loop
+  thread, time-based eviction silently never runs. `PDSReplayCache` already
+  uses a `dispatch_source_t` timer for the same job.
+
+Repository:
+
+- `Repository/MST.m` `nodeFromCBOR` silently `continue`s past malformed
+  entries (`:1027,1046,1052`) and clamps an over-long `p` prefix (`:1035`)
+  instead of rejecting, so malformed bytes decode to a different valid-looking
+  tree. It also infers node level from the first key's depth (`:1079-1082`,
+  the comment calls it an approximation), so a node whose entries were partly
+  skipped gets a wrong level and an empty node always gets level 0.
+- `Database/Migrations/PDSMigrationManager.m:1020-1087` passes `&errMsg` to
+  `sqlite3_exec` for BEGIN and COMMIT and never calls `sqlite3_free` in the
+  method, leaking the message on failure — it logs it at `:1054`, proving
+  allocation. Other methods in the file free correctly.
+
+### Decisions taken (2026-07-26)
+
+- **Reclamation follows the spec: both mechanisms.** Delete-on-last-reference
+  scoped per repository at record delete, plus a grace-period sweep for
+  never-referenced temporary blobs. The grace period is configurable with a
+  floor of one hour and a default of several hours.
+- **Per-account quota is configurable and enabled by default**, enforced at
+  upload and returning a quota-exceeded error. This matches the spec's
+  preference for account-wide resource limits over per-blob caps.
+- **The MST decoder rejects malformed nodes** rather than silently repairing
+  them, per the requirements of a canonical content-addressed format.
+
+### Slices
+
+Blob lifecycle (phase 15):
+
+1. **Model the lifecycle.** Add the referenced/temporary state and a
+   record→blob reference table, reconciling the two divergent `blobs` schemas
+   into one definition as part of the migration.
+2. **Install the usage triggers.** Create the six existing
+   `kPDSAccountUsage*` triggers during migration and backfill `account_usage`
+   for existing rows, so the already-wired soft-quota checks and reporting
+   endpoints stop reading zeros.
+3. **Enforce quota at upload** in `uploadBlob`, using the now-live counters.
+4. **Reference extraction on write and delete.** Extract blob references when
+   records are created and removed; on delete, drop the blob when no other
+   current record in the same repository references it.
+5. **Grace-period sweep** for temporary blobs, plus provider cleanup on the
+   metadata-save failure path at `BlobStorage.m:130`.
+6. **Serve only what is servable.** Restrict `getBlobWithCID:did:` and
+   `blobFilePathWithCID:did:` to referenced blobs, make the ownership check
+   fail closed on both nil `did` and store-lookup failure, and exclude
+   temporary blobs from `listBlobs`.
+
+Storage pool and decoder (phase 16):
+
+7. **Fix pool enumeration**: either make `knownDids` a real on-disk index or
+   drop the cache and always walk. Silent partial results are the defect;
+   pick whichever keeps `getAllRepos`/`getAllAccounts` complete.
+8. **Make eviction safe and non-blocking**: do not close stores that have
+   in-flight work, move `close` off `poolQueue`, and move SQLite open out of
+   the pool's critical section. Replace the `NSTimer` with a
+   `dispatch_source_t`.
+9. **Strict MST decode** per the decision above.
+10. **Low-severity cleanup**: the `sqlite3_free` leak, the
+    `performSelector:` bounce at `DatabasePool.m:22`, and the unsigned
+    `openFileHandleCount` decrement at `:236`.
+
+### Owner boundary
+
+Phase 15 owns `Garazyk/Sources/Blob/`, the `blobs`/`account_usage` schema and
+its migration, and the record write/delete call sites that must emit blob
+references. Phase 16 owns `Database/Pool/`, `Repository/MST.m` decode, and the
+named low-severity sites. Neither phase touches `Auth/`, which phases 13-14
+hold.
+
+### Gate
+
+Phase 15 is conformance-shaped, so the gate is behavioural: an uploaded blob
+is not retrievable and not listed until referenced; it becomes retrievable
+after the referencing record is created; it is deleted when the last
+referencing record in that repo is deleted but retained while another record
+still references it; a never-referenced blob survives inside the grace window
+and is swept after it; an upload past quota is rejected with a quota error and
+leaves no provider bytes; and a blob request with a nil `did` or a failing
+store lookup is denied rather than served.
+
+Phase 16's gate is a pool test that opens one store and then asserts
+`getAllRepos` returns every on-disk repo, an eviction test under
+`maxSize` pressure with concurrent readers, and MST decode rejection cases for
+malformed entries, over-long prefixes, and empty nodes. Migration round-trip
+(apply/rollback/re-apply) coverage is required for every schema change in both
+phases, per the O2 phase B lesson in workstream 07.
+
+New suites need registration in `Garazyk/Tests/test_main.m` plus a cmake
+reconfigure, then the mega-plan global gates with bounded `--parallel 4`.
+
+### Rollback
+
+Each slice is a single-commit revert. Slice 6 is the visible behaviour change
+— blobs that are currently readable become unreadable until referenced — so it
+lands last in phase 15 and after the backfill in slice 2, and should be
+verified against a real client upload flow before release. Schema changes
+carry apply/rollback/re-apply tests. Phase 16 slices are independent of each
+other and of phase 15.
+
+### Execution phases
+
+- `../prompts/phase-15-blob-lifecycle.md` — slices 1-6.
+- `../prompts/phase-16-storage-pool-and-decoder.md` — slices 7-10,
+  `depends_on: []`.
+
+## S10. WebSocket framing and outbound egress hardening
+
+**Status: not started (identified 2026-07-26).** A review of Network, Sync,
+and Federation found three unauthenticated, unbounded defects on the public
+ingress surface, and one class of bypass on the outbound side that renders the
+existing SSRF protection ineffective despite its classification logic being
+sound.
+
+The ingress defects share a shape: the WebSocket codec enforces per-frame
+limits but no aggregate limits, and validates frame contents but not frame
+*sequences*. The egress defect is a time-of-check/time-of-use gap: the SSRF
+verdict is computed against one DNS answer and the connection is made against
+another.
+
+### Evidence
+
+Outbound egress:
+
+- `Network/SSRFValidator.m` resolves the hostname and classifies every
+  returned address, but `Network/ATProtoSafeHTTPClient.m:262` then passes the
+  original URL string to `curl_easy_setopt(curl, CURLOPT_URL, ...)`. Neither
+  `CURLOPT_RESOLVE` nor `CURLOPT_CONNECT_TO` appears anywhere in the file, and
+  the `NSURLSession` implementation in the same file has the same structure.
+  curl therefore performs an independent second lookup. A short-TTL
+  attacker-controlled domain returns a public address to the validator and a
+  private one to the connection — the standard DNS-rebinding SSRF bypass,
+  against a component named `SafeHTTPClient`.
+- `SSRFValidator.m:44` catches `::1` by exact `memcmp` against
+  `in6addr_loopback`, so `::` (unspecified) classifies as public. NAT64
+  (`64:ff9b::/96`) and 6to4 (`2002::/16`) can encode a private IPv4
+  destination and are not decoded. The IPv4 side, by contrast, is
+  comprehensive — including `169.254.0.0/16`, the cloud metadata range.
+- `SSRFValidator.m:82` (`CFHostStartInfoResolution`) and `:164`
+  (`getaddrinfo`) are synchronous with no timeout, so a slow or hostile
+  authoritative server stalls the calling thread for the resolver's duration.
+- `ATProtoSafeHTTPClient.m:199-218` is indented as though it sits outside
+  `if (!isLoopback) {` at `:178`. Brace counting confirms it is inside, so
+  behavior is correct — but the indentation is actively misleading in a
+  security gate.
+
+WebSocket ingress (`Sync/WebSocket/WebSocketCodec.m`):
+
+- `:141` appends every continuation frame to `self.fragments` with no
+  aggregate cap; the total is only summed once FIN arrives (`:144-147`).
+  `maxFrameSize` bounds a single frame at 16 MB and **has no references
+  outside `WebSocketCodec.h`**, so it is never tuned. 1000 unterminated 16 MB
+  continuation frames is 16 GB of heap on a public, unauthenticated endpoint.
+- `:122` treats every opcode `>= 0x8` as an always-complete control frame,
+  enforcing neither RFC 6455 §5.5 limit (≤125 byte payload, never
+  fragmented). `Sync/WebSocket/WebSocketConnection.m:517-518` echoes ping
+  payloads verbatim via `sendPong:`, so a 16 MB ping yields a 16 MB pong —
+  an amplifier bounded only by connection count.
+- `:70` reads `masked` but never enforces it; RFC 6455 §5.1 requires failing
+  the connection on an unmasked client frame.
+- `:128-160` accepts invalid frame sequences: a new non-FIN data frame while a
+  fragmented message is in progress silently overwrites `fragmentOpcode` and
+  merges payloads; a stray CONTINUE with no start is accumulated then silently
+  dropped when `eventForOpcode:0` returns nil; reserved opcodes (0x3-0x7,
+  0xB-0xF) are ignored rather than failing the connection; RSV bits are never
+  checked.
+- `:101` adds `headerLength + payloadLength` without overflow guard. Currently
+  unreachable because `:87` rejects anything above the 16 MB default first,
+  but `maxFrameSize` is a public settable property.
+- `:167` calls `replaceBytesInRange:` on every `feedData:` call, memmoving the
+  residual buffer — quadratic cost for a stream of small frames arriving
+  across many reads.
+
+HTTP framing:
+
+- `Network/Http1Parser.m:110-115` reads `Content-Length` via
+  `CFHTTPMessageCopyHeaderFieldValue`, which joins repeated headers as
+  `"5, 10"`; `longLongValue` then parses `5` and stops at the comma. The
+  parser correctly rejects `Transfer-Encoding` together with `Content-Length`
+  (`:198-199`) but not two conflicting `Content-Length` headers, which
+  RFC 7230 §3.3.3 also requires rejecting. `longLongValue` additionally
+  accepts leading whitespace, a sign, and trailing garbage where the RFC wants
+  strict digits.
+- `Sync/Firehose/SubscribeReposHandler.m:134,137` parse
+  `PDS_FIREHOSE_MAX_PENDING_SENDS`/`_BYTES` with `integerValue` and do not
+  validate the result, so a typo silently yields 0.
+
+### Decisions taken (2026-07-26)
+
+- **The validated address is pinned into the connection.** `SSRFValidator`
+  returns the vetted address and the client connects to *that*, via
+  `CURLOPT_RESOLVE` and the `NSURLSession` equivalent, rather than
+  re-resolving. TLS SNI and the `Host` header must continue to carry the
+  original hostname.
+- **The WebSocket codec implements full RFC 6455 conformance**, failing the
+  connection on unmasked client frames, oversized or fragmented control
+  frames, reserved opcodes, set RSV bits, and invalid fragmentation
+  sequences — alongside the aggregate reassembly cap.
+
+### Slices
+
+Ingress (phase 17):
+
+1. **Aggregate reassembly cap** and control-frame limits (≤125 bytes, never
+   fragmented), plus a bound on echoed ping payloads.
+2. **Frame-sequence and header validation**: mask enforcement, reserved
+   opcodes, RSV bits, and the fragmentation state machine.
+3. **Overflow guard and buffer cost**: guard `:101` independently of
+   `maxFrameSize`, and replace the quadratic compaction at `:167` with a
+   read-offset buffer.
+4. **HTTP framing**: reject duplicate or conflicting `Content-Length`, and
+   parse it strictly. Validate the firehose env limits.
+
+Egress (phase 18):
+
+5. **Pin the resolved address** through both client implementations, keeping
+   SNI and `Host` on the original hostname.
+6. **Close the IPv6 gaps**: `::`, NAT64, and 6to4 decoding.
+7. **Bound DNS resolution** with a timeout so a hostile resolver cannot stall
+   a request thread.
+8. **Fix the misleading indentation** in `validateURL:` as part of touching
+   that function, so the security gate reads the way it behaves.
+
+### Owner boundary
+
+Phase 17 owns `Sync/WebSocket/` and `Network/Http1Parser.m` plus their tests;
+`SubscribeReposHandler` is a consumer and changes only where it reads env
+limits. Phase 18 owns `Network/SSRFValidator.m` and
+`Network/ATProtoSafeHTTPClient.m`. Neither touches `Auth/` (phases 13-14) or
+`Blob/`/`Database/Pool/` (phases 15-16).
+
+### Gate
+
+Phase 17 is a protocol-conformance gate, so it is negative-test shaped: an
+unmasked client frame, a 200-byte ping, a fragmented control frame, each
+reserved opcode, a set RSV bit, a CONTINUE with no start, a second non-FIN
+data frame mid-fragment, and a fragment sequence exceeding the aggregate cap
+must each close the connection with the correct RFC close code rather than
+being accepted or silently ignored. A 16 MB ping must not produce a 16 MB
+pong. Two conflicting `Content-Length` headers must yield 400. Existing
+firehose scenarios (33, 65, 66, 95) must still pass, since they exercise the
+same codec.
+
+Phase 18's gate is a rebinding test: a resolver that returns a public address
+on first lookup and a private one on second must fail the request, proving the
+pin holds. Plus classification cases for `::`, a NAT64-encoded private IPv4,
+and a 6to4-encoded private IPv4; and a slow-resolver case that times out
+rather than hanging.
+
+New suites need registration in `Garazyk/Tests/test_main.m` plus a cmake
+reconfigure, then the mega-plan global gates with bounded `--parallel 4`.
+
+### Rollback
+
+Each slice is a single-commit revert. Phase 17 slices 1-2 turn currently
+accepted frames into connection closes, so they carry real interop risk with
+non-conformant clients: if a real peer breaks, capture its exact frame bytes as
+a fixture and decide whether the peer or the codec is wrong before loosening
+anything. Phase 18 slice 5 changes how every outbound request connects — if a
+legitimate host fails, the likely cause is a multi-address or CDN host whose
+pinned address went stale, so verify against a round-robin DNS target before
+release.
+
+### Execution phases
+
+- `../prompts/phase-17-websocket-and-http-framing.md` — slices 1-4.
+- `../prompts/phase-18-egress-pinning.md` — slices 5-8, `depends_on: []`.
+
+## S11. Core decoder bounds, platform secret storage, and destructive CLI
+
+**Status: phase 19 (slices 1-3) complete 2026-07-27; phase 20 (slices 4-7)
+in progress.** A review of Core, Compat, and
+CLI found two width-related defects in the DAG-CBOR decoder reachable from
+every untrusted-input path, a platform shim that silently provides far weaker
+guarantees than the API it emulates, and a destructive CLI command that
+under-deletes while reporting complete success.
+
+The Core defects are notable for what they are *not*: the decoder already has
+a depth limit and a correct varint reader. The gaps are **widths**, not
+depths — 64-bit lengths and counts taken from attacker-controlled headers and
+used before validation.
+
+### Evidence
+
+Core decoders:
+
+- `Core/ATProtoDagCBOR.m:585` bounds a byte string with
+  `*index + len > length`, where `*index` is `NSUInteger` and `len` is a
+  64-bit value read from the CBOR header. The sum wraps. Verified with a
+  harness replicating the expression: `index=9`, `len=2^64-5` sums to `4`, the
+  check returns false, and `[NSData dataWithBytes:bytes + 9 length:2^64-5]`
+  executes. Nine bytes of input (`5B FF FF FF FF FF FF FF FB`) reach that
+  call. The decoder is entered from CAR import, PLC operations, STAR,
+  `RepoCommit`, and XRPC handlers.
+- `:617` and `:640` pass an unvalidated 64-bit `count` straight to
+  `arrayWithCapacity:`/`dictionaryWithCapacity:` before anything checks the
+  remaining input could hold that many items — each item needs at least one
+  byte, so the bound is available and unused. On the Linux build this matters
+  most, since GNUstep's `initWithCapacity:` allocates a backing buffer.
+- `:577` computes `-(int64_t)(value + 1)`; at `2^64-1` the increment wraps to
+  0 and the integer silently decodes as `0`, and above `2^63-1` the cast is
+  undefined. DAG-CBOR restricts integers to the int64 range, so these are
+  rejections, not wrap-arounds, in a content-addressed format.
+- `Core/Base58.m:76-83` indexes `string.UTF8String` (bytes) with
+  `string.length` (UTF-16 units). Safe only because the `chars[i] & 0x80`
+  guard rejects every multi-byte input before the indices diverge — correct by
+  accident. `calloc` results are unchecked at `:35` and `:93`.
+- `Core/CID.m:343` and `Base58.m:61,64` emit one character per
+  `appendFormat:@"%c"`, parsing a format string per character.
+  `CID.stringValue` runs for every block touched by MST, CAR, and block
+  storage.
+
+Platform shim:
+
+- `Compat/PlatformShims/Security/SecItemLinuxStore.m` persists secrets as
+  plaintext property-list blobs in SQLite, protected only by directory `0700`
+  (`:64`) and file `0600` (`:74`). On Apple the same `SecItem` API is
+  hardware-backed and encrypted at rest. Callers cannot see which guarantee
+  they get; the difference is silent and per-platform. Any process running as
+  the same user, and every backup or disk image, reads them directly.
+
+CLI:
+
+- `CLI/PDSCLINukeCommand.m:92-98` deletes a hardcoded list — `di`, `blobs`,
+  `service`, `sequencer`, `did_cache`. Per-account databases are not in it.
+  `App/PDSApplication.m:333` roots the user pool at the data directory itself,
+  and `Database/Pool/DatabasePool.m:93-134` shards actor stores to
+  `{dataDir}/{method}/{prefix}/{did}` — so they live under `plc/`, `web/`, or
+  `key/`, in files named `did:plc:...` with no extension, two levels down.
+  `di` matches nothing. The fallback loop at `:121-143` is non-recursive and
+  matches only `.db`, `.sqlite`, `-shm`, `-wal`, and `-journal` suffixes, so
+  it misses them too. The command then prints
+  `✅ All data has been nuked. You can now start fresh.` Blobs, service,
+  sequencer, and did_cache **are** removed correctly, which makes the result
+  worse than a clean failure: the service database is gone while every account
+  database survives.
+- `CLI/PDSCLIAccountCommand.m:225` and `CLI/PDSCLIAdminCommand.m:150` accept
+  `--password` on the command line, and the help text at
+  `PDSCLIAccountCommand.m:55` and `PDSCLIAdminCommand.m:42` demonstrates it
+  (`--password secret`). Arguments are visible in `ps`, shell history, and
+  process accounting. A correct interactive prompt already exists.
+- `CLI/PDSCLIInputHelper.m:56-65` disables terminal echo and restores it on
+  both the success and EOF paths, but not on signal, so `Ctrl-C` mid-prompt
+  leaves the terminal with echo off. The password buffer at `:62` is not
+  cleared after use.
+
+### Decisions taken (2026-07-26)
+
+- **Linux secrets are encrypted at rest with an operator-supplied key**,
+  derived from an environment variable or key file at startup. The key's
+  location becomes an explicit, documented operator responsibility rather than
+  an implicit gap. OS-keyring integration was considered and rejected for its
+  runtime dependency in minimal containers.
+
+### Slices
+
+Core decoders (phase 19) — complete, commits on `phase-19-20`:
+
+1. **Fix the width defects in `ATProtoDagCBOR`**: compare against remaining
+   bytes rather than summing (`:585`), clamp the collection capacity hint to
+   what the remaining input can encode (`:617`, `:640`), and reject
+   out-of-int64-range integers instead of wrapping (`:577`). Commit
+   `2f21358e`.
+2. **Harden `Base58`**: index the UTF-8 buffer with its own byte length, and
+   check `calloc`. Commit `727370e9`.
+3. **Replace per-character `appendFormat:`** in the base32 and base58
+   encoders with direct buffer construction. Commit `cd6530b2`. Verified
+   behaviour-neutral against Base58Tests, ATProtoCIDTests, and the
+   MST/CAR/STAR/Interop fixture suites (164 tests, 0 failures).
+
+Platform and CLI (phase 20):
+
+4. **Encrypt the Linux secret store at rest** with an operator-supplied key,
+   including a migration path for existing plaintext stores and a startup
+   failure when the key is absent but a store exists.
+5. **Make `nuke-data` actually delete what it claims**: enumerate the shard
+   layout the pool writes, delete recursively, and — critically — report
+   honestly. It must not print success when items remain.
+6. **Remove `--password` from the documented path.** Keep an automation-safe
+   input (stdin, environment, or file) and stop demonstrating argv passwords
+   in help text.
+7. **Restore terminal echo on signal** and clear the password buffer after
+   use.
+
+### Owner boundary
+
+Phase 19 owns `Core/ATProtoDagCBOR.m`, `Core/Base58.m`, and the encoder in
+`Core/CID.m`, plus their tests. Phase 20 owns
+`Compat/PlatformShims/Security/SecItemLinuxStore.m` and `Garazyk/Sources/CLI/`.
+Neither touches `Auth/`, `Blob/`, `Database/Pool/`, `Sync/`, or `Network/`,
+which phases 13-18 hold.
+
+### Gate
+
+Phase 19 is decoder-fuzzing shaped. Required cases: the 9-byte overflow input
+above must be rejected, not read; a declared collection count exceeding the
+remaining bytes must be rejected without a large allocation; integers outside
+the int64 range must be rejected rather than wrapped; and Base58 must reject
+non-ASCII without relying on index coincidence. Existing golden CAR/STAR
+fixtures must stay byte-identical — this phase must not change any valid
+encoding. The `fuzzing/` corpus should gain the overflow input as a permanent
+regression seed.
+
+**Phase 19 gate result (2026-07-27):** all required rejection cases pass
+(`ATProtoDagCBORTests`, `ATProtoDagCBOREdgeCaseTests`, `Base58Tests`); the
+9-byte overflow input is checked into
+`Garazyk/Tests/fixtures/cbor/cbor_bytestring_length_overflow.bin` as the
+permanent regression seed (`fuzzing/corpus/` itself is CI-cache-only and
+gitignored, so it cannot hold a durable seed). Golden CAR/STAR/MST/Interop
+fixtures verified byte-identical (164 tests, 0 failures). `deno task check`
+and `deno task test` pass; `deno task lint` has 6 pre-existing failures in
+`packages/gruszka/scripts/generate_test.ts` (unused vars), reproduced on
+unmodified `main` — unrelated to this phase and left untouched. The full
+`AllTests` binary has 18 pre-existing failures in `Network/AdminAuthSyncTests.m`
+(`applyWrites` returning 400) that reproduce identically with this phase's
+`Core/` changes reverted (confirmed via `git stash`) — outside this phase's
+owner boundary (`Network/`, not `Core/`) and not caused by it.
+
+Phase 20's gate is behavioural: a secret written before the change is readable
+after migration; startup fails loudly when a store exists and no key is
+supplied; `nuke-data` on a populated data directory leaves **zero** account
+databases and reports accurately when it cannot delete something; and no
+command path accepts a password in a way that lands in `ps` output without an
+explicit warning.
+
+New suites need registration in `Garazyk/Tests/test_main.m` plus a cmake
+reconfigure, then the mega-plan global gates with bounded `--parallel 4`. Run
+the Linux Docker gate for phase 20 — `SecItemLinuxStore` compiles only on the
+non-Apple branch.
+
+### Rollback
+
+Phase 19 slices are independent single-commit reverts; slice 1 only rejects
+inputs that currently crash or over-allocate, so interop risk is minimal —
+if a real CAR fails to import afterwards, that CAR was malformed and should be
+captured as a fixture. Phase 20 slice 4 changes the on-disk secret format and
+is the one that needs care: ship the migration and a verified round-trip
+before deleting any plaintext-reading path, and keep the reader able to
+consume the old format for at least one release. Slice 5 makes a destructive
+command more destructive — gate it behind the existing `--confirm` and test
+against a scratch data directory, never a real one.
+
+### Execution phases
+
+- `../prompts/phase-19-core-decoder-bounds.md` — slices 1-3.
+- `../prompts/phase-20-secret-store-and-cli.md` — slices 4-7,
+  `depends_on: []`.
