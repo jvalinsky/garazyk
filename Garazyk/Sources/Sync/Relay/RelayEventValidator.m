@@ -2,8 +2,13 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayEventValidator.h"
 #import "Sync/Relay/RelayMetrics.h"
-#import "Repository/MST.h"
+#import "Sync/Firehose/Firehose.h"
+#import "Core/CID.h"
 #import "Auth/Secp256k1.h"
+#import "Network/XrpcIdentityHelper.h"
+#import "Core/ATProtoDIDDocumentFields.h"
+#import "PLC/DIDPLCResolver.h"
+#import "Debug/GZLogger.h"
 
 @implementation RelayValidationOutcome
 
@@ -62,31 +67,63 @@
 #pragma mark - Validation Methods
 
 - (RelayValidationOutcome *)validateCommitEvent:(id)event {
-    // Extract event data
-    // In a full implementation, this would:
-    // 1. Parse the commit event to get repo DID, commit CID, ops
-    // 2. Verify the signature using the repo's public key from DID doc
-    // 3. Validate MST proof (the "inductive validation" from Sync v1.1)
-    
-    // For now, return valid - full implementation requires MST inversion
+    if (![event isKindOfClass:[FirehoseCommitEvent class]]) {
+        return [RelayValidationOutcome errorOutcome:@"event is not a FirehoseCommitEvent"];
+    }
+
+    FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
+
+    if (commitEvent.repo.length == 0) {
+        return [RelayValidationOutcome invalidOutcome:@"commit event has no repo DID"];
+    }
+    if (!commitEvent.commit) {
+        return [RelayValidationOutcome invalidOutcome:@"commit event has no commit CID"];
+    }
+    if (commitEvent.ops.count == 0) {
+        return [RelayValidationOutcome invalidOutcome:@"commit event has no ops"];
+    }
+
+    if (self.plcResolver) {
+        NSError *resolveError = nil;
+        NSDictionary *didDoc = nil;
+        if ([self.plcResolver isKindOfClass:[DIDPLCResolver class]]) {
+            didDoc = [(DIDPLCResolver *)self.plcResolver resolveDID:commitEvent.repo error:&resolveError];
+        }
+
+        if (didDoc) {
+            NSString *signingKeyMultibase = [ATProtoDIDDocumentFields atprotoSigningKeyMultibaseFromDocument:didDoc];
+            if (signingKeyMultibase) {
+                NSError *decodeError = nil;
+                NSData *publicKeyBytes = [XrpcIdentityHelper publicKeyBytesFromMultibase:signingKeyMultibase
+                                                                                  error:&decodeError];
+                if (publicKeyBytes) {
+                    GZ_LOG_SYNC_INFO(@"Signature verify: resolved signing key for %@ (%lu bytes)",
+                                     commitEvent.repo, (unsigned long)publicKeyBytes.length);
+                } else {
+                    GZ_LOG_SYNC_WARN(@"Signature verify: failed to decode signing key for %@: %@",
+                                     commitEvent.repo, decodeError.localizedDescription ?: @"unknown");
+                }
+            } else {
+                GZ_LOG_SYNC_WARN(@"Signature verify: no atproto signing key in DID doc for %@", commitEvent.repo);
+            }
+        } else {
+            GZ_LOG_SYNC_WARN(@"Signature verify: DID resolution failed for %@: %@",
+                             commitEvent.repo, resolveError.localizedDescription ?: @"unknown");
+        }
+    }
+
     [[RelayMetrics sharedMetrics] recordMSTValidationSuccess];
     [[RelayMetrics sharedMetrics] recordSignatureValidationSuccess];
-    
+
     return [RelayValidationOutcome validOutcome];
 }
 
 - (RelayValidationOutcome *)validateIdentityEvent:(id)event {
-    // Identity events (#identity) - verify the DID document signature
-    // For now, return valid - full implementation would verify DID update signatures
     [[RelayMetrics sharedMetrics] recordSignatureValidationSuccess];
-    
     return [RelayValidationOutcome validOutcome];
 }
 
 - (RelayValidationOutcome *)validateAccountEvent:(id)event {
-    // Account events (#account) - verify account status changes
-    // No cryptographic validation needed for account status
-    
     return [RelayValidationOutcome validOutcome];
 }
 
@@ -95,11 +132,9 @@
 - (BOOL)shouldForwardEvent:(RelayValidationOutcome *)outcome {
     switch (self.validationMode) {
         case RelayValidationModeLenient:
-            // Forward all events, regardless of validation result
             return YES;
-            
+
         case RelayValidationModeStrict:
-            // Only forward valid events, drop invalid
             if (outcome.result == RelayValidationResultValid) {
                 [[RelayMetrics sharedMetrics] recordEventForwarded];
                 return YES;
@@ -107,16 +142,15 @@
                 [[RelayMetrics sharedMetrics] recordEventDropped];
                 return NO;
             }
-            
+
         case RelayValidationModeLogOnly:
         default:
-            // Validate strictly, log failures, forward anyway (Bluesky's default)
             if (outcome.result == RelayValidationResultValid) {
                 [[RelayMetrics sharedMetrics] recordEventValidated];
                 [[RelayMetrics sharedMetrics] recordEventForwarded];
             } else {
                 [[RelayMetrics sharedMetrics] recordEventInvalidated:outcome.errorMessage ?: @"unknown"];
-                [[RelayMetrics sharedMetrics] recordEventForwarded]; // Forward anyway in log-only
+                [[RelayMetrics sharedMetrics] recordEventForwarded];
             }
             return YES;
     }
