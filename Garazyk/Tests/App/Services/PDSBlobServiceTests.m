@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Services/PDS/PDSBlobService.h"
+#import "Services/PDS/PDSRecordService.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
+#import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Schema.h"
 #import "Core/CID.h"
@@ -14,6 +16,7 @@
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
 @property (nonatomic, strong) BlobStorage *blobStorage;
 @property (nonatomic, strong) PDSBlobService *blobService;
+@property (nonatomic, strong) PDSRecordService *recordService;
 @property (nonatomic, strong) NSData *testData;
 @property (nonatomic, copy) NSString *testDID;
 @end
@@ -36,10 +39,36 @@
     self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.databasePool provider:provider];
     
     self.blobService = [[PDSBlobService alloc] initWithDatabasePool:self.databasePool storage:self.blobStorage];
+    self.recordService = [[PDSRecordService alloc] initWithDatabasePool:self.databasePool];
     
     NSString *testString = @"Hello, Blob Service World!";
     self.testData = [testString dataUsingEncoding:NSUTF8StringEncoding];
     self.testDID = @"did:web:test.blob-service.example.com";
+}
+
+- (void)referenceBlobWithCIDString:(NSString *)cidString did:(NSString *)did {
+    NSError *error = nil;
+    uint8_t privateKey[32] = {0};
+    memset(privateKey, 1, sizeof(privateKey));
+    PDSActorStore *store = [self.databasePool storeForDid:did error:&error];
+    XCTAssertNotNil(store, @"%@", error);
+    XCTAssertTrue([store importSigningKey:[NSData dataWithBytes:privateKey length:sizeof(privateKey)] error:&error], @"%@", error);
+
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"references an uploaded blob",
+        @"embed": @{
+            @"$type": @"blob",
+            @"ref": @{ @"$link": cidString }
+        }
+    };
+    BOOL stored = [self.recordService putRecord:@"app.bsky.feed.post"
+                                           rkey:[[NSUUID UUID] UUIDString]
+                                          value:value
+                                         forDid:did
+                                 validationMode:PDSValidationModeOff
+                                          error:&error];
+    XCTAssertTrue(stored, @"%@", error);
 }
 
 - (void)tearDown {
@@ -95,7 +124,7 @@
     }
 }
 
-- (void)testGetBlobWithCID {
+- (void)testTemporaryBlobWithCIDIsNotReadable {
     NSError *error = nil;
     NSDictionary *uploadResult = [self.blobService uploadBlob:self.testData
                                                       forDid:self.testDID
@@ -109,7 +138,26 @@
     NSDictionary *getResult = [self.blobService getBlobWithCID:cidString
                                                          did:self.testDID
                                                       error:&error];
-    XCTAssertNotNil(getResult);
+    XCTAssertNil(getResult);
+    XCTAssertNotNil(error);
+}
+
+- (void)testReferencedBlobWithCIDIsReadable {
+    NSError *error = nil;
+    NSDictionary *uploadResult = [self.blobService uploadBlob:self.testData
+                                                      forDid:self.testDID
+                                                     mimeType:@"text/plain"
+                                                       error:&error];
+    XCTAssertNotNil(uploadResult, @"%@", error);
+
+    NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
+    [self referenceBlobWithCIDString:cidString did:self.testDID];
+
+    error = nil;
+    NSDictionary *getResult = [self.blobService getBlobWithCID:cidString
+                                                            did:self.testDID
+                                                         error:&error];
+    XCTAssertNotNil(getResult, @"%@", error);
     XCTAssertNil(error);
     
     NSData *retrievedData = getResult[@"blob"];
@@ -145,6 +193,7 @@
                                                      mimeType:@"text/plain"
                                                        error:&error];
     NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
+    [self referenceBlobWithCIDString:cidString did:self.testDID];
     
     NSDictionary *getResult = [self.blobService getBlobWithCID:cidString
                                                          did:@"did:web:wrong.example.com"
@@ -152,18 +201,14 @@
     XCTAssertNil(getResult);
 }
 
-- (void)testListBlobsForDID {
+- (void)testTemporaryBlobIsExcludedFromList {
     NSError *error = nil;
     [self.blobService uploadBlob:self.testData forDid:self.testDID mimeType:@"text/plain" error:&error];
     
     NSArray *blobs = [self.blobService listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
     
     XCTAssertNotNil(blobs);
-    XCTAssertEqual(blobs.count, 1);
-    
-    NSDictionary *blobInfo = blobs.firstObject;
-    XCTAssertNotNil(blobInfo[@"cid"]);
-    XCTAssertEqualObjects(blobInfo[@"mimeType"], @"text/plain");
+    XCTAssertEqual(blobs.count, 0);
 }
 
 - (void)testListBlobsEmptyDID {
@@ -178,7 +223,8 @@
     NSError *error = nil;
     for (int i = 0; i < 5; i++) {
         NSData *data = [[NSString stringWithFormat:@"blob %d", i] dataUsingEncoding:NSUTF8StringEncoding];
-        [self.blobService uploadBlob:data forDid:self.testDID mimeType:@"text/plain" error:&error];
+        NSDictionary *result = [self.blobService uploadBlob:data forDid:self.testDID mimeType:@"text/plain" error:&error];
+        [self referenceBlobWithCIDString:result[@"blob"][@"ref"][@"$link"] did:self.testDID];
     }
     
     NSArray *allBlobs = [self.blobService listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
@@ -193,10 +239,11 @@
     for (int i = 0; i < 3; i++) {
         NSData *data = [[NSString stringWithFormat:@"cursor blob %d", i]
             dataUsingEncoding:NSUTF8StringEncoding];
-        [self.blobService uploadBlob:data
-                             forDid:self.testDID
-                           mimeType:@"text/plain"
-                              error:&error];
+        NSDictionary *result = [self.blobService uploadBlob:data
+                                                       forDid:self.testDID
+                                                     mimeType:@"text/plain"
+                                                        error:&error];
+        [self referenceBlobWithCIDString:result[@"blob"][@"ref"][@"$link"] did:self.testDID];
         XCTAssertNil(error);
     }
 
@@ -260,6 +307,7 @@
     XCTAssertNotNil(uploadResult);
     NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
     XCTAssertNotNil(cidString);
+    [self referenceBlobWithCIDString:cidString did:self.testDID];
     
     [self.blobService deleteBlobWithCID:cidString did:self.testDID error:&error];
     XCTAssertNil(error);
@@ -278,6 +326,7 @@
         NSData *data = [[NSString stringWithFormat:@"data %d", i] dataUsingEncoding:NSUTF8StringEncoding];
         NSDictionary *result = [self.blobService uploadBlob:data forDid:self.testDID mimeType:@"text/plain" error:&error];
         [cidStrings addObject:result[@"blob"][@"ref"][@"$link"]];
+        [self referenceBlobWithCIDString:result[@"blob"][@"ref"][@"$link"] did:self.testDID];
     }
     
     NSArray *blobs = [self.blobService listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
@@ -303,8 +352,10 @@
     NSData *data1 = [@"data for user 1" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *data2 = [@"data for user 2" dataUsingEncoding:NSUTF8StringEncoding];
     
-    [self.blobService uploadBlob:data1 forDid:did1 mimeType:@"text/plain" error:&error];
-    [self.blobService uploadBlob:data2 forDid:did2 mimeType:@"text/plain" error:&error];
+    NSDictionary *result1 = [self.blobService uploadBlob:data1 forDid:did1 mimeType:@"text/plain" error:&error];
+    NSDictionary *result2 = [self.blobService uploadBlob:data2 forDid:did2 mimeType:@"text/plain" error:&error];
+    [self referenceBlobWithCIDString:result1[@"blob"][@"ref"][@"$link"] did:did1];
+    [self referenceBlobWithCIDString:result2[@"blob"][@"ref"][@"$link"] did:did2];
     
     NSArray *did1Blobs = [self.blobService listBlobsForDID:did1 limit:10 cursor:nil error:&error];
     NSArray *did2Blobs = [self.blobService listBlobsForDID:did2 limit:10 cursor:nil error:&error];
@@ -341,6 +392,7 @@
     XCTAssertNotNil(uploadResult);
     NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
     XCTAssertNotNil(cidString);
+    [self referenceBlobWithCIDString:cidString did:self.testDID];
 
     // Convert CID string to raw bytes
     CID *cid = [CID cidFromString:cidString];
@@ -370,15 +422,14 @@
                                                        error:&error];
     XCTAssertNotNil(uploadResult);
     NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
+    [self referenceBlobWithCIDString:cidString did:self.testDID];
 
     error = nil;
     NSDictionary *streamResult = [self.blobService getBlobStreamWithCID:cidString
                                                                     did:self.testDID
                                                                   error:&error];
-    // Stream may return nil if file-backed streaming isn't available in test env
-    if (streamResult) {
-        XCTAssertNotNil(streamResult[@"mimeType"]);
-    }
+    XCTAssertNotNil(streamResult, @"%@", error);
+    XCTAssertNotNil(streamResult[@"mimeType"]);
 }
 
 - (void)testGetBlobStreamInvalidCIDReturnsNil {

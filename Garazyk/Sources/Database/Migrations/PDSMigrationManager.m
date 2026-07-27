@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSMigrationManager.h"
+#import "Database/Schema.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
@@ -8,6 +9,7 @@
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Database/Utils/ATProtoDatabaseUtilities.h"
+#import "Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.h"
 #import <sqlite3.h>
 
 // Suppress -Wobjc-string-concatenation: multi-line SQL string literals
@@ -482,7 +484,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     } else {
         tablesToDrop = @[
             @"repo_root", @"records", @"ipld_blocks", @"record_tombstones",
-            @"blobs", @"rotation_keys", @"signing_keys"
+            @"blobs", @"blob_refs", @"rotation_keys", @"signing_keys"
         ];
     }
 
@@ -591,126 +593,467 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
-#pragma mark - V7 Actor Store Blob Lifecycle (Actor Store)
+#pragma mark - V6 Blob Lifecycle Schema Migration (Actor Store)
 
-@interface V7ActorStoreBlobLifecycle : NSObject <PDSMigration>
+@interface V6BlobLifecycleSchema : NSObject <PDSMigration>
 @end
 
-@implementation V7ActorStoreBlobLifecycle
+@implementation V6BlobLifecycleSchema
 
-- (NSInteger)version { return 7; }
+- (NSInteger)version { return 6; }
+- (NSString *)name { return @"blob_lifecycle_schema"; }
 
-- (NSString *)name { return @"actor_store_blob_lifecycle"; }
+// Not every database this migration manager runs against carries the full
+// actor-store schema: partially-bootstrapped and purpose-built test databases
+// can reach it without a `blobs` (or `records`) table. Rebuilding
+// unconditionally would fail the migration and leave the store unopenable, so
+// each step is gated on the tables it actually needs.
+static BOOL PDSMigrationTableExists(sqlite3 *db, const char *tableName) {
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", -1, &stmt, NULL) != SQLITE_OK) {
+        return NO;
+    }
+    sqlite3_bind_text(stmt, 1, tableName, -1, SQLITE_STATIC);
+    BOOL exists = (sqlite3_step(stmt) == SQLITE_ROW);
+    sqlite3_finalize(stmt);
+    return exists;
+}
 
 - (BOOL)up:(sqlite3 *)db error:(NSError **)error {
-    // Check if blobs table exists — some databases (e.g. service DB, test
-    // databases without blob support) don't have one.
-    BOOL hasBlobsTable = NO;
-    {
-        const char *check = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='blobs'";
-        sqlite3_stmt *stmt = NULL;
-        if (sqlite3_prepare_v2(db, check, -1, &stmt, NULL) == SQLITE_OK) {
-            hasBlobsTable = (sqlite3_step(stmt) == SQLITE_ROW);
-            sqlite3_finalize(stmt);
-        }
+    NSMutableArray<NSString *> *statements = [NSMutableArray array];
+
+    // Rebuild blobs with a lifecycle state column (temporary until a
+    // record references it). Existing rows default to 'temporary'; the
+    // backfill pass below promotes any blob a current record actually
+    // references to 'referenced'.
+    if (PDSMigrationTableExists(db, "blobs")) {
+        [statements addObjectsFromArray:@[
+            @"CREATE TABLE blobs_new ("
+            @"cid BLOB PRIMARY KEY,"
+            @"did TEXT NOT NULL,"
+            @"mimeType TEXT,"
+            @"size INTEGER NOT NULL,"
+            @"created_at DATETIME NOT NULL,"
+            @"state TEXT NOT NULL DEFAULT 'temporary')",
+
+            @"INSERT INTO blobs_new (cid, did, mimeType, size, created_at, state) "
+            @"SELECT cid, did, mimeType, size, created_at, 'temporary' FROM blobs",
+
+            @"DROP TABLE blobs",
+            @"ALTER TABLE blobs_new RENAME TO blobs",
+        ]];
+    } else {
+        // No pre-existing table to preserve: create the target shape directly.
+        [statements addObject:
+            @"CREATE TABLE IF NOT EXISTS blobs ("
+            @"cid BLOB PRIMARY KEY,"
+            @"did TEXT NOT NULL,"
+            @"mimeType TEXT,"
+            @"size INTEGER NOT NULL,"
+            @"created_at DATETIME NOT NULL,"
+            @"state TEXT NOT NULL DEFAULT 'temporary')"];
     }
 
-    // Step 1: Add status column to blobs (only if table exists)
-    if (hasBlobsTable) {
+    [statements addObjectsFromArray:@[
+        @"CREATE INDEX IF NOT EXISTS idx_blobs_did ON blobs(did)",
+        @"CREATE INDEX IF NOT EXISTS idx_blobs_cid ON blobs(cid)",
+        @"CREATE INDEX IF NOT EXISTS idx_blobs_state ON blobs(state)",
+
+        @"CREATE TABLE IF NOT EXISTS blob_refs ("
+        @"record_uri TEXT NOT NULL,"
+        @"blob_cid BLOB NOT NULL,"
+        @"did TEXT NOT NULL,"
+        @"created_at DATETIME NOT NULL,"
+        @"PRIMARY KEY (record_uri, blob_cid),"
+        @"FOREIGN KEY (blob_cid) REFERENCES blobs(cid)) WITHOUT ROWID",
+        @"CREATE INDEX IF NOT EXISTS idx_blob_refs_blob_cid ON blob_refs(blob_cid)",
+        @"CREATE INDEX IF NOT EXISTS idx_blob_refs_record_uri ON blob_refs(record_uri)",
+    ]];
+
+    for (NSUInteger i = 0; i < statements.count; i++) {
         char *errMsg = NULL;
-        int rc = sqlite3_exec(db,
-            "ALTER TABLE blobs ADD COLUMN status TEXT NOT NULL DEFAULT 'temporary'",
-            NULL, NULL, &errMsg);
-        if (rc != SQLITE_OK) {
-            // "duplicate column" means already applied — treat as success.
-            BOOL alreadyApplied = errMsg && strstr(errMsg, "duplicate column") != NULL;
-            if (!alreadyApplied) {
-                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
-                if (errMsg) sqlite3_free(errMsg);
-                if (error) {
-                    *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                                 code:PDSMigrationErrorMigrationFailed
-                                             userInfo:@{NSLocalizedDescriptionKey:
-                                                            [NSString stringWithFormat:@"V7 add status column: %@", msg]}];
-                }
-                return NO;
+        if (sqlite3_exec(db, statements[i].UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V6 up failed (statement %lu): %@", (unsigned long)i, message]}];
             }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
         }
-        if (errMsg) sqlite3_free(errMsg);
-
-        // Step 2: Mark all existing blobs as referenced
-        sqlite3_exec(db,
-            "UPDATE blobs SET status = 'referenced' WHERE status = 'temporary'",
-            NULL, NULL, NULL);
     }
 
-    // Step 3: Create blob_refs table (safe even if blobs table missing)
-    {
-        char *errMsg = NULL;
-        int rc = sqlite3_exec(db,
-            "CREATE TABLE IF NOT EXISTS blob_refs ("
-            "    record_uri TEXT NOT NULL,"
-            "    blob_cid BLOB NOT NULL,"
-            "    did TEXT NOT NULL,"
-            "    created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
-            "    PRIMARY KEY (record_uri, blob_cid)"
-            ")",
-            NULL, NULL, &errMsg);
-        if (rc != SQLITE_OK) {
-            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
-            if (errMsg) sqlite3_free(errMsg);
+    // The backfill scans `records`; with no such table there is nothing to
+    // promote and the migration is already complete.
+    if (!PDSMigrationTableExists(db, "records")) {
+        return YES;
+    }
+
+    return [self backfillBlobRefsAndStateInDatabase:db error:error];
+}
+
+// Scans every current record's JSON value for blob CID references, reusing
+// the same extraction PDSBlobReferenceScanOperation already uses
+// (PDSBlobAuditBlobReferenceCIDsFromJSONObject), so a blob already
+// referenced by an existing record is marked 'referenced' at migration time
+// rather than left 'temporary' (and therefore wrongly eligible for the
+// slice-5 grace-period sweep).
+- (BOOL)backfillBlobRefsAndStateInDatabase:(sqlite3 *)db error:(NSError **)error {
+    sqlite3_stmt *selectStmt = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT uri, did, value FROM records WHERE value IS NOT NULL", -1, &selectStmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V6 up failed: could not prepare records scan"}];
+        }
+        return NO;
+    }
+
+    NSMutableArray<NSArray<NSString *> *> *refRows = [NSMutableArray array]; // [uri, did, cidString]
+    int selectResult = SQLITE_OK;
+    while ((selectResult = sqlite3_step(selectStmt)) == SQLITE_ROW) {
+        const unsigned char *uriText = sqlite3_column_text(selectStmt, 0);
+        const unsigned char *didText = sqlite3_column_text(selectStmt, 1);
+        if (!uriText || !didText) continue;
+        NSString *uri = [NSString stringWithUTF8String:(const char *)uriText];
+        NSString *did = [NSString stringWithUTF8String:(const char *)didText];
+
+        const void *valueBytes = sqlite3_column_blob(selectStmt, 2);
+        int valueLen = sqlite3_column_bytes(selectStmt, 2);
+        if (!valueBytes || valueLen <= 0) continue;
+
+        NSData *valueData = [NSData dataWithBytes:valueBytes length:(NSUInteger)valueLen];
+        id json = [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil];
+        if (!json) continue;
+
+        for (NSString *cidString in PDSBlobAuditBlobReferenceCIDsFromJSONObject(json)) {
+            [refRows addObject:@[uri, did, cidString]];
+        }
+    }
+    sqlite3_finalize(selectStmt);
+
+    if (selectResult != SQLITE_DONE) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V6 up failed while scanning record blob references"}];
+        }
+        return NO;
+    }
+
+    if (refRows.count == 0) return YES;
+
+    sqlite3_stmt *cidLookupStmt = NULL;
+    sqlite3_stmt *insertRefStmt = NULL;
+    sqlite3_stmt *updateStateStmt = NULL;
+    BOOL prepared = (sqlite3_prepare_v2(db, "SELECT cid FROM blobs", -1, &cidLookupStmt, NULL) == SQLITE_OK) &&
+                     (sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO blob_refs (record_uri, blob_cid, did, created_at) VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))", -1, &insertRefStmt, NULL) == SQLITE_OK) &&
+                     (sqlite3_prepare_v2(db, "UPDATE blobs SET state = 'referenced' WHERE cid = ?", -1, &updateStateStmt, NULL) == SQLITE_OK);
+
+    if (!prepared) {
+        if (cidLookupStmt) sqlite3_finalize(cidLookupStmt);
+        if (insertRefStmt) sqlite3_finalize(insertRefStmt);
+        if (updateStateStmt) sqlite3_finalize(updateStateStmt);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V6 up failed: could not prepare blob_refs backfill statements"}];
+        }
+        return NO;
+    }
+
+    // Map raw blob.cid bytes -> CID string once, so record references
+    // (which are CID strings) can be matched back to a specific raw-byte key.
+    NSMutableDictionary<NSString *, NSData *> *cidStringToRawBytes = [NSMutableDictionary dictionary];
+    while (sqlite3_step(cidLookupStmt) == SQLITE_ROW) {
+        const void *cidBytes = sqlite3_column_blob(cidLookupStmt, 0);
+        int cidLen = sqlite3_column_bytes(cidLookupStmt, 0);
+        if (!cidBytes || cidLen <= 0) continue;
+        NSData *rawCID = [NSData dataWithBytes:cidBytes length:(NSUInteger)cidLen];
+        NSString *cidString = PDSBlobAuditCIDStringFromRawBytes(rawCID);
+        if (cidString) cidStringToRawBytes[cidString] = rawCID;
+    }
+    sqlite3_finalize(cidLookupStmt);
+
+    for (NSArray<NSString *> *row in refRows) {
+        NSString *uri = row[0];
+        NSString *did = row[1];
+        NSString *cidString = row[2];
+        NSData *rawCID = cidStringToRawBytes[cidString];
+        if (!rawCID) continue; // referenced CID has no matching blob metadata row in this shard
+
+        sqlite3_bind_text(insertRefStmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(insertRefStmt, 2, rawCID.bytes, (int)rawCID.length, SQLITE_TRANSIENT);
+        sqlite3_bind_text(insertRefStmt, 3, did.UTF8String, -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(insertRefStmt) != SQLITE_DONE) {
+            sqlite3_finalize(insertRefStmt);
+            sqlite3_finalize(updateStateStmt);
             if (error) {
                 *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                              code:PDSMigrationErrorMigrationFailed
-                                         userInfo:@{NSLocalizedDescriptionKey:
-                                                        [NSString stringWithFormat:@"V7 blob_refs table: %@", msg]}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"V6 up failed while backfilling blob references"}];
             }
             return NO;
         }
-        if (errMsg) sqlite3_free(errMsg);
-    }
+        sqlite3_reset(insertRefStmt);
 
-    // Step 4: Create indexes
-    const char *indexes[] = {
-        "CREATE INDEX IF NOT EXISTS idx_blob_refs_cid ON blob_refs(blob_cid)",
-        "CREATE INDEX IF NOT EXISTS idx_blob_refs_did ON blob_refs(did)",
-    };
-    for (size_t i = 0; i < sizeof(indexes) / sizeof(indexes[0]); i++) {
-        char *errMsg = NULL;
-        int rc = sqlite3_exec(db, indexes[i], NULL, NULL, &errMsg);
-        if (rc != SQLITE_OK) {
-            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
-            if (errMsg) sqlite3_free(errMsg);
+        sqlite3_bind_blob(updateStateStmt, 1, rawCID.bytes, (int)rawCID.length, SQLITE_TRANSIENT);
+        if (sqlite3_step(updateStateStmt) != SQLITE_DONE) {
+            sqlite3_finalize(insertRefStmt);
+            sqlite3_finalize(updateStateStmt);
             if (error) {
                 *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                              code:PDSMigrationErrorMigrationFailed
-                                         userInfo:@{NSLocalizedDescriptionKey:
-                                                        [NSString stringWithFormat:@"V7 index %zu: %@", i, msg]}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"V6 up failed while promoting referenced blobs"}];
             }
             return NO;
         }
-        if (errMsg) sqlite3_free(errMsg);
+        sqlite3_reset(updateStateStmt);
     }
 
+    sqlite3_finalize(insertRefStmt);
+    sqlite3_finalize(updateStateStmt);
     return YES;
 }
 
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error {
-    // DROP TABLE blob_refs cascades to its indexes.
-    // The status column cannot be removed in SQLite without table recreation;
-    // existing blobs retain the column and its values after rollback.
-    char *errMsg = NULL;
-    int rc = sqlite3_exec(db, "DROP TABLE IF EXISTS blob_refs", NULL, NULL, &errMsg);
-    if (rc == SQLITE_OK) return YES;
-    NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
-    if (errMsg) sqlite3_free(errMsg);
-    if (error) {
-        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                     code:PDSMigrationErrorMigrationFailed
-                                 userInfo:@{NSLocalizedDescriptionKey:
-                                                [NSString stringWithFormat:@"V7 down failed: %@", msg]}];
+    // Symmetric with `up:` — a database that never had a `blobs` table has
+    // nothing to roll back beyond dropping blob_refs.
+    if (!PDSMigrationTableExists(db, "blobs")) {
+        char *dropErr = NULL;
+        if (sqlite3_exec(db, "DROP TABLE IF EXISTS blob_refs", NULL, NULL, &dropErr) != SQLITE_OK) {
+            if (error) {
+                NSString *message = dropErr ? [NSString stringWithUTF8String:dropErr] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V6 down failed dropping blob_refs: %@", message]}];
+            }
+            if (dropErr) sqlite3_free(dropErr);
+            return NO;
+        }
+        if (dropErr) sqlite3_free(dropErr);
+        return YES;
     }
-    return NO;
+
+    static const char *statements[] = {
+        "DROP TABLE IF EXISTS blob_refs",
+
+        "CREATE TABLE blobs_old ("
+        "cid BLOB PRIMARY KEY,"
+        "did TEXT NOT NULL,"
+        "mimeType TEXT,"
+        "size INTEGER NOT NULL,"
+        "created_at DATETIME NOT NULL)",
+        "INSERT INTO blobs_old (cid, did, mimeType, size, created_at) "
+        "SELECT cid, did, mimeType, size, created_at FROM blobs",
+        "DROP TABLE blobs",
+        "ALTER TABLE blobs_old RENAME TO blobs",
+        "CREATE INDEX IF NOT EXISTS idx_blobs_did ON blobs(did)",
+        "CREATE INDEX IF NOT EXISTS idx_blobs_cid ON blobs(cid)",
+    };
+
+    for (size_t i = 0; i < sizeof(statements) / sizeof(statements[0]); i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, statements[i], NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V6 down failed (statement %zu): %@", i, message]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - V7 Account Usage Triggers + Backfill
+
+@interface V7AccountUsageTriggers : NSObject <PDSMigration>
+@end
+
+@implementation V7AccountUsageTriggers
+
+- (NSInteger)version { return 7; }
+- (NSString *)name { return @"account_usage_triggers"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    // SQLite resolves a trigger's base table at CREATE TRIGGER time, so each
+    // pair is installed only when the table it hangs off actually exists.
+    // Partially-bootstrapped databases legitimately reach this migration
+    // without one; installing unconditionally aborts the whole chain and
+    // leaves the store unopenable.
+    NSMutableArray<NSString *> *statements =
+        [NSMutableArray arrayWithObject:kPDSAccountUsageTableCreateSQL];
+    if (PDSMigrationTableExists(db, "blobs")) {
+        [statements addObjectsFromArray:@[
+            kPDSAccountUsageTriggerBlobInsertSQL,
+            kPDSAccountUsageTriggerBlobDeleteSQL,
+        ]];
+    }
+    if (PDSMigrationTableExists(db, "ipld_blocks")) {
+        [statements addObjectsFromArray:@[
+            kPDSAccountUsageTriggerBlockInsertSQL,
+            kPDSAccountUsageTriggerBlockDeleteSQL,
+        ]];
+    }
+    if (PDSMigrationTableExists(db, "records")) {
+        [statements addObjectsFromArray:@[
+            kPDSAccountUsageTriggerRecordInsertSQL,
+            kPDSAccountUsageTriggerRecordDeleteSQL,
+        ]];
+    }
+
+    for (NSUInteger i = 0; i < statements.count; i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, statements[i].UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V7 up failed (statement %lu): %@", (unsigned long)i, message]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+
+    return [self backfillAccountUsageFromExistingDataInDatabase:db error:error];
+}
+
+// Aggregate existing blobs, ipld_blocks, and records into a single
+// account_usage row so consumers (XrpcVendorPack, XrpcAdminPack+AccountInfo,
+// PDSAccountService) see non-zero values immediately after migration.
+- (BOOL)backfillAccountUsageFromExistingDataInDatabase:(sqlite3 *)db error:(NSError **)error {
+    // Each actor-store shard is per-DID. Reuse the same owner lookup as the
+    // installed block triggers, so the backfill and live accounting share
+    // one source of truth.
+    if (!PDSMigrationTableExists(db, "records")) {
+        return YES; // no records table — nothing to attribute usage to
+    }
+
+    sqlite3_stmt *didStmt = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT did FROM records LIMIT 1", -1, &didStmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V7 up failed: could not prepare did lookup"}];
+        }
+        return NO;
+    }
+
+    NSString *did = nil;
+    if (sqlite3_step(didStmt) == SQLITE_ROW) {
+        const unsigned char *didText = sqlite3_column_text(didStmt, 0);
+        if (didText) did = [NSString stringWithUTF8String:(const char *)didText];
+    }
+    sqlite3_finalize(didStmt);
+
+    if (!did) return YES; // empty shard — nothing to backfill
+
+    // Aggregate blob metrics
+    sqlite3_stmt *blobStmt = NULL;
+    long long blobBytes = 0;
+    long long blobCount = 0;
+    if (sqlite3_prepare_v2(db, "SELECT COALESCE(SUM(size), 0), COUNT(*) FROM blobs", -1, &blobStmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(blobStmt) == SQLITE_ROW) {
+            blobBytes = sqlite3_column_int64(blobStmt, 0);
+            blobCount = sqlite3_column_int64(blobStmt, 1);
+        }
+        sqlite3_finalize(blobStmt);
+    }
+
+    // Aggregate repo block metrics
+    sqlite3_stmt *blockStmt = NULL;
+    long long repoBytes = 0;
+    if (sqlite3_prepare_v2(db, "SELECT COALESCE(SUM(size), 0) FROM ipld_blocks", -1, &blockStmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(blockStmt) == SQLITE_ROW) {
+            repoBytes = sqlite3_column_int64(blockStmt, 0);
+        }
+        sqlite3_finalize(blockStmt);
+    }
+
+    // Aggregate record count
+    sqlite3_stmt *recordStmt = NULL;
+    long long recordCount = 0;
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM records", -1, &recordStmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(recordStmt) == SQLITE_ROW) {
+            recordCount = sqlite3_column_int64(recordStmt, 0);
+        }
+        sqlite3_finalize(recordStmt);
+    }
+
+    // Upsert the aggregated row
+    const char *upsertSQL =
+        "INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+        "ON CONFLICT(did) DO UPDATE SET "
+        "blob_bytes = ?, blob_count = ?, repo_bytes = ?, record_count = ?, "
+        "updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')";
+
+    sqlite3_stmt *upsertStmt = NULL;
+    if (sqlite3_prepare_v2(db, upsertSQL, -1, &upsertStmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V7 up failed: could not prepare upsert"}];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(upsertStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(upsertStmt, 2, blobBytes);
+    sqlite3_bind_int64(upsertStmt, 3, blobCount);
+    sqlite3_bind_int64(upsertStmt, 4, repoBytes);
+    sqlite3_bind_int64(upsertStmt, 5, recordCount);
+    // ON CONFLICT parameters (bind after the excluded/old values)
+    sqlite3_bind_int64(upsertStmt, 6, blobBytes);
+    sqlite3_bind_int64(upsertStmt, 7, blobCount);
+    sqlite3_bind_int64(upsertStmt, 8, repoBytes);
+    sqlite3_bind_int64(upsertStmt, 9, recordCount);
+
+    int rc = sqlite3_step(upsertStmt);
+    sqlite3_finalize(upsertStmt);
+
+    if (rc != SQLITE_DONE) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"V7 up failed: account_usage backfill step failed"}];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    static const char *statements[] = {
+        "DROP TRIGGER IF EXISTS trg_account_usage_blob_insert",
+        "DROP TRIGGER IF EXISTS trg_account_usage_blob_delete",
+        "DROP TRIGGER IF EXISTS trg_account_usage_block_insert",
+        "DROP TRIGGER IF EXISTS trg_account_usage_block_delete",
+        "DROP TRIGGER IF EXISTS trg_account_usage_record_insert",
+        "DROP TRIGGER IF EXISTS trg_account_usage_record_delete",
+    };
+
+    for (size_t i = 0; i < sizeof(statements) / sizeof(statements[0]); i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, statements[i], NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V7 down failed (statement %zu): %@", i, message]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
 }
 
 @end
@@ -1153,9 +1496,14 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         if (error) {
             *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                          code:PDSMigrationErrorTransactionFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
         }
+        if (errMsg) sqlite3_free(errMsg);
         return NO;
+    }
+    if (errMsg) {
+        sqlite3_free(errMsg);
+        errMsg = NULL;
     }
 
     // Run migration up method
@@ -1176,6 +1524,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
                 if (result != SQLITE_OK) {
                     GZ_LOG_DB_ERROR(@"Failed to commit migration V%ld: %s", (long)migration.version, errMsg);
+                    if (errMsg) {
+                        sqlite3_free(errMsg);
+                        errMsg = NULL;
+                    }
                     sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                     success = NO;
                 } else {
@@ -1206,6 +1558,8 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         success = NO;
     }
 
+    if (errMsg) sqlite3_free(errMsg);
+
     return success;
 }
 
@@ -1221,9 +1575,14 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         if (error) {
             *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                          code:PDSMigrationErrorTransactionFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
         }
+        if (errMsg) sqlite3_free(errMsg);
         return NO;
+    }
+    if (errMsg) {
+        sqlite3_free(errMsg);
+        errMsg = NULL;
     }
 
     // Run migration down method
@@ -1242,6 +1601,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
                 if (result != SQLITE_OK) {
                     GZ_LOG_DB_ERROR(@"Failed to commit rollback V%ld: %s", (long)migration.version, errMsg);
+                    if (errMsg) {
+                        sqlite3_free(errMsg);
+                        errMsg = NULL;
+                    }
                     sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                     success = NO;
                 } else {
@@ -1271,6 +1634,8 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         }
         success = NO;
     }
+
+    if (errMsg) sqlite3_free(errMsg);
 
     return success;
 }
@@ -2710,7 +3075,8 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[V3RecordTombstonesWithoutRowid alloc] init]];
     [manager registerMigration:[[V4DedicatedSpaceSigningKeySchema alloc] init]];
     [manager registerMigration:[[V5RecordsRevisionCoveringIndex alloc] init]];
-    [manager registerMigration:[[V7ActorStoreBlobLifecycle alloc] init]];
+    [manager registerMigration:[[V6BlobLifecycleSchema alloc] init]];
+    [manager registerMigration:[[V7AccountUsageTriggers alloc] init]];
     return manager;
 }
 

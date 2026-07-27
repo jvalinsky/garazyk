@@ -381,7 +381,7 @@
     GZ_LOG_INFO(@"[MST TEST] Deserialize with missing CID in block provider completed.");
 }
 
-- (void)testDeserializeEmptyTree {
+- (void)testDeserializeEmptyTreeIsRejected {
     // Empty tree serialization/deserialization
     MST *tree = [[MST alloc] init];
     XCTAssertEqual(tree.allEntries.count, 0);
@@ -391,13 +391,13 @@
 
     // Deserialize with nil blockProvider
     MST *restored = [MST deserializeFromCBOR:cbor blockProvider:nil];
-    XCTAssertNotNil(restored);
+    XCTAssertNil(restored);
     XCTAssertEqual(restored.allEntries.count, 0);
 
     // Deserialize with block provider
     MSTBlockProvider provider = ^NSData *(CID *cid) { return nil; };
     MST *restored2 = [MST deserializeFromCBOR:cbor blockProvider:provider];
-    XCTAssertNotNil(restored2);
+    XCTAssertNil(restored2);
     XCTAssertEqual(restored2.allEntries.count, 0);
 
     GZ_LOG_INFO(@"[MST TEST] Deserialize empty tree completed.");

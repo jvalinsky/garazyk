@@ -88,7 +88,7 @@ static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagno
                                                            blobStorage:self.blobStorage
                                                        serviceDatabases:self.serviceDatabases
                                                                 dryRun:dryRun];
-    } else if ([type isEqualToString:@"references"]) {
+    } else if ([type isEqualToString:@"references"] || [type isEqualToString:@"temporary"]) {
         return [[PDSBlobReferenceScanOperation alloc] initWithJobId:jobId
                                                           auditType:type
                                                         blobStorage:self.blobStorage
