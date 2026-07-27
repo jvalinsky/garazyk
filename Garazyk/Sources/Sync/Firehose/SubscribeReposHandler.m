@@ -36,6 +36,34 @@ static const NSUInteger kSubscribeReposMaxPendingSendsDefault = 512;
 static const NSUInteger kSubscribeReposMaxPendingBytesDefault =
     16 * 1024 * 1024; // 16MB
 static NSString *const kSubscribeReposErrorFutureCursor = @"FutureCursor";
+
+// Strictly parses a positive decimal integer env override. integerValue
+// silently returns 0 for a non-numeric value (e.g. a typo'd env var), which
+// would otherwise become an unbounded/zero limit without any indication of
+// the misconfiguration.
+static BOOL SubscribeReposParsePositiveIntegerEnv(NSString *value,
+                                                   NSUInteger *outValue) {
+  if (value.length == 0) {
+    return NO;
+  }
+  unsigned long long parsed = 0;
+  for (NSUInteger i = 0; i < value.length; i++) {
+    unichar c = [value characterAtIndex:i];
+    if (c < '0' || c > '9') {
+      return NO;
+    }
+    unsigned long long digit = (unsigned long long)(c - '0');
+    if (parsed > (ULLONG_MAX - digit) / 10) {
+      return NO;
+    }
+    parsed = parsed * 10 + digit;
+  }
+  if (parsed == 0) {
+    return NO;
+  }
+  *outValue = (NSUInteger)parsed;
+  return YES;
+}
 static NSString *const kSubscribeReposErrorConsumerTooSlow = @"ConsumerTooSlow";
 static NSString *const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
@@ -131,10 +159,26 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       _maxReplayEventsPerConnection = [env[@"PDS_FIREHOSE_MAX_REPLAY"] integerValue];
     }
     if (env[@"PDS_FIREHOSE_MAX_PENDING_SENDS"]) {
-      _maxPendingSendsPerConnection = [env[@"PDS_FIREHOSE_MAX_PENDING_SENDS"] integerValue];
+      NSUInteger parsedMaxPendingSends = 0;
+      if (SubscribeReposParsePositiveIntegerEnv(env[@"PDS_FIREHOSE_MAX_PENDING_SENDS"],
+                                                 &parsedMaxPendingSends)) {
+        _maxPendingSendsPerConnection = parsedMaxPendingSends;
+      } else {
+        GZ_LOG_SYNC_ERROR(@"Invalid PDS_FIREHOSE_MAX_PENDING_SENDS value %@; using default %lu",
+                           env[@"PDS_FIREHOSE_MAX_PENDING_SENDS"],
+                           (unsigned long)_maxPendingSendsPerConnection);
+      }
     }
     if (env[@"PDS_FIREHOSE_MAX_PENDING_BYTES"]) {
-      _maxPendingBytesPerConnection = [env[@"PDS_FIREHOSE_MAX_PENDING_BYTES"] integerValue];
+      NSUInteger parsedMaxPendingBytes = 0;
+      if (SubscribeReposParsePositiveIntegerEnv(env[@"PDS_FIREHOSE_MAX_PENDING_BYTES"],
+                                                 &parsedMaxPendingBytes)) {
+        _maxPendingBytesPerConnection = parsedMaxPendingBytes;
+      } else {
+        GZ_LOG_SYNC_ERROR(@"Invalid PDS_FIREHOSE_MAX_PENDING_BYTES value %@; using default %lu",
+                           env[@"PDS_FIREHOSE_MAX_PENDING_BYTES"],
+                           (unsigned long)_maxPendingBytesPerConnection);
+      }
     }
     _lastCommitRevByDID = [NSMutableDictionary dictionary];
     _backfillSemaphore = dispatch_semaphore_create(3); // Allow max 3 concurrent backfills

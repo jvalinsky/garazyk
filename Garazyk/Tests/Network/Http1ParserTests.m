@@ -119,6 +119,63 @@
     XCTAssertEqualObjects(err.errorCode, @"LengthRequired");
 }
 
+- (void)testConflictingContentLengthHeadersRejected {
+    // RFC 7230 §3.3.3: multiple Content-Length headers with different
+    // values must be rejected, not silently resolved to the first value.
+    NSString *reqStr = @"POST / HTTP/1.1\r\nContent-Length: 5\r\nContent-Length: 10\r\n\r\nhello";
+    NSData *reqData = [reqStr dataUsingEncoding:NSUTF8StringEncoding];
+
+    BOOL complete = [self.parser feedData:reqData];
+    XCTAssertTrue(complete);
+    XCTAssertEqual(self.parser.state, Http1ParserStateError);
+
+    Http1ParserError *err = [self.parser parseError];
+    XCTAssertNotNil(err);
+    XCTAssertEqual(err.statusCode, 400);
+}
+
+- (void)testDuplicateIdenticalContentLengthHeadersRejected {
+    // Even identical duplicates are rejected -- RFC 7230 §3.3.3 permits
+    // treating identical duplicates as valid, but this codebase takes the
+    // stricter reject-duplicates reading.
+    NSString *reqStr = @"POST / HTTP/1.1\r\nContent-Length: 5\r\nContent-Length: 5\r\n\r\nhello";
+    NSData *reqData = [reqStr dataUsingEncoding:NSUTF8StringEncoding];
+
+    BOOL complete = [self.parser feedData:reqData];
+    XCTAssertTrue(complete);
+    XCTAssertEqual(self.parser.state, Http1ParserStateError);
+
+    Http1ParserError *err = [self.parser parseError];
+    XCTAssertNotNil(err);
+    XCTAssertEqual(err.statusCode, 400);
+}
+
+- (void)testContentLengthWithSignRejected {
+    NSString *reqStr = @"POST / HTTP/1.1\r\nContent-Length: +5\r\n\r\nhello";
+    NSData *reqData = [reqStr dataUsingEncoding:NSUTF8StringEncoding];
+
+    BOOL complete = [self.parser feedData:reqData];
+    XCTAssertTrue(complete);
+    XCTAssertEqual(self.parser.state, Http1ParserStateError);
+
+    Http1ParserError *err = [self.parser parseError];
+    XCTAssertNotNil(err);
+    XCTAssertEqual(err.statusCode, 400);
+}
+
+- (void)testContentLengthWithTrailingGarbageRejected {
+    NSString *reqStr = @"POST / HTTP/1.1\r\nContent-Length: 5x\r\n\r\nhello";
+    NSData *reqData = [reqStr dataUsingEncoding:NSUTF8StringEncoding];
+
+    BOOL complete = [self.parser feedData:reqData];
+    XCTAssertTrue(complete);
+    XCTAssertEqual(self.parser.state, Http1ParserStateError);
+
+    Http1ParserError *err = [self.parser parseError];
+    XCTAssertNotNil(err);
+    XCTAssertEqual(err.statusCode, 400);
+}
+
 - (void)testPipelinedDataRetention {
     NSString *req1 = @"GET /1 HTTP/1.1\r\n\r\n";
     NSString *req2 = @"GET /2 HTTP/1.1\r\n\r\n";
