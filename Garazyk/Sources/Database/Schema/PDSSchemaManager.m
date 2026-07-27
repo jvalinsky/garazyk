@@ -514,7 +514,19 @@
            @"    did TEXT NOT NULL,"
            @"    mimeType TEXT,"
            @"    size INTEGER NOT NULL,"
-           @"    created_at DATETIME NOT NULL"
+           @"    status TEXT NOT NULL DEFAULT 'temporary',"
+           @"    created_at DATETIME NOT NULL,"
+           @"    FOREIGN KEY (did) REFERENCES accounts(did)"
+           @")";
+}
+
+- (NSString *)actorStoreBlobRefsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS blob_refs ("
+           @"    record_uri TEXT NOT NULL,"
+           @"    blob_cid BLOB NOT NULL,"
+           @"    did TEXT NOT NULL,"
+           @"    created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+           @"    PRIMARY KEY (record_uri, blob_cid)"
            @")";
 }
 
@@ -575,6 +587,8 @@
     [sql appendString:[self inviteCodesTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreBlobsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self actorStoreBlobRefsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreRotationKeysTableSchema]];
     [sql appendString:@";\n\n"];
