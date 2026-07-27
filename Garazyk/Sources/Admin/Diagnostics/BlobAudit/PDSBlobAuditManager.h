@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @brief Start a new audit job.
  *
- * @param type Audit type: "orphans", "cid_verify", "consistency", or "references"
+ * @param type Audit type: "orphans", "cid_verify", "consistency", "references", or "temporary"
  * @param dryRun If YES, don't make any changes
  * @return Job ID (UUID string) or nil on error
  */
