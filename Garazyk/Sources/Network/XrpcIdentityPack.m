@@ -24,6 +24,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/PLCRotationKeyManager.h"
 #import "PLC/PLCOperation.h"
+#import "PLC/PLCAuditor.h"
 #import "PLC/DIDPLCResolver.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
@@ -404,6 +405,18 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
                 }
 
                 if (ops.count > 0) {
+                    // Verify the operation chain before trusting derived state.
+                    // The audit log from the remote PLC directory has no signature
+                    // or prev-chain check — an attacker-controlled response could
+                    // inject forged operations.
+                    if (![PLCAuditor verifyChain:ops did:did error:&auditError]) {
+                        GZ_LOG_ERROR(@"signPlcOperation: PLC audit log verification failed for DID %@: %@",
+                                      did, auditError.localizedDescription ?: @"unknown error");
+                        response.statusCode = HttpStatusBadRequest;
+                        [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"PLC audit log verification failed"}];
+                        return;
+                    }
+
                     NSError *replayError = nil;
                     PLCDIDState *state = [PLCStateReplayer replayHistory:ops error:&replayError];
                     if (state && state.tombstoned) {
@@ -847,6 +860,15 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
                     }
                 }
                 
+                // Verify the operation chain before trusting derived state.
+                if (![PLCAuditor verifyChain:ops did:did error:&auditError]) {
+                    GZ_LOG_ERROR(@"updateHandle: PLC audit log verification failed for DID %@: %@",
+                                  did, auditError.localizedDescription ?: @"unknown error");
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"PLC audit log verification failed"}];
+                    return;
+                }
+
                 PLCDIDState *currentState = nil;
                 @try {
                     GZ_LOG_DEBUG(@"updateHandle: Replaying PLC history");

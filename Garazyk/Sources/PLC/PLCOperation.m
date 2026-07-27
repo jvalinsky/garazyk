@@ -6,6 +6,7 @@
 #import "Core/ATProtoBase32.h"
 #import "Debug/GZLogger.h"
 #import "PLC/PLCConstants.h"
+#import "PLC/PLCAuditor.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -172,7 +173,16 @@ static BOOL isBase32Char(unichar c) {
     }
 
     PLCOperation *op = [[PLCOperation alloc] init];
-    op.did = dict[@"did"];
+    id didValue = dict[@"did"];
+    if (didValue && ![didValue isKindOfClass:[NSString class]]) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:PLCErrorDomain
+                                            code:PLCErrorInvalidDIDFormat
+                                        userInfo:@{NSLocalizedDescriptionKey: @"op.did must be a string or nil"}];
+        }
+        return nil;
+    }
+    op.did = didValue;
     
     if (op.did && [op.did isKindOfClass:[NSString class]]) {
         if (![self assertDidPlc:op.did error:outError]) {
@@ -333,25 +343,34 @@ static BOOL isBase32Char(unichar c) {
     state.alsoKnownAs = @[];
     
     for (PLCOperation *op in history) {
+        // Sanitize operation data through normalizedDataForOperation: so nil
+        // elements can no longer reach collection literals. If normalization
+        // fails (unsupported type, missing fields), skip the operation — it
+        // will not contribute to the derived state.
+        NSError *normalizeError = nil;
+        NSDictionary *normalized = [PLCAuditor normalizedDataForOperation:op error:&normalizeError];
+        if (!normalized) {
+            GZ_LOG_CORE_WARN(@"PLCStateReplayer: skipping operation with invalid data: %@",
+                              normalizeError.localizedDescription ?: @"unknown error");
+            continue;
+        }
+        
         NSString *type = op.data[@"type"];
         if (![type isKindOfClass:[NSString class]]) continue;
         
         if ([type isEqualToString:@"plc_operation"]) {
-            state.rotationKeys = op.data[@"rotationKeys"];
-            state.verificationMethods = op.data[@"verificationMethods"];
-            state.alsoKnownAs = op.data[@"alsoKnownAs"];
-            state.services = op.data[@"services"];
+            state.rotationKeys = normalized[@"rotationKeys"];
+            state.verificationMethods = normalized[@"verificationMethods"];
+            state.alsoKnownAs = normalized[@"alsoKnownAs"];
+            state.services = normalized[@"services"];
             state.tombstoned = NO;
         } else if ([type isEqualToString:@"plc_tombstone"]) {
             state.tombstoned = YES;
         } else if ([type isEqualToString:@"create"]) {
-            state.rotationKeys = @[op.data[@"recoveryKey"], op.data[@"signingKey"]];
-            state.verificationMethods = @{@"atproto": op.data[@"signingKey"]};
-            NSString *handle = op.data[@"handle"] ?: @"";
-            NSString *service = op.data[@"service"] ?: @"";
-            state.alsoKnownAs = @[PLCNormalizeAtprotoHandle(handle)];
-            state.services = @{@"atproto_pds": @{@"type": @"AtprotoPersonalDataServer",
-                                                 @"endpoint": PLCNormalizeServiceEndpoint(service)}};
+            state.rotationKeys = normalized[@"rotationKeys"];
+            state.verificationMethods = normalized[@"verificationMethods"];
+            state.alsoKnownAs = normalized[@"alsoKnownAs"];
+            state.services = normalized[@"services"];
             state.tombstoned = NO;
         }
     }
