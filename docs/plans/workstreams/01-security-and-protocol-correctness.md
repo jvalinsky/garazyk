@@ -791,6 +791,9 @@ started. The decisions were recorded as ADRs after execution:
 | 4 | `77defcb7` | PLC audit-log verification — PLCAuditor chain check before state replayer |
 | 5 | `a04c03ea` | TID charset validation — unichar truncation (U+0132) gate |
 | 6 | `b0b6754d` | GZ_LOG_DEBUG/DEBUG_C gated on active log level |
+| review | `fc0357f5` | Verify trailing PLC tombstone signatures before accepting the chain |
+| review | `a1e6b436` | Reject non-ASCII CID characters before base32 validation |
+| review | `b0730534` | Use live time by default in JWTVerifier |
 
 **Phase 14 (slice 7):**
 
@@ -801,6 +804,8 @@ started. The decisions were recorded as ADRs after execution:
 | 4-5 | `91848d5e` | did:web validation + AuthVerifier DPoP/audience gaps |
 | 6 | `a58df71b` | Wire AuthVerifier cluster behind `PDS_USE_AUTH_VERIFIER` switch |
 | (fix) | `cd420966` | Fix duplicate method and property access in XrpcAuthHelper |
+| review | `65e9b987` | Auth-path parity, account-policy, and did:web regression suites |
+| review | `31f1a4cf` | CI recursive-setter check and RelayMetrics setter fix |
 
 ### Execution phases
 
