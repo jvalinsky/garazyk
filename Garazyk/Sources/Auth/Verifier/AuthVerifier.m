@@ -88,11 +88,11 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
 }
 
 - (void)setLocalPublicKey:(id)publicKey {
-    self.localPublicKey = publicKey;
+    _localPublicKey = publicKey;
 }
 
 - (void)setLocalIssuer:(NSString *)issuer {
-    self.localIssuer = issuer;
+    _localIssuer = [issuer copy];
     if (self.expectedAudience.length == 0) {
         self.expectedAudience = issuer;
     }
