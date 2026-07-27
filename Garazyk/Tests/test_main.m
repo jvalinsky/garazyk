@@ -976,6 +976,7 @@ int main(int argc, char *argv[]) {
       @"BookmarkServiceTests",
       @"DraftServiceTests",
       @"GraphServiceTests",
+      @"AppViewIdentityHelperTests",
       @"FeedSkeletonTests",
       @"NotificationServiceTests",
       @"RecordLifecycleHandlerTests",
