@@ -1117,13 +1117,13 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 }
 
 - (id)valueFromStatement:(sqlite3_stmt *)stmt columnIndex:(int)colIndex {
-    __block id result = nil;
-    [self safeExecuteSync:^{
-        result = ATProtoDBColumnValue(stmt, colIndex);
-        if (result == [NSNull null]) {
-            result = nil;
-        }
-    }];
+    // No queue synchronization needed: ATProtoDBColumnValue reads from an
+    // already-prepared statement passed by the caller, who already holds
+    // the queue (all callers are inside safeExecuteSync: blocks).
+    id result = ATProtoDBColumnValue(stmt, colIndex);
+    if (result == [NSNull null]) {
+        result = nil;
+    }
     return result;
 }
 
