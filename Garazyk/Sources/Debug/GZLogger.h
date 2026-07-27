@@ -235,10 +235,15 @@ extern NSString * const GZLogComponentCLI;
 /*!
  @macro GZ_LOG_DEBUG
  
- @abstract Logs a debug-level message.
+ @abstract Logs a debug-level message. Gated on the active log level so
+    arguments are never evaluated when debug logging is disabled.
  */
 #define GZ_LOG_DEBUG(FORMAT, ...) \
-    [[GZLogger sharedLogger] logWithLevel:GZLogLevelDebug file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+    do { \
+        if ([GZLogger sharedLogger].logLevel <= GZLogLevelDebug) { \
+            [[GZLogger sharedLogger] logWithLevel:GZLogLevelDebug file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]; \
+        } \
+    } while (0)
 
 /*!
  @macro GZ_LOG_INFO
@@ -267,10 +272,16 @@ extern NSString * const GZLogComponentCLI;
 /*!
  @macro GZ_LOG_DEBUG_C
 
- @abstract Logs a debug-level message with component tag.
+ @abstract Logs a debug-level message with component tag. Gated on the
+    active log level so arguments are never evaluated when debug logging
+    is disabled.
  */
 #define GZ_LOG_DEBUG_C(COMPONENT, FORMAT, ...) \
-    [[GZLogger sharedLogger] logWithLevel:GZLogLevelDebug component:COMPONENT file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
+    do { \
+        if ([GZLogger sharedLogger].logLevel <= GZLogLevelDebug) { \
+            [[GZLogger sharedLogger] logWithLevel:GZLogLevelDebug component:COMPONENT file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]; \
+        } \
+    } while (0)
 
 /*!
  @macro GZ_LOG_INFO_C
