@@ -835,6 +835,7 @@ int main(int argc, char *argv[]) {
       @"OAuth2Tests",
       @"RefreshSecurityTests",
       @"SubscribeReposHandlerTests",
+      @"SubscribeReposHandlerEnvLimitsTests",
       @"GetServiceAuthMethodTests",
       @"XrpcHandlerTests",
       @"XrpcMethodRegistryTests",
