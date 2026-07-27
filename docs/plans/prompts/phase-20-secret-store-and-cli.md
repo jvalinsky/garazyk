@@ -1,7 +1,7 @@
 ---
 phase: 20
 title: Linux secret store encryption and destructive CLI correctness
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
 ---
@@ -10,8 +10,11 @@ depends_on: []
 
 ## Progress
 
-2026-07-27: Started slice 4. Preserved the completed Phase 19 commits and am
-completing the Linux secret-store encryption migration with scratch-path tests.
+2026-07-27: Completed slices 4-7 in independent commits: `194a2580` (encrypted
+secret-store migration), `0572e133` (honest recursive `nuke-data`),
+`84cb8ce3` (environment password input and argv warning), and `52cda6ea`
+(signal-safe password prompt hygiene). The Linux secret-store model is
+recorded in ADR 0013 and the deployment guide.
 
 ## Mission
 

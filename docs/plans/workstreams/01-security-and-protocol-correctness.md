@@ -1155,8 +1155,7 @@ release.
 
 ## S11. Core decoder bounds, platform secret storage, and destructive CLI
 
-**Status: phase 19 (slices 1-3) complete 2026-07-27; phase 20 (slices 4-7)
-in progress.** A review of Core, Compat, and
+**Status: complete 2026-07-27.** A review of Core, Compat, and
 CLI found two width-related defects in the DAG-CBOR decoder reachable from
 every untrusted-input path, a platform shim that silently provides far weaker
 guarantees than the API it emulates, and a destructive CLI command that
@@ -1255,19 +1254,19 @@ Core decoders (phase 19) — complete, commits on `phase-19-20`:
    behaviour-neutral against Base58Tests, ATProtoCIDTests, and the
    MST/CAR/STAR/Interop fixture suites (164 tests, 0 failures).
 
-Platform and CLI (phase 20):
+Platform and CLI (phase 20) — complete, commits on `phase-19-20`:
 
 4. **Encrypt the Linux secret store at rest** with an operator-supplied key,
    including a migration path for existing plaintext stores and a startup
-   failure when the key is absent but a store exists.
+   failure when the key is absent but a store exists. Commit `194a2580`.
 5. **Make `nuke-data` actually delete what it claims**: enumerate the shard
    layout the pool writes, delete recursively, and — critically — report
-   honestly. It must not print success when items remain.
+   honestly. It must not print success when items remain. Commit `0572e133`.
 6. **Remove `--password` from the documented path.** Keep an automation-safe
    input (stdin, environment, or file) and stop demonstrating argv passwords
-   in help text.
+   in help text. Commit `84cb8ce3`.
 7. **Restore terminal echo on signal** and clear the password buffer after
-   use.
+   use. Commit `52cda6ea`.
 
 ### Owner boundary
 
