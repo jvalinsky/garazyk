@@ -149,12 +149,12 @@ static const NSUInteger kEventFormatterMaxNestingDepth = 32;
     }
     [result appendData:payloadData];
     
-    // Enforce 1MB size limit (1024 * 1024 bytes)
-    if (result.length > 1024 * 1024) {
+    // Enforce max frame size limit
+    if (result.length > kEventFormatterMaxFrameBytes) {
         if (error) {
             *error = [NSError errorWithDomain:EventFormatterErrorDomain
                                          code:EventFormatterErrorCodeEncodingFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Event size %lu exceeds 1MB limit", (unsigned long)result.length]}];
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Event size %lu exceeds %lu byte limit", (unsigned long)result.length, (unsigned long)kEventFormatterMaxFrameBytes]}];
         }
         return nil;
     }
