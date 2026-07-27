@@ -93,6 +93,10 @@
     self.mockConnection = [[MockNetworkConnection alloc] init];
     self.adapter = [[PDSWebSocketNetworkAdapter alloc] initWithConnection:self.mockConnection];
     self.codec = [[WebSocketCodec alloc] init];
+    // self.adapter's own codec is server role (default), requiring masked
+    // incoming frames. self.codec here only builds frames "sent by a
+    // client" for injection, so it must mask its own output to match.
+    self.codec.maskOutgoingFrames = YES;
 }
 
 - (void)tearDown {
@@ -144,7 +148,12 @@
     NSData *pingFrame = [self.codec pingFrame:nil];
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        XCTAssertGreaterThanOrEqual(self.mockConnection.sentData.length, pingFrame.length);
+        // The adapter replies as a server, so its pong is unmasked (2-byte
+        // header, no mask key) even though the injected ping was masked (as
+        // a real client's would be) -- the two frames aren't the same size,
+        // so just confirm a pong was actually written.
+        uint8_t expectedPong[] = {0x8A, 0x00};
+        XCTAssertEqualObjects(self.mockConnection.sentData, [NSData dataWithBytes:expectedPong length:sizeof(expectedPong)]);
         [pongExpectation fulfill];
     });
 
