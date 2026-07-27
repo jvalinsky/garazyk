@@ -5,6 +5,8 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/PDSDatabaseBlob.h"
+#import "Core/CID.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 
 @interface PDSRecordServiceTests : XCTestCase
@@ -211,6 +213,86 @@
     NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/nonexistent-rkey", self.testDID]
                                             forDid:self.testDID error:nil];
     XCTAssertNil(record);
+}
+
+- (void)testRecordBlobReferencesTrackAllCurrentRecordsBeforeReclaimingMetadata {
+    NSData *blobData = [@"record blob reference" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *blobCID = [CID sha256:blobData];
+    PDSActorStore *store = [self.pool storeForDid:self.testDID error:nil];
+    PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
+    blob.cid = blobCID.bytes;
+    blob.did = self.testDID;
+    blob.mimeType = @"text/plain";
+    blob.size = (NSInteger)blobData.length;
+    blob.createdAt = [NSDate date];
+    blob.state = PDSDatabaseBlobStateTemporary;
+    NSError *error = nil;
+    XCTAssertTrue([store saveBlob:blob error:&error], @"%@", error);
+
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"references a blob",
+        @"embed": @{
+            @"$type": @"blob",
+            @"ref": @{ @"$link": blobCID.stringValue }
+        }
+    };
+    XCTAssertTrue([self.service putRecord:@"app.bsky.feed.post" rkey:@"blob-ref-one" value:value forDid:self.testDID validationMode:PDSValidationModeOff error:&error], @"%@", error);
+    XCTAssertTrue([self.service putRecord:@"app.bsky.feed.post" rkey:@"blob-ref-two" value:value forDid:self.testDID validationMode:PDSValidationModeOff error:&error], @"%@", error);
+
+    PDSDatabaseBlob *referencedBlob = [store getBlobForCID:blobCID.bytes error:&error];
+    XCTAssertEqualObjects(referencedBlob.state, PDSDatabaseBlobStateReferenced);
+
+    XCTAssertTrue([self.service deleteRecord:@"app.bsky.feed.post" rkey:@"blob-ref-one" forDid:self.testDID error:&error], @"%@", error);
+    XCTAssertNotNil([store getBlobForCID:blobCID.bytes error:&error], @"The second record still references this blob");
+
+    XCTAssertTrue([self.service deleteRecord:@"app.bsky.feed.post" rkey:@"blob-ref-two" forDid:self.testDID error:&error], @"%@", error);
+    XCTAssertNil([store getBlobForCID:blobCID.bytes error:&error], @"The last current-record reference must reclaim the blob metadata");
+}
+
+- (void)testApplyWritesTracksBlobReferencesInTheRecordTransaction {
+    NSData *blobData = [@"batch blob reference" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *blobCID = [CID sha256:blobData];
+    PDSActorStore *store = [self.pool storeForDid:self.testDID error:nil];
+    PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
+    blob.cid = blobCID.bytes;
+    blob.did = self.testDID;
+    blob.mimeType = @"text/plain";
+    blob.size = (NSInteger)blobData.length;
+    blob.createdAt = [NSDate date];
+    blob.state = PDSDatabaseBlobStateTemporary;
+    NSError *error = nil;
+    XCTAssertTrue([store saveBlob:blob error:&error], @"%@", error);
+
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"references a blob through applyWrites",
+        @"embed": @{ @"$type": @"blob", @"ref": @{ @"$link": blobCID.stringValue } }
+    };
+    NSDictionary *created = [self.service applyWrites:@[@{
+        @"action": @"create",
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": @"batch-blob-ref",
+        @"value": value
+    }]
+                                            forDid:self.testDID
+                                    validationMode:PDSValidationModeOff
+                                        swapCommit:nil
+                                             error:&error];
+    XCTAssertNotNil(created, @"%@", error);
+    XCTAssertEqualObjects([store getBlobForCID:blobCID.bytes error:&error].state, PDSDatabaseBlobStateReferenced);
+
+    NSDictionary *deleted = [self.service applyWrites:@[@{
+        @"action": @"delete",
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": @"batch-blob-ref"
+    }]
+                                            forDid:self.testDID
+                                    validationMode:PDSValidationModeOff
+                                        swapCommit:nil
+                                             error:&error];
+    XCTAssertNotNil(deleted, @"%@", error);
+    XCTAssertNil([store getBlobForCID:blobCID.bytes error:&error]);
 }
 
 
