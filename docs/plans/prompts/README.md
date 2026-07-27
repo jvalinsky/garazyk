@@ -14,6 +14,11 @@ Phases 13-14 derive from workstream 01 § S8 (auth trust-boundary review,
 2026-07-26). Phase 14 must not start before 13 is complete: it wires code
 whose latent defects phase 13's contracts and phase 14's own steps 1-5 fix.
 
+Phases 15-16 derive from workstream 01 § S9 (Repository/Database/Blob review,
+2026-07-26). Both have empty `depends_on` and touch files that phases 13-14 do
+not, so they may run concurrently — but only in separate git worktrees, per
+the rule below.
+
 ## Loop protocol
 
 Each phase file has frontmatter:
