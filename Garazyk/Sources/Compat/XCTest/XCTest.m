@@ -108,6 +108,9 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 
 @implementation XCTestCase
 
+@synthesize selector = _selector;
+@synthesize name = _name;
+
 - (nullable instancetype)initWithSelector:(SEL)selector {
     self = [super init];
     if (self) {
@@ -170,6 +173,9 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 @end
 
 @implementation XCTestSuite
+
+@synthesize name = _name;
+@synthesize mutableTests = _mutableTests;
 
 + (instancetype)testSuiteWithName:(NSString *)name {
     XCTestSuite *suite = [[XCTestSuite alloc] init];

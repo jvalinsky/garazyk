@@ -1622,6 +1622,7 @@ if(BUILD_TESTS)
 
   # Exclude problematic tests (preserved from original)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/SecItemLinuxStoreTestMain.m")
   # Exclude top-level Integration tests only, except our new PLC integration test
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/comprehensive_tests.m")
@@ -1753,6 +1754,31 @@ if(BUILD_TESTS)
   set_target_properties(AllTests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
   )
+
+  if(NOT APPLE)
+    # SecItemLinuxStore is compiled only on GNUstep/Linux.  Keep its
+    # encryption migration independently runnable so a broad AllTests
+    # portability failure cannot turn this security boundary into an
+    # untested code path.
+    add_executable(SecItemLinuxStoreTests
+      Garazyk/Sources/Auth/CryptoUtils.m
+      Garazyk/Tests/Compat/SecItemLinuxStoreTestMain.m
+      Garazyk/Tests/Compat/SecItemPersistenceTests.m
+      Garazyk/Sources/Compat/XCTest/XCTest.m
+    )
+    target_include_directories(SecItemLinuxStoreTests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+      ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests
+    )
+    target_link_libraries(SecItemLinuxStoreTests PRIVATE
+      ATProtoCore
+      ${PLATFORM_LIBRARIES}
+    )
+    set_target_properties(SecItemLinuxStoreTests PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+    )
+    add_test(NAME SecItemLinuxStoreTests COMMAND SecItemLinuxStoreTests)
+  endif()
 
   # --gated=run folds the gated integration/socket test classes into every
   # ctest invocation (CI runs ctest, not scripts/test/run-tests.sh). The
