@@ -13,6 +13,7 @@
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Sync/Relay/RelayMetrics.h"
 #import "Sync/Relay/RelayRepoStateManager.h"
+#import "Sync/Relay/RelayEventValidator.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
@@ -77,6 +78,22 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
         GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event of class %@", NSStringFromClass([event class]));
         if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
             FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
+
+            if (![self verifyChainForCommitEvent:commitEvent]) {
+                GZ_LOG_SYNC_WARN(@"Relay: Dropping commit seq=%lld repo=%@ (chain break)",
+                                 (long long)commitEvent.seq, commitEvent.repo);
+                return;
+            }
+
+            if (self.eventValidator) {
+                RelayValidationOutcome *outcome = [self.eventValidator validateCommitEvent:commitEvent];
+                if (![self.eventValidator shouldForwardEvent:outcome]) {
+                    GZ_LOG_SYNC_WARN(@"Relay: Dropping commit seq=%lld repo=%@ (validation: %d %@)",
+                                     (long long)commitEvent.seq, commitEvent.repo,
+                                     (int)outcome.result, outcome.errorMessage ?: @"");
+                    return;
+                }
+            }
 
             NSString *rootCID = commitEvent.commit.stringValue;
             if (self.repoStateManager && commitEvent.repo.length > 0 && rootCID.length > 0) {
@@ -178,6 +195,38 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
         return self.subscribeReposHandler.attachedConnections.count;
     }
     return 0;
+}
+
+#pragma mark - Chain Verification
+
+- (BOOL)verifyChainForCommitEvent:(FirehoseCommitEvent *)event {
+    if (!self.repoStateManager || event.repo.length == 0) {
+        return YES;
+    }
+
+    NSString *did = event.repo;
+    NSString *prevDataCID = event.prevData.stringValue;
+    NSString *storedRoot = [self.repoStateManager rootCIDForRepo:did];
+
+    if (!storedRoot) {
+        return YES;
+    }
+
+    if (prevDataCID.length == 0) {
+        GZ_LOG_SYNC_WARN(@"Chain verify: commit seq=%lld repo=%@ has no prevData but repo is known (root=%@); accepting",
+                         (long long)event.seq, did, storedRoot);
+        return YES;
+    }
+
+    if ([prevDataCID isEqualToString:storedRoot]) {
+        return YES;
+    }
+
+    GZ_LOG_SYNC_WARN(@"Chain verify: BREAK seq=%lld repo=%@ prevData=%@ storedRoot=%@",
+                     (long long)event.seq, did, prevDataCID, storedRoot);
+    [self.repoStateManager handleIdentityEventForRepo:did];
+    [self.metrics recordEventDropped];
+    return NO;
 }
 
 #pragma mark - Repository Inventory Bootstrap

@@ -96,6 +96,8 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
 @property (nonatomic, weak, nullable) id<RelayEventValidatorDelegate> delegate;
 /** Current validation mode used to decide forwarding policy. */
 @property (nonatomic, assign, readonly) RelayValidationMode validationMode;
+/** Optional PLC resolver for DID-based signature verification. */
+@property (nonatomic, strong, nullable) id plcResolver;
 
 /**
  * @abstract Creates a validator with the supplied forwarding policy.
