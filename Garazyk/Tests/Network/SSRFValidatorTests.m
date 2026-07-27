@@ -3,6 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Network/SSRFValidator.h"
 #include <arpa/inet.h>
+#include <unistd.h>
 
 @interface SSRFValidatorTests : XCTestCase
 @end
@@ -143,6 +144,43 @@
     ip6.s6_addr[4] = 1;
     ip6.s6_addr[5] = 1;
     XCTAssertTrue([SSRFValidator isPrivateIPv6Address:ip6]);
+}
+
+- (void)testResolverDeadlineBoundsInjectedResolver {
+    CFAbsoluteTime started = CFAbsoluteTimeGetCurrent();
+    NSError *error = nil;
+    NSArray<NSString *> *addresses = nil;
+    BOOL succeeded = [SSRFValidator resolvePinnedAddressesForHost:@"example.test"
+                                                           timeout:0.05
+                                                         resolver:^BOOL(NSString *hostname, NSTimeInterval timeout, NSArray<NSString *> **outAddresses, NSError **outError) {
+        usleep(250000);
+        *outAddresses = @[ @"8.8.8.8" ];
+        return YES;
+    }
+                                                         addresses:&addresses
+                                                             error:&error];
+
+    XCTAssertFalse(succeeded);
+    XCTAssertNil(addresses);
+    XCTAssertEqual(error.code, SSRFValidatorErrorResolutionTimedOut);
+    XCTAssertLessThan(CFAbsoluteTimeGetCurrent() - started, 0.20);
+}
+
+- (void)testResolverReturnsTheCompleteVettedAddressSet {
+    NSArray<NSString *> *addresses = nil;
+    NSError *error = nil;
+    BOOL succeeded = [SSRFValidator resolvePinnedAddressesForHost:@"example.test"
+                                                           timeout:0.05
+                                                         resolver:^BOOL(NSString *hostname, NSTimeInterval timeout, NSArray<NSString *> **outAddresses, NSError **outError) {
+        *outAddresses = @[ @"8.8.8.8", @"2001:4860:4860::8888" ];
+        return YES;
+    }
+                                                         addresses:&addresses
+                                                             error:&error];
+
+    XCTAssertTrue(succeeded);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(addresses, (@[ @"8.8.8.8", @"2001:4860:4860::8888" ]));
 }
 
 - (void)testPrivateIPv6_ULA {
