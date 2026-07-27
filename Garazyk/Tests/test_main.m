@@ -830,6 +830,8 @@ int main(int argc, char *argv[]) {
       @"ATProtoOAuthClientMetadataTests",
       @"OAuthDPoPTests",
       @"JWTTests",
+      @"AuthVerifierParityTests",
+      @"PDSAccountPolicyTests",
       @"OAuth2Tests",
       @"RefreshSecurityTests",
       @"SubscribeReposHandlerTests",

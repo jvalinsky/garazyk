@@ -214,6 +214,25 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertFalse(allowed, @"Non-owner must be rejected");
 }
 
+- (void)testDidWebOwnerCanReadAndWriteOwnRepo {
+    NSString *did = @"did:web:pds.example.com%3A8443";
+    [self createAccountWithDid:did handle:@"owner.example.com"];
+
+    NSError *error = nil;
+    XCTAssertTrue([self.manager validateReadAccess:did
+                                     forCollection:@"app.bsky.feed.post"
+                                          actorDID:did
+                                             error:&error]);
+    XCTAssertNil(error);
+
+    XCTAssertTrue([self.manager validateWriteAccess:did
+                                      forCollection:@"com.atproto.server"
+                                               rkey:@"234567abcdefg"
+                                           actorDID:did
+                                              error:&error]);
+    XCTAssertNil(error);
+}
+
 @end
 
 NS_ASSUME_NONNULL_END
