@@ -786,7 +786,7 @@ Derived prompts live in `../prompts/`:
 
 ## S9. Blob lifecycle and storage-pool correctness
 
-**Status: Phase 15 complete (2026-07-27); Phase 16 pending.** A review of Repository,
+**Status: Phases 15–16 complete (2026-07-27).** A review of Repository,
 Database, and Blob found that the blob subsystem implements neither half of
 the published blob lifecycle, and that a complete usage-accounting design
 exists in the tree but was never installed. Separately, the actor-store pool
@@ -836,6 +836,21 @@ Sources: <https://atproto.com/specs/blob>,
   `./build/tests/AllTests --gated=run`. Disk was checked immediately before
   the native gate (15 GiB available).
 - ADR: [0013 Blob lifecycle conformance](../../adr/0013-blob-lifecycle-conformance.md).
+
+### Phase 16 completion evidence (2026-07-27)
+
+- Commits: `d4313993` (complete actor-store enumeration), `5e5b451c` and
+  `8966a66e` (the jointly implemented authoritative slice 8: active-use-safe
+  eviction, off-queue cold opens, and the dispatch-source timer), `c2d888c8`
+  (strict MST decode), and `f8065279` (migration error-message cleanup).
+- Phase acceptance: `DatabasePoolTests` passed 18 tests; the complete `MST*`
+  filter passed 108 tests, including the byte-identical fixture. The newly
+  registered `MSTDecoderTests` suite executed 5 rejection cases. The focused
+  migration filter passed 20 tests, including apply/rollback/re-apply coverage.
+- Global gates passed: `deno task check`, `deno task lint`, `deno task test`,
+  `cmake --build build --target AllTests --parallel 4`, and
+  `./build/tests/AllTests --gated=run`. Disk was checked immediately before
+  the native gate (13 GiB available).
 
 ### Evidence
 
