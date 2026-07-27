@@ -176,21 +176,27 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
 }
 
 - (nullable NSData *)getBlobWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error {
-    // If DID is provided, we can optionally check metadata existence
-    if (did) {
-        NSError *dbError = nil;
-        PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
-        if (store) {
-            PDSDatabaseBlob *blobMeta = [store getBlobForCID:[cid bytes] error:&dbError];
-            if (!blobMeta) {
-                 if (error) {
-                    *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                                  code:BlobStorageErrorBlobNotFound
-                                              userInfo:@{NSLocalizedDescriptionKey: @"Blob metadata not found for user"}];
-                }
-                return nil;
-            }
-        }
+    if (did.length == 0) {
+        if (error) *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                                 code:BlobStorageErrorBlobNotFound
+                                             userInfo:@{NSLocalizedDescriptionKey: @"A blob owner DID is required"}];
+        return nil;
+    }
+
+    NSError *dbError = nil;
+    PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
+    if (!store) {
+        if (error) *error = dbError ?: [NSError errorWithDomain:BlobStorageErrorDomain
+                                                             code:BlobStorageErrorStorageFailure
+                                                         userInfo:@{NSLocalizedDescriptionKey: @"Blob metadata store is unavailable"}];
+        return nil;
+    }
+    PDSDatabaseBlob *blobMeta = [store getBlobForCID:[cid bytes] error:&dbError];
+    if (dbError || !blobMeta || ![blobMeta.state isEqualToString:PDSDatabaseBlobStateReferenced]) {
+        if (error) *error = dbError ?: [NSError errorWithDomain:BlobStorageErrorDomain
+                                                            code:BlobStorageErrorBlobNotFound
+                                                        userInfo:@{NSLocalizedDescriptionKey: @"Referenced blob metadata not found for user"}];
+        return nil;
     }
 
     // Retrieve data from provider
@@ -225,20 +231,27 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
 }
 
 - (nullable NSString *)blobFilePathWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error {
-    if (did) {
-        NSError *dbError = nil;
-        PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
-        if (store) {
-            PDSDatabaseBlob *blobMeta = [store getBlobForCID:[cid bytes] error:&dbError];
-            if (!blobMeta) {
-                if (error) {
-                    *error = [NSError errorWithDomain:BlobStorageErrorDomain
+    if (did.length == 0) {
+        if (error) *error = [NSError errorWithDomain:BlobStorageErrorDomain
                                                  code:BlobStorageErrorBlobNotFound
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Blob metadata not found for user"}];
-                }
-                return nil;
-            }
-        }
+                                             userInfo:@{NSLocalizedDescriptionKey: @"A blob owner DID is required"}];
+        return nil;
+    }
+
+    NSError *dbError = nil;
+    PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
+    if (!store) {
+        if (error) *error = dbError ?: [NSError errorWithDomain:BlobStorageErrorDomain
+                                                             code:BlobStorageErrorStorageFailure
+                                                         userInfo:@{NSLocalizedDescriptionKey: @"Blob metadata store is unavailable"}];
+        return nil;
+    }
+    PDSDatabaseBlob *blobMeta = [store getBlobForCID:[cid bytes] error:&dbError];
+    if (dbError || !blobMeta || ![blobMeta.state isEqualToString:PDSDatabaseBlobStateReferenced]) {
+        if (error) *error = dbError ?: [NSError errorWithDomain:BlobStorageErrorDomain
+                                                            code:BlobStorageErrorBlobNotFound
+                                                        userInfo:@{NSLocalizedDescriptionKey: @"Referenced blob metadata not found for user"}];
+        return nil;
     }
 
     if (![_provider hasBlobDataForCID:cid]) {
@@ -272,7 +285,11 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
     if (!store) return @[];
     
-    return [store listBlobsForDid:did limit:limit cursor:cursor error:error];
+    NSArray<PDSDatabaseBlob *> *blobs = [store listBlobsForDid:did limit:limit cursor:cursor error:error];
+    NSPredicate *referenced = [NSPredicate predicateWithBlock:^BOOL(PDSDatabaseBlob *blob, NSDictionary *bindings) {
+        return [blob.state isEqualToString:PDSDatabaseBlobStateReferenced];
+    }];
+    return [blobs filteredArrayUsingPredicate:referenced];
 }
 
 - (BOOL)deleteBlobWithCID:(CID *)cid did:(NSString *)did error:(NSError **)error {

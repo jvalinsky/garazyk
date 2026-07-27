@@ -28,6 +28,10 @@ reference-scan traversal, applies the configurable six-hour grace period
 (one-hour floor), and reclaims provider bytes only after all repositories are
 checked. Upload metadata-save failures now remove newly stored provider bytes.
 
+Completed slice 6: blob reads, file paths, and listings now require referenced
+metadata and fail closed without an owner store. XCTest coverage exercises the
+XRPC upload → record reference → fetch flow and excludes temporary blobs.
+
 ## Mission
 
 Implement the published blob lifecycle, which Garazyk currently does not model
