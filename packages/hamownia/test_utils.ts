@@ -8,8 +8,16 @@
  * All functions use Deno APIs and require --allow-run and --allow-env.
  */
 
-/** CLI entry point relative to the repo root. */
-export const CLI_PATH = "packages/hamownia/cli.ts";
+import { dirname, fromFileUrl, join } from "@std/path";
+
+/**
+ * CLI entry point relative to the current module.
+ * Resolved from the test_utils.ts location so it works regardless of CWD.
+ */
+export const CLI_PATH = join(
+  dirname(fromFileUrl(import.meta.url)),
+  "cli.ts",
+);
 
 /** Return type for spawn functions. */
 export interface SpawnResult {
