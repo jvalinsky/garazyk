@@ -523,13 +523,15 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // H1: Give PDSAdminAuth access
     [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;
 
-    // H3: Warn if X-Admin-Token legacy header is active in production
+    // H3: Warn if X-Admin-Token legacy header is explicitly enabled in production
     NSDictionary *startupEnv = [[NSProcessInfo processInfo] environment];
     BOOL isProductionEnv = [[startupEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"];
-    BOOL xAdminTokenDisabled = [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"1"] ||
-                                [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"true"];
-    if (isProductionEnv && !xAdminTokenDisabled) {
-        GZ_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is active in production. Set PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1 to disable it.");
+    NSString *disableEnv = startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"];
+    BOOL xAdminTokenExplicitlyEnabled = (disableEnv != nil &&
+                                          ([[disableEnv lowercaseString] isEqualToString:@"0"] ||
+                                           [[disableEnv lowercaseString] isEqualToString:@"false"]));
+    if (isProductionEnv && xAdminTokenExplicitlyEnabled) {
+        GZ_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is explicitly enabled in production. This header is disabled by default. Remove PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0 to restore secure defaults.");
     }
 
     // Firehose handler

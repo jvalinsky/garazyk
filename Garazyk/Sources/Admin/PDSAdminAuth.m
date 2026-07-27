@@ -148,7 +148,17 @@ static NSTimeInterval PDSAdminAuthResolvedTokenTTL(NSDictionary *env) {
 }
 
 static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(NSDictionary *env) {
-    return PDSAdminAuthEnvBool(env[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"]);
+    NSString *disableEnv = env[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"];
+    if (disableEnv != nil) {
+        // Explicitly set - honor the value (0 = enabled, 1 = disabled)
+        return PDSAdminAuthEnvBool(disableEnv);
+    }
+    // Not set - default to disabled in production
+    NSString *pdsEnv = env[@"PDS_ENV"];
+    if (pdsEnv != nil && [[pdsEnv lowercaseString] isEqualToString:@"production"]) {
+        return YES;  // Disabled in production by default
+    }
+    return NO;  // Enabled otherwise
 }
 
 static NSString *PDSAdminAuthSanitizedErrorSummary(NSError *error) {
@@ -299,20 +309,6 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
         NSString *adminTokenHeader = headers[@"X-Admin-Token"] ?: headers[@"x-admin-token"];
         if ([adminTokenHeader isKindOfClass:[NSString class]]) {
             token = adminTokenHeader;
-        }
-    }
-
-    if (token.length == 0) {
-        NSString *cookieHeader = headers[@"Cookie"] ?: headers[@"cookie"];
-        if ([cookieHeader isKindOfClass:[NSString class]]) {
-            NSArray *cookies = [cookieHeader componentsSeparatedByString:@";"];
-            for (NSString *cookie in cookies) {
-                NSString *trimmed = [cookie stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-                if ([trimmed hasPrefix:@"admin_token="]) {
-                    token = [trimmed substringFromIndex:@"admin_token=".length];
-                    break;
-                }
-            }
         }
     }
 
