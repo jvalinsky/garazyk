@@ -969,6 +969,7 @@ int main(int argc, char *argv[]) {
       @"PDSRepositoryServiceTests",
       @"PDSRelayServiceTests",
       @"ActorServiceTests",
+      @"ActorServiceBatchHydrationTests",
       @"SearchIndexServiceTests",
       @"FeedServiceTests",
       @"GroupServiceTests",
