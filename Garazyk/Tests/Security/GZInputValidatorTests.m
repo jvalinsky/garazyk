@@ -27,6 +27,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     XCTAssertTrue([self.validator isValidDID:@"did:plc:abc123"]);
     XCTAssertFalse([self.validator isValidDID:@"did:plc:"]);
+    XCTAssertTrue([self.validator isValidDID:@"did:web:pds.example.com"]);
+    XCTAssertTrue([self.validator isValidDID:@"did:web:pds.example.com%3A8443"]);
+    XCTAssertFalse([self.validator isValidDID:@"did:web:pds example.com"]);
 
     XCTAssertTrue([self.validator isValidHandle:@"user.example.com"]);
     XCTAssertFalse([self.validator isValidHandle:@"-bad.example.com"]);
