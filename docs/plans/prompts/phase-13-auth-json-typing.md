@@ -52,6 +52,11 @@ depends_on: []
   the gate. Zero-cost when DEBUG is not the active level. Measurable
   improvement on DID derivation and signature verification paths.
   Committed as `b0b6754d`.
+- 2026-07-27: **Review follow-ups complete.** `verifyChain:` now verifies a
+  trailing tombstone before accepting it (`fc0357f5`); `isValidCID:` applies
+  the same non-ASCII `unichar` gate as TIDs (`a1e6b436`); and a default
+  `JWTVerifier` uses live time while `clockOffset` remains an optional test
+  override (`b0730534`).
 
 ## Mission
 

@@ -33,6 +33,13 @@ depends_on: [13]
   - Global gates: `deno task check` green, `deno task lint` (6 pre-existing
     failures in `generate_test.ts`, not introduced), `cmake --build --target
     AllTests --parallel 4` passes.
+- 2026-07-27: **Post-review parity and regression gate complete.**
+  `AuthVerifierParityTests` compares the legacy and new paths for valid,
+  expired, suspended/taken-down, `did:web`, and DPoP-bound token cases
+  (matching, mismatched, missing, and request-less proof). The follow-up also
+  registers `PDSAccountPolicyTests`, covers `did:web` owner read/write in
+  `GZAuthzManagerTests`, and adds the recursive-setter CI sweep. Committed as
+  `65e9b987` and `31f1a4cf`.
 
 ## Mission
 
