@@ -1,7 +1,7 @@
 ---
 phase: 22
 title: MST viewer gating and dead admin credential surface
-status: pending
+status: complete
 agent: worker
 depends_on: []
 ---
