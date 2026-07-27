@@ -347,15 +347,21 @@ NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
 
 @interface PDSAccountPolicy ()
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, weak) id adminController;
+@property (nonatomic, strong) id adminController;
 @end
 
 @implementation PDSAccountPolicy
 
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
+    return [self initWithDatabase:database adminController:nil];
+}
+
+- (instancetype)initWithDatabase:(PDSDatabase *)database
+                adminController:(id)adminController {
     self = [super init];
     if (self) {
         _database = database;
+        _adminController = adminController;
     }
     return self;
 }
@@ -366,6 +372,17 @@ NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
 
 - (BOOL)isAccountAllowed:(NSString *)did
                    error:(NSError **)error {
+    if (!self.adminController) {
+        // Fail closed: a missing admin controller means we cannot determine
+        // takedown status, so deny access rather than silently allowing.
+        GZ_LOG_CORE_ERROR(@"PDSAccountPolicy.isAccountAllowed: no adminController configured — denying all");
+        if (error) {
+            *error = [NSError errorWithDomain:PDSAuthErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Account policy not configured: missing admin controller"}];
+        }
+        return NO;
+    }
     if ([self.adminController respondsToSelector:@selector(isAccountTakedownActive:error:)]) {
         NSError *takedownError = nil;
         BOOL isTakedown = [self.adminController isAccountTakedownActive:did error:&takedownError];
