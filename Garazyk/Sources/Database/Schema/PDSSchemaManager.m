@@ -488,11 +488,15 @@
 }
 
 - (NSString *)actorStoreBlocksTableSchema {
+    // `did` carries the owning repository so the account_usage block triggers
+    // can attribute bytes directly (see Schema.m); it is written by
+    // -[PDSActorStore putBlock:forDid:].
     return @"CREATE TABLE IF NOT EXISTS ipld_blocks ("
            @"    cid BLOB PRIMARY KEY,"
            @"    block BLOB NOT NULL,"
            @"    size INTEGER NOT NULL,"
-           @"    rev TEXT"
+           @"    rev TEXT,"
+           @"    did TEXT"
            @")";
 }
 
@@ -630,6 +634,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_ipld_blocks_cid ON ipld_blocks(cid);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_ipld_blocks_rev ON ipld_blocks(rev);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_ipld_blocks_did ON ipld_blocks(did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];

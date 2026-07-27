@@ -168,12 +168,23 @@ NSString * const kPDSAccountUsageTriggerBlobDeleteSQL =
     @"WHERE did = OLD.did; "
     @"END";
 
+// These two triggers attribute block bytes via `ipld_blocks.did`, written by
+// -[PDSActorStore putBlock:forDid:], rather than by looking up an arbitrary
+// row in `records`. The previous `(SELECT did FROM records LIMIT 1)` form
+// resolved to NULL whenever a block was written before the shard's first
+// record row existed — which is every account's initial commit, since
+// PDSRepositoryService+RepoInit writes the empty-tree commit block before any
+// record. Because SQLite treats NULL as distinct from NULL for uniqueness,
+// `ON CONFLICT(did)` could not dedupe those, so each such block created its
+// own orphan `account_usage` row and the real account's `repo_bytes` was
+// undercounted by exactly the bytes on those rows. Migration V8 adds the
+// column, backfills it, reinstalls these triggers, and folds the orphans back.
 NSString * const kPDSAccountUsageTriggerBlockInsertSQL =
     @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_block_insert "
     @"AFTER INSERT ON ipld_blocks "
     @"BEGIN "
     @"INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
-    @"VALUES ((SELECT did FROM records LIMIT 1), 0, 0, NEW.size, 0, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+    @"VALUES (NEW.did, 0, 0, NEW.size, 0, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
     @"ON CONFLICT(did) DO UPDATE SET "
     @"repo_bytes = repo_bytes + NEW.size, "
     @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'); "
@@ -186,7 +197,7 @@ NSString * const kPDSAccountUsageTriggerBlockDeleteSQL =
     @"UPDATE account_usage SET "
     @"repo_bytes = MAX(repo_bytes - OLD.size, 0), "
     @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') "
-    @"WHERE did = (SELECT did FROM records LIMIT 1); "
+    @"WHERE did = OLD.did; "
     @"END";
 
 NSString * const kPDSAccountUsageTriggerRecordInsertSQL =
