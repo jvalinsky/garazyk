@@ -161,7 +161,7 @@ static NSString *GZActorPlaceholders(NSUInteger count) {
     NSMutableArray<NSDictionary *> *profiles = [NSMutableArray arrayWithCapacity:actorDIDs.count];
     for (NSString *did in actorDIDs) {
         NSMutableDictionary *profile = [@{ @"did": did } mutableCopy];
-        NSString *handle = handles[did] ?: [self resolveDIDToHandle:did error:nil];
+        NSString *handle = handles[did];
         if (handle.length > 0) profile[@"handle"] = handle;
         NSString *cid = profileCIDByDID[did];
         CID *parsedCID = [CID cidFromString:cid];
