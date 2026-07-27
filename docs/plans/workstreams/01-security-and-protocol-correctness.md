@@ -1023,12 +1023,11 @@ other and of phase 15.
 
 ## S10. WebSocket framing and outbound egress hardening
 
-**Status: in progress (updated 2026-07-27).** Phase 17 ingress slices are
-complete; Phase 18 egress hardening remains pending. A review of Network,
-Sync, and Federation found three unauthenticated, unbounded defects on the
-public ingress surface, and one class of bypass on the outbound side that
-renders the existing SSRF protection ineffective despite its classification
-logic being sound.
+**Status: complete (updated 2026-07-27).** Both Phase 17 ingress and Phase 18
+egress slices are complete. A review of Network, Sync, and Federation found
+three unauthenticated, unbounded defects on the public ingress surface, and
+one class of bypass on the outbound side that rendered the existing SSRF
+protection ineffective despite its classification logic being sound.
 
 The ingress defects share a shape: the WebSocket codec enforces per-frame
 limits but no aggregate limits, and validates frame contents but not frame
@@ -1182,6 +1181,28 @@ reconfigure, then the mega-plan global gates with bounded `--parallel 4`.
   required global gates passed: `deno task check`, `deno task lint`,
   `deno task test`, `cmake --build build --target AllTests --parallel 4`,
   `./build/tests/AllTests`, and `./build/tests/AllTests --gated=run`.
+
+### Phase 18 completion evidence (2026-07-27)
+
+- Egress pinning implementation: `aaf6ed57` uses per-transfer
+  `CURLOPT_RESOLVE` on GNUstep/Linux and an in-file `NWConnection` transport
+  on Apple. Both preserve the original host for HTTP and TLS while dialing
+  only vetted numeric addresses. Redirects are validated and pinned one hop
+  at a time; Apple failover remains within the vetted set.
+- IPv6 classification coverage: `5c79d90c` proves rejection of `::`, NAT64
+  `64:ff9b::/96` private embeddings, and 6to4 `2002::/16` private embeddings.
+- Resolver deadline and vetted-set coverage: `30bbe6f3` proves a slow
+  injected resolver fails promptly and that a complete public address set is
+  returned without a mutable global resolver.
+- `SSRFValidatorTests` is registered and executed (32 tests, zero failures)
+  after `AllTests --list --filter SSRFValidatorTests` reported one class.
+- GNUstep Docker gate passed after a 19 GiB disk preflight: runtime image
+  `357ecdb` and builder image `4ecd295`; the builder configured `AllTests`
+  and completed the in-container `SSRFValidatorTests` run.
+- Global gates passed after the final implementation: `deno task check`,
+  `deno task lint`, `deno task test`, `cmake --build build --target AllTests
+  --parallel 4`, `./build/tests/AllTests`, and `./build/tests/AllTests
+  --gated=run`.
 
 ### Rollback
 
