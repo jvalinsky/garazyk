@@ -174,24 +174,79 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
     XCTAssertTrue([int64MinDecoded isKindOfClass:[NSNumber class]]);
     XCTAssertEqual([(NSNumber *)int64MinDecoded longLongValue], INT64_MIN);
 
-    // UINT64_MAX is decoded from raw bytes; re-encoding is only asserted if the implementation supports it.
+    // UINT64_MAX (major type 0, unsigned) is outside DAG-CBOR's int64 range and
+    // must be rejected, not silently truncated by a later int64 cast.
     const uint8_t uint64MaxBytes[] = {
         0x1B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
     };
-    NSData *uint64MaxData = ATProtoDataWithBytes(uint64MaxBytes, sizeof(uint64MaxBytes));
-    id uint64MaxDecoded = [ATProtoDagCBOR decodeData:uint64MaxData error:&error];
-    XCTAssertNotNil(uint64MaxDecoded);
-    XCTAssertNil(error);
-    XCTAssertTrue([uint64MaxDecoded isKindOfClass:[NSNumber class]]);
-    XCTAssertEqual([(NSNumber *)uint64MaxDecoded unsignedLongLongValue], UINT64_MAX);
+    [self assertDecodeFailsForBytes:uint64MaxBytes length:sizeof(uint64MaxBytes)];
+}
 
-    NSData *uint64MaxReencoded = [ATProtoDagCBOR encodeObject:uint64MaxDecoded error:&error];
-    if (uint64MaxReencoded) {
-        XCTAssertNil(error);
-        XCTAssertEqualObjects(uint64MaxReencoded, uint64MaxData);
-    } else {
-        XCTAssertNotNil(error);
-    }
+#pragma mark - Width Defects (workstream 01 S11)
+
+- (void)testByteStringLengthOverflowRejected {
+    // Headline case: index=9 after the header, declared length 2^64-5 wraps
+    // `*index + len` back to 4, which is <= length(9) under the old check.
+    const uint8_t overflowByteString[] = {
+        0x5B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFB
+    };
+    [self assertDecodeFailsForBytes:overflowByteString length:sizeof(overflowByteString)];
+}
+
+- (void)testArrayCountExceedingRemainingDataRejectedWithoutLargeAllocation {
+    // Array(8-byte length) declaring far more elements than the (empty)
+    // remaining input can possibly hold.
+    NSMutableData *data = [NSMutableData data];
+    uint8_t header = 0x9B;
+    [data appendBytes:&header length:1];
+    uint64_t count = OSSwapHostToBigInt64(UINT32_MAX);
+    [data appendBytes:&count length:8];
+
+    NSDate *start = [NSDate date];
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:data error:&error];
+    NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:start];
+
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertLessThan(duration, 1.0, @"Should reject fast, not allocate for the declared count");
+}
+
+- (void)testMapCountExceedingRemainingDataRejectedWithoutLargeAllocation {
+    // Map(8-byte length) declaring far more entries than the (empty)
+    // remaining input can possibly hold.
+    NSMutableData *data = [NSMutableData data];
+    uint8_t header = 0xBB;
+    [data appendBytes:&header length:1];
+    uint64_t count = OSSwapHostToBigInt64(UINT32_MAX);
+    [data appendBytes:&count length:8];
+
+    NSDate *start = [NSDate date];
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:data error:&error];
+    NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:start];
+
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertLessThan(duration, 1.0, @"Should reject fast, not allocate for the declared count");
+}
+
+- (void)testUnsignedIntegerAboveInt64RangeRejected {
+    // Major type 0, value 2^63 (INT64_MAX + 1): first value outside the
+    // representable int64 range.
+    const uint8_t aboveInt64Max[] = {
+        0x1B, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    [self assertDecodeFailsForBytes:aboveInt64Max length:sizeof(aboveInt64Max)];
+}
+
+- (void)testNegativeIntegerEdgeAtTwoPow64MinusOneRejected {
+    // Major type 1, value 2^64-1: previously wrapped `-(int64_t)(value + 1)`
+    // to 0 instead of being rejected.
+    const uint8_t negativeEdge[] = {
+        0x3B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+    [self assertDecodeFailsForBytes:negativeEdge length:sizeof(negativeEdge)];
 }
 
 - (void)testNullValuesInMapsAndArrays {
