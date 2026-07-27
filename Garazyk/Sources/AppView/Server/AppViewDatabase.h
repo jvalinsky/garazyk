@@ -542,6 +542,20 @@ extern NSString * const AppViewDatabaseErrorDomain;
 - (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error;
 
 /*!
+ @method resolveDIDsToHandles:error:
+ @abstract Batch find handles for a set of DIDs in a single query. DIDs with no
+ known handle are simply absent from the returned dictionary.
+ */
+- (NSDictionary<NSString *, NSString *> *)resolveDIDsToHandles:(NSArray<NSString *> *)dids error:(NSError **)error;
+
+/*!
+ @method resolveHandlesToDIDs:error:
+ @abstract Batch find DIDs for a set of handles in a single query. Handles with
+ no known DID are simply absent from the returned dictionary.
+ */
+- (NSDictionary<NSString *, NSString *> *)resolveHandlesToDIDs:(NSArray<NSString *> *)handles error:(NSError **)error;
+
+/*!
  @method parameterPlaceholdersForCount:
  @abstract Returns a string of ? placeholders for use in an IN clause.
  */

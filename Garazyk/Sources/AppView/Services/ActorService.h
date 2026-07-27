@@ -42,6 +42,17 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Get profiles for multiple actors. */
 - (nullable NSArray<NSDictionary *> *)getProfilesForActors:(NSArray<NSString *> *)actorDIDs error:(NSError **)error;
 
+/*!
+ @method getProfilesByDIDForActors:error:
+ @abstract Batch-hydrates profiles for a list of actor DIDs in a bounded
+ number of queries and returns them keyed by DID, for callers that need to
+ look a row's profile up by DID rather than by input position (e.g. inside a
+ loop over rows from an unrelated table). DIDs with no profile are simply
+ absent from the result, matching -getProfileForActor:error: returning nil.
+ */
+- (nullable NSDictionary<NSString *, NSDictionary *> *)getProfilesByDIDForActors:(NSArray<NSString *> *)actorDIDs
+                                                                            error:(NSError **)error;
+
 /*! Get followers count. */
 - (NSInteger)getFollowersCountForDID:(NSString *)did error:(NSError **)error;
 

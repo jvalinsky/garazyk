@@ -1201,6 +1201,48 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return rows.firstObject[@"handle"];
 }
 
+- (NSDictionary<NSString *, NSString *> *)resolveDIDsToHandles:(NSArray<NSString *> *)dids error:(NSError **)error {
+    if (dids.count == 0) return @{};
+    NSArray<NSString *> *uniqueDIDs = [[NSOrderedSet orderedSetWithArray:dids] array];
+    NSMutableDictionary<NSString *, NSString *> *result = [NSMutableDictionary dictionary];
+    const NSUInteger batchSize = 900;
+    for (NSUInteger offset = 0; offset < uniqueDIDs.count; offset += batchSize) {
+        NSUInteger length = MIN(batchSize, uniqueDIDs.count - offset);
+        NSArray<NSString *> *batch = [uniqueDIDs subarrayWithRange:NSMakeRange(offset, length)];
+        NSString *sql = [NSString stringWithFormat:@"SELECT did, handle FROM handles WHERE did IN (%@)",
+                         [self parameterPlaceholdersForCount:batch.count]];
+        NSArray *rows = [self executeParameterizedQuery:sql params:batch error:error];
+        if (!rows) return @{};
+        for (NSDictionary *row in rows) {
+            NSString *did = row[@"did"];
+            NSString *handle = row[@"handle"];
+            if (did && handle) result[did] = handle;
+        }
+    }
+    return [result copy];
+}
+
+- (NSDictionary<NSString *, NSString *> *)resolveHandlesToDIDs:(NSArray<NSString *> *)handles error:(NSError **)error {
+    if (handles.count == 0) return @{};
+    NSArray<NSString *> *uniqueHandles = [[NSOrderedSet orderedSetWithArray:handles] array];
+    NSMutableDictionary<NSString *, NSString *> *result = [NSMutableDictionary dictionary];
+    const NSUInteger batchSize = 900;
+    for (NSUInteger offset = 0; offset < uniqueHandles.count; offset += batchSize) {
+        NSUInteger length = MIN(batchSize, uniqueHandles.count - offset);
+        NSArray<NSString *> *batch = [uniqueHandles subarrayWithRange:NSMakeRange(offset, length)];
+        NSString *sql = [NSString stringWithFormat:@"SELECT did, handle FROM handles WHERE handle IN (%@)",
+                         [self parameterPlaceholdersForCount:batch.count]];
+        NSArray *rows = [self executeParameterizedQuery:sql params:batch error:error];
+        if (!rows) return @{};
+        for (NSDictionary *row in rows) {
+            NSString *did = row[@"did"];
+            NSString *handle = row[@"handle"];
+            if (did && handle) result[handle] = did;
+        }
+    }
+    return [result copy];
+}
+
 - (NSString *)parameterPlaceholdersForCount:(NSUInteger)count {
     return ATProtoDBPlaceholders(count);
 }
