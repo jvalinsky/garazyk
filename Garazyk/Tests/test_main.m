@@ -18,6 +18,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Auth/OAuthConformanceTests.h"
 #import "Auth/OAuthPublicClientTests.h"
+#import "Repository/MSTDecoderTests.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
 #import "Debug/GZLogger.h"
@@ -959,6 +960,7 @@ int main(int argc, char *argv[]) {
       @"MSTPersistenceTests",
       @"MSTRebalancingTests",
       @"MSTUTF8Tests",
+      @"MSTDecoderTests",
       @"HttpResponseTests",
       @"ATProtoServiceConfigurationTests",
       @"PDSPhoneVerificationProviderTests",
