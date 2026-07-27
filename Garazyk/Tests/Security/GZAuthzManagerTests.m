@@ -190,16 +190,28 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(error.code, GZAuthzErrorUnauthorized);
 }
 
-- (void)testAuthzManagerFailsValidateReadAccessMutedCollection {
+- (void)testValidateReadAccessOwnerCanReadOwnContent {
+    // Owners must be able to read their own posts, reposts, and likes.
+    // The previous implementation had a broken mute check that denied owners
+    // reading their own content when the account row existed.
     NSError *error = nil;
-    [self createAccountWithDid:@"did:plc:mute123" handle:@"mute.example.com"];
+    [self createAccountWithDid:@"did:plc:owner123" handle:@"owner.example.com"];
 
     error = nil;
-    BOOL allowed = [self.manager validateReadAccess:@"did:plc:mute123"
+    BOOL allowed = [self.manager validateReadAccess:@"did:plc:owner123"
                                       forCollection:@"app.bsky.feed.post"
-                                           actorDID:@"did:plc:mute123"
+                                           actorDID:@"did:plc:owner123"
                                               error:&error];
-    XCTAssertFalse(allowed);
+    XCTAssertTrue(allowed, @"Owner must be able to read own posts");
+    XCTAssertNil(error);
+
+    // Non-owner reading should still be rejected
+    error = nil;
+    allowed = [self.manager validateReadAccess:@"did:plc:owner123"
+                                 forCollection:@"app.bsky.feed.post"
+                                      actorDID:@"did:plc:other"
+                                         error:&error];
+    XCTAssertFalse(allowed, @"Non-owner must be rejected");
 }
 
 @end
