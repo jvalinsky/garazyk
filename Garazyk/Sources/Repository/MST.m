@@ -10,6 +10,7 @@
 #import <objc/runtime.h>
 #import <math.h>
 #import <stdatomic.h>
+#import <string.h>
 
 // objc/runtime.h does not declare these ARC runtime entry points; the atomic
 // root publication path below (`-root`/`-setRoot:`) calls them directly to
@@ -18,6 +19,31 @@
 extern id objc_retain(id);
 extern void objc_release(id);
 extern id objc_autorelease(id);
+
+static BOOL MSTCBORValueIsNull(CBORValue *value) {
+    return value.type == CBORTypeSimpleOrFloat && value.simpleValue.unsignedIntegerValue == 22;
+}
+
+static CID * _Nullable MSTCIDFromCBORTag(CBORValue *value) {
+    if (value.type != CBORTypeTag || value.tag.unsignedIntegerValue != 42 ||
+        value.tagValue.type != CBORTypeByteString) {
+        return nil;
+    }
+
+    NSData *bytes = value.tagValue.byteString;
+    if (bytes.length <= 1 || ((const uint8_t *)bytes.bytes)[0] != 0) return nil;
+    return [CID cidFromBytes:[bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)]];
+}
+
+static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
+    NSUInteger commonLength = MIN(left.length, right.length);
+    int result = memcmp(left.bytes, right.bytes, commonLength);
+    if (result < 0) return NSOrderedAscending;
+    if (result > 0) return NSOrderedDescending;
+    if (left.length < right.length) return NSOrderedAscending;
+    if (left.length > right.length) return NSOrderedDescending;
+    return NSOrderedSame;
+}
 
 #pragma mark - Internal Classes
 
@@ -1015,50 +1041,45 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     }
 
     CBORValue *entriesValue = rootValue.map[[CBORValue textString:@"e"]];
-    NSArray<CBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray)
-        ? entriesValue.array
-        : @[];
+    if (entriesValue.type != CBORTypeArray) return nil;
+
+    CBORValue *leftValue = rootValue.map[[CBORValue textString:@"l"]];
+    if (!leftValue) return nil;
 
     NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
 
-    for (CBORValue *entryMap in entriesArray) {
-        if (entryMap.type != CBORTypeMap) {
-            continue;
-        }
+    for (CBORValue *entryMap in entriesValue.array) {
+        if (entryMap.type != CBORTypeMap) return nil;
 
         CBORValue *keyValue = entryMap.map[[CBORValue textString:@"k"]];
-        NSData *suffixData = keyValue.byteString ?: [NSData data];
+        if (keyValue.type != CBORTypeByteString) return nil;
+        NSData *suffixData = keyValue.byteString;
 
         CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
+        if (prefixValue.type != CBORTypeUnsignedInteger) return nil;
         NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
-        NSUInteger safePrefixLen = MIN(prefixLen, prevKeyData.length);
+        if (prefixLen > prevKeyData.length) return nil;
         
-        NSMutableData *fullKeyData = [NSMutableData dataWithData:[prevKeyData subdataWithRange:NSMakeRange(0, safePrefixLen)]];
+        NSMutableData *fullKeyData = [NSMutableData dataWithData:[prevKeyData subdataWithRange:NSMakeRange(0, prefixLen)]];
         [fullKeyData appendData:suffixData];
         
-        NSString *fullKey = [[NSString alloc] initWithData:fullKeyData encoding:NSUTF8StringEncoding] ?: @"";
+        NSString *fullKey = [[NSString alloc] initWithData:fullKeyData encoding:NSUTF8StringEncoding];
+        if (fullKey.length == 0 || (prevKeyData.length > 0 && MSTCompareData(prevKeyData, fullKeyData) != NSOrderedAscending)) {
+            return nil;
+        }
         prevKeyData = [fullKeyData copy];
 
         CBORValue *valueTag = entryMap.map[[CBORValue textString:@"v"]];
-        CBORValue *valueBytes = valueTag.tagValue;
-        if (!valueBytes || valueBytes.type != CBORTypeByteString || valueBytes.byteString.length <= 1) {
-            continue;
-        }
-
-        NSData *vCidBytes = [valueBytes.byteString subdataWithRange:NSMakeRange(1, valueBytes.byteString.length - 1)];
-        CID *valueCID = [CID cidFromBytes:vCidBytes];
-        if (!valueCID) {
-            continue;
-        }
+        CID *valueCID = MSTCIDFromCBORTag(valueTag);
+        if (!valueCID) return nil;
 
         CID *treeCID = nil;
-        CBORValue *treeTag = entryMap.map[[CBORValue textString:@"t"]];
-        if (treeTag && treeTag.type == CBORTypeTag) {
-            NSData *tCidBytes = treeTag.tagValue.byteString;
-            if (tCidBytes.length > 1) {
-                treeCID = [CID cidFromBytes:[tCidBytes subdataWithRange:NSMakeRange(1, tCidBytes.length - 1)]];
-            }
+        CBORValue *treeValue = entryMap.map[[CBORValue textString:@"t"]];
+        if (!treeValue) return nil;
+        if (!MSTCBORValueIsNull(treeValue)) {
+            treeCID = MSTCIDFromCBORTag(treeValue);
+            if (!treeCID) return nil;
         }
 
         MSTNodeEntry *entry = [[MSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:nil];
@@ -1067,19 +1088,18 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     }
 
     CID *leftCID = nil;
-    CBORValue *leftTag = rootValue.map[[CBORValue textString:@"l"]];
-    if (leftTag && leftTag.type == CBORTypeTag) {
-        NSData *lCidBytes = leftTag.tagValue.byteString;
-        if (lCidBytes.length > 1) {
-            leftCID = [CID cidFromBytes:[lCidBytes subdataWithRange:NSMakeRange(1, lCidBytes.length - 1)]];
-        }
+    if (!MSTCBORValueIsNull(leftValue)) {
+        leftCID = MSTCIDFromCBORTag(leftValue);
+        if (!leftCID) return nil;
     }
 
-    // Determine level based on the first key's depth (approximation for deserialized nodes)
-    uint32_t level = 0;
-    if (entries.count > 0) {
-        level = [MST keyDepth:entries[0].fullKey];
-    }
+    // An empty leaf has no canonical MST representation. An empty node with a
+    // left CID is a structural forwarding node and must remain decodable.
+    if (entries.count == 0 && !leftCID) return nil;
+
+    // NodeData has no serialized layer field. Its canonical entry order makes
+    // the first key the existing compatibility source for the node layer.
+    uint32_t level = entries.count > 0 ? [MST keyDepth:entries.firstObject.fullKey] : 0;
 
     MSTNode *node = [[MSTNode alloc] initWithLevel:level left:nil entries:entries];
     node.leftCID = leftCID;
