@@ -5,6 +5,13 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 
+@interface PDSDatabasePool (DatabasePoolTesting)
+- (instancetype)initWithDbDirectory:(NSString *)dbDirectory
+                            maxSize:(NSUInteger)maxSize
+                   evictionInterval:(NSTimeInterval)evictionInterval
+                      idleThreshold:(NSTimeInterval)idleThreshold;
+@end
+
 @interface DatabasePoolTests : XCTestCase
 
 @property (nonatomic, strong) NSString *testDirectory;
@@ -181,6 +188,43 @@
     XCTAssertEqualObjects(fetched.handle, @"account.test");
 }
 
+- (void)testEnumerationIncludesEveryOnDiskActorAfterOpeningOneStore {
+    NSArray<NSString *> *dids = @[
+        @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa",
+        @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb",
+        @"did:plc:cccccccccccccccccccccccc"
+    ];
+    PDSDatabasePool *seedPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:10];
+    for (NSString *did in dids) {
+        PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+        account.did = did;
+        account.handle = [NSString stringWithFormat:@"%@.test", [did substringFromIndex:8]];
+        account.createdAt = NSDate.date.timeIntervalSince1970;
+        account.updatedAt = account.createdAt;
+        PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];
+        repo.ownerDid = did;
+        repo.rootCid = [NSData data];
+        repo.createdAt = NSDate.date;
+        repo.updatedAt = repo.createdAt;
+        NSError *error = nil;
+        [seedPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+            XCTAssertTrue([transactor createAccount:account error:innerError], @"%@", *innerError);
+            XCTAssertTrue([transactor createRepo:repo error:innerError], @"%@", *innerError);
+        } error:&error];
+        XCTAssertNil(error, @"%@", error);
+    }
+    [seedPool closeAll];
+
+    XCTAssertNotNil([self.pool storeForDid:dids.firstObject error:nil]);
+    NSError *error = nil;
+    NSArray<PDSDatabaseAccount *> *accounts = [self.pool getAllAccountsWithError:&error];
+    XCTAssertNil(error, @"%@", error);
+    XCTAssertEqual(accounts.count, dids.count);
+    NSArray<PDSDatabaseRepo *> *repos = [self.pool getAllReposWithError:&error];
+    XCTAssertNil(error, @"%@", error);
+    XCTAssertEqual(repos.count, dids.count);
+}
+
 - (void)testMetricsCollection {
     __autoreleasing NSError *error = nil;
     
@@ -262,6 +306,59 @@
 }
 
 #ifndef GNUSTEP
+- (void)testDispatchTimerEvictsPoolConstructedWithoutRunLoop {
+    __block PDSDatabasePool *backgroundPool = nil;
+    dispatch_semaphore_t constructed = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        backgroundPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory
+                                                               maxSize:1
+                                                      evictionInterval:0.02
+                                                         idleThreshold:0.01];
+        dispatch_semaphore_signal(constructed);
+    });
+    XCTAssertEqual(dispatch_semaphore_wait(constructed, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC)), 0);
+
+    NSString *did = @"did:plc:cccccccccccccccccccccccc";
+    XCTAssertNotNil([backgroundPool storeForDid:did error:nil]);
+    NSMutableDictionary<NSString *, NSDate *> *lastAccessTime = [backgroundPool valueForKey:@"lastAccessTime"];
+    lastAccessTime[did] = [NSDate distantPast];
+
+    dispatch_group_t waitForTimer = dispatch_group_create();
+    dispatch_group_async(waitForTimer, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        usleep(250000);
+    });
+    XCTAssertEqual(dispatch_group_wait(waitForTimer, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC)), 0);
+    XCTAssertEqual(backgroundPool.currentSize, 0, @"Dispatch timer must evict without a constructing-thread run loop");
+    [backgroundPool closeAll];
+}
+
+- (void)testEvictionSkipsActiveTransactionAndDoesNotBlockMetrics {
+    PDSDatabasePool *smallPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:1];
+    NSString *activeDID = @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa";
+    NSString *nextDID = @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb";
+    dispatch_semaphore_t started = dispatch_semaphore_create(0);
+    dispatch_semaphore_t release = dispatch_semaphore_create(0);
+    dispatch_group_t group = dispatch_group_create();
+    __block NSError *transactionError = nil;
+
+    dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        [smallPool transactWithDid:activeDID block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+            dispatch_semaphore_signal(started);
+            dispatch_semaphore_wait(release, DISPATCH_TIME_FOREVER);
+        } error:&transactionError];
+    });
+    XCTAssertEqual(dispatch_semaphore_wait(started, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)), 0);
+
+    [smallPool evictStoreForDid:activeDID];
+    XCTAssertNotNil([smallPool storeForDid:nextDID error:nil]);
+    XCTAssertNotNil([smallPool collectMetrics], @"Pool queue must remain responsive during an active transaction");
+
+    dispatch_semaphore_signal(release);
+    XCTAssertEqual(dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)), 0);
+    XCTAssertNil(transactionError, @"Eviction must not close the active store: %@", transactionError);
+    [smallPool closeAll];
+}
+
 - (void)testConcurrentAccessPatternsReturnsExpectedStoreCount {
     XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Concurrent access"];
 
