@@ -267,6 +267,71 @@
     XCTAssertNil(url);
 }
 
+#pragma mark - Additional expansion tests
+
+- (void)testAuthorityDomainForNSID_DashInName_ReturnsAuthority {
+    NSError *error = nil;
+    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"com.my-service.record" error:&error];
+    XCTAssertEqualObjects(domain, @"my-service.com");
+    XCTAssertNil(error);
+}
+
+- (void)testPdsEndpointFromDidDocument_NonArrayServices_ReturnsNilError {
+    // When service is a dictionary instead of an array (malformed document)
+    DIDDocument *doc = [[DIDDocument alloc] init];
+    [doc setValue:@{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"} forKey:@"service"];
+    NSError *error = nil;
+    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    XCTAssertNil(endpoint);
+    XCTAssertNotNil(error);
+}
+
+- (void)testBuildResolveResponse_EmptyNsid_ReturnsResponse {
+    NSDictionary *schema = @{@"id": @"", @"type": @"record"};
+    NSError *error = nil;
+    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"" configuration:self.config error:&error];
+    XCTAssertNotNil(response);
+    XCTAssertNil(error);
+}
+
+- (void)testBuildResolveResponse_NullErrorPointer_Safe {
+    NSDictionary *schema = @{@"id": @"com.example.record", @"type": @"record"};
+    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"com.example.record" configuration:self.config error:NULL];
+    XCTAssertNotNil(response);
+}
+
+- (void)testLexiconRecordURL_UnsupportedScheme_ReturnsNilError {
+    NSError *error = nil;
+    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"ftp://pds.example.com" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    XCTAssertNil(url);
+    XCTAssertNotNil(error);
+}
+
+- (void)testLexiconRecordURL_EndpointWithOnlySlash_AppendsXrpc {
+    NSError *error = nil;
+    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com/" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    XCTAssertNotNil(url);
+    NSString *urlStr = url.absoluteString;
+    XCTAssertTrue([urlStr containsString:@"/xrpc/com.atproto.repo.getRecord"]);
+}
+
+- (void)testLexiconRecordURL_NilNsid_ReturnsURL {
+    NSError *error = nil;
+    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com" did:@"did:plc:abc" nsid:nil error:&error];
+    XCTAssertNotNil(url);
+}
+
+- (void)testLoadLexiconJSON_NotFound_ReturnsNilError {
+    NSString *tempDir = NSTemporaryDirectory();
+    NSError *error = nil;
+    NSDictionary *schema = [XrpcLexiconResolver loadLexiconJSONForNSID:@"com.nonexistent.test"
+                                                         dataDirectory:tempDir
+                                                                 error:&error];
+    XCTAssertNil(schema);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 404);
+}
+
 #pragma mark - Helpers
 
 - (DIDDocument *)documentWithServices:(NSArray *)services {

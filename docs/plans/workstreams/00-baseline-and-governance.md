@@ -1,7 +1,7 @@
 ---
 title: Baseline and Plan Governance
 status: active
-last_verified: 2026-07-24
+last_verified: 2026-07-26
 ---
 
 # Baseline and Plan Governance
@@ -13,19 +13,16 @@ old branches.
 
 ## B0.1 Repair audit tooling
 
-Current architecture scanner results undercount services and tests because the
-scripts look for `Garazyk/Sources/App/Services` and `Tests` instead of
-`Garazyk/Sources/Services` and `Garazyk/Tests`. Fix those roots and add a smoke
-fixture that asserts nonzero service and test counts.
+**Status: complete (verified 2026-07-26).** Scanner scripts now use the correct
+roots:
+
+- `scan_service_boundaries.sh:12` reads `Garazyk/Sources/Services`.
+- `map_test_gaps.sh:7-8` reads `Garazyk/Sources` and `Garazyk/Tests`.
+- `test_scanner_roots.sh` smoke test (lines 13-18) asserts nonzero service and
+  test counts, and verifies two known files appear in output.
 
 Generated scan hits remain leads. For example, the SQLite scan treats files
 using `PDS_SQLITE_AUTORELEASE_STMT` as missing finalization.
-
-Verification:
-
-- scanner discovers `Garazyk/Sources/Services` and `Garazyk/Tests`;
-- a known fixture appears in each report;
-- generated reports stay outside the source tree or in an ignored directory.
 
 Rollback: revert only scanner changes. No product code depends on them.
 
