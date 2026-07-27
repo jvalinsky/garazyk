@@ -1419,9 +1419,14 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         if (error) {
             *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                          code:PDSMigrationErrorTransactionFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
         }
+        if (errMsg) sqlite3_free(errMsg);
         return NO;
+    }
+    if (errMsg) {
+        sqlite3_free(errMsg);
+        errMsg = NULL;
     }
 
     // Run migration up method
@@ -1442,6 +1447,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
                 if (result != SQLITE_OK) {
                     GZ_LOG_DB_ERROR(@"Failed to commit migration V%ld: %s", (long)migration.version, errMsg);
+                    if (errMsg) {
+                        sqlite3_free(errMsg);
+                        errMsg = NULL;
+                    }
                     sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                     success = NO;
                 } else {
@@ -1472,6 +1481,8 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         success = NO;
     }
 
+    if (errMsg) sqlite3_free(errMsg);
+
     return success;
 }
 
@@ -1487,9 +1498,14 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         if (error) {
             *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                          code:PDSMigrationErrorTransactionFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to begin transaction"}];
         }
+        if (errMsg) sqlite3_free(errMsg);
         return NO;
+    }
+    if (errMsg) {
+        sqlite3_free(errMsg);
+        errMsg = NULL;
     }
 
     // Run migration down method
@@ -1508,6 +1524,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
                 if (result != SQLITE_OK) {
                     GZ_LOG_DB_ERROR(@"Failed to commit rollback V%ld: %s", (long)migration.version, errMsg);
+                    if (errMsg) {
+                        sqlite3_free(errMsg);
+                        errMsg = NULL;
+                    }
                     sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                     success = NO;
                 } else {
@@ -1537,6 +1557,8 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         }
         success = NO;
     }
+
+    if (errMsg) sqlite3_free(errMsg);
 
     return success;
 }
