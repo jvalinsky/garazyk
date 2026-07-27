@@ -110,9 +110,25 @@ NSString * const kPDSBlobTableCreateSQL =
     @"did TEXT NOT NULL,"
     @"mimeType TEXT,"
     @"size INTEGER NOT NULL,"
+    @"status TEXT NOT NULL DEFAULT 'temporary',"
     @"created_at TEXT NOT NULL,"
     @"FOREIGN KEY (did) REFERENCES accounts(did)"
     @")";
+
+NSString * const kPDSBlobRefsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS blob_refs ("
+    @"record_uri TEXT NOT NULL,"
+    @"blob_cid BLOB NOT NULL,"
+    @"did TEXT NOT NULL,"
+    @"created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+    @"PRIMARY KEY (record_uri, blob_cid)"
+    @")";
+
+NSString * const kPDSIndexBlobRefsCidSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_blob_refs_cid ON blob_refs(blob_cid)";
+
+NSString * const kPDSIndexBlobRefsDidSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_blob_refs_did ON blob_refs(did)";
 
 #pragma mark - Account Usage
 

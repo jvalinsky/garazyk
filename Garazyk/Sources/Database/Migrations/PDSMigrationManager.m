@@ -591,6 +591,74 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V7 Actor Store Blob Lifecycle (Actor Store)
+
+@interface V7ActorStoreBlobLifecycle : NSObject <PDSMigration>
+@end
+
+@implementation V7ActorStoreBlobLifecycle
+
+- (NSInteger)version { return 7; }
+
+- (NSString *)name { return @"actor_store_blob_lifecycle"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *steps[] = {
+        // Add status column to existing blobs table (default 'temporary' for new rows)
+        "ALTER TABLE blobs ADD COLUMN status TEXT NOT NULL DEFAULT 'temporary'",
+        // Mark all existing blobs as referenced (they were uploaded before lifecycle tracking)
+        "UPDATE blobs SET status = 'referenced' WHERE status = 'temporary'",
+        // Create blob_refs table for record→blob reference tracking
+        "CREATE TABLE IF NOT EXISTS blob_refs ("
+        "    record_uri TEXT NOT NULL,"
+        "    blob_cid BLOB NOT NULL,"
+        "    did TEXT NOT NULL,"
+        "    created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+        "    PRIMARY KEY (record_uri, blob_cid)"
+        ")",
+        // Index on blob_cid for fast reference lookups
+        "CREATE INDEX IF NOT EXISTS idx_blob_refs_cid ON blob_refs(blob_cid)",
+        // Index on did for per-account queries
+        "CREATE INDEX IF NOT EXISTS idx_blob_refs_did ON blob_refs(did)",
+    };
+
+    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
+        if (rc == SQLITE_OK) continue;
+        NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        if (errMsg) sqlite3_free(errMsg);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithFormat:@"V7 step %zu failed: %@", i, msg]}];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    // DROP TABLE blob_refs cascades to its indexes.
+    // The status column cannot be removed in SQLite without table recreation;
+    // existing blobs retain the column and its values after rollback.
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "DROP TABLE IF EXISTS blob_refs", NULL, NULL, &errMsg);
+    if (rc == SQLITE_OK) return YES;
+    NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+    if (errMsg) sqlite3_free(errMsg);
+    if (error) {
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:@"V7 down failed: %@", msg]}];
+    }
+    return NO;
+}
+
+@end
+
 #pragma mark - PDSMigrationManager Implementation
 
 @interface PDSMigrationManager ()
@@ -2586,6 +2654,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[V3RecordTombstonesWithoutRowid alloc] init]];
     [manager registerMigration:[[V4DedicatedSpaceSigningKeySchema alloc] init]];
     [manager registerMigration:[[V5RecordsRevisionCoveringIndex alloc] init]];
+    [manager registerMigration:[[V7ActorStoreBlobLifecycle alloc] init]];
     return manager;
 }
 
