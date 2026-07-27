@@ -78,6 +78,53 @@
     return json[@"blob"][@"ref"][@"$link"];
 }
 
+- (BOOL)referenceBlobWithCID:(NSString *)cid error:(NSError **)error {
+    NSDictionary *session = [self.controller loginWithHandle:@"blobtest.bsky.social"
+                                                     password:@"password"
+                                                        error:error];
+    if (!session) return NO;
+
+    NSDictionary *body = @{
+        @"repo": self.did,
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": [[NSUUID UUID] UUIDString],
+        @"validate": @NO,
+        @"record": @{
+            @"$type": @"app.bsky.feed.post",
+            @"text": @"references an uploaded blob",
+            @"embed": @{
+                @"$type": @"blob",
+                @"ref": @{ @"$link": cid }
+            }
+        }
+    };
+    NSData *bodyData = [NSJSONSerialization dataWithJSONObject:body options:0 error:error];
+    if (!bodyData) return NO;
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                   methodString:@"POST"
+                                                           path:@"/xrpc/com.atproto.repo.createRecord"
+                                                    queryString:@""
+                                                    queryParams:@{}
+                                                        version:@"1.1"
+                                                        headers:@{
+        @"content-type": @"application/json",
+        @"authorization": [NSString stringWithFormat:@"Bearer %@", session[@"accessJwt"]]
+    }
+                                                           body:bodyData
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:request response:response];
+    if (response.statusCode == HttpStatusOK) return YES;
+
+    if (error) {
+        *error = [NSError errorWithDomain:@"BlobXrpcTests"
+                                     code:response.statusCode
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create blob reference record"}];
+    }
+    return NO;
+}
+
 - (void)testUploadBlobEndpointSuccess {
     NSError *error = nil;
     NSString *blobContent = @"Hello XRPC Blob";
@@ -236,6 +283,7 @@
     NSDictionary *uploadJson = [NSJSONSerialization JSONObjectWithData:uploadResponse.body options:0 error:nil];
     NSString *cid = uploadJson[@"blob"][@"ref"][@"$link"];
     XCTAssertNotNil(cid);
+    XCTAssertTrue([self referenceBlobWithCID:cid error:&error], @"%@", error);
     
     // 2. Retrieve the blob
     // Query params: did, cid
@@ -248,7 +296,7 @@
                                                       queryParams:queryParams
                                                           version:@"1.1"
                                                           headers:@{} // No auth required for getBlob? Usually public if repo is public, but let's check spec. Sync endpoints are usually public.
-                                                             body:nil
+                                                             body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
     
     HttpResponse *getResponse = [[HttpResponse alloc] init];
@@ -257,6 +305,29 @@
     XCTAssertEqual(getResponse.statusCode, 200, @"Should return 200 OK for getBlob");
     XCTAssertEqualObjects(getResponse.body, blobData, @"Retrieved data should match uploaded data");
     XCTAssertEqualObjects(getResponse.contentType, @"text/plain", @"Content-Type should match");
+}
+
+- (void)testTemporaryBlobIsNotRetrievable {
+    NSError *error = nil;
+    NSString *cid = [self uploadBlobAndReturnCIDForData:[@"Temporary Blob Content" dataUsingEncoding:NSUTF8StringEncoding]
+                                                mimeType:@"text/plain"
+                                                   error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(cid);
+
+    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                     methodString:@"GET"
+                                                             path:@"/xrpc/com.atproto.sync.getBlob"
+                                                      queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
+                                                      queryParams:@{ @"did": self.did, @"cid": cid }
+                                                          version:@"1.1"
+                                                          headers:@{}
+                                                             body:[NSData data]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:getRequest response:getResponse];
+
+    XCTAssertEqual(getResponse.statusCode, HttpStatusNotFound);
 }
 
 - (void)testGetBlobNotFound {
@@ -269,7 +340,7 @@
                                                       queryParams:queryParams
                                                           version:@"1.1"
                                                           headers:@{}
-                                                             body:nil
+                                                             body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
     
     HttpResponse *getResponse = [[HttpResponse alloc] init];
@@ -287,6 +358,7 @@
     if (!cid) {
         return;
     }
+    XCTAssertTrue([self referenceBlobWithCID:cid error:&error], @"%@", error);
 
     HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
@@ -319,6 +391,7 @@
     if (!cid) {
         return;
     }
+    XCTAssertTrue([self referenceBlobWithCID:cid error:&error], @"%@", error);
 
     HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
@@ -348,6 +421,7 @@
     if (!cid) {
         return;
     }
+    XCTAssertTrue([self referenceBlobWithCID:cid error:&error], @"%@", error);
 
     NSDictionary *session = [self.controller loginWithHandle:@"blobtest.bsky.social"
                                                     password:@"password"
@@ -389,6 +463,7 @@
     if (!cid) {
         return;
     }
+    XCTAssertTrue([self referenceBlobWithCID:cid error:&error], @"%@", error);
 
     NSDictionary *session = [self.controller loginWithHandle:@"blobtest.bsky.social"
                                                     password:@"password"
