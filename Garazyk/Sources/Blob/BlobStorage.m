@@ -12,6 +12,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "App/ATProtoServiceConfiguration.h"
 #if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonCrypto.h>
 #endif
@@ -83,38 +84,10 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
         return nil;
     }
 
-    // Check if blob already exists in DB (User's DB)
-    __block NSError *dbError = nil;
-    __block PDSDatabaseBlob *existingBlob = nil;
-    
-    // We can't easily check 'all' databases, so we check this user's DB.
-    // If another user uploaded it, we might duplicate data storage call to provider,
-    // but provider 'storeBlobData' should be idempotent/deduplicating.
-    PDSActorStore *store = [_databasePool storeForDid:did error:&dbError];
-    if (store) {
-        existingBlob = [store getBlobForCID:[cid bytes] error:&dbError];
-    }
-    
-    if (existingBlob) {
-        return cid;
-    }
-
-    // Check if provider has it (for consistency)
-    if (![_provider hasBlobDataForCID:cid]) {
-        // Store data via provider
-        NSError *providerError = nil;
-        if (![_provider storeBlobData:data forCID:cid error:&providerError]) {
-            if (error) {
-                *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                             code:BlobStorageErrorStorageFailure
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to store blob data",
-                                                    NSUnderlyingErrorKey: providerError}];
-            }
-            return nil;
-        }
-    }
-
-    // Store blob metadata in database using transaction
+    // The quota check and metadata insert share the actor-store transaction, so
+    // concurrent uploads for the same account cannot both spend the same bytes.
+    // The provider is reached only after the quota check succeeds.
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
     blob.cid = [cid bytes];
     blob.did = did;
@@ -123,21 +96,71 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     blob.createdAt = [NSDate date];
     blob.state = PDSDatabaseBlobStateTemporary;
 
-    __block BOOL success = NO;
+    __block BOOL savedMetadata = NO;
+    __block NSError *dbError = nil;
     [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store saveBlob:blob error:blockError];
+
+        PDSDatabaseBlob *existingBlob = [store getBlobForCID:blob.cid error:blockError];
+        if (*blockError) return;
+        if (existingBlob) {
+            savedMetadata = YES;
+            return;
+        }
+
+        if (config.blobStorageQuotaBytes > 0) {
+            NSString *usageSQL = @"SELECT blob_bytes FROM account_usage WHERE did = ?";
+            sqlite3_stmt *statement = [store prepareStatement:usageSQL error:blockError];
+            if (!statement) return;
+
+            sqlite3_bind_text(statement, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+            int result = sqlite3_step(statement);
+            unsigned long long usedBytes = 0;
+            if (result == SQLITE_ROW) {
+                usedBytes = (unsigned long long)sqlite3_column_int64(statement, 0);
+            } else if (result != SQLITE_DONE) {
+                [store finalizeStatement:statement];
+                *blockError = [NSError errorWithDomain:BlobStorageErrorDomain
+                                                   code:BlobStorageErrorStorageFailure
+                                               userInfo:@{NSLocalizedDescriptionKey: @"Failed to read account blob usage"}];
+                return;
+            }
+            [store finalizeStatement:statement];
+
+            unsigned long long quota = config.blobStorageQuotaBytes;
+            if (data.length > quota || usedBytes > quota - data.length) {
+                *blockError = [NSError errorWithDomain:BlobStorageErrorDomain
+                                                   code:BlobStorageErrorQuotaExceeded
+                                               userInfo:@{NSLocalizedDescriptionKey: @"Blob storage quota exceeded"}];
+                return;
+            }
+        }
+
+        if (![_provider hasBlobDataForCID:cid]) {
+            NSError *providerError = nil;
+            if (![_provider storeBlobData:data forCID:cid error:&providerError]) {
+                *blockError = [NSError errorWithDomain:BlobStorageErrorDomain
+                                                   code:BlobStorageErrorStorageFailure
+                                               userInfo:@{NSLocalizedDescriptionKey: @"Failed to store blob data",
+                                                          NSUnderlyingErrorKey: providerError ?: [NSNull null]}];
+                return;
+            }
+        }
+
+        savedMetadata = [store saveBlob:blob error:blockError];
     } error:&dbError];
 
-    if (!success) {
-        // We do NOT delete from provider here typically, as another user might rely on it.
-        // Garbage collection is a separate concern.
-        
+    if (!savedMetadata) {
+        // Slice 5 supplies provider cleanup for metadata-save failures. A quota
+        // rejection reaches this branch before the provider is ever written.
         if (error) {
-            *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                         code:BlobStorageErrorStorageFailure
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to save blob metadata",
-                                                NSUnderlyingErrorKey: dbError ?: [NSNull null]}];
+            if (dbError) {
+                *error = dbError;
+            } else {
+                *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                             code:BlobStorageErrorStorageFailure
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to save blob metadata"}];
+            }
         }
         return nil;
     }
