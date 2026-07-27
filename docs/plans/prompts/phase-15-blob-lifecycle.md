@@ -1,12 +1,23 @@
 ---
 phase: 15
 title: Blob lifecycle conformance
-status: pending
+status: in-progress
 agent: worker
 depends_on: []
 ---
 
 # Phase 15: Blob lifecycle conformance
+
+## Progress
+
+- 2026-07-27: **Slice 1 complete.** Modeled the blob lifecycle: added
+  `status TEXT NOT NULL DEFAULT 'temporary'` column to both `blobs`
+  definitions (`actorStoreBlobsTableSchema` and `kPDSBlobTableCreateSQL`).
+  Reconciled divergent FK definitions (added FK to actor store version).
+  Created `blob_refs` reference table with indexes. Added `status` property
+  to `PDSDatabaseBlob`. Updated all blob CRUD queries. V7 migration creates
+  column/table for existing stores, marks all pre-existing blobs as
+  `'referenced'`. Committed as `4f061304`.
 
 ## Mission
 
