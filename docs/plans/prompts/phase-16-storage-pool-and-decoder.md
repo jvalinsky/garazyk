@@ -25,6 +25,12 @@ removes idle stores under `poolQueue`, and schedules their close on the
 eviction queue. `DatabasePoolTests` passed 17 tests, including the new
 long-transaction eviction and metrics responsiveness regression.
 
+Completed slice 9: cold actor-store path derivation and SQLite opening now
+run outside `poolQueue`, with a per-DID single-flight group preventing duplicate
+opens. The run-loop-bound timer was replaced by a dispatch source on the
+eviction queue. `DatabasePoolTests` passed 18 tests, including a pool created
+on a thread without a run loop that was evicted by the timer.
+
 ## Mission
 
 Execute workstream 01 § S9 slices 7-10: fix the actor-store pool's silently
