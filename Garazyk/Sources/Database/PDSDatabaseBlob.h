@@ -33,6 +33,12 @@ NS_ASSUME_NONNULL_BEGIN
 /** The size of the blob in bytes. */
 @property (nonatomic, assign) NSInteger size;
 
+/**
+ * The lifecycle status of the blob: 'temporary' (uploaded but not yet
+ * referenced by a record) or 'referenced' (at least one record references it).
+ */
+@property (nonatomic, copy, nullable) NSString *status;
+
 /** Date when the blob was uploaded. */
 @property (nonatomic, strong) NSDate *createdAt;
 
