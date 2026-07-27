@@ -9,6 +9,10 @@
 #ifndef GZ_TEST_XCTEST_FORWARDING_HEADER_H
 #define GZ_TEST_XCTEST_FORWARDING_HEADER_H
 
+#ifdef __APPLE__
+#include_next <XCTest/XCTest.h>
+#else
 #import "Compat/XCTest/XCTest.h"
+#endif
 
 #endif

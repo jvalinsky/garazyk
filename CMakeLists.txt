@@ -1622,6 +1622,7 @@ if(BUILD_TESTS)
 
   # Exclude problematic tests (preserved from original)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/SecItemLinuxStoreTestMain.m")
   # Exclude top-level Integration tests only, except our new PLC integration test
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/comprehensive_tests.m")
