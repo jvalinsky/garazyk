@@ -572,14 +572,17 @@ Primary source: https://tangled.org/microcosm.blue/star
 
 ## S8. Untyped JSON at auth trust boundaries
 
-**Status: not started (identified 2026-07-26).** A review of Auth, Security,
-PLC, and Identity found one defect class repeated at every trust boundary that
-parses attacker-supplied JSON: values are read out of an `NSDictionary` and
-assigned to typed properties or sent typed messages without an
-`isKindOfClass:` check. Because `NSDictionary` and `NSArray` implement
-`-copyWithZone:`, assignment into a `copy` `NSString *` property succeeds and
-stores the wrong class; the failure surfaces later as an unrecognized selector,
-which is an uncaught `NSInvalidArgumentException` and therefore process abort.
+**Status: complete (verified 2026-07-27).** All 7 slices landed across two
+execution phases. 11 commits, 3 ADRs written, global gates green.
+
+A review of Auth, Security, PLC, and Identity found one defect class repeated
+at every trust boundary that parses attacker-supplied JSON: values are read out
+of an `NSDictionary` and assigned to typed properties or sent typed messages
+without an `isKindOfClass:` check. Because `NSDictionary` and `NSArray`
+implement `-copyWithZone:`, assignment into a `copy` `NSString *` property
+succeeds and stores the wrong class; the failure surfaces later as an
+unrecognized selector, which is an uncaught `NSInvalidArgumentException` and
+therefore process abort.
 
 Confirmed by harness, not by reading alone: assigning `@{@"x":@1}` to a
 `copy NSString *` property yields `NSConstantDictionary`, and the subsequent
@@ -758,31 +761,53 @@ revert that slice rather than loosening the check, and capture the client's
 actual payload shape as a test case first. Slice 6 is behavior-neutral. Slice 7
 is the only destructive slice and should land last, after its ADR.
 
-### Decisions taken (2026-07-26)
+### Decisions taken (2026-07-26, documented 2026-07-27)
 
 All three open questions were resolved by the operator before execution
-started. Each still needs its ADR written, because each is a durable,
-protocol- or architecture-visible contract:
+started. The decisions were recorded as ADRs after execution:
 
 - **Claim type mismatches are rejected, not coerced.** `aud` accepts the
   RFC 7519 array form: normalize to an array internally and match if any
   element equals the expected audience. Every other claim type mismatch is a
-  hard rejection.
+  hard rejection. See ADR 0013.
 - **DPoP replay state is durable.** The jti cache becomes a persistent store
   rather than `:memory:`, so replay protection survives restart and remains
-  correct behind a load balancer. The ADR must record the disk budget and the
-  added I/O on the OAuth token and PAR paths.
+  correct behind a load balancer. Disk budget and I/O cost recorded in ADR
+  0014.
 - **The auth cluster is wired, not deleted.** `Auth/Verifier`,
-  `PDSAccountPolicy`, and `GZAuthzManager` become the live auth path. The ADR
-  must record the parity strategy against the existing `XrpcAuthHelper` path
-  and the cutover/rollback trigger.
+  `PDSAccountPolicy`, and `GZAuthzManager` become the live auth path, behind
+  a `PDS_USE_AUTH_VERIFIER` env-var switch with the incumbent path retained
+  for rollback. Parity strategy and cutover trigger recorded in ADR 0015.
+
+### Commits
+
+**Phase 13 (slices 1-6):**
+
+| Slice | Commit | Description |
+|-------|--------|-------------|
+| 1 | `d8ba0644` | Fail-closed claim typing at JWT/DPoP parse boundaries (ADR 0013) |
+| 2 | `a80e91b5` | JWTVerifier mandatory claims, fail-closed alg, key-derived verification |
+| 3 | `f079278b` | DPoP replay cache durable, sharedCache never nil (ADR 0014) |
+| 4 | `77defcb7` | PLC audit-log verification — PLCAuditor chain check before state replayer |
+| 5 | `a04c03ea` | TID charset validation — unichar truncation (U+0132) gate |
+| 6 | `b0b6754d` | GZ_LOG_DEBUG/DEBUG_C gated on active log level |
+
+**Phase 14 (slice 7):**
+
+| Step | Commit | Description |
+|------|--------|-------------|
+| 1 | `ee358663` | Break self-recursive setters in AuthVerifier/PDSAuth |
+| 2-3 | `713b4490` | Account policy fail-closed + GZAuthzManager correctness |
+| 4-5 | `91848d5e` | did:web validation + AuthVerifier DPoP/audience gaps |
+| 6 | `a58df71b` | Wire AuthVerifier cluster behind `PDS_USE_AUTH_VERIFIER` switch |
+| (fix) | `cd420966` | Fix duplicate method and property access in XrpcAuthHelper |
 
 ### Execution phases
 
 Derived prompts live in `../prompts/`:
 
-- `phase-13-auth-json-typing.md` — slices 1-6, no architecture change.
-- `phase-14-wire-auth-cluster.md` — slice 7, `depends_on: [13]`.
+- `phase-13-auth-json-typing.md` — slices 1-6, no architecture change. **Complete.**
+- `phase-14-wire-auth-cluster.md` — slice 7, `depends_on: [13]`. **Complete.**
 
 ## S9. Blob lifecycle and storage-pool correctness
 
