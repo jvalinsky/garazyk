@@ -21,6 +21,10 @@
 #import <arpa/inet.h>
 #import <CoreFoundation/CoreFoundation.h>
 
+@interface ATProtoServiceConfiguration (MSTViewerTestAccess)
+- (void)applyConfig:(NSDictionary *)config;
+@end
+
 @interface ATProtoHttpServerBuilderTests : XCTestCase
 @property (nonatomic, strong) HttpServer *testServer;
 @property (nonatomic, strong) NSString *testDirectory;
@@ -271,6 +275,56 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     XCTAssertTrue(builder.enableOAuthDemo);
     XCTAssertTrue(builder.enableMSTViewer);
     XCTAssertTrue(builder.enableNodeInfo);
+}
+
+- (void)testInitWithConfigurationDisablesMSTViewerInProduction {
+    // Save and restore PDS_ENV
+    NSString *savedEnv = getenv("PDS_ENV") ? [NSString stringWithUTF8String:getenv("PDS_ENV")] : nil;
+    setenv("PDS_ENV", "production", 1);
+
+    @try {
+        ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
+        // applyConfig: reads PDS_ENV and sets mstViewerEnabled = NO in production
+        [config applyConfig:@{@"server": @{}}];
+
+        ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] initWithConfiguration:config];
+        XCTAssertFalse(builder.enableMSTViewer,
+                       @"MST viewer should be off by default in production");
+    } @finally {
+        if (savedEnv) {
+            setenv("PDS_ENV", savedEnv.UTF8String, 1);
+        } else {
+            unsetenv("PDS_ENV");
+        }
+    }
+}
+
+- (void)testInitWithConfigurationEnablesMSTViewerWithEnvOverrideInProduction {
+    // Save and restore env vars
+    NSString *savedEnv = getenv("PDS_ENV") ? [NSString stringWithUTF8String:getenv("PDS_ENV")] : nil;
+    NSString *savedMst = getenv("PDS_ENABLE_MST_VIEWER") ? [NSString stringWithUTF8String:getenv("PDS_ENABLE_MST_VIEWER")] : nil;
+    setenv("PDS_ENV", "production", 1);
+    setenv("PDS_ENABLE_MST_VIEWER", "1", 1);
+
+    @try {
+        ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
+        [config applyConfig:@{@"server": @{}}];
+
+        ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] initWithConfiguration:config];
+        XCTAssertTrue(builder.enableMSTViewer,
+                       @"MST viewer should be on when PDS_ENABLE_MST_VIEWER=1 in production");
+    } @finally {
+        if (savedEnv) {
+            setenv("PDS_ENV", savedEnv.UTF8String, 1);
+        } else {
+            unsetenv("PDS_ENV");
+        }
+        if (savedMst) {
+            setenv("PDS_ENABLE_MST_VIEWER", savedMst.UTF8String, 1);
+        } else {
+            unsetenv("PDS_ENABLE_MST_VIEWER");
+        }
+    }
 }
 
 - (void)testInitWithConfigurationSetsDefaultPortWithNilConfig {
