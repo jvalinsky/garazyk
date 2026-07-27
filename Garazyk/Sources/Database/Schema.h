@@ -35,6 +35,7 @@ extern NSString * const kPDSRepoTableName;
 extern NSString * const kPDSRecordTableName;
 extern NSString * const kPDSBlockTableName;
 extern NSString * const kPDSBlobTableName;
+extern NSString * const kPDSBlobRefTableName;
 extern NSString * const kPDSAccountUsageTableName;
 extern NSString * const kPDSInviteCodeTableName;
 extern NSString * const kPDSPasskeysTableName;
@@ -65,12 +66,7 @@ extern NSString * const kPDSRepoTableCreateSQL;
 extern NSString * const kPDSRecordTableCreateSQL;
 extern NSString * const kPDSBlockTableCreateSQL;
 extern NSString * const kPDSBlobTableCreateSQL;
-
-#pragma mark - Blob Refs
-
-extern NSString * const kPDSBlobRefsTableCreateSQL;
-extern NSString * const kPDSIndexBlobRefsCidSQL;
-extern NSString * const kPDSIndexBlobRefsDidSQL;
+extern NSString * const kPDSBlobRefTableCreateSQL;
 
 #pragma mark - Account Usage
 

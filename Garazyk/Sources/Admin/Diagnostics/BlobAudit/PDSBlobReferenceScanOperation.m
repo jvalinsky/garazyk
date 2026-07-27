@@ -9,6 +9,9 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"
+#import "App/ATProtoServiceConfiguration.h"
+#import "Blob/PDSBlobProvider.h"
+#import "Core/CID.h"
 
 @implementation PDSBlobReferenceScanOperation
 
@@ -26,6 +29,11 @@
 
     NSMutableArray *unreferencedBlobs = [NSMutableArray array];
     NSMutableArray<NSDictionary<NSString *, NSString *> *> *invalidMetadataCIDs = [NSMutableArray array];
+    NSMutableArray<NSDictionary<NSString *, id> *> *sweepCandidates = [NSMutableArray array];
+    NSMutableSet<NSString *> *retainedProviderCIDs = [NSMutableSet set];
+    BOOL temporarySweep = [self.auditType isEqualToString:@"temporary"];
+    NSTimeInterval cutoff = [[NSDate date] timeIntervalSince1970] -
+        [ATProtoServiceConfiguration sharedConfiguration].blobTemporaryGracePeriodSeconds;
     NSUInteger totalReferenced = 0;
     NSUInteger totalMetadata = 0;
     NSUInteger totalAccounts = accounts.count;
@@ -39,6 +47,7 @@
 
         NSMutableSet<NSString *> *metadataCIDs = [NSMutableSet set];
         NSMutableSet<NSString *> *referencedCIDs = [NSMutableSet set];
+        NSMutableDictionary<NSString *, PDSDatabaseBlob *> *metadataByCID = [NSMutableDictionary dictionary];
         NSError *readError = nil;
 
         [self.blobStorage.databasePool readWithDid:account.did block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
@@ -55,6 +64,7 @@
                     NSString *cidString = PDSBlobAuditCIDStringFromRawBytes(blob.cid);
                     if (cidString.length > 0) {
                         [metadataCIDs addObject:cidString];
+                        metadataByCID[cidString] = blob;
                     } else {
                         NSString *rawCID = PDSBlobAuditCursorFromRawBytes(blob.cid) ?: @"";
                         [invalidMetadataCIDs addObject:@{
@@ -121,6 +131,48 @@
                 @"cid": cidString
             }];
         }
+
+        for (NSString *cidString in metadataCIDs) {
+            PDSDatabaseBlob *blob = metadataByCID[cidString];
+            BOOL eligibleTemporary = temporarySweep &&
+                [blob.state isEqualToString:PDSDatabaseBlobStateTemporary] &&
+                blob.createdAt.timeIntervalSince1970 <= cutoff &&
+                ![referencedCIDs containsObject:cidString];
+            if (eligibleTemporary) {
+                [sweepCandidates addObject:@{ @"did": account.did ?: @"", @"cid": cidString }];
+            } else {
+                [retainedProviderCIDs addObject:cidString];
+            }
+        }
+    }
+
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *sweptBlobs = [NSMutableArray array];
+    NSMutableSet<NSString *> *deletedProviderCIDs = [NSMutableSet set];
+    if (temporarySweep && !self.dryRun) {
+        for (NSDictionary<NSString *, id> *candidate in sweepCandidates) {
+            NSString *did = candidate[@"did"];
+            NSString *cidString = candidate[@"cid"];
+            CID *cid = [CID cidFromString:cidString];
+            NSError *deleteError = nil;
+            if (!cid || ![self.blobStorage deleteBlobWithCID:cid did:did error:&deleteError]) {
+                GZ_LOG_ERROR(@"TemporaryBlobSweep: Failed to delete metadata %@ for %@: %@", cidString, did, deleteError);
+                [retainedProviderCIDs addObject:cidString];
+                continue;
+            }
+            [sweptBlobs addObject:@{ @"did": did, @"cid": cidString }];
+        }
+
+        for (NSDictionary<NSString *, id> *candidate in sweepCandidates) {
+            NSString *cidString = candidate[@"cid"];
+            if ([retainedProviderCIDs containsObject:cidString] || [deletedProviderCIDs containsObject:cidString]) continue;
+            CID *cid = [CID cidFromString:cidString];
+            NSError *providerError = nil;
+            if (!cid || ![self.blobStorage.provider deleteBlobDataForCID:cid error:&providerError]) {
+                GZ_LOG_ERROR(@"TemporaryBlobSweep: Failed to delete provider data %@: %@", cidString, providerError);
+                continue;
+            }
+            [deletedProviderCIDs addObject:cidString];
+        }
     }
 
     NSTimeInterval endTime = [[NSDate date] timeIntervalSince1970];
@@ -131,6 +183,9 @@
         @"totalReferenced": @(totalReferenced),
         @"totalMetadata": @(totalMetadata),
         @"invalidMetadataCIDs": invalidMetadataCIDs,
+        @"sweptBlobs": sweptBlobs,
+        @"totalSwept": @(sweptBlobs.count),
+        @"gracePeriodSeconds": @([ATProtoServiceConfiguration sharedConfiguration].blobTemporaryGracePeriodSeconds),
         @"duration": @(endTime - startTime),
         @"dryRun": @(self.dryRun)
     };

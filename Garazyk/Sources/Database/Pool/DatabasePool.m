@@ -13,49 +13,56 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 // Queue-specific key for re-entrancy detection in dealloc
 static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 
-@interface PDSDatabasePoolTimerProxy : NSObject
-@property (nonatomic, weak) id pool;
-@end
-
-@implementation PDSDatabasePoolTimerProxy
-- (void)evictionTimerFired:(NSTimer *)timer {
-    [self.pool performSelector:@selector(evictionTimerFired:) withObject:timer];
-}
-@end
-
 @interface PDSDatabasePool ()
-- (void)evictionTimerFired:(NSTimer *)timer;
+- (instancetype)initWithDbDirectory:(NSString *)dbDirectory
+                            maxSize:(NSUInteger)maxSize
+                   evictionInterval:(NSTimeInterval)evictionInterval
+                      idleThreshold:(NSTimeInterval)idleThreshold;
+- (nullable PDSActorStore *)storeForDid:(NSString *)did
+                            retainForUse:(BOOL)retainForUse
+                                   error:(NSError **)error;
+- (void)releaseStoreUseForDid:(NSString *)did store:(PDSActorStore *)store;
 @property (nonatomic, copy, readwrite) NSString *dbDirectory;
 @property (nonatomic, assign, readwrite) NSUInteger maxSize;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, PDSActorStore *> *stores;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *lastAccessTime;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *activeUseCounts;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, id> *pendingOpenGroups;
 @property (nonatomic, strong) NSMutableSet<NSString *> *knownDids;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t evictionQueue;
-@property (nonatomic, strong) NSTimer *evictionTimer;
+@property (nonatomic, PDS_GCD_STRONG) dispatch_source_t evictionTimer;
+@property (nonatomic, assign) NSTimeInterval evictionIdleThreshold;
 @property (nonatomic, assign, readwrite) NSUInteger openFileHandleCount;
 
 @end
 
 @implementation PDSDatabasePool
 
-- (void)evictionTimerFired:(NSTimer *)timer {
-    dispatch_async(self.evictionQueue, ^{
-        [self evictUnusedStores];
-    });
+- (instancetype)initWithDbDirectory:(NSString *)dbDirectory maxSize:(NSUInteger)maxSize {
+    return [self initWithDbDirectory:dbDirectory
+                             maxSize:maxSize
+                    evictionInterval:60.0
+                       idleThreshold:300.0];
 }
 
-- (instancetype)initWithDbDirectory:(NSString *)dbDirectory maxSize:(NSUInteger)maxSize {
+- (instancetype)initWithDbDirectory:(NSString *)dbDirectory
+                            maxSize:(NSUInteger)maxSize
+                   evictionInterval:(NSTimeInterval)evictionInterval
+                      idleThreshold:(NSTimeInterval)idleThreshold {
     self = [super init];
     if (self) {
         _dbDirectory = [dbDirectory copy];
         _maxSize = maxSize;
         _stores = [NSMutableDictionary dictionary];
         _lastAccessTime = [NSMutableDictionary dictionary];
+        _activeUseCounts = [NSMutableDictionary dictionary];
+        _pendingOpenGroups = [NSMutableDictionary dictionary];
         _poolQueue = dispatch_queue_create("com.atproto.pds.databasepool", DISPATCH_QUEUE_SERIAL);
         dispatch_queue_set_specific(_poolQueue, kDatabasePoolQueueKey, kDatabasePoolQueueKey, NULL);
         _evictionQueue = dispatch_queue_create("com.atproto.pds.databasepool.eviction", DISPATCH_QUEUE_SERIAL);
         _openFileHandleCount = 0;
+        _evictionIdleThreshold = idleThreshold;
         _knownDids = [NSMutableSet set];
         
         NSFileManager *fm = [NSFileManager defaultManager];
@@ -67,20 +74,29 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
             }
         }
         
-        PDSDatabasePoolTimerProxy *proxy = [[PDSDatabasePoolTimerProxy alloc] init];
-        proxy.pool = self;
-        _evictionTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
-                                                          target:proxy
-                                                        selector:@selector(evictionTimerFired:)
-                                                        userInfo:nil
-                                                         repeats:YES];
+        _evictionTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _evictionQueue);
+        if (_evictionTimer) {
+            dispatch_source_set_timer(_evictionTimer,
+                                      dispatch_time(DISPATCH_TIME_NOW, (int64_t)(evictionInterval * NSEC_PER_SEC)),
+                                      (uint64_t)(evictionInterval * NSEC_PER_SEC),
+                                      0);
+            __weak typeof(self) weakSelf = self;
+            dispatch_source_set_event_handler(_evictionTimer, ^{
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                [strongSelf evictUnusedStores];
+            });
+            dispatch_resume(_evictionTimer);
+        }
     }
     return self;
 }
 
 - (void)dealloc {
-    [self.evictionTimer invalidate];
     if (dispatch_get_specific(kDatabasePoolQueueKey)) {
+        if (self.evictionTimer) {
+            dispatch_source_cancel(self.evictionTimer);
+            self.evictionTimer = nil;
+        }
         // Already on pool queue — close stores directly to avoid deadlock
         [self closeAllNoSync];
     } else {
@@ -134,43 +150,84 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 }
 
 - (nullable PDSActorStore *)storeForDid:(NSString *)did error:(NSError **)error {
+    return [self storeForDid:did retainForUse:NO error:error];
+}
+
+- (nullable PDSActorStore *)storeForDid:(NSString *)did
+                            retainForUse:(BOOL)retainForUse
+                                   error:(NSError **)error {
+    if (did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabasePoolErrorDomain
+                                         code:1001
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID for actor store path"}];
+        }
+        return nil;
+    }
+
     __block PDSActorStore *store = nil;
     __block NSError *blockError = nil;
-    __block NSString *dbPath = nil;
+    __block dispatch_group_t openGroup = nil;
+    __block BOOL shouldOpen = NO;
 
     dispatch_sync(self.poolQueue, ^{
         store = self.stores[did];
 
         if (store) {
             self.lastAccessTime[did] = [NSDate date];
+            if (retainForUse) {
+                self.activeUseCounts[did] = @([self.activeUseCounts[did] unsignedIntegerValue] + 1);
+            }
             return;
         }
 
-        if (self.stores.count >= self.maxSize) {
-            [self evictLRUStore];
-        }
-
-        dbPath = [self dbPathForDid:did];
-        if (dbPath.length == 0) {
-            blockError = [NSError errorWithDomain:PDSDatabasePoolErrorDomain
-                                             code:1001
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID for actor store path"}];
+        id existingGroup = self.pendingOpenGroups[did];
+        if (existingGroup) {
+            openGroup = PDS_GCD_CAST(dispatch_group_t, existingGroup);
             return;
         }
+
+        openGroup = dispatch_group_create();
+        dispatch_group_enter(openGroup);
+        self.pendingOpenGroups[did] = PDS_GCD_BRIDGE_ID(openGroup);
+        shouldOpen = YES;
+    });
+
+    if (store) return store;
+    if (!shouldOpen) {
+        dispatch_group_wait(openGroup, DISPATCH_TIME_FOREVER);
+        return [self storeForDid:did retainForUse:retainForUse error:error];
+    }
+
+    NSString *dbPath = [self dbPathForDid:did];
+    if (dbPath.length == 0) {
+        blockError = [NSError errorWithDomain:PDSDatabasePoolErrorDomain
+                                         code:1001
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID for actor store path"}];
+    } else {
         GZ_LOG_DB_DEBUG(@"Opening store at path: %@ (exists: %d)", dbPath,
                          [[NSFileManager defaultManager] fileExistsAtPath:dbPath]);
-
         store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&blockError];
+    }
 
+    if (store) store.masterSecret = self.masterSecret;
+    dispatch_sync(self.poolQueue, ^{
+        [self.pendingOpenGroups removeObjectForKey:did];
         if (store) {
-            store.masterSecret = self.masterSecret;
+            if (self.stores.count >= self.maxSize) {
+                [self evictLRUStore];
+            }
             self.stores[did] = store;
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;
             [self.knownDids addObject:did];
+            if (retainForUse) {
+                self.activeUseCounts[did] = @1;
+            }
         } else {
             GZ_LOG_DB_ERROR(@"Failed to open store for %@: %@", did, blockError);
         }
+        dispatch_group_leave(openGroup);
     });
 
     if (error && blockError) {
@@ -180,8 +237,20 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
     return store;
 }
 
+- (void)releaseStoreUseForDid:(NSString *)did store:(PDSActorStore *)store {
+    dispatch_sync(self.poolQueue, ^{
+        if (self.stores[did] != store) return;
+        NSUInteger active = [self.activeUseCounts[did] unsignedIntegerValue];
+        if (active <= 1) {
+            [self.activeUseCounts removeObjectForKey:did];
+        } else {
+            self.activeUseCounts[did] = @(active - 1);
+        }
+    });
+}
+
 - (void)evictUnusedStores {
-    NSDate *cutoff = [NSDate dateWithTimeIntervalSinceNow:-300];
+    NSDate *cutoff = [NSDate dateWithTimeIntervalSinceNow:-self.evictionIdleThreshold];
     
     dispatch_sync(self.poolQueue, ^{
         NSMutableArray<NSString *> *toEvict = [NSMutableArray array];
@@ -209,7 +278,8 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
     
     for (NSString *did in self.lastAccessTime) {
         NSDate *accessTime = self.lastAccessTime[did];
-        if ([accessTime compare:lruTime] == NSOrderedAscending) {
+        if ([self.activeUseCounts[did] unsignedIntegerValue] == 0 &&
+            [accessTime compare:lruTime] == NSOrderedAscending) {
             lruTime = accessTime;
             lruDid = did;
         }
@@ -228,18 +298,23 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 
 - (void)evictStoreForDidInternal:(NSString *)did {
     PDSActorStore *store = self.stores[did];
-    if (store) {
+    if (!store || [self.activeUseCounts[did] unsignedIntegerValue] > 0) return;
+
+    [self.stores removeObjectForKey:did];
+    [self.lastAccessTime removeObjectForKey:did];
+    [self.knownDids removeObject:did];
+    [self.activeUseCounts removeObjectForKey:did];
+    if (self.openFileHandleCount > 0) self.openFileHandleCount--;
+    dispatch_async(self.evictionQueue, ^{
         [store close];
-        [self.stores removeObjectForKey:did];
-        [self.lastAccessTime removeObjectForKey:did];
-        [self.knownDids removeObject:did];
-        self.openFileHandleCount--;
-    }
+    });
 }
 
 - (void)closeAll {
-    [self.evictionTimer invalidate];
-    self.evictionTimer = nil;
+    if (self.evictionTimer) {
+        dispatch_source_cancel(self.evictionTimer);
+        self.evictionTimer = nil;
+    }
     dispatch_sync(self.poolQueue, ^{
         [self closeAllNoSync];
     });
@@ -255,6 +330,7 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
     }
     [self.stores removeAllObjects];
     [self.lastAccessTime removeAllObjects];
+    [self.activeUseCounts removeAllObjects];
     [self.knownDids removeAllObjects];
     self.openFileHandleCount = 0;
 }
@@ -264,57 +340,67 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 - (void)transactWithDid:(NSString *)did 
                   block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block 
                   error:(NSError **)error {
-    PDSActorStore *store = [self storeForDid:did error:error];
+    PDSActorStore *store = [self storeForDid:did retainForUse:YES error:error];
     if (!store) {
         return;
     }
     
     [store transactWithBlock:block error:error];
+    [self releaseStoreUseForDid:did store:store];
 }
 
 - (void)readWithDid:(NSString *)did 
               block:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
               error:(NSError **)error {
-    PDSActorStore *store = [self storeForDid:did error:error];
+    PDSActorStore *store = [self storeForDid:did retainForUse:YES error:error];
     if (!store) {
         return;
     }
     
     [store readWithBlock:block error:error];
+    [self releaseStoreUseForDid:did store:store];
 }
 
 #pragma mark - Convenience Methods
 
 - (nullable PDSDatabaseAccount *)getAccount:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [self storeForDid:did error:error];
+    PDSActorStore *store = [self storeForDid:did retainForUse:YES error:error];
     if (!store) {
         return nil;
     }
-    return [store getAccountForDid:did error:error];
+    PDSDatabaseAccount *account = [store getAccountForDid:did error:error];
+    [self releaseStoreUseForDid:did store:store];
+    return account;
 }
 
 - (nullable PDSDatabaseRepo *)getRepo:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [self storeForDid:did error:error];
+    PDSActorStore *store = [self storeForDid:did retainForUse:YES error:error];
     if (!store) {
         return nil;
     }
-    return [store getRepoForDid:did error:error];
+    PDSDatabaseRepo *repo = [store getRepoForDid:did error:error];
+    [self releaseStoreUseForDid:did store:store];
+    return repo;
 }
 
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [self storeForDid:did error:error];
+    PDSActorStore *store = [self storeForDid:did retainForUse:YES error:error];
     if (!store) {
         return nil;
     }
-    return [store getRepoRootForDid:did error:error];
+    NSData *root = [store getRepoRootForDid:did error:error];
+    [self releaseStoreUseForDid:did store:store];
+    return root;
 }
 
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [self storeForDid:did error:error];
+    PDSActorStore *store = [self storeForDid:did retainForUse:YES error:error];
     if (!store) {
         return nil;
     }
-    return [store getRecord:uri forDid:did error:error];
+    PDSDatabaseRecord *record = [store getRecord:uri forDid:did error:error];
+    [self releaseStoreUseForDid:did store:store];
+    return record;
 }
 
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
@@ -340,24 +426,10 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 }
 
 // Walks {dbDir}/{method}/{prefix}/{did} looking for files starting with "did:".
-// Uses knownDids set as a cache when available, falling back to filesystem walk
-// only when the set is empty (e.g., on first call after restart).
+// The open-store cache is not an inventory: it contains only stores that have
+// been opened since this pool was created and must never determine an
+// enumeration result.
 - (void)enumerateDidFiles:(void (^)(NSString *did))block {
-    __block NSArray<NSString *> *cachedDids = nil;
-    dispatch_sync(self.poolQueue, ^{
-        if (self.knownDids.count > 0) {
-            cachedDids = [self.knownDids allObjects];
-        }
-    });
-
-    if (cachedDids) {
-        for (NSString *did in cachedDids) {
-            block(did);
-        }
-        return;
-    }
-
-    // Fallback: walk the filesystem
     NSFileManager *fm = [NSFileManager defaultManager];
     NSArray<NSString *> *methodDirs = [fm contentsOfDirectoryAtPath:self.dbDirectory error:nil];
     for (NSString *methodEntry in methodDirs) {
@@ -376,9 +448,6 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
                     continue;
                 }
                 if ([file hasPrefix:@"did:"]) {
-                    dispatch_sync(self.poolQueue, ^{
-                        [self.knownDids addObject:file];
-                    });
                     block(file);
                 }
             }

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSRecordService+RecordCRUD.h"
+#import "PDSRecordService+BlobLifecycle.h"
 #import "PDSRecordService+Validation.h"
 #import "Debug/GZLogger.h"
 #import "Core/ATProtoValidator.h"
@@ -245,7 +246,17 @@
         NSTimeInterval waitMs = (writeStart - writeEnter) * 1000.0;
         GZ_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
                        waitMs, did, collection, rkey);
-        success = [self.recordRepository saveRecord:record error:&writeError];
+        [self.databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+            if (![transactor putRecord:record forDid:did error:blockError]) {
+                success = NO;
+                return;
+            }
+            success = [self syncBlobReferencesForRecordURI:uri
+                                                recordValue:value
+                                                     forDid:did
+                                                transactor:transactor
+                                                     error:blockError];
+        } error:&writeError];
 
         if (success) {
             NSTimeInterval saveMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
@@ -385,7 +396,12 @@
 
             if (![transactor deleteRecord:uri forDid:did error:blockError]) {
                 success = NO;
+                return;
             }
+            success = [self removeBlobReferencesForRecordURI:uri
+                                                       forDid:did
+                                                  transactor:transactor
+                                                       error:blockError];
         } error:&writeError];
 
         if (success) {

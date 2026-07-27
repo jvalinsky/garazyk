@@ -12,6 +12,7 @@ NSString * const kPDSRepoTableName = @"repos";
 NSString * const kPDSRecordTableName = @"records";
 NSString * const kPDSBlockTableName = @"blocks";
 NSString * const kPDSBlobTableName = @"blobs";
+NSString * const kPDSBlobRefTableName = @"blob_refs";
 NSString * const kPDSAccountUsageTableName = @"account_usage";
 NSString * const kPDSInviteCodeTableName = @"invite_codes";
 
@@ -104,31 +105,33 @@ NSString * const kPDSBlockTableCreateSQL =
     @"FOREIGN KEY (repo_did) REFERENCES repos(owner_did)"
     @")";
 
+// Reconciled with Database/Schema/PDSSchemaManager.m's actorStoreBlobsTableSchema
+// (2026-07-26, phase 15): the two definitions previously disagreed on the
+// `did` foreign key. Actor-store shards are per-DID and never populate their
+// own local `accounts` table (account rows live only in the service store),
+// so a `did REFERENCES accounts(did)` constraint never holds there; dropped
+// here to match the live actor-store shape. `state` models the blob
+// lifecycle (temporary until a record references it; see
+// docs/plans/prompts/phase-15-blob-lifecycle.md).
 NSString * const kPDSBlobTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS blobs ("
     @"cid BLOB PRIMARY KEY,"
     @"did TEXT NOT NULL,"
     @"mimeType TEXT,"
     @"size INTEGER NOT NULL,"
-    @"status TEXT NOT NULL DEFAULT 'temporary',"
     @"created_at TEXT NOT NULL,"
-    @"FOREIGN KEY (did) REFERENCES accounts(did)"
+    @"state TEXT NOT NULL DEFAULT 'temporary'"
     @")";
 
-NSString * const kPDSBlobRefsTableCreateSQL =
+NSString * const kPDSBlobRefTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS blob_refs ("
     @"record_uri TEXT NOT NULL,"
     @"blob_cid BLOB NOT NULL,"
     @"did TEXT NOT NULL,"
-    @"created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
-    @"PRIMARY KEY (record_uri, blob_cid)"
-    @")";
-
-NSString * const kPDSIndexBlobRefsCidSQL =
-    @"CREATE INDEX IF NOT EXISTS idx_blob_refs_cid ON blob_refs(blob_cid)";
-
-NSString * const kPDSIndexBlobRefsDidSQL =
-    @"CREATE INDEX IF NOT EXISTS idx_blob_refs_did ON blob_refs(did)";
+    @"created_at TEXT NOT NULL,"
+    @"PRIMARY KEY (record_uri, blob_cid),"
+    @"FOREIGN KEY (blob_cid) REFERENCES blobs(cid)"
+    @") WITHOUT ROWID";
 
 #pragma mark - Account Usage
 

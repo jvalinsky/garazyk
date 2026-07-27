@@ -288,4 +288,42 @@
     XCTAssertEqual(invalidMetadataCIDs.count, 1);
 }
 
+- (void)testTemporarySweepHonorsGracePeriodAndReclaimsProviderData {
+    NSString *did = @"did:plc:tempsw234567abcdefghijkl";
+    [self createServiceAccountWithDid:did handle:@"temporary.example.com"];
+
+    NSError *error = nil;
+    CID *expiredCID = [self.blobStorage uploadBlob:[@"expired" dataUsingEncoding:NSUTF8StringEncoding]
+                                           mimeType:@"text/plain"
+                                                did:did
+                                              error:&error];
+    CID *recentCID = [self.blobStorage uploadBlob:[@"recent" dataUsingEncoding:NSUTF8StringEncoding]
+                                          mimeType:@"text/plain"
+                                               did:did
+                                             error:&error];
+    XCTAssertNotNil(expiredCID, @"%@", error);
+    XCTAssertNotNil(recentCID, @"%@", error);
+
+    PDSActorStore *store = [self.userDatabasePool storeForDid:did error:&error];
+    PDSDatabaseBlob *expiredBlob = [store getBlobForCID:expiredCID.bytes error:&error];
+    expiredBlob.createdAt = [NSDate dateWithTimeIntervalSinceNow:-(7 * 60 * 60)];
+    XCTAssertTrue([store saveBlob:expiredBlob error:&error], @"%@", error);
+
+    [self insertJobWithId:@"temporary-job" type:@"temporary" status:@"pending" progress:0 results:nil error:nil createdAt:[[NSDate date] timeIntervalSince1970]];
+    PDSBlobReferenceScanOperation *operation = [[PDSBlobReferenceScanOperation alloc] initWithJobId:@"temporary-job"
+                                                                                              auditType:@"temporary"
+                                                                                            blobStorage:self.blobStorage
+                                                                                        serviceDatabases:self.serviceDatabases
+                                                                                                 dryRun:NO];
+    [operation main];
+
+    XCTAssertNil([store getBlobForCID:expiredCID.bytes error:&error]);
+    XCTAssertFalse([self.blobProvider hasBlobDataForCID:expiredCID]);
+    XCTAssertNotNil([store getBlobForCID:recentCID.bytes error:&error]);
+    XCTAssertTrue([self.blobProvider hasBlobDataForCID:recentCID]);
+
+    NSDictionary *status = [self.auditManager jobStatusForId:@"temporary-job"];
+    XCTAssertEqual([status[@"results"][@"totalSwept"] integerValue], 1);
+}
+
 @end
