@@ -1754,6 +1754,31 @@ if(BUILD_TESTS)
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
   )
 
+  if(NOT APPLE)
+    # SecItemLinuxStore is compiled only on GNUstep/Linux.  Keep its
+    # encryption migration independently runnable so a broad AllTests
+    # portability failure cannot turn this security boundary into an
+    # untested code path.
+    add_executable(SecItemLinuxStoreTests
+      Garazyk/Sources/Auth/CryptoUtils.m
+      Garazyk/Tests/Compat/SecItemLinuxStoreTestMain.m
+      Garazyk/Tests/Compat/SecItemPersistenceTests.m
+      Garazyk/Sources/Compat/XCTest/XCTest.m
+    )
+    target_include_directories(SecItemLinuxStoreTests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+      ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests
+    )
+    target_link_libraries(SecItemLinuxStoreTests PRIVATE
+      ATProtoCore
+      ${PLATFORM_LIBRARIES}
+    )
+    set_target_properties(SecItemLinuxStoreTests PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+    )
+    add_test(NAME SecItemLinuxStoreTests COMMAND SecItemLinuxStoreTests)
+  endif()
+
   # --gated=run folds the gated integration/socket test classes into every
   # ctest invocation (CI runs ctest, not scripts/test/run-tests.sh). The
   # 2026-07-16 76-failure baseline across 11 of the 29 gated classes
