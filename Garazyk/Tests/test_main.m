@@ -970,6 +970,8 @@ int main(int argc, char *argv[]) {
       @"PDSRelayServiceTests",
       @"ActorServiceTests",
       @"ActorServiceBatchHydrationTests",
+      @"RecordBodyBatchHydrationTests",
+      @"RouteLimitClampTests",
       @"SearchIndexServiceTests",
       @"FeedServiceTests",
       @"GroupServiceTests",
