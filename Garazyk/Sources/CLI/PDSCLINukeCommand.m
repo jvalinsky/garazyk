@@ -3,7 +3,6 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/GZLogger.h"
 #import "PDSCLIInputHelper.h"
-#import "Core/ATProtoDataPaths.h"
 
 #pragma mark - Nuke Command
 
