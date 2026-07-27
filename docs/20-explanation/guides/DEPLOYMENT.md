@@ -55,6 +55,8 @@ Common environment overrides include:
 | `PDS_MASTER_SECRET`       | Server secret                                 |
 | `PDS_ADMIN_PASSWORD_FILE` | File containing the admin password            |
 | `PDS_ADMIN_PASSWORD`      | Admin password when a secret file is not used |
+| `PDS_LINUX_KEYCHAIN_KEY`  | Linux secret-store encryption key             |
+| `PDS_LINUX_KEYCHAIN_KEY_FILE` | File containing the Linux secret-store key |
 | `PDS_PLC_URL`             | PLC directory URL                             |
 | `PDS_CRAWL_RELAYS`        | Relay URLs announced or contacted by the PDS  |
 | `PDS_APPVIEW_URL`         | Remote AppView URL                            |
@@ -64,6 +66,21 @@ OAuth client policy can be set to `dynamic` or `allowlist` with
 comma-separated client IDs.
 
 See `ATProtoServiceConfiguration.m` for the full set of environment overrides.
+
+### Linux secret-store key
+
+Linux `SecItem` storage is encrypted at rest with an operator-managed key. Set
+exactly one of `PDS_LINUX_KEYCHAIN_KEY` or `PDS_LINUX_KEYCHAIN_KEY_FILE` before
+starting a service that uses the secret store; a secret file mounted with
+restricted permissions is preferred. The service refuses to start without a
+usable key and never falls back to plaintext storage.
+
+The database remains permission-restricted (`0700` parent directory and `0600`
+database file), but this is operator-key-based encryption rather than
+hardware-backed keychain protection. Preserve the key with the database backup:
+if the key is lost, encrypted secret-store contents cannot be recovered. An
+upgrade migrates existing plaintext rows to encrypted form; the legacy reader
+is retained for at least one release.
 
 ## Reverse proxy
 
