@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-24
+last_verified: 2026-07-26
 ---
 
 # Garazyk Mega Plan
@@ -161,6 +161,23 @@ documentation, TUI, package, and refactor plans.
   (e.g., `IN (%@)`, `isEqualToString:`, and unbalanced locks) were false positives.
   The codebase's SQL bindings, string comparisons, and backpressure mechanisms
   are already hardened.
+- Workstream 01 items S1 (duplicate XRPC ownership), S2 (canonical lexicon
+  generation), and S4 (HTTP deadlines) have been verified complete against
+  the codebase (2026-07-26). S1's three duplicate registrations are resolved
+  with runtime enforcement, characterization tests, and CI duplicate detection.
+  S2's two generators now share the canonical root `Garazyk/Resources/lexicons/`;
+  the NSID generator has a CI drift check, the TS generator's drift detection
+  runs via `deno task test`. S4's idle and aggregate header deadlines are
+  implemented with three characterization tests proving non-reset behavior.
+- Workstream 02 item A6 (incremental public sync) verified complete (2026-07-26):
+  N+1 fix, delta export, golden fixtures, memory/size bounds, streamable-CAR
+  enumerator (flag off), collection subsets, and pruner tests all present.
+- Workstream 00 item B0.1 (scanner roots) verified complete (2026-07-26):
+  scripts use correct roots, smoke test exists. One stale path in
+  `generate_xrpc_next_steps.cjs` fixed.
+- Workstream 03 (repository boundaries) remains blocked on maintainer decision
+  to lift the indefinite JSR publication deferral (reaffirmed 2026-07-26).
+  R1 (synchronize forward) is not blocked; R2-R4 are blocked on publication.
 
 ## Priority model
 
@@ -179,7 +196,7 @@ better-isolated steps.
 | OAuth Permissions spec (granular scopes)      |             4 |               3 |             4 |             3 |      4 | ✓ Complete      |
 | Replace false-confidence security tests       |             4 |               3 |             5 |             5 |      5 | ✓ Complete      |
 | PLC schema-upgrade atomicity                  |             4 |               4 |             5 |             3 |      4 | ✓ Complete      |
-| Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | ✓ Complete (publication excluded) |
+| Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | Blocked (publication deferred indefinitely; R1 unblocked) |
 | Relay product decision and assembly           |             4 |               5 |             4 |             2 |      5 | Decided (ADR 0006) |
 | Admin UI structural and accessibility work    |             4 |               5 |             4 |             3 |      4 | ✓ Complete      |
 | Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | ✓ Complete      |
@@ -193,6 +210,7 @@ better-isolated steps.
 | WASM runtime gap closure                      |             2 |               4 |             4 |             3 |      3 | ✓ Complete      |
 | SMTP, cloud blob, Skylab, dashboard dispositions |          3 |               3 |             3 |             2 |      3 | Decided (5/6 implemented; STAR exempted, see brief) |
 | Space app attestation (`appAccess#allowList`)  |             4 |               2 |             3 |             2 |      3 | Decided (ADR 0004 amendment) |
+| Deno repository-boundary publication           |             4 |               5 |             5 |             2 |      5 | Blocked (indefinite maintainer deferral) |
 
 ## Dependency order
 
@@ -338,16 +356,17 @@ scenario 93/94 runtime passes.
 
 ### Phase 3: boundaries
 
-1. **Blocked (2026-07-18, maintainer decision):** complete the two-repository
-   Deno extraction using released package versions as the boundary. Keep thin
-   compatibility launchers until consumers pass. `@garazyk/tui@0.1.0` is the
-   first verified release candidate: its dedicated format, lint, type-check,
-   and 252-test tasks pass, and it exposes the required root, runtime, and
-   testing exports. Its JSR publication is indefinitely deferred by maintainer
-   decision: do not request or use publisher access, or run `deno publish`,
-   until the maintainer explicitly reopens Phase 5. No package has been
-   published; later ATProto package releases and the in-tree deletion (R4)
-   remain deferred with it (workstream 03).
+1. **Blocked (2026-07-18, maintainer decision; reaffirmed 2026-07-26):** complete
+   the two-repository Deno extraction using released package versions as the
+   boundary. Keep thin compatibility launchers until consumers pass.
+   `@garazyk/tui@0.1.0` is the first verified release candidate: its dedicated
+   format, lint, type-check, and 252-test tasks pass, and it exposes the required
+   root, runtime, and testing exports. Its JSR publication is indefinitely
+   deferred by maintainer decision: do not request or use publisher access, or
+   run `deno publish`, until the maintainer explicitly reopens Phase 5. No
+   package has been published; later ATProto package releases and the in-tree
+   deletion (R4) remain deferred with it (workstream 03). R1 (synchronize
+   forward) is not blocked and can proceed independently.
 2. **Preparatory rewrite complete (2026-07-25):** no TypeScript source under
    `scripts/scenarios/` or `packages/` imports `scripts/lib/deno`, and
    `packages/hamownia/tasks.ts` now imports `XrpcClient` from workspace
@@ -438,20 +457,20 @@ removals without caller proof.
 ### Phase 5: decisions
 
 1. **Complete (2026-07-25): baseline and ADR 0010 subset implemented.** The
-   reproducible capability baseline landed in phase 10 slice 2:
-   `objc-jupyter-wasm/scripts/run-capability-baseline.sh` rejects a dirty
-   checkout, builds `kernel-wasm` twice, runs smoke/runtime/notebook/
-   compatibility probes (91/91 runtime probes, 18/18 compat cases, Chromium
-   worker smoke green), and regenerates the capability matrix;
-   `kernel/PARSER_STATUS.md` and the gap report now redirect to it. The
-   subset checkpoint was decided in ADR 0010 (operator delegated,
-   2026-07-23): a parser-termination invariant plus `->` member access and
-   top-level C function definitions become supported; `@encode`/
-   `@synchronized` become intentionally-unsupported diagnostics. The
-   clean-checkout baseline now records 97/97 runtime probes, 18/18
-   compatibility cases, and 22 passing demo notebooks (138/152 executed
-   cells); its Nix-built kernel artifact is promoted to JupyterLite. The
-   compiled-cell plane stays deferred by decision.
+    reproducible capability baseline landed in phase 10 slice 2:
+    `objc-jupyter-wasm/scripts/run-capability-baseline.sh` rejects a dirty
+    checkout, builds `kernel-wasm` twice, runs smoke/runtime/notebook/
+    compatibility probes (91/91 runtime probes, 18/18 compat cases, Chromium
+    worker smoke green), and regenerates the capability matrix;
+    `kernel/PARSER_STATUS.md` and the gap report now redirect to it. The
+    subset checkpoint was decided in ADR 0010 (operator delegated,
+    2026-07-23): a parser-termination invariant plus `->` member access and
+    top-level C function definitions become supported; `@encode`/
+    `@synchronized` become intentionally-unsupported diagnostics. The
+    clean-checkout baseline now records 97/97 runtime probes, 18/18
+    compatibility cases, and 22 passing demo notebooks (138/152 executed
+    cells); its Nix-built kernel artifact is promoted to JupyterLite. The
+    compiled-cell plane stays deferred by decision.
 2. **Complete (2026-07-22), 5 of 6:** operator approved all six dispositions in
     [the Phase 10 product-surface decision brief](../archive/planning/phase-10-product-surface-decision-brief.md).
    Implemented: SMTP removed, S3 blob config now rejected (fails closed), Skylab

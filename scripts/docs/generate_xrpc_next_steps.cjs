@@ -287,7 +287,7 @@ function createIssueMarkdown(payload, topN) {
     lines.push("- Suggested implementation files:");
     lines.push("  - `Garazyk/Sources/Network/XrpcMethodRegistry.m`");
     lines.push("  - `Garazyk/Sources/App/PDSController.m`");
-    lines.push("  - `Garazyk/Sources/App/Services/` (new or existing service)");
+    lines.push("  - `Garazyk/Sources/Services/` (new or existing service)");
     lines.push("- Acceptance criteria:");
     lines.push(`  - Register and route \`${candidate.method_id}\` through XRPC registry.`);
     lines.push("  - Enforce auth/session checks and input validation.");

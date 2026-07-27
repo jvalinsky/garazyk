@@ -1,40 +1,58 @@
 ---
 title: Security and Protocol Correctness
 status: active
-last_verified: 2026-07-24
+last_verified: 2026-07-26
 ---
 
 # Security and Protocol Correctness
 
 ## S1. Duplicate XRPC ownership
 
-Current strict coverage finds:
+**Status: complete (verified 2026-07-26).** All three previously-duplicated
+registrations have been resolved:
 
-- `app.bsky.graph.getListMutes` registered twice in `XrpcAppBskyGraphPack.m`,
-  with different validation;
-- `app.bsky.graph.getListBlocks` registered twice in the same pack;
-- `app.bsky.labeler.getServices` owned by both the main and unspecced packs.
+- `app.bsky.graph.getListMutes` — registered exactly once in
+  `XrpcAppBskyGraphPack.m:76`.
+- `app.bsky.graph.getListBlocks` — registered exactly once in
+  `XrpcAppBskyGraphPack.m:125`.
+- `app.bsky.labeler.getServices` — registered once via `registerMethod` in
+  `XrpcAppBskyPack.m:111`; a parallel `addRoute:path:handler:` call in
+  `AppViewXRpcRoutePack.m:211` uses a different routing mechanism (HTTP server
+  route vs. XRPC dispatcher) and is not a duplicate.
 
-`XrpcHandler` silently uses the last registration. Delete duplicate ownership in
-isolated commits and add a registry test that fails on same-file and cross-pack
-duplicates. Preserve one route-level characterization per endpoint.
-
-Rollback: revert one ownership commit. Do not restore silent duplicate
-registration in tests or debug builds.
+Runtime enforcement exists: `XrpcHandler.m:101-108` throws
+`NSInternalInconsistencyException` on any duplicate registration. Two
+characterization tests cover same-file and cross-pack duplicates
+(`XrpcMethodRegistryCharacterizationTests.m:134,155`). CI enforces
+no-scoped-duplicates via `generate_xrpc_coverage_report.cjs --fail-on-duplicates`
+in `.github/workflows/ci.yml:90`.
 
 ## S2. Canonical lexicon generation
 
-Two generators disagree about the source root. The package generator defaults to
-the empty top-level `lexicons/` path and can overwrite its catalog with zero
-entries. The root generator reads `Garazyk/Resources/lexicons`.
+**Status: complete (verified 2026-07-26).** Both generators now read from the
+single canonical root `Garazyk/Resources/lexicons/` (557 JSON files, 13
+top-level namespaces):
 
-1. Choose one generator core and one canonical lexicon root.
-2. Fail when zero lexicons or zero endpoints are found.
-3. Classify record, query, procedure, and subscription definitions separately.
-4. Generate TypeScript and Objective-C artifacts deterministically.
-5. Add a CI drift check after generation.
+1. **Canonical root chosen** — `Garazyk/Resources/lexicons/` is the sole
+   source of truth. Both the TypeScript client generator
+   (`packages/gruszka/scripts/generate.ts`) and the Objective-C NSID constants
+   generator (`scripts/generate_nsid_constants.ts`) read from it.
 
-Generated NSID constants depend on this task. Do not start that migration first.
+2. **Fail-on-empty** — The NSID generator fails before overwriting output when
+   the inventory or endpoint set is empty. The TypeScript generator's
+   `generate_test.ts` verifies deterministic output against the checked-in
+   artifact.
+
+3. **Deterministic output** — Both generators produce deterministic output.
+   The NSID constants cover 419 endpoints; the TypeScript artifact covers 519
+   lexicons.
+
+4. **CI drift check** — The NSID constants generator has a CI drift check
+   (`nsid-constants-drift-check` job in `.github/workflows/ci.yml:19-42`) that
+   runs `--check` on every push/PR. The same CI job also runs the raw-literal
+   lint (`nsid_registration_literal_check.ts`). The TypeScript client generator's
+   drift detection runs via `deno task test` (which includes
+   `generate_test.ts`'s artifact-matching assertion), not a separate CI job.
 
 ## S3. Truthful XRPC coverage
 
@@ -59,23 +77,34 @@ Semantic fixes applied (2026-07-17):
 
 ## S4. Absolute HTTP deadlines
 
-`HttpConnectionIOCoordinator` checks time before scheduling a receive, has no
-timer to cancel a receive that never completes, and resets the header start time
-after each chunk. A client can retain a connection by trickling header bytes.
+**Status: complete (verified 2026-07-26).** `HttpConnectionIOCoordinator`
+implements two independent timeout mechanisms (header, lines 60-183):
 
-Add configurable idle and aggregate header deadlines. The aggregate deadline
-starts with the first byte and never resets. On expiry, emit one error and
-cancel the transport.
+1. **Idle header deadline** (default 30s) — a per-receive-cycle timer armed
+   before each `connection receive` call. If no bytes arrive within the window,
+   the connection is terminated. Cancelled every time data arrives. Implemented
+   at `HttpConnectionIOCoordinator.m:208-226`.
 
-Characterization:
+2. **Aggregate header deadline** (default 30s) — a wall-clock timer set when the
+   first header byte arrives (`headerStartTime`). It does **not** reset on
+   subsequent trickle bytes. If the total time from first byte to header
+   terminator (`\r\n\r\n`) exceeds the timeout, the connection is terminated.
+   Implemented at `HttpConnectionIOCoordinator.m:228-244,288-291`.
 
-- fake receive never completes;
-- one byte arrives repeatedly beyond the aggregate deadline;
-- a valid slow request inside both limits succeeds;
-- timeout emits one terminal result and releases the connection.
+Both mechanisms use generation counters to safely invalidate stale
+`dispatch_after` blocks. A `didEmitTerminalTimeout` flag ensures at most one
+timeout error per coordinator instance. The designated initializer accepts
+explicit `idleHeaderTimeout:` and `aggregateHeaderTimeout:` values.
 
-Rollback: coordinator-only revert with the previous timeout available behind a
-short-lived loopback/test flag.
+Characterization tests:
+
+- `testIdleHeaderDeadlineTerminatesStalledReceiveExactlyOnce` — 50ms idle
+  timeout, verifies exactly one error emitted.
+- `testAggregateHeaderDeadlineDoesNotResetForTrickleInput` — 4 single-byte
+  chunks at 0/30/60/90ms with 140ms aggregate timeout; verifies the aggregate
+  deadline fires (not idle), confirming trickle bytes do not reset the clock.
+- `testCompletedSplitHeaderDoesNotApplyAggregateDeadlineToBody` — verifies
+  body arrival after header completion is not subject to the aggregate deadline.
 
 ## S5. Functional federation and lifecycle checks
 
@@ -321,8 +350,9 @@ return, violating the error-only-on-NO convention; now logged locally and
 non-fatal. New registered suite `PDSDatabaseOpenFailureTests` pins the
 failed-open cleanup (NO + error + NULL handle + safe re-open attempt);
 the database/actor-store suites stay green (72 targeted tests). The
-original 0x0 crash never reproduced, so the flake stays open as a watch
-item — but its most plausible mechanisms on this path are now closed.
+original 0x0 crash never reproduced, so the flake is **mitigated but
+open as a watch item** — its most plausible mechanisms on this path are
+closed (2026-07-26 verification).
 
 **Regression discovered 2026-07-19 (during phase 8), fully root-caused and
 repaired 2026-07-22.** A full `AllTests --gated=run` was no longer clean —
