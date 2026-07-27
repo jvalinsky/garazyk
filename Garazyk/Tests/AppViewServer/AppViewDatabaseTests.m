@@ -134,6 +134,35 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual(loaded.seq, 200LL, @"Upsert should update to latest seq");
 }
 
+- (void)testCheckpointDoesNotMoveBackward {
+    NSError *err = nil;
+    XCTAssertTrue([self.db saveCheckpoint:[[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:200] error:&err]);
+    XCTAssertTrue([self.db saveCheckpoint:[[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:100] error:&err]);
+    AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
+    XCTAssertEqual(loaded.seq, 200LL);
+}
+
+- (void)testActorCountsTrackReplaceAndDelete {
+    NSError *err = nil;
+    NSString *followURI = @"at://did:plc:alice/app.bsky.graph.follow/one";
+    NSString *insert = @"INSERT OR REPLACE INTO records(uri,did,collection,rkey,cid,subject_did) VALUES(?,?,?,?,?,?)";
+    XCTAssertTrue(([self.db executeParameterizedUpdate:insert params:@[followURI, @"did:plc:alice", @"app.bsky.graph.follow", @"one", @"cid-one", @"did:plc:bob"] error:&err]));
+    XCTAssertTrue(([self.db executeParameterizedUpdate:@"INSERT INTO records(uri,did,collection,rkey,cid) VALUES(?,?,?,?,?)" params:@[@"at://did:plc:alice/app.bsky.feed.post/one", @"did:plc:alice", @"app.bsky.feed.post", @"one", @"cid-post"] error:&err]));
+    NSArray *rows = [self.db executeParameterizedQuery:@"SELECT followers_count, follows_count, posts_count FROM appview_actor_counts WHERE did = ?" params:@[@"did:plc:alice"] error:&err];
+    XCTAssertEqual([rows.firstObject[@"follows_count"] integerValue], 1);
+    XCTAssertEqual([rows.firstObject[@"posts_count"] integerValue], 1);
+    rows = [self.db executeParameterizedQuery:@"SELECT followers_count FROM appview_actor_counts WHERE did = ?" params:@[@"did:plc:bob"] error:&err];
+    XCTAssertEqual([rows.firstObject[@"followers_count"] integerValue], 1);
+    XCTAssertTrue(([self.db executeParameterizedUpdate:insert params:@[followURI, @"did:plc:alice", @"app.bsky.graph.follow", @"one", @"cid-two", @"did:plc:carol"] error:&err]));
+    rows = [self.db executeParameterizedQuery:@"SELECT followers_count FROM appview_actor_counts WHERE did = ?" params:@[@"did:plc:bob"] error:&err];
+    XCTAssertEqual([rows.firstObject[@"followers_count"] integerValue], 0);
+    rows = [self.db executeParameterizedQuery:@"SELECT followers_count FROM appview_actor_counts WHERE did = ?" params:@[@"did:plc:carol"] error:&err];
+    XCTAssertEqual([rows.firstObject[@"followers_count"] integerValue], 1);
+    XCTAssertTrue([self.db executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[followURI] error:&err]);
+    rows = [self.db executeParameterizedQuery:@"SELECT follows_count FROM appview_actor_counts WHERE did = ?" params:@[@"did:plc:alice"] error:&err];
+    XCTAssertEqual([rows.firstObject[@"follows_count"] integerValue], 0);
+}
+
 - (void)testCheckpointMissingReturnsNil {
     NSError *err = nil;
     AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://nonexistent" error:&err];
@@ -159,7 +188,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
         @"SELECT version FROM _migrations ORDER BY version"
                                                        params:@[] error:&error];
     XCTAssertNotNil(versions, @"%@", error);
-    XCTAssertEqual(versions.count, 4U, @"V1-V4 must all be recorded");
+    XCTAssertEqual(versions.count, 5U, @"V1-V5 must all be recorded");
     XCTAssertEqual([versions[0][@"version"] integerValue], 1);
     XCTAssertEqual([versions[1][@"version"] integerValue], 2);
     XCTAssertEqual([versions[2][@"version"] integerValue], 3);
@@ -202,7 +231,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     versions = [database executeParameterizedQuery:
         @"SELECT version FROM _migrations ORDER BY version"
                                            params:@[] error:&error];
-    XCTAssertEqual(versions.count, 4U, @"Reopen must not record migrations twice");
+    XCTAssertEqual(versions.count, 5U, @"Reopen must not record migrations twice");
     indexes = [database executeParameterizedQuery:
         @"SELECT name FROM sqlite_master WHERE type = 'index' "
         "AND name IN ('idx_bsky_feed_threadgates_uri', 'idx_pending_deltas_did')"
@@ -225,7 +254,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     NSArray *versions = [database executeParameterizedQuery:
         @"SELECT version FROM _migrations ORDER BY version"
                                                        params:@[] error:&error];
-    XCTAssertEqual(versions.count, 4U, @"Idempotent run must not double-record versions");
+    XCTAssertEqual(versions.count, 5U, @"Idempotent run must not double-record versions");
 
     [database close];
     [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
@@ -258,7 +287,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     NSArray *versions = [database executeParameterizedQuery:
         @"SELECT version FROM _migrations ORDER BY version"
                                                        params:@[] error:nil];
-    XCTAssertEqual(versions.count, 4U, @"All four migrations must be recorded");
+    XCTAssertEqual(versions.count, 5U, @"All five migrations must be recorded");
 
     // Legacy data must be preserved
     AppViewCheckpoint *checkpoint = [database loadCheckpointForRelayURL:@"wss://legacy.relay"
