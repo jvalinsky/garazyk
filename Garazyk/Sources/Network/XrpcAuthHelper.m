@@ -64,7 +64,12 @@ static AuthVerifier *XrpcAuthSharedVerifier(void) {
             return;
         }
 
-        PDSAccountPolicy *policy = [[PDSAccountPolicy alloc] initWithDatabase:controller.database
+        PDSDatabase *db = [controller serviceDatabaseWithError:nil];
+        if (!db) {
+            GZ_LOG_CORE_ERROR(@"AuthVerifier: cannot obtain service database — cannot construct verifier");
+            return;
+        }
+        PDSAccountPolicy *policy = [[PDSAccountPolicy alloc] initWithDatabase:db
                                                               adminController:controller.adminController];
 
         verifier = [[AuthVerifier alloc] initWithKeyResolver:nil
@@ -74,8 +79,8 @@ static AuthVerifier *XrpcAuthSharedVerifier(void) {
         [verifier setLocalIssuer:controller.jwtMinter.issuer ?: @""];
         verifier.expectedAudience = controller.jwtMinter.issuer ?: @"";
         verifier.requireDPoP = [ATProtoServiceConfiguration sharedConfiguration].requireDPoPNonce;
-        GZ_LOG_AUTH_INFO(@"AuthVerifier cluster constructed (issuer=%@, requireDPoP=%d)",
-                          verifier.localIssuer, verifier.requireDPoP);
+        GZ_LOG_AUTH_INFO(@"AuthVerifier cluster constructed (issuer=%@)",
+                          controller.jwtMinter.issuer ?: @"");
     });
     return verifier;
 }
@@ -463,24 +468,6 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     }
 
     // Legacy path
-    id<PDSSessionRepository> sessionRepo = nil;
-    if ([controller.accountService respondsToSelector:@selector(sessionRepository)]) {
-        sessionRepo = controller.accountService.sessionRepository;
-    }
-    
-    return [self extractDIDFromAuthHeader:authHeader
-                               jwtMinter:controller.jwtMinter
-                         adminController:controller.adminController
-                       sessionRepository:sessionRepo
-                                 request:request
-                                response:response];
-}
-
-+ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                            controller:(PDSController *)controller
-                               request:(HttpRequest *)request
-                              response:(HttpResponse *)response {
-    // Attempt to get session repository from controller's account service
     id<PDSSessionRepository> sessionRepo = nil;
     if ([controller.accountService respondsToSelector:@selector(sessionRepository)]) {
         sessionRepo = controller.accountService.sessionRepository;
