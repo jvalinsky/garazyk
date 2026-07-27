@@ -88,4 +88,48 @@
     XCTAssertTrue([lowercaseHelp containsString:@"danger"] || [lowercaseHelp containsString:@"delete"]);
 }
 
+- (void)testNukeCommandRecursivelyRemovesShardedActorStoresFromScratchDirectory {
+    NSString *scratchDir = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    XCTAssertTrue([fileManager createDirectoryAtPath:scratchDir withIntermediateDirectories:YES attributes:nil error:nil]);
+
+    NSArray<NSString *> *relativeFiles = @[
+        @"plc/ab/did:plc:abc123", @"web/ex/did:web:example.com",
+        @"blobs/blob", @"service/service.db", @"sequencer/sequencer.db", @"did_cache/cache.db"
+    ];
+    for (NSString *relativePath in relativeFiles) {
+        NSString *path = [scratchDir stringByAppendingPathComponent:relativePath];
+        XCTAssertTrue([fileManager createDirectoryAtPath:[path stringByDeletingLastPathComponent]
+                              withIntermediateDirectories:YES attributes:nil error:nil]);
+        XCTAssertTrue([fileManager createFileAtPath:path contents:[NSData data] attributes:nil]);
+    }
+
+    PDSCLICommandContext *context = [[PDSCLICommandContext alloc] init];
+    context.dataDir = scratchDir;
+    id command = [[NSClassFromString(@"PDSCLINukeCommand") alloc] init];
+    XCTAssertEqual([command executeWithArguments:@[@"--confirm"] context:context], 0);
+    XCTAssertEqual([fileManager contentsOfDirectoryAtPath:scratchDir error:nil].count, 0);
+
+    [fileManager removeItemAtPath:scratchDir error:nil];
+}
+
+- (void)testNukeCommandReportsFailureWhenScratchDataCannotBeDeleted {
+    NSString *scratchDir = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    NSString *protectedDir = [scratchDir stringByAppendingPathComponent:@"protected"];
+    NSString *protectedFile = [protectedDir stringByAppendingPathComponent:@"actor.db"];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    XCTAssertTrue([fileManager createDirectoryAtPath:protectedDir withIntermediateDirectories:YES attributes:nil error:nil]);
+    XCTAssertTrue([fileManager createFileAtPath:protectedFile contents:[NSData data] attributes:nil]);
+    XCTAssertTrue([fileManager setAttributes:@{NSFilePosixPermissions: @0555} ofItemAtPath:protectedDir error:nil]);
+
+    PDSCLICommandContext *context = [[PDSCLICommandContext alloc] init];
+    context.dataDir = scratchDir;
+    id command = [[NSClassFromString(@"PDSCLINukeCommand") alloc] init];
+    XCTAssertEqual([command executeWithArguments:@[@"--confirm"] context:context], 1);
+    XCTAssertTrue([fileManager fileExistsAtPath:protectedDir]);
+
+    XCTAssertTrue([fileManager setAttributes:@{NSFilePosixPermissions: @0755} ofItemAtPath:protectedDir error:nil]);
+    [fileManager removeItemAtPath:scratchDir error:nil];
+}
+
 @end
