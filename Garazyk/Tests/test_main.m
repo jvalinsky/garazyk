@@ -748,6 +748,18 @@ int main(int argc, char *argv[]) {
     if (getenv("PDS_MASTER_SECRET") == NULL) {
       setenv("PDS_MASTER_SECRET", "test-master-secret-123", 1);
     }
+    // SecItemLinuxStore now requires an operator-supplied encryption key
+    // before it will open at all (workstream 01 S11 slice 4). Its state is
+    // process-global (dispatch_once), so this must be set before the first
+    // test that touches the Linux keychain shim, wherever that happens to be.
+    if (getenv("PDS_LINUX_KEYCHAIN_KEY") == NULL) {
+      setenv("PDS_LINUX_KEYCHAIN_KEY", "test-linux-keychain-key-123", 1);
+    }
+    if (getenv("PDS_LINUX_KEYCHAIN_DB_PATH") == NULL) {
+      NSString *keychainTestPath = [NSTemporaryDirectory()
+          stringByAppendingPathComponent:[NSString stringWithFormat:@"garazyk-keychain-%d.db", getpid()]];
+      setenv("PDS_LINUX_KEYCHAIN_DB_PATH", keychainTestPath.fileSystemRepresentation, 1);
+    }
     // Skip PLC server registration in tests - use sans-IO DID generation
     if (getenv("PDS_PLC_URL") == NULL) {
       setenv("PDS_PLC_URL", "skip", 1);
