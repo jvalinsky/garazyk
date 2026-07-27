@@ -26,6 +26,7 @@ depends_on: []
   sites patched to set `allowedAlgorithms`. 7 new JWTTests, all suites
   green (JWTTests 33, OAuthDPoPTests 16, JWTSecurityTests 4,
   SessionStoreTests 24, ATProtoCoreTests 33, AdminAuthXrpcTests 37).
+  Committed as `a80e91b5`.
 
 ## Mission
 

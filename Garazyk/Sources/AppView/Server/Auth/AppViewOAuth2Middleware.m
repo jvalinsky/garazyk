@@ -12,6 +12,7 @@
 #import "Auth/JWT.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/CryptoUtils.h"
+#import "Auth/PDSReplayCache.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
@@ -162,7 +163,7 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
                                             nonce:nil
                                      requireNonce:NO
                                    nonceValidator:nil
-                                    replayChecker:nil
+                                    replayChecker:[PDSReplayCache sharedCache]
                                     outThumbprint:&dpopThumbprint
                                             error:&dpopError];
 
