@@ -184,7 +184,20 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
     NSString *dpopThumbprint = nil;
     NSURL *dpopURL = nil;
 
-    if (isDPoP && request) {
+    if (isDPoP) {
+        // A nil request means DPoP proof verification is impossible (no URL to
+        // bind to). Reject immediately rather than silently skipping the check
+        // while leaving isDPoP=true — the caller would then receive a principal
+        // that reports DPoP was used when no proof was actually verified.
+        if (!request) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorInvalidRequest
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP verification requires a request object"}];
+            }
+            return nil;
+        }
+
         dpopURL = [self expectedDPoPURLForRequest:request];
         if (!dpopURL) {
             GZ_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
@@ -369,7 +382,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         return nil;
     }
 
-    if (audience && self.expectedAudience.length > 0 && ![PDSSecurityCompare constantTimeEqualString:audience string:self.expectedAudience]) {
+    if (self.expectedAudience.length > 0 && ![PDSSecurityCompare constantTimeEqualString:audience ?: @"" string:self.expectedAudience]) {
         if (error) {
             *error = [NSError errorWithDomain:AuthVerifierErrorDomain
                                          code:AuthVerifierErrorInvalidAudience
