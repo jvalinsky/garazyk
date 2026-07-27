@@ -1454,6 +1454,153 @@ against a scratch data directory, never a real one.
 
 ### Execution phases
 
-- `../prompts/phase-19-core-decoder-bounds.md` — slices 1-3.
-- `../prompts/phase-20-secret-store-and-cli.md` — slices 4-7,
-  `depends_on: []`.
+- `../prompts/phase-19-core-decoder-bounds.md` — slices 1-3.- `../prompts/phase-20-secret-store-and-cli.md` — slices 4-7,
+    `depends_on: []`.
+
+## S12. MST viewer gating and dead admin credential surface
+
+**Status: pending.** A review of App, Network, and Admin found a debug tool
+shipped on by default with no supported disable path and no authentication,
+and a cookie credential carrier on the admin auth path that nothing in the
+codebase ever issues.
+
+### Evidence
+
+MST viewer:
+
+- `Network/ATProtoHttpServerBuilder.m:45` sets `_enableMSTViewer = YES` in
+  `init`. The only sites that set it to NO are tests (19 occurrences across
+  `ATProtoHttpServerBuilderTests.m` and `PDSHttpPDSAdminRoutePackTests.m`).
+  There is no config key, no environment variable, and no production code path
+  that disables it — every deployment serves `/mst-viewer` and `/api/mst`.
+- `App/MSTViewer/MSTViewerHandler.m` performs no authentication check anywhere
+  in its 280 lines. `handleRequest:` dispatches directly to sub-handlers
+  without examining headers.
+- `/api/mst/accounts` runs `SELECT did, handle FROM accounts ORDER BY
+  created_at DESC LIMIT 1000` with no auth (line 162). `/api/mst/export/{did}`
+  loads an entire MST via `loadMSTForDid` and serializes it to JSON or DOT with
+  no auth (line 232) and no rate limit. The NSCache in the handler (100 items,
+  60s-120s TTL) mitigates repeated requests but the first request for any DID
+  does full MST load + serialization.
+- ATProto already publishes repo contents and `listRepos`, so this is not a
+  data breach. The real problems are an unauthenticated endpoint doing
+  unbounded per-request work (a cheap amplifier) and a debug tool shipped on
+  by default with no supported way to turn it off.
+
+Dead cookie credential surface:
+
+- `Admin/PDSAdminAuth.m:306-317` accepts an `admin_token=` cookie as an admin
+  token carrier. Nothing in `Garazyk/Sources` ever sets that cookie — confirmed
+  by grep: the only `Set-Cookie` issuer for any `admin_token` variant is
+  `UIAuthManager.m:215`, which sets `ui_admin_token` with `HttpOnly;
+  SameSite=Strict`. The `admin_token=` cookie has no issuer, no `SameSite`, no
+  `HttpOnly`, and no CSRF protection anywhere in `PDSAdminAuth` or the XRPC
+  admin pack (CSRF machinery exists only in `AdminUIServer`).
+- The cookie token still goes through full JWT verification afterward, so this
+  is not an auth bypass. It is dead credential surface on a privileged path,
+  reachable by cookie, with no Origin or CSRF check — it should be removed
+  rather than defended.
+- The sibling `X-Admin-Token` header path (`PDSAdminAuth.m:299`) is lower risk
+  — also just a JWT carrier — but has neither an issuer nor CSRF protection.
+  It already has `PDS_DISABLE_X_ADMIN_TOKEN_HEADER` env var (`:151`) and a
+  startup warning in production (`PDSApplication.m:526-532`). The cookie path
+  has neither disable mechanism nor warning, making it the higher-priority
+  removal.
+
+### Decisions taken (2026-07-27)
+
+- **MST viewer defaults off in production.** A new `debug.mst_viewer_enabled`
+  config key and `PDS_ENABLE_MST_VIEWER` env var control the viewer. The
+  default is NO when `PDS_ENV=production` (matching the issuer fail-closed
+  pattern at `PDSApplication.m:354-363`) and YES otherwise, preserving
+  backward compat for dev/test. When enabled, the handler requires admin auth
+  via `PDSAdminAuth` on every request — including static assets, since the
+  page is useless without the API and serving it without auth only reveals the
+  tool exists.
+- **The dead `admin_token=` cookie path is removed, not defaulted.** It has no
+  issuer, no disable mechanism, and no CSRF protection. Removing the parsing
+  block is safer than adding a config gate that operators must discover.
+- **The `X-Admin-Token` header path is defaulted to disabled in production**
+  rather than removed outright. It already has `PDS_DISABLE_X_ADMIN_TOKEN_HEADER`
+  and a startup warning; defaulting it off in production closes the gap without
+  breaking any operator who explicitly enables it for automation.
+
+### Slices
+
+1. **MST viewer gating and auth.** Add `_mstViewerEnabled` property to
+   `ATProtoServiceConfiguration` (default YES, NO in production). Read from
+   `debug.mst_viewer_enabled` config key and `PDS_ENABLE_MST_VIEWER` env var in
+   `applyConfig:`. Wire `ATProtoHttpServerBuilder.initWithConfiguration:` to
+   read `configuration.mstViewerEnabled` instead of hardcoding YES. Add an
+   admin auth check at the top of `MSTViewerHandler.handleRequest:` — call
+   `[PDSAdminAuth sharedAuth] authenticateHeaders:request.headers error:nil]`
+   and return 401 JSON on failure. Update tests that rely on the viewer being
+   on by default.
+2. **Dead cookie and X-Admin-Token retirement.** Remove the `admin_token=`
+   cookie parsing block from `PDSAdminAuth.m:306-317`. Default the
+   `X-Admin-Token` header to disabled when `PDS_ENV=production` (change
+   `PDSAdminAuthIsXAdminTokenHeaderDisabled` to also check `PDS_ENV`). Update
+   `PDSAdminAuthTests.m` to remove cookie-path tests and add a test asserting
+   the cookie is no longer accepted. Update the startup warning in
+   `PDSApplication.m:526-532` to reflect that the header is now off by default
+   in production.
+
+### Owner boundary
+
+Slice 1 owns `App/ATProtoServiceConfiguration.h/.m` (new property + config
+parsing), `Network/ATProtoHttpServerBuilder.m` (wiring),
+`App/MSTViewer/MSTViewerHandler.m` (auth check), and their tests. Slice 2 owns
+`Admin/PDSAdminAuth.m` (cookie removal + header default),
+`App/PDSApplication.m` (warning update), and `Admin/PDSAdminAuthTests.m`.
+
+### Gate
+
+- **Viewer off by default in production:** a test that constructs
+  `ATProtoServiceConfiguration` under `PDS_ENV=production` asserts
+  `mstViewerEnabled == NO`.
+- **Viewer on by default otherwise:** the same test under no `PDS_ENV` asserts
+  `mstViewerEnabled == YES`.
+- **Viewer requires auth when enabled:** a request to `/api/mst/accounts`
+  with no `Authorization` header returns 401, not 200. A request with a valid
+  admin JWT returns 200.
+- **Config key and env var:** `debug.mst_viewer_enabled: false` in config and
+  `PDS_ENABLE_MST_VIEWER=0` in env each independently disable the viewer.
+- **Cookie path removed:** a request with `Cookie: admin_token=<valid-jwt>`
+  returns 401 (the cookie is no longer parsed). A request with
+  `Authorization: Bearer <same-jwt>` still returns 200.
+- **X-Admin-Token defaulted off in production:** under `PDS_ENV=production`
+  with no `PDS_DISABLE_X_ADMIN_TOKEN_HEADER` set, a request with
+  `X-Admin-Token: <valid-jwt>` returns 401. Under `PDS_ENV=production` with
+  `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0`, it returns 200.
+- **No regression:** `Authorization: Bearer <valid-jwt>` admin auth still
+  works in all modes. Existing `ATProtoHttpServerBuilderTests` and
+  `PDSAdminAuthTests` pass after updating the tests that relied on removed
+  behavior.
+
+New suites need their header imported and the class registered in
+`Garazyk/Tests/test_main.m` plus a cmake reconfigure. Then the global gates:
+
+```bash
+deno task check
+deno task lint
+deno task test
+cmake --build build --target AllTests --parallel 4
+./build/tests/AllTests
+```
+
+Bounded parallelism only (`--parallel 4`).
+
+### Rollback
+
+Each slice is a single-commit revert. Slice 1 changes the default behavior of
+the MST viewer (off in production) — if an operator relied on the viewer being
+on without auth in production, they can set `PDS_ENABLE_MST_VIEWER=1`, but they
+must also provide admin credentials. Slice 2 removes a credential carrier — if
+an automation client relied on the `admin_token=` cookie, it must migrate to
+the `Authorization: Bearer` header. The X-Admin-Token header remains available
+via `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0` for operators who need it.
+
+### Execution phases
+
+- `../prompts/phase-22-mst-viewer-and-dead-cookie.md` — slices 1-2,
+    `depends_on: []`.

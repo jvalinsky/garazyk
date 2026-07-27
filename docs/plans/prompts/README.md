@@ -91,3 +91,7 @@ These are Codex built-in agent types; project audit roles live under
 | 10 | [phase-10](phase-10-deferred-products.md) | WASM baseline + SMTP/blob/STAR decisions + drift cadence | — |
 | 11 | [phase-11](phase-11-storage-and-mst-optimization.md) | Storage and MST optimization remainder (workstream 07) | 7 |
 | 12 | [phase-12](phase-12-godfile-decomposition.md) | Objective-C god-file decomposition (route packs, OAuth, PDS services) | 6 |
+
+<!-- Phases 13-21 exist as files but are not listed here; backfill if needed. -->
+
+| 22 | [phase-22](phase-22-mst-viewer-and-dead-cookie.md) | MST viewer gating + dead admin cookie removal (workstream 01 § S12) | — |
