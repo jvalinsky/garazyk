@@ -1023,11 +1023,12 @@ other and of phase 15.
 
 ## S10. WebSocket framing and outbound egress hardening
 
-**Status: not started (identified 2026-07-26).** A review of Network, Sync,
-and Federation found three unauthenticated, unbounded defects on the public
-ingress surface, and one class of bypass on the outbound side that renders the
-existing SSRF protection ineffective despite its classification logic being
-sound.
+**Status: in progress (updated 2026-07-27).** Phase 17 ingress slices are
+complete; Phase 18 egress hardening remains pending. A review of Network,
+Sync, and Federation found three unauthenticated, unbounded defects on the
+public ingress surface, and one class of bypass on the outbound side that
+renders the existing SSRF protection ineffective despite its classification
+logic being sound.
 
 The ingress defects share a shape: the WebSocket codec enforces per-frame
 limits but no aggregate limits, and validates frame contents but not frame
@@ -1166,6 +1167,21 @@ rather than hanging.
 
 New suites need registration in `Garazyk/Tests/test_main.m` plus a cmake
 reconfigure, then the mega-plan global gates with bounded `--parallel 4`.
+
+### Phase 17 completion evidence (2026-07-27)
+
+- Slices 1-4 and the missing transport-level protocol-error close behavior:
+  `6dd33a30`, `93e4baed`, `fede19c1`, `8e7e086a`, and `f802e015`.
+- Focused XCTest suites passed: `WebSocketRFCConformanceTests` (16),
+  `Http1ParserTests` (11), `SubscribeReposHandlerEnvLimitsTests` (5), and
+  gated `PDSWebSocketTransportTests` (8), including the oversized-control
+  frame test that asserts Close rather than Pong.
+- Structured Hamownia run `2026-07-27t1559z-69010`: scenarios 33, 65, 66,
+  and 95 passed (22 checks, zero failures).
+- After rebasing onto the lint-corrected `main` baseline (`86ed976d`), the
+  required global gates passed: `deno task check`, `deno task lint`,
+  `deno task test`, `cmake --build build --target AllTests --parallel 4`,
+  `./build/tests/AllTests`, and `./build/tests/AllTests --gated=run`.
 
 ### Rollback
 
