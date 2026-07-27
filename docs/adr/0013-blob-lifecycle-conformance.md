@@ -45,3 +45,33 @@ than falling through to the provider.
   data.
 - Existing databases gain lifecycle metadata, reference tracking, installed
   usage triggers, and backfilled usage through the V6 and V7 migrations.
+
+## Amendment (2026-07-27): block usage attribution
+
+The six `account_usage` triggers were adopted as-written on the basis that
+they were already correct and had merely never been installed. That held for
+four of them. The two block triggers attributed bytes with
+`(SELECT did FROM records LIMIT 1)`, which resolves to NULL whenever a block
+is written before the shard has any record row — that is, on every account's
+initial commit, since `PDSRepositoryService+RepoInit` stores the empty-tree
+commit block before any record exists.
+
+Because SQLite treats NULL as distinct from NULL for uniqueness,
+`ON CONFLICT(did)` could not merge those rows: each such block created its own
+NULL-keyed `account_usage` row, and the real account's `repo_bytes` was short
+by exactly the bytes stranded on them. The same `records`-keyed assumption
+also made V7's backfill skip a shard that had only its initial commit block.
+
+`ipld_blocks` now carries the owning `did`, written by
+`-[PDSActorStore putBlock:forDid:]`, and the two triggers attribute via
+`NEW.did`/`OLD.did`. Migration V8 adds and backfills the column, reinstalls
+the triggers against it, discards the orphan rows, and recomputes `repo_bytes`
+from `ipld_blocks` — a recomputation rather than an accumulation, so the
+repair is idempotent and also covers shards V7 skipped. The owner is resolved
+from the shard's `rotation_keys`/`signing_keys` singletons, which are written
+at account creation and are therefore populated before the first block.
+
+Under-counting `repo_bytes` is a quota-accounting understatement, not an
+over-charge: affected accounts were credited less storage than they used. The
+magnitude is one commit block per affected account, so no account is expected
+to have been wrongly admitted past a quota by a meaningful margin.

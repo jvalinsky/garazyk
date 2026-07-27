@@ -348,6 +348,8 @@ static NSString * const kTestDID2 = @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb";
         b.mimeType = @"text/plain";
         b.size = 100 * (i + 1);
         b.createdAt = [NSDate date];
+        // Only referenced blobs are listable; see testBlobListForDIDExcludesTemporaryBlobs.
+        b.state = PDSDatabaseBlobStateReferenced;
         [_blobRepo saveBlob:b error:nil];
     }
 
@@ -356,6 +358,37 @@ static NSString * const kTestDID2 = @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb";
 
     NSArray *page2 = [_blobRepo blobsForDid:kTestDID limit:2 offset:2 error:nil];
     XCTAssertEqual(page2.count, 1);
+}
+
+// Blob lifecycle conformance: an uploaded blob stays in temporary storage and
+// "is not accessible for download or distribution while in this state", which
+// includes being excluded from listBlobs. It becomes listable only once a
+// record references it. See docs/adr/0013-blob-lifecycle-conformance.md.
+- (void)testBlobListForDIDExcludesTemporaryBlobs {
+    PDSDatabaseBlob *temporary = [[PDSDatabaseBlob alloc] init];
+    temporary.cid = [@"cid-temporary" dataUsingEncoding:NSUTF8StringEncoding];
+    temporary.did = kTestDID;
+    temporary.mimeType = @"text/plain";
+    temporary.size = 100;
+    temporary.createdAt = [NSDate date];
+    temporary.state = PDSDatabaseBlobStateTemporary;
+    XCTAssertTrue([_blobRepo saveBlob:temporary error:nil]);
+
+    XCTAssertEqual([_blobRepo blobsForDid:kTestDID limit:10 offset:0 error:nil].count, 0,
+                   @"a temporary blob must not be listed");
+
+    PDSDatabaseBlob *referenced = [[PDSDatabaseBlob alloc] init];
+    referenced.cid = [@"cid-referenced" dataUsingEncoding:NSUTF8StringEncoding];
+    referenced.did = kTestDID;
+    referenced.mimeType = @"text/plain";
+    referenced.size = 200;
+    referenced.createdAt = [NSDate date];
+    referenced.state = PDSDatabaseBlobStateReferenced;
+    XCTAssertTrue([_blobRepo saveBlob:referenced error:nil]);
+
+    NSArray<PDSDatabaseBlob *> *listed = [_blobRepo blobsForDid:kTestDID limit:10 offset:0 error:nil];
+    XCTAssertEqual(listed.count, 1, @"only the referenced blob is listable");
+    XCTAssertEqualObjects(listed.firstObject.cid, referenced.cid);
 }
 
 - (void)testBlobCount {
