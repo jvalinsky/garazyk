@@ -14,6 +14,19 @@
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @end
 
+@protocol GZActorAppViewDatabase <PDSQueryDatabase>
+- (NSDictionary<NSString *, NSString *> *)resolveDIDsToHandles:(NSArray<NSString *> *)dids error:(NSError **)error;
+@end
+
+static NSString *GZActorPlaceholders(NSUInteger count) {
+    if (count == 0) return @"";
+    NSMutableArray<NSString *> *placeholders = [NSMutableArray arrayWithCapacity:count];
+    for (NSUInteger index = 0; index < count; index++) {
+        [placeholders addObject:@"?"];
+    }
+    return [placeholders componentsJoinedByString:@","];
+}
+
 @implementation ActorService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
@@ -85,16 +98,169 @@
         return @[];
     }
 
-    NSMutableArray<NSDictionary *> *profiles = [NSMutableArray arrayWithCapacity:actorDIDs.count];
+    if (![self.database respondsToSelector:@selector(resolveDIDsToHandles:error:)] ||
+        [actorDIDs filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSString *actor, NSDictionary *bindings) {
+            return ![actor isKindOfClass:[NSString class]] || ![actor hasPrefix:@"did:"];
+        }]].count > 0) {
+        NSMutableArray<NSDictionary *> *profiles = [NSMutableArray arrayWithCapacity:actorDIDs.count];
+        for (NSString *actor in actorDIDs) {
+            NSDictionary *profile = [self getProfileForActor:actor error:error];
+            if (profile) [profiles addObject:profile];
+        }
+        return [profiles copy];
+    }
 
-    for (NSString *did in actorDIDs) {
-        NSDictionary *profile = [self getProfileForActor:did error:error];
-        if (profile) {
-            [profiles addObject:profile];
+    id<GZActorAppViewDatabase> database = (id<GZActorAppViewDatabase>)self.database;
+    NSArray<NSString *> *uniqueDIDs = [[NSOrderedSet orderedSetWithArray:actorDIDs] array];
+    NSDictionary<NSString *, NSString *> *handles = [database resolveDIDsToHandles:uniqueDIDs error:error];
+
+    NSMutableDictionary<NSString *, NSString *> *profileCIDByDID = [NSMutableDictionary dictionary];
+    NSMutableArray<NSData *> *profileCIDs = [NSMutableArray array];
+    for (NSUInteger offset = 0; offset < uniqueDIDs.count; offset += 900) {
+        NSArray<NSString *> *batch = [uniqueDIDs subarrayWithRange:NSMakeRange(offset, MIN((NSUInteger)900, uniqueDIDs.count - offset))];
+        NSString *sql = [NSString stringWithFormat:@"SELECT did, cid FROM records WHERE collection = ? AND did IN (%@)", GZActorPlaceholders(batch.count)];
+        NSMutableArray *params = [NSMutableArray arrayWithObject:@"app.bsky.actor.profile"];
+        [params addObjectsFromArray:batch];
+        NSArray *rows = [self.database executeParameterizedQuery:sql params:params error:error];
+        if (!rows) return nil;
+        for (NSDictionary *row in rows) {
+            NSString *did = row[@"did"];
+            NSString *cid = row[@"cid"];
+            if (did.length > 0 && cid.length > 0 && !profileCIDByDID[did]) {
+                profileCIDByDID[did] = cid;
+                CID *parsedCID = [CID cidFromString:cid];
+                if (parsedCID.bytes) [profileCIDs addObject:parsedCID.bytes];
+            }
         }
     }
 
+    NSMutableDictionary<NSString *, NSDictionary *> *profileRecords = [NSMutableDictionary dictionary];
+    if (profileCIDs.count > 0) {
+        for (NSUInteger offset = 0; offset < profileCIDs.count; offset += 900) {
+            NSArray<NSData *> *batch = [profileCIDs subarrayWithRange:NSMakeRange(offset, MIN((NSUInteger)900, profileCIDs.count - offset))];
+            NSString *sql = [NSString stringWithFormat:@"SELECT cid, repo_did, block_data FROM blocks WHERE cid IN (%@)", GZActorPlaceholders(batch.count)];
+            NSArray *rows = [self.database executeParameterizedQuery:sql params:batch error:error];
+            if (!rows) return nil;
+            for (NSDictionary *row in rows) {
+                NSData *cid = row[@"cid"];
+                NSString *did = row[@"repo_did"];
+                NSData *blockData = row[@"block_data"];
+                if (!cid || did.length == 0 || blockData.length == 0) continue;
+                NSError *decodeError = nil;
+                NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:blockData error:&decodeError];
+                if ([record isKindOfClass:[NSDictionary class]]) {
+                    profileRecords[[NSString stringWithFormat:@"%@:%@", did, cid]] = record;
+                }
+            }
+        }
+    }
+
+    NSDictionary<NSString *, NSDictionary *> *counts = [self batchActorCountsForDIDs:uniqueDIDs error:error];
+    if (!counts) return nil;
+
+    NSMutableArray<NSDictionary *> *profiles = [NSMutableArray arrayWithCapacity:actorDIDs.count];
+    for (NSString *did in actorDIDs) {
+        NSMutableDictionary *profile = [@{ @"did": did } mutableCopy];
+        NSString *handle = handles[did] ?: [self resolveDIDToHandle:did error:nil];
+        if (handle.length > 0) profile[@"handle"] = handle;
+        NSString *cid = profileCIDByDID[did];
+        CID *parsedCID = [CID cidFromString:cid];
+        NSDictionary *record = parsedCID.bytes ? profileRecords[[NSString stringWithFormat:@"%@:%@", did, parsedCID.bytes]] : nil;
+        for (NSString *field in @[@"displayName", @"description", @"avatar", @"banner"]) {
+            if (record[field]) profile[field] = record[field];
+        }
+        NSDictionary *count = counts[did];
+        profile[@"followersCount"] = @([count[@"followers_count"] integerValue]);
+        profile[@"followsCount"] = @([count[@"follows_count"] integerValue]);
+        profile[@"postsCount"] = @([count[@"posts_count"] integerValue]);
+        profile[@"indexedAt"] = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
+        [profiles addObject:[profile copy]];
+    }
     return [profiles copy];
+}
+
+- (nullable NSDictionary<NSString *, NSDictionary *> *)getProfilesByDIDForActors:(NSArray<NSString *> *)actorDIDs
+                                                                            error:(NSError **)error {
+    if (!actorDIDs || actorDIDs.count == 0) {
+        return @{};
+    }
+    NSArray<NSString *> *uniqueDIDs = [[NSOrderedSet orderedSetWithArray:actorDIDs] array];
+    NSArray<NSDictionary *> *profiles = [self getProfilesForActors:uniqueDIDs error:error];
+    if (!profiles) return nil;
+
+    NSMutableDictionary<NSString *, NSDictionary *> *result = [NSMutableDictionary dictionaryWithCapacity:profiles.count];
+    for (NSDictionary *profile in profiles) {
+        NSString *did = profile[@"did"];
+        if (did) result[did] = profile;
+    }
+    return [result copy];
+}
+
+// Batch-fetches followers/follows/posts counts for a set of DIDs in a bounded
+// number of queries. Tries the materialized appview_actor_counts table first;
+// if that table isn't present (e.g. a PDS-mode database with no AppView
+// migrations), falls back to bounded GROUP BY aggregates over records so the
+// query count stays independent of page size either way.
+- (nullable NSDictionary<NSString *, NSDictionary *> *)batchActorCountsForDIDs:(NSArray<NSString *> *)dids
+                                                                          error:(NSError **)error {
+    if (dids.count == 0) return @{};
+
+    NSMutableDictionary<NSString *, NSDictionary *> *counts = [NSMutableDictionary dictionary];
+    BOOL countsTableAvailable = YES;
+    for (NSUInteger offset = 0; offset < dids.count; offset += 900) {
+        NSArray<NSString *> *batch = [dids subarrayWithRange:NSMakeRange(offset, MIN((NSUInteger)900, dids.count - offset))];
+        NSString *sql = [NSString stringWithFormat:@"SELECT did, followers_count, follows_count, posts_count FROM appview_actor_counts WHERE did IN (%@)", GZActorPlaceholders(batch.count)];
+        NSError *countsError = nil;
+        NSArray *rows = [self.database executeParameterizedQuery:sql params:batch error:&countsError];
+        if (!rows) {
+            countsTableAvailable = NO;
+            break;
+        }
+        for (NSDictionary *row in rows) {
+            NSString *did = row[@"did"];
+            if (did.length > 0) counts[did] = row;
+        }
+    }
+    if (countsTableAvailable) return [counts copy];
+
+    NSDictionary<NSString *, NSNumber *> *followers = [self groupCountForDIDs:dids didColumn:@"subject_did" collection:@"app.bsky.graph.follow" error:error];
+    if (!followers) return nil;
+    NSDictionary<NSString *, NSNumber *> *follows = [self groupCountForDIDs:dids didColumn:@"did" collection:@"app.bsky.graph.follow" error:error];
+    if (!follows) return nil;
+    NSDictionary<NSString *, NSNumber *> *posts = [self groupCountForDIDs:dids didColumn:@"did" collection:@"app.bsky.feed.post" error:error];
+    if (!posts) return nil;
+
+    NSMutableDictionary<NSString *, NSDictionary *> *fallbackCounts = [NSMutableDictionary dictionaryWithCapacity:dids.count];
+    for (NSString *did in dids) {
+        fallbackCounts[did] = @{
+            @"followers_count": followers[did] ?: @0,
+            @"follows_count": follows[did] ?: @0,
+            @"posts_count": posts[did] ?: @0,
+        };
+    }
+    return [fallbackCounts copy];
+}
+
+- (nullable NSDictionary<NSString *, NSNumber *> *)groupCountForDIDs:(NSArray<NSString *> *)dids
+                                                             didColumn:(NSString *)didColumn
+                                                            collection:(NSString *)collection
+                                                                 error:(NSError **)error {
+    NSMutableDictionary<NSString *, NSNumber *> *result = [NSMutableDictionary dictionary];
+    for (NSUInteger offset = 0; offset < dids.count; offset += 900) {
+        NSArray<NSString *> *batch = [dids subarrayWithRange:NSMakeRange(offset, MIN((NSUInteger)900, dids.count - offset))];
+        NSString *sql = [NSString stringWithFormat:@"SELECT %@ AS did, COUNT(*) AS count FROM records WHERE %@ IN (%@) AND collection = ? GROUP BY %@",
+                         didColumn, didColumn, GZActorPlaceholders(batch.count), didColumn];
+        NSMutableArray *params = [NSMutableArray arrayWithArray:batch];
+        [params addObject:collection];
+        NSArray *rows = [self.database executeParameterizedQuery:sql params:params error:error];
+        if (!rows) return nil;
+        for (NSDictionary *row in rows) {
+            NSString *did = row[@"did"];
+            NSNumber *count = row[@"count"];
+            if (did.length > 0 && count) result[did] = count;
+        }
+    }
+    return [result copy];
 }
 
 - (nullable NSDictionary *)getPreferencesForActor:(NSString *)actorDID error:(NSError **)error {
@@ -256,6 +422,13 @@
     if (!did || did.length == 0) {
         return 0;
     }
+    NSError *countsError = nil;
+    NSArray *countRows = [self.database executeParameterizedQuery:@"SELECT followers_count FROM appview_actor_counts WHERE did = ?" params:@[did] error:&countsError];
+    if (countRows && !countsError) {
+        return countRows.count > 0 ? [countRows.firstObject[@"followers_count"] integerValue] : 0;
+    }
+
+    // No materialized counts table (e.g. a PDS-mode database) — fall back to a direct count.
     NSString *query = @"SELECT COUNT(*) as count FROM records WHERE subject_did = ? AND collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.graph.follow"] error:error];
 
@@ -267,6 +440,14 @@
 }
 
 - (NSInteger)getFollowsCountForDID:(NSString *)did error:(NSError **)error {
+    if (!did || did.length == 0) return 0;
+    NSError *countsError = nil;
+    NSArray *countRows = [self.database executeParameterizedQuery:@"SELECT follows_count FROM appview_actor_counts WHERE did = ?" params:@[did] error:&countsError];
+    if (countRows && !countsError) {
+        return countRows.count > 0 ? [countRows.firstObject[@"follows_count"] integerValue] : 0;
+    }
+
+    // No materialized counts table (e.g. a PDS-mode database) — fall back to a direct count.
     NSString *query = @"SELECT COUNT(*) as count FROM records WHERE did = ? AND collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.graph.follow"] error:error];
 
@@ -278,6 +459,14 @@
 }
 
 - (NSInteger)getPostsCountForDID:(NSString *)did error:(NSError **)error {
+    if (!did || did.length == 0) return 0;
+    NSError *countsError = nil;
+    NSArray *countRows = [self.database executeParameterizedQuery:@"SELECT posts_count FROM appview_actor_counts WHERE did = ?" params:@[did] error:&countsError];
+    if (countRows && !countsError) {
+        return countRows.count > 0 ? [countRows.firstObject[@"posts_count"] integerValue] : 0;
+    }
+
+    // No materialized counts table (e.g. a PDS-mode database) — fall back to a direct count.
     NSString *query = @"SELECT COUNT(*) as count FROM records WHERE did = ? AND collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.feed.post"] error:error];
 
@@ -301,7 +490,6 @@
 
     limit = MIN(MAX(limit, 1), 100);
 
-    NSMutableArray *actors = [NSMutableArray array];
     NSString *searchPattern = [NSString stringWithFormat:@"%%%@%%", term.lowercaseString];
 
     NSString *query = @"SELECT DISTINCT did FROM records "
@@ -323,12 +511,7 @@
     BOOL hasMore = rows.count > limit;
     NSArray *resultRows = hasMore ? [rows subarrayWithRange:NSMakeRange(0, limit)] : rows;
 
-    for (NSDictionary *row in resultRows) {
-        NSDictionary *profile = [self getProfileForActor:row[@"did"] error:nil];
-        if (profile) {
-            [actors addObject:profile];
-        }
-    }
+    NSArray *actors = [self getProfilesForActors:[resultRows valueForKey:@"did"] error:nil] ?: @[];
 
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"actors"] = actors;
@@ -360,9 +543,11 @@
     NSArray *rows = [self.database executeParameterizedQuery:query params:params error:error];
     if (!rows) return nil;
 
-    NSMutableArray *actors = [NSMutableArray array];
-    for (NSDictionary *row in rows) {
-        NSDictionary *profile = [self getProfileForActor:row[@"did"] error:nil];
+    NSArray *profiles = [self getProfilesForActors:[rows valueForKey:@"did"] error:nil] ?: @[];
+    NSMutableArray *actors = [NSMutableArray arrayWithCapacity:profiles.count];
+    for (NSUInteger index = 0; index < profiles.count; index++) {
+        NSDictionary *row = rows[index];
+        NSDictionary *profile = profiles[index];
         if (profile) {
             [actors addObject:@{
                 @"did": row[@"did"],
@@ -477,14 +662,7 @@
         suggestionDIDs = [[suggestionDIDs subarrayWithRange:NSMakeRange(0, limit)] mutableCopy];
     }
 
-    // Get profiles for the suggestions
-    NSMutableArray *actors = [NSMutableArray arrayWithCapacity:suggestionDIDs.count];
-    for (NSString *did in suggestionDIDs) {
-        NSDictionary *profile = [self getProfileForActor:did error:nil];
-        if (profile) {
-            [actors addObject:profile];
-        }
-    }
+    NSArray *actors = [self getProfilesForActors:suggestionDIDs error:nil] ?: @[];
 
     NSString *nextCursor = nil;
     if (suggestionDIDs.count > 0 && actors.count >= limit) {
