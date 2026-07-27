@@ -11,6 +11,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "App/ATProtoServiceConfiguration.h"
 #if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonCrypto.h>
 #endif
@@ -96,6 +97,35 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     
     if (existingBlob) {
         return cid;
+    }
+
+    // Check blob storage quota before storing provider bytes
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+    if (config.softQuotaBlobBytes > 0) {
+        __block unsigned long long currentBlobBytes = 0;
+        [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+            PDSActorStore *actorStore = (PDSActorStore *)reader;
+            NSString *sql = @"SELECT blob_bytes FROM account_usage WHERE did = ?";
+            sqlite3_stmt *stmt = [actorStore prepareStatement:sql error:blockError];
+            if (!stmt) return;
+            sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                currentBlobBytes = (unsigned long long)sqlite3_column_int64(stmt, 0);
+            }
+            [actorStore finalizeStatement:stmt];
+        } error:nil];
+
+        unsigned long long newTotal = currentBlobBytes + data.length;
+        if (newTotal > config.softQuotaBlobBytes) {
+            GZ_LOG_WARN(@"Blob upload rejected — quota exceeded for %@: current %llu + new %lu > %llu",
+                         did, currentBlobBytes, (unsigned long)data.length, config.softQuotaBlobBytes);
+            if (error) {
+                *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                             code:BlobStorageErrorQuotaExceeded
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Blob upload would exceed storage quota"}];
+            }
+            return nil;
+        }
     }
 
     // Check if provider has it (for consistency)

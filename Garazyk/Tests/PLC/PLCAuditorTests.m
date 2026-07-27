@@ -243,6 +243,185 @@
     XCTAssertTrue(success, @"Auditor should accept valid handle update. Error: %@", error);
 }
 
+#pragma mark - verifyChain:did:error: (store-free audit-log verification)
+
+- (void)testVerifyChainAcceptsValidNonTombstoneChain {
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    NSString *didKey = [keyPair didKeyString];
+
+    NSDictionary *op1Data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://test.com"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
+    NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
+    NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
+
+    PLCOperation *op1 = [[PLCOperation alloc] init];
+    op1.sig = [self base64URLEncode:op1Sig];
+    op1.data = op1Data;
+    op1.prev = nil;
+    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+
+    NSError *error = nil;
+    BOOL success = [PLCAuditor verifyChain:@[op1] did:op1.did error:&error];
+    XCTAssertTrue(success, @"verifyChain: should accept a valid single-operation chain. Error: %@", error);
+}
+
+- (void)testVerifyChainAcceptsSignedTombstoneAtEnd {
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    NSString *didKey = [keyPair didKeyString];
+
+    NSDictionary *op1Data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://test.com"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
+    NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
+    NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
+
+    PLCOperation *op1 = [[PLCOperation alloc] init];
+    op1.sig = [self base64URLEncode:op1Sig];
+    op1.data = op1Data;
+    op1.prev = nil;
+    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+
+    NSString *prevCid = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSDictionary *tombstoneData = @{
+        @"type": @"plc_tombstone",
+        @"prev": prevCid
+    };
+    NSData *tombstoneHash = [self.auditor hashForOperationData:tombstoneData];
+    NSData *tombstoneSig = [keyPair signHash:tombstoneHash error:nil];
+
+    PLCOperation *tombstone = [[PLCOperation alloc] init];
+    tombstone.did = op1.did;
+    tombstone.sig = [self base64URLEncode:tombstoneSig];
+    tombstone.data = tombstoneData;
+    tombstone.prev = prevCid;
+
+    NSError *error = nil;
+    BOOL success = [PLCAuditor verifyChain:@[op1, tombstone] did:op1.did error:&error];
+    XCTAssertTrue(success, @"verifyChain: should accept a chain ending in a correctly-signed tombstone. Error: %@", error);
+}
+
+- (void)testVerifyChainRejectsUnsignedTombstoneAtEnd {
+    // Regression test: a chain that is otherwise valid (correct prev-CID
+    // linkage) but whose terminal tombstone is not actually signed by an
+    // authorized rotation key must be rejected. Before this fix,
+    // +verifyChain:did:error: returned YES for a trailing tombstone as
+    // soon as ordering was confirmed, without ever calling
+    // verifySignatureForOperation: on it.
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    Secp256k1KeyPair *attackerKeyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    NSString *didKey = [keyPair didKeyString];
+
+    NSDictionary *op1Data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://test.com"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
+    NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
+    NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
+
+    PLCOperation *op1 = [[PLCOperation alloc] init];
+    op1.sig = [self base64URLEncode:op1Sig];
+    op1.data = op1Data;
+    op1.prev = nil;
+    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+
+    NSString *prevCid = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSDictionary *tombstoneData = @{
+        @"type": @"plc_tombstone",
+        @"prev": prevCid
+    };
+    // Signed by an unrelated key, not one of op1's rotationKeys — the prev
+    // CID still links correctly, so only a real signature check catches this.
+    NSData *tombstoneHash = [self.auditor hashForOperationData:tombstoneData];
+    NSData *forgedSig = [attackerKeyPair signHash:tombstoneHash error:nil];
+
+    PLCOperation *forgedTombstone = [[PLCOperation alloc] init];
+    forgedTombstone.did = op1.did;
+    forgedTombstone.sig = [self base64URLEncode:forgedSig];
+    forgedTombstone.data = tombstoneData;
+    forgedTombstone.prev = prevCid;
+
+    NSError *error = nil;
+    BOOL success = [PLCAuditor verifyChain:@[op1, forgedTombstone] did:op1.did error:&error];
+    XCTAssertFalse(success, @"verifyChain: must reject a chain-linked tombstone with an unauthorized signature");
+    XCTAssertNotNil(error);
+}
+
+- (void)testVerifyChainRejectsTombstoneNotLast {
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    NSString *didKey = [keyPair didKeyString];
+
+    NSDictionary *op1Data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://test.com"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
+    NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
+    NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
+
+    PLCOperation *op1 = [[PLCOperation alloc] init];
+    op1.sig = [self base64URLEncode:op1Sig];
+    op1.data = op1Data;
+    op1.prev = nil;
+    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+
+    NSString *prevCid1 = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSDictionary *tombstoneData = @{
+        @"type": @"plc_tombstone",
+        @"prev": prevCid1
+    };
+    NSData *tombstoneHash = [self.auditor hashForOperationData:tombstoneData];
+    NSData *tombstoneSig = [keyPair signHash:tombstoneHash error:nil];
+
+    PLCOperation *tombstone = [[PLCOperation alloc] init];
+    tombstone.did = op1.did;
+    tombstone.sig = [self base64URLEncode:tombstoneSig];
+    tombstone.data = tombstoneData;
+    tombstone.prev = prevCid1;
+
+    // A third operation appended after the tombstone — must be rejected
+    // regardless of its own signature, since a tombstone must be terminal.
+    NSString *prevCid2 = [PLCOperation calculateCIDForOperation:[tombstone toDictionary] error:nil];
+    NSDictionary *op3Data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://test.com"],
+        @"services": @{},
+        @"prev": prevCid2
+    };
+    NSData *op3Hash = [self.auditor hashForOperationData:op3Data];
+    NSData *op3Sig = [keyPair signHash:op3Hash error:nil];
+
+    PLCOperation *op3 = [[PLCOperation alloc] init];
+    op3.did = op1.did;
+    op3.sig = [self base64URLEncode:op3Sig];
+    op3.data = op3Data;
+    op3.prev = prevCid2;
+
+    NSError *error = nil;
+    BOOL success = [PLCAuditor verifyChain:@[op1, tombstone, op3] did:op1.did error:&error];
+    XCTAssertFalse(success, @"verifyChain: must reject any operation appended after a tombstone");
+    XCTAssertNotNil(error);
+}
+
 #pragma mark - P-256 Helpers
 
 - (void)testAuditorVerifiesP256Signature {
