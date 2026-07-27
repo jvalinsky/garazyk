@@ -1,23 +1,42 @@
 ---
 phase: 15
 title: Blob lifecycle conformance
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
+completed_at: 2026-07-27
+commit: 1b8a04f5
 ---
 
 # Phase 15: Blob lifecycle conformance
 
 ## Progress
 
-- 2026-07-27: **Slice 1 complete.** Modeled the blob lifecycle: added
-  `status TEXT NOT NULL DEFAULT 'temporary'` column to both `blobs`
-  definitions (`actorStoreBlobsTableSchema` and `kPDSBlobTableCreateSQL`).
-  Reconciled divergent FK definitions (added FK to actor store version).
-  Created `blob_refs` reference table with indexes. Added `status` property
-  to `PDSDatabaseBlob`. Updated all blob CRUD queries. V7 migration creates
-  column/table for existing stores, marks all pre-existing blobs as
-  `'referenced'`. Committed as `4f061304`.
+Started 2026-07-26 in worktree `../garazyk-storage` (branch `phase-15-16`).
+Read both spec pages, workstream 01 S9, Schema.m, PDSSchemaManager.m,
+ActorStore.m, PDSMigrationManager.m. Beginning slice 1.
+
+Resumed 2026-07-27 after slices 1-2. Beginning slice 3: enforce the
+account-wide blob-byte quota from the live, backfilled `account_usage` row
+before provider storage.
+
+Completed slice 4: current-record blob references are extracted and updated
+atomically for direct writes, batches, and imports. Last-reference removal
+reclaims per-repository lifecycle metadata; deduplicated provider bytes remain
+for the global orphan sweep in slice 5.
+
+Completed slice 5: a startup and hourly temporary-blob sweep reuses the
+reference-scan traversal, applies the configurable six-hour grace period
+(one-hour floor), and reclaims provider bytes only after all repositories are
+checked. Upload metadata-save failures now remove newly stored provider bytes.
+
+Completed slice 6: blob reads, file paths, and listings now require referenced
+metadata and fail closed without an owner store. XCTest coverage exercises the
+XRPC upload → record reference → fetch flow and excludes temporary blobs.
+
+Completed 2026-07-27: all acceptance and global gates passed. Evidence and
+commit hashes are recorded in workstream 01 § S9; ADR 0013 records the
+lifecycle policy and compatibility impact.
 
 ## Mission
 

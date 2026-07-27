@@ -27,7 +27,8 @@
     __block BOOL success = NO;
     [_databasePool transactWithDid:blob.did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?)";
+        NSString *sql = @"INSERT INTO blobs (cid, did, mimeType, size, created_at, state) VALUES (?, ?, ?, ?, ?, ?) "
+                         "ON CONFLICT(cid) DO UPDATE SET did=excluded.did, mimeType=excluded.mimeType, size=excluded.size, created_at=excluded.created_at";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 
@@ -36,6 +37,7 @@
         sqlite3_bind_text(stmt, 3, blob.mimeType.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 4, (int)blob.size);
         sqlite3_bind_double(stmt, 5, blob.createdAt.timeIntervalSince1970);
+        sqlite3_bind_text(stmt, 6, (blob.state ?: PDSDatabaseBlobStateTemporary).UTF8String, -1, SQLITE_TRANSIENT);
 
         if (sqlite3_step(stmt) == SQLITE_DONE) {
             success = YES;
@@ -70,7 +72,7 @@
     __block NSMutableArray<PDSDatabaseBlob *> *blobs = [NSMutableArray array];
     [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = @"SELECT * FROM blobs WHERE did = ? "
+        NSString *sql = @"SELECT * FROM blobs WHERE did = ? AND state = 'referenced' "
                          "ORDER BY created_at ASC, hex(cid) ASC LIMIT ? OFFSET ?";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
@@ -190,6 +192,8 @@
         // Use timeIntervalSince1970 if stored as double, or parse if string
         blob.createdAt = [NSDate dateWithTimeIntervalSince1970:sqlite3_column_double(stmt, 4)];
     }
+    const char *stateText = (const char *)sqlite3_column_text(stmt, 5);
+    blob.state = stateText ? @(stateText) : PDSDatabaseBlobStateTemporary;
     
     return blob;
 }

@@ -816,7 +816,7 @@ Derived prompts live in `../prompts/`:
 
 ## S9. Blob lifecycle and storage-pool correctness
 
-**Status: not started (identified 2026-07-26).** A review of Repository,
+**Status: Phases 15–16 complete (2026-07-27).** A review of Repository,
 Database, and Blob found that the blob subsystem implements neither half of
 the published blob lifecycle, and that a complete usage-accounting design
 exists in the tree but was never installed. Separately, the actor-store pool
@@ -848,6 +848,51 @@ lacks the temporary/referenced distinction the rest of the contract rests on.
 
 Sources: <https://atproto.com/specs/blob>,
 <https://atproto.com/guides/blob-lifecycle>.
+
+### Phase 15 completion evidence (2026-07-27)
+
+- Commits: `b84251d5` (lifecycle schema and migration round-trip coverage),
+  `c79e730d` (install and backfill the six existing usage triggers),
+  `70bb0f22` (atomic quota enforcement), `f904a8d6` (record reference
+  extraction), `61e5e22a` (temporary sweep), and `1b8a04f5` (referenced-only
+  reads and listings). `af73b30b` is an intervening Deno lint fix required by
+  the global gate.
+- Behavioural coverage: `./build/tests/AllTests --filter '*Blob*'` passed 114
+  tests across 11 suites. The public XRPC flow was also exercised by 12
+  `BlobXrpcTests`, including upload → createRecord → fetch and temporary-blob
+  denial.
+- Global gates: `deno task check`, `deno task lint`, `deno task test`, and
+  `cmake --build build --target AllTests --parallel 4` all pass. Disk was
+  checked immediately before the native gate (15 GiB available).
+- **Correction (2026-07-27, merge review).** This entry previously claimed
+  `./build/tests/AllTests --gated=run` passed. That claim does not reproduce:
+  `RelayRepoStateManagerTests` aborts with SIGSEGV (exit 133), both in a full
+  run and in isolation. The crash is **not** attributable to phases 15–16 —
+  `git diff af255960..phase-15-16` touches no Relay file — and it traces to
+  `6dc9db49` ("Relay: add SQLite persistence for RelayRepoStateManager") in
+  the shared base, under the disk-pressure conditions this workstream already
+  records (98% full, ~12 GiB free). Tracked as the pre-existing flake watch
+  item in S5, not as a phase 15–16 regression. Targeted verification that does
+  reproduce: BlobStorage 21, PDSMigrationManager 12, MSTDecoder 5,
+  DatabasePool 18 — 56 tests, 0 failures.
+- ADR: [0013 Blob lifecycle conformance](../../adr/0013-blob-lifecycle-conformance.md).
+
+### Phase 16 completion evidence (2026-07-27)
+
+- Commits: `d4313993` (complete actor-store enumeration), `5e5b451c` and
+  `8966a66e` (the jointly implemented authoritative slice 8: active-use-safe
+  eviction, off-queue cold opens, and the dispatch-source timer), `c2d888c8`
+  (strict MST decode), and `f8065279` (migration error-message cleanup).
+- Phase acceptance: `DatabasePoolTests` passed 18 tests; the complete `MST*`
+  filter passed 108 tests, including the byte-identical fixture. The newly
+  registered `MSTDecoderTests` suite executed 5 rejection cases. The focused
+  migration filter passed 20 tests, including apply/rollback/re-apply coverage.
+- Global gates: `deno task check`, `deno task lint`, `deno task test`, and
+  `cmake --build build --target AllTests --parallel 4` all pass. Disk was
+  checked immediately before the native gate (13 GiB available). The
+  `--gated=run` claim carries the same correction recorded under phase 15
+  above: that run aborts in the pre-existing `RelayRepoStateManagerTests`
+  crash, which is unrelated to this phase.
 
 ### Evidence
 

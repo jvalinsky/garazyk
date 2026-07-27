@@ -2,9 +2,8 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { generateLexicons } from "./generate.ts";
 
-const REPO_ROOT = dirname(
-  dirname(dirname(dirname(fromFileUrl(import.meta.url)))),
-);
+const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
+const REPO_ROOT = dirname(dirname(dirname(SCRIPT_DIR)));
 
 function lexiconDoc(id: string, type: "query" | "record" = "query") {
   return {
