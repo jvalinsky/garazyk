@@ -99,6 +99,40 @@ static const uint8_t WS_MASK = 0x80;
         uint64_t payloadLength = secondByte & 0x7F;
         NSUInteger extendedLengthOffset = 0;
 
+        if ((firstByte & 0x70) != 0) {
+            // RFC 6455 §5.2: RSV1-RSV3 are reserved and MUST be 0 unless an
+            // extension negotiated their use. This codec negotiates none.
+            [events addObject:[self protocolErrorEventWithCloseCode:1002
+                                                          closeReason:@"Reserved bits (RSV1-RSV3) must be zero"]];
+            [self resetConnectionState];
+            return events;
+        }
+
+        BOOL isKnownOpcode = (opcode == WS_OPCODE_CONTINUE || opcode == WS_OPCODE_TEXT ||
+                               opcode == WS_OPCODE_BINARY || opcode == WS_OPCODE_CLOSE ||
+                               opcode == WS_OPCODE_PING || opcode == WS_OPCODE_PONG);
+        if (!isKnownOpcode) {
+            // RFC 6455 §5.2: opcodes 0x3-0x7 and 0xB-0xF are reserved for
+            // future use and MUST fail the connection if received.
+            [events addObject:[self protocolErrorEventWithCloseCode:1002
+                                                          closeReason:@"Reserved opcode"]];
+            [self resetConnectionState];
+            return events;
+        }
+
+        BOOL requiresMaskedIncoming = !self.maskOutgoingFrames;
+        if (masked != requiresMaskedIncoming) {
+            // RFC 6455 §5.1: a server MUST fail the connection on an
+            // unmasked frame from a client, and a client MUST fail the
+            // connection on a masked frame from a server. maskOutgoingFrames
+            // records which side of that pairing this codec instance plays.
+            NSString *reason = requiresMaskedIncoming ? @"Client frames must be masked"
+                                                        : @"Server frames must not be masked";
+            [events addObject:[self protocolErrorEventWithCloseCode:1002 closeReason:reason]];
+            [self resetConnectionState];
+            return events;
+        }
+
         BOOL isControlFrame = opcode >= WS_OPCODE_CLOSE;
         if (isControlFrame && (!fin || payloadLength > 125)) {
             // RFC 6455 §5.5: control frames are never fragmented and carry
@@ -165,6 +199,14 @@ static const uint8_t WS_MASK = 0x80;
         } else {
             // Data or continuation frame
             if (opcode != WS_OPCODE_CONTINUE) {
+                if (self.fragmentOpcode != 0) {
+                    // RFC 6455 §5.4: a new data frame may not start while a
+                    // fragmented message is still in progress.
+                    [events addObject:[self protocolErrorEventWithCloseCode:1002
+                                                                  closeReason:@"New data frame received while a fragmented message is in progress"]];
+                    [self resetConnectionState];
+                    return events;
+                }
                 if (!fin) {
                     self.fragmentOpcode = opcode;
                     self.fragmentsTotalLength = 0;
@@ -181,6 +223,14 @@ static const uint8_t WS_MASK = 0x80;
                     }
                 }
             } else {
+                if (self.fragmentOpcode == 0) {
+                    // RFC 6455 §5.4: a continuation frame must not appear
+                    // without a preceding non-FIN data frame to continue.
+                    [events addObject:[self protocolErrorEventWithCloseCode:1002
+                                                                  closeReason:@"Continuation frame with no preceding start frame"]];
+                    [self resetConnectionState];
+                    return events;
+                }
                 if (![self appendFragment:payload]) {
                     [events addObject:[self protocolErrorEventWithCloseCode:1009
                                                                   closeReason:@"Aggregate message size exceeds limit"]];

@@ -12,6 +12,10 @@
 - (void)setUp {
     [super setUp];
     self.session = [[WebSocketProtocolSession alloc] init];
+    // These fixtures hand-build unmasked frames, simulating what a real
+    // server legitimately sends. maskOutgoingFrames=YES puts the codec in
+    // client role, which requires unmasked incoming frames per RFC 6455 §5.1.
+    self.session.codec.maskOutgoingFrames = YES;
 }
 
 - (void)tearDown {
