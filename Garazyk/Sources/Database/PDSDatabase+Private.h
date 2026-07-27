@@ -75,6 +75,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Reads a value from a statement column, handling type detection. */
 - (nullable id)valueFromStatement:(sqlite3_stmt *)stmt columnIndex:(int)colIndex;
 
+/*! Prepares a statement and returns it via the out parameter. */
+- (BOOL)prepareStatement:(sqlite3_stmt *_Nullable *_Nonnull)stmt sql:(NSString *)sql error:(NSError **)error;
+
 /*! Generates parameter placeholders (?, ?, ...) for a given count. */
 - (NSString *)parameterPlaceholdersForCount:(NSUInteger)count;
 
