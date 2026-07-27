@@ -361,7 +361,7 @@ NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
 }
 
 - (void)setAdminController:(id)adminController {
-    self.adminController = adminController;
+    _adminController = adminController;
 }
 
 - (BOOL)isAccountAllowed:(NSString *)did
