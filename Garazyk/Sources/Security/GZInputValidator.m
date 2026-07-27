@@ -76,10 +76,13 @@ static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
     if ([self containsNullByte:tid]) return NO;
 
     for (NSUInteger i = 0; i < tid.length; i++) {
-        char c = [tid characterAtIndex:i];
+        unichar c = [tid characterAtIndex:i];
+        // Reject non-ASCII characters: a unichar above U+00FF truncates to
+        // a char that can alias a base32 digit (e.g. U+0132 -> 0x32 = '2').
+        if (c > 0x7F) return NO;
         BOOL valid = NO;
         for (int j = 0; j < 32; j++) {
-            if (c == kTIDBase32Alphabet[j]) {
+            if (c == (unsigned char)kTIDBase32Alphabet[j]) {
                 valid = YES;
                 break;
             }
