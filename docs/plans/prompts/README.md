@@ -10,6 +10,10 @@ These are **derived execution prompts, not plans**: the
 [mega plan](../mega-plan.md) and workstreams stay authoritative. If a prompt
 and a workstream disagree, the workstream wins and the prompt gets fixed.
 
+Phases 13-14 derive from workstream 01 § S8 (auth trust-boundary review,
+2026-07-26). Phase 14 must not start before 13 is complete: it wires code
+whose latent defects phase 13's contracts and phase 14's own steps 1-5 fix.
+
 ## Loop protocol
 
 Each phase file has frontmatter:
