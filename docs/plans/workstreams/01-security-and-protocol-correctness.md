@@ -786,7 +786,7 @@ Derived prompts live in `../prompts/`:
 
 ## S9. Blob lifecycle and storage-pool correctness
 
-**Status: not started (identified 2026-07-26).** A review of Repository,
+**Status: Phase 15 complete (2026-07-27); Phase 16 pending.** A review of Repository,
 Database, and Blob found that the blob subsystem implements neither half of
 the published blob lifecycle, and that a complete usage-accounting design
 exists in the tree but was never installed. Separately, the actor-store pool
@@ -818,6 +818,24 @@ lacks the temporary/referenced distinction the rest of the contract rests on.
 
 Sources: <https://atproto.com/specs/blob>,
 <https://atproto.com/guides/blob-lifecycle>.
+
+### Phase 15 completion evidence (2026-07-27)
+
+- Commits: `b84251d5` (lifecycle schema and migration round-trip coverage),
+  `c79e730d` (install and backfill the six existing usage triggers),
+  `70bb0f22` (atomic quota enforcement), `f904a8d6` (record reference
+  extraction), `61e5e22a` (temporary sweep), and `1b8a04f5` (referenced-only
+  reads and listings). `af73b30b` is an intervening Deno lint fix required by
+  the global gate.
+- Behavioural coverage: `./build/tests/AllTests --filter '*Blob*'` passed 114
+  tests across 11 suites. The public XRPC flow was also exercised by 12
+  `BlobXrpcTests`, including upload → createRecord → fetch and temporary-blob
+  denial.
+- Global gates passed: `deno task check`, `deno task lint`, `deno task test`,
+  `cmake --build build --target AllTests --parallel 4`, and
+  `./build/tests/AllTests --gated=run`. Disk was checked immediately before
+  the native gate (15 GiB available).
+- ADR: [0013 Blob lifecycle conformance](../../adr/0013-blob-lifecycle-conformance.md).
 
 ### Evidence
 
