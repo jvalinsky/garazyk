@@ -38,6 +38,7 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
     BlobStorageErrorCIDMismatch = 2003,
     BlobStorageErrorStorageFailure = 2004,
     BlobStorageErrorBlobNotFound = 2005,
+    BlobStorageErrorQuotaExceeded = 2006,
 };
 
 /**
