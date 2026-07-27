@@ -109,7 +109,15 @@ static NSString *const kRelayStateSchemaSQL =
 
 - (void)dealloc {
     if (_db) {
-        [self persistState];
+        // Not [self persistState]: that dispatch_syncs onto _stateQueue, and
+        // a block captured on _stateQueue can be the last strong reference
+        // to self, so -dealloc can run while already executing on
+        // _stateQueue. dispatch_sync onto the queue you're already running
+        // on deadlocks. By the time -dealloc runs, no other reference to
+        // self exists, so no block on _stateQueue can be concurrently
+        // executing (each holds self strongly for its duration) — running
+        // the persistence body directly, unsynchronized, is safe here.
+        [self persistStateOnQueue];
         sqlite3_close(_db);
         _db = NULL;
     }
@@ -231,39 +239,46 @@ static NSString *const kRelayStateSchemaSQL =
         return;
     }
     dispatch_sync(_stateQueue, ^{
-        sqlite3_exec(self->_db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
-
-        sqlite3_exec(self->_db, "DELETE FROM relay_repos;", NULL, NULL, NULL);
-
-        sqlite3_stmt *stmt = NULL;
-        const char *insertSQL =
-            "INSERT INTO relay_repos (did, root_cid, prev_data_cid, rev, seq, status, last_seen_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?);";
-        sqlite3_prepare_v2(self->_db, insertSQL, -1, &stmt, NULL);
-
-        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-        for (NSString *did in self.repoRoots) {
-            NSString *root = self.repoRoots[did] ?: @"";
-            NSString *prev = self->_prevDataCIDs[did] ?: @"";
-            NSString *rev = self.repoRevs[did] ?: @"";
-            NSNumber *seq = self.repoSeqs[did] ?: @(0);
-            NSNumber *status = self.repoStatuses[did] ?: @(RelayRepoStatusDesynchronized);
-
-            sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 2, root.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 3, prev.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 4, rev.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_int64(stmt, 5, seq.longLongValue);
-            sqlite3_bind_int(stmt, 6, (int)status.integerValue);
-            sqlite3_bind_double(stmt, 7, now);
-
-            sqlite3_step(stmt);
-            sqlite3_reset(stmt);
-        }
-        sqlite3_finalize(stmt);
-
-        sqlite3_exec(self->_db, "COMMIT;", NULL, NULL, NULL);
+        [self persistStateOnQueue];
     });
+}
+
+// The actual persistence body. Callers must either already be executing on
+// _stateQueue, or be -dealloc (see the comment there for why that's safe
+// without dispatching).
+- (void)persistStateOnQueue {
+    sqlite3_exec(self->_db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
+
+    sqlite3_exec(self->_db, "DELETE FROM relay_repos;", NULL, NULL, NULL);
+
+    sqlite3_stmt *stmt = NULL;
+    const char *insertSQL =
+        "INSERT INTO relay_repos (did, root_cid, prev_data_cid, rev, seq, status, last_seen_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?);";
+    sqlite3_prepare_v2(self->_db, insertSQL, -1, &stmt, NULL);
+
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    for (NSString *did in self.repoRoots) {
+        NSString *root = self.repoRoots[did] ?: @"";
+        NSString *prev = self->_prevDataCIDs[did] ?: @"";
+        NSString *rev = self.repoRevs[did] ?: @"";
+        NSNumber *seq = self.repoSeqs[did] ?: @(0);
+        NSNumber *status = self.repoStatuses[did] ?: @(RelayRepoStatusDesynchronized);
+
+        sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, root.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, prev.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, rev.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 5, seq.longLongValue);
+        sqlite3_bind_int(stmt, 6, (int)status.integerValue);
+        sqlite3_bind_double(stmt, 7, now);
+
+        sqlite3_step(stmt);
+        sqlite3_reset(stmt);
+    }
+    sqlite3_finalize(stmt);
+
+    sqlite3_exec(self->_db, "COMMIT;", NULL, NULL, NULL);
 }
 
 - (BOOL)loadState:(NSError **)error {
