@@ -38,6 +38,11 @@ leaf nodes rather than repairing or skipping them. Structural forwarding nodes
 remain valid. `MSTDecoderTests` executed five rejection cases, and the complete
 MST filter passed 108 tests including byte-for-byte fixture verification.
 
+Completed slice 10: every BEGIN/COMMIT `sqlite3_exec` error string is freed on
+both migration apply and rollback paths. The old timer bounce and guarded pool
+counter decrement were completed in slice 8. Migration-focused suites passed
+20 tests, including existing apply/rollback/re-apply coverage.
+
 ## Mission
 
 Execute workstream 01 § S9 slices 7-10: fix the actor-store pool's silently
