@@ -202,6 +202,15 @@ const BASE_TEMPLATES: Record<string, ActorTemplate> = {
     role: "user",
     pds: "pds1",
   },
+  sasha: {
+    name: "Alex Sasha",
+    handle: "sasha.test",
+    email: "sasha@test.com",
+    password: "sasha_pass_123",
+    persona: "System architect, tests relay backfill and partition recovery",
+    role: "user",
+    pds: "pds1",
+  },
   volt: {
     name: "DJ Volt",
     handle: "volt.test",
