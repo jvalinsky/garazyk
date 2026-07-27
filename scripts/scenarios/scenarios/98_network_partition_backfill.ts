@@ -202,8 +202,8 @@ function decodeDataFrames(frames: ParsedFrame[]): FirehoseEventLike[] {
 // Scenario
 // ---------------------------------------------------------------------------
 
-const FIREHOSE_TIMEOUT_MS = 30_000;
-const BACKFILL_POLL_INTERVAL_MS = 3_000;
+const FIREHOSE_TIMEOUT_MS = 60_000;
+const BACKFILL_POLL_INTERVAL_MS = 5_000;
 
 /**
  * Collect firehose events from a subscribeRepos WebSocket until a predicate
@@ -435,8 +435,11 @@ export async function run(): Promise<ScenarioResult> {
       () => `reconnected ${relayContainer} to ${networkName}`,
     );
 
-    // Give the reconnection time to establish and backfill to begin
-    await new Promise((r) => setTimeout(r, 3000));
+    // Give the reconnection time to establish and backfill to begin.
+    // Increased from 3s to 12s to accommodate the relay's reconnect pipeline:
+    //   TCP disconnect detection (~3s) + 5s base reconnect delay +
+    //   WebSocket establishment + PDS cursor replay + event propagation ~4-5s
+    await new Promise((r) => setTimeout(r, 12_000));
 
     // ── Step 9: Verify backfill via relay firehose ─────────────────
     const relayUrl = SERVICE_URLS.relay;
