@@ -340,24 +340,10 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 }
 
 // Walks {dbDir}/{method}/{prefix}/{did} looking for files starting with "did:".
-// Uses knownDids set as a cache when available, falling back to filesystem walk
-// only when the set is empty (e.g., on first call after restart).
+// The open-store cache is not an inventory: it contains only stores that have
+// been opened since this pool was created and must never determine an
+// enumeration result.
 - (void)enumerateDidFiles:(void (^)(NSString *did))block {
-    __block NSArray<NSString *> *cachedDids = nil;
-    dispatch_sync(self.poolQueue, ^{
-        if (self.knownDids.count > 0) {
-            cachedDids = [self.knownDids allObjects];
-        }
-    });
-
-    if (cachedDids) {
-        for (NSString *did in cachedDids) {
-            block(did);
-        }
-        return;
-    }
-
-    // Fallback: walk the filesystem
     NSFileManager *fm = [NSFileManager defaultManager];
     NSArray<NSString *> *methodDirs = [fm contentsOfDirectoryAtPath:self.dbDirectory error:nil];
     for (NSString *methodEntry in methodDirs) {
@@ -376,9 +362,6 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
                     continue;
                 }
                 if ([file hasPrefix:@"did:"]) {
-                    dispatch_sync(self.poolQueue, ^{
-                        [self.knownDids addObject:file];
-                    });
                     block(file);
                 }
             }
