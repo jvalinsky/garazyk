@@ -107,23 +107,18 @@
 
 #ifndef GNUSTEP
 - (void)testMaskedFrameParsingMatchesLastTextObject {
-    // Hello World masked
+    // "Hello", unmasked -- this connection is a bare `init`, which dials out
+    // as a client (RFC 6455 §5.1: a client MUST fail the connection on a
+    // masked frame from a server, so a legitimate server frame is unmasked).
     // Fin=1, Opcode=1 (Text) -> 0x81
-    // Mask=1, Len=5 -> 0x85
-    // Mask Key = 0x37 0xFA 0x21 0x3D
+    // Mask=0, Len=5 -> 0x05
     // "Hello" -> 0x48 0x65 0x6C 0x6C 0x6F
-    // Masked:
-    // H ^ 37 = 7F
-    // e ^ FA = 9F
-    // l ^ 21 = 4D
-    // l ^ 3D = 51
-    // o ^ 37 = 58
-    
+
     uint8_t frameBytes[] = {
-        0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D, 0x7F, 0x9F, 0x4D, 0x51, 0x58
+        0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F
     };
     NSData *frame = [NSData dataWithBytes:frameBytes length:sizeof(frameBytes)];
-    
+
     self.delegate.expectation = [self expectationWithDescription:@"Receive masked text"];
     
     [self.connection handleReceivedData:frame];
