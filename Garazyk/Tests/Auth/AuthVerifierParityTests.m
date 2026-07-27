@@ -3,6 +3,10 @@
 #import <XCTest/XCTest.h>
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
+#import "Auth/DPoPUtil.h"
+#import "Auth/Crypto/AuthCryptoBase64URL.h"
+#import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/TestKeyFixtures.h"
 #import "Auth/Verifier/AuthVerifier.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -138,6 +142,16 @@
     XCTAssertEqualObjects(principal.did, expectedDID);
 }
 
+- (NSString *)thumbprintFromProof:(NSString *)proof error:(NSError **)error {
+    NSArray<NSString *> *parts = [proof componentsSeparatedByString:@"."];
+    if (parts.count != 3) {
+        return nil;
+    }
+    NSData *headerData = [AuthCryptoBase64URL decode:parts[0]];
+    NSDictionary *header = [NSJSONSerialization JSONObjectWithData:headerData options:0 error:error];
+    return header ? [AuthCryptoJWK thumbprint:header[@"jwk"] error:error] : nil;
+}
+
 - (void)testParityValidSessionToken {
     NSError *error = nil;
     JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
@@ -194,6 +208,54 @@
     NSError *verificationError = nil;
     XCTAssertNil([self.verifier verifyAccessToken:token.encodedToken error:&verificationError]);
     XCTAssertEqual(verificationError.code, AuthVerifierErrorDPoPRequired);
+}
+
+- (void)testParityAcceptsDpopBoundTokenWithMatchingProof {
+    NSError *error = nil;
+    SecKeyRef key = PDSTestCreateFixedP256PrivateKey(&error);
+    if (!key) {
+        XCTSkip(@"Fixed P-256 key unavailable: %@", error);
+    }
+    NSString *url = @"https://pds.example.com/xrpc/com.atproto.server.getSession";
+    DPoPToken *legacyProof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
+    NSString *thumbprint = [self thumbprintFromProof:legacyProof.jwt error:&error];
+    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
+                                             handle:@"alice.example.com"
+                                             scopes:@[]
+                                  dpopKeyThumbprint:thumbprint
+                                               error:&error];
+    XCTAssertNotNil(token, @"Token minting failed: %@", error);
+
+    NSString *authorization = [@"DPoP " stringByAppendingString:token.encodedToken];
+    HttpRequest *legacyRequest = [self requestWithAuthorization:authorization dpop:legacyProof.jwt];
+    XCTAssertEqualObjects([self legacyDIDForAuthorization:authorization request:legacyRequest], @"did:plc:alice");
+
+    // The new verifier has a durable replay cache. Use a fresh proof for its
+    // independent evaluation while keeping the same token/key binding.
+    DPoPToken *newProof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
+    HttpRequest *newRequest = [self requestWithAuthorization:authorization dpop:newProof.jwt];
+    XCTAssertEqualObjects([self newPrincipalForAuthorization:authorization request:newRequest].did, @"did:plc:alice");
+    CFRelease(key);
+}
+
+- (void)testParityRejectsDpopProofWithMismatchedThumbprint {
+    NSError *error = nil;
+    SecKeyRef key = PDSTestCreateFixedP256PrivateKey(&error);
+    if (!key) {
+        XCTSkip(@"Fixed P-256 key unavailable: %@", error);
+    }
+    NSString *url = @"https://pds.example.com/xrpc/com.atproto.server.getSession";
+    DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
+    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
+                                             handle:@"alice.example.com"
+                                             scopes:@[]
+                                  dpopKeyThumbprint:@"wrong-thumbprint"
+                                               error:&error];
+    NSString *authorization = [@"DPoP " stringByAppendingString:token.encodedToken];
+    HttpRequest *request = [self requestWithAuthorization:authorization dpop:proof.jwt];
+    XCTAssertNil([self legacyDIDForAuthorization:authorization request:request]);
+    XCTAssertNil([self newPrincipalForAuthorization:authorization request:request]);
+    CFRelease(key);
 }
 
 - (void)testParitySupportsDidWebSubjectAndCapturesAdminScope {
