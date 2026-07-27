@@ -1,9 +1,10 @@
 ---
 phase: 16
 title: Storage pool and MST decoder correctness
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
+completed_at: 2026-07-27
 ---
 
 # Phase 16: Storage pool and MST decoder correctness
@@ -12,7 +13,7 @@ depends_on: []
 
 Started 2026-07-27 in worktree `../garazyk-storage` after Phase 15 completed.
 Beginning the required read-first pass for pool enumeration, eviction, and MST
-decode correctness before implementing slice 1.
+decode correctness before implementing slice 7.
 
 Completed slice 7: pool enumeration now always walks the on-disk actor layout
 rather than treating its open-store cache as a complete inventory. The
@@ -42,6 +43,9 @@ Completed slice 10: every BEGIN/COMMIT `sqlite3_exec` error string is freed on
 both migration apply and rollback paths. The old timer bounce and guarded pool
 counter decrement were completed in slice 8. Migration-focused suites passed
 20 tests, including existing apply/rollback/re-apply coverage.
+
+Completed 2026-07-27: Phase acceptance and all mega-plan global gates passed.
+Evidence and commit hashes are recorded in workstream 01 § S9.
 
 ## Mission
 
@@ -111,7 +115,7 @@ One coherent slice per commit.
 
 - **Enumeration:** open exactly one store, then assert `getAllRepos` and
   `getAllAccounts` return every on-disk repo/account. This test fails against
-  today's code and is the regression guard for slice 1.
+  today's code and is the regression guard for slice 7.
 - **Eviction:** drive concurrent readers against more than `maxSize` distinct
   DIDs and assert no operation fails with "database not open", and that the
   pool remains responsive (metrics calls return) while a long transaction is
@@ -132,7 +136,7 @@ deno task check
 deno task lint
 deno task test
 cmake --build build --target AllTests --parallel 4
-./build/tests/AllTests
+./build/tests/AllTests --gated=run
 ```
 
 Bounded parallelism only (`--parallel 4`).
@@ -144,11 +148,11 @@ mutually independent. Slice 9 is the one that can reject data currently accepted
 if a real peer's CAR
 fails to import after it, capture the offending node bytes as a fixture and
 decide explicitly whether the peer or the decoder is wrong before loosening
-anything. Slices 2-4 change pool timing, so watch for new flakiness in the
+anything. Slice 8 changes pool timing, so watch for new flakiness in the
 gated suite rather than only the targeted tests.
 
 ## On completion
 
 Update S9 slices 7-10 status in workstream 01 with commit hashes, then set
-`status: complete` here. If slice 5 changes what the decoder accepts in a way
+`status: complete` here. If slice 9 changes what the decoder accepts in a way
 visible to peers, record it as an ADR alongside ADR 0009's STAR precedent.
