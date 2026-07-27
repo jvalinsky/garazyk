@@ -347,8 +347,8 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! The allowed signing algorithms. */
 @property (nonatomic, copy) NSArray<NSString *> *allowedAlgorithms;
 
-/*! Clock offset for time-based validation. */
-@property (nonatomic, strong) NSDate *clockOffset;
+/*! Optional test-injectable reference time for time-based validation. */
+@property (nonatomic, strong, nullable) NSDate *clockOffset;
 
 /*! Public key for verification. */
 @property (nonatomic, copy, nullable) NSData *publicKey;
