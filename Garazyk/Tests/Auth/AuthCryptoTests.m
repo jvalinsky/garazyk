@@ -3,6 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
+#import "Auth/PDSReplayCache.h"
 #import "Auth/Base32Utils.h"
 
 #pragma mark - AuthCryptoDPoP Tests
@@ -89,7 +90,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -105,7 +106,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -122,7 +123,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -146,7 +147,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -170,7 +171,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -194,7 +195,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -218,7 +219,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -243,7 +244,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -268,7 +269,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -294,7 +295,7 @@
                                          nonce:nil
                                   requireNonce:NO
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -319,7 +320,7 @@
                                          nonce:@"expected-nonce"
                                   requireNonce:YES
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
@@ -344,7 +345,7 @@
                                          nonce:@"expected-nonce"
                                   requireNonce:YES
                                 nonceValidator:nil
-                                 replayChecker:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
                                          error:&error];
     XCTAssertFalse(result);
