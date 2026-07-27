@@ -42,6 +42,7 @@
 
     self.verifier = [[JWTVerifier alloc] init];
     self.verifier.expectedIssuer = @"test.issuer";
+    self.verifier.allowedAlgorithms = @[@"ES256K"];
     self.verifier.publicKey = keyPair.publicKey;
 
     self.store.minter = self.minter;
