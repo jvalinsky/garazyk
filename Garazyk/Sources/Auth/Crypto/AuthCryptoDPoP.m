@@ -63,7 +63,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
                nonce:(nullable NSString *)nonce
         requireNonce:(BOOL)requireNonce
       nonceValidator:(nullable id<AuthCryptoDPoPNonceValidator>)nonceValidator
-       replayChecker:(nullable id<AuthCryptoDPoPReplayChecker>)replayChecker
+       replayChecker:(id<AuthCryptoDPoPReplayChecker>)replayChecker
        outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
                error:(NSError **)error {
 
@@ -283,16 +283,14 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     // Replay check
-    if (replayChecker) {
-        NSDate *jtiExpiration = [NSDate dateWithTimeIntervalSince1970:iat.doubleValue + 300];
-        if (![replayChecker checkAndAddJTI:jti expiration:jtiExpiration]) {
-            if (error) {
-                *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
-                                             code:-12
-                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP jti reuse detected"}];
-            }
-            return NO;
+    NSDate *jtiExpiration = [NSDate dateWithTimeIntervalSince1970:iat.doubleValue + 300];
+    if (![replayChecker checkAndAddJTI:jti expiration:jtiExpiration]) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                         code:-12
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP jti reuse detected"}];
         }
+        return NO;
     }
 
     // Create public key from JWK using protocol-based API

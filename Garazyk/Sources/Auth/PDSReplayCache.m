@@ -19,7 +19,19 @@ static NSString * const PDSReplayCacheErrorDomain = @"com.garazyk.auth.replay-ca
     static PDSReplayCache *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[PDSReplayCache alloc] init];
+        // Try configured data directory first for persistence across restarts.
+        NSString *dataDir = [[NSProcessInfo processInfo] environment][@"PDS_DATA_DIR"];
+        if (dataDir.length > 0) {
+            NSString *dbPath = [dataDir stringByAppendingPathComponent:@"replay_cache.db"];
+            shared = [[PDSReplayCache alloc] initWithDatabasePath:dbPath];
+        }
+        // Fall back to in-memory if on-disk init fails or no data dir configured.
+        // A nil sharedCache would disable DPoP replay protection for the entire
+        // process lifetime (dispatch_once stores nil permanently), so the fallback
+        // ensures replay detection is always active — even if less durable.
+        if (!shared) {
+            shared = [[PDSReplayCache alloc] initWithDatabasePath:nil];
+        }
     });
     return shared;
 }

@@ -90,7 +90,7 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
     @param nonce Expected nonce value (may be nil if not required).
     @param requireNonce If YES, proof must contain a nonce.
     @param nonceValidator Optional validator for nonce freshness.
-    @param replayChecker Optional replay detection.
+    @param replayChecker Replay detection instance. Must not be nil; omission is no longer a silent skip.
     @param thumbprint On success, receives the JWK thumbprint.
     @param error Set on verification failure.
     @return YES if the proof is valid. */
@@ -103,7 +103,7 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
                nonce:(nullable NSString *)nonce
         requireNonce:(BOOL)requireNonce
       nonceValidator:(nullable id<AuthCryptoDPoPNonceValidator>)nonceValidator
-       replayChecker:(nullable id<AuthCryptoDPoPReplayChecker>)replayChecker
+       replayChecker:(id<AuthCryptoDPoPReplayChecker>)replayChecker
        outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
                error:(NSError **)error;
 
