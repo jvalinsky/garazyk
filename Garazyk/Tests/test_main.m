@@ -1055,6 +1055,7 @@ int main(int argc, char *argv[]) {
       @"WebSocketCodecFragmentationTests",
       @"WebSocketHeartbeatPolicyTests",
       @"WebSocketProtocolSessionTests",
+      @"WebSocketRFCConformanceTests",
       @"HttpConnectionCharacterizationTests",
       @"Http1PipelinePolicyTests",
       @"Http1ParserTests",

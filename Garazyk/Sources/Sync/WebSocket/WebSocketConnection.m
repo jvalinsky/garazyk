@@ -515,7 +515,14 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)handlePingFrame:(NSData *)payload {
-  [self sendPong:payload];
+  // RFC 6455 §5.5: control frame payloads are at most 125 bytes. The codec
+  // already enforces this on the wire; this bound is defense in depth so a
+  // future or alternate caller can never echo an oversized pong.
+  NSData *boundedPayload = payload;
+  if (payload.length > 125) {
+    boundedPayload = [payload subdataWithRange:NSMakeRange(0, 125)];
+  }
+  [self sendPong:boundedPayload];
 }
 
 - (void)handlePongFrame:(NSData *)payload {
