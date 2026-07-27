@@ -23,6 +23,11 @@ atomically for direct writes, batches, and imports. Last-reference removal
 reclaims per-repository lifecycle metadata; deduplicated provider bytes remain
 for the global orphan sweep in slice 5.
 
+Completed slice 5: a startup and hourly temporary-blob sweep reuses the
+reference-scan traversal, applies the configurable six-hour grace period
+(one-hour floor), and reclaims provider bytes only after all repositories are
+checked. Upload metadata-save failures now remove newly stored provider bytes.
+
 ## Mission
 
 Implement the published blob lifecycle, which Garazyk currently does not model
