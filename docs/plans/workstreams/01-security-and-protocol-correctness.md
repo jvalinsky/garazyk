@@ -1459,7 +1459,7 @@ against a scratch data directory, never a real one.
 
 ## S12. MST viewer gating and dead admin credential surface
 
-**Status: pending.** A review of App, Network, and Admin found a debug tool
+**Status: complete.** Commits: `6bce0725` (slice 1: MST viewer gating and auth), `65bc7ebe` (slice 2: cookie removal and X-Admin-Token production default). A review of App, Network, and Admin found a debug tool
 shipped on by default with no supported disable path and no authentication,
 and a cookie credential carrier on the admin auth path that nothing in the
 codebase ever issues.
