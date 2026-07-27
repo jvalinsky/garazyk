@@ -16,6 +16,11 @@
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/ATURI.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
+
+static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
+    return [NSString stringWithFormat:@"%@|%@", did ?: @"", cid ?: @""];
+}
 
 @interface GraphService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
@@ -105,6 +110,55 @@
     return [decoded isKindOfClass:[NSDictionary class]] ? decoded : nil;
 }
 
+// Batches the same lookup -getRecordBodyFromCID:did:error: performs for a set
+// of (cid, did) pairs, in a bounded number of queries. Unlike FeedService,
+// this keeps the repo_did check: a pair is only resolved if the block's
+// stored repo_did matches the did it was queried under, exactly as the
+// single-pair method's getBlockWithCid:repoDid: does. Results are keyed by
+// "did|cid" (see GZGraphRecordBodyKey) so callers can look a row up by its
+// own (did, cid) without positional bookkeeping.
+- (NSDictionary<NSString *, NSDictionary *> *)getRecordBodiesForPairs:(NSArray<NSArray<NSString *> *> *)cidDidPairs
+                                                                  error:(NSError **)error {
+    if (cidDidPairs.count == 0) return @{};
+
+    NSMutableDictionary<NSData *, NSString *> *cidStringByBytes = [NSMutableDictionary dictionary];
+    NSMutableArray<NSData *> *cidBytesList = [NSMutableArray array];
+    for (NSArray<NSString *> *pair in cidDidPairs) {
+        NSString *cidStr = pair.firstObject;
+        if (cidStr.length == 0) continue;
+        CID *cid = [CID cidFromString:cidStr];
+        NSData *bytes = cid.bytes;
+        if (!bytes || cidStringByBytes[bytes]) continue;
+        cidStringByBytes[bytes] = cidStr;
+        [cidBytesList addObject:bytes];
+    }
+    if (cidBytesList.count == 0) return @{};
+
+    NSMutableDictionary<NSString *, NSDictionary *> *result = [NSMutableDictionary dictionary];
+    const NSUInteger batchSize = 900;
+    for (NSUInteger offset = 0; offset < cidBytesList.count; offset += batchSize) {
+        NSArray<NSData *> *batch = [cidBytesList subarrayWithRange:NSMakeRange(offset, MIN(batchSize, cidBytesList.count - offset))];
+        NSString *sql = [NSString stringWithFormat:@"SELECT cid, repo_did, block_data FROM blocks WHERE cid IN (%@)", ATProtoDBPlaceholders(batch.count)];
+        NSArray *rows = [self.database executeParameterizedQuery:sql params:batch error:error];
+        if (!rows) return nil;
+        for (NSDictionary *row in rows) {
+            NSData *cidBytes = row[@"cid"];
+            NSString *repoDid = row[@"repo_did"];
+            NSData *blockData = row[@"block_data"];
+            if (![cidBytes isKindOfClass:[NSData class]] || ![blockData isKindOfClass:[NSData class]] || repoDid.length == 0) continue;
+            NSString *cidStr = cidStringByBytes[cidBytes];
+            if (!cidStr) continue;
+            id decoded = [ATProtoCBORSerialization JSONObjectWithData:blockData error:error];
+            if (!decoded) {
+                decoded = [ATProtoDagCBOR decodeData:blockData error:error];
+            }
+            if (![decoded isKindOfClass:[NSDictionary class]]) continue;
+            result[GZGraphRecordBodyKey(repoDid, cidStr)] = decoded;
+        }
+    }
+    return [result copy];
+}
+
 #pragma mark - Follows
 
 - (nullable NSDictionary *)getFollowsForActor:(NSString *)actorDID
@@ -130,11 +184,20 @@
         return @{@"subject": [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID}, @"follows": @[]};
     }
 
+    NSMutableArray<NSArray<NSString *> *> *rowPairs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSString *cid = rows[i][@"cid"];
+        if (cid.length > 0) [rowPairs addObject:@[cid, actorDID]];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByKey = rowPairs.count > 0
+        ? ([self getRecordBodiesForPairs:rowPairs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *rowSubjectDIDs = [NSMutableArray arrayWithCapacity:rows.count];
     NSMutableArray *distinctSubjectDIDs = [NSMutableArray array];
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
+        NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(actorDID, row[@"cid"])];
         NSString *subjectDID = (record && record[@"subject"]) ? record[@"subject"] : nil;
         [rowSubjectDIDs addObject:subjectDID ?: [NSNull null]];
         if (subjectDID && ![distinctSubjectDIDs containsObject:subjectDID]) {
@@ -191,6 +254,16 @@
         return @{@"subject": [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID}, @"followers": @[]};
     }
 
+    NSMutableArray<NSArray<NSString *> *> *allPairs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSString *cid = row[@"cid"];
+        NSString *followerDID = row[@"did"];
+        if (cid.length > 0 && followerDID.length > 0) [allPairs addObject:@[cid, followerDID]];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByKey = allPairs.count > 0
+        ? ([self getRecordBodiesForPairs:allPairs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *matchedFollowerDIDs = [NSMutableArray array];
     BOOL pastCursor = (cursor == nil);
 
@@ -205,7 +278,7 @@
             continue;
         }
 
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:followerDID error:nil];
+        NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(followerDID, row[@"cid"])];
         if (record && [record[@"subject"] isEqualToString:actorDID]) {
             [matchedFollowerDIDs addObject:followerDID];
         }
@@ -269,11 +342,20 @@
         return @{@"blocks": @[]};
     }
 
+    NSMutableArray<NSArray<NSString *> *> *rowPairs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSString *cid = rows[i][@"cid"];
+        if (cid.length > 0) [rowPairs addObject:@[cid, actorDID]];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByKey = rowPairs.count > 0
+        ? ([self getRecordBodiesForPairs:rowPairs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *rowSubjectDIDs = [NSMutableArray arrayWithCapacity:rows.count];
     NSMutableArray *distinctSubjectDIDs = [NSMutableArray array];
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
+        NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(actorDID, row[@"cid"])];
         NSString *subjectDID = (record && record[@"subject"]) ? record[@"subject"] : nil;
         [rowSubjectDIDs addObject:subjectDID ?: [NSNull null]];
         if (subjectDID && ![distinctSubjectDIDs containsObject:subjectDID]) {

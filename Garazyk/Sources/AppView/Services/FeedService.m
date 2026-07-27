@@ -11,6 +11,7 @@
 #import "Database/Schema.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "AppView/Services/VideoUriBuilder.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 @interface FeedService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @property (nonatomic, strong) ActorService *actorService;
@@ -88,6 +89,50 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     return GZFeedDictionaryValue([ATProtoCBORSerialization JSONObjectWithData:blockData error:error]);
 }
 
+// Batches the same lookup -getRecordBodyFromCID:did:error: performs, keyed by
+// CID string. blocks.cid is the table's sole unique key on every backend this
+// service runs against, and -getRecordBodyFromCID:did:error: already falls
+// through to an unscoped-by-repo lookup on a repo_did miss — so, exactly as
+// in the per-row method, the returned content depends only on the CID, not
+// which did asked for it. That lets every call site below batch by CID alone
+// regardless of whether its rows share one did or span many.
+- (NSDictionary<NSString *, NSDictionary *> *)getRecordBodiesForCIDStrings:(NSArray<NSString *> *)cidStrings
+                                                                       error:(NSError **)error {
+    if (cidStrings.count == 0) return @{};
+
+    NSMutableDictionary<NSData *, NSString *> *cidStringByBytes = [NSMutableDictionary dictionary];
+    NSMutableArray<NSData *> *cidBytesList = [NSMutableArray array];
+    for (NSString *cidStr in cidStrings) {
+        NSString *cidString = GZFeedStringValue(cidStr);
+        if (cidString.length == 0) continue;
+        CID *cid = [CID cidFromString:cidString];
+        NSData *bytes = cid.bytes;
+        if (!bytes || cidStringByBytes[bytes]) continue;
+        cidStringByBytes[bytes] = cidString;
+        [cidBytesList addObject:bytes];
+    }
+    if (cidBytesList.count == 0) return @{};
+
+    NSMutableDictionary<NSString *, NSDictionary *> *result = [NSMutableDictionary dictionaryWithCapacity:cidBytesList.count];
+    const NSUInteger batchSize = 900;
+    for (NSUInteger offset = 0; offset < cidBytesList.count; offset += batchSize) {
+        NSArray<NSData *> *batch = [cidBytesList subarrayWithRange:NSMakeRange(offset, MIN(batchSize, cidBytesList.count - offset))];
+        NSString *sql = [NSString stringWithFormat:@"SELECT cid, block_data FROM blocks WHERE cid IN (%@)", ATProtoDBPlaceholders(batch.count)];
+        NSArray *rows = [self.database executeParameterizedQuery:sql params:batch error:error];
+        if (!rows) return nil;
+        for (NSDictionary *row in rows) {
+            NSData *cidBytes = row[@"cid"];
+            NSData *blockData = row[@"block_data"];
+            if (![cidBytes isKindOfClass:[NSData class]] || ![blockData isKindOfClass:[NSData class]]) continue;
+            NSString *cidStr = cidStringByBytes[cidBytes];
+            if (!cidStr) continue;
+            NSDictionary *decoded = GZFeedDictionaryValue([ATProtoCBORSerialization JSONObjectWithData:blockData error:error]);
+            if (decoded) result[cidStr] = decoded;
+        }
+    }
+    return [result copy];
+}
+
 - (nullable NSDictionary *)getTimelineForActor:(NSString *)actorDID
                                           limit:(NSInteger)limit
                                         cursor:(nullable NSString *)cursor
@@ -146,12 +191,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 
     NSArray *posts = [self getPostsFromAuthors:@[actorDID] limit:limit cursor:cursor error:error];
     if (posts) {
-        for (NSDictionary *post in posts) {
-            NSDictionary *feedItem = [self formatFeedItem:post];
-            if (feedItem) {
-                [feedItems addObject:feedItem];
-            }
-        }
+        [feedItems addObjectsFromArray:[self formatFeedItems:posts]];
     }
 
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
@@ -267,10 +307,23 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     [args addObject:@(limit)];
 
     NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+
+    NSMutableArray<NSString *> *cids = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        if (cid.length > 0) [cids addObject:cid];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByCID = cids.count > 0
+        ? ([self getRecordBodiesForCIDStrings:cids error:nil] ?: @{})
+        : @{};
+    // Every like in this loop belongs to actorDID (the query filters on it),
+    // so the actor profile is fetched once and reused.
+    NSDictionary *actorProfile = [self.actorService getProfileForActor:actorDID error:error] ?: @{@"did": actorDID};
+
     for (NSDictionary *row in rows) {
         NSString *cid = GZFeedStringValue(row[@"cid"]);
         NSString *value = GZFeedStringValue(row[@"value"]);
-        NSDictionary *record = [self getRecordBodyFromCID:cid did:actorDID error:nil] ?: GZFeedRecordFromJSONString(value);
+        NSDictionary *record = recordsByCID[cid] ?: GZFeedRecordFromJSONString(value);
         NSDictionary *subjectURI = GZFeedDictionaryValue(record[@"subject"]);
         NSString *subject = GZFeedStringValue(subjectURI[@"uri"]);
 
@@ -283,7 +336,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
                     @"like": @{
                         @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.like/%@", actorDID, rkey],
                         @"cid": cid ?: @"",
-                        @"actor": [self.actorService getProfileForActor:actorDID error:error] ?: @{@"did": actorDID}
+                        @"actor": actorProfile
                     }
                 };
                 [feedItems addObject:feedItem];
@@ -354,6 +407,17 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 
     NSString *query = @"SELECT subject_did, cid, value FROM records WHERE did = ? AND collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID, @"app.bsky.graph.follow"] error:error];
+
+    NSMutableArray<NSString *> *fallbackCIDs = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        if (GZFeedStringValue(row[@"subject_did"]).length > 0) continue;
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        if (cid.length > 0) [fallbackCIDs addObject:cid];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByCID = fallbackCIDs.count > 0
+        ? ([self getRecordBodiesForCIDStrings:fallbackCIDs error:nil] ?: @{})
+        : @{};
+
     for (NSDictionary *row in rows) {
         NSString *subject = GZFeedStringValue(row[@"subject_did"]);
         if (subject.length > 0) {
@@ -363,7 +427,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 
         NSString *cid = GZFeedStringValue(row[@"cid"]);
         NSString *value = GZFeedStringValue(row[@"value"]);
-        NSDictionary *record = [self getRecordBodyFromCID:cid did:actorDID error:nil] ?: GZFeedRecordFromJSONString(value);
+        NSDictionary *record = recordsByCID[cid] ?: GZFeedRecordFromJSONString(value);
         subject = GZFeedStringValue(record[@"subject"]);
         if (subject.length > 0) {
             [followedDIDs addObject:subject];
@@ -397,7 +461,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         return [posts copy];
     }
 
-    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid, value FROM records WHERE did IN (%@) AND collection = ?",
+    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid, value, created_at FROM records WHERE did IN (%@) AND collection = ?",
                              [placeholders componentsJoinedByString:@","]];
     if (cursor) {
         [query appendString:@" AND rkey < ?"];
@@ -412,6 +476,16 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     [args addObject:@(limit)];
     
     NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+
+    NSMutableArray<NSString *> *rowCIDs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        if (cid.length > 0) [rowCIDs addObject:cid];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByCID = rowCIDs.count > 0
+        ? ([self getRecordBodiesForCIDStrings:rowCIDs error:nil] ?: @{})
+        : @{};
+
     for (NSDictionary *row in rows) {
         NSString *repo = GZFeedStringValue(row[@"did"]);
         NSString *rkey = GZFeedStringValue(row[@"rkey"]);
@@ -420,8 +494,8 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         if (repo.length == 0 || rkey.length == 0) {
             continue;
         }
-        
-        NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
+
+        NSDictionary *record = recordsByCID[cid];
         if (!record) {
             record = GZFeedRecordFromJSONString(value);
         }
@@ -433,6 +507,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
             @"cid": cid ?: @"",
             @"repo": repo,
             @"rkey": rkey,
+            @"indexedAt": GZFeedStringValue(row[@"created_at"]) ?: @"",
             @"record": record ?: @{}
         }];
     }
@@ -542,6 +617,16 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 
     NSString *query = @"SELECT did, rkey, cid, value FROM records WHERE collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.post"] error:error];
+
+    NSMutableArray<NSString *> *rowCIDs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        if (cid.length > 0) [rowCIDs addObject:cid];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByCID = rowCIDs.count > 0
+        ? ([self getRecordBodiesForCIDStrings:rowCIDs error:nil] ?: @{})
+        : @{};
+
     for (NSDictionary *row in rows) {
         NSString *cid = GZFeedStringValue(row[@"cid"]);
         NSString *repo = GZFeedStringValue(row[@"did"]);
@@ -550,8 +635,8 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         if (repo.length == 0 || rkey.length == 0) {
             continue;
         }
-        
-        NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
+
+        NSDictionary *record = recordsByCID[cid];
         if (!record) {
             record = GZFeedRecordFromJSONString(value);
         }
@@ -634,6 +719,83 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 
 - (nullable NSDictionary *)getAuthorInfoForDID:(NSString *)did error:(NSError **)error {
     return [self.actorService getProfileForActor:did error:error];
+}
+
+- (NSDictionary<NSString *, NSDictionary *> *)getInteractionCountsForPosts:(NSArray<NSDictionary *> *)posts {
+    if (posts.count == 0) return @{};
+
+    NSMutableString *query = [NSMutableString stringWithString:@"SELECT "];
+    NSMutableArray *params = [NSMutableArray arrayWithCapacity:posts.count * 6];
+    for (NSUInteger index = 0; index < posts.count; index++) {
+        NSString *uri = GZFeedStringValue(posts[index][@"uri"]) ?: @"";
+        NSArray<NSString *> *parts = [uri componentsSeparatedByString:@"/"];
+        NSString *replyURI = parts.count >= 4
+            ? [NSString stringWithFormat:@"at://%@/%@", parts[2], parts[3]]
+            : @"";
+        NSString *replyPattern = [NSString stringWithFormat:@"%%\"reply\"%%\"uri\"%%\"%@\"%%", replyURI];
+        NSString *subjectPattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", uri];
+        if (index > 0) [query appendString:@", "];
+        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? THEN 1 ELSE 0 END) AS reply%lu, ", (unsigned long)index];
+        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? THEN 1 ELSE 0 END) AS repost%lu, ", (unsigned long)index];
+        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? THEN 1 ELSE 0 END) AS like%lu", (unsigned long)index];
+        [params addObjectsFromArray:@[@"app.bsky.feed.post", replyPattern,
+                                      @"app.bsky.feed.repost", subjectPattern,
+                                      @"app.bsky.feed.like", subjectPattern]];
+    }
+    [query appendString:@" FROM records WHERE collection IN (?, ?, ?)"];
+    [params addObjectsFromArray:@[@"app.bsky.feed.post",
+                                  @"app.bsky.feed.repost",
+                                  @"app.bsky.feed.like"]];
+
+    NSArray *rows = [self.database executeParameterizedQuery:query params:params error:nil];
+    NSDictionary *row = rows.firstObject ?: @{};
+    NSMutableDictionary<NSString *, NSDictionary *> *counts = [NSMutableDictionary dictionaryWithCapacity:posts.count];
+    for (NSUInteger index = 0; index < posts.count; index++) {
+        NSString *uri = GZFeedStringValue(posts[index][@"uri"]) ?: @"";
+        counts[uri] = @{
+            @"replyCount": @([row[[NSString stringWithFormat:@"reply%lu", (unsigned long)index]] integerValue]),
+            @"repostCount": @([row[[NSString stringWithFormat:@"repost%lu", (unsigned long)index]] integerValue]),
+            @"likeCount": @([row[[NSString stringWithFormat:@"like%lu", (unsigned long)index]] integerValue]),
+        };
+    }
+    return [counts copy];
+}
+
+- (NSArray<NSDictionary *> *)formatFeedItems:(NSArray<NSDictionary *> *)posts {
+    if (posts.count == 0) return @[];
+
+    NSMutableArray<NSString *> *repos = [NSMutableArray arrayWithCapacity:posts.count];
+    for (NSDictionary *post in posts) {
+        NSString *repo = GZFeedStringValue(post[@"repo"]);
+        if (repo.length > 0) [repos addObject:repo];
+    }
+    NSDictionary<NSString *, NSDictionary *> *authors = [self.actorService getProfilesByDIDForActors:repos error:nil] ?: @{};
+    NSDictionary<NSString *, NSDictionary *> *counts = [self getInteractionCountsForPosts:posts];
+    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
+    NSMutableArray<NSDictionary *> *items = [NSMutableArray arrayWithCapacity:posts.count];
+    for (NSDictionary *post in posts) {
+        NSString *uri = GZFeedStringValue(post[@"uri"]) ?: @"";
+        NSString *cid = GZFeedStringValue(post[@"cid"]) ?: @"";
+        NSString *repo = GZFeedStringValue(post[@"repo"]) ?: @"";
+        NSDictionary *record = GZFeedDictionaryValue(post[@"record"]) ?: @{};
+        NSDictionary *postCounts = counts[uri] ?: @{};
+        NSMutableDictionary *view = [@{
+            @"uri": uri,
+            @"cid": cid,
+            @"author": authors[repo] ?: @{ @"did": repo },
+            @"record": record,
+            @"replyCount": postCounts[@"replyCount"] ?: @0,
+            @"repostCount": postCounts[@"repostCount"] ?: @0,
+            @"likeCount": postCounts[@"likeCount"] ?: @0,
+            @"indexedAt": GZFeedStringValue(post[@"indexedAt"]) ?: now,
+            @"viewer": @{},
+            @"labels": @[]
+        } mutableCopy];
+        NSDictionary *embedView = [self appViewEmbedForRecord:record did:repo];
+        if (embedView) view[@"embed"] = embedView;
+        [items addObject:[view copy]];
+    }
+    return [items copy];
 }
 
 - (nullable NSDictionary *)formatFeedItem:(NSDictionary *)post {
@@ -721,8 +883,17 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     NSString *query = @"SELECT cid, did FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.generator", @(limit)] error:error];
 
+    NSMutableArray<NSString *> *rowCIDs = [NSMutableArray arrayWithCapacity:rows.count];
     for (NSDictionary *row in rows) {
-        NSDictionary *record = [self getRecordBodyFromCID:GZFeedStringValue(row[@"cid"]) did:GZFeedStringValue(row[@"did"]) error:nil];
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        if (cid.length > 0) [rowCIDs addObject:cid];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByCID = rowCIDs.count > 0
+        ? ([self getRecordBodiesForCIDStrings:rowCIDs error:nil] ?: @{})
+        : @{};
+
+    for (NSDictionary *row in rows) {
+        NSDictionary *record = recordsByCID[GZFeedStringValue(row[@"cid"])];
         NSArray *feedItems = GZFeedArrayValue(record[@"items"]);
         if (feedItems) {
             for (NSDictionary *item in feedItems) {
