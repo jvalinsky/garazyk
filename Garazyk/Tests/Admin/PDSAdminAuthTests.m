@@ -273,7 +273,8 @@
     XCTAssertFalse([authError.localizedDescription containsString:@"secret-token-fragment"]);
 }
 
-- (void)testAuthenticateHeadersAcceptsCookieBasedToken {
+- (void)testAdminTokenCookieNoLongerAccepted {
+    // Set up admin password and mint a valid JWT
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
     [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
 
@@ -285,37 +286,90 @@
     NSString *token = [PDSAdminAuth sharedAuth].adminToken;
     XCTAssertTrue(token.length > 0);
 
-    // Auth via Cookie header (as set by the Set-Cookie login response)
+    // Cookie-based auth should now be rejected
     NSDictionary *cookieHeaders = @{@"Cookie": [NSString stringWithFormat:@"admin_token=%@", token]};
     NSError *cookieError = nil;
     BOOL cookieAuth = [[PDSAdminAuth sharedAuth] authenticateHeaders:cookieHeaders error:&cookieError];
-    XCTAssertTrue(cookieAuth, @"Cookie-based auth should succeed with a valid admin_token");
-    XCTAssertNil(cookieError);
-}
-
-- (void)testAuthenticateHeadersRejectsInvalidCookieToken {
-    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
-
-    NSDictionary *cookieHeaders = @{@"Cookie": @"admin_token=invalid-jwt-value"};
-    NSError *cookieError = nil;
-    BOOL cookieAuth = [[PDSAdminAuth sharedAuth] authenticateHeaders:cookieHeaders error:&cookieError];
-    XCTAssertFalse(cookieAuth, @"Cookie-based auth should reject an invalid token");
+    XCTAssertFalse(cookieAuth, @"Cookie-based auth should no longer be accepted");
     XCTAssertNotNil(cookieError);
 }
 
-- (void)testAuthenticateHeadersAcceptsCookieAmongOtherCookies {
-    [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
-    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+- (void)testXAdminTokenDisabledByDefaultInProduction {
+    // Save and restore env vars
+    NSString *savedEnv = getenv("PDS_ENV") ? [NSString stringWithUTF8String:getenv("PDS_ENV")] : nil;
+    NSString *savedDisable = getenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER") ?
+                              [NSString stringWithUTF8String:getenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER")] : nil;
 
-    NSError *error = nil;
-    BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
-    XCTAssertTrue(authenticated);
+    setenv("PDS_ENV", "production", 1);
+    unsetenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER");
 
-    NSString *token = [PDSAdminAuth sharedAuth].adminToken;
-    NSDictionary *cookieHeaders = @{@"Cookie": [NSString stringWithFormat:@"pref=light; admin_token=%@; session=abc", token]};
-    NSError *cookieError = nil;
-    BOOL cookieAuth = [[PDSAdminAuth sharedAuth] authenticateHeaders:cookieHeaders error:&cookieError];
-    XCTAssertTrue(cookieAuth, @"Should find admin_token among multiple cookies");
+    @try {
+        // Set up admin password and mint a valid JWT
+        [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
+        [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+
+        NSError *error = nil;
+        BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
+        XCTAssertTrue(authenticated);
+
+        NSString *token = [PDSAdminAuth sharedAuth].adminToken;
+
+        // X-Admin-Token should be rejected in production by default
+        NSDictionary *headers = @{@"X-Admin-Token": token};
+        NSError *authError = nil;
+        BOOL authed = [[PDSAdminAuth sharedAuth] authenticateHeaders:headers error:&authError];
+        XCTAssertFalse(authed, @"X-Admin-Token should be disabled by default in production");
+        XCTAssertNotNil(authError);
+    } @finally {
+        if (savedEnv) {
+            setenv("PDS_ENV", savedEnv.UTF8String, 1);
+        } else {
+            unsetenv("PDS_ENV");
+        }
+        if (savedDisable) {
+            setenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER", savedDisable.UTF8String, 1);
+        }
+    }
+}
+
+- (void)testXAdminTokenExplicitlyEnabledInProduction {
+    // Save and restore env vars
+    NSString *savedEnv = getenv("PDS_ENV") ? [NSString stringWithUTF8String:getenv("PDS_ENV")] : nil;
+    NSString *savedDisable = getenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER") ?
+                              [NSString stringWithUTF8String:getenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER")] : nil;
+
+    setenv("PDS_ENV", "production", 1);
+    setenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER", "0", 1);
+
+    @try {
+        // Set up admin password and mint a valid JWT
+        [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
+        [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+
+        NSError *error = nil;
+        BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
+        XCTAssertTrue(authenticated);
+
+        NSString *token = [PDSAdminAuth sharedAuth].adminToken;
+
+        // X-Admin-Token should be accepted when explicitly enabled
+        NSDictionary *headers = @{@"X-Admin-Token": token};
+        NSError *authError = nil;
+        BOOL authed = [[PDSAdminAuth sharedAuth] authenticateHeaders:headers error:&authError];
+        XCTAssertTrue(authed, @"X-Admin-Token should be accepted when explicitly enabled via =0");
+        XCTAssertNil(authError);
+    } @finally {
+        if (savedEnv) {
+            setenv("PDS_ENV", savedEnv.UTF8String, 1);
+        } else {
+            unsetenv("PDS_ENV");
+        }
+        if (savedDisable) {
+            setenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER", savedDisable.UTF8String, 1);
+        } else {
+            unsetenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER");
+        }
+    }
 }
 
 @end
