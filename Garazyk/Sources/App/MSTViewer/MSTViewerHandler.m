@@ -4,6 +4,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "App/PDSController.h"
+#import "Admin/PDSAdminAuth.h"
 #import "Debug/GZLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
@@ -47,6 +48,17 @@
 }
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    // Require admin auth for all MST viewer requests, including static assets.
+    if (![[PDSAdminAuth sharedAuth] authenticateHeaders:request.headers
+                                                  error:nil]) {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{
+            @"error": @"Unauthorized",
+            @"message": @"MST viewer requires admin authentication"
+        }];
+        return;
+    }
+
     NSString *path = request.path;
     GZ_LOG_DEBUG(@"MSTViewerHandler: %@", path);
 

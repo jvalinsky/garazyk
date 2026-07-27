@@ -191,6 +191,7 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _debugInMemoryDatabases = NO;
     _debugResetOnStartup = NO;
     _useNewRepositoryImplementation = NO;
+    _mstViewerEnabled = YES;
 
     _userDatabasePoolMaxSize = 100;
     _serviceDatabasePoolMaxSize = 10;
@@ -533,6 +534,19 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
       _useNewRepositoryImplementation =
           [self boolFromEnv:@"PDS_USE_NEW_REPO"
                     default:[debug[@"use_new_repository"] boolValue]];
+  }
+
+  // MST viewer: default off in production, on otherwise.
+  // PDS_ENABLE_MST_VIEWER overrides the default in either direction.
+  {
+    BOOL isProduction =
+        [[[[NSProcessInfo processInfo] environment][@"PDS_ENV"] lowercaseString]
+            isEqualToString:@"production"];
+    BOOL mstDefault = isProduction ? NO : YES;
+    if (debug[@"mst_viewer_enabled"] != nil)
+      mstDefault = [debug[@"mst_viewer_enabled"] boolValue];
+    _mstViewerEnabled =
+        [self boolFromEnv:@"PDS_ENABLE_MST_VIEWER" default:mstDefault];
   }
 
   NSDictionary *database = config[@"database"];
