@@ -41,7 +41,6 @@ COPY staging/bin/jelcz /usr/local/bin/jelcz
 COPY staging/bin/syrena-chat /usr/local/bin/syrena-chat
 COPY staging/bin/germ /usr/local/bin/germ
 COPY staging/bin/Assets /usr/local/bin/Assets
-COPY staging/bin/Assets /usr/local/bin/Assets
 
 COPY staging/lib /usr/local/lib
 RUN ldconfig
