@@ -16,6 +16,11 @@
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/ATURI.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
+
+static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
+    return [NSString stringWithFormat:@"%@|%@", did ?: @"", cid ?: @""];
+}
 
 @interface GraphService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
@@ -56,13 +61,25 @@
                            record:(nullable NSDictionary *)record
                        indexedAt:(nullable id)indexedAt
                               cid:(nullable NSString *)cid {
+    return [self listViewForURI:uri did:did record:record indexedAt:indexedAt cid:cid creatorProfile:nil];
+}
+
+// creatorProfile lets callers that already batch-hydrated the creator's
+// profile (e.g. across a page of rows sharing the same creator) pass it in,
+// instead of this helper re-fetching it once per row.
+- (NSDictionary *)listViewForURI:(NSString *)uri
+                              did:(NSString *)did
+                           record:(nullable NSDictionary *)record
+                       indexedAt:(nullable id)indexedAt
+                              cid:(nullable NSString *)cid
+                   creatorProfile:(nullable NSDictionary *)creatorProfile {
     NSMutableDictionary *listView = [NSMutableDictionary dictionary];
     listView[@"uri"] = uri ?: @"";
     if (cid.length > 0) listView[@"cid"] = cid;
     listView[@"name"] = record[@"name"] ?: @"";
     listView[@"purpose"] = record[@"purpose"] ?: @"";
     listView[@"description"] = record[@"description"] ?: @"";
-    listView[@"creator"] = [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did ?: @""};
+    listView[@"creator"] = creatorProfile ?: [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did ?: @""};
     listView[@"indexedAt"] = record[@"createdAt"] ?: indexedAt ?: @"";
     return listView;
 }
@@ -93,6 +110,55 @@
     return [decoded isKindOfClass:[NSDictionary class]] ? decoded : nil;
 }
 
+// Batches the same lookup -getRecordBodyFromCID:did:error: performs for a set
+// of (cid, did) pairs, in a bounded number of queries. Unlike FeedService,
+// this keeps the repo_did check: a pair is only resolved if the block's
+// stored repo_did matches the did it was queried under, exactly as the
+// single-pair method's getBlockWithCid:repoDid: does. Results are keyed by
+// "did|cid" (see GZGraphRecordBodyKey) so callers can look a row up by its
+// own (did, cid) without positional bookkeeping.
+- (NSDictionary<NSString *, NSDictionary *> *)getRecordBodiesForPairs:(NSArray<NSArray<NSString *> *> *)cidDidPairs
+                                                                  error:(NSError **)error {
+    if (cidDidPairs.count == 0) return @{};
+
+    NSMutableDictionary<NSData *, NSString *> *cidStringByBytes = [NSMutableDictionary dictionary];
+    NSMutableArray<NSData *> *cidBytesList = [NSMutableArray array];
+    for (NSArray<NSString *> *pair in cidDidPairs) {
+        NSString *cidStr = pair.firstObject;
+        if (cidStr.length == 0) continue;
+        CID *cid = [CID cidFromString:cidStr];
+        NSData *bytes = cid.bytes;
+        if (!bytes || cidStringByBytes[bytes]) continue;
+        cidStringByBytes[bytes] = cidStr;
+        [cidBytesList addObject:bytes];
+    }
+    if (cidBytesList.count == 0) return @{};
+
+    NSMutableDictionary<NSString *, NSDictionary *> *result = [NSMutableDictionary dictionary];
+    const NSUInteger batchSize = 900;
+    for (NSUInteger offset = 0; offset < cidBytesList.count; offset += batchSize) {
+        NSArray<NSData *> *batch = [cidBytesList subarrayWithRange:NSMakeRange(offset, MIN(batchSize, cidBytesList.count - offset))];
+        NSString *sql = [NSString stringWithFormat:@"SELECT cid, repo_did, block_data FROM blocks WHERE cid IN (%@)", ATProtoDBPlaceholders(batch.count)];
+        NSArray *rows = [self.database executeParameterizedQuery:sql params:batch error:error];
+        if (!rows) return nil;
+        for (NSDictionary *row in rows) {
+            NSData *cidBytes = row[@"cid"];
+            NSString *repoDid = row[@"repo_did"];
+            NSData *blockData = row[@"block_data"];
+            if (![cidBytes isKindOfClass:[NSData class]] || ![blockData isKindOfClass:[NSData class]] || repoDid.length == 0) continue;
+            NSString *cidStr = cidStringByBytes[cidBytes];
+            if (!cidStr) continue;
+            id decoded = [ATProtoCBORSerialization JSONObjectWithData:blockData error:error];
+            if (!decoded) {
+                decoded = [ATProtoDagCBOR decodeData:blockData error:error];
+            }
+            if (![decoded isKindOfClass:[NSDictionary class]]) continue;
+            result[GZGraphRecordBodyKey(repoDid, cidStr)] = decoded;
+        }
+    }
+    return [result copy];
+}
+
 #pragma mark - Follows
 
 - (nullable NSDictionary *)getFollowsForActor:(NSString *)actorDID
@@ -118,15 +184,39 @@
         return @{@"subject": [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID}, @"follows": @[]};
     }
 
+    NSMutableArray<NSArray<NSString *> *> *rowPairs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSString *cid = rows[i][@"cid"];
+        if (cid.length > 0) [rowPairs addObject:@[cid, actorDID]];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByKey = rowPairs.count > 0
+        ? ([self getRecordBodiesForPairs:rowPairs error:nil] ?: @{})
+        : @{};
+
+    NSMutableArray *rowSubjectDIDs = [NSMutableArray arrayWithCapacity:rows.count];
+    NSMutableArray *distinctSubjectDIDs = [NSMutableArray array];
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSDictionary *row = rows[i];
+        NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(actorDID, row[@"cid"])];
+        NSString *subjectDID = (record && record[@"subject"]) ? record[@"subject"] : nil;
+        [rowSubjectDIDs addObject:subjectDID ?: [NSNull null]];
+        if (subjectDID && ![distinctSubjectDIDs containsObject:subjectDID]) {
+            [distinctSubjectDIDs addObject:subjectDID];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *profilesByDID = distinctSubjectDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:distinctSubjectDIDs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *follows = [NSMutableArray array];
     NSString *nextCursor = nil;
 
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
-        if (record && record[@"subject"]) {
-            NSString *subjectDID = record[@"subject"];
-            NSDictionary *profile = [self.actorService getProfileForActor:subjectDID error:nil];
+        id subjectDIDValue = rowSubjectDIDs[i];
+        if (subjectDIDValue != (id)[NSNull null]) {
+            NSString *subjectDID = subjectDIDValue;
+            NSDictionary *profile = profilesByDID[subjectDID];
             if (profile) {
                 [follows addObject:profile];
             } else {
@@ -164,7 +254,17 @@
         return @{@"subject": [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID}, @"followers": @[]};
     }
 
-    NSMutableArray *followers = [NSMutableArray array];
+    NSMutableArray<NSArray<NSString *> *> *allPairs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSString *cid = row[@"cid"];
+        NSString *followerDID = row[@"did"];
+        if (cid.length > 0 && followerDID.length > 0) [allPairs addObject:@[cid, followerDID]];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByKey = allPairs.count > 0
+        ? ([self getRecordBodiesForPairs:allPairs error:nil] ?: @{})
+        : @{};
+
+    NSMutableArray *matchedFollowerDIDs = [NSMutableArray array];
     BOOL pastCursor = (cursor == nil);
 
     for (NSDictionary *row in rows) {
@@ -178,19 +278,28 @@
             continue;
         }
 
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:followerDID error:nil];
+        NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(followerDID, row[@"cid"])];
         if (record && [record[@"subject"] isEqualToString:actorDID]) {
-            NSDictionary *profile = [self.actorService getProfileForActor:followerDID error:nil];
-            if (profile) {
-                [followers addObject:profile];
-            } else {
-                [followers addObject:@{@"did": followerDID, @"handle": @"handle.invalid"}];
-            }
+            [matchedFollowerDIDs addObject:followerDID];
         }
 
-        if ((NSInteger)followers.count >= limit) {
+        if ((NSInteger)matchedFollowerDIDs.count >= limit) {
             break;
         }
+    }
+
+    NSMutableArray *distinctFollowerDIDs = [NSMutableArray array];
+    for (NSString *followerDID in matchedFollowerDIDs) {
+        if (![distinctFollowerDIDs containsObject:followerDID]) [distinctFollowerDIDs addObject:followerDID];
+    }
+    NSDictionary<NSString *, NSDictionary *> *followerProfilesByDID = distinctFollowerDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:distinctFollowerDIDs error:nil] ?: @{})
+        : @{};
+
+    NSMutableArray *followers = [NSMutableArray arrayWithCapacity:matchedFollowerDIDs.count];
+    for (NSString *followerDID in matchedFollowerDIDs) {
+        NSDictionary *profile = followerProfilesByDID[followerDID];
+        [followers addObject:profile ?: @{@"did": followerDID, @"handle": @"handle.invalid"}];
     }
 
     NSDictionary *subject = [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID};
@@ -233,15 +342,39 @@
         return @{@"blocks": @[]};
     }
 
+    NSMutableArray<NSArray<NSString *> *> *rowPairs = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSString *cid = rows[i][@"cid"];
+        if (cid.length > 0) [rowPairs addObject:@[cid, actorDID]];
+    }
+    NSDictionary<NSString *, NSDictionary *> *recordsByKey = rowPairs.count > 0
+        ? ([self getRecordBodiesForPairs:rowPairs error:nil] ?: @{})
+        : @{};
+
+    NSMutableArray *rowSubjectDIDs = [NSMutableArray arrayWithCapacity:rows.count];
+    NSMutableArray *distinctSubjectDIDs = [NSMutableArray array];
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSDictionary *row = rows[i];
+        NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(actorDID, row[@"cid"])];
+        NSString *subjectDID = (record && record[@"subject"]) ? record[@"subject"] : nil;
+        [rowSubjectDIDs addObject:subjectDID ?: [NSNull null]];
+        if (subjectDID && ![distinctSubjectDIDs containsObject:subjectDID]) {
+            [distinctSubjectDIDs addObject:subjectDID];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *profilesByDID = distinctSubjectDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:distinctSubjectDIDs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *blocks = [NSMutableArray array];
     NSString *nextCursor = nil;
 
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
-        if (record && record[@"subject"]) {
-            NSString *subjectDID = record[@"subject"];
-            NSDictionary *profile = [self.actorService getProfileForActor:subjectDID error:nil];
+        id subjectDIDValue = rowSubjectDIDs[i];
+        if (subjectDIDValue != (id)[NSNull null]) {
+            NSString *subjectDID = subjectDIDValue;
+            NSDictionary *profile = profilesByDID[subjectDID];
             if (profile) {
                 [blocks addObject:profile];
             } else {
@@ -299,13 +432,24 @@
         return @{@"mutes": @[]};
     }
 
+    NSMutableArray *distinctMutedDIDs = [NSMutableArray array];
+    for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
+        NSString *mutedDID = rows[i][@"muted_did"];
+        if (mutedDID && ![distinctMutedDIDs containsObject:mutedDID]) {
+            [distinctMutedDIDs addObject:mutedDID];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *profilesByDID = distinctMutedDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:distinctMutedDIDs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *mutes = [NSMutableArray array];
     NSString *nextCursor = nil;
 
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
         NSString *mutedDID = row[@"muted_did"];
-        NSDictionary *profile = [self.actorService getProfileForActor:mutedDID error:nil];
+        NSDictionary *profile = profilesByDID[mutedDID];
         if (profile) {
             [mutes addObject:profile];
         } else {
@@ -397,7 +541,7 @@
     NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.like"] error:error];
 
-    NSMutableArray *likes = [NSMutableArray array];
+    NSMutableArray *matchedLikes = [NSMutableArray array]; // pairs of [likerDID, createdAt]
     BOOL pastCursor = (cursor == nil);
 
     for (NSDictionary *row in rows) {
@@ -417,19 +561,37 @@
             NSString *subjectURI = [subject isKindOfClass:[NSDictionary class]] ? subject[@"uri"] : nil;
             if ([subjectURI isEqualToString:uri]) {
                 NSString *createdAt = record[@"createdAt"] ?: @"";
-                NSDictionary *profile = [self.actorService getProfileForActor:likerDID error:nil];
-                NSDictionary *like = @{
-                    @"indexedAt": createdAt,
-                    @"createdAt": createdAt,
-                    @"actor": profile ?: @{@"did": likerDID, @"handle": @"handle.invalid"}
-                };
-                [likes addObject:like];
+                [matchedLikes addObject:@[likerDID ?: @"", createdAt]];
             }
         }
 
-        if ((NSInteger)likes.count >= limit) {
+        if ((NSInteger)matchedLikes.count >= limit) {
             break;
         }
+    }
+
+    NSMutableArray *distinctLikerDIDs = [NSMutableArray array];
+    for (NSArray *pair in matchedLikes) {
+        NSString *likerDID = pair[0];
+        if (likerDID.length > 0 && ![distinctLikerDIDs containsObject:likerDID]) {
+            [distinctLikerDIDs addObject:likerDID];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *likerProfilesByDID = distinctLikerDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:distinctLikerDIDs error:nil] ?: @{})
+        : @{};
+
+    NSMutableArray *likes = [NSMutableArray arrayWithCapacity:matchedLikes.count];
+    for (NSArray *pair in matchedLikes) {
+        NSString *likerDID = pair[0];
+        NSString *createdAt = pair[1];
+        NSDictionary *profile = likerProfilesByDID[likerDID];
+        NSDictionary *like = @{
+            @"indexedAt": createdAt,
+            @"createdAt": createdAt,
+            @"actor": profile ?: @{@"did": likerDID, @"handle": @"handle.invalid"}
+        };
+        [likes addObject:like];
     }
 
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
@@ -454,7 +616,7 @@
     NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.repost"] error:error];
 
-    NSMutableArray *repostedBy = [NSMutableArray array];
+    NSMutableArray *matchedReposterDIDs = [NSMutableArray array];
     BOOL pastCursor = (cursor == nil);
 
     for (NSDictionary *row in rows) {
@@ -473,14 +635,29 @@
             NSDictionary *subject = record[@"subject"];
             NSString *subjectURI = [subject isKindOfClass:[NSDictionary class]] ? subject[@"uri"] : nil;
             if ([subjectURI isEqualToString:uri]) {
-                NSDictionary *profile = [self.actorService getProfileForActor:reposterDID error:nil];
-                [repostedBy addObject:profile ?: @{@"did": reposterDID, @"handle": @"handle.invalid"}];
+                [matchedReposterDIDs addObject:reposterDID ?: @""];
             }
         }
 
-        if ((NSInteger)repostedBy.count >= limit) {
+        if ((NSInteger)matchedReposterDIDs.count >= limit) {
             break;
         }
+    }
+
+    NSMutableArray *distinctReposterDIDs = [NSMutableArray array];
+    for (NSString *reposterDID in matchedReposterDIDs) {
+        if (reposterDID.length > 0 && ![distinctReposterDIDs containsObject:reposterDID]) {
+            [distinctReposterDIDs addObject:reposterDID];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *reposterProfilesByDID = distinctReposterDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:distinctReposterDIDs error:nil] ?: @{})
+        : @{};
+
+    NSMutableArray *repostedBy = [NSMutableArray arrayWithCapacity:matchedReposterDIDs.count];
+    for (NSString *reposterDID in matchedReposterDIDs) {
+        NSDictionary *profile = reposterProfilesByDID[reposterDID];
+        [repostedBy addObject:profile ?: @{@"did": reposterDID, @"handle": @"handle.invalid"}];
     }
 
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
@@ -552,6 +729,10 @@
     NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     if (!rows) return nil;
 
+    // Every row here belongs to the same actorDID (the query filters on it),
+    // so the creator profile is fetched once and reused.
+    NSDictionary *creatorProfile = [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID};
+
     NSMutableArray *starterPacks = [NSMutableArray array];
     for (NSDictionary *row in rows) {
         NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.starterpack/%@", actorDID, row[@"rkey"]];
@@ -561,7 +742,7 @@
                 @"uri": uri,
                 @"cid": row[@"cid"],
                 @"record": record,
-                @"creator": [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID},
+                @"creator": creatorProfile,
                 @"indexedAt": row[@"created_at"] ?: @""
             }];
         }
@@ -592,6 +773,15 @@
     NSArray *rows = [self.database executeParameterizedQuery:sql params:@[likeQuery, @(limit)] error:error];
     if (!rows) return nil;
 
+    NSMutableArray *distinctDIDs = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSString *did = row[@"did"];
+        if (did && ![distinctDIDs containsObject:did]) [distinctDIDs addObject:did];
+    }
+    NSDictionary<NSString *, NSDictionary *> *creatorProfilesByDID = distinctDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:distinctDIDs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *starterPacks = [NSMutableArray array];
     for (NSDictionary *row in rows) {
         NSString *did = row[@"did"];
@@ -603,7 +793,7 @@
                 @"uri": uri,
                 @"cid": row[@"cid"],
                 @"record": record,
-                @"creator": [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did},
+                @"creator": creatorProfilesByDID[did] ?: @{@"did": did},
                 @"indexedAt": row[@"created_at"] ?: @""
             }];
         }
@@ -738,6 +928,11 @@
 
     NSMutableSet *seenURIs = [NSMutableSet set];
 
+    // Every row in both loops below belongs to the same actorDID (the query
+    // filters on it), so the creator profile is fetched once and reused
+    // rather than re-fetched per list.
+    NSDictionary *creatorProfile = [self.actorService getProfileForActor:actorDID error:nil] ?: @{@"did": actorDID ?: @""};
+
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
         NSString *did = row[@"did"];
@@ -749,7 +944,7 @@
             @"purpose": row[@"purpose"] ?: @"",
             @"description": row[@"description"] ?: @""
         };
-        NSDictionary *listView = [self listViewForURI:uri did:did record:record indexedAt:row[@"created_at"] cid:nil];
+        NSDictionary *listView = [self listViewForURI:uri did:did record:record indexedAt:row[@"created_at"] cid:nil creatorProfile:creatorProfile];
 
         [lists addObject:listView];
 
@@ -783,7 +978,8 @@
                                                        did:actorDID
                                                     record:record
                                                  indexedAt:row[@"indexed_at"]
-                                                       cid:cid];
+                                                       cid:cid
+                                            creatorProfile:creatorProfile];
             [lists addObject:listView];
             [seenURIs addObject:uri];
 
@@ -864,13 +1060,24 @@
     NSMutableArray *items = [NSMutableArray array];
     NSString *nextCursor = nil;
 
+    NSMutableArray *itemSubjectDIDs = [NSMutableArray array];
+    for (NSUInteger i = 0; itemRows && (NSInteger)i < limit && i < itemRows.count; i++) {
+        NSString *subjectDID = itemRows[i][@"subject_did"];
+        if (subjectDID && ![itemSubjectDIDs containsObject:subjectDID]) {
+            [itemSubjectDIDs addObject:subjectDID];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *itemProfilesByDID = itemSubjectDIDs.count > 0
+        ? ([self.actorService getProfilesByDIDForActors:itemSubjectDIDs error:nil] ?: @{})
+        : @{};
+
     for (NSUInteger i = 0; itemRows && (NSInteger)i < limit && i < itemRows.count; i++) {
         NSDictionary *row = itemRows[i];
         NSString *subjectDID = row[@"subject_did"];
 
         NSMutableDictionary *itemView = [NSMutableDictionary dictionary];
         itemView[@"uri"] = row[@"uri"];
-        itemView[@"subject"] = [self.actorService getProfileForActor:subjectDID error:nil] ?: @{@"did": subjectDID};
+        itemView[@"subject"] = itemProfilesByDID[subjectDID] ?: @{@"did": subjectDID};
         itemView[@"indexedAt"] = row[@"created_at"] ?: @"";
 
         [items addObject:itemView];
@@ -885,9 +1092,25 @@
         NSArray *recordItemRows = [self.database executeParameterizedQuery:recordItemQuery
                                                                     params:@[creatorDID, @"app.bsky.graph.listitem", @(limit + 1)]
                                                                      error:error];
+        NSMutableArray *rowRecords = [NSMutableArray arrayWithCapacity:recordItemRows.count];
+        NSMutableArray *recordSubjectDIDs = [NSMutableArray array];
+        for (NSDictionary *row in recordItemRows) {
+            NSDictionary *record = [self recordBodyFromRow:row did:creatorDID error:nil];
+            [rowRecords addObject:record ?: (id)[NSNull null]];
+            if ([record[@"list"] isEqualToString:listURI]) {
+                NSString *subjectDID = record[@"subject"];
+                if (subjectDID.length > 0 && ![recordSubjectDIDs containsObject:subjectDID]) {
+                    [recordSubjectDIDs addObject:subjectDID];
+                }
+            }
+        }
+        NSDictionary<NSString *, NSDictionary *> *recordItemProfilesByDID = recordSubjectDIDs.count > 0
+            ? ([self.actorService getProfilesByDIDForActors:recordSubjectDIDs error:nil] ?: @{})
+            : @{};
+
         for (NSUInteger i = 0; i < recordItemRows.count && (NSInteger)items.count < limit; i++) {
             NSDictionary *row = recordItemRows[i];
-            NSDictionary *record = [self recordBodyFromRow:row did:creatorDID error:nil];
+            NSDictionary *record = rowRecords[i] == (id)[NSNull null] ? nil : rowRecords[i];
             if (![record[@"list"] isEqualToString:listURI]) continue;
 
             NSString *subjectDID = record[@"subject"];
@@ -895,7 +1118,7 @@
 
             NSMutableDictionary *itemView = [NSMutableDictionary dictionary];
             itemView[@"uri"] = row[@"uri"] ?: [NSString stringWithFormat:@"at://%@/app.bsky.graph.listitem/%@", creatorDID, row[@"rkey"] ?: @""];
-            itemView[@"subject"] = [self.actorService getProfileForActor:subjectDID error:nil] ?: @{@"did": subjectDID};
+            itemView[@"subject"] = recordItemProfilesByDID[subjectDID] ?: @{@"did": subjectDID};
             itemView[@"indexedAt"] = record[@"createdAt"] ?: row[@"indexed_at"] ?: @"";
             [items addObject:itemView];
 
