@@ -1,12 +1,26 @@
 ---
 phase: 13
 title: Untyped JSON at auth trust boundaries
-status: pending
+status: in-progress
 agent: worker
 depends_on: []
 ---
 
 # Phase 13: Untyped JSON at auth trust boundaries
+
+## Progress
+
+- 2026-07-26: Started. Working tree confirmed clean at HEAD `af255960`
+  (unrelated relay/ADR work from a concurrent session landed and was
+  verified committed before starting). Reading sources for slice 1
+  (fail-closed claim typing) next.
+- 2026-07-27: Slice 1 complete. Added `AuthClaimTypeCheck.h` with
+  `AuthTypedValue` static-inline helper. Applied at JWTHeader/JWTPayload
+  construction and `AuthCryptoDPoP verifyProof:`. `aud` array form
+  normalized per RFC 7519 §4.1.3. 14 new JWT negative tests + 3 new
+  DPoP negative tests, all green. Deno check/lint pass (lint has 6
+  pre-existing failures in generate_test.ts, not introduced here).
+  Committed as `<hash>`.
 
 ## Mission
 
