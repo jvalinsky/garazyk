@@ -107,12 +107,54 @@
     return NSMakeRange(NSNotFound, 0);
 }
 
-- (NSUInteger)contentLengthForMessage:(CFHTTPMessageRef)message {
+- (NSUInteger)contentLengthForMessage:(CFHTTPMessageRef)message valid:(BOOL *)valid {
+    // CFHTTPMessageCopyHeaderFieldValue joins repeated headers of the same
+    // name as "5, 10" per RFC 7230 §3.2.2's combining rule, but §3.3.3
+    // requires *rejecting* multiple Content-Length headers (even identical
+    // duplicates) rather than combining them. A comma in the value -- from
+    // either duplicate headers or a single malformed one -- fails the
+    // strict digit-only check below, which rejects both cases correctly.
     NSString *contentLengthString = (__bridge_transfer NSString *)CFHTTPMessageCopyHeaderFieldValue(message, CFSTR("Content-Length"));
     if (!contentLengthString) {
+        if (valid) {
+            *valid = YES;
+        }
         return 0;
     }
-    return (NSUInteger)[contentLengthString longLongValue];
+    return [self strictlyParseContentLengthDigits:contentLengthString valid:valid];
+}
+
+- (NSUInteger)strictlyParseContentLengthDigits:(NSString *)value valid:(BOOL *)valid {
+    // RFC 7230 §3.3.3: Content-Length is a single decimal string of digits.
+    // No leading/trailing whitespace, no sign, no other characters.
+    if (value.length == 0) {
+        if (valid) {
+            *valid = NO;
+        }
+        return 0;
+    }
+    unsigned long long parsed = 0;
+    for (NSUInteger i = 0; i < value.length; i++) {
+        unichar c = [value characterAtIndex:i];
+        if (c < '0' || c > '9') {
+            if (valid) {
+                *valid = NO;
+            }
+            return 0;
+        }
+        unsigned long long digit = (unsigned long long)(c - '0');
+        if (parsed > (ULLONG_MAX - digit) / 10) {
+            if (valid) {
+                *valid = NO;
+            }
+            return 0;
+        }
+        parsed = parsed * 10 + digit;
+    }
+    if (valid) {
+        *valid = YES;
+    }
+    return (NSUInteger)parsed;
 }
 
 - (NSDictionary<NSString *, NSString *> *)headersFromMessage:(CFHTTPMessageRef)message {
@@ -189,7 +231,13 @@
 
         self.headersComplete = YES;
         self.headerEndOffset = headerEndRange.location + headerEndRange.length;
-        self.expectedBodyLength = [self contentLengthForMessage:self.message];
+
+        BOOL contentLengthValid = YES;
+        self.expectedBodyLength = [self contentLengthForMessage:self.message valid:&contentLengthValid];
+        if (!contentLengthValid) {
+            [self setErrorWithStatusCode:400 errorCode:@"BadRequest" message:@"Invalid Content-Length"];
+            return YES;
+        }
 
         NSDictionary *headers = [self headersFromMessage:self.message];
         NSString *transferEncoding = [[headers objectForKey:@"transfer-encoding"] lowercaseString];
@@ -410,6 +458,11 @@
 
 - (NSUInteger)contentLengthFromHeaders:(NSDictionary<NSString *, NSString *> *)headers
                                  valid:(BOOL *)valid {
+    // headersFromHeaderData: joins repeated header lines of the same name
+    // with ", " (mirroring RFC 7230 §3.2.2's combining rule), but §3.3.3
+    // requires *rejecting* multiple Content-Length headers rather than
+    // combining them. A comma in the value -- from either duplicate headers
+    // or a single malformed one -- fails the strict digit-only check below.
     NSString *contentLengthString = headers[@"content-length"];
     if (!contentLengthString) {
         if (valid) {
@@ -417,22 +470,40 @@
         }
         return 0;
     }
+    return [self strictlyParseContentLengthDigits:contentLengthString valid:valid];
+}
 
-    NSString *trimmed = [contentLengthString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    NSScanner *scanner = [NSScanner scannerWithString:trimmed];
-    long long value = 0;
-    BOOL parsed = [scanner scanLongLong:&value] && [scanner isAtEnd] && value >= 0;
-    if (!parsed) {
+- (NSUInteger)strictlyParseContentLengthDigits:(NSString *)value valid:(BOOL *)valid {
+    // RFC 7230 §3.3.3: Content-Length is a single decimal string of digits.
+    // No leading/trailing whitespace, no sign, no other characters.
+    if (value.length == 0) {
         if (valid) {
             *valid = NO;
         }
         return 0;
     }
-
+    unsigned long long parsed = 0;
+    for (NSUInteger i = 0; i < value.length; i++) {
+        unichar c = [value characterAtIndex:i];
+        if (c < '0' || c > '9') {
+            if (valid) {
+                *valid = NO;
+            }
+            return 0;
+        }
+        unsigned long long digit = (unsigned long long)(c - '0');
+        if (parsed > (ULLONG_MAX - digit) / 10) {
+            if (valid) {
+                *valid = NO;
+            }
+            return 0;
+        }
+        parsed = parsed * 10 + digit;
+    }
     if (valid) {
         *valid = YES;
     }
-    return (NSUInteger)value;
+    return (NSUInteger)parsed;
 }
 
 - (NSDictionary<NSString *, NSString *> *)headersFromHeaderData:(NSData *)headerData
