@@ -145,8 +145,18 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! The subject (who the token is about, typically a DID). */
 @property (nonatomic, copy, nullable) NSString *sub;
 
-/*! The audience (who the token is intended for). */
+/*! The audience (who the token is intended for). RFC 7519 §4.1.3 permits
+    this claim to be either a single string or an array of strings; when the
+    source JSON was an array, this holds the first element and `audiences`
+    holds the full normalized list. */
 @property (nonatomic, copy, nullable) NSString *aud;
+
+/*! The full, normalized audience list. Populated whenever `aud` is present
+    in the source JSON, whether it was a single string (one-element array)
+    or an array of strings. Prefer this over `aud` for audience matching:
+    per RFC 7519 §4.1.3, a token is intended for a principal if that
+    principal is identified by *any* element. */
+@property (nonatomic, copy, nullable) NSArray<NSString *> *audiences;
 
 /*! Expiration time (Unix timestamp). */
 @property (nonatomic, strong, nullable) NSDate *exp;

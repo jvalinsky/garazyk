@@ -344,4 +344,124 @@
     XCTAssertEqualObjects(decodedString, @"ab");
 }
 
+#pragma mark - Fail-Closed Claim Typing (workstream 01 S8 slice 1)
+
+// Builds an unsigned compact JWT string from raw header/payload dictionaries
+// so tests can inject claim values of the wrong JSON type. Signature
+// verification is never reached by these tests, so the signature segment is
+// a fixed placeholder.
+- (NSString *)tokenWithHeaderDict:(NSDictionary *)headerDict payloadDict:(NSDictionary *)payloadDict {
+    NSError *error = nil;
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:headerDict options:0 error:&error];
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payloadDict options:0 error:&error];
+    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:&error];
+    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:&error];
+    return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, @"sig"];
+}
+
+- (void)assertTokenRejectedWithHeader:(NSDictionary *)headerDict claim:(NSString *)claim {
+    NSString *token = [self tokenWithHeaderDict:headerDict
+                                     payloadDict:@{@"sub": @"test-user"}];
+    NSError *error = nil;
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNil(jwt, @"Header claim '%@' with wrong type should be rejected, not crash", claim);
+    XCTAssertNotNil(error, @"Rejection should set an error for claim '%@'", claim);
+    XCTAssertEqual(error.domain, JWTErrorDomain);
+}
+
+- (void)assertTokenRejectedWithPayload:(NSDictionary *)payloadDict claim:(NSString *)claim {
+    NSString *token = [self tokenWithHeaderDict:@{@"alg": @"ES256", @"typ": @"JWT"}
+                                     payloadDict:payloadDict];
+    NSError *error = nil;
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNil(jwt, @"Payload claim '%@' with wrong type should be rejected, not crash", claim);
+    XCTAssertNotNil(error, @"Rejection should set an error for claim '%@'", claim);
+    XCTAssertEqual(error.domain, JWTErrorDomain);
+}
+
+- (void)testHeaderClaimTypeMismatchesAreRejected {
+    NSDictionary<NSString *, id> *malformedValues = @{
+        @"number": @42,
+        @"array": @[@"x"],
+        @"object": @{@"x": @1},
+        @"null": [NSNull null],
+    };
+    for (NSString *claim in @[@"alg", @"typ", @"kid", @"cty"]) {
+        for (NSString *shape in malformedValues) {
+            NSMutableDictionary *header = [@{@"alg": @"ES256", @"typ": @"JWT"} mutableCopy];
+            header[claim] = malformedValues[shape];
+            [self assertTokenRejectedWithHeader:header claim:[NSString stringWithFormat:@"%@ (%@)", claim, shape]];
+        }
+    }
+}
+
+- (void)testPayloadStringClaimTypeMismatchesAreRejected {
+    NSDictionary<NSString *, id> *malformedValues = @{
+        @"number": @42,
+        @"array": @[@"x"],
+        @"object": @{@"x": @1},
+        @"null": [NSNull null],
+    };
+    NSArray<NSString *> *stringClaims = @[@"iss", @"sub", @"jti", @"sid", @"did", @"handle", @"scope", @"lxm", @"token_use"];
+    for (NSString *claim in stringClaims) {
+        for (NSString *shape in malformedValues) {
+            NSMutableDictionary *payload = [@{@"sub": @"test-user"} mutableCopy];
+            payload[claim] = malformedValues[shape];
+            [self assertTokenRejectedWithPayload:payload claim:[NSString stringWithFormat:@"%@ (%@)", claim, shape]];
+        }
+    }
+}
+
+- (void)testAudObjectShapeIsRejected {
+    [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"aud": @{@"x": @1}} claim:@"aud (object)"];
+}
+
+- (void)testAudNumberShapeIsRejected {
+    [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"aud": @42} claim:@"aud (number)"];
+}
+
+- (void)testAudArrayWithNonStringElementIsRejected {
+    [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"aud": @[@"valid.aud", @7]} claim:@"aud (mixed array)"];
+}
+
+- (void)testAudArrayFormIsAcceptedAndNormalized {
+    NSString *token = [self tokenWithHeaderDict:@{@"alg": @"ES256", @"typ": @"JWT"}
+                                     payloadDict:@{@"sub": @"test-user", @"aud": @[@"aud-one", @"aud-two"]}];
+    NSError *error = nil;
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt, @"Array-valued aud is RFC 7519-legal and must parse");
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(jwt.payload.aud, @"aud-one", @"aud should hold the first element for single-value consumers");
+    XCTAssertEqualObjects(jwt.payload.audiences, (@[@"aud-one", @"aud-two"]), @"audiences should hold the full normalized list");
+}
+
+- (void)testAudStringFormIsNormalizedToSingleElementArray {
+    NSString *token = [self tokenWithHeaderDict:@{@"alg": @"ES256", @"typ": @"JWT"}
+                                     payloadDict:@{@"sub": @"test-user", @"aud": @"solo-aud"}];
+    NSError *error = nil;
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(jwt.payload.aud, @"solo-aud");
+    XCTAssertEqualObjects(jwt.payload.audiences, @[@"solo-aud"]);
+}
+
+- (void)testExpStringShapeIsRejectedRatherThanSilentlyIgnored {
+    // Before this fix, a string 'exp' silently left payload.exp nil, which
+    // JWTVerifier's absent-claim skip then treated as "never expires."
+    [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"exp": @"1700000000"} claim:@"exp (string)"];
+}
+
+- (void)testIatStringShapeIsRejected {
+    [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"iat": @"1700000000"} claim:@"iat (string)"];
+}
+
+- (void)testNbfStringShapeIsRejected {
+    [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"nbf": @"1700000000"} claim:@"nbf (string)"];
+}
+
+- (void)testCnfNonObjectShapeIsRejected {
+    [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"cnf": @"not-an-object"} claim:@"cnf (string)"];
+}
+
 @end
