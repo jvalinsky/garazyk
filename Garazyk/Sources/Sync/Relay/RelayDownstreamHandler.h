@@ -22,6 +22,8 @@
 @class SubscribeReposHandler;
 @class RelayMetrics;
 @class RelayRepoStateManager;
+@class RelayEventValidator;
+@class FirehoseCommitEvent;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -62,6 +64,13 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Manages repository state for XRPC queries.
  */
 @property (nonatomic, strong, readwrite, nullable) RelayRepoStateManager *repoStateManager;
+
+/*!
+ @property eventValidator
+
+ @abstract Optional event validator for schema, MST, and signature checks.
+ */
+@property (nonatomic, strong, readwrite, nullable) RelayEventValidator *eventValidator;
 
 /*!
  @method initWithEventBuffer:subscribeReposHandler:
@@ -144,6 +153,18 @@ NS_ASSUME_NONNULL_BEGIN
  @return Count of connected downstream subscribers.
  */
 - (NSUInteger)activeDownstreamCount;
+
+/*!
+ @method verifyChainForCommitEvent:
+
+ @abstract Checks that the commit event's prevData CID matches the last known root
+           for the repository, detecting chain breaks on the firehose.
+
+ @discussion Returns YES when the event should be forwarded (valid chain, first
+             seen repo, or state-manager unavailable).  Returns NO and marks the
+             repo as desynchronized when a chain break is detected.
+ */
+- (BOOL)verifyChainForCommitEvent:(FirehoseCommitEvent *)event;
 
 @end
 

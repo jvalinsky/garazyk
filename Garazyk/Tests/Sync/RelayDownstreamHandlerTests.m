@@ -364,4 +364,120 @@
                      @"Should handle cursor with nil metrics");
 }
 
+#pragma mark - Chain Verification
+
+- (void)testVerifyChainFirstCommitAccepted {
+    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
+    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    downstreamHandler.repoStateManager = repoStateManager;
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:newrepo";
+    event.commit = [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.rev = @"3m1";
+    event.seq = 1;
+
+    XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
+                  @"First commit for unknown repo should be accepted");
+}
+
+- (void)testVerifyChainValidContinuation {
+    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
+    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    downstreamHandler.repoStateManager = repoStateManager;
+
+    CID *root1 = [CID sha256:[@"root1" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *root2 = [CID sha256:[@"root2" dataUsingEncoding:NSUTF8StringEncoding]];
+
+    [repoStateManager handleCommitForRepo:@"did:plc:test" root:root1.stringValue rev:@"1" seq:1];
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:test";
+    event.commit = root2;
+    event.rev = @"2";
+    event.seq = 2;
+    event.prevData = root1;
+
+    XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
+                  @"Commit with prevData matching stored root should be accepted");
+}
+
+- (void)testVerifyChainBreakDetected {
+    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
+    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    downstreamHandler.repoStateManager = repoStateManager;
+
+    CID *root1 = [CID sha256:[@"root1" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *wrongPrev = [CID sha256:[@"wrongprev" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *root2 = [CID sha256:[@"root2" dataUsingEncoding:NSUTF8StringEncoding]];
+
+    [repoStateManager handleCommitForRepo:@"did:plc:test" root:root1.stringValue rev:@"1" seq:1];
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:test";
+    event.commit = root2;
+    event.rev = @"2";
+    event.seq = 2;
+    event.prevData = wrongPrev;
+
+    XCTAssertFalse([downstreamHandler verifyChainForCommitEvent:event],
+                   @"Commit with mismatched prevData should be rejected");
+
+    XCTAssertEqual([repoStateManager statusForRepo:@"did:plc:test"], RelayRepoStatusDesynchronized,
+                   @"Repo should be marked desynchronized after chain break");
+}
+
+- (void)testVerifyChainNoPrevDataAcceptedWithWarning {
+    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
+    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    downstreamHandler.repoStateManager = repoStateManager;
+
+    CID *root1 = [CID sha256:[@"root1" dataUsingEncoding:NSUTF8StringEncoding]];
+    [repoStateManager handleCommitForRepo:@"did:plc:test" root:root1.stringValue rev:@"1" seq:1];
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:test";
+    event.commit = [CID sha256:[@"root2" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.rev = @"2";
+    event.seq = 2;
+    event.prevData = nil;
+
+    XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
+                  @"Commit with nil prevData for known repo should be accepted with warning");
+}
+
+- (void)testVerifyChainNoStateManagerAlwaysAccepted {
+    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
+    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    // repoStateManager is nil
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:test";
+    event.commit = [CID sha256:[@"root" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.rev = @"1";
+    event.seq = 1;
+
+    XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
+                  @"Should accept when no state manager is configured");
+}
+
 @end
