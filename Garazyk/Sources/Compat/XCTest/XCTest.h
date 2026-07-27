@@ -197,54 +197,62 @@ NS_ASSUME_NONNULL_BEGIN
     } while(0)
 
 /*! Assert condition is true. */
-#define XCTAssertTrue(condition) \
+#define XCTAssertTrue(condition, ...) \
     do { if (!(condition)) { _PDSXCTFail(@"XCTAssertTrue failed: %s", #condition); } } while(0)
 
 /*! Assert condition is false. */
-#define XCTAssertFalse(condition) \
+#define XCTAssertFalse(condition, ...) \
     do { if ((condition)) { _PDSXCTFail(@"XCTAssertFalse failed: %s", #condition); } } while(0)
 
 /*! Assert values are equal (scalar). */
-#define XCTAssertEqual(a, b) \
+#define XCTAssertEqual(a, b, ...) \
     do { if ((a) != (b)) { _PDSXCTFail(@"XCTAssertEqual failed: %@ != %@", @(a), @(b)); } } while(0)
 
 /*! Assert objects are equal via isEqual:. */
-#define XCTAssertEqualObjects(a, b) \
+#define XCTAssertEqualObjects(a, b, ...) \
     do { if (![(a) isEqual:(b)]) { _PDSXCTFail(@"XCTAssertEqualObjects failed: %@ != %@", (a), (b)); } } while(0)
 
 /*! Assert object is not nil. */
-#define XCTAssertNotNil(obj) \
+#define XCTAssertNotNil(obj, ...) \
     do { if ((obj) == nil) { _PDSXCTFail(@"XCTAssertNotNil failed: %s is nil", #obj); } } while(0)
 
 /*! Assert object is nil. */
-#define XCTAssertNil(obj) \
+#define XCTAssertNil(obj, ...) \
     do { if ((obj) != nil) { _PDSXCTFail(@"XCTAssertNil failed: %s is not nil", #obj); } } while(0)
 
 /*! Assert values are not equal (scalar). */
-#define XCTAssertNotEqual(a, b) \
+#define XCTAssertNotEqual(a, b, ...) \
     do { if ((a) == (b)) { _PDSXCTFail(@"XCTAssertNotEqual failed: %@ == %@", @(a), @(b)); } } while(0)
 
 /*! Assert first value is greater than second. */
-#define XCTAssertGreaterThan(a, b) \
+#define XCTAssertGreaterThan(a, b, ...) \
     do { if ((a) <= (b)) { _PDSXCTFail(@"XCTAssertGreaterThan failed: %@ <= %@", @(a), @(b)); } } while(0)
 
 /*! Assert first value is less than second. */
-#define XCTAssertLessThan(a, b) \
+#define XCTAssertLessThan(a, b, ...) \
     do { if ((a) >= (b)) { _PDSXCTFail(@"XCTAssertLessThan failed: %@ >= %@", @(a), @(b)); } } while(0)
 
+/*! Assert first value is greater than or equal to second. */
+#define XCTAssertGreaterThanOrEqual(a, b, ...) \
+    do { if ((a) < (b)) { _PDSXCTFail(@"XCTAssertGreaterThanOrEqual failed: %@ < %@", @(a), @(b)); } } while(0)
+
+/*! Assert first value is less than or equal to second. */
+#define XCTAssertLessThanOrEqual(a, b, ...) \
+    do { if ((a) > (b)) { _PDSXCTFail(@"XCTAssertLessThanOrEqual failed: %@ > %@", @(a), @(b)); } } while(0)
+
 /*! Assert expression does not throw exception. */
-#define XCTAssertNoThrow(expr) \
+#define XCTAssertNoThrow(expr, ...) \
     do { @try { expr; } @catch (id e) { _PDSXCTFail(@"XCTAssertNoThrow failed: threw %@", e); } } while(0)
 
 /*! Assert expression throws exception. */
-#define XCTAssertThrows(expr) \
+#define XCTAssertThrows(expr, ...) \
     do { @try { expr; _PDSXCTFail(@"XCTAssertThrows failed: did not throw"); } @catch (id e) { } } while(0)
 
 /*! Unconditional test failure with message. */
 #define XCTFail(...) _PDSXCTFail(__VA_ARGS__)
 
 /*! Assert floating point values are equal within accuracy. */
-#define XCTAssertEqualWithAccuracy(a, b, accuracy) \
+#define XCTAssertEqualWithAccuracy(a, b, accuracy, ...) \
     do { if (fabs((double)(a) - (double)(b)) > (accuracy)) { _PDSXCTFail(@"XCTAssertEqualWithAccuracy failed"); } } while(0)
 
 /*! Assert condition is true (with custom message). */
