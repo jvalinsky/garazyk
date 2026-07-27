@@ -326,9 +326,6 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 - (instancetype)init {
     self = [super init];
-    if (self) {
-        _clockOffset = [NSDate date];
-    }
     return self;
 }
 
@@ -412,10 +409,8 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 - (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error {
-    // Use clockOffset as the reference time if set; otherwise use now.
-    // clockOffset is initialized to [NSDate date] in -init, so by default
-    // this is the current time. Tests can override it to simulate fixed
-    // time for deterministic expiry/nbf checks.
+    // Use clockOffset as the reference time if set; otherwise use the live
+    // clock. Tests can set clockOffset for deterministic expiry/nbf checks.
     NSDate *now = self.clockOffset ?: [NSDate date];
 
     // exp is mandatory: a token without an expiration must never be

@@ -623,4 +623,27 @@
     XCTAssertEqual(error.code, JWTErrorTokenExpired);
 }
 
+- (void)testDefaultClockUsesLiveTimeRatherThanConstructionTime {
+    // Give the token a short lifetime after the verifier already exists. A
+    // verifier that freezes time during init would still accept it; the
+    // default path must observe that it has expired by verification time.
+    NSError *error = nil;
+    NSDictionary *payload = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @"test.audience",
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:0.005] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payload error:&error];
+    XCTAssertNotNil(token, @"Token signing failed: %@", error);
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt, @"Token parsing failed: %@", error);
+
+    [NSThread sleepForTimeInterval:0.02];
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"A default verifier must use live time and reject an expired token");
+    XCTAssertEqual(error.code, JWTErrorTokenExpired);
+}
+
 @end
