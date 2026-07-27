@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-24
+last_verified: 2026-07-26
 ---
 
 # Core Architecture and Reliability
@@ -115,21 +115,36 @@ meets the old option-1 acceptance (see ADR 0006).
 
 ## A6. Incremental public sync
 
-Response streaming is bounded, but export preparation can still materialize up
-to 100,000 records plus changed-CID and tombstone sets. Collection listing also
-opens actor stores per account.
+**Status: complete (verified 2026-07-26).** All components implemented and
+tested:
 
-Build byte-for-byte CAR/STAR fixtures, then introduce an incremental producer
-behind a bounded fallback. Track peak memory in tests. Replace N+1 account
-summary reads with indexed materialized metadata where measurements justify it.
+- **N+1 fix** — `headInfoForDid:error:` (`PDSRepositoryService+Commit.m:39-70`)
+  reads stored head directly from `repo_root`, avoiding expensive MST rebuild.
+  Used by `listRepos` in `XrpcSyncPack.m:633-653`. Two tests in
+  `PDSRepositoryServiceTests.m:686-699`.
 
-**Progress (2026-07-18):** the N+1 account-summary fix (`headInfoForDid`
-+ updated `listRepos`), the golden-fixture net (structural CAR/STAR
-goldens, byte-identical re-export, peak memory/size bounds), and the
-materialized `collection_membership` index with its admin stats/prune
-endpoint are committed (`6de6ebc64`). Still pending: the incremental
-producer itself, and test coverage for `PDSCollectionMembershipPruner` —
-phase 7 owns finishing these.
+- **Incremental export** — `since:` parameter flows through all 8 export entry
+  points in `PDSRepositoryService+Export.m`. Delta-mode logic (lines 950-984)
+  computes changed records via `listBlockCIDsSinceRev:` and
+  `listRecordHeadersSinceRev:`, exporting only commit + MST proof + changed
+  blocks. 4+ dedicated delta-sync tests.
+
+- **Bounded fallback** — Paginated `listRecordCIDsForDid:` with 10k batching,
+  200k safety cap, Tier 4 database fallback via `ActorStore`.
+
+- **Golden fixtures** — Structural CAR/STAR-L0/STAR-Lite validation plus
+  byte-identical re-export and chunk-producer reassembly tests. Memory bounds
+  (<15 MB for 50 records) and size bounds (<2 MB for 50 records) verified.
+
+- **Streamable-CAR enumerator** — Forward-compat pre-order DFS enumerator in
+  `MST.m:1618+` with feature flag off by design (Sync 1.1 spec not finalized).
+  15+ tests in `MSTPreorderTests.m` and `MSTPreorderFixtureTests.m`.
+
+- **Collection subsets** — `tools.garazyk.sync.getRepoFiltered` vendor extension
+  with test coverage for inclusion/exclusion, no-match, and empty-collections.
+
+- **Pruner tests** — `PDSCollectionMembershipPrunerTests.m` (2 tests: stale
+  entry removal, start/stop lifecycle). Registered in `test_main.m:1031`.
 
 **Closed (2026-07-19).** The Sync 1.1 remainder (export block ordering,
 collection-based repository subsets) has not reached published spec text —

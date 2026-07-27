@@ -1,7 +1,7 @@
 ---
 title: Repository Boundaries
 status: active
-last_verified: 2026-07-25
+last_verified: 2026-07-26
 ---
 
 # Repository Boundaries
@@ -37,15 +37,20 @@ form the dependency boundary.
   `main` histories are pushed: `jvalinsky/garazyk-tui` and
   `jvalinsky/garazyk-atproto-testing`. The local branches track `origin/main`.
   `@garazyk/tui@0.1.0` is the first verified release candidate, but its JSR
-  publication is indefinitely deferred by maintainer decision (2026-07-18).
-  Do not request or use publisher access, or publish this or any later package,
-  until the maintainer explicitly reopens Phase 5.
+  publication is **indefinitely deferred by maintainer decision** (2026-07-18,
+  reaffirmed 2026-07-26). Do not request or use publisher access, or publish
+  this or any later package, until the maintainer explicitly reopens Phase 5.
+  This deferral blocks R2 (publication boundaries), R3 (wrapper removal), and
+  R4 (deletion branch regeneration). R1 (synchronize forward) is not blocked
+  and can proceed when capacity allows.
 
 ## R1. Synchronize forward
 
 Treat current `main` as the source for code added after extraction. Port each
 external-repo difference with history-aware commits. Resolve configuration
 differences explicitly; do not copy `deno.json` wholesale.
+
+**Not blocked** on the publication deferral — can proceed independently.
 
 Run in each destination:
 
