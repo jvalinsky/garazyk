@@ -93,7 +93,36 @@
 
     CBORValue *nodeMap = [CBORValue decode:blockData];
     if (!nodeMap || nodeMap.type != CBORTypeMap) continue;
-    // (Note: The original implementation has a comment about not recursing to avoid OOM)
+
+    CBORValue *leftTag = nodeMap.map[[CBORValue textString:@"l"]];
+    if (leftTag && leftTag.type == CBORTypeTag) {
+      NSData *lBytes = leftTag.tagValue.byteString;
+      if (lBytes.length > 1) {
+        NSData *lCidBytes = [lBytes subdataWithRange:NSMakeRange(1, lBytes.length - 1)];
+        CID *leftCID = [CID cidFromBytes:lCidBytes];
+        if (leftCID && ![visited containsObject:leftCID.stringValue]) {
+          [queue addObject:lCidBytes];
+        }
+      }
+    }
+
+    CBORValue *entriesValue = nodeMap.map[[CBORValue textString:@"e"]];
+    if (entriesValue && entriesValue.type == CBORTypeArray) {
+      for (CBORValue *entryMap in entriesValue.array) {
+        if (entryMap.type != CBORTypeMap) continue;
+        CBORValue *treeTag = entryMap.map[[CBORValue textString:@"t"]];
+        if (treeTag && treeTag.type == CBORTypeTag) {
+          NSData *tBytes = treeTag.tagValue.byteString;
+          if (tBytes.length > 1) {
+            NSData *tCidBytes = [tBytes subdataWithRange:NSMakeRange(1, tBytes.length - 1)];
+            CID *treeCID = [CID cidFromBytes:tCidBytes];
+            if (treeCID && ![visited containsObject:treeCID.stringValue]) {
+              [queue addObject:tCidBytes];
+            }
+          }
+        }
+      }
+    }
   }
 }
 
