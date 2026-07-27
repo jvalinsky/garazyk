@@ -495,14 +495,18 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                 }
                 return NO;
             }
-            // Tombstone is valid — no need to verify further operations
-            return YES;
         }
 
         // Verify signature against current rotation keys
         if (![auditor verifySignatureForOperation:op allowedKeys:rotationKeys error:&localError]) {
             if (error) *error = localError;
             return NO;
+        }
+
+        // A tombstone is terminal, but it must still be authorized by the
+        // rotation keys in effect immediately before it.
+        if (isTombstone) {
+            return YES;
         }
 
         // Update rotation keys and prev CID for next iteration
