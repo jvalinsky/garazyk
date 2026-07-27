@@ -5,6 +5,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/** Blob has been uploaded but is not yet referenced by any record: not
+    retrievable, not listed, and eligible for the grace-period sweep. */
+extern NSString * const PDSDatabaseBlobStateTemporary;
+
+/** Blob is referenced by at least one current record: publicly
+    retrievable and listed. */
+extern NSString * const PDSDatabaseBlobStateReferenced;
+
 /**
  * @class PDSDatabaseBlob
  * 
@@ -35,6 +43,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** Date when the blob was uploaded. */
 @property (nonatomic, strong) NSDate *createdAt;
+
+/** Lifecycle state: PDSDatabaseBlobStateTemporary or
+    PDSDatabaseBlobStateReferenced. */
+@property (nonatomic, copy) NSString *state;
 
 @end
 

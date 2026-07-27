@@ -514,8 +514,20 @@
            @"    did TEXT NOT NULL,"
            @"    mimeType TEXT,"
            @"    size INTEGER NOT NULL,"
-           @"    created_at DATETIME NOT NULL"
+           @"    created_at DATETIME NOT NULL,"
+           @"    state TEXT NOT NULL DEFAULT 'temporary'"
            @")";
+}
+
+- (NSString *)actorStoreBlobRefsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS blob_refs ("
+           @"    record_uri TEXT NOT NULL,"
+           @"    blob_cid BLOB NOT NULL,"
+           @"    did TEXT NOT NULL,"
+           @"    created_at DATETIME NOT NULL,"
+           @"    PRIMARY KEY (record_uri, blob_cid),"
+           @"    FOREIGN KEY (blob_cid) REFERENCES blobs(cid)"
+           @") WITHOUT ROWID";
 }
 
 - (NSString *)actorStoreAccountUsageTableSchema {
@@ -576,6 +588,8 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreBlobsTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self actorStoreBlobRefsTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreRotationKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreSigningKeysTableSchema]];
@@ -622,6 +636,12 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blobs_did ON blobs(did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blobs_cid ON blobs(cid);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blobs_state ON blobs(state);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blob_refs_blob_cid ON blob_refs(blob_cid);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blob_refs_record_uri ON blob_refs(record_uri);"];
     [sql appendString:@";\n\n"];
     [sql appendString:[self schemaVersionTableSQL]];
     return sql;

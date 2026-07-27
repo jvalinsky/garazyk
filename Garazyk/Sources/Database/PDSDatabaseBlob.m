@@ -3,6 +3,9 @@
 #import "Database/PDSDatabaseBlob.h"
 #import "Core/NSDateFormatter+ATProto.h"
 
+NSString * const PDSDatabaseBlobStateTemporary = @"temporary";
+NSString * const PDSDatabaseBlobStateReferenced = @"referenced";
+
 @implementation PDSDatabaseBlob
 
 - (instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row {
@@ -12,7 +15,8 @@
         _did = row[@"did"];
         _mimeType = row[@"mime_type"] ?: row[@"mimeType"];
         _size = [row[@"size"] integerValue];
-        
+        _state = row[@"state"] ?: PDSDatabaseBlobStateTemporary;
+
         id createdAt = row[@"created_at"];
         if ([createdAt isKindOfClass:[NSString class]]) {
             _createdAt = [NSDateFormatter atproto_dateFromString:createdAt];

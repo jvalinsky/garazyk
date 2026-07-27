@@ -38,24 +38,29 @@ static NSData *PDSActorStoreBlobCursorData(NSString *cursor, NSError **error) {
     blob.did = row[@"did"];
     blob.mimeType = row[@"mimeType"];
     blob.size = [row[@"size"] longLongValue];
+    blob.state = row[@"state"] ?: PDSDatabaseBlobStateTemporary;
     blob.createdAt = [NSDate dateWithTimeIntervalSince1970:[row[@"created_at"] doubleValue]];
     return blob;
 }
 
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error {
-    NSString *sql = @"INSERT INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(cid) DO UPDATE SET did=excluded.did, mimeType=excluded.mimeType, size=excluded.size, created_at=excluded.created_at";
+    // state is intentionally omitted from the ON CONFLICT UPDATE clause: a
+    // re-upload of an already-referenced blob must not reset it back to
+    // temporary (spec: re-uploading an existing referenced blob is a no-op).
+    NSString *sql = @"INSERT INTO blobs (cid, did, mimeType, size, created_at, state) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(cid) DO UPDATE SET did=excluded.did, mimeType=excluded.mimeType, size=excluded.size, created_at=excluded.created_at";
     NSArray *params = @[
         blob.cid ?: [NSNull null],
         blob.did ?: @"",
         blob.mimeType ?: [NSNull null],
         @(blob.size),
-        @(blob.createdAt.timeIntervalSince1970)
+        @(blob.createdAt.timeIntervalSince1970),
+        blob.state ?: PDSDatabaseBlobStateTemporary
     ];
     return [self.database executeParameterizedUpdate:sql params:params error:error];
 }
 
 - (nullable PDSDatabaseBlob *)getBlobForCID:(NSData *)cid error:(NSError **)error {
-    NSString *sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE cid = ?";
+    NSString *sql = @"SELECT cid, did, mimeType, size, created_at, state FROM blobs WHERE cid = ?";
     NSArray *results = [self.database executeParameterizedQuery:sql params:@[cid] error:error];
     if (results.count > 0) {
         return [self blobFromDictionary:results.firstObject];
@@ -77,10 +82,10 @@ static NSData *PDSActorStoreBlobCursorData(NSString *cursor, NSError **error) {
     NSMutableArray *params = [NSMutableArray array];
     [params addObject:did];
     if (decodedCursor) {
-        sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE did = ? AND cid > ? ORDER BY cid LIMIT ?";
+        sql = @"SELECT cid, did, mimeType, size, created_at, state FROM blobs WHERE did = ? AND cid > ? ORDER BY cid LIMIT ?";
         [params addObject:decodedCursor];
     } else {
-        sql = @"SELECT cid, did, mimeType, size, created_at FROM blobs WHERE did = ? ORDER BY cid LIMIT ?";
+        sql = @"SELECT cid, did, mimeType, size, created_at, state FROM blobs WHERE did = ? ORDER BY cid LIMIT ?";
     }
     [params addObject:@(limit)];
 

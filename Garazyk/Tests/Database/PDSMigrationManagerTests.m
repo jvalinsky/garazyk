@@ -10,6 +10,7 @@
 #import "Database/Schema.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Chat/Server/Config/ChatSchemaManager.h"
+#import "Core/CID.h"
 #import <sqlite3.h>
 
 static void PDSMigrationTestExecute(sqlite3 *db, const char *sql) {
@@ -246,8 +247,14 @@ static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, con
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO _migrations VALUES (%ld, 'seed', 0)", (long)version];
         PDSMigrationTestExecute(db, sql.UTF8String);
     }
-    PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, rev TEXT)");
-    PDSMigrationTestExecute(db, "INSERT INTO records VALUES ('at://did:plc:alice/app.bsky.feed.post/one', '3jzfcijpj2z2a')");
+    PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, did TEXT NOT NULL, rev TEXT, value BLOB)");
+    PDSMigrationTestExecute(db, "INSERT INTO records VALUES ('at://did:plc:alice/app.bsky.feed.post/one', 'did:plc:alice', '3jzfcijpj2z2a', NULL)");
+    // V6 dependency tables: minimal empty shapes so the blob lifecycle migration
+    // can run after V5 without failing on missing tables.
+    PDSMigrationTestExecute(db, "CREATE TABLE ipld_blocks (cid BLOB PRIMARY KEY, block BLOB NOT NULL, size INTEGER NOT NULL, rev TEXT)");
+    PDSMigrationTestExecute(db, "CREATE TABLE blobs (cid BLOB PRIMARY KEY, did TEXT NOT NULL, mimeType TEXT, size INTEGER NOT NULL, created_at DATETIME NOT NULL)");
+    PDSMigrationTestExecute(db, "CREATE TABLE rotation_keys (did TEXT PRIMARY KEY)");
+    PDSMigrationTestExecute(db, "CREATE TABLE signing_keys (did TEXT PRIMARY KEY)");
 
     PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
     NSError *error = nil;
@@ -341,6 +348,123 @@ static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, con
     XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
     XCTAssertTrue(PDSMigrationTestTableUsesWithoutRowid(db, "collection_membership"));
     XCTAssertEqual(PDSMigrationTestRowCount(db, "collection_membership"), (NSInteger)1);
+    sqlite3_close(db);
+}
+
+static NSString *PDSMigrationTestHexLiteral(NSData *data) {
+    NSMutableString *hex = [NSMutableString stringWithString:@"X'"];
+    const uint8_t *bytes = data.bytes;
+    for (NSUInteger i = 0; i < data.length; i++) {
+        [hex appendFormat:@"%02x", bytes[i]];
+    }
+    [hex appendString:@"'"];
+    return hex;
+}
+
+- (nullable NSString *)pds_columnTextFromTable:(sqlite3 *)db sql:(NSString *)sql {
+    sqlite3_stmt *statement = NULL;
+    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &statement, NULL) != SQLITE_OK) return nil;
+    NSString *value = nil;
+    if (sqlite3_step(statement) == SQLITE_ROW) {
+        const unsigned char *text = sqlite3_column_text(statement, 0);
+        if (text) value = [NSString stringWithUTF8String:(const char *)text];
+    }
+    sqlite3_finalize(statement);
+    return value;
+}
+
+// Phase 15 slice 1: apply/rollback/re-apply coverage for V6BlobLifecycleSchema.
+// Verifies rows, indexes, the blob_refs foreign key, and the blobs.state
+// default all survive a round trip, and that the migration's backfill pass
+// correctly classifies a blob a record already references as 'referenced'
+// (rather than leaving it 'temporary' and wrongly eligible for the
+// slice-5 sweep).
+- (void)testBlobLifecycleMigrationRoundTripPreservesRowsIndexesAndBackfillsState {
+    sqlite3 *db = NULL;
+    XCTAssertEqual(SQLITE_OK, sqlite3_open(":memory:", &db));
+    PDSMigrationTestExecute(db, "CREATE TABLE _migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at REAL NOT NULL)");
+    for (NSInteger version = 1; version <= 5; version++) {
+        NSString *sql = [NSString stringWithFormat:@"INSERT INTO _migrations VALUES (%ld, 'seed', 0)", (long)version];
+        PDSMigrationTestExecute(db, sql.UTF8String);
+    }
+
+    // Pre-v6 shapes: no lifecycle state on blobs or blob_refs join table.
+    PDSMigrationTestExecute(db, "CREATE TABLE ipld_blocks (cid BLOB PRIMARY KEY, block BLOB NOT NULL, size INTEGER NOT NULL, rev TEXT)");
+    PDSMigrationTestExecute(db, "CREATE TABLE blobs (cid BLOB PRIMARY KEY, did TEXT NOT NULL, mimeType TEXT, size INTEGER NOT NULL, created_at DATETIME NOT NULL)");
+    PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, did TEXT NOT NULL, value BLOB)");
+
+    NSString *did = @"did:plc:alice";
+    CID *commitCID = [CID sha256:[@"initial-commit-block" dataUsingEncoding:NSUTF8StringEncoding]];
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:
+        @"INSERT INTO ipld_blocks (cid, block, size, rev) VALUES (%@, X'01', 1, 'rev1')",
+        PDSMigrationTestHexLiteral(commitCID.bytes)].UTF8String);
+
+    CID *referencedBlobCID = [CID sha256:[@"referenced-blob-bytes" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *temporaryBlobCID = [CID sha256:[@"temporary-blob-bytes" dataUsingEncoding:NSUTF8StringEncoding]];
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:
+        @"INSERT INTO blobs (cid, did, mimeType, size, created_at) VALUES (%@, '%@', 'image/png', 100, '2026-01-01T00:00:00Z')",
+        PDSMigrationTestHexLiteral(referencedBlobCID.bytes), did].UTF8String);
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:
+        @"INSERT INTO blobs (cid, did, mimeType, size, created_at) VALUES (%@, '%@', 'image/png', 50, '2026-01-01T00:00:00Z')",
+        PDSMigrationTestHexLiteral(temporaryBlobCID.bytes), did].UTF8String);
+
+    NSString *recordURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/one", did];
+    NSDictionary *recordValue = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"hello",
+        @"embed": @{@"$type": @"blob", @"ref": @{@"$link": referencedBlobCID.stringValue}, @"mimeType": @"image/png", @"size": @100}
+    };
+    NSData *recordJSON = [NSJSONSerialization dataWithJSONObject:recordValue options:0 error:nil];
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:
+        @"INSERT INTO records (uri, did, value) VALUES ('%@', '%@', %@)",
+        recordURI, did, PDSMigrationTestHexLiteral(recordJSON)].UTF8String);
+
+    PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
+    NSError *error = nil;
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+
+    // Rows preserved.
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "ipld_blocks"), (NSInteger)1);
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "blobs"), (NSInteger)2);
+
+    // Indexes present.
+    XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_blobs_state"));
+    XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_blob_refs_blob_cid"));
+    XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_blob_refs_record_uri"));
+
+    // Foreign key and default preserved.
+    XCTAssertNotEqual([PDSMigrationTestTableSQL(db, "blob_refs") rangeOfString:@"REFERENCES blobs(cid)"].location, NSNotFound);
+    XCTAssertNotEqual([PDSMigrationTestTableSQL(db, "blobs") rangeOfString:@"DEFAULT 'temporary'"].location, NSNotFound);
+
+    // The already-referenced blob is promoted; the untouched one stays temporary.
+    NSString *referencedState = [self pds_columnTextFromTable:db sql:
+        [NSString stringWithFormat:@"SELECT state FROM blobs WHERE cid = %@", PDSMigrationTestHexLiteral(referencedBlobCID.bytes)]];
+    NSString *temporaryState = [self pds_columnTextFromTable:db sql:
+        [NSString stringWithFormat:@"SELECT state FROM blobs WHERE cid = %@", PDSMigrationTestHexLiteral(temporaryBlobCID.bytes)]];
+    XCTAssertEqualObjects(referencedState, @"referenced");
+    XCTAssertEqualObjects(temporaryState, @"temporary");
+
+    // blob_refs links exactly the referenced record/blob pair.
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "blob_refs"), (NSInteger)1);
+    NSString *linkedURI = [self pds_columnTextFromTable:db sql:@"SELECT record_uri FROM blob_refs LIMIT 1"];
+    XCTAssertEqualObjects(linkedURI, recordURI);
+
+    // Roll back: lifecycle state and blob_refs are removed while rows remain.
+    XCTAssertTrue([manager rollbackToVersion:db version:5 error:&error], @"%@", error);
+    XCTAssertEqual([PDSMigrationTestTableSQL(db, "blobs") rangeOfString:@"state"].location, (NSUInteger)NSNotFound);
+    XCTAssertNil(PDSMigrationTestTableSQL(db, "blob_refs"));
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "ipld_blocks"), (NSInteger)1);
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "blobs"), (NSInteger)2);
+
+    // Re-apply: everything comes back, backfill re-runs correctly.
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "ipld_blocks"), (NSInteger)1);
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "blobs"), (NSInteger)2);
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "blob_refs"), (NSInteger)1);
+    referencedState = [self pds_columnTextFromTable:db sql:
+        [NSString stringWithFormat:@"SELECT state FROM blobs WHERE cid = %@", PDSMigrationTestHexLiteral(referencedBlobCID.bytes)]];
+    XCTAssertEqualObjects(referencedState, @"referenced");
+
     sqlite3_close(db);
 }
 
