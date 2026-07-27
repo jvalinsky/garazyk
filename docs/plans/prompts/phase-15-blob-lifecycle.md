@@ -14,6 +14,10 @@ Started 2026-07-26 in worktree `../garazyk-storage` (branch `phase-15-16`).
 Read both spec pages, workstream 01 S9, Schema.m, PDSSchemaManager.m,
 ActorStore.m, PDSMigrationManager.m. Beginning slice 1.
 
+Resumed 2026-07-27 after slices 1-2. Beginning slice 3: enforce the
+account-wide blob-byte quota from the live, backfilled `account_usage` row
+before provider storage.
+
 ## Mission
 
 Implement the published blob lifecycle, which Garazyk currently does not model

@@ -412,6 +412,11 @@ extern BOOL ATProtoServiceConfigRunningUnderTests(void);
 /*! @abstract Soft quota for repo storage in bytes (0 = unlimited). When exceeded, a warning is logged and a Prometheus counter incremented. */
 @property (nonatomic, readonly) unsigned long long softQuotaRepoBytes;
 
+#pragma mark - Blob Storage Quota
+
+/*! @abstract Per-account blob-storage quota in bytes. Defaults to 10 GiB; set to 0 to disable the hard upload limit. */
+@property (nonatomic, readonly) unsigned long long blobStorageQuotaBytes;
+
 /*! @abstract Whether per-account Prometheus labels are enabled (default: NO, high cardinality risk on large hosts). */
 @property (nonatomic, readonly) BOOL metricsPerAccountLabels;
 

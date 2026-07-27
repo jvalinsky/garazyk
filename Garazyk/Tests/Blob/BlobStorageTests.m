@@ -6,12 +6,15 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Schema.h"
+#import "Database/ActorStore/ActorStore.h"
 #import "Core/CID.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @interface BlobStorageTests : XCTestCase
 
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
 @property (nonatomic, strong) BlobStorage *blobStorage;
+@property (nonatomic, strong) PDSDiskBlobProvider *blobProvider;
 @property (nonatomic, strong) NSURL *testDBURL;
 @property (nonatomic, strong) NSURL *testStorageURL;
 @property (nonatomic, strong) NSData *testData;
@@ -37,9 +40,9 @@
     self.databasePool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDBURL.path maxSize:5];
     
     // Create provider
-    PDSDiskBlobProvider *provider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.testStorageURL];
+    self.blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.testStorageURL];
     
-    self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.databasePool provider:provider];
+    self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.databasePool provider:self.blobProvider];
 
     NSString *testString = @"Hello, World! This is test blob data.";
     self.testData = [testString dataUsingEncoding:NSUTF8StringEncoding];
@@ -298,6 +301,50 @@
     // Now data should be gone from disk (if ref counting works)
     NSData *goneData = [self.blobStorage getBlobWithCID:cid1 did:did2 error:&error];
     XCTAssertNil(goneData, @"Data should be removed after last reference is deleted");
+}
+
+- (void)testUploadBlobExceedingQuotaDoesNotStoreProviderBytes {
+    NSString *quotaDID = @"did:web:quota.example.com";
+    NSData *rejectedData = [@"this upload must exceed the remaining quota" dataUsingEncoding:NSUTF8StringEncoding];
+    unsigned long long usedBytes = 30;
+    unsigned long long quota = usedBytes + rejectedData.length - 1;
+    ATProtoServiceConfiguration *configuration = [ATProtoServiceConfiguration sharedConfiguration];
+    unsigned long long previousQuota = configuration.blobStorageQuotaBytes;
+    [configuration setValue:@(quota) forKey:@"blobStorageQuotaBytes"];
+
+    @try {
+        NSError *error = nil;
+        PDSActorStore *store = [self.databasePool storeForDid:quotaDID error:&error];
+        XCTAssertNotNil(store, @"Quota test store should open: %@", error);
+        if (!store) return;
+
+        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+            PDSActorStore *actorStore = (PDSActorStore *)transactor;
+            sqlite3_stmt *statement = [actorStore prepareStatement:@"INSERT INTO account_usage (did, blob_bytes) VALUES (?, ?)" error:blockError];
+            if (!statement) return;
+            sqlite3_bind_text(statement, 1, quotaDID.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int64(statement, 2, (sqlite3_int64)usedBytes);
+            if (sqlite3_step(statement) != SQLITE_DONE) {
+                *blockError = [NSError errorWithDomain:BlobStorageErrorDomain
+                                                   code:BlobStorageErrorStorageFailure
+                                               userInfo:@{NSLocalizedDescriptionKey: @"Failed to seed account usage"}];
+            }
+            [actorStore finalizeStatement:statement];
+        } error:&error];
+        XCTAssertNil(error, @"Quota test usage seed should succeed");
+
+        error = nil;
+        CID *rejectedCID = [self.blobStorage uploadBlob:rejectedData mimeType:@"text/plain" did:quotaDID error:&error];
+        XCTAssertNil(rejectedCID, @"Upload exceeding the account quota must be rejected");
+        XCTAssertEqual(error.code, BlobStorageErrorQuotaExceeded);
+
+        NSError *providerError = nil;
+        NSArray<CID *> *providerCIDs = [self.blobProvider listAllCIDsWithError:&providerError];
+        XCTAssertNil(providerError);
+        XCTAssertEqual(providerCIDs.count, 0, @"A rejected upload must not leave provider bytes");
+    } @finally {
+        [configuration setValue:@(previousQuota) forKey:@"blobStorageQuotaBytes"];
+    }
 }
 
 @end
