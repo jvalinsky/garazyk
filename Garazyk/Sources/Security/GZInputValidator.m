@@ -103,7 +103,8 @@ static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
     if (encoded.length < 10) return NO;
 
     for (NSUInteger i = 0; i < encoded.length; i++) {
-        char c = [encoded characterAtIndex:i];
+        unichar c = [encoded characterAtIndex:i];
+        if (c > 0x7F) return NO;
         if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '2' && c <= '7'))) {
             return NO;
         }
