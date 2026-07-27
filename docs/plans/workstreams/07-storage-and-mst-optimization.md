@@ -689,6 +689,125 @@ indexing worker fast enough to keep up with ingest.
 
 ---
 
+## O7: AppView actor hydration and ingest checkpoint
+
+**Status: not started (identified 2026-07-26).** A review of AppView,
+Services, and Lexicon found the read path's dominant cost is per-row profile
+hydration, not query shape — the SQL is parameterized and the indexes exist.
+It also found one ingest-cursor correctness gap and an inconsistency in limit
+clamping.
+
+Coverage note: this review concentrated on the AppView services, the ingest
+queue, and the lexicon validator. `Services/PDS/PDSSpaceStore.m` (1643 lines)
+and `Services/PDS/PDSRepositoryService+Export.m` (1601) were not read in
+depth and are not covered by the claims below.
+
+### Evidence
+
+**Profile hydration is 5 queries per actor, three of them unbounded
+aggregates.** `AppView/Services/ActorService.m getProfileForActor:` issues
+`resolveDIDToHandle:` (1 query), `getProfileRecordForDID:` (1), plus
+`getFollowersCountForDID:`, `getFollowsCountForDID:`, and
+`getPostsCountForDID:` — six when the input is a handle needing resolution.
+The three counts are:
+
+```sql
+SELECT COUNT(*) FROM records WHERE subject_did = ? AND collection = ?
+SELECT COUNT(*) FROM records WHERE did = ?         AND collection = ?
+SELECT COUNT(*) FROM records WHERE did = ?         AND collection = ?
+```
+
+`Database/Schema.m:90-93` provides `idx_records_did_collection` and
+`idx_records_subject_did_collection`, so these are index range scans rather
+than table scans — but a range scan still visits every matching entry, so an
+actor with 100k posts costs 100k index entries counted, per profile, per
+request.
+
+`getProfileForActor:` is called inside row loops at `ActorService.m:91`,
+`:327`, `:365`, `:483`, `ContactService.m:156`, `:192`, and
+`GraphService.m:308`. A 50-actor page therefore costs ~251 queries, 150 of
+them count aggregations.
+
+A second N+1 layer sits on top: `getRecordBodyFromCID:` is one query and is
+called per row at `FeedService.m:273`, `:366`, `:424`, `:554`, `:725` and
+`GraphService.m:126`, `:181`, `:241`.
+
+**The ingest checkpoint can move backwards.** `AppView/Server/AppViewDatabase.m:141`
+saves with `INSERT OR REPLACE INTO appview_checkpoints(relay_url, seq, saved_at)`
+and no monotonicity guard, so a stale or racing save overwrites a higher `seq`
+with a lower one. Rewinding causes re-ingestion rather than loss, but the
+guard is one clause and its absence makes the cursor's direction dependent on
+save ordering.
+
+**Limit clamping is inconsistent, with a dead third implementation.**
+`Network/AppViewXRpcRoutePack.m:31 parseLimitParam` clamps correctly
+(`MIN(MAX(limit, 1), maxLimit)`) and the AppView routes use it, so this is not
+currently exploitable. But `GraphService` re-clamps defensively at ten call
+sites while `FeedService`, `GroupService`, and `NotificationService` never do,
+and `Security/GZInputValidator.m:150 validateLimitParameter:maxLimit:` — a
+third implementation of the same idea — has **zero callers**. A new route that
+forgets `parseLimitParam` gets an unbounded query with no second line of
+defense.
+
+### Steps
+
+1. **Materialize the three counts.** Maintain follower, follow, and post
+   counts in a counts table kept current by triggers, following the
+   `kPDSAccountUsage*` trigger pattern in `Database/Schema.m:129-195` (note
+   that those triggers exist but were never installed — phase 15 slice 2
+   installs them; reuse the shape, not the omission). Backfill on migration.
+2. **Batch profile hydration.** Replace per-row `getProfileForActor:` calls in
+   the seven listed loops with a single batched fetch over the row set, in the
+   `IN (?,?,?)` placeholder style already used correctly at
+   `FeedService.m:400`.
+3. **Batch record-body hydration.** Same treatment for `getRecordBodyFromCID:`
+   at the eight listed call sites.
+4. **Guard the checkpoint.** Make the checkpoint save conditional so `seq`
+   only advances.
+5. **Consolidate limit clamping.** One implementation, applied at the route
+   boundary, with the dead `validateLimitParameter:` removed or made the
+   single shared one. Service-layer clamps become redundant rather than
+   load-bearing.
+
+### Files
+
+- `Garazyk/Sources/AppView/Services/ActorService.m`,
+  `FeedService.m`, `GraphService.m`, `ContactService.m`
+- `Garazyk/Sources/AppView/Server/AppViewDatabase.m`
+- `Garazyk/Sources/Database/Schema.m` (counts table + triggers)
+- `Garazyk/Sources/Network/AppViewXRpcRoutePack.m`,
+  `Garazyk/Sources/Security/GZInputValidator.m`
+
+### Verification
+
+Query-count assertions are the gate, since the defect is volume rather than
+correctness: hydrating a 50-actor page must issue a bounded number of queries
+independent of page size, and the count must be asserted in a test rather than
+observed once. `EXPLAIN QUERY PLAN` evidence for the new counts path.
+Response payloads must be byte-identical before and after — this is an
+optimization, so any change in output is a bug. Migration round-trip
+(apply/rollback/re-apply) coverage for the counts table. A checkpoint test
+that attempts a lower-`seq` save and asserts the cursor does not move.
+
+### Rollback
+
+Each step is a single-commit revert. Step 1 adds a table and triggers, so it
+rolls back via its migration down path; steps 2-3 are pure call-site changes
+whose output must be identical, making revert safe at any point. Step 5
+touches a shared helper — verify every route still clamps after consolidation,
+since removing a redundant clamp is only safe if the boundary one is
+universal.
+
+### Dependencies
+
+Independent of O1-O6. Step 1 shares the trigger-installation mechanics with
+phase 15 slice 2 (workstream 01 § S9); if both are in flight, land the blob
+usage triggers first so the migration pattern is established once.
+
+Derived prompt: `../prompts/phase-21-appview-hydration.md`.
+
+---
+
 ## Dependency order
 
 ```mermaid
