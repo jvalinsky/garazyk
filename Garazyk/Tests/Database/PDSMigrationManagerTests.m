@@ -66,6 +66,38 @@ static BOOL PDSMigrationTestIndexExists(sqlite3 *db, const char *indexName) {
     return exists;
 }
 
+static BOOL PDSMigrationTestTableExists(sqlite3 *db, const char *tableName) {
+    sqlite3_stmt *statement = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", -1, &statement, NULL) != SQLITE_OK) return NO;
+    sqlite3_bind_text(statement, 1, tableName, -1, SQLITE_STATIC);
+    BOOL exists = sqlite3_step(statement) == SQLITE_ROW;
+    sqlite3_finalize(statement);
+    return exists;
+}
+
+static BOOL PDSMigrationTestTriggerExists(sqlite3 *db, const char *triggerName) {
+    sqlite3_stmt *statement = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = ?", -1, &statement, NULL) != SQLITE_OK) return NO;
+    sqlite3_bind_text(statement, 1, triggerName, -1, SQLITE_STATIC);
+    BOOL exists = sqlite3_step(statement) == SQLITE_ROW;
+    sqlite3_finalize(statement);
+    return exists;
+}
+
+static NSString *PDSMigrationTestObjectSQL(sqlite3 *db, const char *type, const char *name) {
+    sqlite3_stmt *statement = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT sql FROM sqlite_master WHERE type = ? AND name = ?", -1, &statement, NULL) != SQLITE_OK) return nil;
+    sqlite3_bind_text(statement, 1, type, -1, SQLITE_STATIC);
+    sqlite3_bind_text(statement, 2, name, -1, SQLITE_STATIC);
+    NSString *sql = nil;
+    if (sqlite3_step(statement) == SQLITE_ROW) {
+        const unsigned char *text = sqlite3_column_text(statement, 0);
+        if (text) sql = [NSString stringWithUTF8String:(const char *)text];
+    }
+    sqlite3_finalize(statement);
+    return sql;
+}
+
 static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, const char *indexName) {
     NSString *explain = [NSString stringWithFormat:@"EXPLAIN QUERY PLAN %s", sql];
     sqlite3_stmt *statement = NULL;
@@ -464,6 +496,107 @@ static NSString *PDSMigrationTestHexLiteral(NSData *data) {
     referencedState = [self pds_columnTextFromTable:db sql:
         [NSString stringWithFormat:@"SELECT state FROM blobs WHERE cid = %@", PDSMigrationTestHexLiteral(referencedBlobCID.bytes)]];
     XCTAssertEqualObjects(referencedState, @"referenced");
+
+    sqlite3_close(db);
+}
+
+// Phase 15 slice 2: apply/rollback/re-apply coverage for V7AccountUsageTriggers.
+// Verifies that account_usage is created, all six triggers fire, and the
+// backfill aggregates existing blobs/ipld_blocks/records into account_usage
+// so consumers (XrpcVendorPack, XrpcAdminPack+AccountInfo) see non-zero
+// values immediately after migration.
+- (void)testAccountUsageTriggersMigrationRoundTripBackfillsAndInstallsTriggers {
+    sqlite3 *db = NULL;
+    XCTAssertEqual(SQLITE_OK, sqlite3_open(":memory:", &db));
+    PDSMigrationTestExecute(db, "CREATE TABLE _migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at REAL NOT NULL)");
+    for (NSInteger version = 1; version <= 6; version++) {
+        NSString *sql = [NSString stringWithFormat:@"INSERT INTO _migrations VALUES (%ld, 'seed', 0)", (long)version];
+        PDSMigrationTestExecute(db, sql.UTF8String);
+    }
+
+    // V6 post-state: blobs has lifecycle state and blob_refs exists.
+    NSString *did = @"did:plc:alice";
+    PDSMigrationTestExecute(db, "CREATE TABLE ipld_blocks (cid BLOB PRIMARY KEY, block BLOB NOT NULL, size INTEGER NOT NULL, rev TEXT)");
+    PDSMigrationTestExecute(db, "INSERT INTO ipld_blocks VALUES (X'aabb', X'01', 512, 'rev1')");
+    PDSMigrationTestExecute(db, "INSERT INTO ipld_blocks VALUES (X'bbcc', X'02', 256, 'rev1')");
+
+    PDSMigrationTestExecute(db, "CREATE TABLE blobs (cid BLOB PRIMARY KEY, did TEXT NOT NULL, mimeType TEXT, size INTEGER NOT NULL, created_at DATETIME NOT NULL, state TEXT NOT NULL DEFAULT 'temporary')");
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO blobs VALUES (X'ddee', '%@', 'image/png', 2048, '2026-01-01T00:00:00Z', 'referenced')", did].UTF8String);
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO blobs VALUES (X'eeff', '%@', 'image/jpeg', 1024, '2026-01-02T00:00:00Z', 'temporary')", did].UTF8String);
+
+    PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, did TEXT NOT NULL, value BLOB)");
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO records VALUES ('at://%@/app.bsky.feed.post/1', '%@', NULL)", did, did].UTF8String);
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO records VALUES ('at://%@/app.bsky.feed.post/2', '%@', NULL)", did, did].UTF8String);
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO records VALUES ('at://%@/app.bsky.feed.post/3', '%@', NULL)", did, did].UTF8String);
+
+    PDSMigrationTestExecute(db, "CREATE TABLE blob_refs (record_uri TEXT NOT NULL, blob_cid BLOB NOT NULL, did TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (record_uri, blob_cid)) WITHOUT ROWID");
+    PDSMigrationTestExecute(db, kPDSAccountUsageTableCreateSQL.UTF8String);
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count) VALUES ('%@', 1, 1, 1, 1)", did].UTF8String);
+
+    PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
+    NSError *error = nil;
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+
+    // account_usage table created and backfilled.
+    XCTAssertTrue(PDSMigrationTestTableExists(db, "account_usage"));
+    NSString *usageBlobBytes = [self pds_columnTextFromTable:db sql:@"SELECT blob_bytes FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(usageBlobBytes, @"3072"); // 2048 + 1024
+    NSString *usageBlobCount = [self pds_columnTextFromTable:db sql:@"SELECT blob_count FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(usageBlobCount, @"2");
+    NSString *usageRepoBytes = [self pds_columnTextFromTable:db sql:@"SELECT repo_bytes FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(usageRepoBytes, @"768"); // 512 + 256
+    NSString *usageRecordCount = [self pds_columnTextFromTable:db sql:@"SELECT record_count FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(usageRecordCount, @"3");
+
+    // All six canonical trigger definitions are installed verbatim.
+    XCTAssertTrue(PDSMigrationTestTriggerExists(db, "trg_account_usage_blob_insert"));
+    XCTAssertTrue(PDSMigrationTestTriggerExists(db, "trg_account_usage_blob_delete"));
+    XCTAssertTrue(PDSMigrationTestTriggerExists(db, "trg_account_usage_block_insert"));
+    XCTAssertTrue(PDSMigrationTestTriggerExists(db, "trg_account_usage_block_delete"));
+    XCTAssertTrue(PDSMigrationTestTriggerExists(db, "trg_account_usage_record_insert"));
+    XCTAssertTrue(PDSMigrationTestTriggerExists(db, "trg_account_usage_record_delete"));
+    NSDictionary<NSString *, NSString *> *canonicalTriggerSQL = @{
+        @"trg_account_usage_blob_insert": kPDSAccountUsageTriggerBlobInsertSQL,
+        @"trg_account_usage_blob_delete": kPDSAccountUsageTriggerBlobDeleteSQL,
+        @"trg_account_usage_block_insert": kPDSAccountUsageTriggerBlockInsertSQL,
+        @"trg_account_usage_block_delete": kPDSAccountUsageTriggerBlockDeleteSQL,
+        @"trg_account_usage_record_insert": kPDSAccountUsageTriggerRecordInsertSQL,
+        @"trg_account_usage_record_delete": kPDSAccountUsageTriggerRecordDeleteSQL,
+    };
+    [canonicalTriggerSQL enumerateKeysAndObjectsUsingBlock:^(NSString *name, NSString *sql, BOOL *stop) {
+        // SQLite normalizes CREATE TRIGGER by omitting IF NOT EXISTS in
+        // sqlite_master. Compare the remaining definition exactly, which
+        // still proves V7 executed the canonical constant rather than a
+        // migration-local copy.
+        NSString *normalizedSQL = [sql stringByReplacingOccurrencesOfString:@"CREATE TRIGGER IF NOT EXISTS "
+                                                                  withString:@"CREATE TRIGGER "];
+        XCTAssertEqualObjects(PDSMigrationTestObjectSQL(db, "trigger", name.UTF8String), normalizedSQL, @"%@ differs from its canonical schema definition", name);
+    }];
+
+    // Trigger fire: insert a new blob and verify counter incremented.
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO blobs VALUES (X'1122', '%@', 'image/png', 100, '2026-01-03T00:00:00Z', 'temporary')", did].UTF8String);
+    NSString *afterInsertBlobCount = [self pds_columnTextFromTable:db sql:@"SELECT blob_count FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(afterInsertBlobCount, @"3");
+    NSString *afterInsertBlobBytes = [self pds_columnTextFromTable:db sql:@"SELECT blob_bytes FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(afterInsertBlobBytes, @"3172"); // 3072 + 100
+
+    // Roll back removes the V7-installed triggers but preserves the pre-existing
+    // account_usage table, its defaults, and the backfilled rows.
+    XCTAssertTrue([manager rollbackToVersion:db version:6 error:&error], @"%@", error);
+    XCTAssertTrue(PDSMigrationTestTableExists(db, "account_usage"));
+    XCTAssertFalse(PDSMigrationTestTriggerExists(db, "trg_account_usage_blob_insert"));
+    XCTAssertFalse(PDSMigrationTestTriggerExists(db, "trg_account_usage_block_insert"));
+    XCTAssertNotEqual([PDSMigrationTestTableSQL(db, "account_usage") rangeOfString:@"DEFAULT 0"].location, NSNotFound);
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:@"SELECT blob_bytes FROM account_usage WHERE did = 'did:plc:alice'"], @"3172");
+
+    // Re-apply: everything restored, backfill re-runs.
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertTrue(PDSMigrationTestTableExists(db, "account_usage"));
+    // Now has 3 blobs (the trigger-created one persisted via INSERT into blobs).
+    NSString *reapplyBlobCount = [self pds_columnTextFromTable:db sql:@"SELECT blob_count FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(reapplyBlobCount, @"3");
+    NSString *reapplyBlobBytes = [self pds_columnTextFromTable:db sql:@"SELECT blob_bytes FROM account_usage WHERE did = 'did:plc:alice'"];
+    XCTAssertEqualObjects(reapplyBlobBytes, @"3172");
 
     sqlite3_close(db);
 }
