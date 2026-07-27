@@ -18,6 +18,11 @@ Resumed 2026-07-27 after slices 1-2. Beginning slice 3: enforce the
 account-wide blob-byte quota from the live, backfilled `account_usage` row
 before provider storage.
 
+Completed slice 4: current-record blob references are extracted and updated
+atomically for direct writes, batches, and imports. Last-reference removal
+reclaims per-repository lifecycle metadata; deduplicated provider bytes remain
+for the global orphan sweep in slice 5.
+
 ## Mission
 
 Implement the published blob lifecycle, which Garazyk currently does not model

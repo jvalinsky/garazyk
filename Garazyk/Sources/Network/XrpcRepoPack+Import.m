@@ -11,6 +11,7 @@
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Network/PDSRepoImportValidator.h"
 #import "Services/PDS/PDSRecordService.h"
+#import "Services/PDS/PDSRecordService+BlobLifecycle.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
@@ -243,6 +244,18 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
             }
             if (validatedRecords.count > 0 && ![transactor putRecords:validatedRecords forDid:did error:error]) {
                 return;
+            }
+            for (PDSDatabaseRecord *record in validatedRecords) {
+                NSData *valueData = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+                NSDictionary *recordValue = valueData ? [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil] : nil;
+                if (![recordValue isKindOfClass:[NSDictionary class]] ||
+                    ![recordService syncBlobReferencesForRecordURI:record.uri
+                                                        recordValue:recordValue
+                                                             forDid:did
+                                                        transactor:transactor
+                                                             error:error]) {
+                    return;
+                }
             }
             if (![transactor updateRepoRoot:did rootCid:reader.rootCID.bytes rev:(commit.rev ?: @"") error:error]) {
                 return;
