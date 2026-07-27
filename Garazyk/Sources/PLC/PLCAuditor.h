@@ -72,6 +72,41 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)verifyOperation:(PLCOperation *)op error:(NSError **)error;
 
 /*!
+ @method normalizedDataForOperation:error:
+
+ @abstract Normalizes and validates the operational data for a PLC operation.
+
+ @param op The PLC operation to normalize.
+ @param error On failure, set to the validation error.
+ @result A dictionary of validated operational data, or nil on failure.
+
+ @discussion
+    This method ensures that the operation data is safe for use by rejecting
+    nil elements, type mismatches, and missing fields that could cause crashes
+    when passed to collection literals. Call before any derived state is read
+    from remote operation data.
+ */
++ (nullable NSDictionary *)normalizedDataForOperation:(PLCOperation *)op error:(NSError **)error;
+
+/*!
+ @method verifyChain:did:error:
+
+ @abstract Verifies an operation chain from a raw audit log without a store.
+
+ @param operations The ordered list of PLC operations to verify.
+ @param did The expected DID.
+ @param error On failure, set to the verification error.
+ @result YES when the chain is internally consistent and signatures verify.
+
+ @discussion
+    Verifies the signature chain, prev links, tombstone placement, and
+    genesis DID matching for operations parsed from a remote audit log.
+    Unlike verifyDID:error:, this method accepts a bare array of operations
+    directly rather than reading from a PLCStore.
+ */
++ (BOOL)verifyChain:(NSArray<PLCOperation *> *)operations did:(NSString *)did error:(NSError **)error;
+
+/*!
  @method hashForOperationData:
 
  @abstract Computes the canonical hash used for PLC operation signing.
