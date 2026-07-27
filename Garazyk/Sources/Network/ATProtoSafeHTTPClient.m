@@ -3,6 +3,10 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 
+#if defined(__APPLE__) && !defined(GNUSTEP)
+#import <Network/Network.h>
+#endif
+
 #if defined(GNUSTEP)
 #import <curl/curl.h>
 #import <unistd.h>
@@ -96,6 +100,13 @@ static size_t pds_curl_header_cb(void *contents, size_t size, size_t nmemb, void
 
 NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
+static BOOL PDSIsLoopbackHost(NSString *host) {
+    NSString *normalized = host.lowercaseString;
+    return [normalized isEqualToString:@"127.0.0.1"] ||
+           [normalized isEqualToString:@"localhost"] ||
+           [normalized isEqualToString:@"::1"];
+}
+
 @implementation ATProtoSafeHTTPClientOptions
 
 + (instancetype)defaultOptions {
@@ -173,7 +184,7 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     }
 
     NSString *host = url.host.lowercaseString;
-    BOOL isLoopback = [host isEqualToString:@"127.0.0.1"] || [host isEqualToString:@"localhost"] || [host isEqualToString:@"::1"];
+    BOOL isLoopback = PDSIsLoopbackHost(host);
 
     if (!isLoopback) {
         NSString *scheme = url.scheme.lowercaseString;
@@ -196,17 +207,17 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
             return NO;
         }
 
-    BOOL allowPrivate = effective.allowPrivateHosts;
-    if (!allowPrivate) {
-        NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
-        if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
-            allowPrivate = YES;
+        BOOL allowPrivate = effective.allowPrivateHosts;
+        if (!allowPrivate) {
+            NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
+            if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
+                allowPrivate = YES;
+            }
         }
-    }
 
-    if (!allowPrivate) {
-        NSError *ssrfError = nil;
-        if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+        if (!allowPrivate) {
+            NSError *ssrfError = nil;
+            if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
                 if (error) {
                     *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
                                      description:@"Outbound request target failed SSRF validation"
@@ -225,6 +236,13 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 - (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
                     options:(ATProtoSafeHTTPClientOptions *)options
                  completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
+    [self performSafeDataTaskWithRequest:request options:options redirectCount:0 completion:completion];
+}
+
+- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
+                    options:(ATProtoSafeHTTPClientOptions *)options
+                 redirectCount:(NSUInteger)redirectCount
+                 completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
     if (!completion) {
         return;
     }
@@ -237,6 +255,20 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
     NSURL *url = [request.URL absoluteURL];
     NSString *urlString = [url absoluteString];
+    NSArray<NSString *> *pinnedAddresses = nil;
+    if (!PDSIsLoopbackHost(url.host) && !effective.allowPrivateHosts) {
+        NSError *resolutionError = nil;
+        if (![SSRFValidator resolvePinnedAddressesForHost:url.host
+                                                  timeout:effective.timeout
+                                                resolver:nil
+                                                addresses:&pinnedAddresses
+                                                    error:&resolutionError]) {
+            completion(nil, nil, [[self class] errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
+                                                  description:@"Outbound request target failed SSRF validation"
+                                              underlyingError:resolutionError]);
+            return;
+        }
+    }
     NSTimeInterval timeout = effective.timeout;
     NSUInteger maxBytes = effective.maxResponseBytes;
     NSData *postBody = request.HTTPBody;
@@ -264,6 +296,23 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)MIN(timeout, 10.0));
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
         curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
+
+        struct curl_slist *resolveEntries = NULL;
+        if (pinnedAddresses.count > 0) {
+            NSInteger port = url.port.integerValue;
+            if (port == 0) {
+                port = [[url.scheme lowercaseString] isEqualToString:@"https"] ? 443 : 80;
+            }
+            for (NSString *address in pinnedAddresses) {
+                NSString *numericAddress = [address containsString:@":"]
+                    ? [NSString stringWithFormat:@"[%@]", address]
+                    : address;
+                NSString *entry = [NSString stringWithFormat:@"%@:%ld:%@",
+                                   url.host, (long)port, numericAddress];
+                resolveEntries = curl_slist_append(resolveEntries, entry.UTF8String);
+            }
+            curl_easy_setopt(curl, CURLOPT_RESOLVE, resolveEntries);
+        }
 
         struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, "Connection: close");
@@ -295,12 +344,9 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-        if (followRedirects) {
-            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-            curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);
-        } else {
-            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 0L);
-        }
+        // Redirects are executed one hop at a time below. Letting curl follow
+        // them internally would bypass validation and pinning for the target.
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 0L);
 
         PDSCurlWriteContext writeCtx = {
             .bodyData = [NSMutableData data],
@@ -366,6 +412,7 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         // closes ALL connections in the multi handle's cache.
         curl_multi_remove_handle(multi, curl);
         curl_slist_free_all(headers);
+        curl_slist_free_all(resolveEntries);
         curl_easy_cleanup(curl);
         curl_multi_cleanup(multi);
 
@@ -376,6 +423,31 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
         if (redirectBlockError) {
             completion(nil, nil, redirectBlockError);
+            return;
+        }
+
+        NSString *location = headerCtx.headers[@"Location"] ?: headerCtx.headers[@"location"];
+        if (followRedirects && httpCode >= 300 && httpCode < 400 && location.length > 0) {
+            if (redirectCount >= 5) {
+                completion(nil, nil, [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
+                                                      description:@"Too many outbound redirects"
+                                                  underlyingError:nil]);
+                return;
+            }
+            NSURL *target = [[NSURL URLWithString:location relativeToURL:url] absoluteURL];
+            NSError *redirectError = nil;
+            if (!target || ![[self class] validateURL:target options:opts error:&redirectError]) {
+                completion(nil, nil, [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
+                                                      description:@"Redirect target failed SSRF validation"
+                                                  underlyingError:redirectError]);
+                return;
+            }
+            NSMutableURLRequest *redirectRequest = [request mutableCopy];
+            redirectRequest.URL = target;
+            [self performSafeDataTaskWithRequest:redirectRequest
+                                          options:opts
+                                     redirectCount:redirectCount + 1
+                                       completion:completion];
             return;
         }
 
@@ -441,7 +513,162 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
 @end
 
-#else // Apple platforms — use NSURLSession
+#else // Apple platforms — NSURLSession for loopback and pinned NWConnection otherwise
+
+@interface PDSPinnedHTTPTransport : NSObject
++ (void)performRequest:(NSURLRequest *)request
+       pinnedAddresses:(NSArray<NSString *> *)pinnedAddresses
+               timeout:(NSTimeInterval)timeout
+            completion:(void (^)(NSData * _Nullable, NSHTTPURLResponse * _Nullable, NSError * _Nullable))completion;
++ (void)performRequest:(NSURLRequest *)request
+       pinnedAddresses:(NSArray<NSString *> *)pinnedAddresses
+          addressIndex:(NSUInteger)addressIndex
+               timeout:(NSTimeInterval)timeout
+            completion:(void (^)(NSData * _Nullable, NSHTTPURLResponse * _Nullable, NSError * _Nullable))completion;
+@end
+
+@implementation PDSPinnedHTTPTransport
+
++ (NSError *)connectionError:(NSString *)description {
+    return [NSError errorWithDomain:NSURLErrorDomain
+                               code:NSURLErrorCannotConnectToHost
+                           userInfo:@{NSLocalizedDescriptionKey: description}];
+}
+
++ (void)performRequest:(NSURLRequest *)request
+       pinnedAddresses:(NSArray<NSString *> *)pinnedAddresses
+               timeout:(NSTimeInterval)timeout
+            completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
+    [self performRequest:request pinnedAddresses:pinnedAddresses addressIndex:0 timeout:timeout completion:completion];
+}
+
++ (void)performRequest:(NSURLRequest *)request
+       pinnedAddresses:(NSArray<NSString *> *)pinnedAddresses
+          addressIndex:(NSUInteger)addressIndex
+               timeout:(NSTimeInterval)timeout
+            completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
+    NSURL *url = request.URL;
+    NSString *address = addressIndex < pinnedAddresses.count ? pinnedAddresses[addressIndex] : nil;
+    if (address.length == 0 || url.host.length == 0) {
+        completion(nil, nil, [self connectionError:@"No pinned address is available"]);
+        return;
+    }
+
+    NSInteger port = url.port.integerValue;
+    if (port == 0) port = [[url.scheme lowercaseString] isEqualToString:@"https"] ? 443 : 80;
+    NSString *portString = [NSString stringWithFormat:@"%ld", (long)port];
+    BOOL secure = [[url.scheme lowercaseString] isEqualToString:@"https"];
+    nw_parameters_t parameters = secure
+        ? nw_parameters_create_secure_tcp(^(nw_protocol_options_t tlsOptions) {
+            sec_protocol_options_t tls = nw_tls_copy_sec_protocol_options(tlsOptions);
+            sec_protocol_options_set_tls_server_name(tls, url.host.UTF8String);
+        }, NW_PARAMETERS_DEFAULT_CONFIGURATION)
+        : nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+
+    nw_endpoint_t endpoint = nw_endpoint_create_host(address.UTF8String, portString.UTF8String);
+    nw_connection_t connection = nw_connection_create(endpoint, parameters);
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    __block BOOL finished = NO;
+    void (^finish)(NSData *, NSHTTPURLResponse *, NSError *) = ^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
+        if (finished) return;
+        finished = YES;
+        nw_connection_cancel(connection);
+        if (error && addressIndex + 1 < pinnedAddresses.count) {
+            [self performRequest:request
+                 pinnedAddresses:pinnedAddresses
+                    addressIndex:addressIndex + 1
+                         timeout:timeout
+                      completion:completion];
+            return;
+        }
+        completion(data, response, error);
+    };
+
+    NSMutableString *path = [url.path mutableCopy] ?: [@"/" mutableCopy];
+    if (path.length == 0) [path appendString:@"/"];
+    if (url.query.length > 0) [path appendFormat:@"?%@", url.query];
+    NSMutableString *wire = [NSMutableString stringWithFormat:@"%@ %@ HTTP/1.1\r\nHost: %@\r\nConnection: close\r\n",
+                             request.HTTPMethod ?: @"GET", path, url.host];
+    for (NSString *field in request.allHTTPHeaderFields) {
+        if ([field caseInsensitiveCompare:@"Host"] == NSOrderedSame ||
+            [field caseInsensitiveCompare:@"Connection"] == NSOrderedSame) continue;
+        [wire appendFormat:@"%@: %@\r\n", field, request.allHTTPHeaderFields[field]];
+    }
+    NSData *body = request.HTTPBody;
+    if (body.length > 0 && ![request valueForHTTPHeaderField:@"Content-Length"]) {
+        [wire appendFormat:@"Content-Length: %lu\r\n", (unsigned long)body.length];
+    }
+    [wire appendString:@"\r\n"];
+    NSMutableData *outbound = [[wire dataUsingEncoding:NSUTF8StringEncoding] mutableCopy];
+    if (body.length > 0) [outbound appendData:body];
+
+    nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t state, nw_error_t nwError) {
+        if (state == nw_connection_state_failed) {
+            NSError *error = nwError ? (__bridge_transfer NSError *)nw_error_copy_cf_error(nwError) : [self connectionError:@"Pinned connection failed"];
+            finish(nil, nil, error);
+            return;
+        }
+        if (state != nw_connection_state_ready) return;
+        dispatch_data_t message = dispatch_data_create(outbound.bytes, outbound.length, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        nw_connection_send(connection, message, _nw_content_context_default_message, true, ^(nw_error_t sendError) {
+            if (sendError) {
+                finish(nil, nil, (__bridge_transfer NSError *)nw_error_copy_cf_error(sendError));
+                return;
+            }
+            NSMutableData *received = [NSMutableData data];
+            __block void (^receiveNext)(void);
+            __weak void (^weakReceiveNext)(void);
+            receiveNext = ^{
+                nw_connection_receive(connection, 1, 64 * 1024, ^(dispatch_data_t content, nw_content_context_t context, bool complete, nw_error_t receiveError) {
+                    if (content) {
+                        dispatch_data_apply(content, ^bool(dispatch_data_t region, size_t offset, const void *buffer, size_t size) {
+                            [received appendBytes:buffer length:size];
+                            return true;
+                        });
+                    }
+                    if (receiveError) {
+                        finish(nil, nil, (__bridge_transfer NSError *)nw_error_copy_cf_error(receiveError));
+                        return;
+                    }
+                    if (!complete) {
+                        void (^next)(void) = weakReceiveNext;
+                        if (next) next();
+                        return;
+                    }
+                    NSRange separator = [received rangeOfData:[@"\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding]
+                                                       options:0 range:NSMakeRange(0, received.length)];
+                    if (separator.location == NSNotFound) {
+                        finish(nil, nil, [self connectionError:@"Pinned server returned malformed HTTP"]);
+                        return;
+                    }
+                    NSData *headerData = [received subdataWithRange:NSMakeRange(0, separator.location)];
+                    NSString *headerText = [[NSString alloc] initWithData:headerData encoding:NSISOLatin1StringEncoding];
+                    NSArray<NSString *> *lines = [headerText componentsSeparatedByString:@"\r\n"];
+                    NSInteger status = lines.count > 0 ? [[[lines[0] componentsSeparatedByString:@" "] lastObject] integerValue] : 0;
+                    NSMutableDictionary *headers = [NSMutableDictionary dictionary];
+                    for (NSUInteger i = 1; i < lines.count; i++) {
+                        NSRange colon = [lines[i] rangeOfString:@":"];
+                        if (colon.location != NSNotFound) {
+                            headers[[lines[i] substringToIndex:colon.location]] = [[lines[i] substringFromIndex:colon.location + 1] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+                        }
+                    }
+                    NSData *responseBody = [received subdataWithRange:NSMakeRange(separator.location + separator.length, received.length - separator.location - separator.length)];
+                    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:url statusCode:status HTTPVersion:@"HTTP/1.1" headerFields:headers];
+                    finish(responseBody, response, nil);
+                });
+            };
+            weakReceiveNext = receiveNext;
+            receiveNext();
+        });
+    });
+    nw_connection_set_queue(connection, queue);
+    nw_connection_start(connection);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)), queue, ^{
+        if (!finished) finish(nil, nil, [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorTimedOut userInfo:nil]);
+    });
+}
+
+@end
 
 @interface ATProtoSafeHTTPClient () <NSURLSessionTaskDelegate>
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSError *> *redirectErrors;
@@ -514,7 +741,7 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     }
 
     NSString *host = url.host.lowercaseString;
-    BOOL isLoopback = [host isEqualToString:@"127.0.0.1"] || [host isEqualToString:@"localhost"] || [host isEqualToString:@"::1"];
+    BOOL isLoopback = PDSIsLoopbackHost(host);
 
     if (!isLoopback) {
         NSString *scheme = url.scheme.lowercaseString;
@@ -537,17 +764,17 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
             return NO;
         }
 
-    BOOL allowPrivate = effective.allowPrivateHosts;
-    if (!allowPrivate) {
-        NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
-        if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
-            allowPrivate = YES;
+        BOOL allowPrivate = effective.allowPrivateHosts;
+        if (!allowPrivate) {
+            NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
+            if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
+                allowPrivate = YES;
+            }
         }
-    }
 
-    if (!allowPrivate) {
-        NSError *ssrfError = nil;
-        if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+        if (!allowPrivate) {
+            NSError *ssrfError = nil;
+            if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
                 if (error) {
                     *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
                                      description:@"Outbound request target failed SSRF validation"
@@ -564,6 +791,13 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 - (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
                     options:(ATProtoSafeHTTPClientOptions *)options
                  completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
+    [self performSafeDataTaskWithRequest:request options:options redirectCount:0 completion:completion];
+}
+
+- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
+                    options:(ATProtoSafeHTTPClientOptions *)options
+                 redirectCount:(NSUInteger)redirectCount
+                 completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
     if (!completion) {
         return;
     }
@@ -571,6 +805,62 @@ NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     NSError *validationError = nil;
     if (![[self class] validateURL:request.URL options:effective error:&validationError]) {
         completion(nil, nil, validationError);
+        return;
+    }
+
+    if (!PDSIsLoopbackHost(request.URL.host) && !effective.allowPrivateHosts) {
+        NSArray<NSString *> *pinnedAddresses = nil;
+        NSError *resolutionError = nil;
+        if (![SSRFValidator resolvePinnedAddressesForHost:request.URL.host
+                                                  timeout:effective.timeout
+                                                resolver:nil
+                                                addresses:&pinnedAddresses
+                                                    error:&resolutionError]) {
+            completion(nil, nil, [[self class] errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
+                                                  description:@"Outbound request target failed SSRF validation"
+                                              underlyingError:resolutionError]);
+            return;
+        }
+        [PDSPinnedHTTPTransport performRequest:request
+                               pinnedAddresses:pinnedAddresses
+                                       timeout:effective.timeout
+                                    completion:^(NSData *data, NSHTTPURLResponse *response, NSError *transportError) {
+            if (transportError) {
+                completion(nil, response, transportError);
+                return;
+            }
+            if (effective.maxResponseBytes > 0 && data.length > effective.maxResponseBytes) {
+                completion(nil, response, [[self class] errorWithCode:ATProtoSafeHTTPClientErrorResponseTooLarge
+                                                           description:@"Outbound response exceeded size limit"
+                                                       underlyingError:nil]);
+                return;
+            }
+            NSString *location = response.allHeaderFields[@"Location"] ?: response.allHeaderFields[@"location"];
+            if (effective.followRedirects && response.statusCode >= 300 && response.statusCode < 400 && location.length > 0) {
+                if (redirectCount >= 5) {
+                    completion(nil, response, [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
+                                                               description:@"Too many outbound redirects"
+                                                           underlyingError:nil]);
+                    return;
+                }
+                NSURL *target = [[NSURL URLWithString:location relativeToURL:request.URL] absoluteURL];
+                NSError *redirectError = nil;
+                if (!target || ![[self class] validateURL:target options:effective error:&redirectError]) {
+                    completion(nil, response, [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
+                                                               description:@"Redirect target failed SSRF validation"
+                                                           underlyingError:redirectError]);
+                    return;
+                }
+                NSMutableURLRequest *redirectRequest = [request mutableCopy];
+                redirectRequest.URL = target;
+                [self performSafeDataTaskWithRequest:redirectRequest
+                                              options:effective
+                                         redirectCount:redirectCount + 1
+                                           completion:completion];
+                return;
+            }
+            completion(data, response, nil);
+        }];
         return;
     }
 
