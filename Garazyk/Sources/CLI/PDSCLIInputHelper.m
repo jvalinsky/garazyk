@@ -80,6 +80,7 @@ static void PDSHandlePasswordPromptSignal(int signalNumber) {
     void (*oldINT)(int) = signal(SIGINT, PDSHandlePasswordPromptSignal);
     void (*oldTERM)(int) = signal(SIGTERM, PDSHandlePasswordPromptSignal);
     void (*oldHUP)(int) = signal(SIGHUP, PDSHandlePasswordPromptSignal);
+    void (*oldQUIT)(int) = signal(SIGQUIT, PDSHandlePasswordPromptSignal);
 
     char buffer[1024] = {0};
     char *result = fgets(buffer, sizeof(buffer), stdin);
@@ -88,6 +89,7 @@ static void PDSHandlePasswordPromptSignal(int signalNumber) {
     signal(SIGINT, oldINT);
     signal(SIGTERM, oldTERM);
     signal(SIGHUP, oldHUP);
+    signal(SIGQUIT, oldQUIT);
     printf("\n");
 
     if (result == NULL) {
