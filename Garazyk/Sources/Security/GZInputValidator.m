@@ -30,7 +30,7 @@ static const char kTIDBase32Alphabet[] = "234567abcdefghijklmnopqrstuvwxyz";
     if (self) {
         NSError *error = nil;
         _nsidRegex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$" options:0 error:&error];
-        _didRegex = [NSRegularExpression regularExpressionWithPattern:@"^did:(plc|web|key):[a-zA-Z0-9_-]+$" options:0 error:&error];
+        _didRegex = [NSRegularExpression regularExpressionWithPattern:@"^did:(plc|web|key):[a-zA-Z0-9_.%-]+$" options:0 error:&error];
         _handleRegex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$" options:0 error:&error];
         _atUriRegex = [NSRegularExpression regularExpressionWithPattern:@"^at://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)?)?$" options:0 error:&error];
 
