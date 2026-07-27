@@ -494,8 +494,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR IGNORE INTO ipld_blocks (cid, block, size, rev) VALUES (?, ?, ?, ?)";
-    return [self.database executeParameterizedUpdate:sql params:@[block.cid ?: [NSNull null], block.blockData ?: [NSNull null], @(block.size), block.rev ?: [NSNull null]] error:error];
+    // `did` feeds the account_usage block triggers; it must be written here
+    // because a block can be stored before the shard has any record row.
+    NSString *sql = @"INSERT OR IGNORE INTO ipld_blocks (cid, block, size, rev, did) VALUES (?, ?, ?, ?, ?)";
+    return [self.database executeParameterizedUpdate:sql params:@[block.cid ?: [NSNull null], block.blockData ?: [NSNull null], @(block.size), block.rev ?: [NSNull null], did ?: self.did ?: [NSNull null]] error:error];
 }
 
 - (BOOL)putBlocks:(NSArray<PDSDatabaseBlock *> *)blocks forDid:(NSString *)did error:(NSError **)error {

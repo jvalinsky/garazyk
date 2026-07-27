@@ -876,6 +876,25 @@ Sources: <https://atproto.com/specs/blob>,
   reproduce: BlobStorage 21, PDSMigrationManager 12, MSTDecoder 5,
   DatabasePool 18 — 56 tests, 0 failures.
 - ADR: [0013 Blob lifecycle conformance](../../adr/0013-blob-lifecycle-conformance.md).
+- **Follow-up (2026-07-27): block usage attribution corrected.** S9 recorded
+  the six `kPDSAccountUsage*` triggers as already correct and needing only
+  installation. Four were; the two block triggers were not. Their
+  `(SELECT did FROM records LIMIT 1)` owner lookup is NULL for any block
+  written before the shard's first record — every account's initial commit —
+  and since SQLite treats NULL as distinct from NULL, `ON CONFLICT(did)` could
+  not merge the results, so each such block created its own orphan
+  `account_usage` row and the account's `repo_bytes` was undercounted by the
+  stranded total. `ipld_blocks` now carries the owning `did` and migration V8
+  backfills it, reinstalls both triggers against `NEW.did`/`OLD.did`, drops the
+  orphans, and recomputes `repo_bytes` from `ipld_blocks`. Regression coverage:
+  `testBlockUsageAttributionMigrationRepairsOrphanedRepoBytes` and
+  `testBlockUsageAttributionMigrationRoundTripIsIdempotent`. See the 2026-07-27
+  amendment in ADR 0013.
+- **Merge-review fix (2026-07-27).** `PDSSQLiteRepositoryTests/testBlobListForDID`
+  asserted the pre-slice-6 listing contract and began failing once temporary
+  blobs were excluded from `listBlobs`. The fixture now marks its blobs
+  referenced, and `testBlobListForDIDExcludesTemporaryBlobs` pins the intended
+  exclusion directly.
 
 ### Phase 16 completion evidence (2026-07-27)
 

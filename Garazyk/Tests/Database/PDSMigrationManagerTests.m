@@ -641,4 +641,118 @@ static NSString *PDSMigrationTestHexLiteral(NSData *data) {
     sqlite3_close(db);
 }
 
+// Builds a pre-V8 actor-store shard carrying the defect this migration fixes:
+// blocks written before the shard's first record row, attributed by the old
+// `(SELECT did FROM records LIMIT 1)` triggers and therefore landing on
+// NULL-keyed orphan rows.
+- (sqlite3 *)pds_openShardWithOrphanedBlockUsageForDID:(NSString *)did
+                                          blockSizes:(NSArray<NSNumber *> *)preRecordSizes {
+    sqlite3 *db = NULL;
+    XCTAssertEqual(SQLITE_OK, sqlite3_open(":memory:", &db));
+    PDSMigrationTestExecute(db, "CREATE TABLE _migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at REAL NOT NULL)");
+    for (NSInteger version = 1; version <= 7; version++) {
+        NSString *sql = [NSString stringWithFormat:@"INSERT INTO _migrations VALUES (%ld, 'seed', 0)", (long)version];
+        PDSMigrationTestExecute(db, sql.UTF8String);
+    }
+    PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, did TEXT NOT NULL, value BLOB)");
+    PDSMigrationTestExecute(db, "CREATE TABLE ipld_blocks (cid BLOB PRIMARY KEY, block BLOB NOT NULL, size INTEGER NOT NULL, rev TEXT)");
+    PDSMigrationTestExecute(db, "CREATE TABLE rotation_keys (did TEXT PRIMARY KEY)");
+    PDSMigrationTestExecute(db, "CREATE TABLE signing_keys (did TEXT PRIMARY KEY)");
+    PDSMigrationTestExecute(db, kPDSAccountUsageTableCreateSQL.UTF8String);
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO rotation_keys VALUES ('%@')", did].UTF8String);
+    PDSMigrationTestExecute(db, [NSString stringWithFormat:@"INSERT INTO signing_keys VALUES ('%@')", did].UTF8String);
+
+    // The pre-V8 block triggers, verbatim.
+    PDSMigrationTestExecute(db,
+        "CREATE TRIGGER trg_account_usage_block_insert AFTER INSERT ON ipld_blocks BEGIN "
+        "INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+        "VALUES ((SELECT did FROM records LIMIT 1), 0, 0, NEW.size, 0, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+        "ON CONFLICT(did) DO UPDATE SET repo_bytes = repo_bytes + NEW.size, "
+        "updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'); END");
+
+    // Repo init: commit blocks land before any record exists.
+    NSInteger cidByte = 1;
+    for (NSNumber *size in preRecordSizes) {
+        PDSMigrationTestExecute(db, [NSString stringWithFormat:
+            @"INSERT INTO ipld_blocks VALUES (X'%02lx', X'DEAD', %@, 'rev%ld')",
+            (unsigned long)cidByte, size, (long)cidByte].UTF8String);
+        cidByte++;
+    }
+    return db;
+}
+
+// Regression: block bytes written before the shard's first record were
+// attributed to a NULL did. Because SQLite treats NULL as distinct from NULL,
+// ON CONFLICT(did) could not merge them, so each such block produced its own
+// orphan account_usage row and the real account's repo_bytes was short by
+// exactly those bytes. V8 adds ipld_blocks.did, reinstalls the triggers
+// against it, and recomputes repo_bytes from the blocks themselves.
+- (void)testBlockUsageAttributionMigrationRepairsOrphanedRepoBytes {
+    NSString *did = @"did:plc:alice";
+    // 500 + 250 written at repo init, before any record row.
+    sqlite3 *db = [self pds_openShardWithOrphanedBlockUsageForDID:did
+                                                      blockSizes:@[@500, @250]];
+
+    // Precondition: the defect is present — orphan rows, nothing on the account.
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:@"SELECT COUNT(*) FROM account_usage WHERE did IS NULL"], @"2",
+                          @"each pre-record block should have produced its own NULL-keyed orphan row");
+    NSString *ownerUsageQuery = [NSString stringWithFormat:@"SELECT repo_bytes FROM account_usage WHERE did = '%@'", did];
+    XCTAssertNil([self pds_columnTextFromTable:db sql:ownerUsageQuery],
+                 @"the real account should have no usage row yet");
+
+    PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
+    NSError *error = nil;
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+
+    // Orphans folded away and the bytes attributed to the real account.
+    NSString *orphanCountQuery = @"SELECT COUNT(*) FROM account_usage WHERE did IS NULL";
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:orphanCountQuery], @"0");
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:ownerUsageQuery], @"750");
+
+    // Existing blocks carry the owning DID.
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:@"SELECT COUNT(*) FROM ipld_blocks WHERE did IS NULL"], @"0");
+    XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_ipld_blocks_did"));
+
+    // And live accounting now attributes correctly with no record row present.
+    NSString *insertBlockSQL = [NSString stringWithFormat:
+        @"INSERT INTO ipld_blocks (cid, block, size, rev, did) VALUES (X'AA', X'BEEF', 120, 'rev9', '%@')", did];
+    PDSMigrationTestExecute(db, insertBlockSQL.UTF8String);
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:ownerUsageQuery], @"870");
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:orphanCountQuery], @"0",
+                          @"a block written with no record row must no longer create an orphan");
+
+    // Deleting it decrements the same account.
+    PDSMigrationTestExecute(db, "DELETE FROM ipld_blocks WHERE cid = X'AA'");
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:ownerUsageQuery], @"750");
+
+    sqlite3_close(db);
+}
+
+// The repair recomputes rather than accumulates, so re-running it is safe.
+- (void)testBlockUsageAttributionMigrationRoundTripIsIdempotent {
+    NSString *did = @"did:plc:alice";
+    sqlite3 *db = [self pds_openShardWithOrphanedBlockUsageForDID:did
+                                                      blockSizes:@[@500, @250]];
+
+    NSString *ownerUsageQuery = [NSString stringWithFormat:@"SELECT repo_bytes FROM account_usage WHERE did = '%@'", did];
+
+    PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
+    NSError *error = nil;
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:ownerUsageQuery], @"750");
+
+    // Roll back to V7: the old trigger definitions return.
+    XCTAssertTrue([manager rollbackToVersion:db version:7 error:&error], @"%@", error);
+    NSString *rolledBackTrigger = PDSMigrationTestObjectSQL(db, "trigger", "trg_account_usage_block_insert");
+    XCTAssertNotEqual([rolledBackTrigger rangeOfString:@"SELECT did FROM records"].location, NSNotFound);
+
+    // Re-apply: repo_bytes lands on the same total, not double-counted.
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertEqualObjects([self pds_columnTextFromTable:db sql:ownerUsageQuery], @"750");
+    NSString *reappliedTrigger = PDSMigrationTestObjectSQL(db, "trigger", "trg_account_usage_block_insert");
+    XCTAssertNotEqual([reappliedTrigger rangeOfString:@"NEW.did"].location, NSNotFound);
+
+    sqlite3_close(db);
+}
+
 @end
