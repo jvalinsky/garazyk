@@ -1,7 +1,7 @@
 ---
 phase: 17
 title: WebSocket RFC conformance and HTTP framing
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
 ---
@@ -14,6 +14,10 @@ Recovery started 2026-07-27: four isolated implementation commits were
 rebased onto current `main`. The recovered work is being reread and verified
 against S10, the named RFC sections, registered XCTest execution, and the
 four firehose regression scenarios before it can be marked complete.
+
+Completed 2026-07-27. The recovered slices, adapter close behavior, targeted
+XCTest suites, structured scenarios, and global Deno/native gates passed.
+Commit and run evidence is recorded in workstream 01 § S10.
 
 ## Mission
 
