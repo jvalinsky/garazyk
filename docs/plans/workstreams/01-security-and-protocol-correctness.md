@@ -1293,14 +1293,10 @@ regression seed.
 `Garazyk/Tests/fixtures/cbor/cbor_bytestring_length_overflow.bin` as the
 permanent regression seed (`fuzzing/corpus/` itself is CI-cache-only and
 gitignored, so it cannot hold a durable seed). Golden CAR/STAR/MST/Interop
-fixtures verified byte-identical (164 tests, 0 failures). `deno task check`
-and `deno task test` pass; `deno task lint` has 6 pre-existing failures in
-`packages/gruszka/scripts/generate_test.ts` (unused vars), reproduced on
-unmodified `main` — unrelated to this phase and left untouched. The full
-`AllTests` binary has 18 pre-existing failures in `Network/AdminAuthSyncTests.m`
-(`applyWrites` returning 400) that reproduce identically with this phase's
-`Core/` changes reverted (confirmed via `git stash`) — outside this phase's
-owner boundary (`Network/`, not `Core/`) and not caused by it.
+fixtures verified byte-identical (164 tests, 0 failures). The global gates
+were subsequently rerun after phase 20: `deno task check`, `deno task lint`,
+`deno task test`, and the full `AllTests` binary all pass. The obsolete unused
+test helper that had blocked lint was removed in `296d00a1`.
 
 Phase 20's gate is behavioural: a secret written before the change is readable
 after migration; startup fails loudly when a store exists and no key is
@@ -1308,6 +1304,15 @@ supplied; `nuke-data` on a populated data directory leaves **zero** account
 databases and reports accurately when it cannot delete something; and no
 command path accepts a password in a way that lands in `ps` output without an
 explicit warning.
+
+**Phase 20 gate result (2026-07-27):** `SecItemLinuxStoreTests` passed in the
+Linux Docker build (10 tests, including plaintext migration, encrypted
+round-trip, and no-recognisable-plaintext checks). The scratch-only
+`PDSCLINukeCommandTests` cover recursive removal and a permission-denied
+failure. Account and admin CLI suites pass with environment-password input and
+legacy-argv warnings. The full global gate passes: `deno task check`, `deno
+task lint`, `deno task test`, `cmake --build build --target AllTests --parallel
+4`, and `./build/tests/AllTests`.
 
 New suites need registration in `Garazyk/Tests/test_main.m` plus a cmake
 reconfigure, then the mega-plan global gates with bounded `--parallel 4`. Run
