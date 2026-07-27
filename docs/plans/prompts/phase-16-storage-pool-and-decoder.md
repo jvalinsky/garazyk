@@ -1,12 +1,23 @@
 ---
 phase: 16
 title: Storage pool and MST decoder correctness
-status: pending
+status: in-progress
 agent: worker
 depends_on: []
 ---
 
 # Phase 16: Storage pool and MST decoder correctness
+
+## Progress
+
+Started 2026-07-27 in worktree `../garazyk-storage` after Phase 15 completed.
+Beginning the required read-first pass for pool enumeration, eviction, and MST
+decode correctness before implementing slice 1.
+
+Completed slice 7: pool enumeration now always walks the on-disk actor layout
+rather than treating its open-store cache as a complete inventory. The
+regression test seeds three actor databases, opens only one in a fresh pool,
+and verifies account and repository enumeration returns all three.
 
 ## Mission
 

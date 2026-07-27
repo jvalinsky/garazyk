@@ -181,6 +181,43 @@
     XCTAssertEqualObjects(fetched.handle, @"account.test");
 }
 
+- (void)testEnumerationIncludesEveryOnDiskActorAfterOpeningOneStore {
+    NSArray<NSString *> *dids = @[
+        @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa",
+        @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb",
+        @"did:plc:cccccccccccccccccccccccc"
+    ];
+    PDSDatabasePool *seedPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:10];
+    for (NSString *did in dids) {
+        PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+        account.did = did;
+        account.handle = [NSString stringWithFormat:@"%@.test", [did substringFromIndex:8]];
+        account.createdAt = NSDate.date.timeIntervalSince1970;
+        account.updatedAt = account.createdAt;
+        PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];
+        repo.ownerDid = did;
+        repo.rootCid = [NSData data];
+        repo.createdAt = NSDate.date;
+        repo.updatedAt = repo.createdAt;
+        NSError *error = nil;
+        [seedPool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+            XCTAssertTrue([transactor createAccount:account error:innerError], @"%@", *innerError);
+            XCTAssertTrue([transactor createRepo:repo error:innerError], @"%@", *innerError);
+        } error:&error];
+        XCTAssertNil(error, @"%@", error);
+    }
+    [seedPool closeAll];
+
+    XCTAssertNotNil([self.pool storeForDid:dids.firstObject error:nil]);
+    NSError *error = nil;
+    NSArray<PDSDatabaseAccount *> *accounts = [self.pool getAllAccountsWithError:&error];
+    XCTAssertNil(error, @"%@", error);
+    XCTAssertEqual(accounts.count, dids.count);
+    NSArray<PDSDatabaseRepo *> *repos = [self.pool getAllReposWithError:&error];
+    XCTAssertNil(error, @"%@", error);
+    XCTAssertEqual(repos.count, dids.count);
+}
+
 - (void)testMetricsCollection {
     __autoreleasing NSError *error = nil;
     
