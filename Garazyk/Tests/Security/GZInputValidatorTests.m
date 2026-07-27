@@ -62,8 +62,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testCIDCollectionAndRepoValidation {
     XCTAssertTrue([self.validator isValidCID:@"bafybeigdyrztxqzjz"]);
+    XCTAssertTrue([self.validator isValidCID:@"bafybeigdyrztxqzj2"]);
     XCTAssertFalse([self.validator isValidCID:@"zafybeigdyrztx3f4z3q4w2j2qk4m6j2z7y7qzj7jz5h3z2w4z6a7b8c9d"]);
     XCTAssertFalse([self.validator isValidCID:@"bshort"]);
+    XCTAssertFalse([self.validator isValidCID:@"bafybeigdyrztxqzj\u0132"],
+                   @"A non-ASCII code point must not alias a valid base32 character");
 
     XCTAssertTrue([self.validator isValidCollectionName:@"com.atproto.server"]);
     XCTAssertFalse([self.validator isValidCollectionName:@"not-a-nsid"]);
