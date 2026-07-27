@@ -332,7 +332,16 @@ static const NSUInteger kMaxVarintSize = 9;
     }
     const uint8_t *bytes = data.bytes;
     NSUInteger length = data.length;
-    NSMutableString *result = [NSMutableString stringWithCapacity:((length * 8) + 4) / 5];
+    // ceil(length * 8 / 5) output characters; build into a C buffer and
+    // construct the NSString once instead of parsing a format string per
+    // character via -appendFormat: (CID.stringValue runs for every block
+    // touched by MST, CAR, and block storage).
+    NSUInteger capacity = ((length * 8) + 4) / 5;
+    char *buf = malloc(capacity);
+    if (!buf) {
+        return nil;
+    }
+    NSUInteger outLength = 0;
     uint64_t buffer = 0;
     int bitsLeft = 0;
     for (NSUInteger i = 0; i < length; i++) {
@@ -340,15 +349,19 @@ static const NSUInteger kMaxVarintSize = 9;
         bitsLeft += 8;
         while (bitsLeft >= 5) {
             int shift = bitsLeft - 5;
-            [result appendFormat:@"%c", kBase32Alphabet[(buffer >> shift) & 0x1F]];
+            buf[outLength++] = kBase32Alphabet[(buffer >> shift) & 0x1F];
             bitsLeft -= 5;
         }
         buffer &= ((1ULL << bitsLeft) - 1);
     }
     if (bitsLeft > 0) {
-        [result appendFormat:@"%c", kBase32Alphabet[(buffer << (5 - bitsLeft)) & 0x1F]];
+        buf[outLength++] = kBase32Alphabet[(buffer << (5 - bitsLeft)) & 0x1F];
     }
-    return [result copy];
+    NSString *result = [[NSString alloc] initWithBytesNoCopy:buf
+                                                        length:outLength
+                                                      encoding:NSASCIIStringEncoding
+                                                  freeWhenDone:YES];
+    return result;
 }
 
 + (NSData *)base32Decode:(NSString *)string {
