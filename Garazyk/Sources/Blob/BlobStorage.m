@@ -7,6 +7,7 @@
 #import "Blob/MimeTypeValidator.h"
 #import "Core/CID.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSDatabaseBlob.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Network/HttpRequest.h"
@@ -120,6 +121,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     blob.mimeType = mimeType;
     blob.size = data.length;
     blob.createdAt = [NSDate date];
+    blob.state = PDSDatabaseBlobStateTemporary;
 
     __block BOOL success = NO;
     [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
