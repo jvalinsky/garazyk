@@ -143,7 +143,7 @@
     NSString *matchSql = @"SELECT DISTINCT did FROM contact_hashes WHERE phone_hash = ? AND did != ?";
     // This is simplified - real implementation uses private set intersection
 
-    NSMutableArray *matches = [NSMutableArray array];
+    NSMutableArray *matchPairs = [NSMutableArray array]; // pairs of [matchDid, contactIndex]
     NSInteger index = 0;
     for (NSString *hash in contactHashes) {
         NSString *findSql = @"SELECT DISTINCT ch.did FROM contact_hashes ch WHERE ch.phone_hash = ? AND ch.did != ?";
@@ -151,20 +151,31 @@
 
         for (NSDictionary *row in matchRows) {
             NSString *matchDid = row[@"did"];
-            NSDictionary *profile = nil;
-            if (_actorService) {
-                profile = [_actorService getProfileForActor:matchDid error:nil];
-            }
-            if (!profile) {
-                profile = @{@"did": matchDid, @"handle": @"handle.invalid"};
-            }
-
-            [matches addObject:@{
-                @"match": profile,
-                @"contactIndex": @(index)
-            }];
+            [matchPairs addObject:@[matchDid ?: @"", @(index)]];
         }
         index++;
+    }
+
+    NSMutableArray *distinctMatchDIDs = [NSMutableArray array];
+    for (NSArray *pair in matchPairs) {
+        NSString *matchDid = pair[0];
+        if (matchDid.length > 0 && ![distinctMatchDIDs containsObject:matchDid]) {
+            [distinctMatchDIDs addObject:matchDid];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *profilesByDID = (_actorService && distinctMatchDIDs.count > 0)
+        ? ([_actorService getProfilesByDIDForActors:distinctMatchDIDs error:nil] ?: @{})
+        : @{};
+
+    NSMutableArray *matches = [NSMutableArray arrayWithCapacity:matchPairs.count];
+    for (NSArray *pair in matchPairs) {
+        NSString *matchDid = pair[0];
+        NSNumber *contactIndex = pair[1];
+        NSDictionary *profile = profilesByDID[matchDid] ?: @{@"did": matchDid, @"handle": @"handle.invalid"};
+        [matches addObject:@{
+            @"match": profile,
+            @"contactIndex": contactIndex
+        }];
     }
 
     // Update sync status
@@ -184,16 +195,21 @@
 
     if (!rows) return nil;
 
+    NSMutableArray *distinctMatchDIDs = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSString *matchDid = row[@"match_did"];
+        if (matchDid && ![distinctMatchDIDs containsObject:matchDid]) {
+            [distinctMatchDIDs addObject:matchDid];
+        }
+    }
+    NSDictionary<NSString *, NSDictionary *> *profilesByDID = (_actorService && distinctMatchDIDs.count > 0)
+        ? ([_actorService getProfilesByDIDForActors:distinctMatchDIDs error:nil] ?: @{})
+        : @{};
+
     NSMutableArray *matches = [NSMutableArray array];
     for (NSDictionary *row in rows) {
         NSString *matchDid = row[@"match_did"];
-        NSDictionary *profile = nil;
-        if (_actorService) {
-            profile = [_actorService getProfileForActor:matchDid error:nil];
-        }
-        if (!profile) {
-            profile = @{@"did": matchDid, @"handle": @"handle.invalid"};
-        }
+        NSDictionary *profile = profilesByDID[matchDid] ?: @{@"did": matchDid, @"handle": @"handle.invalid"};
         [matches addObject:profile];
     }
 

@@ -57,6 +57,14 @@ static NSInteger PDSMigrationTestRowCount(sqlite3 *db, const char *tableName) {
     return count;
 }
 
+static NSInteger PDSMigrationTestInteger(sqlite3 *db, const char *sql) {
+    sqlite3_stmt *statement = NULL;
+    if (sqlite3_prepare_v2(db, sql, -1, &statement, NULL) != SQLITE_OK) return -1;
+    NSInteger value = sqlite3_step(statement) == SQLITE_ROW ? sqlite3_column_int64(statement, 0) : -1;
+    sqlite3_finalize(statement);
+    return value;
+}
+
 static BOOL PDSMigrationTestIndexExists(sqlite3 *db, const char *indexName) {
     sqlite3_stmt *statement = NULL;
     if (sqlite3_prepare_v2(db, "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?", -1, &statement, NULL) != SQLITE_OK) return NO;
@@ -290,15 +298,57 @@ static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, con
 
     PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
     NSError *error = nil;
-    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertTrue([manager migrateDatabase:db toVersion:5 error:&error], @"%@", error);
     XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_records_rev"));
     XCTAssertTrue(PDSMigrationTestQueryPlanUsesIndex(db,
         "SELECT rev FROM records WHERE rev IS NOT NULL ORDER BY rev DESC LIMIT 1", "idx_records_rev"));
     XCTAssertNotEqual([[[PDSSchemaManager sharedManager] actorStoreSchemaSQL] rangeOfString:@"idx_records_rev"].location, NSNotFound);
     XCTAssertTrue([manager rollbackToVersion:db version:4 error:&error], @"%@", error);
     XCTAssertFalse(PDSMigrationTestIndexExists(db, "idx_records_rev"));
-    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertTrue([manager migrateDatabase:db toVersion:5 error:&error], @"%@", error);
     XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_records_rev"));
+    sqlite3_close(db);
+}
+
+- (void)testAppViewActorCountsMigrationBackfillsUsesPrimaryKeyAndRoundTrips {
+    sqlite3 *db = NULL;
+    XCTAssertEqual(SQLITE_OK, sqlite3_open(":memory:", &db));
+    PDSMigrationTestExecute(db, "CREATE TABLE _migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at REAL NOT NULL)");
+    for (NSInteger version = 1; version <= 4; version++) {
+        NSString *sql = [NSString stringWithFormat:@"INSERT INTO _migrations VALUES (%ld, 'seed', 0)", (long)version];
+        PDSMigrationTestExecute(db, sql.UTF8String);
+    }
+    PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, did TEXT NOT NULL, collection TEXT NOT NULL, subject_did TEXT)");
+    PDSMigrationTestExecute(db, "INSERT INTO records VALUES ('at://did:plc:alice/app.bsky.graph.follow/one', 'did:plc:alice', 'app.bsky.graph.follow', 'did:plc:bob')");
+    PDSMigrationTestExecute(db, "INSERT INTO records VALUES ('at://did:plc:alice/app.bsky.feed.post/one', 'did:plc:alice', 'app.bsky.feed.post', NULL)");
+
+    PDSMigrationManager *manager = [PDSMigrationManager appViewDatabaseMigrationManager];
+    NSError *error = nil;
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertEqual([manager currentVersion:db], 5);
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "appview_actor_counts"), (NSInteger)2);
+    XCTAssertEqual(PDSMigrationTestInteger(db, "SELECT follows_count + posts_count FROM appview_actor_counts WHERE did = 'did:plc:alice'"), (NSInteger)2);
+    XCTAssertEqual(PDSMigrationTestInteger(db, "SELECT followers_count FROM appview_actor_counts WHERE did = 'did:plc:bob'"), (NSInteger)1);
+    XCTAssertTrue(PDSMigrationTestQueryPlanUsesIndex(
+        db,
+        "SELECT followers_count, follows_count, posts_count FROM appview_actor_counts WHERE did = 'did:plc:alice'",
+        "sqlite_autoindex_appview_actor_counts_1"));
+
+    PDSMigrationTestExecute(db, "INSERT OR REPLACE INTO records VALUES ('at://did:plc:alice/app.bsky.graph.follow/one', 'did:plc:alice', 'app.bsky.graph.follow', 'did:plc:carol')");
+    PDSMigrationTestExecute(db, "DELETE FROM records WHERE uri = 'at://did:plc:alice/app.bsky.feed.post/one'");
+    PDSMigrationTestExecute(db, "INSERT INTO records VALUES ('at://did:plc:alice/app.bsky.feed.post/two', 'did:plc:alice', 'app.bsky.feed.post', NULL)");
+
+    XCTAssertTrue([manager rollbackToVersion:db version:4 error:&error], @"%@", error);
+    XCTAssertNil(PDSMigrationTestTableSQL(db, "appview_actor_counts"));
+    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertEqual([manager currentVersion:db], 5);
+    XCTAssertEqual(PDSMigrationTestRowCount(db, "appview_actor_counts"), (NSInteger)2);
+    XCTAssertEqual(PDSMigrationTestInteger(db, "SELECT follows_count + posts_count FROM appview_actor_counts WHERE did = 'did:plc:alice'"), (NSInteger)2);
+    XCTAssertEqual(PDSMigrationTestInteger(db, "SELECT followers_count FROM appview_actor_counts WHERE did = 'did:plc:carol'"), (NSInteger)1);
+    XCTAssertTrue(PDSMigrationTestQueryPlanUsesIndex(
+        db,
+        "SELECT followers_count, follows_count, posts_count FROM appview_actor_counts WHERE did = 'did:plc:alice'",
+        "sqlite_autoindex_appview_actor_counts_1"));
     sqlite3_close(db);
 }
 

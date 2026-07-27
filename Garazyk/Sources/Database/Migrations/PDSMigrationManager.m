@@ -3236,6 +3236,47 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 @end
 
+#pragma mark - AppView V5 Actor Counts
+
+@interface AppViewV5ActorCounts : NSObject <PDSMigration>
+@end
+
+@implementation AppViewV5ActorCounts
+
+- (NSInteger)version { return 5; }
+- (NSString *)name { return @"appview_actor_counts"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *sql =
+        "CREATE TABLE IF NOT EXISTS appview_actor_counts (did TEXT PRIMARY KEY, followers_count INTEGER NOT NULL DEFAULT 0, follows_count INTEGER NOT NULL DEFAULT 0, posts_count INTEGER NOT NULL DEFAULT 0);"
+        "INSERT INTO appview_actor_counts (did, follows_count, posts_count) SELECT did, SUM(collection = 'app.bsky.graph.follow'), SUM(collection = 'app.bsky.feed.post') FROM records GROUP BY did ON CONFLICT(did) DO UPDATE SET follows_count = excluded.follows_count, posts_count = excluded.posts_count;"
+        "INSERT INTO appview_actor_counts (did, followers_count) SELECT subject_did, COUNT(*) FROM records WHERE collection = 'app.bsky.graph.follow' AND subject_did IS NOT NULL GROUP BY subject_did ON CONFLICT(did) DO UPDATE SET followers_count = excluded.followers_count;"
+        "CREATE TRIGGER IF NOT EXISTS trg_appview_actor_counts_replace BEFORE INSERT ON records BEGIN "
+        "UPDATE appview_actor_counts SET follows_count = MAX(follows_count - 1, 0) WHERE did = (SELECT did FROM records WHERE uri = NEW.uri) AND (SELECT collection FROM records WHERE uri = NEW.uri) = 'app.bsky.graph.follow';"
+        "UPDATE appview_actor_counts SET posts_count = MAX(posts_count - 1, 0) WHERE did = (SELECT did FROM records WHERE uri = NEW.uri) AND (SELECT collection FROM records WHERE uri = NEW.uri) = 'app.bsky.feed.post';"
+        "UPDATE appview_actor_counts SET followers_count = MAX(followers_count - 1, 0) WHERE did = (SELECT subject_did FROM records WHERE uri = NEW.uri) AND (SELECT collection FROM records WHERE uri = NEW.uri) = 'app.bsky.graph.follow'; END;"
+        "CREATE TRIGGER IF NOT EXISTS trg_appview_actor_counts_insert AFTER INSERT ON records BEGIN "
+        "INSERT INTO appview_actor_counts(did, follows_count, posts_count) VALUES(NEW.did, CASE WHEN NEW.collection = 'app.bsky.graph.follow' THEN 1 ELSE 0 END, CASE WHEN NEW.collection = 'app.bsky.feed.post' THEN 1 ELSE 0 END) ON CONFLICT(did) DO UPDATE SET follows_count = follows_count + excluded.follows_count, posts_count = posts_count + excluded.posts_count;"
+        "INSERT INTO appview_actor_counts(did, followers_count) SELECT NEW.subject_did, 1 WHERE NEW.collection = 'app.bsky.graph.follow' AND NEW.subject_did IS NOT NULL ON CONFLICT(did) DO UPDATE SET followers_count = followers_count + 1; END;"
+        "CREATE TRIGGER IF NOT EXISTS trg_appview_actor_counts_delete AFTER DELETE ON records BEGIN "
+        "UPDATE appview_actor_counts SET follows_count = MAX(follows_count - 1, 0) WHERE did = OLD.did AND OLD.collection = 'app.bsky.graph.follow';"
+        "UPDATE appview_actor_counts SET posts_count = MAX(posts_count - 1, 0) WHERE did = OLD.did AND OLD.collection = 'app.bsky.feed.post';"
+        "UPDATE appview_actor_counts SET followers_count = MAX(followers_count - 1, 0) WHERE did = OLD.subject_did AND OLD.collection = 'app.bsky.graph.follow'; END;";
+    char *message = NULL;
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &message);
+    if (rc == SQLITE_OK) return YES;
+    if (error) *error = [NSError errorWithDomain:PDSMigrationErrorDomain code:PDSMigrationErrorMigrationFailed userInfo:@{NSLocalizedDescriptionKey: message ? [NSString stringWithUTF8String:message] : @"AppView actor counts migration failed"}];
+    if (message) sqlite3_free(message);
+    return NO;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    const char *sql = "DROP TRIGGER IF EXISTS trg_appview_actor_counts_replace; DROP TRIGGER IF EXISTS trg_appview_actor_counts_insert; DROP TRIGGER IF EXISTS trg_appview_actor_counts_delete; DROP TABLE IF EXISTS appview_actor_counts;";
+    return sqlite3_exec(db, sql, NULL, NULL, NULL) == SQLITE_OK;
+}
+
+@end
+
 #pragma mark - Convenience Factory Methods
 
 @implementation PDSMigrationManager (Factory)
@@ -3286,6 +3327,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[AppViewV2ThreadgateURI alloc] init]];
     [manager registerMigration:[[AppViewV3PendingIndexEvents alloc] init]];
     [manager registerMigration:[[AppViewV4LegacySchemaBridge alloc] init]];
+    [manager registerMigration:[[AppViewV5ActorCounts alloc] init]];
     return manager;
 }
 
