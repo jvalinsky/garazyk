@@ -76,6 +76,7 @@
 @property (nonatomic, strong, readwrite, nullable) id<PDSEmailProvider> emailProvider;
 @property (nonatomic, strong, readwrite) id<PDSAdminController> adminController;
 @property (nonatomic, strong, readwrite) PDSBlobAuditManager *blobAuditManager;
+@property (nonatomic, strong) NSTimer *temporaryBlobSweepTimer;
 @property (nonatomic, strong, readwrite) PDSController *legacyController;
 @property (nonatomic, assign, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, assign) NSUInteger servicePoolSizeOverride;
@@ -603,6 +604,12 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     [_spaceReconciler start];
     [_spaceOplogPruner start];
     [_collectionMembershipPruner start];
+    [self runTemporaryBlobSweep:nil];
+    _temporaryBlobSweepTimer = [NSTimer scheduledTimerWithTimeInterval:60 * 60
+                                                                   target:self
+                                                                 selector:@selector(runTemporaryBlobSweep:)
+                                                                 userInfo:nil
+                                                                  repeats:YES];
 
     // Video worker
     if ([_configuration.videoMode isEqualToString:@"internal"]) {
@@ -636,6 +643,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     // Stop video processing worker
     [[ATProtoVideoWorker sharedWorker] stop];
+    [_temporaryBlobSweepTimer invalidate];
+    _temporaryBlobSweepTimer = nil;
 
     // Servers
     [_httpServer stop];
@@ -665,6 +674,13 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     _running = NO;
     GZ_LOG_CORE_INFO(@"PDSApplication stopped");
+}
+
+- (void)runTemporaryBlobSweep:(NSTimer *)timer {
+    NSString *jobId = [_blobAuditManager startAuditWithType:@"temporary" dryRun:NO];
+    if (!jobId) {
+        GZ_LOG_CORE_ERROR(@"Failed to start temporary blob sweep");
+    }
 }
 
 @end

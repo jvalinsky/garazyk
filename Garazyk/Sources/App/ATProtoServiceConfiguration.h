@@ -417,6 +417,9 @@ extern BOOL ATProtoServiceConfigRunningUnderTests(void);
 /*! @abstract Per-account blob-storage quota in bytes. Defaults to 10 GiB; set to 0 to disable the hard upload limit. */
 @property (nonatomic, readonly) unsigned long long blobStorageQuotaBytes;
 
+/*! @abstract Grace period before an unreferenced temporary blob is eligible for sweeping. Defaults to six hours and is clamped to at least one hour. */
+@property (nonatomic, readonly) NSTimeInterval blobTemporaryGracePeriodSeconds;
+
 /*! @abstract Whether per-account Prometheus labels are enabled (default: NO, high cardinality risk on large hosts). */
 @property (nonatomic, readonly) BOOL metricsPerAccountLabels;
 

@@ -122,6 +122,7 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
 @property (nonatomic, assign) NSUInteger softQuotaRecordCount;
 @property (nonatomic, assign) unsigned long long softQuotaRepoBytes;
 @property (nonatomic, assign) unsigned long long blobStorageQuotaBytes;
+@property (nonatomic, assign) NSTimeInterval blobTemporaryGracePeriodSeconds;
 @property (nonatomic, assign) BOOL metricsPerAccountLabels;
 @end
 
@@ -246,6 +247,7 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _softQuotaRecordCount = 0;
     _softQuotaRepoBytes = 0;
     _blobStorageQuotaBytes = 10ULL * 1024ULL * 1024ULL * 1024ULL;
+    _blobTemporaryGracePeriodSeconds = 6 * 60 * 60;
     _metricsPerAccountLabels = NO;
 
     _blobStorageType = @"disk"; // Default to disk storage
@@ -1078,6 +1080,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _softQuotaRepoBytes = [config[@"softQuotaRepoBytes"] unsignedLongLongValue];
   if ([self dictionary:config hasValueForKey:@"blobStorageQuotaBytes"])
     _blobStorageQuotaBytes = [config[@"blobStorageQuotaBytes"] unsignedLongLongValue];
+  if ([self dictionary:config hasValueForKey:@"blobTemporaryGracePeriodSeconds"])
+    _blobTemporaryGracePeriodSeconds = MAX(60 * 60, [config[@"blobTemporaryGracePeriodSeconds"] doubleValue]);
   if ([self dictionary:config hasValueForKey:@"metricsPerAccountLabels"])
     _metricsPerAccountLabels = [config[@"metricsPerAccountLabels"] boolValue];
 
@@ -1090,6 +1094,11 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
   unsigned long long envBlobStorageQuotaBytes = 0;
   if (ATProtoServiceConfigParseUnsignedLongLong(envBlobStorageQuota, &envBlobStorageQuotaBytes))
     _blobStorageQuotaBytes = envBlobStorageQuotaBytes;
+
+  NSString *envBlobTemporaryGrace = [self resolveEnvOverrideForKey:@"PDS_BLOB_TEMPORARY_GRACE_PERIOD_SECONDS" default:nil];
+  unsigned long long envBlobTemporaryGraceSeconds = 0;
+  if (ATProtoServiceConfigParseUnsignedLongLong(envBlobTemporaryGrace, &envBlobTemporaryGraceSeconds))
+    _blobTemporaryGracePeriodSeconds = MAX(60 * 60, (NSTimeInterval)envBlobTemporaryGraceSeconds);
 
   NSString *envVideoMode = [self resolveEnvOverrideForKey:@"PDS_VIDEO_MODE" default:nil];
   if (envVideoMode.length > 0)
