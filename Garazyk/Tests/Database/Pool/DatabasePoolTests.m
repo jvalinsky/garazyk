@@ -299,6 +299,33 @@
 }
 
 #ifndef GNUSTEP
+- (void)testEvictionSkipsActiveTransactionAndDoesNotBlockMetrics {
+    PDSDatabasePool *smallPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:1];
+    NSString *activeDID = @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa";
+    NSString *nextDID = @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb";
+    dispatch_semaphore_t started = dispatch_semaphore_create(0);
+    dispatch_semaphore_t release = dispatch_semaphore_create(0);
+    dispatch_group_t group = dispatch_group_create();
+    __block NSError *transactionError = nil;
+
+    dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        [smallPool transactWithDid:activeDID block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+            dispatch_semaphore_signal(started);
+            dispatch_semaphore_wait(release, DISPATCH_TIME_FOREVER);
+        } error:&transactionError];
+    });
+    XCTAssertEqual(dispatch_semaphore_wait(started, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)), 0);
+
+    [smallPool evictStoreForDid:activeDID];
+    XCTAssertNotNil([smallPool storeForDid:nextDID error:nil]);
+    XCTAssertNotNil([smallPool collectMetrics], @"Pool queue must remain responsive during an active transaction");
+
+    dispatch_semaphore_signal(release);
+    XCTAssertEqual(dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)), 0);
+    XCTAssertNil(transactionError, @"Eviction must not close the active store: %@", transactionError);
+    [smallPool closeAll];
+}
+
 - (void)testConcurrentAccessPatternsReturnsExpectedStoreCount {
     XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Concurrent access"];
 
