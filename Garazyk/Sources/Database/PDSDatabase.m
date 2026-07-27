@@ -247,6 +247,10 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 - (sqlite3_stmt *)preparedStatementForQuery:(NSString *)query {
     __block sqlite3_stmt *stmt = NULL;
     [self safeExecuteSync:^{
+        if (!self.isOpen || !_db) {
+            stmt = NULL;
+            return;
+        }
         NSValue *stmtValue = self.statementCache[query];
         if (stmtValue) {
             stmt = [stmtValue pointerValue];
@@ -281,6 +285,11 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 - (BOOL)prepareStatement:(sqlite3_stmt **)stmt sql:(NSString *)sql error:(NSError **)error {
     __block BOOL result = NO;
     [self safeExecuteSync:^{
+        if (!self.isOpen || !_db) {
+            if (error) *error = [self errorWithMessage:"Database is not open" code:PDSDatabaseErrorNotOpen];
+            result = NO;
+            return;
+        }
 
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, stmt, NULL);
     if (rc != SQLITE_OK) {
