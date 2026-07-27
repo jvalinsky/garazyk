@@ -569,3 +569,217 @@ deterministically. Slice A changes emitted bytes, but STAR is negotiated
 only via Garazyk's vendor MIME types with no known external consumer.
 
 Primary source: https://tangled.org/microcosm.blue/star
+
+## S8. Untyped JSON at auth trust boundaries
+
+**Status: not started (identified 2026-07-26).** A review of Auth, Security,
+PLC, and Identity found one defect class repeated at every trust boundary that
+parses attacker-supplied JSON: values are read out of an `NSDictionary` and
+assigned to typed properties or sent typed messages without an
+`isKindOfClass:` check. Because `NSDictionary` and `NSArray` implement
+`-copyWithZone:`, assignment into a `copy` `NSString *` property succeeds and
+stores the wrong class; the failure surfaces later as an unrecognized selector,
+which is an uncaught `NSInvalidArgumentException` and therefore process abort.
+
+Confirmed by harness, not by reading alone: assigning `@{@"x":@1}` to a
+`copy NSString *` property yields `NSConstantDictionary`, and the subsequent
+`-hasPrefix:` raises `NSInvalidArgumentException`.
+
+The same review found a second, unrelated class: several security components
+exist but are never constructed, so their defects are latent while their
+presence implies coverage that does not exist.
+
+### Evidence
+
+Live, reachable from unauthenticated request handling:
+
+- `Auth/JWT.m:38-90` — `headerFromDictionary:` and `payloadFromDictionary:`
+  assign every claim unchecked. Consumers inherit the untyped value:
+  `Chat/Server/ChatAuthManager.m:87` (`typ` → `isEqualToString:`) and
+  `:108` (`aud` → `-length`), both before any signature check. The `aud` case
+  is reachable from a *spec-compliant* client, since RFC 7519 §4.1.3 permits
+  `aud` to be an array. Same parse feeds `Video/VideoJWTAuthProvider.m:80`,
+  `Auth/OAuth2.m:980`, `Auth/OAuth2Handler+TokenRevocation.m:112`,
+  `Auth/PDS/PDSAuth.m:298`.
+- `Auth/Crypto/AuthCryptoDPoP.m:111,120,129,172-178` — `typ`, `alg`, `jwk`,
+  `htm`, `htu` used as their assumed type. Live via `Auth/OAuth2.m:462`,
+  `Auth/DPoPUtil.m:191`, `AppView/Server/Auth/AppViewOAuth2Middleware.m:159`.
+- `PLC/PLCOperation.m:348-353,306-307` — collection literals built from
+  unchecked lookups (`@[op.data[@"recoveryKey"], …]`); a nil element raises.
+  `PLCStateReplayer replayHistory:` performs no signature or `prev`-chain
+  check, and `Network/XrpcIdentityPack.m:388-408` feeds it a PLC directory
+  audit log directly, without invoking `PLCAuditor`.
+- `Auth/JWT.m:351-385` — `exp`/`iss`/`aud` checks are skipped when the claim
+  is absent, so an omitted `exp` never expires and an omitted `aud` bypasses
+  audience validation. `exp` parses only from `NSNumber`, so `"exp": "170…"`
+  also yields a non-expiring token. `_clockOffset` (`:259`) is never read, so
+  there is no skew tolerance.
+- `Auth/JWT.m:265,280` — `allowedAlgorithms` is optional (nil accepts any
+  `alg`), and the header's `alg` selects the verification path rather than the
+  key selecting the algorithm.
+- `Auth/PDSReplayCache.m` — `initWithDatabasePath:` returns nil on failure and
+  `sharedCache` caches that nil permanently via `dispatch_once`;
+  `AuthCryptoDPoP.m:258` guards with `if (replayChecker)`, so a nil cache
+  silently disables DPoP replay protection on the live OAuth token and PAR
+  paths (`OAuth2.m:468`, `DPoPUtil.m:197`). The shared cache is also
+  `:memory:`, so protection is per-process and lost on restart.
+- `Security/GZInputValidator.m:79,103` — `char c = [s characterAtIndex:i]`
+  truncates `unichar` to 8 bits; verified that `U+0132` truncates to `'2'`,
+  inside the TID base32 alphabet. Live via `isValidRecordKey:` →
+  `isValidTID:` from `Security/Space/PDSSpaceURI.m:95`.
+- `PLC/PLCOperation.m:56-71,92-106` and `PLC/PLCAuditor.m:427-430` —
+  `GZ_LOG_DEBUG_C` expands to an unconditional message send
+  (`Debug/GZLogger.h:272`), so per-byte hex strings (up to 7500 bytes ×2) are
+  built on every DID derivation and every signature verification regardless of
+  log level, then discarded.
+
+Latent — present but never constructed, so currently unreachable:
+
+- `Auth/Verifier/AuthVerifier.m` — no construction site in `Garazyk/Sources`.
+  Contains two self-recursive setters (`:90`, `:94`: `self.localPublicKey =`
+  inside `-setLocalPublicKey:`), which are unbounded recursion and are the only
+  way to configure local-issuer verification.
+- `Auth/PDS/PDSAuth.m:363` — same self-recursive setter shape;
+  `PDSAccountPolicy` is never constructed. Takedown enforcement on the real
+  path goes through the services-container `adminController`
+  (`Network/XrpcAuthHelper.m:369`, `XrpcRepoPack.m:54,95`,
+  `XrpcSyncPack.m:184,1265`) and is unaffected.
+- `Security/GZAuthzManager.m` — zero callers. Contains
+  `validateReadAccess:` (`:216-224`) which denies posts/reposts/likes whenever
+  the account row exists (no mute lookup despite the variable name), and
+  `isAuthorizedForAdminOperation:` (`:154-187`) which can never return `YES`
+  yet runs a discarded `getAccountByDid:` query. Its `isValidDID:` dependency
+  (`GZInputValidator.m:33`) rejects every `did:web`, since the character class
+  excludes `.`.
+
+### Slices
+
+Ordered so each is independently shippable and revertible.
+
+1. **Fail-closed claim typing.** Add a single typed-accessor helper and apply
+   it at the two parse boundaries: `JWTHeader/JWTPayload` construction and
+   `AuthCryptoDPoP verifyProof:`. Reject the token on any type mismatch rather
+   than coercing or ignoring. `Auth/OAuth2Handler+ClientValidation.m:920-925`
+   already does this correctly and is the reference shape. Requires the `aud`
+   decision below.
+2. **Required-claim and algorithm binding.** In `JWTVerifier`: make `exp`
+   mandatory, make `iss`/`aud` mandatory whenever the corresponding
+   `expected*` is set, make `allowedAlgorithms` mandatory (fail closed when
+   unset), derive the algorithm from the key rather than the header, and apply
+   a bounded skew allowance using the existing `clockOffset`. Audit the
+   minters first — `mintAccessTokenForDID:`/`mintRefreshTokenForDID:` always
+   emit `iss`/`aud`/`exp`, so no self-issued token should regress.
+3. **Replay checker fails closed, backed by durable state.** Stop caching a nil
+   `sharedCache`, and make the `replayChecker` argument non-optional in
+   `AuthCryptoDPoP verifyProof:` so omission is a compile error rather than a
+   silent skip. Per the 2026-07-26 decision, the jti cache becomes persistent
+   rather than `:memory:`: `sharedCache` takes its path from configuration so
+   replay protection survives restart and stays correct behind a load
+   balancer. `initWithDatabasePath:` already accepts a path and the schema,
+   index, and cleanup timer already exist, so this is wiring plus a config key
+   plus disk-budget accounting on the OAuth hot path — not new machinery.
+4. **PLC audit-log verification.** Run `PLCAuditor` over the fetched audit log
+   in `XrpcIdentityPack` before any state derived from it is trusted, and
+   route `PLCStateReplayer` through `normalizedDataForOperation:`
+   (`PLCAuditor.m:469-472` already type-checks the identical literal) instead
+   of duplicating the construction unsafely. Reject non-string `op.did`
+   (`PLCOperation.m:177`).
+5. **Charset validation correctness.** Use `unichar` in `isValidTID:` and
+   `isValidCID:`, and reject anything above `0x7F` before the alphabet check.
+6. **Debug-log evaluation cost.** Gate `GZ_LOG_DEBUG_C` on the active level so
+   arguments are not evaluated when disabled. This macro is repo-wide, so
+   measure before and after and keep the change mechanical.
+7. **Wire the auth cluster.** Per the 2026-07-26 decision, `Auth/Verifier`,
+   `PDSAccountPolicy`, and `GZAuthzManager` are the intended auth path and get
+   constructed and routed to, not deleted. This inverts the risk on every
+   latent finding above: each becomes a release blocker rather than dead code,
+   and two of them would cause an outage if wired as-is. Ordering is therefore
+   mandatory — **fix before wiring**:
+
+   a. Fix the three self-recursive setters (`AuthVerifier.m:90,94`,
+      `PDSAuth.m:363`) — assign the ivar, not the property — and add the
+      detection sweep to CI so the shape cannot recur.
+   b. Make `PDSAccountPolicy`'s admin controller a constructor-injected,
+      `strong` dependency instead of a `weak` optional set after the fact, and
+      make the no-controller case a startup failure rather than a per-request
+      `return YES`.
+   c. Fix `GZAuthzManager validateReadAccess:` (`:216-224`) — it currently
+      denies posts/reposts/likes whenever the account row exists, which once
+      live would deny owners reading their own repo. Either implement the
+      mute/block query the variable name implies or delete the branch.
+   d. Fix `GZInputValidator isValidDID:` (`:33`) to accept `did:web`, whose
+      identifier contains `.` and percent-encoding. Wiring `GZAuthzManager`
+      before this ships a total denial for every `did:web` account.
+   e. Resolve `isAuthorizedForAdminOperation:` (`:154-187`), which can never
+      return `YES` yet runs a discarded query — either give it a real scope
+      check or remove it so no caller can mistake it for a grant.
+   f. Close `AuthVerifier`'s own gaps before it carries traffic: the absent
+      `aud` check (`:372`), and `:187` where a nil `request` skips DPoP proof
+      verification entirely while leaving `isDPoP` true, so a DPoP-bound token
+      is accepted with no proof of possession.
+   g. Only then construct the cluster and route XRPC auth through it, with the
+      existing `XrpcAuthHelper` path kept working until parity is proven.
+
+   This slice is larger than slices 1-6 combined and changes the auth
+   architecture, so it is tracked as its own execution phase rather than a
+   tail-end slice.
+
+### Owner boundary
+
+Slices 1-3 own `Garazyk/Sources/Auth/` plus their tests; DPoP and OAuth call
+sites are consumers and keep their signatures except where slice 3
+deliberately tightens the `replayChecker` parameter. Slice 4 owns
+`Garazyk/Sources/PLC/` and the single `XrpcIdentityPack` call site. Slice 5
+owns `Security/GZInputValidator.m`. Slice 6 owns `Debug/GZLogger.h` and is
+otherwise repo-wide by construction — it changes no behavior, only evaluation.
+Slice 7 owns the three unwired files and is the only slice that may delete
+public headers.
+
+### Gate
+
+Per-slice negative tests are the gate, since every finding here is a rejection
+path: malformed-type JWT headers and payloads (number, array, object, and null
+for each claim), array-valued `aud`, absent `exp`/`iss`/`aud`, DPoP proofs with
+non-string `typ`/`alg`/`htu` and a string `jwk`, a `create` PLC operation
+missing `recoveryKey`, an audit log whose `prev` chain does not link, and a TID
+containing `U+0132`. Each must produce a clean 4xx, never an abort.
+
+New suites need their header imported and the class registered in
+`Garazyk/Tests/test_main.m` and a cmake reconfigure, or they silently run zero
+tests. Build `AllTests` with bounded parallelism (`-j4`); unbounded
+`--parallel` exhausts memory on a 16 GB machine. Confirm free disk before a
+full run — gated runs flake with `SQLITE_FULL` near capacity.
+
+### Rollback
+
+Each slice is a single-commit revert. Slices 1-4 tighten rejection and so can
+turn previously-accepted malformed tokens into 4xx; if a real client regresses,
+revert that slice rather than loosening the check, and capture the client's
+actual payload shape as a test case first. Slice 6 is behavior-neutral. Slice 7
+is the only destructive slice and should land last, after its ADR.
+
+### Decisions taken (2026-07-26)
+
+All three open questions were resolved by the operator before execution
+started. Each still needs its ADR written, because each is a durable,
+protocol- or architecture-visible contract:
+
+- **Claim type mismatches are rejected, not coerced.** `aud` accepts the
+  RFC 7519 array form: normalize to an array internally and match if any
+  element equals the expected audience. Every other claim type mismatch is a
+  hard rejection.
+- **DPoP replay state is durable.** The jti cache becomes a persistent store
+  rather than `:memory:`, so replay protection survives restart and remains
+  correct behind a load balancer. The ADR must record the disk budget and the
+  added I/O on the OAuth token and PAR paths.
+- **The auth cluster is wired, not deleted.** `Auth/Verifier`,
+  `PDSAccountPolicy`, and `GZAuthzManager` become the live auth path. The ADR
+  must record the parity strategy against the existing `XrpcAuthHelper` path
+  and the cutover/rollback trigger.
+
+### Execution phases
+
+Derived prompts live in `../prompts/`:
+
+- `phase-13-auth-json-typing.md` — slices 1-6, no architecture change.
+- `phase-14-wire-auth-cluster.md` — slice 7, `depends_on: [13]`.
