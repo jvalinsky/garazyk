@@ -603,39 +603,95 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 - (NSString *)name { return @"actor_store_blob_lifecycle"; }
 
 - (BOOL)up:(sqlite3 *)db error:(NSError **)error {
-    const char *steps[] = {
-        // Add status column to existing blobs table (default 'temporary' for new rows)
-        "ALTER TABLE blobs ADD COLUMN status TEXT NOT NULL DEFAULT 'temporary'",
-        // Mark all existing blobs as referenced (they were uploaded before lifecycle tracking)
-        "UPDATE blobs SET status = 'referenced' WHERE status = 'temporary'",
-        // Create blob_refs table for record→blob reference tracking
-        "CREATE TABLE IF NOT EXISTS blob_refs ("
-        "    record_uri TEXT NOT NULL,"
-        "    blob_cid BLOB NOT NULL,"
-        "    did TEXT NOT NULL,"
-        "    created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
-        "    PRIMARY KEY (record_uri, blob_cid)"
-        ")",
-        // Index on blob_cid for fast reference lookups
+    // Check if blobs table exists — some databases (e.g. service DB, test
+    // databases without blob support) don't have one.
+    BOOL hasBlobsTable = NO;
+    {
+        const char *check = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='blobs'";
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(db, check, -1, &stmt, NULL) == SQLITE_OK) {
+            hasBlobsTable = (sqlite3_step(stmt) == SQLITE_ROW);
+            sqlite3_finalize(stmt);
+        }
+    }
+
+    // Step 1: Add status column to blobs (only if table exists)
+    if (hasBlobsTable) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db,
+            "ALTER TABLE blobs ADD COLUMN status TEXT NOT NULL DEFAULT 'temporary'",
+            NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            // "duplicate column" means already applied — treat as success.
+            BOOL alreadyApplied = errMsg && strstr(errMsg, "duplicate column") != NULL;
+            if (!alreadyApplied) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+                if (errMsg) sqlite3_free(errMsg);
+                if (error) {
+                    *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                                 code:PDSMigrationErrorMigrationFailed
+                                             userInfo:@{NSLocalizedDescriptionKey:
+                                                            [NSString stringWithFormat:@"V7 add status column: %@", msg]}];
+                }
+                return NO;
+            }
+        }
+        if (errMsg) sqlite3_free(errMsg);
+
+        // Step 2: Mark all existing blobs as referenced
+        sqlite3_exec(db,
+            "UPDATE blobs SET status = 'referenced' WHERE status = 'temporary'",
+            NULL, NULL, NULL);
+    }
+
+    // Step 3: Create blob_refs table (safe even if blobs table missing)
+    {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db,
+            "CREATE TABLE IF NOT EXISTS blob_refs ("
+            "    record_uri TEXT NOT NULL,"
+            "    blob_cid BLOB NOT NULL,"
+            "    did TEXT NOT NULL,"
+            "    created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+            "    PRIMARY KEY (record_uri, blob_cid)"
+            ")",
+            NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V7 blob_refs table: %@", msg]}];
+            }
+            return NO;
+        }
+        if (errMsg) sqlite3_free(errMsg);
+    }
+
+    // Step 4: Create indexes
+    const char *indexes[] = {
         "CREATE INDEX IF NOT EXISTS idx_blob_refs_cid ON blob_refs(blob_cid)",
-        // Index on did for per-account queries
         "CREATE INDEX IF NOT EXISTS idx_blob_refs_did ON blob_refs(did)",
     };
-
-    for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); i++) {
+    for (size_t i = 0; i < sizeof(indexes) / sizeof(indexes[0]); i++) {
         char *errMsg = NULL;
-        int rc = sqlite3_exec(db, steps[i], NULL, NULL, &errMsg);
-        if (rc == SQLITE_OK) continue;
-        NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
-        if (errMsg) sqlite3_free(errMsg);
-        if (error) {
-            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                         code:PDSMigrationErrorMigrationFailed
-                                     userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithFormat:@"V7 step %zu failed: %@", i, msg]}];
+        int rc = sqlite3_exec(db, indexes[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V7 index %zu: %@", i, msg]}];
+            }
+            return NO;
         }
-        return NO;
+        if (errMsg) sqlite3_free(errMsg);
     }
+
     return YES;
 }
 
