@@ -2,20 +2,9 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { generateLexicons } from "./generate.ts";
 
-const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
-const REPO_ROOT = dirname(dirname(dirname(SCRIPT_DIR)));
-
-// Check whether the Garazyk lexicon directory (from the main monorepo) exists.
-// This test is designed for the full garazyk monorepo and should be skipped
-// automatically in standalone checkouts (e.g., the external npm/atproto-testing repo).
-function defaultLexiconsExist(): boolean {
-  try {
-    const info = Deno.statSync(join(REPO_ROOT, "Garazyk", "Resources", "lexicons"));
-    return info.isDirectory;
-  } catch {
-    return false;
-  }
-}
+const REPO_ROOT = dirname(
+  dirname(dirname(dirname(fromFileUrl(import.meta.url)))),
+);
 
 function lexiconDoc(id: string, type: "query" | "record" = "query") {
   return {
