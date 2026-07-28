@@ -20,9 +20,9 @@ behavior.
 
 ## Current evidence
 
-- `da296909f` implements Proposal 0016 (isolated SQLite store, space
+- `06d70f36` implements Proposal 0016 (isolated SQLite store, space
   URIs/scopes, delegation, credentials, policy, private blobs, notifications).
-- `cc063779a` adds scenarios 93 and 94 plus PDS3 topology config; both are
+- `83f82705` adds scenarios 93 and 94 plus PDS3 topology config; both are
   type-checked but have no recorded runtime pass.
 - Scenario 93's OAuth PAR step was blocked by a non-deterministic (~50%)
   DPoP signature-verification failure. Root cause: the P-256 verifier
@@ -33,14 +33,14 @@ behavior.
   This was a general OAuth/auth correctness bug, not spaces-specific; it was
   the prerequisite blocker for the P6.1 acceptance runs below.
 - Scenario 94's earlier missing-authorization-code report was caused by the
-  GNUstep form parser's historical `+`-for-space handling. `0a7925f9a` fixes
-  that parser, `3b6a4f5cb` uses `%20` encoding in the scenario, and
-  `9000097ba` characterizes the exact `atproto+space:` consent form (31
+  GNUstep form parser's historical `+`-for-space handling. `57c7bf0d` fixes
+  that parser, `0c8f7778` uses `%20` encoding in the scenario, and
+  `583a5efa` characterizes the exact `atproto+space:` consent form (31
   `OAuth2HandlerTests`, 0 failures). The prior run's AppView process had an
   externally occupied port; a fresh structured run `2026-07-18t2204z-20523`
   allocated a healthy port and passed scenario 94 **25/25**.
 - Private blobs are now proven across the same three-PDS topology: commit
-  `21eeb5719` covers bound OAuth+DPoP upload, remote credential-gated read,
+  `06d70f36` covers bound OAuth+DPoP upload, remote credential-gated read,
   and ordinary repo/sync/blob isolation. Structured scenario-93 run
   `2026-07-18t2209z-29983` passed **21/21**.
 - The reconciliation protocol from ADR 0005 is fully implemented in source:
@@ -71,16 +71,16 @@ recovery with selector/request-count evidence.
 PDS.
 
 1. Stand up the three-PDS topology (the PDS3 config and manifest from
-   `cc063779a`; Docker where possible) and record structured
+   `83f82705`; Docker where possible) and record structured
    `hamownia agent` runs of scenarios 93 and 94.
 2. **Complete (2026-07-18):** scenario 94 uses a production-excluded,
    triple-gated test pack to seed a replica, prune a known cursor, run one real
    reconciliation pass, and observe `incremental`, `lightweight`, and
-   `fullCAR` selectors with request counts (`43b3ad9c3`; 28/28 structured run
+   `fullCAR` selectors with request counts (`83f82705`; 28/28 structured run
    `2026-07-18t2238z-90828`).
 3. **Complete (2026-07-18):** private-blob acceptance is scenario 93's
    bound upload, credential-gated remote read, and public endpoint isolation
-   path (`21eeb5719`; 21/21 in `2026-07-18t2209z-29983`).
+   path (`06d70f36`; 21/21 in `2026-07-18t2209z-29983`).
 4. **Complete (2026-07-18):** all compatibility-gate rows have dated
    structured-run evidence.
 

@@ -18,7 +18,7 @@ preparation incremental instead of materializing up to 100k records.
 ## Progress (2026-07-19)
 
 - **Part 2 — Slice 3 complete**: Implemented incremental repository export producer and bounded fallback (`loadMSTForDid:store:error:` + paginated record CIDs via `listRecordCIDsForDid:limit:offset:error:` with 10k batching and 200k safety cap). `prepareRepoExportForDid:deltaMode:error:` now avoids pre-materializing up to 100k records in memory when generating CAR exports, and Tier 4 database fallback (`getRecordByCID:` via `ActorStore`) is wired into `buildRepoWriterForDid:` and `repoContentsSTARL0ChunkProducer` to ensure non-materialized records can be exported seamlessly. Byte-identical export fixtures and memory growth bounds verified across `PDSRepositoryServiceTests`.
-- **Part 1 — relay decision: complete and committed** (`d9fa51a1d`).
+- **Part 1 — relay decision: complete and committed** (`799fd706`).
   Operator chose Option 3 (remove). `PDSCLIRelayCommand.m/.h` and
   `PDSCLIRelayCommandTests.m` deleted; `PDSCLIRegisterAll.m` and
   `test_main.m` cleaned. `zuk` remains the canonical relay binary; the
@@ -27,7 +27,7 @@ preparation incremental instead of materializing up to 100k records.
   PDSRelayService, and AppViewIngestEngine. Recorded as ADR 0006
   (`docs/adr/0006-remove-kaszlak-relay-serve.md`).
 - **Part 2 — incremental public sync: slices 1-2 complete and committed**
-  (`6de6ebc64`). Slice 1: N+1 fix — `headInfoForDid` method, updated
+  (`3e7b0340`). Slice 1: N+1 fix — `headInfoForDid` method, updated
   `listRepos`/`getRecord`, unit tests. Slice 2: golden fixtures —
   structural CAR/STAR golden tests, byte-identical re-export test, peak
   memory/size bounds. Also landed in that commit: a materialized
@@ -50,17 +50,17 @@ preparation incremental instead of materializing up to 100k records.
 All items are closed; this phase is complete.
 
 1. ~~Slice 3: the incremental export producer behind a bounded fallback~~ —
-   **done** (`788592aca`, 2026-07-19): paginated record-CID batching with a
+   **done** (`799fd706`, 2026-07-19): paginated record-CID batching with a
    200k safety cap, Tier 4 database fallback wired into the writer and STAR
    chunk producer, byte-identical fixtures and memory bounds verified.
 2. ~~`PDSCollectionMembershipPruner` test coverage~~ — **done**
-   (`6b52752e0`, 2026-07-19), including on-demand pruning when stopped.
+   (`895ae94c`, 2026-07-19), including on-demand pruning when stopped.
 3. ~~Commit the regenerated `packages/gruszka/lexicons.ts` pickup of
    `tools.garazyk.admin.getCollectionMembershipStats`~~ — **done**
-   (`1269ee19`, 2026-07-19).
+   (`6ea8bdbf`, 2026-07-19).
 4. Sync 1.1 remainder (export block ordering, collection subsets) — **closed**
    (2026-07-19). A forward-compat streamable-CAR pre-order enumerator was
-   already committed (`ed01c8085`, on `34e2b94ae`) — MST.h/MST.m
+   already committed (`b775a12c`, on `b775a12c`) — MST.h/MST.m
    (`-enumerateStreamableCARBlocksUsingBlock:recordProvider:error:`
    behind `+[MST setStreamableCARBlockOrderingEnabled:]`, default off),
    `PDSRepositoryService.m` wiring, and `MSTPreorderTests`/
@@ -98,7 +98,7 @@ All items are closed; this phase is complete.
 
 - Decision recorded as an ADR — **met** (ADR 0006).
 - Export fixtures byte-identical before/after the incremental producer —
-  **met** (`788592aca`, `PDSRepositoryServiceTests`).
+  **met** (`799fd706`, `PDSRepositoryServiceTests`).
 - Protocol E2E for Relay/sync green in structured runs; global gates pass —
   **met**: `PDSRepositoryServiceTests` 36/36 (including the 3 new filtered-
   export tests); full `AllTests --parallel 4` build and run green.

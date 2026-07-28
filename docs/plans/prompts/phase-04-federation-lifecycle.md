@@ -155,11 +155,11 @@ Evidence:
 ## Follow-up closed after this phase (2026-07-17)
 
 The account-status downstream-propagation gap this phase filed as a
-follow-up has since been implemented and landed: `28641e671` (admin
+follow-up has since been implemented and landed: `91444a89` (admin
 takedown/reinstate now post the account notifications; `RelayClient`
 forwards account events via a new delegate method; `AppViewIngestEngine`
-persists and forwards them), `a3f8d3c53` (`RelayUpstreamManager` forwards
-account events downstream), and scenario 97 (`7bde0e0b6`) proves the full
+persists and forwards them), `04f23030` (`RelayUpstreamManager` forwards
+account events downstream), and scenario 97 (`909c6399`) proves the full
 takedown-propagation chain E2E. Workstream 01 S5's account-lifecycle
 section records the closure. Nothing from this phase remains open.
 

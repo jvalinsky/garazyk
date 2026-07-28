@@ -215,17 +215,17 @@ verification slice. Filed as a follow-up. The cursor-resume test is
 smaller and more self-contained; left as the next actionable item here.
 
 **Both gaps closed (2026-07-17).** Cursor resume: scenario 96
-(`96_firehose_cursor_resume.ts`, `6387245a8`) proves gap-free resume
+(`96_firehose_cursor_resume.ts`, `1a8da8cb`) proves gap-free resume
 across a live disconnect/reconnect (no gap, no duplicates, monotonic,
 disconnect-window records delivered; 10/10 structured steps), enabled by
-the `closeForUpgrade` WebSocket-handoff fix (`80f5a56e6`). Downstream
-propagation: `28641e671` wires admin takedown/reinstate to the account
+the `closeForUpgrade` WebSocket-handoff fix (`700352ab`). Downstream
+propagation: `91444a89` wires admin takedown/reinstate to the account
 notifications so `SubscribeReposHandler` emits real `#account` events,
 adds the `RelayClientDelegate` account-event method, and has
 `AppViewIngestEngine` durably persist and forward account events;
-`a3f8d3c53` closes the last hop (`RelayUpstreamManager` forwards account
+`04f23030` closes the last hop (`RelayUpstreamManager` forwards account
 events downstream). Scenario 97 (`97_account_takedown_propagation.ts`,
-`7bde0e0b6`) proves the takedown chain E2E. - **AppView un-indexing on takedown — Complete (2026-07-24).** `RelayRepoStateManager`'s status-tracking model is now integrated with AppView's indexing pipeline to un-index records when an account is taken down.
+`909c6399`) proves the takedown chain E2E. - **AppView un-indexing on takedown — Complete (2026-07-24).** `RelayRepoStateManager`'s status-tracking model is now integrated with AppView's indexing pipeline to un-index records when an account is taken down.
 
 ### Gated Objective-C coverage into CI
 
@@ -493,7 +493,7 @@ feature was actually exercised.
 ## S6. Published-spec conformance matrix
 
 **Status: complete (report-only).** Matrix built at
-`docs/reports/spec-conformance-matrix.md` (commit `703723c4c`,
+`docs/reports/spec-conformance-matrix.md` (commit `de67b72a`,
 2026-07-17). 20 spec rows + Proposal 0016 = 21 rows total. 16 supported,
 4 partial, 0 gap. Every "supported" row names at least one executable
 proof (unit test, scenario, or CI gate).
@@ -1261,7 +1261,7 @@ reconfigure, then the mega-plan global gates with bounded `--parallel 4`.
 - `SSRFValidatorTests` is registered and executed (32 tests, zero failures)
   after `AllTests --list --filter SSRFValidatorTests` reported one class.
 - GNUstep Docker gate passed after a 19 GiB disk preflight: runtime image
-  `357ecdb` and builder image `4ecd295`; the builder configured `AllTests`
+  `0d128839` and builder image `0d128839`; the builder configured `AllTests`
   and completed the in-container `SSRFValidatorTests` run.
 - Global gates passed after the final implementation: `deno task check`,
   `deno task lint`, `deno task test`, `cmake --build build --target AllTests

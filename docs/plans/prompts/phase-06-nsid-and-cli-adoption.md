@@ -15,13 +15,13 @@ Phase 6 is complete. All scope items (NSID constants generation/migration and CL
 
 ## Progress (2026-07-19)
 
-- `garazyk-ui` characterization completed (`133ce30a5`) and lifecycle adoption completed (`2026-07-19`).
+- `garazyk-ui` characterization completed (`5e51b09a`) and lifecycle adoption completed (`2026-07-19`).
 - `garazyk-ui` is fully ported to `GZCommandLineOptions` and `GZServiceLifecycle` with `announceSignals:NO` and `GZCrashReporter` preserving its silent signal behavior and `/tmp/garazyk-ui-crash.log` crash-diagnostic contract. Verified via `GarazykUICommandTests` (7/7 pass natively) and `docker run ... garazyk-gnustep help/version/serve --help` across GNUstep/Linux.
-- All remaining binaries (`jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) have been characterized (`JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) and ported to `GZCommandLineOptions` and `GZServiceLifecycle`. Verified natively and across GNUstep/Linux, preserving option parsing grammars, signal behavior, and `/tmp/<binary>-crash.log` contracts. Committed one binary per commit (`2888ba0ea`, `2aae843b`, `253d2406`, `d7009b3d`, `b614a23f`, `1244e7c2`). Phase 6 is now complete.
+- All remaining binaries (`jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) have been characterized (`JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) and ported to `GZCommandLineOptions` and `GZServiceLifecycle`. Verified natively and across GNUstep/Linux, preserving option parsing grammars, signal behavior, and `/tmp/<binary>-crash.log` contracts. Committed one binary per commit (`f35f32b5`, `2788d723`, `83c14795`, `dd5d4d4d`, `0401964f`, `c71068e3`). Phase 6 is now complete.
 
 ## Progress (2026-07-17)
 
-- Generator landed: `f46ab5fb8` generates ObjC NSID constants from the
+- Generator landed: `2468d5e0` generates ObjC NSID constants from the
   canonical lexicons (`scripts/generate_nsid_constants.ts`).
 - The call-site adoption sweep is committed: every `Xrpc*Pack.m`,
   `XrpcHandler.h/.m` (pass-through registration methods deleted),
@@ -36,7 +36,7 @@ Phase 6 is complete. All scope items (NSID constants generation/migration and CL
 ## Progress (2026-07-18)
 
 - The CLI seam this phase will work in has fresh characterization
-  coverage (`65abe6e6f`): `PDSCLIRegisterAll.m` is refactored to a
+  coverage (`635b0715`): `PDSCLIRegisterAll.m` is refactored to a
   dispatcher-injected `PDSCLIRegisterAllCommandsForDispatcher()` (called
   from `-[PDSCLIDispatcher registerDefaultCommands]`), and new CLI test
   suites landed (`PDSCLIDispatcherTests`, `PDSCLIRegisterAllTests`,
