@@ -2049,3 +2049,107 @@ revert that handler and add a targeted fix.
 
 - `../prompts/phase-27-chat-trust-boundary.md` — slices 1-7,
   `depends_on: [S13, S14]`.
+
+## S16. Video + Germ/Mikrus/Beskid trust-boundary sweep
+
+**Status: not started.** 2,410 lines across Video (1,226 lines) and
+Germ/Mikrus/Beskid (1,184 lines) audited for isKindOfClass gaps, JWT
+claim typing, and proxy forwarding safety.
+
+### Evidence
+
+**V1 — jwt.payload.aud used without isKindOfClass.**
+`VideoJWTAuthProvider.m:129` — `NSString *aud = jwt.payload.aud` is
+passed to `VideoServiceAuthDIDWithoutFragment:` which calls
+`rangeOfString:` on it. A non-string `aud` claim (arrays per RFC 7519)
+triggers `-[NSArray rangeOfString:]` → unrecognized selector crash.
+Same S8 defect class.
+
+**V2 — JWT claims trusted as their assumed type.**
+`VideoJWTAuthProvider.m:99,102,107,208` — `jwt.payload.sub` (used with
+`hasPrefix:`), `jwt.payload.did` (same), `jwt.payload.iss` (same),
+`jwt.payload.scope` (used with `isEqualToString:`). All extracted
+without isKindOfClass checks. A non-string value in any of these
+claims crashes on NSString methods.
+
+**V3 — Omitted exp claim yields non-expiring token.**
+`VideoJWTAuthProvider.m:145-152` — `NSDate *exp = jwt.payload.exp`
+checked with `if (exp && [exp timeIntervalSinceNow] < 0)`. If `exp`
+is nil (claim omitted), the check is skipped and the token never
+expires. Same gap documented in S8 slice 2.
+
+**V4 — job[@"retry_count"] without isKindOfClass.**
+`VideoWorker.m:473` — `[job[@"retry_count"] integerValue]` called
+without verifying the value is an NSNumber. A non-number value
+crashes on unrecognized selector. Low severity: job dicts come from
+the local database, not external input.
+
+**G1 — Missing isKindOfClass on string body fields.**
+`XrpcGermMailboxPack.m:84-85,124,206-207,242` — `agentRef`, `address`
+extracted from JSON body without isKindOfClass:[NSString class]
+guard. Truthiness checks catch nil, but non-string values pass
+through to downstream services. `countNum` and `epochNum` already
+have isKindOfClass:[NSNumber class] guards; `ciphertextObj` already
+guarded in `decodeBytesField:`.
+
+**B1 — Unguarded .length on hydration source path.**
+`BeskidXrpcRoutePack.m:309` — `NSString *path = source[@"path"]; if
+(path.length > 0)` calls `.length` without verifying it's a string.
+A non-string value from the upstream service crashes.
+
+**B2 — Unvalidated authorization header forwarding.**
+`BeskidXrpcRoutePack.m:293-294` — `NSString *auth =
+payload[@"authorization"]` forwarded to upstream PDS without
+isKindOfClass guard and without validating it's a `Bearer ...`
+token. Proxy behavior is intentional, but the header value should
+be validated as a string before `.length` access.
+
+**M1 — No significant findings in Mikrus.** All params validated
+through helpers with isKindOfClass guards; SQL parameterized; rate
+limiting present. Clean.
+
+### Slices
+
+1. Video isKindOfClass/JWT sweep: add isKindOfClass guards to
+   `jwt.payload.aud` (:129), `jwt.payload.sub` (:99), `jwt.payload.did`
+   (:102), `jwt.payload.iss` (:107), and `jwt.payload.scope` (:208)
+   in VideoJWTAuthProvider.m. Make `exp` mandatory (reject tokens
+   without exp claim). Add isKindOfClass guard to `job[@"retry_count"]`
+   at VideoWorker.m:473.
+2. Germ isKindOfClass sweep: add isKindOfClass:[NSString class]
+   guards to `agentRef` and `address` body extractions in
+   XrpcGermMailboxPack.m handlers.
+3. Beskid path guard: add isKindOfClass:[NSString class] guard to
+   `source[@"path"]` before `.length` access in
+   BeskidXrpcRoutePack.m:309.
+4. Beskid auth forwarding validation: add isKindOfClass:[NSString
+   class] guard to `payload[@"authorization"]` in
+   BeskidXrpcRoutePack.m:293-294.
+5. Acceptance gate tests for all findings.
+
+### Gate
+
+- Non-string `aud`/`sub`/`iss`/`scope`/`did` in JWT returns 401.
+- Token without `exp` claim returns 401.
+- Non-number `retry_count` handled gracefully (logged, not crashed).
+- Non-string `agentRef`/`address` in Germ mailbox returns 400.
+- Non-string `path` in Beskid hydration returns 400.
+- Non-string `authorization` in Beskid proxy returns 400.
+- All existing Video/Germ/Beskid tests pass.
+
+### Rollback
+
+Each slice is a single-commit revert. Slice 1 (Video JWT claims) is
+the highest operational risk — a real client sending non-string
+claims would start getting 401 where it previously got through.
+Slices 2-4 follow the same isKindOfClass pattern as S8/S13/S15 and
+carry the same rollback strategy.
+
+### Owner boundary
+
+`Garazyk/Sources/Video/` (slice 1), `Garazyk/Sources/Germ/` (slice
+2), `Garazyk/Sources/Beskid/` (slices 3-4). Mikrus is clean.
+
+### Execution phases
+
+- `../prompts/phase-28-video-germ-beskid-trust-boundary.md` — slices 1-5.
