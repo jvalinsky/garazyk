@@ -1604,3 +1604,274 @@ via `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0` for operators who need it.
 
 - `../prompts/phase-22-mst-viewer-and-dead-cookie.md` — slices 1-2,
     `depends_on: []`.
+
+## S13. Registration, PhoneVerification, and Email trust-boundary sweep
+
+**Status: partially complete (slices 4 & 4b done at HEAD `c2277d62`; slices 1-3, 5 pending).** A review of the
+account-creation and verification trust boundaries — Registration,
+PhoneVerification, Email, and the XRPC handlers that consume them — found
+two complete no-op verification gates, a password-reset token that is the
+public DID, an unbounded OTP brute-force surface, and several input
+validation gaps at the createAccount/confirmEmail/verifyPhone boundaries.
+None of these modules has a dedicated security lane; they have been touched
+only incidentally (S5 test fixes, E3 SMTP removal). The gates are the first
+defense against account-creation abuse; a no-op gate defeats every other
+gate in the composite via the OR logic in `PDSCompositeRegistrationGate`
+(`PDSRegistrationGate.m:73-86`), so each finding is a release blocker for
+any operator that turns the corresponding gate on.
+
+### Evidence
+
+**CAPTCHA gate is a complete no-op.** `PDSCaptchaRegistrationGate.m:75`
+(`verifyTokenWithSiteverify:`) returns `YES` unconditionally with
+`#pragma unused(verifyURL)` — the siteverify HTTP call is never made. When
+no secret key is configured, `:62-65` accepts token presence only. Together
+these mean the captcha gate never verifies anything. Live via
+`PDSRegistrationGateFactory` (`PDSRegistrationGate.m:178-182`) when
+`captchaRequired` is YES.
+
+**Phone OTP gate accepts any code when the provider is nil.**
+`PDSPhoneOTPRegistrationGate.m:99-101` — the nil-provider fallback returns
+`YES` for any non-empty `phoneVerificationCode`. The factory at
+`PDSRegistrationGate.m:147-160` logs a warning on provider creation failure
+and proceeds, so a misconfigured phone gate silently becomes open
+registration.
+
+**Password-reset token is the public DID.**
+`XrpcServerPack+AccountManagement.m:225-235` — `resetPassword` validates
+`token` as a DID via `ATProtoValidator validateDID:` and looks up the
+account by that DID. Anyone who knows a victim's DID can reset their
+password. `requestPasswordReset` (`:188-202`) is a no-op that returns 200
+without minting or sending any token.
+
+**`confirmEmail` accepts any token.**
+`XrpcServerPack+AccountManagement.m:85-127` validates only that the email
+matches the account (`:113-118`) and returns 200 without checking `token`
+against anything. `emailConfirmed` can be set by any authenticated account
+holder who knows their own email, with no round-trip through the email
+provider. `requestEmailConfirmation` (`:62-80`) and `requestEmailUpdate`
+(`:82-101`) are no-ops.
+
+**No OTP attempt counting.** None of the four phone providers
+(Twilio/Vonage/Plivo/Telegram Gateway) enforce a per-phone attempt limit
+at the PDS layer. Twilio Verify manages this server-side; the other three
+do not. The gate at `PDSPhoneOTPRegistrationGate.m:62-66` passes
+`body[@"verificationSessionID"]` through without checking it, so providers
+that require a sessionID (Vonage/Plivo/Telegram) return a generic
+"verification failed" rather than a specific error.
+
+**Plivo "200 means success" fallback.**
+`PDSPlivoPhoneVerificationProvider.m:215-220` — a 200 response with neither
+`is_verified: true` nor a "verified" message is accepted as approved. A 200
+with an empty or error body would pass.
+
+**`PDS_ALLOW_HTTP=1` deterministic OTP code at runtime.**
+`ContactService.m:51-53` — when `PDS_ALLOW_HTTP` is set, the verification
+code is hardcoded to `123456`. This is a runtime check in a release build,
+not a compile-time debug guard. The same env var legitimately controls
+HTTP egress policy elsewhere (`ATProtoSafeHTTPClient.m:193,750`,
+`AppViewWriteProxy.m:152`), so it cannot be removed, but the deterministic
+code path must move behind `#if DEBUG`.
+
+**Untyped JSON at the registration boundary.** The gates extract
+`body[@"phoneNumber"]` / `body[@"captchaToken"]` / `body[@"inviteCode"]`
+without `isKindOfClass:[NSString class]` checks — the same defect class as
+S8, but at the registration boundary. A `body[@"phoneNumber"]` that is an
+`NSNumber` crashes `length` (`PDSPhoneOTPRegistrationGate.m:43`).
+
+**`PDSEmailHTTPClient` retry-loop race.** `PDSEmailHTTPClient.m:120-128` —
+`requestError` is set in the completion block and read after
+`dispatch_semaphore_wait`; on a 30s timeout the wait returns and the loop
+reads `requestError` before the block has run. Same class of bug as the
+`ATProtoVideoTranscoderIntegrationTests` use-after-free fixed in S5 and the
+`AppViewIngestEngine` out-parameter fix in O6.
+
+### Slices
+
+The full slice breakdown, decisions, and acceptance gate live in the
+derived prompt (`../prompts/phase-23-registration-phone-email-trust-boundary.md`).
+Summary:
+
+1. CAPTCHA gate: implement siteverify via `ATProtoSafeHTTPClient`, fail
+closed when no secret key is configured, pass `remoteip`.
+2. Phone OTP gate: fail closed on nil provider, enforce sessionID for
+providers that require it, add server-side attempt counting (service DB
+V16).
+3. Email: fix `PDSEmailHTTPClient` retry race, implement `confirmEmail` token
+exchange (service DB V17), move `PDS_ALLOW_HTTP` deterministic code behind
+`#if DEBUG`, redact OTP code from logs.
+4. Password reset: replace DID-as-token with opaque single-use token (service
+DB V18), implement `requestPasswordReset` token minting and email delivery.
+5. Plivo "200 means success" fallback removal, input validation sweep
+(`isKindOfClass:` checks at gate field extraction), E.164 phone number
+validation, `PDSEmailHTTPClient` nil-apiKey guard.
+
+### Owner boundary
+
+Slices 1-4 own `Garazyk/Sources/Registration/`, `Garazyk/Sources/PhoneVerification/`,
+`Garazyk/Sources/Email/`, and the `XrpcServerPack+Session.m` /
+`XrpcServerPack+AccountManagement.m` handlers. Slice 5 owns
+`PDSPlivoPhoneVerificationProvider.m`, `ATProtoValidator`, and the
+input-validation touch points across the gates. `ContactService.m` is owned
+by slice 3 only. The service-DB migrations (V16/V17/V18) ship one per slice
+so slices remain independently revertible.
+
+### Gate
+
+Per-slice negative tests are the gate, since every finding here is a
+rejection or fail-closed path. See the derived prompt for the full
+per-slice acceptance criteria. Global gates: `deno task check &&
+deno task lint && deno task test`, then `cmake --build build --target
+AllTests --parallel 4 && ./build/tests/AllTests`. Bounded parallelism only.
+
+### Rollback
+
+Each slice is a single-commit revert. Slices 1-2 change gates from
+always-accept to fail-closed — operators who relied on the no-op behavior
+for open registration must use `PDSOpenRegistrationGate` explicitly. Slice
+4 is the only contract change: any client that sends a DID as the
+`resetPassword` token must migrate to the emailed opaque token. See the
+derived prompt for full rollback notes.
+
+### Execution phases
+
+- `../prompts/phase-23-registration-phone-email-trust-boundary.md` — slices
+  1-5, `depends_on: []`.
+
+## S14. Ozone moderation trust-boundary sweep
+
+**Status: not started (identified 2026-07-27).** A focused security review of
+the Ozone moderation service (`Garazyk/Sources/Ozone/Services/ModerationService.m`,
+844 lines) and its XRPC trust boundary (`Garazyk/Sources/Network/XrpcToolsOzonePack.m`,
+1,228 lines) found an authorization gap that weakens every `tools.ozone.*`
+endpoint, a missing WHERE clause that can mass-update all safelink rules in a
+single request, a wrong column name that makes `getSubjects` return stale data
+for every moderation decision, a key mismatch that makes team role updates and
+removals silent no-ops, an unvalidated event-type string that enables takedown
+forging, a non-atomic set membership replacement that can lose all members on
+crash, and missing audit logging on scheduled-action cancellations. The Ozone
+module has no dedicated security lane — it was implemented as a feature surface
+and has been touched only incidentally by the phase-12 god-file decomposition.
+The `tools.ozone.*` endpoints are the live moderation interface used by the
+AdminUI backend (`UIBackendClient+Ozone.m`) and by external Ozone clients; a
+defect here affects every moderation decision the operator makes.
+
+### Evidence
+
+*   **Ozone endpoints bypass the canonical admin auth path (O-1 — auth gap).**
+    `ExtractAdminDid` at `XrpcToolsOzonePack.m:23-39` gates every
+    `tools.ozone.*` endpoint using `extractDIDFromAuthHeader:` (JWT
+    verification + takedown check) and `isAdminDid:` (DID-list membership) but
+    skips `isAuthenticatedWithRequest:` / `authenticateHeaders:`
+    (`PDSAdminAuth.m:289-297`), which enforces `minimumTokenIssuedAt` (global
+    token freshness floor for blanket revocation) and admin-scope tokens
+    (`PDSScopesContainAdmin`). The canonical admin auth path at
+    `XrpcAuthHelper.m:519-549` (`authorizeAdminRequest:`) calls both checks. A
+    compromised admin token remains valid on `tools.ozone.*` after the operator
+    bumps the freshness floor — the attacker can continue emitting takedowns
+    and labels.
+
+*   **`updateSafelink` can mass-update all rules on malformed input (O-2 —
+    missing WHERE guard).** `ModerationService.m:709-714` only appends the
+    WHERE clause when `safelinkId` contains a colon (`parts.count == 2`). A
+    malformed ID with no colon (e.g., `"malformed"`) runs the UPDATE against
+    every row in `moderation_safelinks`. The companion `deleteSafelink:` at
+    `:727-728` correctly rejects malformed IDs with an early return — the fix
+    is to copy that guard into `updateSafelink:`.
+
+*   **`getSubjects` queries a non-existent column (O-3 — wrong column name).**
+    `ModerationService.m:637` uses `WHERE did = ?` against
+    `moderation_subjects`, but the table's actual column is `subject_did`.
+    Every other query in the file uses `subject_did` (`:45`, `:82`, `:186`,
+    `:562`). SQLite returns an error, `executeParameterizedQuery:` returns nil,
+    and every subject gets `reviewState: "none"` unconditionally — moderation
+    decisions are made on stale data.
+
+*   **Team management endpoints key on `email` but the DB uses `did` (O-4 —
+    key mismatch).** `addTeamMember:` at `ModerationService.m:216` inserts rows
+    keyed by `member[@"did"]`, but the XRPC handlers at
+    `XrpcToolsOzonePack.m:~461, ~484, ~510` pass `body[@"email"]` as the member
+    identifier. `updateTeamMember` (`:233`) and `removeTeamMember` (`:240`)
+    query `WHERE did = ?`, so they never match an email. Team role updates and
+    removals are silent no-ops.
+
+*   **`emitModerationEvent` accepts arbitrary `$type` strings (O-5 —
+    unvalidated event type).** `ModerationService.m:38` passes
+    `event[@"$type"]` directly from the request body to `reviewStateForAction:`
+    at `:795-835`, which maps known strings to review-state transitions
+    (takedown → `takendown`, reverseTakedown → `reviewOpen`, etc.). Unknown
+    types return nil and do not trigger a state change, but the event is still
+    committed to `moderation_events`. The lack of explicit whitelist validation
+    means a future refactor could accidentally widen the transition set.
+
+*   **`updateSet` replaces set members non-atomically (O-6 — no transaction).**
+    `ModerationService.m:276-283` deletes all set members (`:278`) then
+    re-adds them in a loop (`:280-282`) with no `transactWithBlock:`. A crash
+    or timeout between the DELETE and the INSERTs loses all members.
+
+*   **`cancelScheduledAction` does not write to `admin_audit_log` (O-7 —
+    missing audit log).** `ModerationService.m:600-605` and `:607+` accept a
+    `cancelledBy` parameter but never INSERT into `admin_audit_log`. Compare
+    `emitModerationEvent:` at `:62` which writes `admin_did`, `action`,
+    `subject_type`, `subject_id`, and `created_at`. Cancellations are
+    unattributed — an operator cannot determine who cancelled a scheduled
+    action.
+
+### Slices
+
+The O-zone findings map to seven independently shippable and revertible slices
+(see `../prompts/phase-24-ozone-trust-boundary.md` for the full specification):
+
+1. Ozone endpoint authorization — close the `minimumTokenIssuedAt` gap (O-1)
+2. `updateSafelink` mass-UPDATE guard (O-2)
+3. `getSubjects` column name fix (O-3)
+4. Team management: `did` not `email` as the row key (O-4)
+5. `emitModerationEvent` event-type whitelist validation (O-5)
+6. `updateSet` transaction boundary (O-6)
+7. `cancelScheduledAction` audit logging (O-7)
+
+No slice changes a public endpoint contract — all fixes are internal
+correctness and security hardening. No new database migrations are introduced.
+
+### Owner boundary
+
+All slices own `Garazyk/Sources/Ozone/Services/ModerationService.m` and
+`Garazyk/Sources/Network/XrpcToolsOzonePack.m`. Slice 1 additionally owns the
+`ExtractAdminDid` → `authorizeAdminRequest:` wiring and the
+`XrpcToolsOzoneTests.m` auth tests. Slice 4 owns the `XrpcToolsOzonePack.m`
+team handlers. `ModerationService.h` is updated only if a new whitelist
+constant or method is exposed. The `PDSAdminAuth`, `XrpcAuthHelper`,
+`ATProtoValidator`, and `PDSDatabase` are consumers and keep their signatures.
+The `UIBackendClient+Ozone.m` AdminUI client is a consumer of the XRPC
+endpoints and is not changed.
+
+### Gate
+
+Per-slice negative tests are the gate, since every finding is a rejection,
+fail-closed, or correctness path. The global verification gates are:
+
+```bash
+deno task check
+deno task lint
+deno task test
+cmake --build build --target AllTests --parallel 4
+./build/tests/AllTests
+```
+
+### Rollback
+
+Each slice is a single-commit revert. Slice 1 restores the weaker
+`ExtractAdminDid` path — if an operator relied on stale-token acceptance, they
+must re-authenticate after the cutover. Slice 2 restores the
+mass-UPDATE-on-malformed-ID path. Slice 3 restores the stale `getSubjects`
+behavior. Slice 4 restores the email-as-key handlers — the team management
+endpoints were effectively non-functional (no updates or removals succeeded),
+so rollback returns to the broken state. Slice 5 restores the unvalidated
+`$type` path. Slice 6 restores the non-atomic set membership replacement — a
+crash during update can lose all members. Slice 7 restores the missing audit
+log — cancellations become unattributed again.
+
+### Execution phases
+
+- `../prompts/phase-24-ozone-trust-boundary.md` — slices 1-7,
+  `depends_on: []`.
