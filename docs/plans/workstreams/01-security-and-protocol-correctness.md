@@ -1827,7 +1827,7 @@ Rollback is a one-line revert of the composite loop.
 
 ## S14. Ozone moderation trust-boundary sweep
 
-**Status: partially complete (slices 1-6 of 7 done; slices 1-5 at a66dd7b1, slice 6 uncommitted).** A focused security review of
+**Status: complete ✅ (all 7 slices done). Slices 1-5 at `a66dd7b1`, slices 6-7 at `cf23deba`. 66 XrpcToolsOzoneTests pass.** A focused security review of
 the Ozone moderation service (`Garazyk/Sources/Ozone/Services/ModerationService.m`,
 844 lines) and its XRPC trust boundary (`Garazyk/Sources/Network/XrpcToolsOzonePack.m`,
 1,228 lines) found an authorization gap that weakens every `tools.ozone.*`
