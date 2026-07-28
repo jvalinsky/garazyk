@@ -148,7 +148,7 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *actor = body[@"actor"];
+                       NSString *actor = [body[@"actor"] isKindOfClass:[NSString class]] ? body[@"actor"] : nil;
                        if (!actor) {
                          [XrpcErrorHelper setValidationError:response
                                                      message:@"actor is required"];

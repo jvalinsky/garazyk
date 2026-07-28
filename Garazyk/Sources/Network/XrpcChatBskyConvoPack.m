@@ -272,7 +272,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -301,7 +301,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -359,8 +359,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *messageId = body[@"messageId"];
-        NSString *emoji = body[@"emoji"];
+        NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
+        NSString *emoji = [body[@"emoji"] isKindOfClass:[NSString class]] ? body[@"emoji"] : nil;
         if (!messageId || !emoji) {
             [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
@@ -388,8 +388,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *messageId = body[@"messageId"];
-        NSString *emoji = body[@"emoji"];
+        NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
+        NSString *emoji = [body[@"emoji"] isKindOfClass:[NSString class]] ? body[@"emoji"] : nil;
         if (!messageId || !emoji) {
             [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
@@ -417,8 +417,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
-        NSString *messageId = body[@"messageId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
+        NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -450,7 +450,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -482,7 +482,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -511,7 +511,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -540,8 +540,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
-        NSArray *messages = body[@"messages"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
+        NSArray *messages = [body[@"messages"] isKindOfClass:[NSArray class]] ? body[@"messages"] : nil;
         if (!convoId || !messages) {
             [XrpcErrorHelper setValidationError:response message:@"convoId and messages are required"];
             return;
@@ -587,7 +587,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -616,7 +616,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -645,7 +645,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *messageId = body[@"messageId"];
+        NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
         if (!messageId) {
             [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
             return;
@@ -871,8 +871,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *convoId = body[@"convoId"];
-        NSDictionary *message = body[@"message"];
+        NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
+        NSDictionary *message = [body[@"message"] isKindOfClass:[NSDictionary class]] ? body[@"message"] : nil;
         if (!convoId || !message) {
             [XrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
             return;
