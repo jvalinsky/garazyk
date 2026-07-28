@@ -30,6 +30,7 @@
    appview.http.port                     APPVIEW_HTTP_PORT
    appview.data_directory                APPVIEW_DATA_DIR
    appview.admin_secret                  APPVIEW_ADMIN_SECRET
+   appview.index.collections[]           APPVIEW_INDEX_COLLECTIONS (comma-sep)
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -122,6 +123,18 @@ typedef NS_ENUM(NSInteger, AppViewMode) {
 
 /*! Base URL of the Jelcz video service for constructing HLS playlist URLs. */
 @property (nonatomic, copy, nullable) NSString *videoServiceURL;
+
+#pragma mark - Collection Scoping
+
+/*!
+ @abstract Collection allowlist for scoped indexing.
+
+ @discussion Empty (default) => index all collections with a loaded lexicon
+ (current behaviour). Non-empty => only index collections matching an entry.
+ Entries with a trailing dot are prefix matches (e.g. "site.standard." matches
+ "site.standard.document"). Entries without a trailing dot are exact matches.
+ */
+@property (nonatomic, copy) NSArray<NSString *> *indexCollections;
 
 #pragma mark - Lifecycle
 

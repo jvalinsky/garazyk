@@ -1,0 +1,65 @@
+{
+  "id": "app.offprint.page",
+  "defs": {
+    "main": {
+      "key": "any",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "publication",
+          "path",
+          "title",
+          "content"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Root-relative path the page is served at, with a leading slash (e.g. \"/about\" or \"/p/colophon\")."
+          },
+          "title": {
+            "type": "string",
+            "description": "Page title.",
+            "maxGraphemes": 500
+          },
+          "content": {
+            "ref": "app.offprint.content",
+            "type": "ref",
+            "description": "Page body. Same block format as documents."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Last edit timestamp."
+          },
+          "coverImage": {
+            "type": "blob",
+            "accept": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "maxSize": 1000000,
+            "description": "Optional hero / cover image."
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief description / meta description for SEO.",
+            "maxGraphemes": 3000
+          },
+          "publication": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Required AT-URI to the `site.standard.publication` this page belongs to."
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Publish timestamp."
+          }
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}

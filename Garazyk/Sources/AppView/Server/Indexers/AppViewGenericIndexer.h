@@ -23,6 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoLexiconRegistry;
 @class AppViewDatabase;
 @class ATProtoLexiconValidator;
+@class AppViewCollectionFilter;
 
 /*!
  @class AppViewGenericIndexer
@@ -55,6 +56,15 @@ NS_ASSUME_NONNULL_BEGIN
  @param collection The collection NSID to exclude.
  */
 - (void)addDomainIndexerCollection:(NSString *)collection;
+
+/*!
+ @property collectionFilter
+
+ @abstract Optional collection allowlist filter. When set, the generic
+ indexer only claims collections that pass the filter. Empty filter
+ (default) => allow all collections with a loaded lexicon.
+ */
+@property (nonatomic, strong, nullable) AppViewCollectionFilter *collectionFilter;
 
 @end
 
