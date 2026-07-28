@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "RepoAuthXrpcTestBase.h"
 #import "Database/Service/ServiceDatabases.h"
+#import <sqlite3.h>
 
 @interface RepoAuthServerTests : RepoAuthXrpcTestBase
 @end
@@ -233,28 +234,146 @@
     XCTAssertTrue([signingKey hasPrefix:@"did:key:"]);
 }
 
-- (void)testRequestAndResetPasswordFlowWithDidToken {
+- (void)testRequestAndResetPasswordFlowWithOpaqueToken {
+    // 1. Missing email → 400.
     HttpResponse *requestMissingEmail = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestPasswordReset"
                                                                  body:@{}
                                                               headers:@{}];
     XCTAssertEqual(requestMissingEmail.statusCode, 400);
 
+    // 2. Valid email → 200 (no-leak).
     HttpResponse *requestResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestPasswordReset"
                                                              body:@{@"email": @"repoauth1@example.com"}
                                                           headers:@{}];
     XCTAssertEqual(requestResponse.statusCode, 200);
 
+    // 3. Extract the opaque token from password_reset_tokens.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    XCTAssertTrue(db != NULL);
+
+    sqlite3_stmt *stmt = NULL;
+    XCTAssertEqual(sqlite3_prepare_v2(db,
+        "SELECT token FROM password_reset_tokens WHERE did = ? ORDER BY rowid DESC LIMIT 1",
+        -1, &stmt, NULL), SQLITE_OK);
+    sqlite3_bind_text(stmt, 1, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+
+    NSString *token = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *tokenText = sqlite3_column_text(stmt, 0);
+        if (tokenText) token = [NSString stringWithUTF8String:(const char *)tokenText];
+    }
+    sqlite3_finalize(stmt);
+    XCTAssertNotNil(token, @"Expected a password reset token to be stored in the database");
+
+    // 4. Reset password with opaque token → 200.
     HttpResponse *resetResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.resetPassword"
-                                                           body:@{@"token": self.did1,
+                                                           body:@{@"token": token,
                                                                   @"password": @"new-password-123"}
                                                         headers:@{}];
     XCTAssertEqual(resetResponse.statusCode, 200);
 
+    // 5. Can create session with new password.
     HttpResponse *sessionResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createSession"
                                                             body:@{@"identifier": @"repoauth1.test",
                                                                    @"password": @"new-password-123"}
                                                          headers:@{}];
     XCTAssertEqual(sessionResponse.statusCode, 200);
+}
+
+- (void)testRequestPasswordResetNoLeakNonexistentEmail {
+    // No-leak: nonexistent email still returns 200.
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestPasswordReset"
+                                                      body:@{@"email": @"nonexistent@example.com"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+}
+
+- (void)testResetPasswordRejectsDidAsToken {
+    // The old DID-as-token path is removed — a DID no longer works.
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.resetPassword"
+                                                      body:@{@"token": self.did1,
+                                                             @"password": @"new-password-123"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidToken");
+}
+
+- (void)testResetPasswordRejectsInvalidToken {
+    // A random 64-char hex string that was never minted.
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.resetPassword"
+                                                      body:@{@"token": @"0000000000000000000000000000000000000000000000000000000000000000",
+                                                             @"password": @"new-password-123"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidToken");
+}
+
+- (void)testResetPasswordRejectsExpiredToken {
+    // Insert an expired token directly into the database.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    XCTAssertTrue(db != NULL);
+
+    NSString *expiredToken = [NSString stringWithFormat:@"expired-%lld",
+                              (long long)([[NSDate date] timeIntervalSince1970] * 1000.0)];
+    NSTimeInterval expiredTime = [[NSDate date] timeIntervalSince1970] - 3600.0; // 1 hour ago
+
+    sqlite3_stmt *stmt = NULL;
+    XCTAssertEqual(sqlite3_prepare_v2(db,
+        "INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)",
+        -1, &stmt, NULL), SQLITE_OK);
+    sqlite3_bind_text(stmt, 1, expiredToken.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 3, (sqlite3_int64)expiredTime);
+    XCTAssertEqual(sqlite3_step(stmt), SQLITE_DONE);
+    sqlite3_finalize(stmt);
+
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.resetPassword"
+                                                      body:@{@"token": expiredToken,
+                                                             @"password": @"new-password-123"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"ExpiredToken");
+}
+
+- (void)testResetPasswordRejectsReplayToken {
+    // 1. Request password reset (stores a token).
+    HttpResponse *requestResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestPasswordReset"
+                                                             body:@{@"email": @"repoauth1@example.com"}
+                                                          headers:@{}];
+    XCTAssertEqual(requestResponse.statusCode, 200);
+
+    // 2. Extract token from database.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    XCTAssertTrue(db != NULL);
+
+    sqlite3_stmt *stmt = NULL;
+    XCTAssertEqual(sqlite3_prepare_v2(db,
+        "SELECT token FROM password_reset_tokens WHERE did = ? ORDER BY rowid DESC LIMIT 1",
+        -1, &stmt, NULL), SQLITE_OK);
+    sqlite3_bind_text(stmt, 1, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+
+    NSString *token = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *tokenText = sqlite3_column_text(stmt, 0);
+        if (tokenText) token = [NSString stringWithUTF8String:(const char *)tokenText];
+    }
+    sqlite3_finalize(stmt);
+    XCTAssertNotNil(token);
+
+    // 3. First reset → 200.
+    HttpResponse *firstReset = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.resetPassword"
+                                                        body:@{@"token": token,
+                                                               @"password": @"first-new-password"}
+                                                     headers:@{}];
+    XCTAssertEqual(firstReset.statusCode, 200);
+
+    // 4. Replay with same token → 400.
+    HttpResponse *replayReset = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.resetPassword"
+                                                         body:@{@"token": token,
+                                                                @"password": @"second-new-password"}
+                                                      headers:@{}];
+    XCTAssertEqual(replayReset.statusCode, 400);
+    XCTAssertEqualObjects(replayReset.jsonBody[@"error"], @"InvalidToken");
 }
 
 - (void)testConfirmEmailAndRequestAccountDeleteRequireAuth {
@@ -278,6 +397,181 @@
                                                             body:@{}
                                                          headers:@{@"authorization": authHeader}];
     XCTAssertEqual(deleteWithAuth.statusCode, 200);
+}
+
+- (void)testRequestAccountDeleteMintsTokenAndCanDelete {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    // 1. Request account delete (no token) → 200 (mints token).
+    HttpResponse *requestResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                             body:@{}
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(requestResponse.statusCode, 200);
+
+    // 2. Extract the opaque token from password_reset_tokens.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    XCTAssertTrue(db != NULL);
+
+    sqlite3_stmt *stmt = NULL;
+    XCTAssertEqual(sqlite3_prepare_v2(db,
+        "SELECT token FROM password_reset_tokens WHERE did = ? ORDER BY rowid DESC LIMIT 1",
+        -1, &stmt, NULL), SQLITE_OK);
+    sqlite3_bind_text(stmt, 1, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+
+    NSString *token = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *tokenText = sqlite3_column_text(stmt, 0);
+        if (tokenText) token = [NSString stringWithUTF8String:(const char *)tokenText];
+    }
+    sqlite3_finalize(stmt);
+    XCTAssertNotNil(token, @"Expected a delete token to be stored in the database");
+
+    // 3. Exchange token via requestAccountDelete → 200 (deletes account).
+    HttpResponse *deleteResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                            body:@{@"token": token}
+                                                         headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(deleteResponse.statusCode, 200);
+
+    // 4. Account no longer exists.
+    NSError *accountError = nil;
+    PDSDatabaseAccount *account = [self.controller.serviceDatabases getAccountByDid:self.did1 error:&accountError];
+    XCTAssertNil(account, @"Account should be deleted");
+}
+
+- (void)testDeleteAccountRejectsExpiredToken {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    // Insert an expired token directly into the database.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    XCTAssertTrue(db != NULL);
+
+    NSString *expiredToken = [NSString stringWithFormat:@"adexp-%lld",
+                              (long long)([[NSDate date] timeIntervalSince1970] * 1000.0)];
+    NSTimeInterval expiredTime = [[NSDate date] timeIntervalSince1970] - 3600.0;
+
+    sqlite3_stmt *stmt = NULL;
+    XCTAssertEqual(sqlite3_prepare_v2(db,
+        "INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)",
+        -1, &stmt, NULL), SQLITE_OK);
+    sqlite3_bind_text(stmt, 1, expiredToken.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 3, (sqlite3_int64)expiredTime);
+    XCTAssertEqual(sqlite3_step(stmt), SQLITE_DONE);
+    sqlite3_finalize(stmt);
+
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                      body:@{@"token": expiredToken}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"ExpiredToken");
+}
+
+- (void)testDeleteAccountRejectsReplayToken {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    // 1. Request account delete (no token) → 200 (stores token).
+    HttpResponse *requestResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                             body:@{}
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(requestResponse.statusCode, 200);
+
+    // 2. Extract token from database.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    sqlite3_stmt *stmt = NULL;
+    sqlite3_prepare_v2(db,
+        "SELECT token FROM password_reset_tokens WHERE did = ? ORDER BY rowid DESC LIMIT 1",
+        -1, &stmt, NULL);
+    sqlite3_bind_text(stmt, 1, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+
+    NSString *token = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *tokenText = sqlite3_column_text(stmt, 0);
+        if (tokenText) token = [NSString stringWithUTF8String:(const char *)tokenText];
+    }
+    sqlite3_finalize(stmt);
+    XCTAssertNotNil(token);
+
+    // 3. First exchange via requestAccountDelete → 200 (deletes account).
+    HttpResponse *firstDelete = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                         body:@{@"token": token}
+                                                      headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(firstDelete.statusCode, 200);
+
+    // 4. Replay with same token → 400.
+    HttpResponse *replayDelete = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                          body:@{@"token": token}
+                                                       headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(replayDelete.statusCode, 400);
+    XCTAssertEqualObjects(replayDelete.jsonBody[@"error"], @"InvalidToken");
+}
+
+- (void)testRequestAccountDeleteRejectsCrossAccountToken {
+    NSString *authHeader1 = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    // 1. Auth as did1, request account delete (no token) → 200 (mints token for did1).
+    HttpResponse *requestResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                             body:@{}
+                                                          headers:@{@"authorization": authHeader1}];
+    XCTAssertEqual(requestResponse.statusCode, 200);
+
+    // 2. Extract the token from password_reset_tokens.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    sqlite3_stmt *stmt = NULL;
+    sqlite3_prepare_v2(db,
+        "SELECT token FROM password_reset_tokens WHERE did = ? ORDER BY rowid DESC LIMIT 1",
+        -1, &stmt, NULL);
+    sqlite3_bind_text(stmt, 1, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+
+    NSString *did1Token = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *tokenText = sqlite3_column_text(stmt, 0);
+        if (tokenText) did1Token = [NSString stringWithUTF8String:(const char *)tokenText];
+    }
+    sqlite3_finalize(stmt);
+    XCTAssertNotNil(did1Token);
+
+    // 3. Auth as did2, try to exchange did1's token → 400 (DID mismatch).
+    NSError *loginError = nil;
+    NSDictionary *session2 = [self.controller loginWithHandle:@"repoauth2.test" password:@"password" error:&loginError];
+    XCTAssertNil(loginError);
+    NSString *accessJwt2 = session2[@"accessJwt"];
+    XCTAssertNotNil(accessJwt2);
+
+    NSString *authHeader2 = [NSString stringWithFormat:@"Bearer %@", accessJwt2];
+    HttpResponse *crossResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+                                                           body:@{@"token": did1Token}
+                                                        headers:@{@"authorization": authHeader2}];
+    XCTAssertEqual(crossResponse.statusCode, 400);
+    XCTAssertEqualObjects(crossResponse.jsonBody[@"error"], @"InvalidToken");
+}
+
+- (void)testDeleteAccountRejectsCrossAccountToken {
+    // Insert a token for did1 directly into the database.
+    sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
+    XCTAssertTrue(db != NULL);
+
+    NSString *crossToken = [NSString stringWithFormat:@"xacct-%lld",
+                            (long long)([[NSDate date] timeIntervalSince1970] * 1000.0)];
+    NSTimeInterval futureTime = [[NSDate date] timeIntervalSince1970] + 3600.0;
+
+    sqlite3_stmt *stmt = NULL;
+    XCTAssertEqual(sqlite3_prepare_v2(db,
+        "INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)",
+        -1, &stmt, NULL), SQLITE_OK);
+    sqlite3_bind_text(stmt, 1, crossToken.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 3, (sqlite3_int64)futureTime);
+    XCTAssertEqual(sqlite3_step(stmt), SQLITE_DONE);
+    sqlite3_finalize(stmt);
+
+    // Call deleteAccount with did2 + did1's token → 400.
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                      body:@{@"token": crossToken,
+                                                             @"did": self.did2,
+                                                             @"password": @"password"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidToken");
 }
 
 @end
