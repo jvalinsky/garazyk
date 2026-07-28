@@ -945,6 +945,7 @@ int main(int argc, char *argv[]) {
       @"CloudStorageBlobProviderTests",
       @"CBORSecurityTests",
       @"JWTSecurityTests",
+      @"S16GateTests",
       @"HandleResolverSecurityTests",
       @"HandleResolverSSRFTests",
       @"WebSocketUpgradeHandlerTests",
