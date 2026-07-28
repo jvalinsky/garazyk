@@ -419,7 +419,7 @@ static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, con
 
     PDSMigrationManager *manager = [PDSMigrationManager serviceDatabaseMigrationManager];
     NSError *error = nil;
-    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertTrue([manager migrateDatabase:db toVersion:15 error:&error], @"%@", error);
     XCTAssertTrue(PDSMigrationTestTableUsesWithoutRowid(db, "collection_membership"));
     XCTAssertEqual(PDSMigrationTestRowCount(db, "collection_membership"), (NSInteger)1);
     XCTAssertTrue(PDSMigrationTestIndexExists(db, "idx_collection_membership_collection"));
@@ -427,7 +427,7 @@ static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, con
     XCTAssertTrue([manager rollbackToVersion:db version:14 error:&error], @"%@", error);
     XCTAssertFalse(PDSMigrationTestTableUsesWithoutRowid(db, "collection_membership"));
     XCTAssertEqual(PDSMigrationTestRowCount(db, "collection_membership"), (NSInteger)1);
-    XCTAssertTrue([manager migrateDatabase:db error:&error], @"%@", error);
+    XCTAssertTrue([manager migrateDatabase:db toVersion:15 error:&error], @"%@", error);
     XCTAssertTrue(PDSMigrationTestTableUsesWithoutRowid(db, "collection_membership"));
     XCTAssertEqual(PDSMigrationTestRowCount(db, "collection_membership"), (NSInteger)1);
     sqlite3_close(db);

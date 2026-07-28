@@ -323,6 +323,8 @@ Deno.test("renderComposeYaml: sidecars rendered as separate services", () => {
     sidecars: {
       "local-plc-db": {
         image: "postgres:16-alpine",
+        entrypoint: ["docker-entrypoint.sh"],
+        command: ["postgres"],
         env: {
           POSTGRES_USER: "plc",
           POSTGRES_PASSWORD: "plc",
@@ -349,6 +351,10 @@ Deno.test("renderComposeYaml: sidecars rendered as separate services", () => {
   assertEquals(!!parsed.services["local-plc"], true);
   assertEquals(!!parsed.services["local-plc-db"], true);
   assertEquals(parsed.services["local-plc-db"].image, "postgres:16-alpine");
+  assertEquals(parsed.services["local-plc-db"].entrypoint, [
+    "docker-entrypoint.sh",
+  ]);
+  assertEquals(parsed.services["local-plc-db"].command, ["postgres"]);
   assertEquals(
     parsed.services["local-plc-db"].healthcheck!.test.join(" "),
     "CMD-SHELL pg_isready -U plc",

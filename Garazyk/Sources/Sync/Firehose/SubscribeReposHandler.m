@@ -88,9 +88,6 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
 @property(nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
 @property(nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
-@property(nonatomic, strong)
-    NSMutableDictionary<NSString *, NSString *> *lastCommitRevByDID;
-
 - (void)ensureSequenceInitialized;
 - (BOOL)parseCursorString:(nullable NSString *)cursor
                  outValue:(NSUInteger *)outValue;
@@ -180,7 +177,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                            (unsigned long)_maxPendingBytesPerConnection);
       }
     }
-    _lastCommitRevByDID = [NSMutableDictionary dictionary];
     _backfillSemaphore = dispatch_semaphore_create(3); // Allow max 3 concurrent backfills
 
     // Initialize backpressure rate limiter (100 events/sec)
@@ -496,25 +492,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
             [store getBlockForCID:[commitCID bytes] forDid:did error:&dbError];
         if (blockData) {
           NSError *decodeError = nil;
-          id decoded = [ATProtoDagCBOR decodeData:blockData error:&decodeError];
-          if ([decoded isKindOfClass:[NSDictionary class]]) {
-            NSDictionary *commitMap = (NSDictionary *)decoded;
-            commit = [[RepoCommit alloc] init];
-            commit.did = did;
-            commit.version = [commitMap[@"version"] integerValue] ?: 3;
-            commit.rev = commitMap[@"rev"];
-
-            id dataVal = commitMap[@"data"];
-            if ([dataVal isKindOfClass:[CID class]])
-              commit.dataCID = (CID *)dataVal;
-
-            id prevVal = commitMap[@"prev"];
-            if ([prevVal isKindOfClass:[CID class]])
-              commit.prevCID = (CID *)prevVal;
-
-            id sigVal = commitMap[@"sig"];
-            if ([sigVal isKindOfClass:[NSData class]])
-              commit.signature = (NSData *)sigVal;
+          commit = [RepoCommit fromSignedBlockData:blockData error:&decodeError];
+          if (commit && ![commit.did isEqualToString:did]) {
+            GZ_LOG_SYNC_ERROR(@"Stored commit DID %@ does not match notification DID %@",
+                              commit.did, did);
+            commit = nil;
+          } else if (!commit && decodeError) {
+            GZ_LOG_SYNC_ERROR(@"Failed to decode stored commit for %@: %@",
+                              did, decodeError);
           }
         }
       }
@@ -587,6 +572,35 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   });
 }
 
+- (void)broadcastSyncEvent:(FirehoseSyncEvent *)event {
+  if (self.stopping || !event) {
+    return;
+  }
+  __weak typeof(self) weakSelf = self;
+  dispatch_async(self.syncQueue, ^{
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf || strongSelf.stopping) return;
+    @autoreleasepool {
+      [strongSelf ensureSequenceInitialized];
+      NSData *eventData = [strongSelf.session encodeSyncEvent:event];
+      if (!eventData) {
+        GZ_LOG_SYNC_ERROR(@"[Relay] failed to encode sync event for %@",
+                          event.did);
+        return;
+      }
+      if (strongSelf.serviceDatabases) {
+        [strongSelf.serviceDatabases persistEvent:strongSelf.session.sequenceNumber
+                                             type:@"sync"
+                                             data:eventData
+                                            error:nil];
+      }
+      [strongSelf bufferRelayEventData:eventData
+                                   seq:strongSelf.session.sequenceNumber];
+      [strongSelf broadcastEventData:eventData];
+    }
+  });
+}
+
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit
                            forRepo:(NSString *)repoDid
                                ops:(NSArray<NSDictionary *> *)ops
@@ -608,8 +622,36 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     event.repo = repoDid;
     event.commit = commit.computeCID;
     event.rev = commit.rev;
-    event.since =
-        strongSelf.lastCommitRevByDID[repoDid]; // Previous commit rev for this repo
+
+    BOOL requiresSyncFallback = NO;
+    RepoCommit *previousCommit = nil;
+    if (commit.prevCID) {
+      NSError *previousError = nil;
+      PDSActorStore *store =
+          [strongSelf.userDatabasePool storeForDid:repoDid error:&previousError];
+      NSData *previousBlock =
+          [store getBlockForCID:commit.prevCID.bytes
+                         forDid:repoDid
+                          error:&previousError];
+      if (previousBlock.length > 0) {
+        previousCommit =
+            [RepoCommit fromSignedBlockData:previousBlock error:&previousError];
+      }
+      BOOL previousCommitMatches =
+          previousCommit &&
+          [previousCommit.did isEqualToString:repoDid] &&
+          [previousCommit.computeCID isEqual:commit.prevCID];
+      if (!previousCommitMatches ||
+          previousCommit.dataCID.stringValue.length == 0) {
+        previousCommit = nil;
+        requiresSyncFallback = YES;
+        GZ_LOG_SYNC_WARN(
+            @"Cannot derive previous data root for %@ commit %@: %@",
+            repoDid, commit.prevCID.stringValue,
+            previousError.localizedDescription ?: @"previous commit unavailable");
+      }
+    }
+    event.since = previousCommit.rev;
     
     event.blocks = [FirehoseCARBuilder buildCARForCommit:commit
                                                      ops:ops
@@ -626,18 +668,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     event.ops = ops;
     event.blobs = blobs ?: @[]; // Already CID array
     event.time = [SubscribeReposHandler rfc3339Timestamp];
-    event.prevData = commit.prevCID ?: nil; // Previous MST root CID
-
-    // Update the per-DID tracking for next event's since field
-    if (commit.rev) {
-      strongSelf.lastCommitRevByDID[repoDid] = commit.rev;
-    }
+    event.prevData = previousCommit.dataCID;
 
     NSString *eventType = @"commit";
-    NSData *eventData = [strongSelf.session encodeCommitEvent:event];
+    NSData *eventData =
+        requiresSyncFallback ? nil : [strongSelf.session encodeCommitEvent:event];
     if (!eventData) {
       GZ_LOG_SYNC_WARN(
-          @"Commit event encoding failed for %@ at seq %lu, falling back "
+          @"Commit event could not be emitted inductively for %@ at seq %lu, falling back "
           @"to #sync",
           repoDid, (unsigned long)strongSelf.session.sequenceNumber + 1);
       FirehoseSyncEvent *syncEvent = [[FirehoseSyncEvent alloc] init];
@@ -646,7 +684,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       syncEvent.rev = commit.rev ?: @"";
       syncEvent.time = event.time;
 
-      eventData = [strongSelf.session.eventFormatter encodeSyncEvent:syncEvent error:nil];
+      eventData = [strongSelf.session encodeSyncEvent:syncEvent];
       if (!eventData) {
         GZ_LOG_SYNC_ERROR(@"Failed to encode sync fallback event");
         return;
@@ -669,7 +707,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     [strongSelf broadcastEventData:eventData];
-    [[GZMetrics sharedMetrics] incrementFirehoseEvent:@"commit"];
+    [[GZMetrics sharedMetrics] incrementFirehoseEvent:eventType];
     [[GZMetrics sharedMetrics] incrementRepoCommits];
     [[GZMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
     GZ_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,

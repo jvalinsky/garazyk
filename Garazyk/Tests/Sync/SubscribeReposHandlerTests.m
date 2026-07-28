@@ -15,6 +15,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/ActorStore/PDSActorStoreInternal.h"
+#import "Database/PDSDatabaseBlock.h"
 #import "Network/HttpRequest.h"
 #import <sqlite3.h>
 
@@ -189,6 +190,115 @@
     NSError *err = nil;
     int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
     XCTAssertGreaterThan(maxSeq, 0);
+}
+
+- (void)testBroadcastCommitEmitsPreviousRevisionAndDataRoot {
+    NSString *did = @"did:plc:ar7c4by46qjdydhdevvrndac";
+    RepoCommit *previous =
+        [RepoCommit createCommitWithDid:did
+                                   data:[CID sha256:[@"previous-data"
+                                       dataUsingEncoding:NSUTF8StringEncoding]]
+                                    rev:@"3mrogbz3mwr2t"
+                                   prev:nil];
+    previous.signature = [NSMutableData dataWithLength:64];
+
+    PDSDatabaseBlock *previousBlock = [[PDSDatabaseBlock alloc] init];
+    previousBlock.cid = previous.computeCID.bytes;
+    previousBlock.repoDid = did;
+    previousBlock.blockData = previous.serializeSigned;
+    previousBlock.size = previousBlock.blockData.length;
+    previousBlock.createdAt = [NSDate date];
+    previousBlock.rev = previous.rev;
+    NSError *storeError = nil;
+    [self.controller.userDatabasePool
+        transactWithDid:did
+                  block:^(id<PDSActorStoreTransactor> transactor,
+                          NSError **error) {
+        [transactor putBlock:previousBlock forDid:did error:error];
+    }
+                  error:&storeError];
+    XCTAssertNil(storeError);
+
+    RepoCommit *current =
+        [RepoCommit createCommitWithDid:did
+                                   data:[CID sha256:[@"current-data"
+                                       dataUsingEncoding:NSUTF8StringEncoding]]
+                                    rev:@"3mrogbz3mwr2u"
+                                   prev:previous.computeCID];
+    current.signature = [NSMutableData dataWithLength:64];
+
+    [self.handler broadcastRepositoryCommit:current
+                                    forRepo:did
+                                        ops:@[]
+                                      blobs:@[]];
+    [self waitForHandlerIdle];
+
+    NSError *eventError = nil;
+    NSArray<NSDictionary *> *events =
+        [self.controller.serviceDatabases getEventsSince:0
+                                                   limit:100
+                                                   error:&eventError];
+    XCTAssertNil(eventError);
+    NSDictionary *stored = events.lastObject;
+    XCTAssertEqualObjects(stored[@"type"], @"commit");
+
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    NSInteger op = 0;
+    NSString *type = nil;
+    NSDictionary *payload =
+        [formatter decodeEventFromData:stored[@"data"]
+                                    op:&op
+                               msgType:&type
+                                 error:&eventError];
+    XCTAssertNil(eventError);
+    XCTAssertEqualObjects(type, @"#commit");
+    XCTAssertEqualObjects(payload[@"since"], previous.rev);
+    XCTAssertEqualObjects([payload[@"prevData"] stringValue],
+                          previous.dataCID.stringValue);
+    XCTAssertNotEqualObjects([payload[@"prevData"] stringValue],
+                             previous.computeCID.stringValue);
+}
+
+- (void)testBroadcastCommitFallsBackToSyncWhenPreviousCommitIsUnavailable {
+    NSString *did = @"did:plc:ar7c4by46qjdydhdevvrndac";
+    CID *missingPrevious =
+        [CID sha256:[@"missing-previous"
+            dataUsingEncoding:NSUTF8StringEncoding]];
+    RepoCommit *current =
+        [RepoCommit createCommitWithDid:did
+                                   data:[CID sha256:[@"current-data"
+                                       dataUsingEncoding:NSUTF8StringEncoding]]
+                                    rev:@"3mrogbz3mwr2v"
+                                   prev:missingPrevious];
+    current.signature = [NSMutableData dataWithLength:64];
+
+    [self.handler broadcastRepositoryCommit:current
+                                    forRepo:did
+                                        ops:@[]
+                                      blobs:@[]];
+    [self waitForHandlerIdle];
+
+    NSError *eventError = nil;
+    NSArray<NSDictionary *> *events =
+        [self.controller.serviceDatabases getEventsSince:0
+                                                   limit:100
+                                                   error:&eventError];
+    XCTAssertNil(eventError);
+    NSDictionary *stored = events.lastObject;
+    XCTAssertEqualObjects(stored[@"type"], @"sync");
+
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    NSInteger op = 0;
+    NSString *type = nil;
+    NSDictionary *payload =
+        [formatter decodeEventFromData:stored[@"data"]
+                                    op:&op
+                               msgType:&type
+                                 error:&eventError];
+    XCTAssertNil(eventError);
+    XCTAssertEqualObjects(type, @"#sync");
+    XCTAssertEqualObjects(payload[@"did"], did);
+    XCTAssertEqualObjects(payload[@"rev"], current.rev);
 }
 
 #ifndef GNUSTEP
