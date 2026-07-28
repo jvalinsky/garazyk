@@ -3,17 +3,10 @@
 A dynamic XRPC client for the AT Protocol, with exact generated Lexicon types
 available for all Bluesky and AT Protocol methods.
 
-## Why Gruszka?
+## Name
 
-In Polish CB radio and amateur radio slang (**slang krótkofalarski**),
-**Gruszka** (literally "pear") is the colloquial term for a **handheld
-microphone**.
-
-Just as a radio operator uses the _gruszka_ to transmit messages and interact
-with the airwaves, this package serves as your "microphone" for the AT Protocol.
-It provides the interface necessary to "broadcast" queries, procedures, and
-events to the network, making it the essential tool for communicating within the
-ATProto ecosystem.
+In Polish CB and amateur radio slang (_slang krótkofalarski_), _gruszka_
+(literally "pear") is the handheld microphone.
 
 ## Installation
 
@@ -23,14 +16,13 @@ deno add jsr:@garazyk/gruszka
 
 ## Features
 
-- **Ergonomic Dynamic API**: The root `client.api` proxy supports nested XRPC
-  calls with dynamic response bodies for scripting and service exploration.
-- **Exact Lexicon Types**: Strong TypeScript definitions for request parameters
-  and response data are available from `@garazyk/gruszka/lexicons`.
-- **Firehose Client**: Easy ingestion of the ATProto event stream.
-- **Chat Viewer**: TUI-based visualization for Bluesky chat conversations.
-- **Account Operations**: High-level helpers for account creation and session
-  management.
+- Dynamic API: the root `client.api` proxy handles nested XRPC calls with
+  dynamic response bodies, for scripting and service exploration.
+- Exact lexicon types: TypeScript definitions for request parameters and
+  response data, from `@garazyk/gruszka/lexicons`.
+- Firehose client: ingests the ATProto event stream.
+- Chat viewer: TUI rendering of Bluesky chat conversations.
+- Account operations: helpers for account creation and session management.
 
 ## Public Subpaths
 

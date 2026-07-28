@@ -4,12 +4,10 @@ An assertion-based end-to-end (E2E) testing framework and AT Protocol
 orchestration package. It owns scenario execution, local network lifecycle,
 binary service startup, stale cleanup, diagnostics, and reports.
 
-## Why Hamownia?
+## Name
 
-**Hamownia** is the Polish word for a **dynamometer** (or "dyno shop"), a place
-where engines are tested for power and performance under load. As a scenario
-runner and testing framework, this package acts as the testing rig for your
-protocol "engines," ensuring they perform correctly and meet assertions.
+_Hamownia_ is the Polish word for a dynamometer, or dyno shop: where engines are
+tested under load.
 
 ## Installation
 
@@ -19,35 +17,30 @@ deno add jsr:@garazyk/hamownia
 
 ## Features
 
-- **Scenario Orchestration**: Automated setup and teardown of the test
-  environment.
-- **ATProto Network Control**: Docker and binary-mode local network startup via
-  explicit subpaths such as `@garazyk/hamownia/atproto-network` and
-  `@garazyk/hamownia/binary-services`.
-- **Type Contracts for Harnesses**: Author scenario code against the types in
-  `@garazyk/hamownia/scenario-context` and `@garazyk/hamownia/run-scenarios-types`.
-- **Docker Scenario Runner**: Scenario container execution is owned here, not by
+- Scenario orchestration: sets up and tears down the test environment.
+- ATProto network control: Docker and binary-mode local network startup, via
+  `@garazyk/hamownia/atproto-network` and `@garazyk/hamownia/binary-services`.
+- Type contracts for harnesses: write scenario code against the types in
+  `@garazyk/hamownia/scenario-context` and
+  `@garazyk/hamownia/run-scenarios-types`.
+- Docker scenario runner: scenario container execution lives here, not in
   `@garazyk/laweta`.
-- **Assertion Library**: Domain-specific assertions for ATProto behavior.
-- **Report Writing**: Generates HTML and JSON test reports with timing
-  statistics.
-- **Account Discovery**: Helpers for finding and resolving DIDs via SSH, admin
-  APIs, or local databases.
-- **Mock Twilio**: Integrated mock SMS gateway for testing account verification
-  flows.
-- **OpenTelemetry Integration**: Built-in support for distributed tracing of
-  test steps.
+- Assertions for ATProto behavior.
+- Report writing: HTML and JSON test reports with timing statistics.
+- Account discovery: resolves DIDs via SSH, admin APIs, or local databases.
+- Mock Twilio: a mock SMS gateway for testing account verification flows.
+- OpenTelemetry: distributed tracing of test steps.
 
 ## Other Public Subpaths
 
-The full surface area extends well beyond the examples above. Highlights:
+The package exports more than the list above. The main ones:
 
-- `@garazyk/hamownia/run-command`, `@garazyk/hamownia/run-loop` — scenario
-  CLI and loop control.
+- `@garazyk/hamownia/run-command`, `@garazyk/hamownia/run-loop` — scenario CLI
+  and loop control.
 - `@garazyk/hamownia/scenario-runner`, `@garazyk/hamownia/scenario-selector` —
   runner internals.
-- `@garazyk/hamownia/run-diagnostics`, `@garazyk/hamownia/docker-diagnostics`
-  — failed-run capture.
+- `@garazyk/hamownia/run-diagnostics`, `@garazyk/hamownia/docker-diagnostics` —
+  failed-run capture.
 - `@garazyk/hamownia/report-writer`, `@garazyk/hamownia/instrumentation`,
   `@garazyk/hamownia/otel` — telemetry.
 - `@garazyk/hamownia/mock-twilio`, `@garazyk/hamownia/account-discovery`,
