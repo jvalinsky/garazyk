@@ -18,8 +18,6 @@
     if ([sql containsString:@"COUNT(*)"]) {
         return @[@{@"count": @0}];
     }
-    // The author-feed query selects created_at, so it must not be routed by a
-    // created_at match — that swallowed this row and returned an empty feed.
     if ([sql containsString:@"did IN"] && [params containsObject:@"app.bsky.feed.post"]) {
         return @[
             @{
@@ -29,6 +27,9 @@
                 @"value": @"{\"$type\":\"app.bsky.feed.post\",\"text\":\"Hello from value\",\"createdAt\":\"2026-05-14T00:00:00Z\"}"
             }
         ];
+    }
+    if ([sql containsString:@"created_at"]) {
+        return @[];
     }
     return @[];
 }

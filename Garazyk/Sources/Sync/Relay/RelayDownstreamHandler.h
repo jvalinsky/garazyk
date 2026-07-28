@@ -17,6 +17,7 @@
 
 #import <Foundation/Foundation.h>
 #import "Sync/Relay/RelayUpstreamManager.h"
+#import "Sync/Relay/RelayConfiguration.h"
 
 @class RelayEventBuffer;
 @class SubscribeReposHandler;
@@ -71,6 +72,14 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Optional event validator for schema, MST, and signature checks.
  */
 @property (nonatomic, strong, readwrite, nullable) RelayEventValidator *eventValidator;
+
+/**
+ * @abstract Controls whether repository continuity failures are forwarded.
+ *
+ * Defaults to ``RelayValidationModeLogOnly`` so an unknown or legacy
+ * baseline cannot suppress an entire upstream firehose.
+ */
+@property (nonatomic, assign) RelayValidationMode chainValidationMode;
 
 /*!
  @method initWithEventBuffer:subscribeReposHandler:
@@ -157,12 +166,12 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method verifyChainForCommitEvent:
 
- @abstract Checks that the commit event's prevData CID matches the last known root
-           for the repository, detecting chain breaks on the firehose.
+ @abstract Validates the commit envelope and checks ``since``/``prevData``
+           against the stored revision and MST data root.
 
- @discussion Returns YES when the event should be forwarded (valid chain, first
-             seen repo, or state-manager unavailable).  Returns NO and marks the
-             repo as desynchronized when a chain break is detected.
+ @discussion In log-only mode, a mismatch is recorded and the structurally
+             valid event becomes the new baseline. In strict mode, mismatches
+             are rejected without advancing repository state.
  */
 - (BOOL)verifyChainForCommitEvent:(FirehoseCommitEvent *)event;
 

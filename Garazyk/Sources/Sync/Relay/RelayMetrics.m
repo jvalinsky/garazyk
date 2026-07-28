@@ -15,6 +15,10 @@
 @property (nonatomic, assign, readwrite) int64_t mstValidationFailure;
 @property (nonatomic, assign, readwrite) int64_t signatureValidationSuccess;
 @property (nonatomic, assign, readwrite) int64_t signatureValidationFailure;
+@property (nonatomic, assign, readwrite) int64_t continuityBaselines;
+@property (nonatomic, assign, readwrite) int64_t continuityVerified;
+@property (nonatomic, assign, readwrite) int64_t continuityFailures;
+@property (nonatomic, assign, readwrite) int64_t syncResets;
 @property (nonatomic, assign, readwrite) int64_t currentSequence;
 @property (nonatomic, assign, readwrite) int64_t reconnectionCount;
 
@@ -129,6 +133,30 @@
     });
 }
 
+- (void)recordContinuityBaseline {
+    dispatch_async(_metricsQueue, ^{
+        self.continuityBaselines++;
+    });
+}
+
+- (void)recordContinuityVerified {
+    dispatch_async(_metricsQueue, ^{
+        self.continuityVerified++;
+    });
+}
+
+- (void)recordContinuityFailure {
+    dispatch_async(_metricsQueue, ^{
+        self.continuityFailures++;
+    });
+}
+
+- (void)recordSyncReset {
+    dispatch_async(_metricsQueue, ^{
+        self.syncResets++;
+    });
+}
+
 #pragma mark - Sequence
 
 - (void)recordSequence:(int64_t)seq {
@@ -197,6 +225,16 @@
         [metrics appendFormat:@"# TYPE relay_signature_validation_total counter\n"];
         [metrics appendFormat:@"relay_signature_validation_total{result=\"success\"} %lld\n", (long long)self.signatureValidationSuccess];
         [metrics appendFormat:@"relay_signature_validation_total{result=\"failure\"} %lld\n\n", (long long)self.signatureValidationFailure];
+
+        [metrics appendString:@"# HELP relay_continuity_total Repository continuity outcomes\n"];
+        [metrics appendFormat:@"# TYPE relay_continuity_total counter\n"];
+        [metrics appendFormat:@"relay_continuity_total{result=\"baseline\"} %lld\n", (long long)self.continuityBaselines];
+        [metrics appendFormat:@"relay_continuity_total{result=\"verified\"} %lld\n", (long long)self.continuityVerified];
+        [metrics appendFormat:@"relay_continuity_total{result=\"failure\"} %lld\n\n", (long long)self.continuityFailures];
+
+        [metrics appendString:@"# HELP relay_sync_resets_total Repository state resets applied from sync events\n"];
+        [metrics appendFormat:@"# TYPE relay_sync_resets_total counter\n"];
+        [metrics appendFormat:@"relay_sync_resets_total %lld\n\n", (long long)self.syncResets];
         
         [metrics appendString:@"# HELP relay_current_sequence Current highest sequence number\n"];
         [metrics appendFormat:@"# TYPE relay_current_sequence gauge\n"];
@@ -226,6 +264,10 @@
             @"mstValidationFailure": @(self.mstValidationFailure),
             @"signatureValidationSuccess": @(self.signatureValidationSuccess),
             @"signatureValidationFailure": @(self.signatureValidationFailure),
+            @"continuityBaselines": @(self.continuityBaselines),
+            @"continuityVerified": @(self.continuityVerified),
+            @"continuityFailures": @(self.continuityFailures),
+            @"syncResets": @(self.syncResets),
             @"currentSequence": @(self.currentSequence),
             @"reconnectionCount": @(self.reconnectionCount)
         };

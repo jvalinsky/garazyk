@@ -460,6 +460,18 @@ static BOOL ChatServiceTableExists(PDSDatabase *database, NSString *tableName) {
     return messages;
 }
 
+- (nullable NSString *)conversationIdForMessage:(NSString *)messageId
+                                          error:(NSError **)error {
+    NSString *query = @"SELECT convo_id FROM messages WHERE id = ?";
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+                                                                     params:@[messageId]
+                                                                      error:error];
+    if (rows.count > 0) {
+        return rows[0][@"convo_id"];
+    }
+    return nil;
+}
+
 - (BOOL)deleteMessageForSelf:(NSString *)messageId
                    memberDid:(NSString *)memberDid
                        error:(NSError **)error {
