@@ -3346,7 +3346,8 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
         "email TEXT NOT NULL,"
         "expires_at INTEGER NOT NULL,"
         "used_at INTEGER NULL)",
-        "CREATE INDEX IF NOT EXISTS idx_email_confirmation_tokens_did ON email_confirmation_tokens(did)"
+        "CREATE INDEX IF NOT EXISTS idx_email_confirmation_tokens_did ON email_confirmation_tokens(did)",
+        "ALTER TABLE accounts ADD COLUMN email_confirmed_at INTEGER NULL"
     };
 
     for (size_t i = 0; i < sizeof(sqls) / sizeof(sqls[0]); i++) {
