@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ModerationService.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSDatabase+Transactions.h"
 #import "Debug/GZLogger.h"
 
 // Lexicon-defined moderation event types (ADR 0027).
@@ -312,12 +313,20 @@ static NSSet<NSString *> *sValidEventTypes(void) {
         if (![(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[name, now, setId] error:error]) return NO;
     }
     if (values) {
-        // Clear and refill members
-        NSString *del = @"DELETE FROM moderation_set_members WHERE set_id = ?";
-        [(PDSDatabase *)self.database executeParameterizedUpdate:del params:@[setId] error:nil];
-        for (NSString *did in values) {
-            [self addSetValues:setId values:@[did] addedBy:adminDid error:nil];
-        }
+        // Replace members atomically (ADR 0028). Without a transaction, a crash
+        // or timeout between the DELETE and the INSERT loop loses all members.
+        PDSDatabase *db = (PDSDatabase *)self.database;
+        BOOL success = [db transactWithBlock:^(NSError **blockError) {
+            NSString *del = @"DELETE FROM moderation_set_members WHERE set_id = ?";
+            if (![db executeParameterizedUpdate:del params:@[setId] error:blockError]) return;
+
+            NSString *insertNow = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+            NSString *ins = @"INSERT OR IGNORE INTO moderation_set_members (set_id, did, added_at) VALUES (?, ?, ?)";
+            for (NSString *did in values) {
+                if (![db executeParameterizedUpdate:ins params:@[setId, did, insertNow] error:blockError]) return;
+            }
+        } error:error];
+        if (!success) return NO;
     }
     return YES;
 }
@@ -639,7 +648,16 @@ static NSSet<NSString *> *sValidEventTypes(void) {
                     cancelledBy:(NSString *)adminDid
                           error:(NSError **)error {
     NSString *sql = @"UPDATE moderation_scheduled_actions SET status = 'cancelled' WHERE id = ?";
-    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[actionId] error:error];
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[actionId] error:error];
+    if (!success) return NO;
+
+    // Record cancellation in the audit log (ADR 0029).
+    NSString *auditSql = @"INSERT INTO admin_audit_log (admin_did, action, subject_type, subject_id, details, created_at) "
+                         @"VALUES (?, ?, ?, ?, ?, datetime('now'))";
+    [(PDSDatabase *)self.database executeParameterizedUpdate:auditSql
+                                         params:@[adminDid, @"CANCEL_SCHEDULED_ACTION", @"scheduledAction", actionId, @""]
+                                          error:nil];
+    return YES;
 }
 
 - (nullable NSDictionary *)cancelScheduledActions:(NSArray<NSString *> *)subjects
@@ -654,6 +672,13 @@ static NSSet<NSString *> *sValidEventTypes(void) {
         BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[subjectDid] error:nil];
         if (success) {
             [succeeded addObject:subjectDid];
+            // Record each cancellation in the audit log (ADR 0029).
+            NSString *details = comment ?: @"";
+            NSString *auditSql = @"INSERT INTO admin_audit_log (admin_did, action, subject_type, subject_id, details, created_at) "
+                                 @"VALUES (?, ?, ?, ?, ?, datetime('now'))";
+            [(PDSDatabase *)self.database executeParameterizedUpdate:auditSql
+                                                 params:@[adminDid, @"CANCEL_SCHEDULED_ACTION", @"scheduledAction", subjectDid, details]
+                                                  error:nil];
         } else {
             [failed addObject:@{
                 @"did": subjectDid,
