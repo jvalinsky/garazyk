@@ -404,6 +404,15 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
+        // Resolve the conversation ID for this message and verify membership.
+        NSError *resolveError = nil;
+        NSString *convoId = [chatService conversationIdForMessage:messageId error:&resolveError];
+        if (!convoId) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Message not found"];
+            return;
+        }
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
+
         NSError *error = nil;
         BOOL success = [chatService addReaction:messageId actorDid:actorDID emoji:emoji error:&error];
         if (!success) {
@@ -432,6 +441,15 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
         }
+
+        // Resolve the conversation ID for this message and verify membership.
+        NSError *resolveError = nil;
+        NSString *convoId = [chatService conversationIdForMessage:messageId error:&resolveError];
+        if (!convoId) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Message not found"];
+            return;
+        }
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
 
         NSError *error = nil;
         BOOL success = [chatService removeReaction:messageId actorDid:actorDID emoji:emoji error:&error];
