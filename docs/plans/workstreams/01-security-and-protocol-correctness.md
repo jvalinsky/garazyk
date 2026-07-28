@@ -1607,7 +1607,7 @@ via `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0` for operators who need it.
 
 ## S13. Registration, PhoneVerification, and Email trust-boundary sweep
 
-**Status: partially complete (slices 1, 4, 4b, 6 done; slices 2-3, 5 pending).** Slice 1 (CAPTCHA gate with siteverify + fail-closed) at `3a303467`. Slice 4 (opaque password-reset tokens, V18 migration) and slice 4b (opaque account-delete tokens) at `c2277d62`. Slice 6 (composite gate AND semantics) plus the slice 1 follow-ups (tightened siteverify wait budget with cancellation, `percentEncode:` nil guard) landed at `0239f88c` (phase-25). A review of the
+**Status: partially complete (slices 1, 2, 3, 4, 4b, 6 done; slice 5 pending, slice 3b confirmEmail deferred).** Slice 1 (CAPTCHA gate with siteverify + fail-closed) at `3a303467`. Slice 2 (phone OTP nil-provider fail-closed, ADR 0020) and slice 3 (email retry-race fix, DEBUG-only deterministic code, ADR 0022) at `2c9dc7ab`. Slice 4 (opaque password-reset tokens, V18 migration) and slice 4b (opaque account-delete tokens) at `c2277d62`. Slice 6 (composite gate AND semantics) plus the slice 1 follow-ups (tightened siteverify wait budget with cancellation, `percentEncode:` nil guard) landed at `0239f88c` (phase-25). A review of the
 account-creation and verification trust boundaries — Registration,
 PhoneVerification, Email, and the XRPC handlers that consume them — found
 two complete no-op verification gates, a password-reset token that is the
