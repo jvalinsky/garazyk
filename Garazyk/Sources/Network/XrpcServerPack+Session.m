@@ -61,10 +61,33 @@
         // Registration gate validation
         if (registrationGate) {
             NSError *gateError = nil;
-            if (![registrationGate validateRegistrationRequest:body
-                                                 configuration:config
-                                                         error:&gateError]) {
-                response.statusCode = HttpStatusBadRequest;
+            // Dispatch to the remoteAddress-aware variant when the gate
+            // implements it (e.g. CAPTCHA siteverify's remoteip field);
+            // fall back to the two-parameter method otherwise.
+            BOOL passed = NO;
+            if ([registrationGate respondsToSelector:@selector(validateRegistrationRequest:configuration:remoteAddress:error:)]) {
+                passed = [registrationGate validateRegistrationRequest:body
+                                                          configuration:config
+                                                          remoteAddress:request.remoteAddress
+                                                                  error:&gateError];
+            } else {
+                passed = [registrationGate validateRegistrationRequest:body
+                                                          configuration:config
+                                                                  error:&gateError];
+            }
+            if (!passed) {
+                // A gate error with httpStatus=503 indicates a service
+                // availability failure (e.g. CAPTCHA siteverify unreachable).
+                // Map to 503 so the client retries rather than believing
+                // the signup was rejected on its merits.
+                NSInteger httpStatusOverride = 0;
+                if ([gateError.domain isEqualToString:PDSRegistrationGateErrorDomain]) {
+                    id statusVal = gateError.userInfo[@"httpStatus"];
+                    if ([statusVal isKindOfClass:[NSNumber class]]) {
+                        httpStatusOverride = [(NSNumber *)statusVal integerValue];
+                    }
+                }
+                response.statusCode = (httpStatusOverride == 503) ? 503 : HttpStatusBadRequest;
                 NSString *errorCode = @"InvalidRequest";
                 NSString *errorMessage = gateError.localizedDescription ?: @"Registration rejected";
                 if ([gateError.domain isEqualToString:PDSRegistrationGateErrorDomain]) {

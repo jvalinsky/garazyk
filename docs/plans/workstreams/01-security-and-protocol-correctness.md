@@ -1705,6 +1705,70 @@ DB V18), implement `requestPasswordReset` token minting and email delivery.
 5. Plivo "200 means success" fallback removal, input validation sweep
 (`isKindOfClass:` checks at gate field extraction), E.164 phone number
 validation, `PDSEmailHTTPClient` nil-apiKey guard.
+6. Composite gate semantics: change `PDSCompositeRegistrationGate` from OR to
+AND (added 2026-07-27 — see below).
+
+### Slice 1 follow-ups (found in review of the in-flight implementation)
+
+The slice 1 implementation is correct in its core: it fails closed on missing
+secret, timeout, network error, non-2xx, unparseable body, and
+`success: false`; it type-checks `captchaToken`, `success`, and `error-codes`;
+it routes through `ATProtoSafeHTTPClient` so it inherits the phase-18 address
+pinning; and `percentEncode:` correctly uses an explicit RFC 3986 unreserved
+allowlist rather than `URLQueryAllowedCharacterSet`, which would leave `&` and
+`=` unescaped and allow field injection into the form body. `remoteAddress` is
+not spoofable — `HttpRequest.m:125` honors `X-Forwarded-For` only when proxy
+trust is enabled *and* the peer is on a private or loopback range.
+
+Two defects remain in that implementation and must land before slice 1 is
+marked complete:
+
+- **Blocking wait budget.** `PDSCaptchaRegistrationGate.m` waits on a
+  `dispatch_semaphore` for up to `siteverifyTimeout` (12s) on the request
+  thread. Connections get a serial queue each (`HttpServer.m:482`), so
+  concurrent registrations against a slow siteverify consume libdispatch
+  workers. The per-IP rate limit at `XrpcHandler.m:194` caps the exposure, so
+  this is not trivially exploitable — but on timeout the in-flight request is
+  never cancelled and runs to completion writing to `__block` variables
+  nobody reads. Per the 2026-07-27 decision the gate stays synchronous:
+  reduce the wait budget to ~5s (keeping a margin above the 10s→5s request
+  timeout) and cancel the in-flight task on timeout.
+- **`percentEncode:` can return nil.**
+  `stringByAddingPercentEncodingWithAllowedCharacters:` returns nil for
+  unpaired surrogates, and `[formBody appendFormat:@"%@=%@", key, …]` would
+  then write the literal `(null)` — sending `secret=(null)` to the provider.
+  Guard it and reject the request rather than emitting a malformed body.
+
+### Slice 6: composite gate semantics
+
+S13's framing already notes that "a no-op gate defeats every other gate in the
+composite via the OR logic." That is true, but it treats the OR as an
+*amplifier* of the no-op bug rather than a defect of its own — so fixing
+slices 1-2 does not fix it. Even with every gate correctly implemented,
+`PDSRegistrationGate.m:63-90` returns `YES` on the **first** gate that passes,
+while the factory adds one gate per independent flag: `inviteCodeRequired`
+(`:156`), `phoneVerificationRequired` (`:163`), `captchaRequired` (`:190`),
+`oauthOnlyRegistration` (`:205`).
+
+So `inviteCodeRequired = YES` together with `captchaRequired = YES` means a
+valid invite code bypasses CAPTCHA entirely. Four flags all named `*Required`
+behaving as a disjunction is the trap. This also silently negates slice 1's
+own work: the fail-closed and 503 paths are only reachable when CAPTCHA is the
+sole configured gate — with any second gate, a CAPTCHA rejection, including
+siteverify being unreachable, is absorbed by the other gate passing.
+
+Per the 2026-07-27 decision, **all configured gates must pass**. Required
+behaviour:
+
+- The composite evaluates every configured gate and admits the registration
+  only if all of them pass. Zero gates still means open registration.
+- Report the **first** failing gate's error, not the last, so the client sees
+  the most specific rejection rather than whichever gate happened to run last.
+- Short-circuit on first failure is acceptable and preferable — it avoids a
+  needless siteverify round-trip when an earlier gate already rejected.
+- A gate that fails with `httpStatus: 503` must still map to 503 at the
+  handler, so an unreachable CAPTCHA provider is distinguishable from a
+  rejected registration.
 
 ### Owner boundary
 
@@ -1715,6 +1779,12 @@ Slices 1-4 own `Garazyk/Sources/Registration/`, `Garazyk/Sources/PhoneVerificati
 input-validation touch points across the gates. `ContactService.m` is owned
 by slice 3 only. The service-DB migrations (V16/V17/V18) ship one per slice
 so slices remain independently revertible.
+
+Slice 6 owns `PDSRegistrationGate.m`'s composite only. It must land **after**
+slices 1-2, because AND semantics turn any still-no-op gate into a hard
+blocker: with OR, a no-op gate silently admits everyone; with AND, a gate that
+wrongly rejects blocks all registration. Ordering it last means every gate is
+already correct when the conjunction takes effect.
 
 ### Gate
 
@@ -1733,14 +1803,25 @@ for open registration must use `PDSOpenRegistrationGate` explicitly. Slice
 `resetPassword` token must migrate to the emailed opaque token. See the
 derived prompt for full rollback notes.
 
+Slice 6 is the highest-risk revert-wise, because it tightens admission for
+every deployment running more than one gate: a user who previously registered
+with an invite code alone now also needs to clear CAPTCHA or phone OTP. That
+is the intended behaviour, but it is a live signup-funnel change, so it needs
+a release note naming the affected configurations, and it should not ship in
+the same release as slice 1's fail-closed change without deliberate sequencing
+— together they turn a misconfigured CAPTCHA into a total registration outage.
+Rollback is a one-line revert of the composite loop.
+
 ### Execution phases
 
 - `../prompts/phase-23-registration-phone-email-trust-boundary.md` — slices
   1-5, `depends_on: []`.
+- `../prompts/phase-25-registration-gate-composition.md` — slice 6 plus the
+  slice 1 follow-ups, `depends_on: [23]`.
 
 ## S14. Ozone moderation trust-boundary sweep
 
-**Status: not started (identified 2026-07-27).** A focused security review of
+**Status: partially complete (slices 1-5 of 7 done at a66dd7b1, 2026-07-27).** A focused security review of
 the Ozone moderation service (`Garazyk/Sources/Ozone/Services/ModerationService.m`,
 844 lines) and its XRPC trust boundary (`Garazyk/Sources/Network/XrpcToolsOzonePack.m`,
 1,228 lines) found an authorization gap that weakens every `tools.ozone.*`
@@ -1822,11 +1903,11 @@ defect here affects every moderation decision the operator makes.
 The O-zone findings map to seven independently shippable and revertible slices
 (see `../prompts/phase-24-ozone-trust-boundary.md` for the full specification):
 
-1. Ozone endpoint authorization — close the `minimumTokenIssuedAt` gap (O-1)
-2. `updateSafelink` mass-UPDATE guard (O-2)
-3. `getSubjects` column name fix (O-3)
-4. Team management: `did` not `email` as the row key (O-4)
-5. `emitModerationEvent` event-type whitelist validation (O-5)
+1. ✅ Ozone endpoint authorization — close the `minimumTokenIssuedAt` gap (O-1)
+2. ✅ `updateSafelink` mass-UPDATE guard (O-2)
+3. ✅ `getSubjects` column name fix (O-3)
+4. ✅ Team management: `did` not `email` as the row key (O-4)
+5. ✅ `emitModerationEvent` event-type whitelist validation (O-5)
 6. `updateSet` transaction boundary (O-6)
 7. `cancelScheduledAction` audit logging (O-7)
 
