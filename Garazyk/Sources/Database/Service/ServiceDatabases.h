@@ -83,9 +83,25 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 
 /*!
  @method serviceDatabase
- 
- @abstract Get raw service database connection from pool.
- 
+
+ @abstract Get raw service database connection from pool. DEPRECATED — do not add callers.
+
+ @discussion Hands out a connection the pool still owns, with none of the
+ serialization that owner provides. macOS system libsqlite3 is built
+ SQLITE_THREADSAFE=2 (multi-thread), so two threads stepping statements on one
+ connection corrupt its lookaside allocator — this has already produced a hard
+ SIGSEGV inside sqlite3DbMallocRawNNTyped when a background pruner raced a
+ request handler. Handing back a bare pointer is what invites that bug.
+
+ Use serviceDatabaseWithError: instead and go through PDSDatabase's
+ executeParameterizedQuery:params:error:,
+ executeParameterizedUpdate:params:changedRows:error:, or
+ performWithSQLiteHandle: — all of which hold the connection's serial queue.
+
+ Remaining callers: PDSSequencerAnalyticsCollector plus the RepoAuthServer and
+ SequencerAnalytics test suites. This method should be removed once those move
+ over.
+
  @return Raw sqlite3 handle or NULL on failure.
  */
 - (nullable void *)serviceDatabase;
