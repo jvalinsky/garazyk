@@ -8,7 +8,11 @@
  @discussion
     Validates that a createAccount request includes a valid CAPTCHA
     token. Supports Cloudflare Turnstile and hCaptcha verification
-    via server-side siteverify endpoint.
+    via server-side siteverify endpoint. The gate fails closed when
+    no secret key is configured (the operator enabled the gate but
+    did not provide credentials) and when siteverify cannot be reached
+    (network error or timeout). A `success: false` response from the
+    provider is a hard rejection.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -23,11 +27,11 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Requires a valid CAPTCHA token for account registration.
 
- @warning Server-side CAPTCHA verification is **not implemented**. When a
-          secret key is configured, the token is accepted without contacting
-          the Turnstile/hCaptcha siteverify endpoint. Without a secret key,
-          only token presence is checked. Full server-side verification will
-          be added when outbound HTTP client infrastructure is available.
+ @discussion
+    Server-side CAPTCHA verification is performed via the provider's
+    siteverify endpoint using ATProtoSafeHTTPClient. The gate accepts
+    an optional remoteAddress passed through from the XRPC handler for
+    the `remoteip` siteverify field.
  */
 @interface PDSCaptchaRegistrationGate : NSObject <PDSRegistrationGate>
 
