@@ -101,10 +101,19 @@
         return YES;
     }
 
-    // No provider available — accept the presence of a non-empty code.
-    // This is the fallback for mock/none providers that only send codes
-    // but don't validate them server-side.
-    return YES;
+    // No provider available — fail closed (ADR 0020). A nil provider
+    // means the phone gate is misconfigured (provider failed to construct
+    // or was set to "none"), and silently accepting registration would
+    // defeat the gate entirely.
+    if (error) {
+        *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                     code:PDSRegistrationGateErrorPhoneVerificationProviderUnavailable
+                                 userInfo:@{
+                                     NSLocalizedDescriptionKey:
+                                         @"Phone verification service unavailable"
+                                 }];
+    }
+    return NO;
 }
 
 @end

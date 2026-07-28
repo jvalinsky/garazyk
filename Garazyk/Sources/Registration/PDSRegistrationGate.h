@@ -38,6 +38,7 @@ typedef NS_ENUM(NSInteger, PDSRegistrationGateErrorCode) {
     PDSRegistrationGateErrorInvalidCaptcha = 6,
     PDSRegistrationGateErrorOAuthOnlyRegistration = 7,
     PDSRegistrationGateErrorNoGatePassed = 8,
+    PDSRegistrationGateErrorPhoneVerificationProviderUnavailable = 9,
 };
 
 #pragma mark - Protocol

@@ -37,11 +37,15 @@
     NSString *verificationId = [[NSUUID UUID] UUIDString];
     NSString *code = [NSString stringWithFormat:@"%06ld", (long)(arc4random_uniform(900000) + 100000)];
     
-    // In local development/testing, use a deterministic code
+#if DEBUG
+    // In local development/testing, use a deterministic code (ADR 0022).
+    // This gate is compile-time only — it cannot be activated in a release
+    // build regardless of environment variables.
     NSString *allowHTTP = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_HTTP"];
     if ([allowHTTP isEqualToString:@"1"] || [allowHTTP isEqualToString:@"true"]) {
         code = @"123456";
     }
+#endif
 
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
 
@@ -107,11 +111,15 @@
     // Verify the token
     NSString *sql = @"SELECT did FROM contact_tokens WHERE token = ? AND did = ?";
     
-    // Support test-import-token in dev mode
+#if DEBUG
+    // Support test-import-token in dev mode (ADR 0022).
     NSString *allowHTTP = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_HTTP"];
-    if ([token isEqualToString:@"test-import-token"] && ([allowHTTP isEqualToString:@"1"] || [allowHTTP isEqualToString:@"true"])) {
-        // Bypass token check for well-known test token
-    } else {
+    BOOL testTokenBypass = [token isEqualToString:@"test-import-token"] &&
+                           ([allowHTTP isEqualToString:@"1"] || [allowHTTP isEqualToString:@"true"]);
+#else
+    BOOL testTokenBypass = NO;
+#endif
+    if (!testTokenBypass) {
         NSArray *rows = [self.database executeParameterizedQuery:sql params:@[token, actorDID] error:error];
         if (!rows || rows.count == 0) {
             if (error) {

@@ -421,7 +421,9 @@
     XCTAssertEqual(error.code, PDSRegistrationGateErrorPhoneVerificationRequired);
 }
 
-- (void)testPhoneOTPGateAcceptsNonEmptyCode {
+- (void)testPhoneOTPGateRejectsWhenProviderUnavailable {
+    // ADR 0020: nil provider must fail closed — a misconfigured phone gate
+    // must not silently become open registration.
     PDSPhoneOTPRegistrationGate *gate =
         [[PDSPhoneOTPRegistrationGate alloc] initWithPhoneVerificationProvider:nil];
 
@@ -430,7 +432,9 @@
                                                        @"phoneNumber": @"+1234567890"}
                                       configuration:nil
                                               error:&error];
-    XCTAssertTrue(result);
+    XCTAssertFalse(result, @"Nil provider must fail closed");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorPhoneVerificationProviderUnavailable);
 }
 
 #pragma mark - CAPTCHA Gate
@@ -556,7 +560,9 @@
     XCTAssertEqual(error.code, PDSRegistrationGateErrorInviteCodeRequired);
 }
 
-- (void)testCompositeWithInviteAndPhoneOTPPassesWithBoth {
+- (void)testCompositeWithInviteAndPhoneOTPFailsWhenPhoneProviderUnavailable {
+    // ADR 0020: a composite with a nil-provider phone gate must fail — AND
+    // semantics mean every gate must pass, and the phone gate now fails closed.
     PDSServiceDatabases *db = [self createTestServiceDatabases];
     if (!db) return;
 
@@ -573,7 +579,9 @@
                                                             @"phoneNumber": @"+1234567890"}
                                           configuration:nil
                                                   error:&error];
-    XCTAssertTrue(result, @"Both gates satisfied must pass under AND semantics");
+    XCTAssertFalse(result, @"Nil-provider phone gate must fail closed under AND semantics");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorPhoneVerificationProviderUnavailable);
 }
 
 #pragma mark - Error Domain
