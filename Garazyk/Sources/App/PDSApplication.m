@@ -21,6 +21,7 @@
 #import "Services/PDS/PDSSpaceReconciler.h"
 #import "Services/PDS/PDSSpaceOplogPruner.h"
 #import "Services/PDS/PDSCollectionMembershipPruner.h"
+#import "Services/PDS/PDSPasswordResetTokenPruner.h"
 #import "Core/ATProtoDataPaths.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Admin/Diagnostics/PDSBlobAuditHandler.h"
@@ -66,6 +67,7 @@
 @property (nonatomic, strong, readwrite, nullable) PDSSpaceReconciler *spaceReconciler;
 @property (nonatomic, strong, readwrite, nullable) PDSSpaceOplogPruner *spaceOplogPruner;
 @property (nonatomic, strong, readwrite, nullable) PDSCollectionMembershipPruner *collectionMembershipPruner;
+@property (nonatomic, strong, readwrite, nullable) PDSPasswordResetTokenPruner *passwordResetTokenPruner;
 @property (nonatomic, strong, readwrite) JWTMinter *jwtMinter;
 @property (nonatomic, strong, readwrite) HttpServer *httpServer;
 @property (nonatomic, strong, readwrite) PDSRelayService *relayService;
@@ -443,6 +445,12 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         initWithServiceDatabases:_serviceDatabases
                 userDatabasePool:_userDatabasePool
                intervalInSeconds:3600];
+
+    // Password-reset tokens have a 15-minute TTL; prune expired rows every
+    // 5 minutes to keep the table from growing unboundedly.
+    _passwordResetTokenPruner = [[PDSPasswordResetTokenPruner alloc]
+        initWithServiceDatabases:_serviceDatabases
+               intervalInSeconds:300];
 }
 
 - (void)initializeServices {
@@ -606,6 +614,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     [_spaceReconciler start];
     [_spaceOplogPruner start];
     [_collectionMembershipPruner start];
+    [_passwordResetTokenPruner start];
     [self runTemporaryBlobSweep:nil];
     _temporaryBlobSweepTimer = [NSTimer scheduledTimerWithTimeInterval:60 * 60
                                                                    target:self
@@ -660,6 +669,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _spaceReconciler = nil;
     [_collectionMembershipPruner stop];
     _collectionMembershipPruner = nil;
+    [_passwordResetTokenPruner stop];
+    _passwordResetTokenPruner = nil;
 
     // Analytics
     [_analyticsCollector stopCollecting];
