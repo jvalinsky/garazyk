@@ -71,6 +71,27 @@ typedef NS_ENUM(NSInteger, PDSRegistrationGateErrorCode) {
                        configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error;
 
+@optional
+
+/*!
+ @method validateRegistrationRequest:configuration:remoteAddress:error:
+ @abstract Check whether the registration request is allowed through this gate,
+           with the requesting client's remote address.
+ @discussion
+    Gates that need the client IP (e.g. CAPTCHA siteverify's `remoteip` field)
+    implement this method. The composite calls it via respondsToSelector: when
+    present, falling back to the two-parameter variant otherwise.
+ @param body The JSON body of the createAccount request.
+ @param configuration The PDS configuration.
+ @param remoteAddress The requesting client's IP address (may be nil).
+ @param error On failure, set to a gate-specific error.
+ @return YES if the request passes this gate, NO otherwise.
+ */
+- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+                       configuration:(ATProtoServiceConfiguration *)configuration
+                       remoteAddress:(nullable NSString *)remoteAddress
+                               error:(NSError **)error;
+
 @end
 
 #pragma mark - Composite Gate
@@ -95,6 +116,18 @@ typedef NS_ENUM(NSInteger, PDSRegistrationGateErrorCode) {
 
 /*! Whether the composite contains a gate with the given identifier. */
 - (BOOL)containsGateWithIdentifier:(NSString *)identifier;
+
+/*!
+ @method validateRegistrationRequest:configuration:remoteAddress:error:
+ @abstract Validates with the requesting client's remote address.
+ @discussion
+    Dispatches to each child gate's remoteAddress-aware method when present,
+    falling back to the two-parameter variant otherwise.
+ */
+- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+                       configuration:(ATProtoServiceConfiguration *)configuration
+                       remoteAddress:(nullable NSString *)remoteAddress
+                               error:(NSError **)error;
 
 @end
 
