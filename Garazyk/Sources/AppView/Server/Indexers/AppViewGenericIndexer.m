@@ -113,10 +113,13 @@
 
     // Use the rkey parameter (passed from ingest/backfill), or fall back to record data
     NSString *effectiveRkey = rkey;
-    if (!effectiveRkey || effectiveRkey.length == 0) {
-        effectiveRkey = record[@"rkey"] ?: record[@"$rkey"];
+    if (effectiveRkey.length == 0) {
+        // Record-supplied values are untrusted: a non-string would crash on
+        // -length below and bind an object into a TEXT column further down.
+        id recordRkey = record[@"rkey"] ?: record[@"$rkey"];
+        effectiveRkey = [recordRkey isKindOfClass:[NSString class]] ? recordRkey : nil;
     }
-    if (!effectiveRkey) {
+    if (effectiveRkey.length == 0) {
         // Generate a random rkey if not present
         effectiveRkey = [[[NSUUID UUID] UUIDString] lowercaseString];
     }
@@ -136,11 +139,13 @@
         subjectDid = nil;
     }
 
-    // Store in the generic records table
+    // Store in the generic records table. The rkey column must agree with the
+    // rkey embedded in the URI above, so both come from effectiveRkey; rkey
+    // itself may be nil, which the parameter array in saveRecordWithURI: cannot hold.
     return [self.database saveRecordWithURI:uri
                                         did:did
                                  collection:collection
-                                       rkey:rkey
+                                       rkey:effectiveRkey
                                         cid:cid ?: @""
                                      handle:nil
                                       value:valueStr
