@@ -198,7 +198,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
         NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(actorDID, row[@"cid"])];
-        NSString *subjectDID = (record && record[@"subject"]) ? record[@"subject"] : nil;
+        NSString *subjectDID = [record[@"subject"] isKindOfClass:[NSString class]] ? record[@"subject"] : nil;
         [rowSubjectDIDs addObject:subjectDID ?: [NSNull null]];
         if (subjectDID && ![distinctSubjectDIDs containsObject:subjectDID]) {
             [distinctSubjectDIDs addObject:subjectDID];
@@ -279,7 +279,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
         }
 
         NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(followerDID, row[@"cid"])];
-        if (record && [record[@"subject"] isEqualToString:actorDID]) {
+        if (record && [record[@"subject"] isKindOfClass:[NSString class]] && [record[@"subject"] isEqualToString:actorDID]) {
             [matchedFollowerDIDs addObject:followerDID];
         }
 
@@ -356,7 +356,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     for (NSUInteger i = 0; i < rows.count && (NSInteger)i < limit; i++) {
         NSDictionary *row = rows[i];
         NSDictionary *record = recordsByKey[GZGraphRecordBodyKey(actorDID, row[@"cid"])];
-        NSString *subjectDID = (record && record[@"subject"]) ? record[@"subject"] : nil;
+        NSString *subjectDID = [record[@"subject"] isKindOfClass:[NSString class]] ? record[@"subject"] : nil;
         [rowSubjectDIDs addObject:subjectDID ?: [NSNull null]];
         if (subjectDID && ![distinctSubjectDIDs containsObject:subjectDID]) {
             [distinctSubjectDIDs addObject:subjectDID];
@@ -482,7 +482,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     NSArray *followRows = [self.database executeParameterizedQuery:followQuery params:@[viewerDID, @"app.bsky.graph.follow"] error:nil];
     for (NSDictionary *row in followRows) {
         NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:viewerDID error:nil];
-        if (record && [record[@"subject"] isEqualToString:targetDID]) {
+        if (record && [record[@"subject"] isKindOfClass:[NSString class]] && [record[@"subject"] isEqualToString:targetDID]) {
             relationship[@"following"] = [NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/%@", viewerDID, row[@"rkey"]];
             break;
         }
@@ -492,7 +492,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     NSArray *followedByRows = [self.database executeParameterizedQuery:followQuery params:@[targetDID, @"app.bsky.graph.follow"] error:nil];
     for (NSDictionary *row in followedByRows) {
         NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:targetDID error:nil];
-        if (record && [record[@"subject"] isEqualToString:viewerDID]) {
+        if (record && [record[@"subject"] isKindOfClass:[NSString class]] && [record[@"subject"] isEqualToString:viewerDID]) {
             relationship[@"followedBy"] = [NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/%@", targetDID, row[@"rkey"]];
             break;
         }
@@ -503,7 +503,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     NSArray *blockRows = [self.database executeParameterizedQuery:blockQuery params:@[viewerDID, @"app.bsky.graph.block"] error:nil];
     for (NSDictionary *row in blockRows) {
         NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:viewerDID error:nil];
-        if (record && [record[@"subject"] isEqualToString:targetDID]) {
+        if (record && [record[@"subject"] isKindOfClass:[NSString class]] && [record[@"subject"] isEqualToString:targetDID]) {
             relationship[@"blocking"] = [NSString stringWithFormat:@"at://%@/app.bsky.graph.block/%@", viewerDID, row[@"rkey"]];
             break;
         }
@@ -520,7 +520,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     NSArray *blockedByRows = [self.database executeParameterizedQuery:blockQuery params:@[targetDID, @"app.bsky.graph.block"] error:nil];
     for (NSDictionary *row in blockedByRows) {
         NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:targetDID error:nil];
-        if (record && [record[@"subject"] isEqualToString:viewerDID]) {
+        if (record && [record[@"subject"] isKindOfClass:[NSString class]] && [record[@"subject"] isEqualToString:viewerDID]) {
             relationship[@"blockedBy"] = @YES;
             break;
         }
