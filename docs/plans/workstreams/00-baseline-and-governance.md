@@ -37,7 +37,7 @@ Capture these results with commit and date:
    May 2026 failure counts into backlog.
 5. Browser smoke for dashboard controls, Admin CSP/CSRF, OAuth consent, and
    keyboard workflows.
-   *Evidence (2026-07-17, commit 703723c4cc36033cb02887981982c457a878b39c):*
+   *Evidence (2026-07-17, commit de67b72a):*
    - `deno run -A scripts/scenario-dashboard/browser_smoke_test.ts` — passed.
      Dashboard controls, mutation-capability enforcement, security headers,
      scenario navigation, and keyboard tab order verified.
@@ -55,7 +55,7 @@ Capture these results with commit and date:
        `packages/gruszka/scripts/generate_test.ts` when run as part of the
        full suite. *Resolved 2026-07-16:* the failures were checked-in
        `lexicons.ts` artifact drift, not test isolation; the regeneration in
-       `ad2bd39f1` fixed them. A full `deno task test` run on 2026-07-16
+       `011bb696` fixed them. A full `deno task test` run on 2026-07-16
        passes clean (7284 passed, 0 failed, 6 ignored), and regenerating via
        `deno task generate-client` produces zero diff.
 6. WASM smoke, notebook, and runtime-gap probes if a current kernel artifact can
@@ -68,7 +68,7 @@ summary and command line in source control.
 
 ### Deno split branch (sync complete, deletion still pending)
 
-`codex/split-deno-testing-repos` (tip `307e8764b`) removes more than 100,000
+`codex/split-deno-testing-repos` (tip `73b950cc`) removes more than 100,000
 lines after copying them to two clean local repositories. As of 2026-07-15,
 both `garazyk-atproto-testing` and `garazyk-tui` are synchronized with
 `main`'s in-tree copies (see mega-plan Phase 0 item 3). The branch itself is
@@ -81,10 +81,10 @@ Until then this branch is inactive, not abandoned.
 
 ### Objective-C modernization branch (code superseded, docs retained)
 
-`refactor/plan01-hygiene-quick-wins` (tip `fdbd2dd42`) contained three hygiene
+`refactor/plan01-hygiene-quick-wins` (tip `73b950cc`) contained three hygiene
 commits (raw logging, `@synthesize`, `#pragma mark` cleanup) stacked on the
 Deno split branch. Those three are now cherry-picked onto `main` as
-`5d048eb53`, `2f88fad66`, and `6511b4502` (code only). The branch is superseded
+`10f6f2f7`, `5780c6a0`, and `439a638f` (code only). The branch is superseded
 for that code and should not be merged as-is. Its remaining unique content —
 `plan/objc-modernization-2026-07/*` and `docs/tui/asciinema-overlay/*` — was
 deliberately left off `main` during the cherry-pick (unrelated to hygiene, and
@@ -95,7 +95,7 @@ decomposition); do not delete it without folding anything still useful into
 
 ### Pre-rewrite backup branch (archival, do not merge)
 
-`backup-pre-rewrite` (tip `fe63ac13a`) is the safety snapshot taken before the
+`backup-pre-rewrite` (tip `73b950cc`) is the safety snapshot taken before the
 network-rework history rewrite that stripped the transient `RateLimiter DEBUG`
 logging commit (see QueryRunner/PLC entry below). All 12 of its other commits
 have since landed on `main` in reworked form, and `main` has progressed 22
@@ -113,7 +113,7 @@ debug logging that shipped with the network rework was removed by rewriting the
 introducing commit, so `main` history carries no `RateLimiter DEBUG` lines. The
 arc is finished; the implementation diary
 (`queryrunner_deepening_pilot_plan.md`) was deleted on 2026-07-16 per the
-plan-lifecycle rule (Git retains its text at `6f8921ab6`).
+plan-lifecycle rule (Git retains its text at `3217a67f`).
 
 ## B0.4 Replace false-confidence tests
 
@@ -123,9 +123,9 @@ CAR, bounded export, blob header, and rejected identifier fixtures. Preserve the
 current production safeguards while making regression claims executable.
 
 **Status (2026-07-14):** complete. Deterministic DPoP, SQL-allowlist,
-refresh-token, import, and CAR coverage landed (`6d8ebe97b`, plus the
-`NetworkSecurityHardeningTests` registration in `6cf9ed1c8` and the
-`TestKeyFixtures` dedupe in `50624140f`). A fresh build from HEAD runs all 9
+refresh-token, import, and CAR coverage landed (`916ad719`, plus the
+`NetworkSecurityHardeningTests` registration in `1394eb57` and the
+`TestKeyFixtures` dedupe in `66868486`). A fresh build from HEAD runs all 9
 `NetworkSecurityHardeningTests` with 0 failures: `testImportTamperRejection`
 sends real corrupted CAR bytes and asserts a CAR-parse 400 (not the empty-body
 guard); `testSyncExportBound` asserts 404 RepoNotFound for a valid-but-unknown DID;

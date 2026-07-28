@@ -36,7 +36,7 @@ Both conditions from the original "Consequences" section are now met:
 
 1. **QueryRunner pattern proven** — the pilot shipped and multiple stores adopted
    `ATProtoDatabaseQueryRunner` without regressions.
-2. **Pooling migration scoped and completed** — commit `e1f5ee2f` replaced the serial
+2. **Pooling migration scoped and completed** — commit `c66b0193` replaced the serial
    dispatch queue with `ATProtoConnectionPool` (min 1, max 8) +
    `ATProtoConnectionManagerPooled` + `ATProtoDatabaseQueryRunner`. All 30 AppViewDatabase
    tests passed.
@@ -48,7 +48,7 @@ migration switch) was subsequently migrated to `PDSMigrationManager` classes
 ## Consequences
 
 - **Superseded.** The conditions listed below were met and `AppViewDatabase` was migrated
-  to `ATProtoDatabaseQueryRunner` + `ATProtoConnectionManagerPooled` (commit `e1f5ee2f`).
+  to `ATProtoDatabaseQueryRunner` + `ATProtoConnectionManagerPooled` (commit `c66b0193`).
   Inline schema was migrated to `PDSMigrationManager` classes. This ADR is retained for
   historical context only.
 - ~~Revisit only when **both** hold: (a) the QueryRunner pilot has proven the mechanics-routing

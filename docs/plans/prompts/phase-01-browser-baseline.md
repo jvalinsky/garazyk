@@ -5,7 +5,7 @@ status: complete
 agent: worker
 depends_on: []
 completed_at: 2026-07-17T00:09:21Z
-commit: 703723c4cc36033cb02887981982c457a878b39c
+commit: 06d70f36
 ---
 
 # Phase 1: Browser smoke baseline
@@ -62,7 +62,7 @@ those — file them as evidence), any dashboard/Admin feature work.
 - Pre-existing `deno task lint` issues in `packages/` are unrelated to this
   baseline. The `deno task test` failures observed at the time (gruszka
   `generate_test.ts`) were `lexicons.ts` artifact drift, fixed by the
-  `ad2bd39f1` regeneration; the full suite passes clean as of 2026-07-16
+  `011bb696` regeneration; the full suite passes clean as of 2026-07-16
   (workstream 00 B0.2 item 5).
 
 ## On completion

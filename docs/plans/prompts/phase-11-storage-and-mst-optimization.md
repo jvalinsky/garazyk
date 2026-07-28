@@ -78,7 +78,7 @@ slice 2 are the safety net for every MST-adjacent change here.
 - The O2 phase B lesson (workstream 07 Status): a `WITHOUT ROWID` rewrite
   must carry over every constraint (FKs, CHECKs, DEFAULTs), not just columns
   and the PK — phase B dropped an `ON DELETE CASCADE` and needed a fix
-  commit (`2f7ba5bdb`).
+  commit (`459ba0e8`).
 
 ## Scope and order
 

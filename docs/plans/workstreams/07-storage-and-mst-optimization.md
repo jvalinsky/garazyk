@@ -12,7 +12,7 @@ analysis, indexing, PRAGMA tuning) — load it before touching any lane here.
 
 ## Status (2026-07-18)
 
-- **O1 complete** (`3be4ee1ab`, merged `2c45c6814`). `ipld_blocks` now uses
+- **O1 complete** (`ad1f43c7`, merged `8b3fccd1`). `ipld_blocks` now uses
   `INSERT OR IGNORE` (`ActorStore.m:448`). The commit went beyond the planned
   scope: 15 other `INSERT OR REPLACE` sites converted to
   `ON CONFLICT DO UPDATE` (preventing blob-trigger double-firing and silent
@@ -21,10 +21,10 @@ analysis, indexing, PRAGMA tuning) — load it before touching any lane here.
   `PRAGMA optimize` on close), and one unparameterized SQL site fixed.
   The added indexes are plain filter indexes — O4's covering-index lane is
   still open.
-- **O2 Phase A complete** (`fc1705696`, merged `8386727de`): actor store V3
+- **O2 Phase A complete** (`9386db07`, merged `9386db07`): actor store V3
   `record_tombstones` WITHOUT ROWID migration + fresh-DB schema, with
   apply/rollback/re-apply round-trip tests.
-- **O2 Phase B complete** (`50f2482c2` + fix `2f7ba5bdb`): service DB **V14**
+- **O2 Phase B complete** (`0d0602e7` + fix `459ba0e8`): service DB **V14**
   (not V13 as originally planned — V13 was already taken)
   `moderation_set_members` + `moderation_subjects` WITHOUT ROWID. The fix
   commit restored the `FOREIGN KEY (set_id) ... ON DELETE CASCADE` the
@@ -69,7 +69,7 @@ transaction discipline) are already done and excluded from this plan.
 
 | Item                                     | Boundary risk | Structural drag | Test leverage | Change safety | Payoff | Priority | Status |
 | ---------------------------------------- | ------------- | ---------------- | ------------- | -------------- | ------ | -------- | ------ |
-| O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       | Done (`3be4ee1ab`) |
+| O1: `INSERT OR IGNORE` for `ipld_blocks` |             2 |                1 |             4 |             5 |      4 | P0       | Done (`ad1f43c7`) |
 | O2: `WITHOUT ROWID` for composite-PK tables |          3 |                2 |             4 |             4 |      4 | P0       | Complete |
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Complete |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Complete (actor V5) |
@@ -78,7 +78,7 @@ transaction discipline) are already done and excluded from this plan.
 
 ## O1: `INSERT OR IGNORE` for `ipld_blocks` — COMPLETE
 
-Landed in `3be4ee1ab` (see Status above). Steps retained for the record.
+Landed in `ad1f43c7` (see Status above). Steps retained for the record.
 
 **Problem:** `ActorStore.m` uses `INSERT OR REPLACE INTO ipld_blocks (...)`.
 For immutable content-addressed blocks, `REPLACE` deletes and re-inserts the
@@ -135,7 +135,7 @@ None. Can ship independently.
 
 ## O2: `WITHOUT ROWID` for composite-PK tables — COMPLETE
 
-Phase A landed in `fc1705696`; Phase B in `50f2482c2` + `2f7ba5bdb` (FK
+Phase A landed in `9386db07`; Phase B in `0d0602e7` + `459ba0e8` (FK
 restoration — see the Status lesson). Phases C and D are complete.
 
 **Problem:** Zero tables in the codebase use `WITHOUT ROWID`. Tables with
@@ -188,7 +188,7 @@ they are the hottest tables. Defer to a later phase.
 
 ### Steps
 
-#### Phase A: Actor store — `record_tombstones` (lowest risk) — COMPLETE (`fc1705696`)
+#### Phase A: Actor store — `record_tombstones` (lowest risk) — COMPLETE (`9386db07`)
 
 1. **Create V3 actor store migration.** Add a `V3RecordTombstonesWithoutRowid`
    class to `PDSMigrationManager.m` that:
@@ -211,11 +211,11 @@ they are the hottest tables. Defer to a later phase.
 
 5. **Run existing tests.** `AllTests --gated=run` must stay green.
 
-#### Phase B: Service DB — `moderation_set_members`, `moderation_subjects` — COMPLETE (`50f2482c2` + `2f7ba5bdb`)
+#### Phase B: Service DB — `moderation_set_members`, `moderation_subjects` — COMPLETE (`0d0602e7` + `459ba0e8`)
 
 6. **Create V14 service migration.** Same pattern as Phase A but for
    both tables. Run within a single transaction. (Landed as
-   `V14ModerationWithoutRowid`; the follow-up `2f7ba5bdb` restored the
+   `V14ModerationWithoutRowid`; the follow-up `459ba0e8` restored the
    `set_id` FK cascade the rewrite dropped.)
 
 7. **Update `PDSSchemaManager.m`.** Change `serviceSchemaSQL` to create
@@ -234,7 +234,7 @@ they are the hottest tables. Defer to a later phase.
     tables use V12 of `pdsDatabaseMigrationManager`; the service-owned
     `collection_membership` uses V15 of `serviceDatabaseMigrationManager`.
     Carry over every FK/CHECK/DEFAULT constraint from the original DDL
-    (the Phase B rewrite dropped an FK — `2f7ba5bdb`).
+    (the Phase B rewrite dropped an FK — `459ba0e8`).
 
 12. **Update fresh DDL.** Change `Schema.m` and the ChatRuntime schema
     manager statements to include `WITHOUT ROWID` for fresh databases.
@@ -411,7 +411,7 @@ table row after finding the index entry.
    index includes all selected columns.
 
 3. **Add indexes.** Create actor-store V5 for the one verified covering index.
-   Note `3be4ee1ab` already added six plain filter indexes
+   Note `ad1f43c7` already added six plain filter indexes
    (`idx_records_collection`, `idx_blocks_repo_did_created`,
    `idx_blobs_did_created`, `idx_labels_val`, `idx_labels_src_val`,
    `idx_takedowns_applied`); check query plans against those before

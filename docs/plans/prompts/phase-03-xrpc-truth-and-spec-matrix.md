@@ -65,11 +65,11 @@ Two of this phase's semantic fixes needed correction after landing:
 - `app.bsky.labeler.getServices` dids validation called `-length` on the
   query param, but repeated query parameters arrive as `NSArray` — every
   spec-conforming request 500'd and `testLabelerGetServices` was failing at
-  HEAD. Fixed in `7a6f97ac8`, which also added the `admin.getRecord`
+  HEAD. Fixed in `e05b2479`, which also added the `admin.getRecord`
   validation tests this phase's acceptance gate required but never got.
-- The companion ATURI hardening (`07c96d421`) rejected `_` and `%` in DID
+- The companion ATURI hardening (`621d2283`) rejected `_` and `%` in DID
   identifiers, which the AT Protocol DID syntax allows (e.g.
-  `did:web:localhost%3A1234`). Aligned with the spec regex in `94a5be824`.
+  `did:web:localhost%3A1234`). Aligned with the spec regex in `f2310b54`.
 
 Lesson for later phases: run the touched suites before committing; both
 regressions were visible in a targeted `-f` run.

@@ -31,7 +31,7 @@ registration and binary entry surfaces this phase cuts along.
 1. **Route packs**: `AppViewXRpcRoutePack.m`, `XrpcRepoPack.m`,
    `XrpcAdminPack.m`, `XrpcServerPack.m` — split by route ownership. The
    generated NSID constants and the registration drift/lint checks
-   (`e212288bd`, Narzedzia literal guard) must stay green after every slice.
+   (`0601a505`, Narzedzia literal guard) must stay green after every slice.
 2. **`OAuth2Handler.m`** — characterize the full grant/consent/DPoP flows
    first (scenario 93/94 regressions guard the consent form; do not weaken
    them).
