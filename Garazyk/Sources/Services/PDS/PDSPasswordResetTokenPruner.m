@@ -87,7 +87,21 @@ static const NSTimeInterval kMinimumPruneInterval = 300.0;
     sqlite3_finalize(stmt);
 
     if (removed > 0) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner removed %d expired tokens", removed);
+        GZ_LOG_INFO_C(@"ServiceDB", @"Token pruner removed %d expired password-reset tokens", removed);
+    }
+
+    // Also prune expired email_confirmation_tokens (phase-23 slice 4c).
+    sqlite3_stmt *emailStmt = NULL;
+    if (sqlite3_prepare_v2(db, "DELETE FROM email_confirmation_tokens WHERE expires_at < ?", -1, &emailStmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_int64(emailStmt, 1, (sqlite3_int64)now);
+        sqlite3_step(emailStmt);
+        int emailRemoved = sqlite3_changes(db);
+        sqlite3_finalize(emailStmt);
+        if (emailRemoved > 0) {
+            GZ_LOG_INFO_C(@"ServiceDB", @"Token pruner removed %d expired email-confirmation tokens", emailRemoved);
+        }
+    } else {
+        GZ_LOG_INFO_C(@"ServiceDB", @"Token pruner: email_confirmation_tokens prepare failed (table may not exist): %s", sqlite3_errmsg(db));
     }
 }
 
