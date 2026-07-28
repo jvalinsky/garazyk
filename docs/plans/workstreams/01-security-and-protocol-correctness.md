@@ -1607,7 +1607,7 @@ via `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0` for operators who need it.
 
 ## S13. Registration, PhoneVerification, and Email trust-boundary sweep
 
-**Status: partially complete (slices 4 & 4b done at HEAD `c2277d62`; slices 1-3, 5 pending).** A review of the
+**Status: partially complete (slices 1, 4, 4b done; slices 2-3, 5-6 pending).** Slice 1 (CAPTCHA gate with siteverify + fail-closed) at `3a303467`. Slice 4 (opaque password-reset tokens, V18 migration) and slice 4b (opaque account-delete tokens) at `c2277d62`. A review of the
 account-creation and verification trust boundaries — Registration,
 PhoneVerification, Email, and the XRPC handlers that consume them — found
 two complete no-op verification gates, a password-reset token that is the
@@ -1700,7 +1700,7 @@ V16).
 3. Email: fix `PDSEmailHTTPClient` retry race, implement `confirmEmail` token
 exchange (service DB V17), move `PDS_ALLOW_HTTP` deterministic code behind
 `#if DEBUG`, redact OTP code from logs.
-4. Password reset: replace DID-as-token with opaque single-use token (service
+4. ✅ Password reset: replace DID-as-token with opaque single-use token (service
 DB V18), implement `requestPasswordReset` token minting and email delivery.
 5. Plivo "200 means success" fallback removal, input validation sweep
 (`isKindOfClass:` checks at gate field extraction), E.164 phone number
@@ -1821,7 +1821,7 @@ Rollback is a one-line revert of the composite loop.
 
 ## S14. Ozone moderation trust-boundary sweep
 
-**Status: partially complete (slices 1-5 of 7 done at a66dd7b1, 2026-07-27).** A focused security review of
+**Status: partially complete (slices 1-6 of 7 done; slices 1-5 at a66dd7b1, slice 6 uncommitted).** A focused security review of
 the Ozone moderation service (`Garazyk/Sources/Ozone/Services/ModerationService.m`,
 844 lines) and its XRPC trust boundary (`Garazyk/Sources/Network/XrpcToolsOzonePack.m`,
 1,228 lines) found an authorization gap that weakens every `tools.ozone.*`
@@ -1908,7 +1908,7 @@ The O-zone findings map to seven independently shippable and revertible slices
 3. ✅ `getSubjects` column name fix (O-3)
 4. ✅ Team management: `did` not `email` as the row key (O-4)
 5. ✅ `emitModerationEvent` event-type whitelist validation (O-5)
-6. `updateSet` transaction boundary (O-6)
+6. ✅ `updateSet` transaction boundary (O-6)
 7. `cancelScheduledAction` audit logging (O-7)
 
 No slice changes a public endpoint contract — all fixes are internal

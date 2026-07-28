@@ -65,6 +65,54 @@
 
 @end
 
+#pragma mark - Stub Gate (fails with httpStatus 503)
+
+@interface PDSStub503FailingGate : NSObject <PDSRegistrationGate>
+@end
+
+@implementation PDSStub503FailingGate
+
+- (NSString *)gateIdentifier {
+    return @"stub_503_failing";
+}
+
+- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+                       configuration:(ATProtoServiceConfiguration *)configuration
+                               error:(NSError **)error {
+    if (error) {
+        *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                     code:PDSRegistrationGateErrorInvalidCaptcha
+                                 userInfo:@{
+                                     NSLocalizedDescriptionKey: @"Stub gate service unavailable",
+                                     @"httpStatus": @(503),
+                                 }];
+    }
+    return NO;
+}
+
+@end
+
+#pragma mark - Stub Gate (counts invocations, always passes)
+
+@interface PDSInvocationCountingGate : NSObject <PDSRegistrationGate>
+@property (nonatomic, assign) NSUInteger invocationCount;
+@end
+
+@implementation PDSInvocationCountingGate
+
+- (NSString *)gateIdentifier {
+    return @"stub_invocation_counting";
+}
+
+- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+                       configuration:(ATProtoServiceConfiguration *)configuration
+                               error:(NSError **)error {
+    self.invocationCount++;
+    return YES;
+}
+
+@end
+
 #pragma mark - Tests
 
 @interface PDSRegistrationGateTests : XCTestCase
@@ -109,7 +157,10 @@
     XCTAssertTrue(result);
 }
 
-- (void)testCompositeGateORLogicPassesIfAnyGatePasses {
+- (void)testCompositeGateANDLogicFailsIfAnyGateFails {
+    // Phase-25 slice 6: the composite now requires every configured gate to
+    // pass. Previously (OR) a single passing gate admitted the registration
+    // even though another configured gate rejected it.
     PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
     [composite addGate:[[PDSStubFailingGate alloc] init]];
     [composite addGate:[[PDSStubPassingGate alloc] init]];
@@ -120,10 +171,24 @@
     BOOL result = [composite validateRegistrationRequest:@{}
                                           configuration:nil
                                                   error:&error];
-    XCTAssertTrue(result);
+    XCTAssertFalse(result, @"AND semantics: one failing gate must reject even if another passes");
+    XCTAssertNotNil(error);
 }
 
-- (void)testCompositeGateORLogicFailsIfAllGatesFail {
+- (void)testCompositeGateANDLogicPassesOnlyIfAllGatesPass {
+    PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
+    [composite addGate:[[PDSStubPassingGate alloc] init]];
+    [composite addGate:[[PDSStubPassingGate alloc] init]];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertTrue(result);
+    XCTAssertNil(error);
+}
+
+- (void)testCompositeGateANDLogicFailsIfAllGatesFail {
     PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
     [composite addGate:[[PDSStubFailingGate alloc] init]];
     [composite addGate:[[PDSStubFailingGate alloc] init]];
@@ -135,6 +200,65 @@
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertEqualObjects(error.domain, PDSRegistrationGateErrorDomain);
+}
+
+- (void)testCompositeGateReportsFirstFailingGatesError {
+    // Two distinct failing gates with distinguishable errors — the composite
+    // must surface the first one's error, not the last, so the client sees
+    // the most specific rejection.
+    PDSStubFailingGate *firstFailing = [[PDSStubFailingGate alloc] init];
+    PDSStubFailingGate *secondFailing = [[PDSStubFailingGate alloc] init];
+
+    PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
+    [composite addGate:firstFailing];
+    [composite addGate:secondFailing];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertFalse(result);
+    // Both stub gates produce the same message; the short-circuit test below
+    // proves ordering more directly (the second gate is never even invoked).
+    XCTAssertEqualObjects(error.localizedDescription, @"Stub gate always fails");
+}
+
+- (void)testCompositeGateShortCircuitsOnFirstFailureAndNeverCallsLaterGates {
+    PDSStubFailingGate *firstFailing = [[PDSStubFailingGate alloc] init];
+    PDSInvocationCountingGate *neverCalled = [[PDSInvocationCountingGate alloc] init];
+
+    PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
+    [composite addGate:firstFailing];
+    [composite addGate:neverCalled];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertFalse(result);
+    XCTAssertEqual(neverCalled.invocationCount, 0,
+                    @"Short-circuit: a gate after the first failure must never be invoked");
+}
+
+- (void)testCompositeGatePropagates503FromLaterGateWhenEarlierGatePasses {
+    // The headline "absorption" bug: with OR semantics, a passing invite gate
+    // returned YES before the CAPTCHA gate (which failed with 503) ever ran.
+    // With AND, the composite must keep evaluating and surface the 503.
+    PDSStubPassingGate *passing = [[PDSStubPassingGate alloc] init];
+    PDSStub503FailingGate *failing503 = [[PDSStub503FailingGate alloc] init];
+
+    PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
+    [composite addGate:passing];
+    [composite addGate:failing503];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertFalse(result);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects([error.userInfo objectForKey:@"httpStatus"], @(503),
+                          @"A 503 from a later gate must not be absorbed by an earlier passing gate");
 }
 
 - (void)testCompositeGateContainsGateWithIdentifier {
@@ -393,7 +517,10 @@
 
 #pragma mark - Composite with Multiple Gates
 
-- (void)testCompositeWithInviteAndPhoneOTPPassesWithInviteCode {
+- (void)testCompositeWithInviteAndPhoneOTPRejectsInviteCodeAlone {
+    // Phase-25 slice 6 (AND semantics): a valid invite code alone must no
+    // longer bypass a second configured gate (phone OTP here stands in for
+    // CAPTCHA — same defect class as inviteCodeRequired + captchaRequired).
     PDSServiceDatabases *db = [self createTestServiceDatabases];
     if (!db) return;
 
@@ -404,15 +531,15 @@
     [composite addGate:[[PDSInviteCodeRegistrationGate alloc] initWithServiceDatabases:db]];
     [composite addGate:[[PDSPhoneOTPRegistrationGate alloc] initWithPhoneVerificationProvider:nil]];
 
-    // Provide invite code but not phone OTP — should pass (OR logic)
     NSError *error = nil;
     BOOL result = [composite validateRegistrationRequest:@{@"inviteCode": code}
                                           configuration:nil
                                                   error:&error];
-    XCTAssertTrue(result);
+    XCTAssertFalse(result, @"Invite code alone must not bypass the phone OTP gate under AND semantics");
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorPhoneVerificationRequired);
 }
 
-- (void)testCompositeWithInviteAndPhoneOTPPassesWithPhoneCode {
+- (void)testCompositeWithInviteAndPhoneOTPRejectsPhoneCodeAlone {
     PDSServiceDatabases *db = [self createTestServiceDatabases];
     if (!db) return;
 
@@ -420,13 +547,33 @@
     [composite addGate:[[PDSInviteCodeRegistrationGate alloc] initWithServiceDatabases:db]];
     [composite addGate:[[PDSPhoneOTPRegistrationGate alloc] initWithPhoneVerificationProvider:nil]];
 
-    // Provide phone OTP but not invite code — should pass (OR logic)
     NSError *error = nil;
     BOOL result = [composite validateRegistrationRequest:@{@"phoneVerificationCode": @"123456",
                                                             @"phoneNumber": @"+1234567890"}
                                           configuration:nil
                                                   error:&error];
-    XCTAssertTrue(result);
+    XCTAssertFalse(result, @"Phone OTP alone must not bypass the invite code gate under AND semantics");
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorInviteCodeRequired);
+}
+
+- (void)testCompositeWithInviteAndPhoneOTPPassesWithBoth {
+    PDSServiceDatabases *db = [self createTestServiceDatabases];
+    if (!db) return;
+
+    NSString *code = @"INVITE-TEST-CODE-2";
+    [db createInviteCode:code forAccount:@"did:plc:system" maxUses:1 error:nil];
+
+    PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
+    [composite addGate:[[PDSInviteCodeRegistrationGate alloc] initWithServiceDatabases:db]];
+    [composite addGate:[[PDSPhoneOTPRegistrationGate alloc] initWithPhoneVerificationProvider:nil]];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{@"inviteCode": code,
+                                                            @"phoneVerificationCode": @"123456",
+                                                            @"phoneNumber": @"+1234567890"}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertTrue(result, @"Both gates satisfied must pass under AND semantics");
 }
 
 #pragma mark - Error Domain
