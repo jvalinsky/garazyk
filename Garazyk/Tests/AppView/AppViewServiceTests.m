@@ -63,11 +63,13 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+               rkey:(NSString *)rkey
                 cid:(nullable NSString *)cid
               error:(NSError **)error {
     [self.indexCalls addObject:AVSCall(_cmd, @{
         @"did": did ?: [NSNull null],
         @"collection": collection ?: [NSNull null],
+        @"rkey": rkey ?: [NSNull null],
         @"cid": cid ?: [NSNull null],
         @"type": record[@"$type"] ?: [NSNull null],
     })];
@@ -91,7 +93,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 
 @implementation RoutingGraphIndexer
 - (instancetype)initWithDatabase:(AppViewDatabase *)database {
-    self = [super initWithDatabase:database relevanceSet:nil];
+    self = [super initWithDatabase:database relevanceSet:nil graphService:nil];
     if (self) {
         _indexCalls = [NSMutableArray array];
         _deleteCalls = [NSMutableArray array];
@@ -102,11 +104,13 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+               rkey:(NSString *)rkey
                 cid:(nullable NSString *)cid
               error:(NSError **)error {
     [self.indexCalls addObject:AVSCall(_cmd, @{
         @"did": did ?: [NSNull null],
         @"collection": collection ?: [NSNull null],
+        @"rkey": rkey ?: [NSNull null],
         @"cid": cid ?: [NSNull null],
         @"type": record[@"$type"] ?: [NSNull null],
     })];
@@ -141,11 +145,13 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+               rkey:(NSString *)rkey
                 cid:(nullable NSString *)cid
               error:(NSError **)error {
     [self.indexCalls addObject:AVSCall(_cmd, @{
         @"did": did ?: [NSNull null],
         @"collection": collection ?: [NSNull null],
+        @"rkey": rkey ?: [NSNull null],
         @"cid": cid ?: [NSNull null],
         @"type": record[@"$type"] ?: [NSNull null],
     })];
@@ -519,6 +525,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     BOOL ok = [indexer indexRecord:@{@"text": @"missing type"}
                                did:@"did:plc:feed"
                         collection:@"app.bsky.feed.post"
+                              rkey:@"rkey1"
                                cid:@"cid1"
                              error:&error];
     XCTAssertFalse(ok);
@@ -528,6 +535,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     ok = [indexer indexRecord:@{@"$type": @"app.bsky.feed.post"}
                           did:@"did:plc:feed"
                    collection:@"app.bsky.feed.post"
+                         rkey:@"rkey2"
                           cid:@"cid2"
                         error:&error];
     XCTAssertFalse(ok);
@@ -537,6 +545,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     ok = [indexer indexRecord:@{@"$type": @"app.bsky.feed.like"}
                           did:@"did:plc:feed"
                    collection:@"app.bsky.feed.like"
+                         rkey:@"rkey3"
                           cid:@"cid3"
                         error:&error];
     XCTAssertFalse(ok);
@@ -546,6 +555,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     ok = [indexer indexRecord:@{@"$type": @"app.bsky.feed.post", @"text": @"hello"}
                           did:@"did:plc:feed"
                    collection:@"app.bsky.feed.post"
+                         rkey:@"rkey4"
                           cid:@"cid4"
                         error:&error];
     XCTAssertTrue(ok);
@@ -555,6 +565,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     ok = [indexer indexRecord:@{@"$type": @"app.bsky.feed.post", @"embed": @{@"$type": @"app.bsky.embed.images"}}
                           did:@"did:plc:feed"
                    collection:@"app.bsky.feed.post"
+                         rkey:@"rkey5"
                           cid:@"cid5"
                         error:&error];
     XCTAssertTrue(ok);
@@ -564,6 +575,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     ok = [indexer indexRecord:@{@"$type": @"app.bsky.feed.repost", @"subject": @{@"uri": @"at://did:plc:target/app.bsky.feed.post/abc"}}
                           did:@"did:plc:feed"
                    collection:@"app.bsky.feed.repost"
+                         rkey:@"rkey6"
                           cid:@"cid6"
                         error:&error];
     XCTAssertTrue(ok);
@@ -607,7 +619,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 #pragma mark - Graph indexer
 
 - (void)testGraphIndexerCanIndexSupportedCollections {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil];
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil graphService:nil];
 
     NSArray<NSString *> *supported = @[
         @"app.bsky.graph.follow",
@@ -625,12 +637,13 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testGraphIndexerValidatesFollowsAndExpandsRelevance {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet];
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet graphService:nil];
     NSError *error = nil;
 
     BOOL ok = [indexer indexRecord:@{@"$type": @"app.bsky.graph.follow"}
                                did:@"did:plc:follower"
                         collection:@"app.bsky.graph.follow"
+                              rkey:@"rkey1"
                                cid:@"cid1"
                              error:&error];
     XCTAssertFalse(ok);
@@ -645,6 +658,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     ok = [indexer indexRecord:@{@"$type": @"app.bsky.graph.follow", @"subject": targetDID}
                           did:followerDID
                    collection:@"app.bsky.graph.follow"
+                         rkey:@"rkey2"
                           cid:@"cid2"
                         error:&error];
     XCTAssertTrue(ok);
@@ -658,7 +672,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testGraphIndexerDoesNotExpandForIrrelevantFollower {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet];
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet graphService:nil];
     NSError *error = nil;
 
     NSString *followerDID = @"did:plc:outsider";
@@ -667,6 +681,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     BOOL ok = [indexer indexRecord:@{@"$type": @"app.bsky.graph.follow", @"subject": targetDID}
                                did:followerDID
                         collection:@"app.bsky.graph.follow"
+                              rkey:@"rkey1"
                                cid:@"cid1"
                              error:&error];
     XCTAssertTrue(ok);
@@ -693,7 +708,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testGraphIndexerProcessesPendingDeltas {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil];
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil graphService:nil];
     AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
         initWithDID:@"did:plc:graph"
                 seq:10
@@ -741,6 +756,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
         BOOL ok = [indexer indexRecord:item[@"record"]
                                    did:@"did:plc:author"
                             collection:item[@"collection"]
+                                  rkey:@"rkey1"
                                    cid:@"cid1"
                                  error:&error];
         XCTAssertTrue(ok);
