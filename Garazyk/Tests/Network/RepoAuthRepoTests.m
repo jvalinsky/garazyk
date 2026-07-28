@@ -339,6 +339,28 @@
     XCTAssertTrue(cid.length > 0);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+
+    // getBlob only serves blobs in the referenced state; an upload that no
+    // record points at stays temporary and is a 404 by design.
+    HttpResponse *reference = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+                                                       body:@{
+                                                           @"repo": self.did1,
+                                                           @"collection": @"app.bsky.feed.post",
+                                                           @"record": @{
+                                                               @"$type": @"app.bsky.feed.post",
+                                                               @"text": @"references the uploaded blob",
+                                                               @"createdAt": [self iso8601String],
+                                                               @"embed": @{
+                                                                   @"$type": @"blob",
+                                                                   @"ref": @{@"$link": cid},
+                                                                   @"mimeType": @"text/plain",
+                                                                   @"size": @(blobData.length),
+                                                               },
+                                                           },
+                                                       }
+                                                    headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(reference.statusCode, HttpStatusOK);
+
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
                                                queryParams:@{@"cid": cid, @"did": self.did1}
                                                    headers:@{@"authorization": authHeader}];

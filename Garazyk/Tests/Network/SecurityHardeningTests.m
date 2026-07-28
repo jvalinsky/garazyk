@@ -626,6 +626,28 @@
     NSString *cid = uploaded[@"blob"][@"ref"][@"$link"];
     XCTAssertTrue(cid.length > 0);
 
+    // getBlob only serves blobs in the referenced state; an upload that no
+    // record points at stays temporary and is a 404 by design.
+    HttpResponse *reference = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+                                                       body:@{
+                                                           @"repo": self.did,
+                                                           @"collection": @"app.bsky.feed.post",
+                                                           @"validate": @NO,
+                                                           @"record": @{
+                                                               @"$type": @"app.bsky.feed.post",
+                                                               @"text": @"references the probe blob",
+                                                               @"createdAt": @"2026-01-01T00:00:00Z",
+                                                               @"embed": @{
+                                                                   @"$type": @"blob",
+                                                                   @"ref": @{@"$link": cid},
+                                                                   @"mimeType": @"text/plain",
+                                                                   @"size": @(blobData.length),
+                                                               },
+                                                           },
+                                                       }
+                                                    headers:@{@"authorization": [NSString stringWithFormat:@"Bearer %@", self.accessJwt]}];
+    XCTAssertEqual(reference.statusCode, 200, @"Referencing record should be created");
+
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getBlob"
                                               queryParams:@{@"did": self.did, @"cid": cid}
                                                   headers:@{}];
