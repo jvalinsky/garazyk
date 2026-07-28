@@ -192,8 +192,9 @@
         // Final fallback: if this is a proxied request from a PDS that still
         // uses the legacy PDS-signed token format, try the old validation path.
         // The legacy token has iss=PDS DID and sub=user DID.
-        if (jwt.payload.sub.length > 0 && [jwt.payload.sub hasPrefix:@"did:"]) {
-            GZ_LOG_WARN(@"ChatAuthManager: service auth verification failed, attempting legacy PDS-signed token fallback for sub=%@", jwt.payload.sub);
+        NSString *sub = [jwt.payload.sub isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.sub : nil;
+        if (sub.length > 0 && [sub hasPrefix:@"did:"]) {
+            GZ_LOG_WARN(@"ChatAuthManager: service auth verification failed, attempting legacy PDS-signed token fallback for sub=%@", sub);
             NSString *legacyDID = [self validateLegacyPDSToken:jwt];
             if (legacyDID) {
                 return legacyDID;
@@ -300,7 +301,7 @@
     // Legacy tokens have sub=user DID and are signed with the PDS key.
     // We can't verify the PDS key here, but we can trust the sub claim
     // if the token came from a PDS we trust (configured via pdsUrl).
-    NSString *sub = jwt.payload.sub;
+    NSString *sub = [jwt.payload.sub isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.sub : nil;
     if (!sub.length || ![sub hasPrefix:@"did:"]) {
         return nil;
     }
@@ -318,8 +319,10 @@
         }
     }
 
-    // If no PDS URL configured, trust the sub claim (legacy behavior)
-    return sub;
+    // If no PDS URL configured, reject — trusting the sub claim without
+    // verification is a security bypass.
+    GZ_LOG_WARN(@"ChatAuthManager: legacy PDS token fallback unavailable — pdsUrl not configured");
+    return nil;
 }
 
 #pragma mark - PDS Session Verification (Legacy Fallback)
