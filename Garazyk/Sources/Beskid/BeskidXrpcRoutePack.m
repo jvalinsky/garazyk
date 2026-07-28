@@ -331,8 +331,11 @@
     forwardReq.HTTPMethod = @"GET";
     forwardReq.timeoutInterval = 5.0;
 
-    NSString *auth = payload[@"authorization"];
-    if (auth.length > 0) [forwardReq setValue:auth forHTTPHeaderField:@"Authorization"];
+    NSString *auth = [payload[@"authorization"] isKindOfClass:[NSString class]] ? payload[@"authorization"] : nil;
+    // Silently drop non-string or newline-containing auth values (header injection prevention).
+    if (auth.length > 0 && [auth rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location == NSNotFound) {
+        [forwardReq setValue:auth forHTTPHeaderField:@"Authorization"];
+    }
 
     // Send synchronous HTTP request to upstream service
     NSHTTPURLResponse *upstreamHttp = nil;
