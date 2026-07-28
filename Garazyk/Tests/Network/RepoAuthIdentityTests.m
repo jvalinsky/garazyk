@@ -8,11 +8,28 @@
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
+#import "Email/PDSMockEmailProvider.h"
 
 @interface RepoAuthIdentityTests : RepoAuthXrpcTestBase
 @end
 
 @implementation RepoAuthIdentityTests
+
+- (nullable NSString *)plcOperationTokenFromResponse:(HttpResponse *)response {
+    NSString *token = response.jsonBody[@"token"];
+    if (token.length > 0) return token;
+
+    PDSMockEmailProvider *provider = (PDSMockEmailProvider *)self.application.emailProvider;
+    NSString *body = [provider.lastSentEmail[@"body"] isKindOfClass:[NSString class]]
+        ? provider.lastSentEmail[@"body"]
+        : nil;
+    if (body.length == 0) return nil;
+    NSRange marker = [body rangeOfString:@"is: "];
+    if (marker.location == NSNotFound) return nil;
+    NSString *remainder = [body substringFromIndex:NSMaxRange(marker)];
+    return [[remainder componentsSeparatedByCharactersInSet:
+        [NSCharacterSet newlineCharacterSet]] firstObject];
+}
 
 - (void)testIdentityUpdateHandleReturnsStatus401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
@@ -55,7 +72,7 @@
                                                               body:@{}
                                                            headers:@{@"authorization": authHeader}];
     XCTAssertEqual(requestSignature.statusCode, 200);
-    NSString *token = requestSignature.jsonBody[@"token"];
+    NSString *token = [self plcOperationTokenFromResponse:requestSignature];
     XCTAssertNotNil(token);
 
     HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
@@ -92,7 +109,7 @@
     HttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
                                                               body:@{}
                                                            headers:@{@"authorization": authHeader}];
-    NSString *token = requestSignature.jsonBody[@"token"];
+    NSString *token = [self plcOperationTokenFromResponse:requestSignature];
     XCTAssertNotNil(token);
     HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
                                                           body:@{ @"token": token,

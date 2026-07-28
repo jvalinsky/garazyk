@@ -79,9 +79,6 @@
     if (!commitEvent.commit) {
         return [RelayValidationOutcome invalidOutcome:@"commit event has no commit CID"];
     }
-    if (commitEvent.ops.count == 0) {
-        return [RelayValidationOutcome invalidOutcome:@"commit event has no ops"];
-    }
 
     if (self.plcResolver) {
         NSError *resolveError = nil;
@@ -97,23 +94,22 @@
                 NSData *publicKeyBytes = [XrpcIdentityHelper publicKeyBytesFromMultibase:signingKeyMultibase
                                                                                   error:&decodeError];
                 if (publicKeyBytes) {
-                    GZ_LOG_SYNC_INFO(@"Signature verify: resolved signing key for %@ (%lu bytes)",
+                    GZ_LOG_SYNC_INFO(@"Signature precheck: resolved signing key for %@ (%lu bytes)",
                                      commitEvent.repo, (unsigned long)publicKeyBytes.length);
                 } else {
-                    GZ_LOG_SYNC_WARN(@"Signature verify: failed to decode signing key for %@: %@",
+                    GZ_LOG_SYNC_WARN(@"Signature precheck: failed to decode signing key for %@: %@",
                                      commitEvent.repo, decodeError.localizedDescription ?: @"unknown");
                 }
             } else {
-                GZ_LOG_SYNC_WARN(@"Signature verify: no atproto signing key in DID doc for %@", commitEvent.repo);
+                GZ_LOG_SYNC_WARN(@"Signature precheck: no atproto signing key in DID doc for %@", commitEvent.repo);
             }
         } else {
-            GZ_LOG_SYNC_WARN(@"Signature verify: DID resolution failed for %@: %@",
+            GZ_LOG_SYNC_WARN(@"Signature precheck: DID resolution failed for %@: %@",
                              commitEvent.repo, resolveError.localizedDescription ?: @"unknown");
         }
     }
 
     [[RelayMetrics sharedMetrics] recordMSTValidationSuccess];
-    [[RelayMetrics sharedMetrics] recordSignatureValidationSuccess];
 
     return [RelayValidationOutcome validOutcome];
 }

@@ -86,7 +86,9 @@ export interface SidecarAdapter {
   image?: string;
   /** Source build used when the sidecar is built locally */
   source?: SourceBuild;
-  /** Entrypoint or command arguments for the sidecar */
+  /** Entrypoint executable and arguments for the sidecar */
+  entrypoint?: string[];
+  /** Command arguments for the sidecar */
   command?: string[];
   /** Environment variables injected into the sidecar */
   env?: Record<string, string>;

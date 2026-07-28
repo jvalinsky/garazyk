@@ -277,6 +277,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     if (event.seq > 0) {
         self.currentSeq = event.seq;
     }
+
+    id<RelayClientDelegate> delegate = self.delegate;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (delegate &&
+            [delegate respondsToSelector:@selector(relayClient:didReceiveSyncEvent:)]) {
+            [delegate relayClient:self didReceiveSyncEvent:event];
+        }
+    });
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
