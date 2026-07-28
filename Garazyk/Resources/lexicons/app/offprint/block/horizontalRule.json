@@ -1,0 +1,10 @@
+{
+  "id": "app.offprint.block.horizontalRule",
+  "defs": {
+    "main": {
+      "type": "object",
+      "properties": []
+    }
+  },
+  "lexicon": 1
+}

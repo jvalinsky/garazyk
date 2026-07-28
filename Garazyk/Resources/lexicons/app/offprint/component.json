@@ -1,0 +1,40 @@
+{
+  "id": "app.offprint.component",
+  "defs": {
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "publication",
+          "name",
+          "content"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Label to identify this component in the dashboard (e.g. \"Newsletter footer\").",
+            "maxGraphemes": 200
+          },
+          "content": {
+            "ref": "app.offprint.content",
+            "type": "ref",
+            "description": "Component body. Same block format as documents."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Last edit timestamp."
+          },
+          "publication": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Required AT-URI to the `site.standard.publication` this component belongs to."
+          }
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}

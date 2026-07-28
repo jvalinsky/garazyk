@@ -1,0 +1,23 @@
+{
+  "id": "app.offprint.document.article",
+  "defs": {
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "document"
+        ],
+        "properties": {
+          "document": {
+            "ref": "com.atproto.repo.strongRef",
+            "type": "ref",
+            "description": "Strong reference to a `site.standard.document` compatible record."
+          }
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}

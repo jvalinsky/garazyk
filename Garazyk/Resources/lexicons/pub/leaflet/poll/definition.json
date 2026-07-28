@@ -1,0 +1,46 @@
+{
+  "id": "pub.leaflet.poll.definition",
+  "defs": {
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "name",
+          "options"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 500,
+            "maxGraphemes": 100
+          },
+          "endDate": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "ref": "#option",
+              "type": "ref"
+            }
+          }
+        }
+      },
+      "description": "Record declaring a poll"
+    },
+    "option": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 500,
+          "maxGraphemes": 50
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}

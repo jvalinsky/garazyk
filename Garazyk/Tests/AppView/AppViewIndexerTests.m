@@ -10,6 +10,7 @@
 #import "AppView/Server/Indexers/AppViewBookmarkIndexer.h"
 #import "AppView/Server/Indexers/AppViewGroupIndexer.h"
 #import "AppView/Server/Indexers/AppViewIndexer.h"
+#import "AppView/Server/Config/AppViewCollectionFilter.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "AppView/Services/BookmarkService.h"
@@ -59,6 +60,56 @@
 
 - (NSDictionary *)sampleBlockRecord {
     return @{@"$type": @"app.bsky.graph.block", @"subject": @"did:plc:target"};
+}
+
+- (NSDictionary *)sampleStandardSiteDocumentWithLeafletContent {
+    // Real record shape from Leaflet (did:plc:btxrwcaeyodrap5mnjw2fvmz).
+    // The 'content' key carries a 'pub.leaflet.content' object — an unknown
+    // $type in an open union with zero refs. This must NOT produce a
+    // dead-letter row (acceptance item 4).
+    // NOTE: site uses https:// rather than the real at:// URI because the
+    // lexicon declares format:uri which requires http/https. Using at://
+    // here would record a dead-letter from the URI check, not from the
+    // open-union path this test targets.
+    return @{
+        @"$type": @"site.standard.document",
+        @"site": @"https://leaflet.pub",
+        @"title": @"Leaflet Field Reporter Announcement",
+        @"publishedAt": @"2025-07-15T12:00:00Z",
+        @"path": @"/3mquhjtnhcc2z",
+        @"tags": @[],
+        @"content": @{
+            @"$type": @"pub.leaflet.content",
+            @"pages": @[@{
+                @"id": @"019f66a6-c19e-7ffd-b171-bc93e6dffa00",
+                @"$type": @"pub.leaflet.pages.linearDocument",
+                @"blocks": @[@{
+                    @"$type": @"pub.leaflet.pages.linearDocument#block",
+                    @"block": @{
+                        @"$type": @"pub.leaflet.blocks.text",
+                        @"plaintext": @"Hello from Leaflet."
+                    }
+                }]
+            }]
+        }
+    };
+}
+
+- (NSDictionary *)sampleStandardSiteDocumentWithoutContent {
+    // Real SSG-published shape (e.g. steveklabnik.com). Most real documents
+    // carry no 'content' at all — only metadata + textContent. This MUST
+    // also index cleanly with no dead-letter row (acceptance item 5).
+    return @{
+        @"$type": @"site.standard.document",
+        @"site": @"https://steveklabnik.com",
+        @"title": @"A blog post about Rust",
+        @"publishedAt": @"2025-06-01T00:00:00Z",
+        @"description": @"An interesting post",
+        @"textContent": @"Full text of the article goes here.",
+        @"path": @"/writing/a-blog-post-about-rust",
+        @"tags": @[@"rust", @"programming"],
+        @"canonicalUrl": @"https://steveklabnik.com/writing/a-blog-post-about-rust"
+    };
 }
 
 - (NSDictionary *)sampleGroupRecord {
@@ -920,7 +971,144 @@ static NSString *sMissingRkey = nil;
     XCTAssertTrue([indexer conformsToProtocol:@protocol(AppViewIndexer)]);
 }
 
-#pragma mark - Protocol Conformance
+#pragma mark - Acceptance: Longform Lexicon (S1+S2)
+
+- (nullable ATProtoLexiconRegistry *)freshRegistryWithLexicons {
+    // Resolve the Garazyk/Resources/lexicons directory and load into
+    // a fresh (non-shared) registry. Uses XCTSkip if the directory
+    // cannot be found, so tests don't fail with confusing messages.
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *lexiconsDir = nil;
+
+    NSString *exePath = [NSBundle mainBundle].executablePath;
+    if (exePath) {
+        NSString *candidate = [exePath stringByDeletingLastPathComponent];
+        while (candidate.length > 0) {
+            NSString *check = [candidate stringByAppendingPathComponent:
+                @"Garazyk/Resources/lexicons"];
+            if ([fm fileExistsAtPath:check]) {
+                lexiconsDir = check;
+                break;
+            }
+            NSString *parent = [candidate stringByDeletingLastPathComponent];
+            if ([parent isEqualToString:candidate]) break;
+            candidate = parent;
+        }
+    }
+
+    if (!lexiconsDir) {
+        const char *srcDir = getenv("GARAZYK_SOURCE_DIR");
+        if (srcDir) {
+            NSString *check = [[NSString stringWithUTF8String:srcDir]
+                stringByAppendingPathComponent:@"Garazyk/Resources/lexicons"];
+            if ([fm fileExistsAtPath:check]) {
+                lexiconsDir = check;
+            }
+        }
+    }
+
+    if (!lexiconsDir) {
+        XCTSkip(@"Cannot find Garazyk/Resources/lexicons directory");
+        return nil;
+    }
+
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    NSError *error = nil;
+    if (![registry loadLexiconsFromDirectory:lexiconsDir error:&error]) {
+        XCTSkip(@"Failed to load lexicons: %@", error.localizedDescription);
+        return nil;
+    }
+    return registry;
+}
+
+- (void)testStandardSiteDocumentWithLeafletContentIndexesWithoutDeadLetter {
+    ATProtoLexiconRegistry *registry = [self freshRegistryWithLexicons];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc]
+        initWithRegistry:registry
+               database:self.database
+             validator:validator
+    domainIndexerCollections:[NSSet set]];
+
+    XCTAssertTrue([indexer canIndexCollection:@"site.standard.document"],
+                  @"Must claim site.standard.document after lexicon load");
+
+    NSDictionary *record = [self sampleStandardSiteDocumentWithLeafletContent];
+    NSError *error = nil;
+    BOOL indexed = [indexer indexRecord:record
+                                    did:@"did:plc:btxrwcaeyodrap5mnjw2fvmz"
+                             collection:@"site.standard.document"
+                                   rkey:@"3mquhjtnhcc2z"
+                                    cid:@"bafyrelivecid"
+                                  error:&error];
+    XCTAssertTrue(indexed, @"Leaflet document must index: %@", error);
+    XCTAssertNil(error);
+
+    NSArray *deadRows = [self.database executeParameterizedQuery:
+        @"SELECT COUNT(*) AS cnt FROM appview_dead_letter"
+                                                          params:@[]
+                                                           error:nil];
+    NSInteger deadCount = [deadRows.firstObject[@"cnt"] integerValue];
+    XCTAssertEqual(deadCount, 0, @"Leaflet doc must not produce dead-letter; got %ld", (long)deadCount);
+}
+
+- (void)testStandardSiteDocumentWithoutContentIndexesWithoutDeadLetter {
+    ATProtoLexiconRegistry *registry = [self freshRegistryWithLexicons];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc]
+        initWithRegistry:registry
+               database:self.database
+             validator:validator
+    domainIndexerCollections:[NSSet set]];
+
+    NSDictionary *record = [self sampleStandardSiteDocumentWithoutContent];
+    NSError *error = nil;
+    BOOL indexed = [indexer indexRecord:record
+                                    did:@"did:plc:3danwc67lo7obz2fmdg6jxcr"
+                             collection:@"site.standard.document"
+                                   rkey:@"3mquhssgdoc01"
+                                    cid:@"bafyressgcid"
+                                  error:&error];
+    XCTAssertTrue(indexed, @"Content-less SSG document must index: %@", error);
+    XCTAssertNil(error);
+
+    NSArray *deadRows = [self.database executeParameterizedQuery:
+        @"SELECT COUNT(*) AS cnt FROM appview_dead_letter"
+                                                          params:@[]
+                                                           error:nil];
+    NSInteger deadCount = [deadRows.firstObject[@"cnt"] integerValue];
+    XCTAssertEqual(deadCount, 0, @"SSG doc must not produce dead-letter; got %ld", (long)deadCount);
+}
+
+- (void)testStandardSiteDocumentCollectionFilterAllowsFamily {
+    AppViewCollectionFilter *filter = [[AppViewCollectionFilter alloc]
+        initWithAllowlist:@[@"site.standard."]];
+    XCTAssertTrue([filter shouldIndexCollection:@"site.standard.document"]);
+    XCTAssertTrue([filter shouldIndexCollection:@"site.standard.publication"]);
+    XCTAssertTrue([filter shouldIndexCollection:@"site.standard.graph.subscription"]);
+    XCTAssertFalse([filter shouldIndexCollection:@"pub.leaflet.document"]);
+}
+
+- (void)testStandardSiteDocumentIndexerRespectsCollectionFilter {
+    ATProtoLexiconRegistry *registry = [self freshRegistryWithLexicons];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc]
+        initWithRegistry:registry
+               database:self.database
+             validator:validator
+    domainIndexerCollections:[NSSet set]];
+
+    XCTAssertTrue([indexer canIndexCollection:@"site.standard.document"]);
+    XCTAssertTrue([indexer canIndexCollection:@"pub.leaflet.document"]);
+
+    AppViewCollectionFilter *filter = [[AppViewCollectionFilter alloc]
+        initWithAllowlist:@[@"site.standard."]];
+    indexer.collectionFilter = filter;
+
+    XCTAssertTrue([indexer canIndexCollection:@"site.standard.document"]);
+    XCTAssertFalse([indexer canIndexCollection:@"pub.leaflet.document"],
+                   @"Filter must reject non-allowlisted collections");
+}
 
 - (void)testAllIndexersConformToAppViewIndexerProtocol {
     AppViewActorIndexer *actor = [[AppViewActorIndexer alloc] initWithDatabase:self.database];

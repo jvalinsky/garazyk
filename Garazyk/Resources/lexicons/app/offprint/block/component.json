@@ -1,0 +1,19 @@
+{
+  "id": "app.offprint.block.component",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "component"
+      ],
+      "properties": {
+        "component": {
+          "type": "string",
+          "format": "at-uri",
+          "description": "AT-URI of the `app.offprint.component` to inline. Referenced by URI (not a strongRef) so edits to the component cascade to every document that embeds it."
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}
