@@ -111,6 +111,23 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     return _db;
 }
 
+- (BOOL)performWithSQLiteHandle:(void (^)(sqlite3 *db))block {
+    if (!block) return NO;
+
+    // See executeParameterizedQuery:params:error: for why reopening is safe.
+    if (!self.isOpen) {
+        [self openWithError:nil];
+    }
+
+    __block BOOL ran = NO;
+    [self safeExecuteSync:^{
+        if (!self.isOpen || !_db) return;
+        block(_db);
+        ran = YES;
+    }];
+    return ran;
+}
+
 + (instancetype)databaseAtURL:(NSURL *)url {
     PDSDatabase *database = [[PDSDatabase alloc] init];
     database.databaseURL = url;
@@ -1212,6 +1229,13 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
                             params:(NSArray *)params
                              error:(NSError **)error {
+    return [self executeParameterizedUpdate:sql params:params changedRows:NULL error:error];
+}
+
+- (BOOL)executeParameterizedUpdate:(NSString *)sql
+                            params:(NSArray *)params
+                       changedRows:(nullable NSInteger *)changedRows
+                             error:(NSError **)error {
     // See executeParameterizedQuery:params:error: above.
     if (!self.isOpen) {
         [self openWithError:nil];
@@ -1241,6 +1265,13 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     ATProtoDBBindParams(stmt, params);
 
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
+
+    // Read the count before leaving the queue: sqlite3_changes() reports the
+    // most recent statement on the connection, so any writer that got in first
+    // would otherwise overwrite the answer.
+    if (success && changedRows) {
+        *changedRows = (NSInteger)sqlite3_changes(_db);
+    }
 
     if (!success && error) {
         *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
