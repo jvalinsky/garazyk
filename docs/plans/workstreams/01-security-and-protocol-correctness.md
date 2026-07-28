@@ -1607,7 +1607,7 @@ via `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0` for operators who need it.
 
 ## S13. Registration, PhoneVerification, and Email trust-boundary sweep
 
-**Status: partially complete (slices 1, 4, 4b done; slices 2-3, 5-6 pending).** Slice 1 (CAPTCHA gate with siteverify + fail-closed) at `3a303467`. Slice 4 (opaque password-reset tokens, V18 migration) and slice 4b (opaque account-delete tokens) at `c2277d62`. A review of the
+**Status: partially complete (slices 1, 4, 4b, 6 done; slices 2-3, 5 pending).** Slice 1 (CAPTCHA gate with siteverify + fail-closed) at `3a303467`. Slice 4 (opaque password-reset tokens, V18 migration) and slice 4b (opaque account-delete tokens) at `c2277d62`. Slice 6 (composite gate AND semantics) plus the slice 1 follow-ups (tightened siteverify wait budget with cancellation, `percentEncode:` nil guard) landed at `0239f88c` (phase-25). A review of the
 account-creation and verification trust boundaries — Registration,
 PhoneVerification, Email, and the XRPC handlers that consume them — found
 two complete no-op verification gates, a password-reset token that is the
@@ -1615,10 +1615,11 @@ public DID, an unbounded OTP brute-force surface, and several input
 validation gaps at the createAccount/confirmEmail/verifyPhone boundaries.
 None of these modules has a dedicated security lane; they have been touched
 only incidentally (S5 test fixes, E3 SMTP removal). The gates are the first
-defense against account-creation abuse; a no-op gate defeats every other
-gate in the composite via the OR logic in `PDSCompositeRegistrationGate`
-(`PDSRegistrationGate.m:73-86`), so each finding is a release blocker for
-any operator that turns the corresponding gate on.
+defense against account-creation abuse; a no-op gate used to defeat every
+other gate in the composite via OR logic in `PDSCompositeRegistrationGate`
+(fixed to AND in slice 6, `PDSRegistrationGate.m:63-90`), so each remaining
+finding is a release blocker for any operator that turns the corresponding
+gate on.
 
 ### Evidence
 
@@ -1705,10 +1706,10 @@ DB V18), implement `requestPasswordReset` token minting and email delivery.
 5. Plivo "200 means success" fallback removal, input validation sweep
 (`isKindOfClass:` checks at gate field extraction), E.164 phone number
 validation, `PDSEmailHTTPClient` nil-apiKey guard.
-6. Composite gate semantics: change `PDSCompositeRegistrationGate` from OR to
+6. ✅ Composite gate semantics: change `PDSCompositeRegistrationGate` from OR to
 AND (added 2026-07-27 — see below).
 
-### Slice 1 follow-ups (found in review of the in-flight implementation)
+### Slice 1 follow-ups (found in review of the in-flight implementation) — ✅ done at `0239f88c`
 
 The slice 1 implementation is correct in its core: it fails closed on missing
 secret, timeout, network error, non-2xx, unparseable body, and
@@ -1720,8 +1721,8 @@ allowlist rather than `URLQueryAllowedCharacterSet`, which would leave `&` and
 not spoofable — `HttpRequest.m:125` honors `X-Forwarded-For` only when proxy
 trust is enabled *and* the peer is on a private or loopback range.
 
-Two defects remain in that implementation and must land before slice 1 is
-marked complete:
+Two defects remained in that implementation and had to land before slice 1
+was marked complete (both fixed at `0239f88c`):
 
 - **Blocking wait budget.** `PDSCaptchaRegistrationGate.m` waits on a
   `dispatch_semaphore` for up to `siteverifyTimeout` (12s) on the request
@@ -1732,14 +1733,19 @@ marked complete:
   never cancelled and runs to completion writing to `__block` variables
   nobody reads. Per the 2026-07-27 decision the gate stays synchronous:
   reduce the wait budget to ~5s (keeping a margin above the 10s→5s request
-  timeout) and cancel the in-flight task on timeout.
+  timeout) and cancel the in-flight task on timeout. ✅ Fixed:
+  `siteverifyTimeout` is now 5.0s, the request/options timeouts are 3.0s, and
+  a lock-guarded `cancelled` flag makes a late completion a no-op instead of
+  writing to unread `__block` state.
 - **`percentEncode:` can return nil.**
   `stringByAddingPercentEncodingWithAllowedCharacters:` returns nil for
   unpaired surrogates, and `[formBody appendFormat:@"%@=%@", key, …]` would
   then write the literal `(null)` — sending `secret=(null)` to the provider.
   Guard it and reject the request rather than emitting a malformed body.
+  ✅ Fixed: each field's encoded value is checked for nil before being
+  appended; a nil result rejects the request with `PDSRegistrationGateErrorInvalidCaptcha`.
 
-### Slice 6: composite gate semantics
+### Slice 6: composite gate semantics — ✅ done at `0239f88c`
 
 S13's framing already notes that "a no-op gate defeats every other gate in the
 composite via the OR logic." That is true, but it treats the OR as an
