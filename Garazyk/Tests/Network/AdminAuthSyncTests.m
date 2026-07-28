@@ -471,7 +471,11 @@
 
   HttpResponse *applyResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
-                         body:@{@"writes" : @[ createWrite ], @"validate" : @NO}
+                         body:@{
+                           @"repo" : self.userDid,
+                           @"writes" : @[ createWrite ],
+                           @"validate" : @NO
+                         }
                       headers:@{@"authorization" : authHeader}];
   XCTAssertEqual(applyResponse.statusCode, 200);
   NSDictionary *applyCommit = applyResponse.jsonBody[@"commit"];
@@ -522,7 +526,11 @@
   };
   HttpResponse *createResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
-                         body:@{@"writes" : @[ createWrite ], @"validate" : @NO}
+                         body:@{
+                           @"repo" : self.userDid,
+                           @"writes" : @[ createWrite ],
+                           @"validate" : @NO
+                         }
                       headers:@{@"authorization" : authHeader}];
   XCTAssertEqual(createResponse.statusCode, 200);
   NSDictionary *createCommit = createResponse.jsonBody[@"commit"];
@@ -537,7 +545,11 @@
   };
   HttpResponse *deleteResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
-                         body:@{@"writes" : @[ deleteWrite ], @"validate" : @NO}
+                         body:@{
+                           @"repo" : self.userDid,
+                           @"writes" : @[ deleteWrite ],
+                           @"validate" : @NO
+                         }
                       headers:@{@"authorization" : authHeader}];
   XCTAssertEqual(deleteResponse.statusCode, 200);
   NSDictionary *deleteCommit = deleteResponse.jsonBody[@"commit"];
@@ -672,6 +684,26 @@
   if (cid.length == 0) {
     return;
   }
+
+  // getBlob only serves blobs in the referenced state; an upload that no record
+  // points at stays temporary and is a 404 by design.
+  NSDictionary *reference = [self.application.legacyController
+      createRecordForDid:self.userDid
+              collection:@"app.bsky.feed.post"
+                  record:@{
+                    @"$type" : @"app.bsky.feed.post",
+                    @"text" : @"references the socket-range blob",
+                    @"createdAt" : [self iso8601String],
+                    @"embed" : @{
+                      @"$type" : @"blob",
+                      @"ref" : @{@"$link" : cid},
+                      @"mimeType" : @"text/plain",
+                      @"size" : @(blobData.length)
+                    }
+                  }
+          validationMode:PDSValidationModeOff
+                   error:nil];
+  XCTAssertNotNil(reference);
 
   NSError *startError = nil;
   HttpServer *server =

@@ -113,11 +113,13 @@
 
     // Use the rkey parameter (passed from ingest/backfill), or fall back to record data
     NSString *effectiveRkey = rkey;
-    if (!effectiveRkey || effectiveRkey.length == 0) {
-        effectiveRkey = record[@"rkey"] ?: record[@"$rkey"];
+    if (effectiveRkey.length == 0) {
+        id recordRkey = record[@"rkey"] ?: record[@"$rkey"];
+        effectiveRkey = [recordRkey isKindOfClass:[NSString class]] ? recordRkey : nil;
     }
-    if (!effectiveRkey) {
-        // Generate a random rkey if not present
+    if (effectiveRkey.length == 0) {
+        // Generate a random rkey if not present. A generated key is not derivable
+        // by deleteRecord:, so such a row is only removable via a DID-scoped purge.
         effectiveRkey = [[[NSUUID UUID] UUIDString] lowercaseString];
     }
 
@@ -136,11 +138,12 @@
         subjectDid = nil;
     }
 
-    // Store in the generic records table
+    // Store in the generic records table. The rkey column must agree with the
+    // rkey embedded in the URI above, so both come from effectiveRkey.
     return [self.database saveRecordWithURI:uri
                                         did:did
                                  collection:collection
-                                       rkey:rkey
+                                       rkey:effectiveRkey
                                         cid:cid ?: @""
                                      handle:nil
                                       value:valueStr
@@ -152,7 +155,11 @@
                  did:(NSString *)did
           collection:(NSString *)collection
                error:(NSError **)error {
-    if (!rkey || !did || !collection) {
+    // An empty rkey cannot address a stored row: indexRecord: never writes a URI
+    // with an empty last segment (it falls back to the record's rkey, then to a
+    // generated one), so treat it like a missing parameter instead of issuing a
+    // DELETE that silently matches nothing.
+    if (rkey.length == 0 || !did || !collection) {
         if (error) {
             *error = [NSError errorWithDomain:@"AppViewGenericIndexer"
                                          code:400
@@ -163,6 +170,8 @@
         return NO;
     }
 
+    // Mirrors the URI construction in indexRecord:; for records stored under a
+    // caller-supplied or record-supplied rkey the two agree exactly.
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
 
     // Delete from the records table

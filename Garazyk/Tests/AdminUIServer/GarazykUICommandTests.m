@@ -288,6 +288,27 @@ static NSString *GZUIStringFromFileDescriptor(int descriptor) {
     XCTAssertFalse([result.standardOutput containsString:@"Press Ctrl+C to stop."]);
 }
 
+/*! Polls until the given loopback port accepts a connection, the task exits, or
+    10 seconds elapse. Returns YES once a connection succeeded. */
+- (BOOL)waitForListenerOnPort:(uint16_t)port task:(NSTask *)task {
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:10.0];
+    while ([deadline timeIntervalSinceNow] > 0 && task.isRunning) {
+        int probe = socket(AF_INET, SOCK_STREAM, 0);
+        if (probe >= 0) {
+            struct sockaddr_in target;
+            memset(&target, 0, sizeof(target));
+            target.sin_family = AF_INET;
+            target.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            target.sin_port = htons(port);
+            int connected = connect(probe, (struct sockaddr *)&target, sizeof(target));
+            close(probe);
+            if (connected == 0) return YES;
+        }
+        usleep(25 * 1000);
+    }
+    return NO;
+}
+
 - (void)testServeTerminatesSilentlyOnSIGTERM {
     int reservation = socket(AF_INET, SOCK_STREAM, 0);
     XCTAssertGreaterThanOrEqual(reservation, 0);
@@ -326,7 +347,12 @@ static NSString *GZUIStringFromFileDescriptor(int descriptor) {
     XCTAssertTrue([task launchAndReturnError:&launchError], @"%@", launchError);
     if (!task.isRunning) return;
 
-    usleep(250 * 1000);
+    // Wait until the port actually accepts rather than sleeping a fixed amount:
+    // GZServiceLifecycle installs its SIGTERM handler just before opening the
+    // listener, so a signal sent while startup is still running is taken by the
+    // default disposition and kills the process.
+    XCTAssertTrue([self waitForListenerOnPort:(uint16_t)ntohs(address.sin_port) task:task],
+                  @"garazyk-ui never started listening");
     XCTAssertTrue(task.isRunning, @"garazyk-ui exited before it could receive SIGTERM");
     if (task.isRunning) {
         [task terminate];
