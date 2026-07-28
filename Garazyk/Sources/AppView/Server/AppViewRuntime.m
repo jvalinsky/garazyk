@@ -21,6 +21,7 @@
 #import "AppView/Server/Indexers/AppViewBookmarkIndexer.h"
 #import "AppView/Server/Indexers/AppViewGroupIndexer.h"
 #import "AppView/Server/Indexers/AppViewGenericIndexer.h"
+#import "AppView/Server/Config/AppViewCollectionFilter.h"
 #import "AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h"
 #import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
 #import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
@@ -242,6 +243,11 @@ static AppViewRuntime *_sharedRuntime = nil;
                database:_database
              validator:_lexiconValidator
    domainIndexerCollections:domainCollections];
+
+    // Wire collection allowlist filter (S2 scoping)
+    AppViewCollectionFilter *collectionFilter =
+        [[AppViewCollectionFilter alloc] initWithAllowlist:config.indexCollections];
+    genericIdx.collectionFilter = collectionFilter;
 
     _indexers = @[actorIdx, feedIdx, graphIdx, notifIdx, bookmarkIdx, groupIdx, genericIdx];
 

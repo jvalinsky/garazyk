@@ -8,6 +8,7 @@
 
 #import "AppView/Server/Indexers/AppViewGenericIndexer.h"
 #import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/Config/AppViewCollectionFilter.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconSchema.h"
 #import "Lexicon/ATProtoLexiconDef.h"
@@ -49,6 +50,11 @@
 
 - (BOOL)canIndexCollection:(NSString *)collection {
     if (!collection) return NO;
+
+    // Collection allowlist filter (S2 scoping)
+    if (self.collectionFilter && ![self.collectionFilter shouldIndexCollection:collection]) {
+        return NO;
+    }
 
     // Don't claim collections that domain-specific indexers handle
     if ([self.domainIndexerCollections containsObject:collection]) {

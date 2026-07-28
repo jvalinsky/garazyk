@@ -15,6 +15,8 @@
    ─────────────────────────────────────────────────────────────────────
    appview.mode                          APPVIEW_MODE
    appview.relay_urls[]                  APPVIEW_RELAY_URLS (comma-sep)
+   appview.ingest.mode                   APPVIEW_INGEST_MODE (relay|jetstream)
+   appview.ingest.jetstream_urls[]       APPVIEW_INGEST_JETSTREAM_URLS (comma-sep)
    appview.cursor.checkpoint_interval_ms APPVIEW_CURSOR_CHECKPOINT_MS
    appview.backfill.enabled              APPVIEW_BACKFILL_ENABLED
    appview.backfill.global_workers       APPVIEW_BACKFILL_GLOBAL_WORKERS
@@ -30,6 +32,7 @@
    appview.http.port                     APPVIEW_HTTP_PORT
    appview.data_directory                APPVIEW_DATA_DIR
    appview.admin_secret                  APPVIEW_ADMIN_SECRET
+   appview.index.collections[]           APPVIEW_INDEX_COLLECTIONS (comma-sep)
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -64,6 +67,22 @@ typedef NS_ENUM(NSInteger, AppViewMode) {
 
 /*! Relay WebSocket URLs to subscribe to. E.g. wss://bsky.network. */
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;
+
+#pragma mark - Ingest
+
+/*! Ingest mode. Default: AppViewIngestModeRelay. */
+@property (nonatomic, assign) NSInteger ingestMode;  // AppViewIngestMode enum
+
+/*! Jetstream subscription URLs. E.g. wss://jetstream2.us-east.bsky.network. */
+@property (nonatomic, strong) NSArray<NSString *> *jetstreamURLs;
+
+/*! The AppViewIngestMode enum values are defined here for config-only use. */
+typedef NS_ENUM(NSInteger, AppViewIngestMode) {
+    AppViewIngestModeRelay     = 0,  // subscribeRepos (default)
+    AppViewIngestModeJetstream = 1,  // Jetstream collection-filtered
+};
+
+#pragma mark - Core (continued)
 
 /*! Directory for the AppView database and working files. */
 @property (nonatomic, copy)   NSString *dataDirectory;
@@ -122,6 +141,18 @@ typedef NS_ENUM(NSInteger, AppViewMode) {
 
 /*! Base URL of the Jelcz video service for constructing HLS playlist URLs. */
 @property (nonatomic, copy, nullable) NSString *videoServiceURL;
+
+#pragma mark - Collection Scoping
+
+/*!
+ @abstract Collection allowlist for scoped indexing.
+
+ @discussion Empty (default) => index all collections with a loaded lexicon
+ (current behaviour). Non-empty => only index collections matching an entry.
+ Entries with a trailing dot are prefix matches (e.g. "site.standard." matches
+ "site.standard.document"). Entries without a trailing dot are exact matches.
+ */
+@property (nonatomic, copy) NSArray<NSString *> *indexCollections;
 
 #pragma mark - Lifecycle
 
