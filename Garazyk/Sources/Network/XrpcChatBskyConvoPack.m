@@ -343,8 +343,16 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
+
+        // Query the target's chat.bsky.actor.declaration for allowIncoming.
+        // Fail open (available: true) on any lookup error — availability is
+        // informational, not a security boundary.
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *allowIncoming = XrpcChatAllowIncomingForDIDFromRepo(did, recordService, authHeader);
+        BOOL available = ![allowIncoming isEqualToString:@"none"];
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"available": @YES}];
+        [response setJsonBody:@{@"available": @(available)}];
     }];
 
     // chat.bsky.convo.addReaction
@@ -893,10 +901,11 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
-        NSString *text = message[@"text"];
+        NSString *text = [message[@"text"] isKindOfClass:[NSString class]] ? message[@"text"] : nil;
         NSString *embedJson = nil;
-        if (message[@"embed"]) {
-            NSData *embedData = [NSJSONSerialization dataWithJSONObject:message[@"embed"] options:0 error:nil];
+        id embed = message[@"embed"];
+        if (embed) {
+            NSData *embedData = [NSJSONSerialization dataWithJSONObject:embed options:0 error:nil];
             if (embedData) embedJson = [[NSString alloc] initWithData:embedData encoding:NSUTF8StringEncoding];
         }
 
