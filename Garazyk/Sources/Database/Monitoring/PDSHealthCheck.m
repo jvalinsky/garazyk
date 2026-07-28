@@ -97,8 +97,31 @@
         return PDSHealthStatusCritical;
     }
     
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA integrity_check", -1, &stmt, NULL);
+    // PRAGMA integrity_check streams its result set, so it runs on the raw
+    // handle — but inside performWithSQLiteHandle:, which holds the database
+    // queue for the duration and keeps the connection single-threaded.
+    __block int result = SQLITE_OK;
+    __block NSString *checkResult = nil;
+    BOOL ran = [store.database performWithSQLiteHandle:^(sqlite3 *db) {
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+        result = sqlite3_prepare_v2(db, "PRAGMA integrity_check", -1, &stmt, NULL);
+        if (result != SQLITE_OK) return;
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *text = (const char *)sqlite3_column_text(stmt, 0);
+            if (text) checkResult = [NSString stringWithUTF8String:text];
+        }
+    }];
+
+    if (!ran) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds.health"
+                                        code:-1
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
+        }
+        return PDSHealthStatusCritical;
+    }
+
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.health"
@@ -107,13 +130,7 @@
         }
         return PDSHealthStatusCritical;
     }
-    
-    NSString *checkResult = nil;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *text = (const char *)sqlite3_column_text(stmt, 0);
-        checkResult = [NSString stringWithUTF8String:text];
-    }
-    
+
     if ([checkResult isEqualToString:@"ok"]) {
         return PDSHealthStatusHealthy;
     } else if ([checkResult.lowercaseString containsString:@"ok"]) {
@@ -141,8 +158,25 @@
         return NO;
     }
     
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA foreign_key_check", -1, &stmt, NULL);
+    __block int result = SQLITE_OK;
+    __block BOOL hasViolations = NO;
+    BOOL ran = [store.database performWithSQLiteHandle:^(sqlite3 *db) {
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+        result = sqlite3_prepare_v2(db, "PRAGMA foreign_key_check", -1, &stmt, NULL);
+        if (result != SQLITE_OK) return;
+
+        hasViolations = (sqlite3_step(stmt) == SQLITE_ROW);
+    }];
+
+    if (!ran) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.pds.health"
+                                        code:-1
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
+        }
+        return NO;
+    }
+
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.health"
@@ -151,13 +185,7 @@
         }
         return NO;
     }
-    
-    BOOL hasViolations = NO;
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        hasViolations = YES;
-        break;
-    }
-    
+
     return !hasViolations;
 }
 
@@ -168,22 +196,20 @@
     PDSActorStore *store = [serviceDb.servicePool storeForDid:@"__service__" error:nil];
     
     if (store && store.isOpen) {
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], 
-            "SELECT name, SUM(pages * page_size) as size FROM sqlite_master "
-            "LEFT JOIN sqlite_dbpage USING(sqlite_dbpage.name) GROUP BY name",
-            -1, &stmt, NULL) == SQLITE_OK) {
-            
-            while (sqlite3_step(stmt) == SQLITE_ROW) {
-                const char *name = (const char *)sqlite3_column_text(stmt, 0);
-                long long size = sqlite3_column_int64(stmt, 1);
-                if (name) {
-                    sizes[[NSString stringWithUTF8String:name]] = @(size);
-                }
+        NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:
+            @"SELECT name, SUM(pages * page_size) as size FROM sqlite_master "
+             "LEFT JOIN sqlite_dbpage USING(sqlite_dbpage.name) GROUP BY name"
+            params:@[]
+             error:nil];
+
+        for (NSDictionary *row in rows) {
+            NSString *name = row[@"name"];
+            if (name.length > 0) {
+                sizes[name] = @([row[@"size"] longLongValue]);
             }
         }
     }
-    
+
     return sizes;
 }
 
@@ -195,16 +221,13 @@
         return 0;
     }
     
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) FROM dbstat WHERE name = 'accounts'", -1, &stmt, NULL) != SQLITE_OK) {
-        return 0;
-    }
-    
-    double fragmentation = 0;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        fragmentation = sqlite3_column_double(stmt, 0);
-    }
-    
+    NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:
+        @"SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) AS fragmentation "
+         "FROM dbstat WHERE name = 'accounts'"
+        params:@[]
+         error:nil];
+
+    double fragmentation = [rows.firstObject[@"fragmentation"] doubleValue];
     return (NSUInteger)(fragmentation * 100);
 }
 
