@@ -54,7 +54,7 @@
     request.HTTPBody = jsonData;
     
     __block NSDictionary *result = nil;
-    __block NSError *requestError = nil;
+    __block NSError *capturedError = nil;
     
     // Log the request (sanitized)
     GZ_LOG_HTTP_INFO(@"Sending email request to: %@", url);
@@ -70,12 +70,13 @@
         }
         
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+        __block NSError *blockError = nil;
         
         [self.safeHTTPClient performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             
             if (taskError) {
-                requestError = taskError;
+                blockError = taskError;
             } else if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
                 NSError *parseError = nil;
                 if (data && data.length > 0) {
@@ -86,9 +87,8 @@
                 }
                 if (!parseError) {
                     success = YES;
-                    requestError = nil;
                 } else {
-                    requestError = parseError;
+                    blockError = parseError;
                 }
             } else {
                 // Handle HTTP errors
@@ -122,7 +122,7 @@
                     GZ_LOG_HTTP_ERROR(@"HTTP error %ld (no response body)", (long)httpResponse.statusCode);
                 }
 
-                requestError = [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain"
+                blockError = [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain"
                                                    code:httpResponse.statusCode
                                                userInfo:userInfo];
                 
@@ -143,15 +143,21 @@
         
         dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
         
+        // Capture the block-scoped error before reading it (ADR 0022).
+        // On a 30s timeout the wait returns before the block has run —
+        // capturedError captures nil safely rather than racing the
+        // completion block's write.
+        capturedError = blockError;
+        
         if (success) {
             break;
         }
         
         // Check if we should stop retrying based on the error code
-        if (requestError && [requestError.domain isEqualToString:@"PDSEmailHTTPClientErrorDomain"]) {
-            NSInteger code = requestError.code;
+        if (capturedError && [capturedError.domain isEqualToString:@"PDSEmailHTTPClientErrorDomain"]) {
+            NSInteger code = capturedError.code;
             if (code >= 400 && code < 500 && code != 429 && code != 409) {
-                GZ_LOG_HTTP_ERROR(@"Client error (%ld), not retrying: %@", (long)code, requestError);
+                GZ_LOG_HTTP_ERROR(@"Client error (%ld), not retrying: %@", (long)code, capturedError);
                 break;
             }
         }
@@ -159,8 +165,8 @@
         attempt++;
     }
     
-    if (error && requestError) {
-        *error = requestError;
+    if (error && capturedError) {
+        *error = capturedError;
     }
     
     return result;
