@@ -109,7 +109,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
         NSDictionary *body = request.jsonBody;
         NSString *groupUri = body[@"groupUri"];
 
-        if (!groupUri) {
+        if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
@@ -753,7 +753,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
         NSDictionary *body = request.jsonBody;
         NSString *linkId = body[@"linkId"];
-        if (!linkId) {
+        if (![linkId isKindOfClass:[NSString class]] || linkId.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
             return;
         }
