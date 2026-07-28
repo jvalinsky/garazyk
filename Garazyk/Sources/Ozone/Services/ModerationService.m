@@ -634,7 +634,7 @@
 
     for (NSString *subject in subjects) {
         // Get moderation status for subject
-        NSString *statusSql = @"SELECT * FROM moderation_subjects WHERE did = ?";
+        NSString *statusSql = @"SELECT * FROM moderation_subjects WHERE subject_did = ?";
         NSArray *statusRows = [self.database executeParameterizedQuery:statusSql params:@[subject] error:nil];
 
         NSMutableDictionary *subjectView = [NSMutableDictionary dictionary];
@@ -707,11 +707,15 @@
     }
 
     NSArray *parts = [safelinkId componentsSeparatedByString:@":"];
-    if (parts.count == 2) {
-        [sql appendFormat:@" WHERE url = ? AND pattern = ?"];
-        [params addObject:parts[0]];
-        [params addObject:parts[1]];
+    if (parts.count != 2) {
+        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Invalid safelink ID format"}];
+        return NO;
     }
+
+    [sql appendFormat:@" WHERE url = ? AND pattern = ?"];
+    [params addObject:parts[0]];
+    [params addObject:parts[1]];
 
     return [self.database executeParameterizedUpdate:sql params:params error:error];
 }
