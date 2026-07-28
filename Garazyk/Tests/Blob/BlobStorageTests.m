@@ -7,9 +7,14 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Schema.h"
 #import "Database/ActorStore/ActorStore.h"
+
 #import "Core/CID.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSRecordService.h"
+
+@interface ATProtoServiceConfiguration (Test)
+- (void)applyConfig:(NSDictionary *)config;
+@end
 
 @interface BlobStorageTests : XCTestCase
 
