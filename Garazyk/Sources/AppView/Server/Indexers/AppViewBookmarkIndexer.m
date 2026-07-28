@@ -63,7 +63,18 @@
         return NO;
     }
 
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, @"main"];
+    // A repo holds one bookmark record per rkey, and bookmarks.uri is UNIQUE, so
+    // the rkey must reach the URI: hardcoding a constant here collapsed every
+    // bookmark a DID owns onto one row that INSERT OR REPLACE kept overwriting,
+    // and left deleteRecord: below (which does use rkey) matching nothing.
+    if (rkey.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"AppViewBookmarkIndexer"
+                                                code:400
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Missing rkey in bookmark record"}];
+        return NO;
+    }
+
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSError *indexErr = nil;
     BOOL ok = [_bookmarkService indexBookmark:bookmarkRecord
                                      did:did
@@ -85,7 +96,15 @@
                   did:(NSString *)did
            collection:(NSString *)collection
                error:(NSError **)error {
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey ?: @"main"];
+    // Mirrors the URI construction in indexRecord:, including its rkey guard.
+    if (rkey.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"AppViewBookmarkIndexer"
+                                                code:400
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Missing rkey in bookmark record"}];
+        return NO;
+    }
+
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSError *unindexErr = nil;
     BOOL ok = [_bookmarkService unindexBookmarkWithURI:uri
                                              did:did
