@@ -44,8 +44,31 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  @method internalSQLiteHandle
  @abstract Returns the raw sqlite3* handle.
  @discussion INTERNAL USE ONLY. Requires casting to sqlite3*.
+
+ The returned handle is NOT serialized by this instance's queue. macOS system
+ libsqlite3 is built SQLITE_THREADSAFE=2 (multi-thread), so stepping statements
+ on it from two threads at once corrupts the connection's lookaside allocator —
+ a crash inside sqlite3DbMallocRawNNTyped, not a clean error. Only open/close
+ and migration paths, which run before the connection is shared, may use it.
+ Everything else must use performWithSQLiteHandle: or the parameterized API.
  */
 - (void *)internalSQLiteHandle;
+
+/*!
+ @method performWithSQLiteHandle:
+
+ @abstract Runs a block with the raw sqlite3 handle, serialized on the database queue.
+
+ @discussion The serialized alternative to internalSQLiteHandle for statements the
+ parameterized API cannot express — PRAGMA result sets, dbstat scans. The handle is
+ valid only for the duration of the block; storing it past the call reintroduces the
+ cross-thread misuse this method exists to prevent. Re-entrant: safe to call from
+ inside another block already running on the queue.
+
+ @param block Receives the open sqlite3 handle. Not invoked if the database is closed.
+ @return YES if the block ran, NO if the database could not be opened.
+ */
+- (BOOL)performWithSQLiteHandle:(void (^)(sqlite3 *db))block;
 
 /*!
  @method init
@@ -145,6 +168,27 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  */
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
                             params:(NSArray *)params
+                             error:(NSError **)error;
+
+/*!
+ @method executeParameterizedUpdate:params:changedRows:error:
+
+ @abstract Executes a parameterized statement and reports how many rows it changed.
+
+ @discussion Reads sqlite3_changes() while still holding the database queue, so the
+ count belongs to this statement even when other threads are updating the same
+ connection. Single-use token claims ("UPDATE ... WHERE used_at IS NULL") must use
+ this rather than a follow-up "SELECT changes()", which another writer can clobber.
+
+ @param sql The SQL statement with ? placeholders for parameters.
+ @param params An array of parameter values to bind to the statement.
+ @param changedRows On success, receives the number of rows modified. May be NULL.
+ @param error On return, contains an error if the statement failed.
+ @return YES if the statement executed successfully, NO otherwise.
+ */
+- (BOOL)executeParameterizedUpdate:(NSString *)sql
+                            params:(NSArray *)params
+                       changedRows:(nullable NSInteger *)changedRows
                              error:(NSError **)error;
 
 /*!
