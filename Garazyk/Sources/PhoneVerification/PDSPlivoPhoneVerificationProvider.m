@@ -113,7 +113,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
 #pragma mark - PDSPhoneVerificationProvider
 
 - (nullable NSString *)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
-    if (!phoneNumber || phoneNumber.length == 0) {
+    if (![phoneNumber isKindOfClass:[NSString class]] || phoneNumber.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSPlivoProviderErrorDomain
                                          code:PDSPlivoProviderErrorInvalidPhoneNumber
@@ -173,7 +173,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
      forPhoneNumber:(NSString *)phoneNumber
           sessionID:(nullable NSString *)sessionID
               error:(NSError **)error {
-    if (!code || code.length == 0) {
+    if (![code isKindOfClass:[NSString class]] || code.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSPlivoProviderErrorDomain
                                          code:PDSPlivoProviderErrorVerificationFailed
@@ -184,7 +184,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
         return NO;
     }
 
-    if (!phoneNumber || phoneNumber.length == 0) {
+    if (!phoneNumber || ![phoneNumber isKindOfClass:[NSString class]] || phoneNumber.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSPlivoProviderErrorDomain
                                          code:PDSPlivoProviderErrorInvalidPhoneNumber
@@ -237,19 +237,18 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
         return NO;
     }
 
-    // Plivo returns 200 on success with the session object
-    // Check for a "is_verified" field or successful status
+    // Plivo returns 200 with is_verified:true when verification succeeds.
+    // Do NOT treat a bare 200 response as success — require an explicit
+    // is_verified field or a verified message (ADR 0020, phase-23 slice 5).
     NSNumber *isVerified = response[@"is_verified"];
     if (isVerified && isVerified.boolValue) {
         GZ_LOG_INFO(@"[Plivo] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }
 
-    // Some Plivo responses indicate success by just returning 200
-    // without an error. If we got here with a non-nil response,
-    // the HTTP status was 200, which for Plivo means success.
+    // Secondary check: some Plivo API versions return message: "verified".
     NSString *message = response[@"message"];
-    if (message && [message containsString:@"verified"]) {
+    if (message && [message localizedCaseInsensitiveContainsString:@"verified"]) {
         GZ_LOG_INFO(@"[Plivo] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }

@@ -34,8 +34,8 @@
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
                        configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
-    NSString *phoneCode = body[@"phoneVerificationCode"];
-    if (!phoneCode || phoneCode.length == 0) {
+    id phoneCodeValue = body[@"phoneVerificationCode"];
+    if (![phoneCodeValue isKindOfClass:[NSString class]] || ((NSString *)phoneCodeValue).length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
                                          code:PDSRegistrationGateErrorPhoneVerificationRequired
@@ -46,8 +46,10 @@
         return NO;
     }
 
-    NSString *phoneNumber = body[@"phoneNumber"];
-    if (!phoneNumber || phoneNumber.length == 0) {
+    NSString *phoneCode = (NSString *)phoneCodeValue;
+
+    id phoneNumberValue = body[@"phoneNumber"];
+    if (![phoneNumberValue isKindOfClass:[NSString class]] || ((NSString *)phoneNumberValue).length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
                                          code:PDSRegistrationGateErrorInvalidPhoneVerification
@@ -58,9 +60,37 @@
         return NO;
     }
 
+    NSString *phoneNumber = (NSString *)phoneNumberValue;
+
+    // E.164 validation: must start with + followed by 7-15 digits, no other characters (ADR 0020, phase-23 slice 5).
+    if (![phoneNumber hasPrefix:@"+"] || phoneNumber.length < 8 || phoneNumber.length > 16) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                         code:PDSRegistrationGateErrorInvalidPhoneVerification
+                                     userInfo:@{
+                                         NSLocalizedDescriptionKey: @"Phone number must be in E.164 format (e.g. +1234567890)"
+                                     }];
+        }
+        return NO;
+    }
+    NSString *afterPlus = [phoneNumber substringFromIndex:1];
+    NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+    if ([afterPlus rangeOfCharacterFromSet:nonDigits].location != NSNotFound ||
+        afterPlus.length < 7 || afterPlus.length > 15) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                         code:PDSRegistrationGateErrorInvalidPhoneVerification
+                                     userInfo:@{
+                                         NSLocalizedDescriptionKey: @"Phone number must contain only digits after + in E.164 format"
+                                     }];
+        }
+        return NO;
+    }
+
     // If a phone verification provider is available and supports
     // verifyCode:forPhoneNumber:sessionID:error:, use it for server-side validation.
-    NSString *sessionID = body[@"verificationSessionID"];
+    id sessionIDValue = body[@"verificationSessionID"];
+    NSString *sessionID = [sessionIDValue isKindOfClass:[NSString class]] ? (NSString *)sessionIDValue : nil;
     if (_provider && [_provider respondsToSelector:@selector(verifyCode:forPhoneNumber:sessionID:error:)]) {
         NSError *verifyError = nil;
         BOOL verified = [(id<PDSPhoneVerificationProvider>)_provider verifyCode:phoneCode
