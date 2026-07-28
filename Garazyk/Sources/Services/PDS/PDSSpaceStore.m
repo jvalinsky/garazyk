@@ -294,7 +294,8 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
   if (!self) return nil;
 
   NSString *directory = [databasePath stringByDeletingLastPathComponent];
-  if (![[NSFileManager defaultManager] createDirectoryAtPath:directory
+  if (directory.length > 0 &&
+      ![[NSFileManager defaultManager] createDirectoryAtPath:directory
                                   withIntermediateDirectories:YES
                                                    attributes:nil
                                                         error:error]) {

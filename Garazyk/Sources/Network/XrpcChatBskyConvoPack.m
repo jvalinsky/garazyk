@@ -404,6 +404,15 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
+        // Resolve the conversation ID for this message and verify membership.
+        NSError *resolveError = nil;
+        NSString *convoId = [chatService conversationIdForMessage:messageId error:&resolveError];
+        if (!convoId) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Message not found"];
+            return;
+        }
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
+
         NSError *error = nil;
         BOOL success = [chatService addReaction:messageId actorDid:actorDID emoji:emoji error:&error];
         if (!success) {
@@ -432,6 +441,15 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
         }
+
+        // Resolve the conversation ID for this message and verify membership.
+        NSError *resolveError = nil;
+        NSString *convoId = [chatService conversationIdForMessage:messageId error:&resolveError];
+        if (!convoId) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Message not found"];
+            return;
+        }
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
 
         NSError *error = nil;
         BOOL success = [chatService removeReaction:messageId actorDid:actorDID emoji:emoji error:&error];
@@ -589,6 +607,20 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         if (!convoId || !messages) {
             [XrpcErrorHelper setValidationError:response message:@"convoId and messages are required"];
             return;
+        }
+
+        // Validate each message element before passing to the service.
+        for (id element in messages) {
+            if (![element isKindOfClass:[NSDictionary class]]) {
+                [XrpcErrorHelper setValidationError:response message:@"Each message must be an object"];
+                return;
+            }
+            NSDictionary *msg = (NSDictionary *)element;
+            NSString *text = [msg[@"text"] isKindOfClass:[NSString class]] ? msg[@"text"] : nil;
+            if (!text) {
+                [XrpcErrorHelper setValidationError:response message:@"Each message must have a text field"];
+                return;
+            }
         }
 
         // Verify the conversation exists and the sender is a member

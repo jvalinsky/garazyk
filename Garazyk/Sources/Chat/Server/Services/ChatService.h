@@ -123,6 +123,15 @@ NS_ASSUME_NONNULL_BEGIN
                                                            error:(NSError **)error;
 
 /**
+ * @abstract Look up the conversation ID for a message.
+ * @param messageId Message identifier.
+ * @param error Receives details when the lookup fails.
+ * @return The conversation ID, or nil if the message was not found.
+ */
+- (nullable NSString *)conversationIdForMessage:(NSString *)messageId
+                                          error:(NSError **)error;
+
+/**
  * @abstract Delete message for self.
  * @param messageId Message identifier.
  * @param memberDid Actor DID for the request.

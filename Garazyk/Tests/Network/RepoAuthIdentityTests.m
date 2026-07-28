@@ -15,41 +15,20 @@
 
 @implementation RepoAuthIdentityTests
 
-/*!
- Requests a PLC operation signature token.
-
- When an email provider is configured the handler mails the code and returns an
- empty body, so recover it from the mock provider's outbox; without a provider it
- comes back in the response.
- */
-- (nullable NSString *)requestPlcOperationTokenWithAuthHeader:(NSString *)authHeader {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
-                                                      body:@{}
-                                                   headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(response.statusCode, 200);
-
+- (nullable NSString *)plcOperationTokenFromResponse:(HttpResponse *)response {
     NSString *token = response.jsonBody[@"token"];
-    if (token.length > 0) {
-        return token;
-    }
+    if (token.length > 0) return token;
 
-    id provider = self.application.emailProvider;
-    if (![provider isKindOfClass:[PDSMockEmailProvider class]]) {
-        XCTFail(@"No token in the response and no mock email provider to read it from");
-        return nil;
-    }
-
-    NSDictionary *email = [(PDSMockEmailProvider *)provider lastSentEmail];
-    XCTAssertNotNil(email, @"Expected a confirmation email carrying the PLC token");
-    NSString *body = email[@"body"];
-    NSTextCheckingResult *match =
-        [[NSRegularExpression regularExpressionWithPattern:@"code[^:]*: ([A-Z0-9]{8})"
-                                                   options:0
-                                                     error:nil] firstMatchInString:body
-                                                                            options:0
-                                                                              range:NSMakeRange(0, body.length)];
-    XCTAssertNotNil(match, @"Could not find a PLC token in the email body: %@", body);
-    return match ? [body substringWithRange:[match rangeAtIndex:1]] : nil;
+    PDSMockEmailProvider *provider = (PDSMockEmailProvider *)self.application.emailProvider;
+    NSString *body = [provider.lastSentEmail[@"body"] isKindOfClass:[NSString class]]
+        ? provider.lastSentEmail[@"body"]
+        : nil;
+    if (body.length == 0) return nil;
+    NSRange marker = [body rangeOfString:@"is: "];
+    if (marker.location == NSNotFound) return nil;
+    NSString *remainder = [body substringFromIndex:NSMaxRange(marker)];
+    return [[remainder componentsSeparatedByCharactersInSet:
+        [NSCharacterSet newlineCharacterSet]] firstObject];
 }
 
 - (void)testIdentityUpdateHandleReturnsStatus401WithoutAuth {
@@ -89,9 +68,12 @@
 - (void)testIdentitySignAndSubmitPlcOperation {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    NSString *token = [self requestPlcOperationTokenWithAuthHeader:authHeader];
+    HttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
+                                                              body:@{}
+                                                           headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(requestSignature.statusCode, 200);
+    NSString *token = [self plcOperationTokenFromResponse:requestSignature];
     XCTAssertNotNil(token);
-    if (!token) return;
 
     HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
                                                           body:@{@"token": token}
@@ -124,9 +106,11 @@
     XCTAssertTrue([spaceKey hasPrefix:@"did:key:z"]);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    NSString *token = [self requestPlcOperationTokenWithAuthHeader:authHeader];
+    HttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
+                                                              body:@{}
+                                                           headers:@{@"authorization": authHeader}];
+    NSString *token = [self plcOperationTokenFromResponse:requestSignature];
     XCTAssertNotNil(token);
-    if (!token) return;
     HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
                                                           body:@{ @"token": token,
                                                                   @"verificationMethods": @{ @"atproto_space": spaceKey } }

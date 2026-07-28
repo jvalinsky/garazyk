@@ -1965,7 +1965,7 @@ log — cancellations become unattributed again.
 
 ## S15. Chat (syrena-chat) trust-boundary sweep
 
-**Status: not started.** A focused audit of the Chat module
+**Status: complete ✅ (all 7 slices done).** A focused audit of the Chat module
 (`Garazyk/Sources/Chat/`, `Garazyk/Sources/Network/XrpcChatBsky*.m`,
 totaling ~2,800 lines) found widespread untyped JSON extraction at the
 XRPC handler boundary (S8/S13 defect class), one unconditional auth-nop
@@ -1974,6 +1974,14 @@ ChatAuthManager is well-implemented (JWT verification, DID resolution,
 audience/lxm checks), but the handler layer exposes the same unguarded
 `body[@"key"]` pattern that the S8 and S13 sweeps fixed in auth and
 registration.
+
+**Completed slices (HEAD: e3af1952):**
+- Slice 1: isKindOfClass sweep (2e1c6321)
+- Slices 2-3: getConvoAvailability hardening + legacy token rejection + text/embed guards (432c03c4)
+- Slice 4: membership verification for 7 handlers (f5d68361)
+- Slice 5: addReaction/removeReaction membership verification via conversationIdForMessage (3786b2e1)
+- Slice 6: sendMessageBatch per-element validation (ac334207)
+- Slice 7: acceptance gate tests — 10 new tests + 4 pre-existing test fixes (uncommitted)
 
 ### Evidence
 
@@ -2052,9 +2060,15 @@ revert that handler and add a targeted fix.
 
 ## S16. Video + Germ/Mikrus/Beskid trust-boundary sweep
 
-**Status: not started.** 2,410 lines across Video (1,226 lines) and
+**Status: complete ✅ (all 5 slices done).** 2,410 lines across Video (1,226 lines) and
 Germ/Mikrus/Beskid (1,184 lines) audited for isKindOfClass gaps, JWT
 claim typing, and proxy forwarding safety.
+
+**Completed slices (HEAD: 92f0c8b4):**
+- Slice 1: Video JWT claim guards + mandatory exp (fb593ca7)
+- Slices 2-3: VideoWorker retry_count guard + Germ mailbox agentRef/address guards + Beskid path guard (540a6943, 55023206)
+- Slice 4: Beskid auth header validation — isKindOfClass + newline check (f363e072)
+- Slice 5: Gate tests — 7 S16GateTests covering V1-V3 JWT claim guards (92f0c8b4)
 
 ### Evidence
 
@@ -2153,3 +2167,116 @@ carry the same rollback strategy.
 ### Execution phases
 
 - `../prompts/phase-28-video-germ-beskid-trust-boundary.md` — slices 1-5.
+
+## S17. Admin + AdminUIServer trust-boundary sweep
+
+**Status: not started.** A focused audit of the Admin and AdminUIServer
+modules (`Garazyk/Sources/Admin/`, `Garazyk/Sources/AdminUIServer/`,
+totaling ~8,000 lines) found the Admin core (PDSAdminAuth.m,
+AdminMiddleware.m) to be well-guarded with isKindOfClass checks already
+in place, but the AdminUIServer route handlers (~1,100 lines across 11
+route categories) exhibit the same unguarded `request.jsonBody[@"key"]`
+pattern fixed in S8, S13, and S15. The UIAuthManager is well-implemented
+(PBKDF2 password hashing, CSPRNG tokens, CSRF nonces), the template
+engine properly HTML-escapes, and the backend client's auth forwarding
+uses config-provided tokens (lower risk than the Beskid B2 case).
+
+### Evidence
+
+**Admin core is well-guarded.** `PDSAdminAuth.m:291` —
+`[request isKindOfClass:[NSDictionary class]]` guards the headers dict.
+`:305` — `[authorization isKindOfClass:[NSString class]]` before
+`hasPrefix:` call. `:311` — `[adminTokenHeader isKindOfClass:[NSString class]]`
+for X-Admin-Token header. `:358,508,658` —
+`[controller isKindOfClass:[PDSController class]]` before use.
+`AdminMiddleware.m` does not perform direct body extraction — it verifies
+admin access via Session objects and the PDSAdminAuth DID list.
+
+**U1 (high): Unguarded JSON extraction across all AdminUIServer route handlers.**
+`UIServerRuntime+OzoneRoutes.m:76` — `NSString *did = request.jsonBody[@"did"]`
+extracted without isKindOfClass. Same pattern repeats at :77 (displayName),
+:93 (dids array), :112 (:url, :pattern), :151-152 (:did, :dids).
+`UIServerRuntime+PDSRoutes.m:46` — `request.jsonBody[@"account"]` unguarded.
+`:57,64` — `request.jsonBody[@"dids"]` unguarded array extraction.
+`:143,152,162,172,182` — :did, :handle, :reportID, :action extractions
+all use `?: @""` fallback without isKindOfClass. Same pattern in
+SecurityRoutes.m:40-41 (:did, :id), :51-52, :62-63 (:did, :name).
+A non-string JSON value is silently coerced to empty string rather than
+returning 400 — the same defect class fixed across S8/S13/S15.
+
+**U2 (low): BackendClient auth forwarding without newline validation.**
+`UIBackendClient.m:117` —
+`[request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"]`.
+The token comes from `self.configuration.pdsAdminToken` (config-provided,
+not user input), so header injection risk is lower than the Beskid B2
+case. However, no newline character check is applied.
+
+**UIAuthManager is solid.** `UIAuthManager.m` uses PBKDF2 password hashing
+with random salt (600k iterations), CSPRNG session tokens (32 bytes),
+SHA-256 token hashing, CSRF double-submit cookie pattern with nonce
+expiration and one-time use, and constant-time comparison via
+`PDSSecurityCompare`. No findings.
+
+**Template engine properly escapes HTML.** `UITemplateEngine.m:5-9` —
+`EscapeHTML()` escapes &, <, >, ", '. The template engine distinguishes
+`{{key}}` (HTML-escaped) from `{{{key}}}` (raw passthrough). Section
+iteration variables (`{{key}}` within `{{#items}}...{{/items}}`) use
+escaped placeholders by default. No XSS findings.
+
+**U3 (minor): Admin DID list element types not validated.**
+`PDSAdminAuth.m:239` — `[dids isKindOfClass:[NSArray class]]` checks the
+array type but individual elements are used without isKindOfClass:
+`[self.adminDidsInternal containsObject:did]` at :501. A non-string
+array element loaded from the admin_dids.json file would persist silently.
+
+### Slices
+
+1. AdminUIServer route handler isKindOfClass sweep: add guards to all
+   `request.jsonBody[@"key"]` extractions in OzoneRoutes, PDSRoutes,
+   SecurityRoutes, and remaining route categories (AppViewRoutes,
+   ChatRoutes, DataExplorerRoutes, MSTRoutes, PLCRoutes, RelayRoutes,
+   VideoRoutes, LabRoutes). Non-string values → 400 with
+   `[XrpcErrorHelper setValidationError:response]`.
+2. BackendClient auth forwarding hardening: add isKindOfClass and
+   newline character check on token before Authorization header
+   interpolation, per B2/S16 slice 4 pattern.
+3. Admin DID list element validation: add NSString isKindOfClass check
+   per element in `PDSAdminAuthLoadAdminDids` and `addAdminDid:`.
+4. Template engine hardening: verify no user-controlled values reach
+   `{{{raw}}}` unescaped placeholders in any template file.
+5. Acceptance gate tests: add tests to PDSAdminAuthTests and a new
+   AdminUIRoutesTests suite covering:
+   - Non-string body fields in admin routes → 400
+   - Auth header with newline → 400
+   - Admin DID list with non-string elements → filtered out
+   - Template rendering with XSS payloads → escaped in output
+
+### Gate
+
+- Non-string JSON body values in AdminUIServer routes → 400.
+- Auth header with embedded newline → 400.
+- Admin DID list persists only NSString elements.
+- All HTML templates escape user-controlled values.
+- All existing admin tests pass (`PDSAdminAuthTests`,
+  `PDSAdminMiddlewareTests`).
+- `./build/tests/AllTests --gated=run` passes.
+
+### Rollback
+
+Each slice is self-contained:
+- Slice 1 (route handler sweep): If any route breaks due to stricter
+  validation, revert that specific handler and add targeted coercion.
+- Slice 2 (auth forwarding): If existing integrations rely on raw
+  token passthrough, make the guard opt-in per route.
+- Slice 3 (DID list): If non-string elements are intentionally stored
+  (unlikely), revert and add coercion at read time instead.
+
+### Owner boundary
+
+`Garazyk/Sources/Admin/` (slices 1, 3), `Garazyk/Sources/AdminUIServer/`
+(slices 1, 2, 4).
+
+### Execution phases
+
+- `../prompts/phase-28-admin-trust-boundary.md` — slices 1-5,
+  `depends_on: [S15, S16]`.

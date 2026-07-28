@@ -6,7 +6,6 @@
 #import "Compat/PDSTypes.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"
-#import <sqlite3.h>
 
 static const NSTimeInterval kMinimumPruneInterval = 300.0;
 
@@ -69,39 +68,31 @@ static const NSTimeInterval kMinimumPruneInterval = 300.0;
 - (void)pruneOnQueueIgnoringStopped:(BOOL)ignoreStopped {
     if (self.stopped && !ignoreStopped) return;
 
-    sqlite3 *db = (sqlite3 *)[self.serviceDatabases serviceDatabase];
-    if (!db) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner: serviceDatabase unavailable, skipping cycle");
-        return;
+    NSDate *cutoff = [NSDate date];
+    NSError *passwordError = nil;
+    NSInteger passwordRemoved =
+        [self.serviceDatabases pruneExpiredPasswordResetTokensBefore:cutoff
+                                                               error:&passwordError];
+    if (passwordRemoved < 0) {
+        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner failed: %@",
+                      passwordError.localizedDescription ?: @"unknown database error");
+    } else if (passwordRemoved > 0) {
+        GZ_LOG_INFO_C(@"ServiceDB",
+                      @"Token pruner removed %ld expired password-reset tokens",
+                      (long)passwordRemoved);
     }
 
-    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, "DELETE FROM password_reset_tokens WHERE expires_at < ?", -1, &stmt, NULL) != SQLITE_OK) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner: prepare failed: %s", sqlite3_errmsg(db));
-        return;
-    }
-    sqlite3_bind_int64(stmt, 1, (sqlite3_int64)now);
-    sqlite3_step(stmt);
-    int removed = sqlite3_changes(db);
-    sqlite3_finalize(stmt);
-
-    if (removed > 0) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Token pruner removed %d expired password-reset tokens", removed);
-    }
-
-    // Also prune expired email_confirmation_tokens (phase-23 slice 4c).
-    sqlite3_stmt *emailStmt = NULL;
-    if (sqlite3_prepare_v2(db, "DELETE FROM email_confirmation_tokens WHERE expires_at < ?", -1, &emailStmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_int64(emailStmt, 1, (sqlite3_int64)now);
-        sqlite3_step(emailStmt);
-        int emailRemoved = sqlite3_changes(db);
-        sqlite3_finalize(emailStmt);
-        if (emailRemoved > 0) {
-            GZ_LOG_INFO_C(@"ServiceDB", @"Token pruner removed %d expired email-confirmation tokens", emailRemoved);
-        }
-    } else {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Token pruner: email_confirmation_tokens prepare failed (table may not exist): %s", sqlite3_errmsg(db));
+    NSError *emailError = nil;
+    NSInteger emailRemoved =
+        [self.serviceDatabases pruneExpiredEmailConfirmationTokensBefore:cutoff
+                                                                   error:&emailError];
+    if (emailRemoved < 0) {
+        GZ_LOG_INFO_C(@"ServiceDB", @"Email-confirmation token pruner failed: %@",
+                      emailError.localizedDescription ?: @"unknown database error");
+    } else if (emailRemoved > 0) {
+        GZ_LOG_INFO_C(@"ServiceDB",
+                      @"Token pruner removed %ld expired email-confirmation tokens",
+                      (long)emailRemoved);
     }
 }
 

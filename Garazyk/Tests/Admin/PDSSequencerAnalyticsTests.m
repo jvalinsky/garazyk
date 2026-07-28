@@ -4,20 +4,31 @@
 #import "Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.h"
 #import "Database/Service/ServiceDatabases.h"
 
-// MARK: - Tests disabled pending API updates
-#if 0
 #import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
-// Mock SubscribeReposHandler for testing
+// Mock SubscribeReposHandler for testing.
+// The collector reads `handler.attachedConnections.count`, so the mock vends a
+// set whose cardinality matches the configured connection count.
 @interface MockSubscribeReposHandler : NSObject
 @property (nonatomic, assign) NSUInteger attachedConnectionsCount;
+@property (nonatomic, readonly) NSSet *attachedConnections;
 @end
 
 @implementation MockSubscribeReposHandler
-- (NSUInteger)attachedConnectionsCount {
-    return _attachedConnectionsCount;
+- (NSSet *)attachedConnections {
+    NSMutableSet *connections = [NSMutableSet set];
+    for (NSUInteger i = 0; i < _attachedConnectionsCount; i++) {
+        [connections addObject:@(i)];
+    }
+    return connections;
 }
+@end
+
+// collectMetrics is private to the collector; tests drive it directly so a
+// collection cycle is deterministic rather than waiting on the 5s timer.
+@interface PDSSequencerAnalyticsCollector (Testing)
+- (void)collectMetrics;
 @end
 
 @interface PDSSequencerAnalyticsTests : XCTestCase
@@ -41,39 +52,18 @@
                                                attributes:nil
                                                     error:nil];
 
-    // Create temp service database
-    NSString *dbPath = [self.tempDirectory stringByAppendingPathComponent:@"service.db"];
-    if (sqlite3_open(dbPath.UTF8String, &_testDatabase) != SQLITE_OK) {
-        XCTFail(@"Failed to create test database");
-    }
+    // Initialize service databases. PDSServiceDatabases derives its own file
+    // layout from the base directory and runs the service migrations, which
+    // create the sequencer_analytics table — so the schema is not set up here.
+    self.serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:self.tempDirectory
+                                                            serviceMaxSize:10
+                                                           didCacheMaxSize:10
+                                                          sequencerMaxSize:10];
 
-    // Create sequencer_analytics table
-    NSString *createTableSQL = @"CREATE TABLE sequencer_analytics ("
-        @"id INTEGER PRIMARY KEY,"
-        @"timestamp INTEGER NOT NULL,"
-        @"seq_number INTEGER NOT NULL,"
-        @"events_per_second REAL,"
-        @"subscriber_count INTEGER,"
-        @"backpressure_warnings INTEGER DEFAULT 0,"
-        @"backpressure_critical INTEGER DEFAULT 0,"
-        @"queue_overflows INTEGER DEFAULT 0,"
-        @"event_type_distribution TEXT,"
-        @"created_at INTEGER NOT NULL"
-        @")";
-
-    char *errMsg = NULL;
-    if (sqlite3_exec(_testDatabase, createTableSQL.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
-        XCTFail(@"Failed to create table: %s", errMsg);
-        sqlite3_free(errMsg);
-    }
-
-    // Create index
-    sqlite3_exec(_testDatabase,
-                 "CREATE INDEX idx_sequencer_analytics_timestamp ON sequencer_analytics(timestamp)",
-                 NULL, NULL, &errMsg);
-
-    // Initialize service databases
-    self.serviceDatabases = [[PDSServiceDatabases alloc] initWithDatabasePath:dbPath];
+    // Tests read and seed the same handle the collector writes through.
+    // Owned by serviceDatabases — not closed here.
+    self.testDatabase = (sqlite3 *)[self.serviceDatabases serviceDatabase];
+    XCTAssertTrue(self.testDatabase != NULL, @"Service database handle should be available");
 
     // Create mock handler
     self.mockSubscribeHandler = [[MockSubscribeReposHandler alloc] init];
@@ -88,11 +78,10 @@
     // Stop collecting
     [self.collector stopCollecting];
 
-    // Close databases
+    // Close databases. self.testDatabase is owned by serviceDatabases, so it
+    // must not be closed independently.
+    self.testDatabase = NULL;
     [self.serviceDatabases closeAll];
-    if (self.testDatabase) {
-        sqlite3_close(self.testDatabase);
-    }
 
     // Cleanup temp directory
     [[NSFileManager defaultManager] removeItemAtPath:self.tempDirectory error:nil];
@@ -116,17 +105,11 @@
 }
 
 - (void)testCollectorRecordsMetricsToDatabase {
-    // Start collection
     [self.collector startCollecting];
 
-    // Wait for first collection cycle
-    XCTestExpectation *expectation = [self expectationWithDescription:@"Wait for analytics collection"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.1 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        [expectation fulfill];
-    });
-
-    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+    // The collection timer does not fire for 5s; drive one cycle directly so
+    // the assertion below tests the recording path rather than the schedule.
+    [self.collector collectMetrics];
 
     // Query database for records
     sqlite3 *db = [self.serviceDatabases serviceDatabase];
@@ -149,14 +132,18 @@
     NSDictionary *snapshot = [self.collector currentSnapshot];
 
     XCTAssertNotNil(snapshot, @"Snapshot should not be nil");
-    XCTAssertNotNil(snapshot[@"seq_number"], @"Should contain seq_number");
-    XCTAssertNotNil(snapshot[@"subscriber_count"], @"Should contain subscriber_count");
-    XCTAssertNotNil(snapshot[@"timestamp"], @"Should contain timestamp");
+    XCTAssertNotNil(snapshot[@"currentSeq"], @"Should contain currentSeq");
+    XCTAssertNotNil(snapshot[@"subscriberCount"], @"Should contain subscriberCount");
+    XCTAssertNotNil(snapshot[@"eventsPerSecond"], @"Should contain eventsPerSecond");
+    XCTAssertNotNil(snapshot[@"healthStatus"], @"Should contain healthStatus");
+    XCTAssertEqualObjects(snapshot[@"subscriberCount"],
+                          @(self.mockSubscribeHandler.attachedConnectionsCount),
+                          @"Subscriber count should come from the attached connections");
 }
 
 - (void)testHistoricalDataReturnsRecords {
-    // Insert test data into database
-    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    // Insert test data into database, using the collector's storage epoch.
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
     for (int i = 0; i < 3; i++) {
         NSString *sql = @"INSERT INTO sequencer_analytics "
             @"(timestamp, seq_number, events_per_second, subscriber_count, "
@@ -187,8 +174,9 @@
 }
 
 - (void)testPruneOldRecords {
-    // Insert test data - mix of old and new
-    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    // Insert test data - mix of old and new. The collector stores and prunes on
+    // timeIntervalSinceReferenceDate, so seeded rows must use the same epoch.
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
     NSTimeInterval twoMonthsAgo = now - (60 * 24 * 3600);
 
     // Insert old record
@@ -266,5 +254,3 @@
 }
 
 @end
-
-#endif // Tests disabled pending API updates

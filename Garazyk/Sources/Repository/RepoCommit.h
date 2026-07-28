@@ -109,6 +109,15 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (nullable instancetype)fromCARData:(NSData *)carData error:(NSError **)error;
 
+/**
+ * @abstract Deserializes a signed commit block from DAG-CBOR bytes.
+ * @param blockData Signed repository commit block bytes.
+ * @param error Receives failure details.
+ * @return RepoCommit instance or nil.
+ */
++ (nullable instancetype)fromSignedBlockData:(NSData *)blockData
+                                       error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

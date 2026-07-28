@@ -42,7 +42,7 @@
     // Relay: Request crawl action
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/request-crawl" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *hostname = request.jsonBody[@"hostname"] ?: [request queryParamForKey:@"hostname"];
+        NSString *hostname = [request.jsonBody[@"hostname"] isKindOfClass:[NSString class]] ? request.jsonBody[@"hostname"] : [request queryParamForKey:@"hostname"];
         NSDictionary *result = [weakSelf.backendClient requestCrawlForHostname:hostname ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
