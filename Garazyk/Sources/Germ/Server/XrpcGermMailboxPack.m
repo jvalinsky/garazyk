@@ -80,8 +80,7 @@
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
-    NSDictionary *body = request.jsonBody ?: @{};
-    NSString *agentRef = body[@"agentRef"];
+    NSDictionary *body = request.jsonBody ?: @{};        NSString *agentRef = [body[@"agentRef"] isKindOfClass:[NSString class]] ? body[@"agentRef"] : nil;
     NSNumber *countNum = body[@"count"];
 
     if (!agentRef || ![countNum isKindOfClass:[NSNumber class]]) {
@@ -120,8 +119,7 @@
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
-    NSDictionary *body = request.jsonBody ?: @{};
-    NSString *address = body[@"address"];
+    NSDictionary *body = request.jsonBody ?: @{};        NSString *address = [body[@"address"] isKindOfClass:[NSString class]] ? body[@"address"] : nil;
     NSDictionary *ciphertextObj = body[@"ciphertext"];
 
     if (!address || !ciphertextObj) {
@@ -202,9 +200,7 @@
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
-    NSDictionary *body = request.jsonBody ?: @{};
-    NSString *address = body[@"address"];
-    NSString *agentRef = body[@"agentRef"];
+    NSDictionary *body = request.jsonBody ?: @{};        NSString *address = [body[@"address"] isKindOfClass:[NSString class]] ? body[@"address"] : nil;        NSString *agentRef = [body[@"agentRef"] isKindOfClass:[NSString class]] ? body[@"agentRef"] : nil;
     NSNumber *epochNum = body[@"epoch"];
 
     if (!address || !agentRef || ![epochNum isKindOfClass:[NSNumber class]]) {
@@ -238,8 +234,7 @@
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
-    NSDictionary *body = request.jsonBody ?: @{};
-    NSString *address = body[@"address"];
+    NSDictionary *body = request.jsonBody ?: @{};        NSString *address = [body[@"address"] isKindOfClass:[NSString class]] ? body[@"address"] : nil;
     NSDictionary *ciphertextObj = body[@"ciphertext"];
 
     if (!address || !ciphertextObj) {

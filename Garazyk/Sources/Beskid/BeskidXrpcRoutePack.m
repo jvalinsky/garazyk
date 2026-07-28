@@ -368,7 +368,7 @@
     for (NSDictionary *source in hydrationSources) {
         if (![source isKindOfClass:[NSDictionary class]]) continue;
         NSString *path = source[@"path"];
-        if (path.length > 0) {
+        if ([path isKindOfClass:[NSString class]] && path.length > 0) {
             [self extractURIsFromJSON:resJson path:path collector:extractedUris];
         }
     }
