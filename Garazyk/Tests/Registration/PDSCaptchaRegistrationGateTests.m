@@ -27,7 +27,9 @@
 
 #import "Registration/PDSCaptchaRegistrationGate.h"
 #import "Registration/PDSRegistrationGate.h"
+#import "Registration/PDSInviteCodeRegistrationGate.h"
 #import "Network/ATProtoSafeHTTPClient.h"
+#import "Database/Service/ServiceDatabases.h"
 
 // Expose private property for testing
 @interface PDSCaptchaRegistrationGate (Testing)
@@ -594,6 +596,158 @@
         [settle fulfill];
     });
     [self waitForExpectationsWithTimeout:3.0 handler:nil];
+}
+
+#pragma mark - Composite AND acceptance matrix (phase-25 slice 6)
+
+- (nullable PDSServiceDatabases *)createTestServiceDatabases {
+    NSString *tmpDir = NSTemporaryDirectory();
+    NSString *serviceDir = [tmpDir stringByAppendingPathComponent:
+                            [NSString stringWithFormat:@"captcha_gate_test_%@", NSUUID.UUID.UUIDString]];
+
+    NSFileManager *fm = [NSFileManager defaultManager];
+    [fm createDirectoryAtPath:serviceDir withIntermediateDirectories:YES attributes:nil error:nil];
+
+    PDSServiceDatabases *db = [[PDSServiceDatabases alloc] initWithDirectory:serviceDir
+                                                             serviceMaxSize:10
+                                                           didCacheMaxSize:10
+                                                         sequencerMaxSize:10];
+    if (!db) return nil;
+
+    [self addTeardownBlock:^{
+        [db closeAll];
+        [fm removeItemAtPath:serviceDir error:nil];
+    }];
+
+    return db;
+}
+
+- (PDSCompositeRegistrationGate *)compositeWithInviteDatabase:(PDSServiceDatabases *)db
+                                                    captchaGate:(PDSCaptchaRegistrationGate *)captchaGate {
+    PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];
+    [composite addGate:[[PDSInviteCodeRegistrationGate alloc] initWithServiceDatabases:db]];
+    [composite addGate:captchaGate];
+    return composite;
+}
+
+- (void)testAcceptanceMatrixInvitePassCaptchaPassAdmits {
+    PDSServiceDatabases *db = [self createTestServiceDatabases];
+    if (!db) return;
+    NSString *code = @"MATRIX-PASS-PASS-1";
+    [db createInviteCode:code forAccount:@"did:plc:system" maxUses:1 error:nil];
+
+    PDSCaptchaRegistrationGate *captchaGate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile" siteKey:@"k" secretKey:@"s"];
+    captchaGate.safeHTTPClient = self.mockClient;
+    MockSiteverifyResponse *mock = [[MockSiteverifyResponse alloc] init];
+    mock.statusCode = 200;
+    mock.bodyJSON = @{@"success": @YES};
+    self.mockClient.mockResponse = mock;
+
+    PDSCompositeRegistrationGate *composite = [self compositeWithInviteDatabase:db captchaGate:captchaGate];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{@"inviteCode": code, @"captchaToken": @"tok"}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertTrue(result, @"invite pass + captcha pass must admit");
+}
+
+- (void)testAcceptanceMatrixInvitePassCaptchaFailRejects {
+    // This is the headline bug being fixed: previously OR semantics let a
+    // valid invite code bypass CAPTCHA entirely.
+    PDSServiceDatabases *db = [self createTestServiceDatabases];
+    if (!db) return;
+    NSString *code = @"MATRIX-PASS-FAIL-1";
+    [db createInviteCode:code forAccount:@"did:plc:system" maxUses:1 error:nil];
+
+    PDSCaptchaRegistrationGate *captchaGate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile" siteKey:@"k" secretKey:@"s"];
+    captchaGate.safeHTTPClient = self.mockClient;
+    MockSiteverifyResponse *mock = [[MockSiteverifyResponse alloc] init];
+    mock.statusCode = 200;
+    mock.bodyJSON = @{@"success": @NO, @"error-codes": @[@"invalid-input-response"]};
+    self.mockClient.mockResponse = mock;
+
+    PDSCompositeRegistrationGate *composite = [self compositeWithInviteDatabase:db captchaGate:captchaGate];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{@"inviteCode": code, @"captchaToken": @"tok"}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertFalse(result, @"invite pass + captcha fail must reject under AND semantics");
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorInvalidCaptcha);
+}
+
+- (void)testAcceptanceMatrixInviteFailCaptchaPassRejects {
+    PDSServiceDatabases *db = [self createTestServiceDatabases];
+    if (!db) return;
+
+    PDSCaptchaRegistrationGate *captchaGate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile" siteKey:@"k" secretKey:@"s"];
+    captchaGate.safeHTTPClient = self.mockClient;
+    MockSiteverifyResponse *mock = [[MockSiteverifyResponse alloc] init];
+    mock.statusCode = 200;
+    mock.bodyJSON = @{@"success": @YES};
+    self.mockClient.mockResponse = mock;
+
+    PDSCompositeRegistrationGate *composite = [self compositeWithInviteDatabase:db captchaGate:captchaGate];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{@"captchaToken": @"tok"}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertFalse(result, @"invite fail + captcha pass must reject");
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorInviteCodeRequired);
+}
+
+- (void)testAcceptanceMatrixInviteFailCaptchaFailReportsFirstGatesError {
+    PDSServiceDatabases *db = [self createTestServiceDatabases];
+    if (!db) return;
+
+    PDSCaptchaRegistrationGate *captchaGate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile" siteKey:@"k" secretKey:@"s"];
+    captchaGate.safeHTTPClient = self.mockClient;
+
+    PDSCompositeRegistrationGate *composite = [self compositeWithInviteDatabase:db captchaGate:captchaGate];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertFalse(result);
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorInviteCodeRequired,
+                  @"invite fail + captcha fail must report the FIRST (invite) gate's error");
+    XCTAssertNil(self.mockClient.lastRequestBodyString,
+                 @"Short-circuit: the invite gate rejects first, so siteverify must never be called");
+}
+
+- (void)testAcceptanceMatrix503FromCaptchaSurfacesEvenWithInvitePassing {
+    // Proves the 503 path is no longer absorbed: with invite passing, the
+    // composite must still invoke CAPTCHA and surface its 503.
+    PDSServiceDatabases *db = [self createTestServiceDatabases];
+    if (!db) return;
+    NSString *code = @"MATRIX-503-1";
+    [db createInviteCode:code forAccount:@"did:plc:system" maxUses:1 error:nil];
+
+    PDSCaptchaRegistrationGate *captchaGate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile" siteKey:@"k" secretKey:@"s"];
+    captchaGate.safeHTTPClient = self.mockClient;
+    MockSiteverifyResponse *mock = [[MockSiteverifyResponse alloc] init];
+    mock.error = [NSError errorWithDomain:@"TestNetworkError"
+                                     code:NSURLErrorNotConnectedToInternet
+                                 userInfo:@{NSLocalizedDescriptionKey: @"No internet connection"}];
+    self.mockClient.mockResponse = mock;
+
+    PDSCompositeRegistrationGate *composite = [self compositeWithInviteDatabase:db captchaGate:captchaGate];
+
+    NSError *error = nil;
+    BOOL result = [composite validateRegistrationRequest:@{@"inviteCode": code, @"captchaToken": @"tok"}
+                                          configuration:nil
+                                                  error:&error];
+    XCTAssertFalse(result);
+    XCTAssertEqualObjects([error.userInfo objectForKey:@"httpStatus"], @(503),
+                          @"CAPTCHA 503 must surface even though invite (an earlier gate) passed");
 }
 
 @end
