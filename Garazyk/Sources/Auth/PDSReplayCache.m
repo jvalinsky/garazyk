@@ -19,11 +19,17 @@ static NSString * const PDSReplayCacheErrorDomain = @"com.garazyk.auth.replay-ca
     static PDSReplayCache *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        // Try configured data directory first for persistence across restarts.
-        NSString *dataDir = [[NSProcessInfo processInfo] environment][@"PDS_DATA_DIR"];
-        if (dataDir.length > 0) {
-            NSString *dbPath = [dataDir stringByAppendingPathComponent:@"replay_cache.db"];
-            shared = [[PDSReplayCache alloc] initWithDatabasePath:dbPath];
+        NSDictionary<NSString *, NSString *> *environment =
+            [[NSProcessInfo processInfo] environment];
+        if ([environment[@"PDS_RUNNING_TESTS"] length] > 0) {
+            shared = [[PDSReplayCache alloc] initWithDatabasePath:nil];
+        } else {
+            // Try configured data directory first for persistence across restarts.
+            NSString *dataDir = environment[@"PDS_DATA_DIR"];
+            if (dataDir.length > 0) {
+                NSString *dbPath = [dataDir stringByAppendingPathComponent:@"replay_cache.db"];
+                shared = [[PDSReplayCache alloc] initWithDatabasePath:dbPath];
+            }
         }
         // Fall back to in-memory if on-disk init fails or no data dir configured.
         // A nil sharedCache would disable DPoP replay protection for the entire
@@ -119,7 +125,8 @@ static NSString * const PDSReplayCacheErrorDomain = @"com.garazyk.auth.replay-ca
     // Atomic check-and-add inside one transaction (the connection manager is serial, so
     // concurrent callers cannot interleave). Returning YES commits; NO rolls back. The
     // caller-facing answer travels in `result`, independent of the commit/rollback flag.
-    [_queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+    BOOL transactionSucceeded =
+        [_queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
 
         NSArray<NSDictionary<NSString *, id> *> *rows =
@@ -140,6 +147,11 @@ static NSString * const PDSReplayCacheErrorDomain = @"com.garazyk.auth.replay-ca
         result = YES;
         return YES;
     } error:&error];
+
+    if (!transactionSucceeded) {
+        GZ_LOG_AUTH_ERROR(@"Replay cache check-and-add failed: %@",
+                          error.localizedDescription ?: @"unknown database error");
+    }
 
     return result;
 }
