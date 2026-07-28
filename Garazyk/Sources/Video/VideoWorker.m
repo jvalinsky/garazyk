@@ -470,7 +470,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 - (void)handleJobFailure:(NSString *)jobId error:(NSError *)error {
     NSError *dbError = nil;
     NSDictionary *job = [self.jobStore getVideoJobById:jobId error:&dbError];
-    NSInteger retryCount = [job[@"retry_count"] integerValue];
+    NSInteger retryCount = [job[@"retry_count"] isKindOfClass:[NSNumber class]] ? [job[@"retry_count"] integerValue] : 0;
 
     if (retryCount < 3) {
         GZ_LOG_WARN(@"Job %@ failed, retrying (%ld/3): %@", jobId, (long)retryCount + 1, error);
