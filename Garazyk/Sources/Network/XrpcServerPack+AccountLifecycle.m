@@ -25,7 +25,6 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
-#import <sqlite3.h>
 
 @implementation XrpcServerPack (AccountLifecycle)
 
@@ -72,32 +71,28 @@
 
         // If a confirmation token is present, validate it before deleting.
         if (token.length > 0) {
-            sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+            PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:nil];
             if (!db) {
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
                 return;
             }
 
-            sqlite3_stmt *stmt = NULL;
-            if (sqlite3_prepare_v2(db, "SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?", -1, &stmt, NULL) != SQLITE_OK) {
+            NSError *lookupError = nil;
+            NSArray<NSDictionary *> *tokenRows = [db executeParameterizedQuery:
+                @"SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?"
+                                                                        params:@[token]
+                                                                         error:&lookupError];
+            if (lookupError) {
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
                 return;
             }
-            sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
 
-            NSString *tokenDid = nil;
-            NSTimeInterval expiresAt = 0;
-            BOOL alreadyUsed = NO;
-
-            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                const unsigned char *didText = sqlite3_column_text(stmt, 0);
-                if (didText) tokenDid = [NSString stringWithUTF8String:(const char *)didText];
-                expiresAt = (NSTimeInterval)sqlite3_column_int64(stmt, 1);
-                alreadyUsed = (sqlite3_column_type(stmt, 2) != SQLITE_NULL);
-            }
-            sqlite3_finalize(stmt);
+            NSDictionary *tokenRow = tokenRows.firstObject;
+            NSString *tokenDid = tokenRow[@"did"];
+            NSTimeInterval expiresAt = [tokenRow[@"expires_at"] doubleValue];
+            BOOL alreadyUsed = (tokenRow[@"used_at"] != nil);
 
             if (!tokenDid || alreadyUsed) {
                 response.statusCode = HttpStatusBadRequest;
@@ -117,24 +112,21 @@
 
             // Atomically claim the token.
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-            sqlite3_stmt *claimStmt = NULL;
-            if (sqlite3_prepare_v2(db,
-                "UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL",
-                -1, &claimStmt, NULL) != SQLITE_OK) {
+            NSInteger claimedRows = 0;
+            if (![db executeParameterizedUpdate:
+                    @"UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL"
+                                         params:@[@((long long)now), token]
+                                    changedRows:&claimedRows
+                                          error:nil]) {
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
                 return;
             }
-            sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)now);
-            sqlite3_bind_text(claimStmt, 2, token.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_step(claimStmt);
-            if (sqlite3_changes(db) == 0) {
-                sqlite3_finalize(claimStmt);
+            if (claimedRows == 0) {
                 response.statusCode = HttpStatusBadRequest;
                 [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid confirmation token"}];
                 return;
             }
-            sqlite3_finalize(claimStmt);
         }
 
         NSError *error = nil;
