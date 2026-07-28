@@ -237,7 +237,14 @@ static NSArray<NSString *> *PDSAdminAuthLoadAdminDids(NSString *dataDirectory) {
     NSError *error = nil;
     NSArray *dids = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
     if (error || ![dids isKindOfClass:[NSArray class]]) return @[];
-    return dids;
+    // Filter to only NSString elements — a non-string in the JSON must not persist.
+    NSMutableArray *valid = [NSMutableArray arrayWithCapacity:dids.count];
+    for (id element in dids) {
+        if ([element isKindOfClass:[NSString class]]) {
+            [valid addObject:element];
+        }
+    }
+    return [valid copy];
 }
 
 static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString *> *dids) {
@@ -594,7 +601,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 }
 
 - (BOOL)addAdminDid:(NSString *)did error:(NSError **)error {
-    if (did.length == 0) return NO;
+    if (![did isKindOfClass:[NSString class]] || did.length == 0) return NO;
     
     __block BOOL changed = NO;
     dispatch_sync(self.adminQueue, ^{
@@ -615,7 +622,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 }
 
 - (BOOL)removeAdminDid:(NSString *)did error:(NSError **)error {
-    if (did.length == 0) return NO;
+    if (![did isKindOfClass:[NSString class]] || did.length == 0) return NO;
     
     __block BOOL changed = NO;
     dispatch_sync(self.adminQueue, ^{

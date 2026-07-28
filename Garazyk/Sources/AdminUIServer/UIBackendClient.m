@@ -15,6 +15,16 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     return [segment stringByAddingPercentEncodingWithAllowedCharacters:allowed] ?: @"";
 }
 
+/// Returns a validated Bearer header value for the token, or nil if the token
+/// is non-string, empty, or contains newline characters (header injection prevention).
+/// Silently drops invalid tokens — tokens come from config, not user input.
+static NSString *UIBackendSafeBearerHeader(NSString *token) {
+    if (![token isKindOfClass:[NSString class]]) return nil;
+    if (token.length == 0) return nil;
+    if ([token rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location != NSNotFound) return nil;
+    return [NSString stringWithFormat:@"Bearer %@", token];
+}
+
 @implementation UIBackendClient
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
@@ -125,8 +135,9 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-    if (token && token.length > 0) {
-        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+    NSString *bearer = UIBackendSafeBearerHeader(token);
+    if (bearer) {
+        [request setValue:bearer forHTTPHeaderField:@"Authorization"];
     }
 
     if (body) {
@@ -224,8 +235,9 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
         [request setValue:contentType forHTTPHeaderField:@"Content-Type"];
     }
 
-    if (token && token.length > 0) {
-        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+    NSString *bearer = UIBackendSafeBearerHeader(token);
+    if (bearer) {
+        [request setValue:bearer forHTTPHeaderField:@"Authorization"];
     }
 
     if (body) {
@@ -317,8 +329,9 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     request.HTTPMethod = @"GET";
     request.timeoutInterval = 5.0;
 
-    if (token && token.length > 0) {
-        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+    NSString *bearer = UIBackendSafeBearerHeader(token);
+    if (bearer) {
+        [request setValue:bearer forHTTPHeaderField:@"Authorization"];
     }
 
     __block NSInteger statusCode = 0;

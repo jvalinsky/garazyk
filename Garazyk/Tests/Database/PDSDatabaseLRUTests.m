@@ -139,4 +139,28 @@
                   @"Unexpected error: %@", error);
 }
 
+- (void)testParameterizedUpdateReportsChangedRows {
+    NSError *error = nil;
+    XCTAssertTrue([self.database executeParameterizedUpdate:@"CREATE TABLE affected_rows_test (id INTEGER PRIMARY KEY, value TEXT)"
+                                                     params:@[]
+                                                      error:&error],
+                  @"Create table failed: %@", error);
+
+    NSInteger changedRows = -1;
+    XCTAssertTrue([self.database executeParameterizedUpdate:@"INSERT INTO affected_rows_test (value) VALUES (?)"
+                                                     params:@[@"value"]
+                                                changedRows:&changedRows
+                                                      error:&error],
+                  @"Insert failed: %@", error);
+    XCTAssertEqual(changedRows, 1);
+
+    NSArray *noMatchesParams = @[@"other", @(999)];
+    XCTAssertTrue([self.database executeParameterizedUpdate:@"UPDATE affected_rows_test SET value = ? WHERE id = ?"
+                                                     params:noMatchesParams
+                                                changedRows:&changedRows
+                                                      error:&error],
+                  @"Update failed: %@", error);
+    XCTAssertEqual(changedRows, 0);
+}
+
 @end
