@@ -1,8 +1,7 @@
 # Documentation Tooling
 
-This directory contains documentation tooling for managing, validating, and maintaining the Garazyk
-documentation ecosystem. Legacy migration helpers still use Node.js; active repo-wide registry,
-link, and coverage checks use Deno/TypeScript.
+Tooling for validating and maintaining the Garazyk documentation. The legacy migration helpers
+still run on Node.js; the repo-wide registry, link, and coverage checks run on Deno/TypeScript.
 
 ## Setup
 
@@ -19,13 +18,8 @@ npm install
 
 Consolidates documentation from multiple source directories into the unified `docs/` structure.
 
-**Features:**
-
-- Preserves git history using `git mv`
-- Updates internal cross-references and links
-- Generates migration mapping file
-- Provides rollback capability
-- Configuration-driven migrations
+It preserves git history by using `git mv`, updates internal cross-references and links, writes a
+migration mapping file, and supports rollback. Migrations are driven by configuration files.
 
 **Usage:**
 
@@ -71,12 +65,8 @@ Validates migration configuration files against the schema.
 npm run validate-config configs/plan-consolidation.json
 ```
 
-**Features:**
-
-- JSON schema validation
-- Semantic rule checking (no nested paths, no duplicates)
-- Detailed error reporting
-- Configuration summary display
+It runs JSON schema validation and semantic rule checks (no nested paths, no duplicates), reports
+errors with context, and prints a configuration summary.
 
 ### Repo-Wide Registry and Validation (`repo_docs.ts`)
 

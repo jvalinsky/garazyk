@@ -5,12 +5,9 @@ package provides Zod-validated service definitions, role metadata, runtime path
 helpers, and Docker Compose manifest rendering for multi-service ATProto stacks
 (PDS, AppView, Relay, PLC).
 
-## Why Schemat?
+## Name
 
-**Schemat** is the Polish word for **schematic** or **diagram**. This package
-defines the structural blueprints and topology of the ATProto network, acting as
-the master schematic that describes how services connect and interact within a
-simulated environment.
+_Schemat_ is the Polish word for a schematic or diagram.
 
 ## Installation
 
@@ -20,16 +17,13 @@ deno add jsr:@garazyk/schemat
 
 ## Features
 
-- **Topology Schemas**: Zod-validated structures for service roles and
-  capabilities.
-- **Runtime Helpers**: Run-directory, service URL, and required-port helpers
-  exposed through `@garazyk/schemat/runtime`.
-- **Role Metadata**: Canonical role-to-port, role-to-service, and role-to-env
-  mapping used by scenario orchestration.
-- **Manifest Generation**: Compile high-level presets into raw Docker Compose
-  YAML.
-- **Service Registration**: Built-in registry of ATProto roles and their
-  required ports/protocols.
+- Topology schemas: Zod-validated structures for service roles and capabilities.
+- Runtime helpers: run-directory, service URL, and required-port helpers, from
+  `@garazyk/schemat/runtime`.
+- Role metadata: the role-to-port, role-to-service, and role-to-env mappings
+  used by scenario orchestration.
+- Manifest generation: compiles high-level presets into Docker Compose YAML.
+- Service registry: ATProto roles with their required ports and protocols.
 
 ## Public Subpaths
 
@@ -39,8 +33,8 @@ Beyond the root entry, the package exposes:
   helpers used at scenario runtime.
 - `@garazyk/schemat/topology-authoring` — programmatic construction of custom
   topologies; the schema-aware DSL used by scenario authors.
-- `@garazyk/schemat/web-client-compose` — Docker Compose overlays for the
-  Skylab browser front-end.
+- `@garazyk/schemat/web-client-compose` — Docker Compose overlays for the Skylab
+  browser front-end.
 
 ## Usage
 
