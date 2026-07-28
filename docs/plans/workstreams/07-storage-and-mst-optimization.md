@@ -1,7 +1,7 @@
 ---
 title: Storage and MST Optimization
 status: complete
-last_verified: 2026-07-24
+last_verified: 2026-07-27
 ---
 
 # Storage and MST Optimization
@@ -74,7 +74,11 @@ transaction discipline) are already done and excluded from this plan.
 | O3: Lazy subtree hydration               |             3 |                4 |             3 |             2 |      5 | P1       | Complete |
 | O4: Covering indexes for hot reads       |             2 |                2 |             3 |             4 |      3 | P1       | Complete (actor V5) |
 | O5: DID/handle resolution caching audit  |             3 |                2 |             3 |             4 |      3 | P2       | Complete |
-| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Implemented — global gates pending |
+| O6: Decouple ingest from indexing        |             4 |                5 |             3 |             2 |      4 | P2       | Complete (lint baseline closed 2026-07-22) |
+| O7: AppView actor hydration and ingest checkpoint |    — |                — |             — |             — |      — | —        | Complete (phase-21, 2026-07-27) |
+
+O7 was identified after this table was first drafted (2026-07-26) and was never
+scored against this rubric — see its own section below for scope and evidence.
 
 ## O1: `INSERT OR IGNORE` for `ipld_blocks` — COMPLETE
 
@@ -689,9 +693,19 @@ indexing worker fast enough to keep up with ingest.
 
 ---
 
-## O7: AppView actor hydration and ingest checkpoint
+## O7: AppView actor hydration and ingest checkpoint — COMPLETE
 
-**Status: not started (identified 2026-07-26).** A review of AppView,
+**Status: complete (phase-21, 2026-07-27).** All five steps below landed:
+materialized actor counts (`94a6a5bf`), batched profile hydration (`fe7333e8`),
+batched record-body hydration (`a5def877`), a monotonic ingest checkpoint
+(`9121d51b`), and verified universal route-boundary limit clamping (code
+inspection, no functional commit needed). See
+`../prompts/phase-21-appview-hydration.md` for the full acceptance-gate
+record (query-count assertions, byte-identical response diffs, migration
+round-trip and checkpoint-regression tests). Findings below are retained for
+the record.
+
+A review of AppView,
 Services, and Lexicon found the read path's dominant cost is per-row profile
 hydration, not query shape — the SQL is parameterized and the indexes exist.
 It also found one ingest-cursor correctness gap and an inconsistency in limit
@@ -751,23 +765,24 @@ defense.
 
 ### Steps
 
-1. **Materialize the three counts.** Maintain follower, follow, and post
-   counts in a counts table kept current by triggers, following the
+1. ✅ **Materialize the three counts** (`94a6a5bf`). Maintain follower, follow,
+   and post counts in a counts table kept current by triggers, following the
    `kPDSAccountUsage*` trigger pattern in `Database/Schema.m:129-195` (note
    that those triggers exist but were never installed — phase 15 slice 2
    installs them; reuse the shape, not the omission). Backfill on migration.
-2. **Batch profile hydration.** Replace per-row `getProfileForActor:` calls in
-   the seven listed loops with a single batched fetch over the row set, in the
-   `IN (?,?,?)` placeholder style already used correctly at
-   `FeedService.m:400`.
-3. **Batch record-body hydration.** Same treatment for `getRecordBodyFromCID:`
-   at the eight listed call sites.
-4. **Guard the checkpoint.** Make the checkpoint save conditional so `seq`
-   only advances.
-5. **Consolidate limit clamping.** One implementation, applied at the route
-   boundary, with the dead `validateLimitParameter:` removed or made the
-   single shared one. Service-layer clamps become redundant rather than
-   load-bearing.
+2. ✅ **Batch profile hydration** (`fe7333e8`). Replace per-row
+   `getProfileForActor:` calls in the seven listed loops with a single
+   batched fetch over the row set, in the `IN (?,?,?)` placeholder style
+   already used correctly at `FeedService.m:400`.
+3. ✅ **Batch record-body hydration** (`a5def877`). Same treatment for
+   `getRecordBodyFromCID:` at the eight listed call sites.
+4. ✅ **Guard the checkpoint** (`9121d51b`). Make the checkpoint save
+   conditional so `seq` only advances.
+5. ✅ **Consolidate limit clamping** (verified via code inspection — all 21
+   route handlers already use `parseLimitParam`; no dead-code removal commit
+   was needed since `validateLimitParameter:` having zero callers was
+   confirmed rather than acted on). One implementation, applied at the route
+   boundary. Service-layer clamps remain redundant rather than load-bearing.
 
 ### Files
 
