@@ -64,6 +64,57 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         }
         if (!XrpcAccountAllowsEmailManagement(request, response)) return;
 
+        // Look up the account to get the email address.
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+        if (!account || account.email.length == 0) {
+            // No-leak: return 200 even if no email is on file.
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{}];
+            return;
+        }
+
+        // Mint a 32-byte opaque token (phase-23 slice 3b, ADR 0022).
+        uint8_t tokenBytes[32];
+        if (SecRandomCopyBytes(kSecRandomDefault, 32, tokenBytes) != errSecSuccess) {
+            GZ_LOG_ERROR(@"requestEmailConfirmation: SecRandomCopyBytes failed");
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalServerError", @"message": @"Failed to generate token"}];
+            return;
+        }
+        NSMutableString *token = [NSMutableString stringWithCapacity:64];
+        for (NSUInteger i = 0; i < 32; i++) {
+            [token appendFormat:@"%02x", tokenBytes[i]];
+        }
+
+        // Store in email_confirmation_tokens (V17). TTL: 30 minutes.
+        NSTimeInterval expiresAt = [[NSDate date] timeIntervalSince1970] + 1800.0;
+        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+        sqlite3_stmt *stmt = NULL;
+        const char *insertSql = "INSERT INTO email_confirmation_tokens (token, did, email, expires_at) VALUES (?, ?, ?, ?)";
+        if (sqlite3_prepare_v2(db, insertSql, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 3, account.email.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int64(stmt, 4, (sqlite3_int64)expiresAt);
+            sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
+        }
+
+        // Send the token via email.
+        id<PDSEmailProvider> emailProvider = services.emailProvider;
+        if (emailProvider) {
+            NSString *subject = @"Confirm your email address";
+            NSString *bodyText = [NSString stringWithFormat:
+                @"Use this token to confirm your email address:\n\n%@\n\nThis token expires in 30 minutes.", token];
+            NSError *emailError = nil;
+            if (![emailProvider sendEmailTo:account.email subject:subject body:bodyText error:&emailError]) {
+                GZ_LOG_ERROR(@"requestEmailConfirmation: failed to send email to %@: %@", account.email, emailError.localizedDescription);
+            }
+        } else {
+            GZ_LOG_WARN(@"requestEmailConfirmation: no emailProvider configured, token not sent");
+        }
+
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
@@ -117,6 +168,65 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidEmail", @"message": @"Provided email does not match account"}];
             return;
+        }
+
+        // Validate the opaque confirmation token (phase-23 slice 3b, V17).
+        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+        sqlite3_stmt *stmt = NULL;
+        const char *selectSql = "SELECT did, email, expires_at, used_at FROM email_confirmation_tokens WHERE token = ?";
+        BOOL tokenValid = NO;
+        if (sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                const char *tokenDid = (const char *)sqlite3_column_text(stmt, 0);
+                const char *tokenEmail = (const char *)sqlite3_column_text(stmt, 1);
+                NSTimeInterval expiresAt = (NSTimeInterval)sqlite3_column_double(stmt, 2);
+                BOOL alreadyUsed = sqlite3_column_type(stmt, 3) != SQLITE_NULL;
+
+                NSString *storedDid = tokenDid ? [NSString stringWithUTF8String:tokenDid] : @"";
+                NSString *storedEmail = tokenEmail ? [NSString stringWithUTF8String:tokenEmail] : @"";
+
+                if (!alreadyUsed && [[NSDate date] timeIntervalSince1970] <= expiresAt &&
+                    [storedDid isEqualToString:did] &&
+                    [[storedEmail lowercaseString] isEqualToString:[email lowercaseString]]) {
+                    tokenValid = YES;
+                }
+            }
+            sqlite3_finalize(stmt);
+        }
+
+        if (!tokenValid) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid, expired, or already used confirmation token"}];
+            return;
+        }
+
+        // Atomically claim the token — guards concurrent replays.
+        NSTimeInterval claimTime = [[NSDate date] timeIntervalSince1970];
+        sqlite3_stmt *claimStmt = NULL;
+        const char *claimSql = "UPDATE email_confirmation_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL";
+        if (sqlite3_prepare_v2(db, claimSql, -1, &claimStmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)claimTime);
+            sqlite3_bind_text(claimStmt, 2, token.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_step(claimStmt);
+            if (sqlite3_changes(db) == 0) {
+                sqlite3_finalize(claimStmt);
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid, expired, or already used confirmation token"}];
+                return;
+            }
+            sqlite3_finalize(claimStmt);
+        }
+
+        // Persist emailConfirmed flag on the account.
+        NSString *nowStr = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+        sqlite3_stmt *flagStmt = NULL;
+        const char *flagSql = "UPDATE accounts SET email_confirmed_at = ? WHERE did = ?";
+        if (sqlite3_prepare_v2(db, flagSql, -1, &flagStmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(flagStmt, 1, nowStr.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(flagStmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_step(flagStmt);
+            sqlite3_finalize(flagStmt);
         }
 
         response.statusCode = HttpStatusOK;
