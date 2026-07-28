@@ -248,7 +248,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
 
     // Secondary check: some Plivo API versions return message: "verified".
     NSString *message = response[@"message"];
-    if (message && [message localizedCaseInsensitiveContainsString:@"verified"]) {
+    if (message && [message rangeOfString:@"verified" options:NSCaseInsensitiveSearch].location != NSNotFound) {
         GZ_LOG_INFO(@"[Plivo] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }
