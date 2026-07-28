@@ -347,7 +347,9 @@
     XCTAssertEqual(error.code, PDSRegistrationGateErrorCaptchaRequired);
 }
 
-- (void)testCaptchaGateAcceptsNonEmptyToken {
+- (void)testCaptchaGateRejectsNonEmptyTokenWhenNoSecretKey {
+    // Phase-23 slice 1: the gate now fails closed when no secret key is
+    // configured. Previously it accepted any token presence (the no-op).
     PDSCaptchaRegistrationGate *gate =
         [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile"
                                                      siteKey:nil
@@ -357,7 +359,8 @@
     BOOL result = [gate validateRegistrationRequest:@{@"captchaToken": @"test-token-abc"}
                                       configuration:nil
                                               error:&error];
-    XCTAssertTrue(result);
+    XCTAssertFalse(result, @"Gate must fail closed when no secret key is configured");
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorInvalidCaptcha);
 }
 
 #pragma mark - OAuth-Only Gate

@@ -63,18 +63,41 @@ NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationg
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
                        configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
+    return [self validateRegistrationRequest:body
+                               configuration:configuration
+                               remoteAddress:nil
+                                       error:error];
+}
+
+- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+                       configuration:(ATProtoServiceConfiguration *)configuration
+                       remoteAddress:(NSString *)remoteAddress
+                               error:(NSError **)error {
     // No gates = open registration
     if (self.mutableGates.count == 0) {
         return YES;
     }
 
-    // OR logic: if ANY gate passes, the registration is allowed
+    // OR logic: if ANY gate passes, the registration is allowed.
+    // Dispatch to the remoteAddress-aware variant when the gate implements it;
+    // fall back to the two-parameter method otherwise. Without this dispatch,
+    // the remoteAddress parameter is unreachable for gates that need it
+    // (e.g. CAPTCHA siteverify's remoteip field).
     NSError *lastError = nil;
     for (id<PDSRegistrationGate> gate in self.mutableGates) {
         NSError *gateError = nil;
-        if ([gate validateRegistrationRequest:body
-                                configuration:configuration
-                                        error:&gateError]) {
+        BOOL passed = NO;
+        if ([gate respondsToSelector:@selector(validateRegistrationRequest:configuration:remoteAddress:error:)]) {
+            passed = [gate validateRegistrationRequest:body
+                                         configuration:configuration
+                                         remoteAddress:remoteAddress
+                                                 error:&gateError];
+        } else {
+            passed = [gate validateRegistrationRequest:body
+                                         configuration:configuration
+                                                 error:&gateError];
+        }
+        if (passed) {
             return YES;
         }
         lastError = gateError;
@@ -165,10 +188,16 @@ static dispatch_queue_t sCustomGateQueue = NULL;
 
     // CAPTCHA gate
     if (configuration.captchaRequired) {
+        NSString *captchaSecret = configuration.captchaSecretKey;
+        if (!captchaSecret || captchaSecret.length == 0) {
+            GZ_LOG_WARN(@"[RegistrationGate] CAPTCHA gate enabled but no secret key configured; "
+                         @"registration will fail until PDS_CAPTCHA_SECRET_KEY is set. "
+                         @"Use open registration explicitly if no CAPTCHA is desired.");
+        }
         PDSCaptchaRegistrationGate *captchaGate =
             [[PDSCaptchaRegistrationGate alloc] initWithProvider:configuration.captchaProvider
                                                         siteKey:configuration.captchaSiteKey
-                                                      secretKey:configuration.captchaSecretKey];
+                                                      secretKey:captchaSecret];
         [composite addGate:captchaGate];
     }
 
