@@ -626,6 +626,19 @@
     NSString *cid = uploaded[@"blob"][@"ref"][@"$link"];
     XCTAssertTrue(cid.length > 0);
 
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"blob header reference",
+        @"createdAt": @"2026-07-28T00:00:00Z",
+        @"attachment": uploaded[@"blob"],
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did
+                                                      collection:@"app.bsky.feed.post"
+                                                         record:record
+                                                 validationMode:PDSValidationModeOff
+                                                          error:nil];
+    XCTAssertNotNil(created);
+
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getBlob"
                                               queryParams:@{@"did": self.did, @"cid": cid}
                                                   headers:@{}];

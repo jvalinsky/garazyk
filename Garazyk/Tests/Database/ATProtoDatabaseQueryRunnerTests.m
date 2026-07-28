@@ -244,4 +244,91 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
     XCTAssertEqualObjects(error.domain, @"blue.microcosm.tests.custom-query-runner");
 }
 
+- (void)testSerialManagersWaitBeforeReadThenWriteTransaction {
+    NSString *path = [NSTemporaryDirectory()
+        stringByAppendingPathComponent:[NSString stringWithFormat:@"serial-manager-%@.sqlite",
+                                                                  NSUUID.UUID.UUIDString]];
+    ATProtoConnectionManagerSerial *firstManager =
+        [[ATProtoConnectionManagerSerial alloc] initWithLabel:@"blue.microcosm.tests.serial.first"];
+    ATProtoConnectionManagerSerial *secondManager =
+        [[ATProtoConnectionManagerSerial alloc] initWithLabel:@"blue.microcosm.tests.serial.second"];
+    NSError *error = nil;
+    XCTAssertTrue([firstManager openWithPath:path config:ATProtoDBConfigDefault error:&error],
+                  @"open first manager: %@", error);
+    error = nil;
+    XCTAssertTrue([secondManager openWithPath:path config:ATProtoDBConfigDefault error:&error],
+                  @"open second manager: %@", error);
+
+    ATProtoDatabaseQueryRunner *firstRunner =
+        [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:firstManager
+                                                          errorDomain:ATProtoDatabaseQueryRunnerTestDomain];
+    ATProtoDatabaseQueryRunner *secondRunner =
+        [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:secondManager
+                                                          errorDomain:ATProtoDatabaseQueryRunnerTestDomain];
+    XCTAssertEqual([firstRunner executeUpdate:@"CREATE TABLE contention_test(value TEXT)"
+                                       params:nil
+                                        error:&error], 0, @"create table: %@", error);
+
+    dispatch_semaphore_t firstWriterReady = dispatch_semaphore_create(0);
+    dispatch_semaphore_t releaseFirstWriter = dispatch_semaphore_create(0);
+    XCTestExpectation *firstFinished = [self expectationWithDescription:@"first writer finished"];
+    XCTestExpectation *secondFinished = [self expectationWithDescription:@"second writer finished"];
+    __block BOOL firstOK = NO;
+    __block BOOL secondOK = NO;
+    __block NSError *firstError = nil;
+    __block NSError *secondError = nil;
+
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        firstOK = [firstRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx,
+                                                              NSError **innerError) {
+            if (![tx executeUpdate:@"INSERT INTO contention_test(value) VALUES(?)"
+                            params:@[@"first"]
+                             error:innerError]) {
+                return NO;
+            }
+            dispatch_semaphore_signal(firstWriterReady);
+            return dispatch_semaphore_wait(releaseFirstWriter,
+                                           dispatch_time(DISPATCH_TIME_NOW,
+                                                         2 * NSEC_PER_SEC)) == 0;
+        } error:&firstError];
+        [firstFinished fulfill];
+    });
+
+    XCTAssertEqual(dispatch_semaphore_wait(firstWriterReady,
+                                           dispatch_time(DISPATCH_TIME_NOW,
+                                                         2 * NSEC_PER_SEC)), 0);
+
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        secondOK = [secondRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx,
+                                                                NSError **innerError) {
+            NSArray *rows = [tx executeQuery:@"SELECT value FROM contention_test"
+                                      params:nil
+                                       error:innerError];
+            if (!rows) return NO;
+            return [tx executeUpdate:@"INSERT INTO contention_test(value) VALUES(?)"
+                              params:@[@"second"]
+                               error:innerError];
+        } error:&secondError];
+        [secondFinished fulfill];
+    });
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC),
+                   dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        dispatch_semaphore_signal(releaseFirstWriter);
+    });
+
+    [self waitForExpectations:@[firstFinished, secondFinished] timeout:5.0];
+    XCTAssertTrue(firstOK, @"first transaction: %@", firstError);
+    XCTAssertTrue(secondOK, @"read-then-write transaction should wait for writer: %@", secondError);
+
+    NSArray *rows = [firstRunner executeQuery:@"SELECT value FROM contention_test ORDER BY value"
+                                       params:nil
+                                        error:&error];
+    XCTAssertEqual(rows.count, 2u, @"both transactions should commit: %@", error);
+
+    [secondManager close];
+    [firstManager close];
+    [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+}
+
 @end

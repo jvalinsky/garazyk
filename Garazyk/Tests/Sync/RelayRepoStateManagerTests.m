@@ -81,18 +81,68 @@
     XCTAssertEqual([manager cursorForRepo:@"did:plc:test"], 101);
 }
 
-#pragma mark - prevDataCID tracking
+#pragma mark - Commit and data-root tracking
 
-- (void)testPrevDataCIDTrackedOnCommit {
+- (void)testCommitAndDataCIDsRemainDistinct {
     RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
-    [manager handleCommitForRepo:@"did:plc:test" root:@"bafyre-first" rev:@"1" seq:1];
-    XCTAssertNil([manager prevDataCIDForRepo:@"did:plc:test"]);
+    [manager handleCommitForRepo:@"did:plc:test"
+                       commitCID:@"bafyre-commit"
+                         dataCID:@"bafyre-data"
+                             rev:@"1"
+                             seq:1];
 
-    [manager handleCommitForRepo:@"did:plc:test" root:@"bafyre-second" rev:@"2" seq:2];
-    XCTAssertEqualObjects([manager prevDataCIDForRepo:@"did:plc:test"], @"bafyre-first");
+    XCTAssertEqualObjects([manager commitCIDForRepo:@"did:plc:test"],
+                          @"bafyre-commit");
+    XCTAssertEqualObjects([manager rootCIDForRepo:@"did:plc:test"],
+                          @"bafyre-commit");
+    XCTAssertEqualObjects([manager dataCIDForRepo:@"did:plc:test"],
+                          @"bafyre-data");
+}
 
-    [manager handleCommitForRepo:@"did:plc:test" root:@"bafyre-third" rev:@"3" seq:3];
-    XCTAssertEqualObjects([manager prevDataCIDForRepo:@"did:plc:test"], @"bafyre-second");
+- (void)testAdvanceRepoComparesPrevDataWithStoredDataCID {
+    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    [manager handleCommitForRepo:@"did:plc:test"
+                       commitCID:@"commit-1"
+                         dataCID:@"data-1"
+                             rev:@"1"
+                             seq:1];
+
+    RelayRepoAdvanceResult result =
+        [manager advanceRepo:@"did:plc:test"
+                       since:@"1"
+                    prevData:@"data-1"
+                   commitCID:@"commit-2"
+                     dataCID:@"data-2"
+                         rev:@"2"
+                         seq:2];
+
+    XCTAssertEqual(result, RelayRepoAdvanceResultAdvanced);
+    XCTAssertEqualObjects([manager commitCIDForRepo:@"did:plc:test"], @"commit-2");
+    XCTAssertEqualObjects([manager dataCIDForRepo:@"did:plc:test"], @"data-2");
+}
+
+- (void)testAdvanceRepoRejectsCommitCIDUsedAsPrevData {
+    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    [manager handleCommitForRepo:@"did:plc:test"
+                       commitCID:@"commit-1"
+                         dataCID:@"data-1"
+                             rev:@"1"
+                             seq:1];
+
+    RelayRepoAdvanceResult result =
+        [manager advanceRepo:@"did:plc:test"
+                       since:@"1"
+                    prevData:@"commit-1"
+                   commitCID:@"commit-2"
+                     dataCID:@"data-2"
+                         rev:@"2"
+                         seq:2];
+
+    XCTAssertEqual(result, RelayRepoAdvanceResultPrevDataMismatch);
+    XCTAssertEqualObjects([manager commitCIDForRepo:@"did:plc:test"], @"commit-1");
+    XCTAssertEqualObjects([manager dataCIDForRepo:@"did:plc:test"], @"data-1");
+    XCTAssertEqual([manager statusForRepo:@"did:plc:test"],
+                   RelayRepoStatusDesynchronized);
 }
 
 #pragma mark - SQLite-backed persistence
@@ -124,15 +174,18 @@
     [self removeDBAt:dbPath];
 }
 
-- (void)testPersistenceRoundTripIncludesPrevDataCID {
+- (void)testPersistenceRoundTripIncludesDataCID {
     NSString *dbPath = [self tempDBPath];
     NSError *error = nil;
 
     RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                           error:&error];
     XCTAssertNotNil(mgr);
-    [mgr handleCommitForRepo:@"did:plc:test" root:@"bafyre-v1" rev:@"1" seq:1];
-    [mgr handleCommitForRepo:@"did:plc:test" root:@"bafyre-v2" rev:@"2" seq:2];
+    [mgr handleCommitForRepo:@"did:plc:test"
+                   commitCID:@"bafyre-commit"
+                     dataCID:@"bafyre-data"
+                         rev:@"2"
+                         seq:2];
     [mgr persistState];
 
     RelayRepoStateManager *mgr2 = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
@@ -140,8 +193,42 @@
     XCTAssertNotNil(mgr2);
     XCTAssertTrue([mgr2 loadState:&error]);
 
-    XCTAssertEqualObjects([mgr2 prevDataCIDForRepo:@"did:plc:test"], @"bafyre-v1");
-    XCTAssertEqualObjects([mgr2 rootCIDForRepo:@"did:plc:test"], @"bafyre-v2");
+    XCTAssertEqualObjects([mgr2 dataCIDForRepo:@"did:plc:test"], @"bafyre-data");
+    XCTAssertEqualObjects([mgr2 rootCIDForRepo:@"did:plc:test"], @"bafyre-commit");
+
+    [self removeDBAt:dbPath];
+}
+
+- (void)testLegacySchemaMigrationDoesNotTrustPrevDataCID {
+    NSString *dbPath = [self tempDBPath];
+    sqlite3 *db = NULL;
+    XCTAssertEqual(sqlite3_open(dbPath.fileSystemRepresentation, &db), SQLITE_OK);
+    const char *legacySQL =
+        "CREATE TABLE relay_repos ("
+        "did TEXT PRIMARY KEY NOT NULL, root_cid TEXT, prev_data_cid TEXT, "
+        "rev TEXT, seq INTEGER NOT NULL DEFAULT 0, "
+        "status INTEGER NOT NULL DEFAULT 0, last_seen_at REAL NOT NULL);"
+        "CREATE TABLE relay_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT);"
+        "INSERT INTO relay_repos "
+        "(did, root_cid, prev_data_cid, rev, seq, status, last_seen_at) "
+        "VALUES ('did:plc:legacy', 'commit-head', 'legacy-commit-head', "
+        "'3mlegacy', 42, 0, 1.0);";
+    XCTAssertEqual(sqlite3_exec(db, legacySQL, NULL, NULL, NULL), SQLITE_OK);
+    sqlite3_close(db);
+
+    NSError *error = nil;
+    RelayRepoStateManager *manager =
+        [[RelayRepoStateManager alloc] initWithDataDir:dbPath error:&error];
+    XCTAssertNotNil(manager, @"Migration failed: %@", error);
+    XCTAssertTrue([manager loadState:&error], @"Load failed: %@", error);
+    XCTAssertEqualObjects([manager commitCIDForRepo:@"did:plc:legacy"],
+                          @"commit-head");
+    XCTAssertNil([manager dataCIDForRepo:@"did:plc:legacy"],
+                 @"Legacy prev_data_cid stored commit CIDs and must not seed data roots");
+
+    RelayRepoStateManager *reopened =
+        [[RelayRepoStateManager alloc] initWithDataDir:dbPath error:&error];
+    XCTAssertNotNil(reopened, @"Idempotent migration failed: %@", error);
 
     [self removeDBAt:dbPath];
 }

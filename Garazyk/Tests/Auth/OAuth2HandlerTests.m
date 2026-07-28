@@ -848,7 +848,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     // Test 2: Invalid JSON in client_metadata (should handle gracefully)
     NSDictionary *invalidQueryParams = @{
-        @"client_id": @"https://example.com",
+        @"client_id": @"unregistered-invalid-client",
         @"redirect_uri": @"https://example.com/callback",
         @"response_type": @"code",
         @"state": @"test-state-invalid",
@@ -859,7 +859,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     HttpResponse *invalidResponse =
         [self authorizeViaPARWithParameters:invalidQueryParams
-                                    clientID:@"https://example.com"];
+                                    clientID:@"unregistered-invalid-client"];
 
     // Should handle gracefully (log warning) and continue
     // Check logs for "Failed to parse client_metadata JSON"
@@ -869,7 +869,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     // Test 3: No client_metadata parameter (should work normally)
     NSDictionary *noMetadataParams = @{
-        @"client_id": @"https://example.com",
+        @"client_id": @"unregistered-client",
         @"redirect_uri": @"https://example.com/callback",
         @"response_type": @"code",
         @"state": @"test-state-no-metadata",
@@ -879,7 +879,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     HttpResponse *noMetadataResponse =
         [self authorizeViaPARWithParameters:noMetadataParams
-                                    clientID:@"https://example.com"];
+                                    clientID:@"unregistered-client"];
     
     // Should return 400 (client not registered)
     XCTAssertEqual(noMetadataResponse.statusCode, 400, @"Should return 400 when no client_metadata and not registered");

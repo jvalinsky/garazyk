@@ -17,12 +17,15 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
+#import "Repository/CAR.h"
+#import "Repository/RepoCommit.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 static const NSUInteger kRelayInventoryPageLimit = 1000;
 static const NSUInteger kRelayInventoryMaximumPages = 10000;
+static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
 @interface RelayDownstreamHandler ()
 @property (nonatomic, strong) RelayEventBuffer *eventBuffer;
@@ -32,6 +35,15 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t handlerQueue;
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
 @property (nonatomic, strong) NSMutableSet<NSString *> *bootstrappingUpstreams;
+@property (nonatomic, strong) NSMutableSet<NSString *> *recoveringRepos;
+- (nullable RepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
+                                           error:(NSError **)error;
+- (nullable RepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
+                                           commitCID:(CID * _Nullable * _Nonnull)commitCID
+                                               error:(NSError **)error;
+- (void)recoverRepo:(NSString *)repoDID
+       fromUpstream:(NSString *)upstreamURL
+           sequence:(int64_t)sequence;
 @end
 
 @implementation RelayDownstreamHandler
@@ -58,6 +70,8 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
         _handlerQueue = dispatch_queue_create("com.atproto.relay.downstream", DISPATCH_QUEUE_SERIAL);
         _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
         _bootstrappingUpstreams = [NSMutableSet set];
+        _recoveringRepos = [NSMutableSet set];
+        _chainValidationMode = RelayValidationModeLogOnly;
         GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler initialized %p", self);
     }
     return self;
@@ -74,16 +88,11 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
     dispatch_async(self.handlerQueue, ^{
         // Extract sequence number and event type
         int64_t seq = 0;
+        [self.metrics recordEventReceived];
 
         GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event of class %@", NSStringFromClass([event class]));
         if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
             FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
-
-            if (![self verifyChainForCommitEvent:commitEvent]) {
-                GZ_LOG_SYNC_WARN(@"Relay: Dropping commit seq=%lld repo=%@ (chain break)",
-                                 (long long)commitEvent.seq, commitEvent.repo);
-                return;
-            }
 
             if (self.eventValidator) {
                 RelayValidationOutcome *outcome = [self.eventValidator validateCommitEvent:commitEvent];
@@ -95,14 +104,18 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
                 }
             }
 
-            NSString *rootCID = commitEvent.commit.stringValue;
-            if (self.repoStateManager && commitEvent.repo.length > 0 && rootCID.length > 0) {
-                [self.repoStateManager handleCommitForRepo:commitEvent.repo
-                                                      root:rootCID
-                                                        rev:commitEvent.rev ?: @""
-                                                        seq:(int64_t)commitEvent.seq];
+            if (![self verifyChainForCommitEvent:commitEvent]) {
+                GZ_LOG_SYNC_WARN(@"Relay: Not forwarding commit seq=%lld repo=%@ (continuity policy)",
+                                 (long long)commitEvent.seq, commitEvent.repo);
+                if ([self.repoStateManager statusForRepo:commitEvent.repo] ==
+                    RelayRepoStatusDesynchronized) {
+                    [self recoverRepo:commitEvent.repo
+                         fromUpstream:url
+                             sequence:(int64_t)commitEvent.seq];
+                }
+                return;
             }
-            
+
             // Just broadcast. Re-sequencing happens in SubscribeReposHandler/Session.
             if (self.subscribeReposHandler) {
                 [self.subscribeReposHandler broadcastCommitEvent:commitEvent];
@@ -111,8 +124,43 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
                 seq = (int64_t)commitEvent.seq;
                 [self.eventBuffer appendEvent:commitEvent seq:seq];
             }
+            [self.metrics recordEventForwarded];
+            [self.metrics recordSequence:seq];
 
             GZ_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
+        }
+        else if ([event isKindOfClass:[FirehoseSyncEvent class]]) {
+            FirehoseSyncEvent *syncEvent = (FirehoseSyncEvent *)event;
+            NSError *syncError = nil;
+            CID *commitCID = nil;
+            RepoCommit *commit =
+                [self validatedCommitForSyncEvent:syncEvent
+                                       commitCID:&commitCID
+                                           error:&syncError];
+            if (!commit) {
+                GZ_LOG_SYNC_WARN(@"Relay: Dropping invalid sync seq=%lld did=%@: %@",
+                                 (long long)syncEvent.seq, syncEvent.did,
+                                 syncError.localizedDescription ?: @"unknown");
+                [self.metrics recordEventInvalidated:@"sync-envelope"];
+                [self.metrics recordEventDropped];
+                return;
+            }
+
+            [self.repoStateManager handleCommitForRepo:syncEvent.did
+                                             commitCID:commitCID.stringValue
+                                               dataCID:commit.dataCID.stringValue
+                                                   rev:syncEvent.rev ?: @""
+                                                   seq:(int64_t)syncEvent.seq];
+            [self.metrics recordSyncReset];
+            if (self.subscribeReposHandler) {
+                [self.subscribeReposHandler broadcastSyncEvent:syncEvent];
+            } else if (self.eventBuffer) {
+                [self.eventBuffer appendEvent:syncEvent seq:(int64_t)syncEvent.seq];
+            }
+            [self.metrics recordEventForwarded];
+            [self.metrics recordSequence:(int64_t)syncEvent.seq];
+            GZ_LOG_SYNC_INFO(@"Relay: Applied and broadcast sync seq=%lld did=%@",
+                             (long long)syncEvent.seq, syncEvent.did);
         }
         else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
             FirehoseIdentityEvent *identityEvent = (FirehoseIdentityEvent *)event;
@@ -199,34 +247,356 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
 
 #pragma mark - Chain Verification
 
+- (nullable RepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
+                                           commitCID:(CID * _Nullable * _Nonnull)commitCID
+                                               error:(NSError **)error {
+    CARReader *reader = [CARReader readFromData:event.blocks error:error];
+    if (!reader || !reader.rootCID) {
+        return nil;
+    }
+    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    if (!commitBlock) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:8
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"sync CAR does not contain its root commit block"}];
+        }
+        return nil;
+    }
+    CID *computedCID = [CID cidWithDigest:[CID sha256Digest:commitBlock.data]
+                                    codec:0x71];
+    if (!computedCID || ![computedCID isEqual:reader.rootCID]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:9
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"sync commit block does not hash to its CAR root"}];
+        }
+        return nil;
+    }
+    RepoCommit *commit = [RepoCommit fromSignedBlockData:commitBlock.data
+                                                   error:error];
+    if (!commit) {
+        return nil;
+    }
+    if (![commit.did isEqualToString:event.did] ||
+        ![commit.rev isEqualToString:event.rev] ||
+        commit.dataCID.stringValue.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:10
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"sync event fields do not match its signed commit"}];
+        }
+        return nil;
+    }
+    *commitCID = reader.rootCID;
+    return commit;
+}
+
+- (nullable RepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
+                                           error:(NSError **)error {
+    if (!event.commit || event.blocks.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"commit event is missing its commit CID or CAR blocks"}];
+        }
+        return nil;
+    }
+
+    CARReader *reader = [CARReader readFromData:event.blocks error:error];
+    if (!reader) {
+        return nil;
+    }
+    if (![reader.rootCID isEqual:event.commit]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"firehose commit CID does not match the CAR root"}];
+        }
+        return nil;
+    }
+
+    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    if (!commitBlock) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:3
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"CAR does not contain its root commit block"}];
+        }
+        return nil;
+    }
+
+    CID *computedCID = [CID cidWithDigest:[CID sha256Digest:commitBlock.data]
+                                    codec:0x71];
+    if (!computedCID || ![computedCID isEqual:event.commit]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:4
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"root commit block bytes do not hash to the advertised CID"}];
+        }
+        return nil;
+    }
+
+    RepoCommit *commit = [RepoCommit fromSignedBlockData:commitBlock.data
+                                                   error:error];
+    if (!commit) {
+        return nil;
+    }
+    if (![commit.did isEqualToString:event.repo]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:5
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"signed commit DID does not match the firehose repo"}];
+        }
+        return nil;
+    }
+    if (![commit.rev isEqualToString:event.rev]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:6
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"signed commit revision does not match the firehose revision"}];
+        }
+        return nil;
+    }
+    if (!commit.dataCID) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
+                                         code:7
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         @"signed commit is missing its MST data root"}];
+        }
+        return nil;
+    }
+    return commit;
+}
+
 - (BOOL)verifyChainForCommitEvent:(FirehoseCommitEvent *)event {
     if (!self.repoStateManager || event.repo.length == 0) {
         return YES;
     }
 
-    NSString *did = event.repo;
-    NSString *prevDataCID = event.prevData.stringValue;
-    NSString *storedRoot = [self.repoStateManager rootCIDForRepo:did];
-
-    if (!storedRoot) {
+    NSError *parseError = nil;
+    RepoCommit *commit = [self validatedCommitForEvent:event error:&parseError];
+    if (!commit) {
+        GZ_LOG_SYNC_WARN(@"Relay continuity: invalid commit envelope seq=%lld repo=%@: %@",
+                         (long long)event.seq, event.repo,
+                         parseError.localizedDescription ?: @"unknown error");
+        [self.metrics recordMSTValidationFailure];
+        [self.metrics recordContinuityFailure];
+        [self.metrics recordEventInvalidated:@"commit-envelope"];
+        if (self.chainValidationMode == RelayValidationModeStrict) {
+            [self.metrics recordEventDropped];
+            return NO;
+        }
         return YES;
     }
 
-    if (prevDataCID.length == 0) {
-        GZ_LOG_SYNC_WARN(@"Chain verify: commit seq=%lld repo=%@ has no prevData but repo is known (root=%@); accepting",
-                         (long long)event.seq, did, storedRoot);
-        return YES;
+    RelayRepoAdvanceResult result =
+        [self.repoStateManager advanceRepo:event.repo
+                                     since:event.since
+                                  prevData:event.prevData.stringValue
+                                 commitCID:event.commit.stringValue
+                                   dataCID:commit.dataCID.stringValue
+                                       rev:event.rev ?: @""
+                                       seq:(int64_t)event.seq];
+
+    switch (result) {
+        case RelayRepoAdvanceResultStale:
+            GZ_LOG_SYNC_WARN(@"Relay continuity: ignoring stale commit seq=%lld repo=%@ rev=%@",
+                             (long long)event.seq, event.repo, event.rev);
+            return NO;
+
+        case RelayRepoAdvanceResultSinceMismatch:
+        case RelayRepoAdvanceResultPrevDataMismatch: {
+            NSString *reason =
+                (result == RelayRepoAdvanceResultSinceMismatch)
+                    ? @"since-mismatch"
+                    : @"prev-data-mismatch";
+            GZ_LOG_SYNC_WARN(
+                @"Relay continuity: %@ seq=%lld repo=%@ since=%@ storedRev=%@ "
+                 "prevData=%@ storedData=%@",
+                reason, (long long)event.seq, event.repo, event.since,
+                [self.repoStateManager revForRepo:event.repo],
+                event.prevData.stringValue,
+                [self.repoStateManager dataCIDForRepo:event.repo]);
+            [self.metrics recordMSTValidationFailure];
+            [self.metrics recordContinuityFailure];
+            [self.metrics recordEventInvalidated:reason];
+            if (self.chainValidationMode == RelayValidationModeStrict) {
+                [self.metrics recordEventDropped];
+                return NO;
+            }
+
+            [self.repoStateManager handleCommitForRepo:event.repo
+                                             commitCID:event.commit.stringValue
+                                               dataCID:commit.dataCID.stringValue
+                                                   rev:event.rev ?: @""
+                                                   seq:(int64_t)event.seq];
+            return YES;
+        }
+
+        case RelayRepoAdvanceResultBaselineEstablished:
+            [self.metrics recordContinuityBaseline];
+            GZ_LOG_SYNC_INFO(@"Relay continuity: established data-root baseline seq=%lld repo=%@",
+                             (long long)event.seq, event.repo);
+            break;
+
+        case RelayRepoAdvanceResultUnverifiableAdvanced:
+            [self.metrics recordContinuityBaseline];
+            GZ_LOG_SYNC_WARN(@"Relay continuity: missing since/prevData seq=%lld repo=%@; advanced baseline",
+                             (long long)event.seq, event.repo);
+            break;
+
+        case RelayRepoAdvanceResultAdvanced:
+            [self.metrics recordMSTValidationSuccess];
+            [self.metrics recordContinuityVerified];
+            break;
+    }
+    return YES;
+}
+
+#pragma mark - Continuity Recovery
+
+- (void)recoverRepo:(NSString *)repoDID
+       fromUpstream:(NSString *)upstreamURL
+           sequence:(int64_t)sequence {
+    if (repoDID.length == 0 || upstreamURL.length == 0 ||
+        [self.recoveringRepos containsObject:repoDID]) {
+        return;
+    }
+    if (self.recoveringRepos.count >= kRelayMaximumConcurrentRecoveries) {
+        GZ_LOG_SYNC_WARN(@"Relay recovery: throttling getRepo for %@", repoDID);
+        [self.repoStateManager handleAccountEventForRepo:repoDID
+                                                   status:RelayRepoStatusThrottled];
+        return;
     }
 
-    if ([prevDataCID isEqualToString:storedRoot]) {
-        return YES;
+    NSURLComponents *components = [NSURLComponents componentsWithString:upstreamURL];
+    NSString *scheme = components.scheme.lowercaseString;
+    if ([scheme isEqualToString:@"wss"]) {
+        components.scheme = @"https";
+    } else if ([scheme isEqualToString:@"ws"]) {
+        components.scheme = @"http";
+    }
+    components.path = @"/xrpc/com.atproto.sync.getRepo";
+    components.queryItems = @[
+        [NSURLQueryItem queryItemWithName:@"did" value:repoDID]
+    ];
+    NSURL *repoURL = components.URL;
+    if (!repoURL) {
+        GZ_LOG_SYNC_WARN(@"Relay recovery: invalid upstream URL %@", upstreamURL);
+        return;
     }
 
-    GZ_LOG_SYNC_WARN(@"Chain verify: BREAK seq=%lld repo=%@ prevData=%@ storedRoot=%@",
-                     (long long)event.seq, did, prevDataCID, storedRoot);
-    [self.repoStateManager handleIdentityEventForRepo:did];
-    [self.metrics recordEventDropped];
-    return NO;
+    [self.recoveringRepos addObject:repoDID];
+    [self.repoStateManager handleAccountEventForRepo:repoDID
+                                               status:RelayRepoStatusInProgress];
+
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:repoURL];
+    request.HTTPMethod = @"GET";
+    request.timeoutInterval = 60.0;
+
+    ATProtoSafeHTTPClientOptions *options =
+        [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.timeout = 60.0;
+    options.maxResponseBytes = 64 * 1024 * 1024;
+    options.allowHTTP = [repoURL.scheme.lowercaseString isEqualToString:@"http"];
+    options.followRedirects = NO;
+
+    __weak typeof(self) weakSelf = self;
+    [self.safeHTTPClient
+        performSafeDataTaskWithRequest:request
+                               options:options
+                            completion:^(NSData * _Nullable data,
+                                         NSHTTPURLResponse * _Nullable response,
+                                         NSError * _Nullable error) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) {
+            return;
+        }
+        dispatch_async(strongSelf.handlerQueue, ^{
+            [strongSelf.recoveringRepos removeObject:repoDID];
+            if (error || response.statusCode != 200 || data.length == 0) {
+                GZ_LOG_SYNC_WARN(
+                    @"Relay recovery: getRepo failed did=%@ upstream=%@ status=%ld error=%@",
+                    repoDID, upstreamURL, (long)response.statusCode,
+                    error.localizedDescription ?: @"none");
+                [strongSelf.repoStateManager
+                    handleAccountEventForRepo:repoDID
+                                       status:RelayRepoStatusThrottled];
+                return;
+            }
+
+            NSError *carError = nil;
+            CARReader *reader = [CARReader readFromData:data error:&carError];
+            CARBlock *rootBlock =
+                reader.rootCID ? [reader blockWithCID:reader.rootCID] : nil;
+            RepoCommit *commit =
+                rootBlock
+                    ? [RepoCommit fromSignedBlockData:rootBlock.data
+                                                error:&carError]
+                    : nil;
+            if (!commit || ![commit.did isEqualToString:repoDID] ||
+                commit.rev.length == 0 || commit.dataCID.stringValue.length == 0) {
+                GZ_LOG_SYNC_WARN(@"Relay recovery: invalid getRepo CAR did=%@: %@",
+                                 repoDID,
+                                 carError.localizedDescription ?: @"commit mismatch");
+                [strongSelf.repoStateManager
+                    handleAccountEventForRepo:repoDID
+                                       status:RelayRepoStatusThrottled];
+                return;
+            }
+
+            FirehoseSyncEvent *syncEvent =
+                [FirehoseSyncEvent eventWithDid:repoDID
+                                            rev:commit.rev
+                                         blocks:data];
+            syncEvent.seq = sequence;
+            syncEvent.time =
+                [[[NSISO8601DateFormatter alloc] init] stringFromDate:[NSDate date]];
+
+            CID *commitCID = nil;
+            NSError *syncError = nil;
+            RepoCommit *validated =
+                [strongSelf validatedCommitForSyncEvent:syncEvent
+                                              commitCID:&commitCID
+                                                  error:&syncError];
+            if (!validated) {
+                GZ_LOG_SYNC_WARN(@"Relay recovery: rejected getRepo CAR did=%@: %@",
+                                 repoDID,
+                                 syncError.localizedDescription ?: @"unknown");
+                [strongSelf.repoStateManager
+                    handleAccountEventForRepo:repoDID
+                                       status:RelayRepoStatusThrottled];
+                return;
+            }
+
+            [strongSelf.repoStateManager handleCommitForRepo:repoDID
+                                                    commitCID:commitCID.stringValue
+                                                      dataCID:validated.dataCID.stringValue
+                                                          rev:validated.rev
+                                                          seq:sequence];
+            [strongSelf.metrics recordSyncReset];
+            if (strongSelf.subscribeReposHandler) {
+                [strongSelf.subscribeReposHandler broadcastSyncEvent:syncEvent];
+            } else if (strongSelf.eventBuffer) {
+                [strongSelf.eventBuffer appendEvent:syncEvent seq:sequence];
+            }
+            [strongSelf.metrics recordEventForwarded];
+            [strongSelf.metrics recordSequence:sequence];
+            GZ_LOG_SYNC_INFO(@"Relay recovery: applied getRepo sync did=%@ rev=%@",
+                             repoDID, validated.rev);
+        });
+    }];
 }
 
 #pragma mark - Repository Inventory Bootstrap
@@ -360,11 +730,11 @@ static const NSUInteger kRelayInventoryMaximumPages = 10000;
             continue;
         }
 
-        [self.repoStateManager handleCommitForRepo:did root:head rev:rev seq:0];
         NSNumber *active = [repo[@"active"] isKindOfClass:[NSNumber class]] ? repo[@"active"] : nil;
-        if (active && !active.boolValue) {
-            [self.repoStateManager handleAccountEventForRepo:did status:RelayRepoStatusDesynchronized];
-        }
+        [self.repoStateManager observeInventoryForRepo:did
+                                            commitCID:head
+                                                  rev:rev
+                                               active:active ? active.boolValue : YES];
         applied++;
     }
     return applied;

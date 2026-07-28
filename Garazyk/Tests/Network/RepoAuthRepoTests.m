@@ -327,16 +327,37 @@
 }
 
 - (void)testGetBlobReturnsBlobForAuthorizedOwner {
-    NSData *blobData = [@"hello-repo-getBlob" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *blobData = [[NSData alloc]
+        initWithBase64EncodedString:@"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+                         options:0];
     NSError *uploadError = nil;
     NSDictionary *uploadResult = [self.controller.blobService uploadBlob:blobData
                                                                    forDid:self.did1
-                                                                  mimeType:@"text/plain"
+                                                                  mimeType:@"image/png"
                                                                     error:&uploadError];
     XCTAssertNotNil(uploadResult);
     XCTAssertNil(uploadError);
     NSString *cid = uploadResult[@"blob"][@"ref"][@"$link"];
     XCTAssertTrue(cid.length > 0);
+
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"referenced blob",
+        @"createdAt": [self iso8601String],
+        @"embed": @{
+            @"$type": @"app.bsky.embed.images",
+            @"images": @[@{
+                @"alt": @"test blob",
+                @"image": uploadResult[@"blob"],
+            }],
+        },
+    };
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                        record:record
+                                                validationMode:PDSValidationModeRequired
+                                                         error:nil];
+    XCTAssertNotNil(created);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
