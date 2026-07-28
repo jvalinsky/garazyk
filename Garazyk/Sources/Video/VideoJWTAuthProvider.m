@@ -96,15 +96,15 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
     NSString *iss = nil;
     if (isAccessToken) {
         // Access tokens: issuer is the PDS, subject is the user DID
-        iss = jwt.payload.sub;
+        iss = [jwt.payload.sub isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.sub : nil;
         if (!iss || ![iss hasPrefix:@"did:"]) {
             // Fall back to the 'did' claim
-            iss = jwt.payload.did;
+            iss = [jwt.payload.did isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.did : nil;
         }
         GZ_LOG_INFO(@"Video auth: received access token for did=%@", iss);
     } else if (isServiceAuth) {
         // Service Auth tokens: issuer is the user DID
-        iss = jwt.payload.iss;
+        iss = [jwt.payload.iss isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.iss : nil;
     } else {
         GZ_LOG_WARN(@"Video auth: rejected token with typ=%@", typ);
         response.statusCode = HttpStatusUnauthorized;
@@ -126,7 +126,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
 
     // Verify audience (Service Auth tokens only; access tokens have PDS as audience)
     if (isServiceAuth) {
-        NSString *aud = jwt.payload.aud;
+        NSString *aud = [jwt.payload.aud isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.aud : nil;
         NSString *audWithoutFragment = VideoServiceAuthDIDWithoutFragment(aud);
         NSString *expectedWithoutFragment = VideoServiceAuthDIDWithoutFragment(self.audience);
         if (aud && ![aud isEqualToString:self.audience] &&
@@ -141,9 +141,17 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
         }
     }
 
-    // Verify expiration
-    NSDate *exp = jwt.payload.exp;
-    if (exp && [exp timeIntervalSinceNow] < 0) {
+    // Verify expiration — missing or non-date exp is rejected.
+    NSDate *exp = [jwt.payload.exp isKindOfClass:[NSDate class]] ? (NSDate *)jwt.payload.exp : nil;
+    if (!exp) {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{
+            @"error": @"InvalidToken",
+            @"message": @"Token missing expiration"
+        }];
+        return nil;
+    }
+    if ([exp timeIntervalSinceNow] < 0) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{
             @"error": @"ExpiredToken",
@@ -205,8 +213,8 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
     // Access tokens have a different scope model (e.g. "atproto transition:generic")
     // and don't need lxm verification.
     if (!isAccessToken) {
-        NSString *scope = jwt.payload.scope;
-        NSString *lxm = jwt.payload.lxm;
+        NSString *scope = [jwt.payload.scope isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.scope : nil;
+        NSString *lxm = [jwt.payload.lxm isKindOfClass:[NSString class]] ? (NSString *)jwt.payload.lxm : nil;
         NSString *effectiveScope = lxm ?: scope;
         if (effectiveScope && ![effectiveScope isEqualToString:@"com.atproto.repo.uploadBlob"] &&
             ![effectiveScope isEqualToString:@"app.bsky.video.uploadVideo"]) {
