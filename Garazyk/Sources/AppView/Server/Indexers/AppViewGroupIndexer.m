@@ -41,7 +41,9 @@ static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
 
     NSString *name = groupRecord[@"name"];
     NSString *description = groupRecord[@"description"];
-    NSString *effectiveRkey = rkey ?: @"main";
+    // groups.uri is the primary key, so an empty rkey would leave the URI's last
+    // segment empty and collapse every such group for a DID onto one row.
+    NSString *effectiveRkey = rkey.length > 0 ? rkey : @"main";
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, effectiveRkey];
     NSString *createdAt = groupRecord[@"createdAt"] ?: groupRecord[@"indexedAt"] ?: @"";
@@ -105,7 +107,9 @@ static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
                   did:(NSString *)did
            collection:(NSString *)collection
                error:(NSError **)error {
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey ?: @"main"];
+    // Mirrors the fallback in indexRecord: so delete addresses the indexed row.
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@",
+                     did, collection, rkey.length > 0 ? rkey : @"main"];
 
     NSString *deleteMembersQuery = @"DELETE FROM group_members WHERE group_uri = ?";
     [self.avdb executeParameterizedUpdate:deleteMembersQuery params:@[uri] error:nil];

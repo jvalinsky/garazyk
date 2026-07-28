@@ -12,6 +12,8 @@
 #import "AppView/Server/Indexers/AppViewIndexer.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
+#import "AppView/Services/BookmarkService.h"
+#import "AppView/Services/GraphService.h"
 
 @interface AppViewIndexerTests : XCTestCase
 @property (nonatomic, strong) AppViewDatabase *database;
@@ -69,6 +71,23 @@ static NSString * const kGenericCollection = @"com.example.generic";
 /*! Deliberately nil rkey, held in a variable so the nonnull annotation is not tripped. */
 static NSString *sMissingRkey = nil;
 
+/*! Returns the single stored profile row for a DID, or nil if there is none. */
+- (nullable NSDictionary *)singleProfileRowForDID:(NSString *)did {
+    NSError *error = nil;
+    NSArray<NSDictionary *> *rows =
+        [self.database executeParameterizedQuery:@"SELECT uri, rkey FROM records WHERE did = ? AND collection = ?"
+                                          params:@[did, @"app.bsky.actor.profile"]
+                                           error:&error];
+    XCTAssertNotNil(rows, @"Query failed: %@", error);
+    XCTAssertLessThanOrEqual(rows.count, 1u, @"Expected at most one row for %@", did);
+    return rows.firstObject;
+}
+
+/*! Last path segment of an at:// URI, without NSString path normalization. */
+- (NSString *)rkeyFromURI:(NSString *)uri {
+    return [[uri componentsSeparatedByString:@"/"] lastObject];
+}
+
 - (AppViewGenericIndexer *)makeGenericIndexer {
     ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
@@ -90,9 +109,35 @@ static NSString *sMissingRkey = nil;
     return rows.firstObject;
 }
 
-/*! Last path segment of an at:// URI, without NSString path normalization. */
-- (NSString *)rkeyFromURI:(NSString *)uri {
-    return [[uri componentsSeparatedByString:@"/"] lastObject];
+/*! All stored bookmark URIs for a DID, oldest row first. */
+- (NSArray<NSString *> *)bookmarkURIsForDID:(NSString *)did {
+    NSError *error = nil;
+    NSArray<NSDictionary *> *rows =
+        [self.database executeParameterizedQuery:@"SELECT uri FROM bookmarks WHERE did = ? ORDER BY id"
+                                          params:@[did]
+                                           error:&error];
+    XCTAssertNotNil(rows, @"Query failed: %@", error);
+    NSMutableArray<NSString *> *uris = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) [uris addObject:row[@"uri"]];
+    return uris;
+}
+
+/*! All stored group URIs for a DID. */
+- (NSArray<NSString *> *)groupURIsForDID:(NSString *)did {
+    NSError *error = nil;
+    NSArray<NSDictionary *> *rows =
+        [self.database executeParameterizedQuery:@"SELECT uri FROM groups WHERE did = ?"
+                                          params:@[did]
+                                           error:&error];
+    XCTAssertNotNil(rows, @"Query failed: %@", error);
+    NSMutableArray<NSString *> *uris = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) [uris addObject:row[@"uri"]];
+    return uris;
+}
+
+- (NSDictionary *)sampleBookmarkRecordForSubject:(NSString *)subjectURI {
+    return @{@"subject": @{@"uri": subjectURI, @"cid": @"bafyreicid"},
+             @"createdAt": @"2026-01-01T00:00:00Z"};
 }
 
 #pragma mark - AppViewActorIndexer
@@ -124,6 +169,61 @@ static NSString *sMissingRkey = nil;
                                  error:&error];
     XCTAssertTrue(result);
     XCTAssertNil(error);
+}
+
+- (void)testActorIndexerNilRkeyStoresRkeyMatchingURI {
+    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    NSError *error = nil;
+    BOOL result = [indexer indexRecord:[self sampleProfileRecord]
+                                   did:@"did:plc:actorNilRkey"
+                            collection:@"app.bsky.actor.profile"
+                                  rkey:sMissingRkey
+                                   cid:@"bafytestcid123"
+                                 error:&error];
+    XCTAssertTrue(result, @"Indexing with a nil rkey must succeed: %@", error);
+
+    NSDictionary *row = [self singleProfileRowForDID:@"did:plc:actorNilRkey"];
+    XCTAssertNotNil(row, @"Expected exactly one stored row");
+    NSString *storedRkey = row[@"rkey"];
+    XCTAssertEqualObjects(storedRkey, @"self", @"A missing rkey must fall back to the profile's \"self\"");
+    XCTAssertEqualObjects(storedRkey, [self rkeyFromURI:row[@"uri"]],
+                          @"Stored rkey column must match the rkey embedded in the stored uri");
+}
+
+- (void)testActorIndexerEmptyRkeyStoresRkeyMatchingURI {
+    // AppViewBackfillWorker passes @"" when a record path carries no rkey.
+    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    NSError *error = nil;
+    BOOL result = [indexer indexRecord:[self sampleProfileRecord]
+                                   did:@"did:plc:actorEmptyRkey"
+                            collection:@"app.bsky.actor.profile"
+                                  rkey:@""
+                                   cid:@"bafytestcid123"
+                                 error:&error];
+    XCTAssertTrue(result, @"Indexing with an empty rkey must succeed: %@", error);
+
+    NSDictionary *row = [self singleProfileRowForDID:@"did:plc:actorEmptyRkey"];
+    XCTAssertNotNil(row, @"Expected exactly one stored row");
+    NSString *storedRkey = row[@"rkey"];
+    XCTAssertGreaterThan(storedRkey.length, 0u, @"rkey column must not be empty");
+    XCTAssertEqualObjects(storedRkey, [self rkeyFromURI:row[@"uri"]],
+                          @"Stored rkey column must match the rkey embedded in the stored uri");
+}
+
+- (void)testActorIndexerExplicitRkeyStoresRkeyMatchingURI {
+    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    NSError *error = nil;
+    BOOL result = [indexer indexRecord:[self sampleProfileRecord]
+                                   did:@"did:plc:actorExplicitRkey"
+                            collection:@"app.bsky.actor.profile"
+                                  rkey:@"self"
+                                   cid:@"bafytestcid123"
+                                 error:&error];
+    XCTAssertTrue(result, @"Indexing failed: %@", error);
+
+    NSDictionary *row = [self singleProfileRowForDID:@"did:plc:actorExplicitRkey"];
+    XCTAssertEqualObjects(row[@"rkey"], @"self");
+    XCTAssertEqualObjects(row[@"rkey"], [self rkeyFromURI:row[@"uri"]]);
 }
 
 - (void)testActorIndexerDeleteRecord {
@@ -385,6 +485,73 @@ static NSString *sMissingRkey = nil;
     XCTAssertTrue(result);
 }
 
+- (void)testGraphIndexerListRejectsEmptyRkey {
+    // handleIngestEvent: passes @"" when a commit op path carries no rkey; an
+    // empty rkey would store "at://<did>/app.bsky.graph.list/" which no delete matches.
+    GraphService *graphService = [[GraphService alloc] initWithDatabase:self.database];
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+                                                                   relevanceSet:nil
+                                                                   graphService:graphService];
+    NSError *error = nil;
+    XCTAssertFalse([indexer indexRecord:@{@"name": @"a list"}
+                                    did:@"did:plc:lister1"
+                             collection:@"app.bsky.graph.list"
+                                   rkey:@""
+                                    cid:@"bafylistcid"
+                                  error:&error],
+                   @"An empty rkey cannot address a list row");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+}
+
+- (void)testGraphIndexerListitemRejectsNilRkey {
+    GraphService *graphService = [[GraphService alloc] initWithDatabase:self.database];
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+                                                                   relevanceSet:nil
+                                                                   graphService:graphService];
+    NSError *error = nil;
+    NSDictionary *listitem = @{@"list": @"at://did:plc:lister1/app.bsky.graph.list/l1",
+                               @"subject": @"did:plc:target"};
+    XCTAssertFalse([indexer indexRecord:listitem
+                                    did:@"did:plc:lister1"
+                             collection:@"app.bsky.graph.listitem"
+                                   rkey:sMissingRkey
+                                    cid:@"bafylistitemcid"
+                                  error:&error],
+                   @"A nil rkey would format into the URI as \"(null)\"");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+}
+
+- (void)testGraphIndexerDeleteListRejectsEmptyRkey {
+    GraphService *graphService = [[GraphService alloc] initWithDatabase:self.database];
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+                                                                   relevanceSet:nil
+                                                                   graphService:graphService];
+    NSError *error = nil;
+    XCTAssertFalse([indexer deleteRecord:@""
+                                     did:@"did:plc:lister1"
+                              collection:@"app.bsky.graph.list"
+                                   error:&error],
+                   @"Delete must reject the rkeys indexing refuses to store");
+    XCTAssertEqual(error.code, 400);
+}
+
+- (void)testGraphIndexerFollowStillAcceptsEmptyRkey {
+    // follow and block never build a URI from rkey, so the guard must not reach them.
+    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+                                                                   relevanceSet:nil
+                                                                   graphService:nil];
+    NSError *error = nil;
+    XCTAssertTrue([indexer indexRecord:[self sampleFollowRecord]
+                                   did:@"did:plc:follower1"
+                            collection:@"app.bsky.graph.follow"
+                                  rkey:@""
+                                   cid:@"bafyfollowcid"
+                                 error:&error],
+                  @"Follow does not use rkey and must keep working: %@", error);
+}
+
 #pragma mark - AppViewGroupIndexer
 
 - (void)testGroupIndexerInstantiation {
@@ -425,7 +592,114 @@ static NSString *sMissingRkey = nil;
     XCTAssertTrue(result);
 }
 
+- (void)testGroupIndexerEmptyRkeyStoresWellFormedURI {
+    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    NSError *error = nil;
+    XCTAssertTrue([indexer indexRecord:[self sampleGroupRecord]
+                                   did:@"did:plc:groupEmptyRkey"
+                            collection:@"chat.bsky.group.definition"
+                                  rkey:@""
+                                   cid:@"bafygroupcid"
+                                 error:&error], @"Indexing failed: %@", error);
+
+    NSArray<NSString *> *uris = [self groupURIsForDID:@"did:plc:groupEmptyRkey"];
+    XCTAssertEqual(uris.count, 1u);
+    XCTAssertGreaterThan([self rkeyFromURI:uris.firstObject].length, 0u,
+                         @"An empty rkey must not leave the URI's last segment empty");
+}
+
+- (void)testGroupIndexerEmptyRkeyRoundTripsThroughDelete {
+    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    NSError *error = nil;
+    XCTAssertTrue([indexer indexRecord:[self sampleGroupRecord]
+                                   did:@"did:plc:groupRoundTrip"
+                            collection:@"chat.bsky.group.definition"
+                                  rkey:@""
+                                   cid:@"bafygroupcid"
+                                 error:&error], @"Indexing failed: %@", error);
+    XCTAssertEqual([self groupURIsForDID:@"did:plc:groupRoundTrip"].count, 1u);
+
+    XCTAssertTrue([indexer deleteRecord:@""
+                                    did:@"did:plc:groupRoundTrip"
+                             collection:@"chat.bsky.group.definition"
+                                  error:&error], @"Delete failed: %@", error);
+    XCTAssertEqual([self groupURIsForDID:@"did:plc:groupRoundTrip"].count, 0u,
+                   @"Delete must address the URI that indexing stored");
+}
+
 #pragma mark - AppViewGenericIndexer
+
+- (void)testGenericIndexerNilRkeyStoresRkeyMatchingURI {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    NSDictionary *record = @{@"$type": kGenericCollection, @"name": @"no rkey anywhere"};
+    XCTAssertTrue([indexer indexRecord:record
+                                   did:@"did:plc:generic1"
+                            collection:kGenericCollection
+                                  rkey:sMissingRkey
+                                   cid:@"bafygenericcid"
+                                 error:&error],
+                  @"Indexing with a nil rkey must succeed: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic1"];
+    XCTAssertNotNil(row, @"Expected exactly one stored row");
+    NSString *storedRkey = row[@"rkey"];
+    XCTAssertGreaterThan(storedRkey.length, 0u, @"rkey column must not be empty");
+    XCTAssertEqualObjects(storedRkey, [self rkeyFromURI:row[@"uri"]],
+                          @"Stored rkey column must match the rkey embedded in the stored uri");
+}
+
+- (void)testGenericIndexerFallsBackToRecordRkey {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    NSDictionary *record = @{@"$type": kGenericCollection, @"rkey": @"fromrecord"};
+    XCTAssertTrue([indexer indexRecord:record
+                                   did:@"did:plc:generic2"
+                            collection:kGenericCollection
+                                  rkey:sMissingRkey
+                                   cid:@"bafygenericcid"
+                                 error:&error],
+                  @"Indexing must fall back to the record's rkey: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic2"];
+    XCTAssertEqualObjects(row[@"rkey"], @"fromrecord");
+    XCTAssertEqualObjects(row[@"rkey"], [self rkeyFromURI:row[@"uri"]]);
+}
+
+- (void)testGenericIndexerIgnoresNonStringRecordRkey {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    NSDictionary *record = @{@"$type": kGenericCollection, @"rkey": @[@"not", @"a string"]};
+    XCTAssertTrue([indexer indexRecord:record
+                                   did:@"did:plc:generic3"
+                            collection:kGenericCollection
+                                  rkey:sMissingRkey
+                                   cid:@"bafygenericcid"
+                                 error:&error],
+                  @"A non-string record rkey must fall through to a generated one: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic3"];
+    XCTAssertTrue([row[@"rkey"] isKindOfClass:[NSString class]]);
+    XCTAssertEqualObjects(row[@"rkey"], [self rkeyFromURI:row[@"uri"]]);
+}
+
+- (void)testGenericIndexerEmptyRecordRkeyStoresRkeyMatchingURI {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    NSDictionary *record = @{@"$type": kGenericCollection, @"rkey": @""};
+    XCTAssertTrue([indexer indexRecord:record
+                                   did:@"did:plc:generic4"
+                            collection:kGenericCollection
+                                  rkey:@""
+                                   cid:@"bafygenericcid"
+                                 error:&error],
+                  @"An empty record rkey must fall through to a generated one: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic4"];
+    NSString *storedRkey = row[@"rkey"];
+    XCTAssertGreaterThan(storedRkey.length, 0u, @"rkey column must not be empty");
+    XCTAssertEqualObjects(storedRkey, [self rkeyFromURI:row[@"uri"]]);
+}
 
 - (void)testGenericIndexerInstantiation {
     ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
@@ -569,6 +843,70 @@ static NSString *sMissingRkey = nil;
 }
 
 #pragma mark - AppViewBookmarkIndexer
+
+- (void)testBookmarkIndexerKeepsOneRowPerRkey {
+    // bookmarks.uri is UNIQUE, so ignoring rkey collapsed every bookmark a DID
+    // owns onto a single row that INSERT OR REPLACE silently overwrote.
+    BookmarkService *service = [[BookmarkService alloc] initWithDatabase:self.database];
+    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+                                                                      bookmarkService:service];
+    NSError *error = nil;
+    XCTAssertTrue([indexer indexRecord:[self sampleBookmarkRecordForSubject:@"at://did:plc:other/app.bsky.feed.post/p1"]
+                                   did:@"did:plc:bookmarker"
+                            collection:@"app.bsky.bookmark"
+                                  rkey:@"bm1"
+                                   cid:@"bafybookmarkcid1"
+                                 error:&error], @"Indexing failed: %@", error);
+    XCTAssertTrue([indexer indexRecord:[self sampleBookmarkRecordForSubject:@"at://did:plc:other/app.bsky.feed.post/p2"]
+                                   did:@"did:plc:bookmarker"
+                            collection:@"app.bsky.bookmark"
+                                  rkey:@"bm2"
+                                   cid:@"bafybookmarkcid2"
+                                 error:&error], @"Indexing failed: %@", error);
+
+    NSArray<NSString *> *uris = [self bookmarkURIsForDID:@"did:plc:bookmarker"];
+    XCTAssertEqual(uris.count, 2u, @"Two bookmarks with distinct rkeys must yield two rows");
+    XCTAssertEqualObjects([self rkeyFromURI:uris[0]], @"bm1");
+    XCTAssertEqualObjects([self rkeyFromURI:uris[1]], @"bm2");
+}
+
+- (void)testBookmarkIndexerDeleteRemovesRowIndexedUnderSameRkey {
+    BookmarkService *service = [[BookmarkService alloc] initWithDatabase:self.database];
+    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+                                                                      bookmarkService:service];
+    NSError *error = nil;
+    XCTAssertTrue([indexer indexRecord:[self sampleBookmarkRecordForSubject:@"at://did:plc:other/app.bsky.feed.post/p1"]
+                                   did:@"did:plc:bookmarkRoundTrip"
+                            collection:@"app.bsky.bookmark"
+                                  rkey:@"bm1"
+                                   cid:@"bafybookmarkcid1"
+                                 error:&error], @"Indexing failed: %@", error);
+    XCTAssertEqual([self bookmarkURIsForDID:@"did:plc:bookmarkRoundTrip"].count, 1u);
+
+    XCTAssertTrue([indexer deleteRecord:@"bm1"
+                                    did:@"did:plc:bookmarkRoundTrip"
+                             collection:@"app.bsky.bookmark"
+                                  error:&error], @"Delete failed: %@", error);
+    XCTAssertEqual([self bookmarkURIsForDID:@"did:plc:bookmarkRoundTrip"].count, 0u,
+                   @"Delete must address the URI that indexing stored");
+}
+
+- (void)testBookmarkIndexerRejectsEmptyRkey {
+    BookmarkService *service = [[BookmarkService alloc] initWithDatabase:self.database];
+    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+                                                                      bookmarkService:service];
+    NSError *error = nil;
+    XCTAssertFalse([indexer indexRecord:[self sampleBookmarkRecordForSubject:@"at://did:plc:other/app.bsky.feed.post/p1"]
+                                    did:@"did:plc:bookmarkNoRkey"
+                             collection:@"app.bsky.bookmark"
+                                   rkey:@""
+                                    cid:@"bafybookmarkcid1"
+                                  error:&error],
+                   @"An empty rkey cannot address a bookmark row");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+    XCTAssertEqual([self bookmarkURIsForDID:@"did:plc:bookmarkNoRkey"].count, 0u);
+}
 
 - (void)testBookmarkIndexerInstantiation {
     AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
