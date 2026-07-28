@@ -10,6 +10,7 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
 #import "Network/ATProtoSafeHTTPClient.h"
+#import "Repository/RepoCommit.h"
 
 @interface RelayDownstreamHandler (RepoInventoryTesting)
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
@@ -17,6 +18,7 @@
 
 @interface RelayInventoryHTTPClient : ATProtoSafeHTTPClient
 @property (nonatomic, strong) NSMutableArray<NSDictionary *> *pages;
+@property (nonatomic, strong) NSMutableArray<NSData *> *responseBodies;
 @property (nonatomic, strong) NSMutableArray<NSURLRequest *> *requests;
 @end
 
@@ -26,6 +28,7 @@
     self = [super init];
     if (self) {
         _pages = [NSMutableArray array];
+        _responseBodies = [NSMutableArray array];
         _requests = [NSMutableArray array];
     }
     return self;
@@ -35,11 +38,17 @@
                                options:(ATProtoSafeHTTPClientOptions *)options
                             completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
     [self.requests addObject:request];
-    NSDictionary *page = self.pages.count > 0 ? self.pages.firstObject : @{};
-    if (self.pages.count > 0) {
-        [self.pages removeObjectAtIndex:0];
+    NSData *data = nil;
+    if (self.responseBodies.count > 0) {
+        data = self.responseBodies.firstObject;
+        [self.responseBodies removeObjectAtIndex:0];
+    } else {
+        NSDictionary *page = self.pages.count > 0 ? self.pages.firstObject : @{};
+        if (self.pages.count > 0) {
+            [self.pages removeObjectAtIndex:0];
+        }
+        data = [NSJSONSerialization dataWithJSONObject:page options:0 error:nil];
     }
-    NSData *data = [NSJSONSerialization dataWithJSONObject:page options:0 error:nil];
     NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL
                                                                statusCode:200
                                                               HTTPVersion:@"HTTP/1.1"
@@ -54,6 +63,33 @@
 @end
 
 @implementation RelayDownstreamHandlerTests
+
+- (FirehoseCommitEvent *)commitEventForRepo:(NSString *)repo
+                                    dataCID:(CID *)dataCID
+                                        rev:(NSString *)rev
+                              prevCommitCID:(nullable CID *)prevCommitCID
+                                      since:(nullable NSString *)since
+                                   prevData:(nullable CID *)prevData
+                                        seq:(int64_t)seq {
+    RepoCommit *commit = [RepoCommit createCommitWithDid:repo
+                                                    data:dataCID
+                                                     rev:rev
+                                                    prev:prevCommitCID];
+    commit.signature = [NSMutableData dataWithLength:64];
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = repo;
+    event.commit = commit.computeCID;
+    event.rev = rev;
+    event.since = since;
+    event.prevData = prevData;
+    event.seq = seq;
+    event.blocks = commit.exportCAR;
+    event.ops = @[];
+    event.blobs = @[];
+    event.time = @"2026-07-27T12:00:00.000Z";
+    return event;
+}
 
 - (void)testInitialization {
     RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
@@ -199,11 +235,16 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    FirehoseCommitEvent *commitEvent = [[FirehoseCommitEvent alloc] init];
-    commitEvent.repo = @"did:plc:relay-state-test";
-    commitEvent.commit = [CID sha256:[@"relay state test commit" dataUsingEncoding:NSUTF8StringEncoding]];
-    commitEvent.rev = @"3mrelaystate";
-    commitEvent.seq = 42;
+    CID *dataCID = [CID sha256:[@"relay state test data"
+        dataUsingEncoding:NSUTF8StringEncoding]];
+    FirehoseCommitEvent *commitEvent =
+        [self commitEventForRepo:@"did:plc:relay-state-test"
+                        dataCID:dataCID
+                            rev:@"3mrelaystate"
+                  prevCommitCID:nil
+                          since:nil
+                       prevData:nil
+                            seq:42];
 
     NSString *expectedRootCID = commitEvent.commit.stringValue;
     NSString *expectedRev = commitEvent.rev;
@@ -220,6 +261,8 @@
         XCTAssertEqualObjects([repoStateManager rootCIDForRepo:commitEvent.repo],
                               expectedRootCID);
         XCTAssertEqualObjects([repoStateManager revForRepo:commitEvent.repo], expectedRev);
+        XCTAssertEqualObjects([repoStateManager dataCIDForRepo:commitEvent.repo],
+                              dataCID.stringValue);
         XCTAssertEqual([repoStateManager cursorForRepo:commitEvent.repo], expectedUpstreamSeq);
         XCTAssertEqual([repoStateManager statusForRepo:commitEvent.repo], RelayRepoStatusActive);
         [stateUpdated fulfill];
@@ -375,14 +418,23 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
-    event.repo = @"did:plc:newrepo";
-    event.commit = [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
-    event.rev = @"3m1";
-    event.seq = 1;
+    CID *dataCID =
+        [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    FirehoseCommitEvent *event =
+        [self commitEventForRepo:@"did:plc:newrepo"
+                        dataCID:dataCID
+                            rev:@"3m1"
+                  prevCommitCID:nil
+                          since:nil
+                       prevData:nil
+                            seq:1];
 
     XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
                   @"First commit for unknown repo should be accepted");
+    XCTAssertEqualObjects([repoStateManager commitCIDForRepo:event.repo],
+                          event.commit.stringValue);
+    XCTAssertEqualObjects([repoStateManager dataCIDForRepo:event.repo],
+                          dataCID.stringValue);
 }
 
 - (void)testVerifyChainValidContinuation {
@@ -394,20 +446,32 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    CID *root1 = [CID sha256:[@"root1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *root2 = [CID sha256:[@"root2" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *commit1 =
+        [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *data1 =
+        [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *data2 =
+        [CID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
 
-    [repoStateManager handleCommitForRepo:@"did:plc:test" root:root1.stringValue rev:@"1" seq:1];
+    [repoStateManager handleCommitForRepo:@"did:plc:test"
+                               commitCID:commit1.stringValue
+                                 dataCID:data1.stringValue
+                                     rev:@"1"
+                                     seq:1];
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
-    event.repo = @"did:plc:test";
-    event.commit = root2;
-    event.rev = @"2";
-    event.seq = 2;
-    event.prevData = root1;
+    FirehoseCommitEvent *event =
+        [self commitEventForRepo:@"did:plc:test"
+                        dataCID:data2
+                            rev:@"2"
+                  prevCommitCID:commit1
+                          since:@"1"
+                       prevData:data1
+                            seq:2];
 
     XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
                   @"Commit with prevData matching stored root should be accepted");
+    XCTAssertEqualObjects([repoStateManager dataCIDForRepo:event.repo],
+                          data2.stringValue);
 }
 
 - (void)testVerifyChainBreakDetected {
@@ -419,18 +483,27 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    CID *root1 = [CID sha256:[@"root1" dataUsingEncoding:NSUTF8StringEncoding]];
+    downstreamHandler.chainValidationMode = RelayValidationModeStrict;
+
+    CID *commit1 = [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *data1 = [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
     CID *wrongPrev = [CID sha256:[@"wrongprev" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *root2 = [CID sha256:[@"root2" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *data2 = [CID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
 
-    [repoStateManager handleCommitForRepo:@"did:plc:test" root:root1.stringValue rev:@"1" seq:1];
+    [repoStateManager handleCommitForRepo:@"did:plc:test"
+                               commitCID:commit1.stringValue
+                                 dataCID:data1.stringValue
+                                     rev:@"1"
+                                     seq:1];
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
-    event.repo = @"did:plc:test";
-    event.commit = root2;
-    event.rev = @"2";
-    event.seq = 2;
-    event.prevData = wrongPrev;
+    FirehoseCommitEvent *event =
+        [self commitEventForRepo:@"did:plc:test"
+                        dataCID:data2
+                            rev:@"2"
+                  prevCommitCID:commit1
+                          since:@"1"
+                       prevData:wrongPrev
+                            seq:2];
 
     XCTAssertFalse([downstreamHandler verifyChainForCommitEvent:event],
                    @"Commit with mismatched prevData should be rejected");
@@ -448,18 +521,28 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    CID *root1 = [CID sha256:[@"root1" dataUsingEncoding:NSUTF8StringEncoding]];
-    [repoStateManager handleCommitForRepo:@"did:plc:test" root:root1.stringValue rev:@"1" seq:1];
+    CID *commit1 = [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *data1 = [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *data2 = [CID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
+    [repoStateManager handleCommitForRepo:@"did:plc:test"
+                               commitCID:commit1.stringValue
+                                 dataCID:data1.stringValue
+                                     rev:@"1"
+                                     seq:1];
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
-    event.repo = @"did:plc:test";
-    event.commit = [CID sha256:[@"root2" dataUsingEncoding:NSUTF8StringEncoding]];
-    event.rev = @"2";
-    event.seq = 2;
-    event.prevData = nil;
+    FirehoseCommitEvent *event =
+        [self commitEventForRepo:@"did:plc:test"
+                        dataCID:data2
+                            rev:@"2"
+                  prevCommitCID:commit1
+                          since:@"1"
+                       prevData:nil
+                            seq:2];
 
     XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
                   @"Commit with nil prevData for known repo should be accepted with warning");
+    XCTAssertEqualObjects([repoStateManager dataCIDForRepo:event.repo],
+                          data2.stringValue);
 }
 
 - (void)testVerifyChainNoStateManagerAlwaysAccepted {
@@ -478,6 +561,81 @@
 
     XCTAssertTrue([downstreamHandler verifyChainForCommitEvent:event],
                   @"Should accept when no state manager is configured");
+}
+
+- (void)testStrictChainBreakFetchesRepoAndBroadcastsSyncReset {
+    RelayEventBuffer *buffer =
+        [[RelayEventBuffer alloc] initWithRetentionHours:1 maxEvents:10];
+    SubscribeReposHandler *subHandler =
+        [[SubscribeReposHandler alloc] initWithServiceDatabases:nil];
+    subHandler.eventBuffer = buffer;
+    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        initWithEventBuffer:buffer
+        subscribeReposHandler:subHandler];
+    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    downstreamHandler.repoStateManager = repoStateManager;
+    downstreamHandler.metrics = metrics;
+    downstreamHandler.chainValidationMode = RelayValidationModeStrict;
+
+    NSString *did = @"did:plc:recovery-test";
+    CID *oldCommit =
+        [CID sha256:[@"old-commit" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *oldData =
+        [CID sha256:[@"old-data" dataUsingEncoding:NSUTF8StringEncoding]];
+    [repoStateManager handleCommitForRepo:did
+                               commitCID:oldCommit.stringValue
+                                 dataCID:oldData.stringValue
+                                     rev:@"1"
+                                     seq:1];
+
+    RepoCommit *recoveryCommit =
+        [RepoCommit createCommitWithDid:did
+                                   data:[CID sha256:[@"recovery-data"
+                                       dataUsingEncoding:NSUTF8StringEncoding]]
+                                    rev:@"3"
+                                   prev:oldCommit];
+    recoveryCommit.signature = [NSMutableData dataWithLength:64];
+    RelayInventoryHTTPClient *client = [[RelayInventoryHTTPClient alloc] init];
+    [client.responseBodies addObject:recoveryCommit.exportCAR];
+    downstreamHandler.safeHTTPClient = client;
+
+    FirehoseCommitEvent *broken =
+        [self commitEventForRepo:did
+                        dataCID:[CID sha256:[@"broken-data"
+                            dataUsingEncoding:NSUTF8StringEncoding]]
+                            rev:@"2"
+                  prevCommitCID:oldCommit
+                          since:@"1"
+                       prevData:[CID sha256:[@"wrong-data"
+                            dataUsingEncoding:NSUTF8StringEncoding]]
+                            seq:2];
+    RelayUpstreamManager *manager =
+        [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
+    [downstreamHandler upstreamManager:manager
+                       didReceiveEvent:broken
+                          fromUpstream:@"https://recovery.test"];
+
+    XCTestExpectation *recovered =
+        [self expectationWithDescription:@"repo recovery applied"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                 (int64_t)(0.2 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        XCTAssertEqual(client.requests.count, 1U);
+        XCTAssertEqualObjects(client.requests.firstObject.URL.path,
+                              @"/xrpc/com.atproto.sync.getRepo");
+        XCTAssertEqualObjects([repoStateManager commitCIDForRepo:did],
+                              recoveryCommit.computeCID.stringValue);
+        XCTAssertEqualObjects([repoStateManager dataCIDForRepo:did],
+                              recoveryCommit.dataCID.stringValue);
+        XCTAssertEqualObjects([repoStateManager revForRepo:did], recoveryCommit.rev);
+        XCTAssertEqual([repoStateManager statusForRepo:did], RelayRepoStatusActive);
+        XCTAssertEqual(buffer.eventCount, 1U);
+        XCTAssertEqual([metrics.snapshotDictionary[@"syncResets"] longLongValue],
+                       1LL);
+        [recovered fulfill];
+    });
+    [self waitForExpectations:@[recovered] timeout:1.0];
 }
 
 @end

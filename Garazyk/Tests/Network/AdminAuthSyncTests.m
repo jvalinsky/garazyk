@@ -459,9 +459,9 @@
 - (void)testApplicationSyncGetRepoSinceApplyWritesCreateRevReturnsEmptyDelta {
   NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
   NSDictionary *createWrite = @{
-    @"action" : @"create",
+    @"$type" : @"com.atproto.repo.applyWrites#create",
     @"collection" : @"app.bsky.feed.post",
-    @"rkey" : @"applywrites-since-create",
+    @"rkey" : @"aw-since-create",
     @"value" : @{
       @"$type" : @"app.bsky.feed.post",
       @"text" : @"applyWrites create rev baseline",
@@ -471,9 +471,17 @@
 
   HttpResponse *applyResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
-                         body:@{@"writes" : @[ createWrite ], @"validate" : @NO}
+                         body:@{
+                           @"repo" : self.userDid,
+                           @"writes" : @[ createWrite ],
+                           @"validate" : @NO
+                         }
                       headers:@{@"authorization" : authHeader}];
-  XCTAssertEqual(applyResponse.statusCode, 200);
+  XCTAssertEqual(applyResponse.statusCode, 200, @"Unexpected response: %@",
+                 applyResponse.jsonBody);
+  if (applyResponse.statusCode != 200) {
+    return;
+  }
   NSDictionary *applyCommit = applyResponse.jsonBody[@"commit"];
   XCTAssertNotNil(applyCommit);
   XCTAssertTrue([applyCommit[@"cid"] length] > 0);
@@ -511,9 +519,9 @@
 - (void)testApplicationSyncGetRepoSinceApplyWritesDeleteRevReturnsEmptyDelta {
   NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
   NSDictionary *createWrite = @{
-    @"action" : @"create",
+    @"$type" : @"com.atproto.repo.applyWrites#create",
     @"collection" : @"app.bsky.feed.post",
-    @"rkey" : @"applywrites-since-delete",
+    @"rkey" : @"aw-since-delete",
     @"value" : @{
       @"$type" : @"app.bsky.feed.post",
       @"text" : @"applyWrites delete rev baseline",
@@ -522,24 +530,40 @@
   };
   HttpResponse *createResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
-                         body:@{@"writes" : @[ createWrite ], @"validate" : @NO}
+                         body:@{
+                           @"repo" : self.userDid,
+                           @"writes" : @[ createWrite ],
+                           @"validate" : @NO
+                         }
                       headers:@{@"authorization" : authHeader}];
-  XCTAssertEqual(createResponse.statusCode, 200);
+  XCTAssertEqual(createResponse.statusCode, 200, @"Unexpected response: %@",
+                 createResponse.jsonBody);
+  if (createResponse.statusCode != 200) {
+    return;
+  }
   NSDictionary *createCommit = createResponse.jsonBody[@"commit"];
   XCTAssertNotNil(createCommit);
   XCTAssertTrue([createCommit[@"cid"] length] > 0);
   XCTAssertTrue([createCommit[@"rev"] length] > 0);
 
   NSDictionary *deleteWrite = @{
-    @"action" : @"delete",
+    @"$type" : @"com.atproto.repo.applyWrites#delete",
     @"collection" : @"app.bsky.feed.post",
-    @"rkey" : @"applywrites-since-delete"
+    @"rkey" : @"aw-since-delete"
   };
   HttpResponse *deleteResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
-                         body:@{@"writes" : @[ deleteWrite ], @"validate" : @NO}
+                         body:@{
+                           @"repo" : self.userDid,
+                           @"writes" : @[ deleteWrite ],
+                           @"validate" : @NO
+                         }
                       headers:@{@"authorization" : authHeader}];
-  XCTAssertEqual(deleteResponse.statusCode, 200);
+  XCTAssertEqual(deleteResponse.statusCode, 200, @"Unexpected response: %@",
+                 deleteResponse.jsonBody);
+  if (deleteResponse.statusCode != 200) {
+    return;
+  }
   NSDictionary *deleteCommit = deleteResponse.jsonBody[@"commit"];
   XCTAssertNotNil(deleteCommit);
   XCTAssertTrue([deleteCommit[@"cid"] length] > 0);
@@ -672,6 +696,20 @@
   if (cid.length == 0) {
     return;
   }
+
+  NSDictionary *record = @{
+    @"$type" : @"app.bsky.feed.post",
+    @"text" : @"socket range blob reference",
+    @"createdAt" : @"2026-07-28T00:00:00Z",
+    @"attachment" : uploadResult[@"blob"],
+  };
+  NSDictionary *created =
+      [self.application.legacyController createRecordForDid:self.userDid
+                                                 collection:@"app.bsky.feed.post"
+                                                     record:record
+                                             validationMode:PDSValidationModeOff
+                                                      error:nil];
+  XCTAssertNotNil(created);
 
   NSError *startError = nil;
   HttpServer *server =

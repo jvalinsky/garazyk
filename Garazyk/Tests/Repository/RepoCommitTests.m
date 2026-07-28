@@ -274,4 +274,28 @@
     }
 }
 
+- (void)testCommitParsingFromSignedBlock {
+    NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
+    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    CID *prevCID = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    RepoCommit *original = [RepoCommit createCommitWithDid:did
+                                                     data:dataCID
+                                                      rev:@"3l66k7pp33p"
+                                                     prev:prevCID];
+
+    NSError *error = nil;
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:&error];
+    XCTAssertNotNil(keyPair);
+    XCTAssertTrue([original signWithPrivateKey:keyPair.privateKey error:&error]);
+
+    RepoCommit *parsed = [RepoCommit fromSignedBlockData:original.serializeSigned
+                                                   error:&error];
+    XCTAssertNotNil(parsed, @"Signed block should parse: %@", error);
+    XCTAssertEqualObjects(parsed.did, did);
+    XCTAssertEqualObjects(parsed.dataCID, dataCID);
+    XCTAssertEqualObjects(parsed.prevCID, prevCID);
+    XCTAssertEqualObjects(parsed.rev, original.rev);
+    XCTAssertEqualObjects(parsed.signature, original.signature);
+}
+
 @end

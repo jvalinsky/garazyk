@@ -464,6 +464,36 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (NSInteger)collectionMembershipCountWithError:(NSError **)error;
 
+/*!
+ @method pruneExpiredPasswordResetTokensBefore:error:
+
+ @abstract Remove password-reset tokens whose expiration predates the supplied date.
+
+ @discussion Executes through the service database pool so the maintenance write is
+ serialized with all other access to the shared SQLite connection.
+
+ @param date Expiration cutoff.
+ @param error Error pointer for query failures.
+ @return Number of expired tokens removed, or -1 on error.
+ */
+- (NSInteger)pruneExpiredPasswordResetTokensBefore:(NSDate *)date
+                                             error:(NSError **)error;
+
+/*!
+ @method pruneExpiredEmailConfirmationTokensBefore:error:
+
+ @abstract Remove email-confirmation tokens whose expiration predates the supplied date.
+
+ @discussion Executes through the service database pool so the maintenance write is
+ serialized with all other access to the shared SQLite connection.
+
+ @param date Expiration cutoff.
+ @param error Error pointer for query failures.
+ @return Number of expired tokens removed, or -1 on error.
+ */
+- (NSInteger)pruneExpiredEmailConfirmationTokensBefore:(NSDate *)date
+                                                  error:(NSError **)error;
+
 #pragma mark - Event Persistence
 
 /*!

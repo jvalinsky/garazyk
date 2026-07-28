@@ -56,7 +56,7 @@
     // Video: Retry job
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/video-retry-job" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *jobId = request.jsonBody[@"jobId"] ?: @"";
+        NSString *jobId = [request.jsonBody[@"jobId"] isKindOfClass:[NSString class]] ? request.jsonBody[@"jobId"] : @"";
         // Retry via PDS admin: incrementVideoJobRetry
         NSDictionary *result = [weakSelf.backendClient retryVideoJobWithId:jobId];
         response.statusCode = result[@"error"] ? 400 : 200;

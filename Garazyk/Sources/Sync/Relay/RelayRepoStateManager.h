@@ -7,7 +7,7 @@
 
  @discussion
     RelayRepoStateManager tracks:
-    - Current root CID for each repo
+    - Current signed commit CID and MST data-root CID for each repo
     - Last sequence number for each repo
     - Repo status (active, desynchronized, etc.)
     
@@ -40,6 +40,24 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
 };
 
 /**
+ * @abstract Result of atomically checking and applying a repository commit.
+ */
+typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
+    /** No prior authenticated data root existed; the event established it. */
+    RelayRepoAdvanceResultBaselineEstablished,
+    /** The event continued the stored revision and data-root chain. */
+    RelayRepoAdvanceResultAdvanced,
+    /** The event revision was not newer than the stored revision. */
+    RelayRepoAdvanceResultStale,
+    /** The event omitted continuity fields; it was accepted as a new baseline. */
+    RelayRepoAdvanceResultUnverifiableAdvanced,
+    /** The event's ``since`` revision did not match the stored revision. */
+    RelayRepoAdvanceResultSinceMismatch,
+    /** The event's ``prevData`` did not match the stored MST data root. */
+    RelayRepoAdvanceResultPrevDataMismatch
+};
+
+/**
  * @abstract Maintains per-repository relay cursor, root, revision, and status state.
  */
 @interface RelayRepoStateManager : NSObject
@@ -47,7 +65,7 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
 /**
  * @abstract Creates an empty in-memory repository state manager.
  */
-- (instancetype)init;
+- (instancetype)init NS_DESIGNATED_INITIALIZER;
 
 /**
  * @abstract Creates a repository state manager backed by an on-disk SQLite database.
@@ -60,7 +78,7 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
 /**
  * @abstract Records the latest commit state for a repository.
  * @param repoDID The repository DID that emitted the commit.
- * @param rootCID The repository root CID after the commit.
+ * @param rootCID The signed repository commit CID after the commit.
  * @param rev The repository revision string after the commit.
  * @param seq The firehose sequence number for the commit event.
  */
@@ -68,6 +86,45 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
                        root:(NSString *)rootCID
                          rev:(NSString *)rev
                          seq:(int64_t)seq;
+
+/**
+ * @abstract Records a structurally validated repository commit as the current baseline.
+ * @param repoDID Repository DID.
+ * @param commitCID Signed repository commit-object CID.
+ * @param dataCID MST data-root CID from the signed commit object.
+ * @param rev Repository revision.
+ * @param seq Upstream firehose sequence.
+ */
+- (void)handleCommitForRepo:(NSString *)repoDID
+                  commitCID:(NSString *)commitCID
+                    dataCID:(nullable NSString *)dataCID
+                        rev:(NSString *)rev
+                        seq:(int64_t)seq;
+
+/**
+ * @abstract Atomically validates continuity and advances repository state.
+ *
+ * The next event's ``prevData`` is compared with the stored signed commit
+ * object's ``data`` CID. It is never compared with the signed commit CID.
+ */
+- (RelayRepoAdvanceResult)advanceRepo:(NSString *)repoDID
+                                since:(nullable NSString *)since
+                             prevData:(nullable NSString *)prevDataCID
+                            commitCID:(NSString *)commitCID
+                              dataCID:(nullable NSString *)dataCID
+                                  rev:(NSString *)rev
+                                  seq:(int64_t)seq;
+
+/**
+ * @abstract Observes a commit head from ``com.atproto.sync.listRepos``.
+ *
+ * Inventory contains a commit CID and revision but no MST data root. Existing
+ * live state is not regressed by an older inventory response.
+ */
+- (void)observeInventoryForRepo:(NSString *)repoDID
+                      commitCID:(NSString *)commitCID
+                            rev:(NSString *)rev
+                         active:(BOOL)active;
 
 /**
  * @abstract Marks that an identity event was received for a repository.
@@ -89,11 +146,17 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
 - (void)handleTombstoneForRepo:(NSString *)repoDID;
 
 /**
- * @abstract Returns the latest known root CID for a repository.
+ * @abstract Returns the latest known signed commit CID for a repository.
  * @param repoDID The repository DID to query.
- * @return The root CID, or nil when the repository is unknown.
+ * @return The signed commit CID, or nil when the repository is unknown.
  */
 - (nullable NSString *)rootCIDForRepo:(NSString *)repoDID;
+
+/** Returns the current signed repository commit-object CID. */
+- (nullable NSString *)commitCIDForRepo:(NSString *)repoDID;
+
+/** Returns the current MST data-root CID extracted from the signed commit. */
+- (nullable NSString *)dataCIDForRepo:(NSString *)repoDID;
 
 /**
  * @abstract Returns the latest known revision for a repository.
@@ -127,13 +190,15 @@ typedef NS_ENUM(NSInteger, RelayRepoStatus) {
 - (NSUInteger)repoCount;
 
 /**
- * @abstract Returns the previous data CID for a repository (the root CID before the
- *           most recent commit).  Used by chain verification to link consecutive
- *           commits via ``prev`` in the CAR header.
+ * @abstract Compatibility alias for the current MST data-root CID.
+ *
+ * This method's historical implementation conflated commit CIDs with MST data
+ * roots. New code must use ``dataCIDForRepo:``.
  * @param repoDID The repository DID to query.
- * @return The previous root CID, or nil when unknown or unchanged.
+ * @return The current MST data-root CID, or nil when unknown.
  */
-- (nullable NSString *)prevDataCIDForRepo:(NSString *)repoDID;
+- (nullable NSString *)prevDataCIDForRepo:(NSString *)repoDID
+    __attribute__((deprecated("Use dataCIDForRepo:; relay state stores the current signed commit data root")));
 
 /**
  * @abstract Synchronizes the in-memory state to the on-disk database.
