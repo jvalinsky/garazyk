@@ -8,6 +8,21 @@
 
 #pragma mark - AuthCryptoDPoP Tests
 
+@interface AuthCryptoDPoPReplaySpy : NSObject <AuthCryptoDPoPReplayChecker>
+@property (nonatomic, assign) NSUInteger callCount;
+@end
+
+@implementation AuthCryptoDPoPReplaySpy
+
+- (BOOL)checkAndAddJTI:(NSString *)jti expiration:(NSDate *)expiration {
+    (void)jti;
+    (void)expiration;
+    self.callCount += 1;
+    return YES;
+}
+
+@end
+
 @interface AuthCryptoDPoPTests : XCTestCase
 @end
 
@@ -350,6 +365,45 @@
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
+}
+
+- (void)testInvalidSignatureDoesNotConsumeReplayIdentifier {
+    NSDictionary *jwk = @{
+        @"kty": @"EC",
+        @"crv": @"P-256",
+        @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+        @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"
+    };
+    NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
+    NSDictionary *payload = @{
+        @"htm": @"GET",
+        @"htu": @"https://example.com",
+        @"iat": @([[NSDate date] timeIntervalSince1970]),
+        @"jti": @"untrusted-jti"
+    };
+    NSString *headerEnc = [AuthCryptoBase64URL
+        encode:[NSJSONSerialization dataWithJSONObject:header options:0 error:nil]];
+    NSString *payloadEnc = [AuthCryptoBase64URL
+        encode:[NSJSONSerialization dataWithJSONObject:payload options:0 error:nil]];
+    NSString *proof = [NSString stringWithFormat:@"%@.%@.invalid-signature",
+                                                  headerEnc, payloadEnc];
+    AuthCryptoDPoPReplaySpy *replaySpy = [[AuthCryptoDPoPReplaySpy alloc] init];
+    NSError *error = nil;
+
+    BOOL valid = [AuthCryptoDPoP verifyProof:proof
+                                      method:@"GET"
+                                         url:[NSURL URLWithString:@"https://example.com"]
+                                       nonce:nil
+                                requireNonce:NO
+                              nonceValidator:nil
+                               replayChecker:replaySpy
+                               outThumbprint:nil
+                                       error:&error];
+
+    XCTAssertFalse(valid);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(replaySpy.callCount, 0u,
+                   @"A proof must authenticate before its JTI is recorded");
 }
 
 - (void)testCreateProofMissingParameters {

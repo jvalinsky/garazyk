@@ -722,6 +722,7 @@ function renderSidecarService(
     service.build = build;
   }
 
+  if (sidecar.entrypoint) service.entrypoint = sidecar.entrypoint;
   if (sidecar.command) service.command = sidecar.command;
   if (sidecar.ports) {
     service.ports = sidecar.ports.map((mapping) =>

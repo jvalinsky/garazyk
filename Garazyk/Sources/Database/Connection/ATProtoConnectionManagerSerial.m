@@ -119,7 +119,11 @@
         }
 
         char *errMsg = NULL;
-        int rc = sqlite3_exec(self.db, "BEGIN", NULL, NULL, &errMsg);
+        // Reserve the write slot before the transaction block performs any reads.
+        // A deferred transaction that reads and then upgrades to a writer can fail
+        // immediately with SQLITE_BUSY when another connection is writing, without
+        // honoring busy_timeout. BEGIN IMMEDIATE waits at the transaction boundary.
+        int rc = sqlite3_exec(self.db, "BEGIN IMMEDIATE", NULL, NULL, &errMsg);
         if (rc != SQLITE_OK) {
             if (error) {
                 *error = ATProtoDBSQLError(ATProtoDBErrorDomain, self.db,

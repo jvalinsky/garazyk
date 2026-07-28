@@ -41,7 +41,7 @@
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-retry-repo" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: [request queryParamForKey:@"did"];
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient retryBackfillForDID:did ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -51,7 +51,7 @@
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-cancel-repo" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: [request queryParamForKey:@"did"];
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient cancelBackfillForDID:did ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -73,8 +73,8 @@
     // AppView: Enqueue DIDs for backfill
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-enqueue-dids" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSArray *dids = request.jsonBody[@"dids"];
-        NSDictionary *result = [weakSelf.backendClient enqueueBackfillDIDs:dids ?: @[]];
+        NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
+        NSDictionary *result = [weakSelf.backendClient enqueueBackfillDIDs:dids];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : [NSString stringWithFormat:@"Enqueued %lu DIDs.", dids.count];

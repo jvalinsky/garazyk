@@ -61,6 +61,25 @@
     XCTAssertEqual(metrics.mstValidationFailure, 1);
 }
 
+- (void)testContinuityMetrics {
+    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+
+    [metrics recordContinuityBaseline];
+    [metrics recordContinuityVerified];
+    [metrics recordContinuityFailure];
+    [metrics recordSyncReset];
+    [self waitForMetricsQueue];
+
+    NSDictionary *snapshot = [metrics snapshotDictionary];
+    XCTAssertEqual([snapshot[@"continuityBaselines"] longLongValue], 1LL);
+    XCTAssertEqual([snapshot[@"continuityVerified"] longLongValue], 1LL);
+    XCTAssertEqual([snapshot[@"continuityFailures"] longLongValue], 1LL);
+    XCTAssertEqual([snapshot[@"syncResets"] longLongValue], 1LL);
+    NSString *prometheus = [metrics renderPrometheusMetrics];
+    XCTAssertTrue([prometheus containsString:@"relay_continuity_total"]);
+    XCTAssertTrue([prometheus containsString:@"relay_sync_resets_total"]);
+}
+
 - (void)testSequenceTracking {
     XCTSkip(@"Async metric - flaky under test isolation");
 }

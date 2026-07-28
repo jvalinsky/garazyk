@@ -159,8 +159,12 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         return nil;
     }
 
-    // Decode using the spec-compliant DAG-CBOR parser
-    id decoded = [ATProtoDagCBOR decodeData:commitBlock.data error:error];
+    return [self fromSignedBlockData:commitBlock.data error:error];
+}
+
++ (nullable instancetype)fromSignedBlockData:(NSData *)blockData
+                                       error:(NSError **)error {
+    id decoded = [ATProtoDagCBOR decodeData:blockData error:error];
     if (![decoded isKindOfClass:[NSDictionary class]]) {
         if (error) {
             *error = [NSError errorWithDomain:RepoCommitErrorDomain

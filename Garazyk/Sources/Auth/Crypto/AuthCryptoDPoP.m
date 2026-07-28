@@ -282,17 +282,6 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         }
     }
 
-    // Replay check
-    NSDate *jtiExpiration = [NSDate dateWithTimeIntervalSince1970:iat.doubleValue + 300];
-    if (![replayChecker checkAndAddJTI:jti expiration:jtiExpiration]) {
-        if (error) {
-            *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
-                                         code:-12
-                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP jti reuse detected"}];
-        }
-        return NO;
-    }
-
     // Create public key from JWK using protocol-based API
     NSError *keyError = nil;
     id<PDSPublicKeyProtocol> publicKey = [AuthCryptoJWK publicKeyFromJWK:jwk error:&keyError];
@@ -327,6 +316,19 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-13
                                      userInfo:@{NSLocalizedDescriptionKey: @"DPoP signature verification failed"}];
+        }
+        return NO;
+    }
+
+    // Record the JTI only after every proof check, including the signature, has
+    // succeeded. Otherwise an invalid proof can consume a victim's JTI and make
+    // the later valid proof look like a replay.
+    NSDate *jtiExpiration = [NSDate dateWithTimeIntervalSince1970:iat.doubleValue + 300];
+    if (![replayChecker checkAndAddJTI:jti expiration:jtiExpiration]) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                         code:-12
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP jti reuse detected"}];
         }
         return NO;
     }

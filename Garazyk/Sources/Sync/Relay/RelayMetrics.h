@@ -62,6 +62,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordSignatureValidationSuccess;
 /** Records a failed repository signature validation. */
 - (void)recordSignatureValidationFailure;
+/** Records that a repository data-root baseline was established. */
+- (void)recordContinuityBaseline;
+/** Records that an inductive commit link was verified. */
+- (void)recordContinuityVerified;
+/** Records that an inductive commit link failed verification. */
+- (void)recordContinuityFailure;
+/** Records that a #sync event reset repository continuity state. */
+- (void)recordSyncReset;
 
 /**
  * @abstract Records the latest observed firehose sequence.
@@ -123,6 +131,14 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) int64_t signatureValidationSuccess;
 /** Total failed signature validations. */
 @property (nonatomic, readonly) int64_t signatureValidationFailure;
+/** Repository baselines learned without a preceding data root. */
+@property (nonatomic, readonly) int64_t continuityBaselines;
+/** Successfully verified repository continuity links. */
+@property (nonatomic, readonly) int64_t continuityVerified;
+/** Failed repository continuity links. */
+@property (nonatomic, readonly) int64_t continuityFailures;
+/** Repository state resets applied from #sync events. */
+@property (nonatomic, readonly) int64_t syncResets;
 /** Latest sequence exposed by the relay. */
 @property (nonatomic, readonly) int64_t currentSequence;
 /** Total upstream reconnection attempts. */

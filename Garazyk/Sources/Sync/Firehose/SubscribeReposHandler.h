@@ -115,6 +115,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Broadcasts a repository commit event object. */
 - (void)broadcastCommitEvent:(FirehoseCommitEvent *)event;
 
+/*! Broadcasts a repository synchronization/reset event object. */
+- (void)broadcastSyncEvent:(FirehoseSyncEvent *)event;
+
 /*! Broadcasts a repository commit event. */
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit 
                           forRepo:(NSString *)repoDid 
