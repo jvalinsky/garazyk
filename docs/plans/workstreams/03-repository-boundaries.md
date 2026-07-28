@@ -1,7 +1,7 @@
 ---
 title: Repository Boundaries
 status: active
-last_verified: 2026-07-26
+last_verified: 2026-07-27
 ---
 
 # Repository Boundaries
@@ -28,9 +28,17 @@ form the dependency boundary.
   and `test` task sets. A 2026-07-18 read-only R2 audit verified all four for
   `@garazyk/tui@0.1.0` (252 tests), Gruszka (304 passed, 6 intended integration
   skips), Laweta (85 passed), and Schemat (188 passed). Hamownia's package test
-  task has 14 failures because `test_utils.ts` assumes the monorepo-relative
-  `packages/hamownia/cli.ts` path; it needs a package-local fixture before its
-  later alpha publication. Gruszka, Laweta, Schemat, and Hamownia also inherit
+  task originally had 14 failures because `test_utils.ts` assumed the
+  monorepo-relative `packages/hamownia/cli.ts` path. **Fixed 2026-07-26 in the
+  external repo** (`garazyk-atproto-testing` commit `533262b`): `CLI_PATH` is
+  now resolved via `fromFileUrl(import.meta.url)` instead of a hardcoded
+  relative path, so it works regardless of where the package is checked out.
+  Re-verified 2026-07-27: `deno task test` in
+  `garazyk-atproto-testing/packages/hamownia` passes 328/328 (0 failed, 1
+  ignored). The same commit also fixed a related Gruszka test
+  (`generateLexicons` default-output test now skips gracefully when
+  `Garazyk/Resources/lexicons` isn't available in an external checkout);
+  Gruszka now passes 321/321 there. Gruszka, Laweta, Schemat, and Hamownia also inherit
   their dependency mappings from the testing repository root, so their release
   manifests are not yet self-contained.
 - **2026-07-18:** private GitHub remotes are established and initial local
