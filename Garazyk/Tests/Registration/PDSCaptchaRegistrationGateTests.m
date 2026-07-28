@@ -524,4 +524,76 @@
                   @"Token with special chars must be percent-encoded");
 }
 
+#pragma mark - percentEncode nil guard (phase-25 slice 1 follow-up)
+
+- (void)testCaptchaGateRejectsTokenWithUnpairedSurrogateInsteadOfEmittingNull {
+    // stringByAddingPercentEncodingWithAllowedCharacters: returns nil for
+    // strings containing unpaired surrogates. A lone high surrogate (no
+    // matching low surrogate) is invalid UTF-16 and triggers that path.
+    unichar loneSurrogate = 0xD800;
+    NSString *tokenWithLoneSurrogate = [NSString stringWithCharacters:&loneSurrogate length:1];
+
+    PDSCaptchaRegistrationGate *gate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile"
+                                                     siteKey:@"site-key"
+                                                   secretKey:@"secret-key"];
+    gate.safeHTTPClient = self.mockClient;
+
+    NSError *error = nil;
+    BOOL result = [gate validateRegistrationRequest:@{@"captchaToken": tokenWithLoneSurrogate}
+                                      configuration:nil
+                                              error:&error];
+    XCTAssertFalse(result, @"A token that cannot be percent-encoded must be rejected");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, PDSRegistrationGateErrorInvalidCaptcha);
+    XCTAssertNil(self.mockClient.lastRequestBodyString,
+                 @"No HTTP request should be sent when the body cannot be encoded");
+}
+
+#pragma mark - Timeout budget (phase-25 slice 1 follow-up)
+
+- (void)testCaptchaGateDefaultTimeoutIsTightened {
+    // Phase-25 slice 1 follow-up: reduced from 12s to ~5s.
+    PDSCaptchaRegistrationGate *gate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile"
+                                                     siteKey:@"site-key"
+                                                   secretKey:@"secret-key"];
+    XCTAssertEqualWithAccuracy(gate.siteverifyTimeout, 5.0, 0.001);
+}
+
+- (void)testCaptchaGateLateCompletionAfterTimeoutDoesNotCrashOrHang {
+    // A completion that fires after the gate has already given up (simulated
+    // here by a delay well past siteverifyTimeout) must be a safe no-op:
+    // the gate already returned, and the late completion must not touch
+    // state or resignal a semaphore that nothing is waiting on.
+    PDSCaptchaRegistrationGate *gate =
+        [[PDSCaptchaRegistrationGate alloc] initWithProvider:@"turnstile"
+                                                     siteKey:@"site-key"
+                                                   secretKey:@"secret-key"];
+    gate.safeHTTPClient = self.mockClient;
+    gate.siteverifyTimeout = 0.2;
+
+    MockSiteverifyResponse *mock = [[MockSiteverifyResponse alloc] init];
+    mock.artificialDelay = 1.0;
+    mock.statusCode = 200;
+    mock.bodyJSON = @{@"success": @YES};
+    self.mockClient.mockResponse = mock;
+
+    NSError *error = nil;
+    BOOL result = [gate validateRegistrationRequest:@{@"captchaToken": @"some-token"}
+                                      configuration:nil
+                                              error:&error];
+    XCTAssertFalse(result, @"Timeout must not accept the token");
+    XCTAssertEqualObjects([error.userInfo objectForKey:@"httpStatus"], @(503));
+
+    // Give the delayed mock completion time to fire after the gate has
+    // already returned, proving the late callback doesn't crash the test run.
+    XCTestExpectation *settle = [self expectationWithDescription:@"late completion settles"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)),
+                    dispatch_get_main_queue(), ^{
+        [settle fulfill];
+    });
+    [self waitForExpectationsWithTimeout:3.0 handler:nil];
+}
+
 @end
