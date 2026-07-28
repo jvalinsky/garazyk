@@ -1965,7 +1965,7 @@ log — cancellations become unattributed again.
 
 ## S15. Chat (syrena-chat) trust-boundary sweep
 
-**Status: complete (slices 1-6 done).** A focused audit of the Chat module
+**Status: complete ✅ (all 7 slices done).** A focused audit of the Chat module
 (`Garazyk/Sources/Chat/`, `Garazyk/Sources/Network/XrpcChatBsky*.m`,
 totaling ~2,800 lines) found widespread untyped JSON extraction at the
 XRPC handler boundary (S8/S13 defect class), one unconditional auth-nop
@@ -1975,14 +1975,13 @@ audience/lxm checks), but the handler layer exposes the same unguarded
 `body[@"key"]` pattern that the S8 and S13 sweeps fixed in auth and
 registration.
 
-**Completed slices (HEAD: ac334207):**
+**Completed slices (HEAD: e3af1952):**
 - Slice 1: isKindOfClass sweep (2e1c6321)
 - Slices 2-3: getConvoAvailability hardening + legacy token rejection + text/embed guards (432c03c4)
 - Slice 4: membership verification for 7 handlers (f5d68361)
 - Slice 5: addReaction/removeReaction membership verification via conversationIdForMessage (3786b2e1)
 - Slice 6: sendMessageBatch per-element validation (ac334207)
-
-**Remaining:** Slice 7 (acceptance gate tests — XrpcChatBskyConvoTests).
+- Slice 7: acceptance gate tests — 10 new tests + 4 pre-existing test fixes (uncommitted)
 
 ### Evidence
 
