@@ -15,6 +15,8 @@
    ─────────────────────────────────────────────────────────────────────
    appview.mode                          APPVIEW_MODE
    appview.relay_urls[]                  APPVIEW_RELAY_URLS (comma-sep)
+   appview.ingest.mode                   APPVIEW_INGEST_MODE (relay|jetstream)
+   appview.ingest.jetstream_urls[]       APPVIEW_INGEST_JETSTREAM_URLS (comma-sep)
    appview.cursor.checkpoint_interval_ms APPVIEW_CURSOR_CHECKPOINT_MS
    appview.backfill.enabled              APPVIEW_BACKFILL_ENABLED
    appview.backfill.global_workers       APPVIEW_BACKFILL_GLOBAL_WORKERS
@@ -65,6 +67,22 @@ typedef NS_ENUM(NSInteger, AppViewMode) {
 
 /*! Relay WebSocket URLs to subscribe to. E.g. wss://bsky.network. */
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;
+
+#pragma mark - Ingest
+
+/*! Ingest mode. Default: AppViewIngestModeRelay. */
+@property (nonatomic, assign) NSInteger ingestMode;  // AppViewIngestMode enum
+
+/*! Jetstream subscription URLs. E.g. wss://jetstream2.us-east.bsky.network. */
+@property (nonatomic, strong) NSArray<NSString *> *jetstreamURLs;
+
+/*! The AppViewIngestMode enum values are defined here for config-only use. */
+typedef NS_ENUM(NSInteger, AppViewIngestMode) {
+    AppViewIngestModeRelay     = 0,  // subscribeRepos (default)
+    AppViewIngestModeJetstream = 1,  // Jetstream collection-filtered
+};
+
+#pragma mark - Core (continued)
 
 /*! Directory for the AppView database and working files. */
 @property (nonatomic, copy)   NSString *dataDirectory;
