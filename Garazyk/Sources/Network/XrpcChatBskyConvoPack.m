@@ -609,6 +609,20 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
+        // Validate each message element before passing to the service.
+        for (id element in messages) {
+            if (![element isKindOfClass:[NSDictionary class]]) {
+                [XrpcErrorHelper setValidationError:response message:@"Each message must be an object"];
+                return;
+            }
+            NSDictionary *msg = (NSDictionary *)element;
+            NSString *text = [msg[@"text"] isKindOfClass:[NSString class]] ? msg[@"text"] : nil;
+            if (!text) {
+                [XrpcErrorHelper setValidationError:response message:@"Each message must have a text field"];
+                return;
+            }
+        }
+
         // Verify the conversation exists and the sender is a member
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
         if (!convo) {
