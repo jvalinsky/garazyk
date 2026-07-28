@@ -26,6 +26,8 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
+#import "Email/PDSEmailProvider.h"
+#import <sqlite3.h>
 
 static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse *response) {
     if ([ATProtoPermissionScopeEvaluator evaluateAccountScopes:request.permissionScopes ?: @[]
@@ -163,8 +165,167 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             return;
         }
 
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *confirmationToken = body[@"token"];
+
+        // ── Path B: Token present — exchange for deletion ──
+        if (confirmationToken.length > 0) {
+            sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+            if (!db) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"AccountDeleteFailed",
+                                         @"message": @"Service unavailable"}];
+                return;
+            }
+
+            // Validate the opaque token against password_reset_tokens.
+            sqlite3_stmt *stmt = NULL;
+            if (sqlite3_prepare_v2(db,
+                "SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?",
+                -1, &stmt, NULL) != SQLITE_OK) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"AccountDeleteFailed",
+                                         @"message": @"Service unavailable"}];
+                return;
+            }
+            sqlite3_bind_text(stmt, 1, confirmationToken.UTF8String, -1, SQLITE_TRANSIENT);
+
+            NSString *tokenDid = nil;
+            NSTimeInterval expiresAt = 0;
+            BOOL alreadyUsed = NO;
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                const unsigned char *didText = sqlite3_column_text(stmt, 0);
+                if (didText) tokenDid = [NSString stringWithUTF8String:(const char *)didText];
+                expiresAt = (NSTimeInterval)sqlite3_column_int64(stmt, 1);
+                alreadyUsed = (sqlite3_column_type(stmt, 2) != SQLITE_NULL);
+            }
+            sqlite3_finalize(stmt);
+
+            // Single error for all invalid-token cases — no leak.
+            if (!tokenDid || alreadyUsed) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidToken",
+                                         @"message": @"Invalid confirmation token"}];
+                return;
+            }
+            if ([[NSDate date] timeIntervalSince1970] > expiresAt) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"ExpiredToken",
+                                         @"message": @"Confirmation token has expired"}];
+                return;
+            }
+            if (![tokenDid isEqualToString:did]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidToken",
+                                         @"message": @"Token does not match account"}];
+                return;
+            }
+
+            // Atomically claim the token — guards concurrent replays.
+            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+            sqlite3_stmt *claimStmt = NULL;
+            if (sqlite3_prepare_v2(db,
+                "UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL",
+                -1, &claimStmt, NULL) != SQLITE_OK) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"AccountDeleteFailed",
+                                         @"message": @"Service unavailable"}];
+                return;
+            }
+            sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)now);
+            sqlite3_bind_text(claimStmt, 2, confirmationToken.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_step(claimStmt);
+            if (sqlite3_changes(db) == 0) {
+                sqlite3_finalize(claimStmt);
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidToken",
+                                         @"message": @"Invalid confirmation token"}];
+                return;
+            }
+            sqlite3_finalize(claimStmt);
+
+            // Delete the account (no password needed — Bearer auth + token is 2FA).
+            NSError *deleteError = nil;
+            if (![serviceDatabases deleteAccount:did error:&deleteError]) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"AccountDeleteFailed",
+                                         @"message": deleteError.localizedDescription ?: @"Failed to delete account"}];
+                return;
+            }
+
+            [serviceDatabases logHostingEvent:did type:@"account_deleted" details:@{} createdBy:did error:nil];
+
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{}];
+            return;
+        }
+
+        // ── Path A: No token — mint and email ──
+
+        // Fail closed if no email provider is configured — this is a global
+        // config check, not a per-account check, so it doesn't leak.
+        id<PDSEmailProvider> emailProvider = services.emailProvider;
+        if (!emailProvider) {
+            response.statusCode = HttpStatusServiceUnavailable;
+            [response setJsonBody:@{@"error": @"AccountDeleteUnavailable",
+                                     @"message": @"Account deletion is not available"}];
+            return;
+        }
+
+        // No-leak: always return 200 before doing any per-account work.
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
+
+        // Look up account to get the email.
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+        if (!account || account.email.length == 0) return;
+
+        // Mint a 32-byte opaque token (64 hex characters).
+        uint8_t tokenBytes[32];
+        if (SecRandomCopyBytes(kSecRandomDefault, 32, tokenBytes) != errSecSuccess) {
+            GZ_LOG_ERROR(@"requestAccountDelete: SecRandomCopyBytes failed");
+            return;
+        }
+        NSMutableString *token = [NSMutableString stringWithCapacity:64];
+        for (NSUInteger i = 0; i < 32; i++) {
+            [token appendFormat:@"%02x", tokenBytes[i]];
+        }
+
+        // TTL: 15 minutes.
+        NSTimeInterval expiresAt = [[NSDate date] timeIntervalSince1970] + 900.0;
+
+        // Store token in service database.
+        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+        if (!db) {
+            GZ_LOG_ERROR(@"requestAccountDelete: serviceDatabase returned NULL");
+            return;
+        }
+
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(db, "INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)", -1, &stmt, NULL) != SQLITE_OK) {
+            GZ_LOG_ERROR(@"requestAccountDelete: prepare INSERT failed: %s", sqlite3_errmsg(db));
+            return;
+        }
+        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 3, (sqlite3_int64)expiresAt);
+
+        int rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+        if (rc != SQLITE_DONE) {
+            GZ_LOG_ERROR(@"requestAccountDelete: INSERT failed: %s", sqlite3_errmsg(db));
+            return;
+        }
+
+        // Send confirmation email (provider already validated above).
+        NSString *subject = @"Account deletion request";
+        NSString *bodyText = [NSString stringWithFormat:
+            @"Use this token to confirm account deletion:\n\n%@\n\nThis token expires in 15 minutes.", token];
+        NSError *emailError = nil;
+        if (![emailProvider sendEmailTo:account.email subject:subject body:bodyText error:&emailError]) {
+            GZ_LOG_ERROR(@"requestAccountDelete: failed to send email to %@: %@", account.email, emailError.localizedDescription);
+        }
     }];
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestPasswordReset handler:^(HttpRequest *request, HttpResponse *response) {
@@ -176,8 +337,70 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             return;
         }
 
+        // Fail closed if no email provider is configured — this is a global
+        // config check, not a per-account check, so it doesn't leak.
+        id<PDSEmailProvider> emailProvider = services.emailProvider;
+        if (!emailProvider) {
+            response.statusCode = HttpStatusServiceUnavailable;
+            [response setJsonBody:@{@"error": @"PasswordResetUnavailable",
+                                     @"message": @"Password reset is not available"}];
+            return;
+        }
+
+        // No-leak: always return 200 regardless of whether the email exists.
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
+
+        // Look up account — silently return if no match (no-leak).
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByEmail:email error:&accountError];
+        if (!account) return;
+
+        // Mint a 32-byte opaque token (64 hex characters).
+        uint8_t tokenBytes[32];
+        if (SecRandomCopyBytes(kSecRandomDefault, 32, tokenBytes) != errSecSuccess) {
+            GZ_LOG_ERROR(@"requestPasswordReset: SecRandomCopyBytes failed");
+            return;
+        }
+        NSMutableString *token = [NSMutableString stringWithCapacity:64];
+        for (NSUInteger i = 0; i < 32; i++) {
+            [token appendFormat:@"%02x", tokenBytes[i]];
+        }
+
+        // TTL: 15 minutes.
+        NSTimeInterval expiresAt = [[NSDate date] timeIntervalSince1970] + 900.0;
+
+        // Store token in service database.
+        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+        if (!db) {
+            GZ_LOG_ERROR(@"requestPasswordReset: serviceDatabase returned NULL");
+            return;
+        }
+
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(db, "INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)", -1, &stmt, NULL) != SQLITE_OK) {
+            GZ_LOG_ERROR(@"requestPasswordReset: prepare INSERT failed: %s", sqlite3_errmsg(db));
+            return;
+        }
+        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, account.did.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 3, (sqlite3_int64)expiresAt);
+
+        int rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+        if (rc != SQLITE_DONE) {
+            GZ_LOG_ERROR(@"requestPasswordReset: INSERT failed: %s", sqlite3_errmsg(db));
+            return;
+        }
+
+        // Send reset email (provider already validated above).
+        NSString *subject = @"Password reset";
+        NSString *bodyText = [NSString stringWithFormat:
+            @"Use this token to reset your password:\n\n%@\n\nThis token expires in 15 minutes.", token];
+        NSError *emailError = nil;
+        if (![emailProvider sendEmailTo:email subject:subject body:bodyText error:&emailError]) {
+            GZ_LOG_ERROR(@"requestPasswordReset: failed to send email to %@: %@", email, emailError.localizedDescription);
+        }
     }];
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_resetPassword handler:^(HttpRequest *request, HttpResponse *response) {
@@ -195,15 +418,80 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             return;
         }
 
-        NSError *didError = nil;
-        if (![ATProtoValidator validateDID:token error:&didError]) {
+        // Previous versions of this handler accepted the account DID as the
+        // token — a security hole that allowed password reset by anyone who
+        // knows a victim's public DID. That path was removed in phase 23 slice 4
+        // in favor of the opaque single-use token in password_reset_tokens.
+        // Clients that previously sent DIDs must migrate to the token received
+        // via email from requestPasswordReset.
+
+        // Look up the opaque token in password_reset_tokens.
+        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+        if (!db) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": @"Service unavailable"}];
+            return;
+        }
+
+        // SELECT token metadata to validate expiry and resolve the DID.
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(db, "SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?", -1, &stmt, NULL) != SQLITE_OK) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": @"Service unavailable"}];
+            return;
+        }
+        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+
+        NSString *did = nil;
+        NSTimeInterval expiresAt = 0;
+        BOOL alreadyUsed = NO;
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            const unsigned char *didText = sqlite3_column_text(stmt, 0);
+            if (didText) did = [NSString stringWithUTF8String:(const char *)didText];
+            expiresAt = (NSTimeInterval)sqlite3_column_int64(stmt, 1);
+            alreadyUsed = (sqlite3_column_type(stmt, 2) != SQLITE_NULL);
+        }
+        sqlite3_finalize(stmt);
+
+        // Use a single error message for all invalid-token cases — no leak.
+        if (!did || alreadyUsed) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid reset token"}];
             return;
         }
+        if ([[NSDate date] timeIntervalSince1970] > expiresAt) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"ExpiredToken", @"message": @"Reset token has expired"}];
+            return;
+        }
 
+        // Atomically claim the token. The WHERE used_at IS NULL guards against
+        // concurrent replays even across connections.
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+        sqlite3_stmt *claimStmt = NULL;
+        if (sqlite3_prepare_v2(db,
+            "UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL",
+            -1, &claimStmt, NULL) != SQLITE_OK) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": @"Service unavailable"}];
+            return;
+        }
+        sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)now);
+        sqlite3_bind_text(claimStmt, 2, token.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_step(claimStmt);
+        if (sqlite3_changes(db) == 0) {
+            sqlite3_finalize(claimStmt);
+            // Another request already claimed this token.
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid reset token"}];
+            return;
+        }
+        sqlite3_finalize(claimStmt);
+
+        // Get account and update password.
         NSError *accountError = nil;
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:token error:&accountError];
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
         if (!account) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid reset token"}];
@@ -227,7 +515,8 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             return;
         }
 
-        [serviceDatabases logHostingEvent:token type:@"password_updated" details:@{} createdBy:token error:nil];
+        // Log the event — use the account DID, not the token.
+        [serviceDatabases logHostingEvent:did type:@"password_updated" details:@{} createdBy:did error:nil];
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];

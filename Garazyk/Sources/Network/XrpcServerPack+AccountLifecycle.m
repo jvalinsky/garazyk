@@ -25,6 +25,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
+#import <sqlite3.h>
 
 @implementation XrpcServerPack (AccountLifecycle)
 
@@ -33,6 +34,7 @@
     JWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     id<PDSAccountService> accountService = services.accountService;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 #pragma mark - com.atproto.server.accountLifecycle.*
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -58,6 +60,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
+        NSString *token = body[@"token"];
         NSString *did = body[@"did"];
         NSString *password = body[@"password"];
 
@@ -65,6 +68,73 @@
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or password"}];
             return;
+        }
+
+        // If a confirmation token is present, validate it before deleting.
+        if (token.length > 0) {
+            sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
+            if (!db) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
+                return;
+            }
+
+            sqlite3_stmt *stmt = NULL;
+            if (sqlite3_prepare_v2(db, "SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?", -1, &stmt, NULL) != SQLITE_OK) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
+                return;
+            }
+            sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+
+            NSString *tokenDid = nil;
+            NSTimeInterval expiresAt = 0;
+            BOOL alreadyUsed = NO;
+
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                const unsigned char *didText = sqlite3_column_text(stmt, 0);
+                if (didText) tokenDid = [NSString stringWithUTF8String:(const char *)didText];
+                expiresAt = (NSTimeInterval)sqlite3_column_int64(stmt, 1);
+                alreadyUsed = (sqlite3_column_type(stmt, 2) != SQLITE_NULL);
+            }
+            sqlite3_finalize(stmt);
+
+            if (!tokenDid || alreadyUsed) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid confirmation token"}];
+                return;
+            }
+            if ([[NSDate date] timeIntervalSince1970] > expiresAt) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"ExpiredToken", @"message": @"Confirmation token has expired"}];
+                return;
+            }
+            if (![tokenDid isEqualToString:did]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Token does not match account"}];
+                return;
+            }
+
+            // Atomically claim the token.
+            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+            sqlite3_stmt *claimStmt = NULL;
+            if (sqlite3_prepare_v2(db,
+                "UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL",
+                -1, &claimStmt, NULL) != SQLITE_OK) {
+                response.statusCode = HttpStatusInternalServerError;
+                [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
+                return;
+            }
+            sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)now);
+            sqlite3_bind_text(claimStmt, 2, token.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_step(claimStmt);
+            if (sqlite3_changes(db) == 0) {
+                sqlite3_finalize(claimStmt);
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid confirmation token"}];
+                return;
+            }
+            sqlite3_finalize(claimStmt);
         }
 
         NSError *error = nil;
@@ -75,6 +145,8 @@
             [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete account"}];
             return;
         }
+
+        [serviceDatabases logHostingEvent:did type:@"account_deleted" details:@{} createdBy:did error:nil];
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"success": @YES}];

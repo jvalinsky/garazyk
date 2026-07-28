@@ -3277,6 +3277,54 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 @end
 
+#pragma mark - V16 Password Reset Tokens Migration
+
+@interface V16PasswordResetTokens : NSObject <PDSMigration>
+@end
+
+@implementation V16PasswordResetTokens
+
+- (NSInteger)version {
+    return 16;
+}
+
+- (NSString *)name {
+    return @"password_reset_tokens";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *sqls[] = {
+        "CREATE TABLE IF NOT EXISTS password_reset_tokens ("
+        "token TEXT PRIMARY KEY,"
+        "did TEXT NOT NULL,"
+        "expires_at INTEGER NOT NULL,"
+        "used_at INTEGER NULL)",
+        "CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_did ON password_reset_tokens(did)"
+    };
+
+    for (size_t i = 0; i < sizeof(sqls) / sizeof(sqls[0]); i++) {
+        char *errMsg = NULL;
+        if (sqlite3_exec(db, sqls[i], NULL, NULL, &errMsg) != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V16 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    sqlite3_exec(db, "DROP TABLE IF EXISTS password_reset_tokens", NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
 #pragma mark - Convenience Factory Methods
 
 @implementation PDSMigrationManager (Factory)
@@ -3297,6 +3345,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
     [manager registerMigration:[[V14ModerationWithoutRowid alloc] init]];
     [manager registerMigration:[[V15CollectionMembershipWithoutRowid alloc] init]];
+    [manager registerMigration:[[V16PasswordResetTokens alloc] init]];
     return manager;
 }
 

@@ -4,6 +4,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Admin/PDSAdminAuth.h"
+#import "Email/PDSMockEmailProvider.h"
 
 @interface ATProtoServiceConfiguration (Test)
 - (void)applyConfig:(NSDictionary *)config;
@@ -31,6 +32,11 @@
     PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
     self.application = app;
     self.controller = app.legacyController;
+
+    // Inject a mock email provider so password-reset / account-delete handlers
+    // don't hit the 503 fail-closed guard (ADR 0018).
+    [app setValue:[[PDSMockEmailProvider alloc] init] forKey:@"emailProvider"];
+
     self.dispatcher = [[XrpcDispatcher alloc] init];
     [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
 
