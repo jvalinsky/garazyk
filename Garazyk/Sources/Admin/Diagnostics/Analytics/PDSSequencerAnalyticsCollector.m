@@ -2,11 +2,19 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSSequencerAnalyticsCollector.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/PDSDatabase.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Metrics/GZMetrics.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
-#import <sqlite3.h>
+
+static void PDSSequencerAnalyticsSetServiceDatabaseUnavailableError(NSError **error) {
+    if (error && !*error) {
+        *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
+                                     code:-1
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
+    }
+}
 
 @interface PDSSequencerAnalyticsCollector ()
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
@@ -149,50 +157,30 @@
 }
 
 - (BOOL)insertAnalyticsSnapshot:(NSDictionary *)snapshot error:(NSError **)error {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
-    if (!db) {
-        if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                                 code:-1
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
-        return NO;
-    }
-
     NSString *sql = @"INSERT INTO sequencer_analytics "
                     @"(timestamp, seq_number, events_per_second, subscriber_count, "
                     @"backpressure_warnings, backpressure_critical, queue_overflows, "
                     @"event_type_distribution, created_at) "
                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                         code:sqlite3_extended_errcode(db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prepare failed: %s", sqlite3_errmsg(db)]}];
-        }
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:error];
+    if (!database) {
+        PDSSequencerAnalyticsSetServiceDatabaseUnavailableError(error);
         return NO;
     }
-
-    sqlite3_bind_int64(stmt, 1, [snapshot[@"timestamp"] longValue]);
-    sqlite3_bind_int64(stmt, 2, [snapshot[@"seq_number"] longLongValue]);
-    sqlite3_bind_double(stmt, 3, [snapshot[@"events_per_second"] doubleValue]);
-    sqlite3_bind_int64(stmt, 4, [snapshot[@"subscriber_count"] longLongValue]);
-    sqlite3_bind_int64(stmt, 5, [snapshot[@"backpressure_warnings"] longLongValue]);
-    sqlite3_bind_int64(stmt, 6, [snapshot[@"backpressure_critical"] longLongValue]);
-    sqlite3_bind_int64(stmt, 7, [snapshot[@"queue_overflows"] longLongValue]);
-    sqlite3_bind_text(stmt, 8, [snapshot[@"event_type_distribution"] UTF8String], -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 9, (long)[[NSDate date] timeIntervalSince1970]);
-
-    BOOL success = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-
-    if (!success && error) {
-        *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                     code:sqlite3_extended_errcode(db)
-                                 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-    }
-
-    return success;
+    return [database executeParameterizedUpdate:sql
+                                         params:@[
+                                             snapshot[@"timestamp"],
+                                             snapshot[@"seq_number"],
+                                             snapshot[@"events_per_second"],
+                                             snapshot[@"subscriber_count"],
+                                             snapshot[@"backpressure_warnings"],
+                                             snapshot[@"backpressure_critical"],
+                                             snapshot[@"queue_overflows"],
+                                             snapshot[@"event_type_distribution"],
+                                             @((long)[[NSDate date] timeIntervalSince1970])
+                                         ]
+                                          error:error];
 }
 
 - (nullable NSDictionary *)currentSnapshot {
@@ -229,8 +217,9 @@
 
 - (nullable NSArray<NSDictionary *> *)historicalDataSince:(NSTimeInterval)timestamp
                                                    limit:(NSInteger)limit {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
-    if (!db) return nil;
+    NSError *error = nil;
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:&error];
+    if (!database) return nil;
 
     NSString *sql = @"SELECT timestamp, seq_number, events_per_second, subscriber_count, "
                     @"backpressure_warnings, backpressure_critical, queue_overflows "
@@ -239,35 +228,30 @@
                     @"ORDER BY timestamp ASC "
                     @"LIMIT ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        return nil;
-    }
-
-    sqlite3_bind_int64(stmt, 1, (long)timestamp);
-    sqlite3_bind_int64(stmt, 2, limit);
-
+    NSArray<NSDictionary *> *rows = [database executeParameterizedQuery:sql
+                                                                   params:@[@((long)timestamp), @(limit)]
+                                                                    error:&error];
+    if (error) return nil;
     NSMutableArray *results = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
+    for (NSDictionary *sourceRow in rows) {
         NSDictionary *row = @{
-            @"timestamp": @(sqlite3_column_int64(stmt, 0)),
-            @"seq": @(sqlite3_column_int64(stmt, 1)),
-            @"eventsPerSecond": @(sqlite3_column_double(stmt, 2)),
-            @"subscriberCount": @(sqlite3_column_int64(stmt, 3)),
-            @"backpressureWarnings": @(sqlite3_column_int64(stmt, 4)),
-            @"backpressureCritical": @(sqlite3_column_int64(stmt, 5)),
-            @"queueOverflows": @(sqlite3_column_int64(stmt, 6))
+            @"timestamp": sourceRow[@"timestamp"] ?: @0,
+            @"seq": sourceRow[@"seq_number"] ?: @0,
+            @"eventsPerSecond": sourceRow[@"events_per_second"] ?: @0,
+            @"subscriberCount": sourceRow[@"subscriber_count"] ?: @0,
+            @"backpressureWarnings": sourceRow[@"backpressure_warnings"] ?: @0,
+            @"backpressureCritical": sourceRow[@"backpressure_critical"] ?: @0,
+            @"queueOverflows": sourceRow[@"queue_overflows"] ?: @0
         };
         [results addObject:row];
     }
-
-    sqlite3_finalize(stmt);
     return results.count > 0 ? results : nil;
 }
 
 - (nullable NSArray<NSDictionary *> *)hourlyDataForPastDays:(NSInteger)days {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
-    if (!db) return nil;
+    NSError *error = nil;
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:&error];
+    if (!database) return nil;
 
     NSTimeInterval cutoff = [NSDate timeIntervalSinceReferenceDate] - (days * 24 * 3600);
 
@@ -281,34 +265,27 @@
                     @"GROUP BY hour "
                     @"ORDER BY hour ASC";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        return nil;
-    }
-
-    sqlite3_bind_int64(stmt, 1, (long)cutoff);
-
+    NSArray<NSDictionary *> *rows = [database executeParameterizedQuery:sql
+                                                                   params:@[@((long)cutoff)]
+                                                                    error:&error];
+    if (error) return nil;
     NSMutableArray *results = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
+    for (NSDictionary *sourceRow in rows) {
         NSDictionary *row = @{
-            @"hour": @(sqlite3_column_int64(stmt, 0)),
-            @"avgEventsPerSecond": @(sqlite3_column_double(stmt, 1)),
-            @"avgSubscribers": @(sqlite3_column_double(stmt, 2)),
-            @"totalWarnings": @(sqlite3_column_int64(stmt, 3))
+            @"hour": sourceRow[@"hour"] ?: @0,
+            @"avgEventsPerSecond": sourceRow[@"avg_eps"] ?: @0,
+            @"avgSubscribers": sourceRow[@"avg_subs"] ?: @0,
+            @"totalWarnings": sourceRow[@"total_warnings"] ?: @0
         };
         [results addObject:row];
     }
-
-    sqlite3_finalize(stmt);
     return results.count > 0 ? results : nil;
 }
 
 - (BOOL)pruneOlderThan:(NSInteger)retentionDays error:(NSError **)error {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
-    if (!db) {
-        if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                                 code:-1
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:error];
+    if (!database) {
+        PDSSequencerAnalyticsSetServiceDatabaseUnavailableError(error);
         return NO;
     }
 
@@ -316,21 +293,9 @@
 
     NSString *sql = @"DELETE FROM sequencer_analytics WHERE timestamp < ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                         code:sqlite3_extended_errcode(db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-        }
-        return NO;
-    }
-
-    sqlite3_bind_int64(stmt, 1, (long)cutoff);
-    BOOL success = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-
-    return success;
+    return [database executeParameterizedUpdate:sql
+                                         params:@[@((long)cutoff)]
+                                          error:error];
 }
 
 - (void)dealloc {
