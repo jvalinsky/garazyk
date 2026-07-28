@@ -72,6 +72,22 @@ static BOOL XrpcChatConversationIncludesActor(NSDictionary *convo, NSString *act
     return NO;
 }
 
+/// Verifies the actor is a member of the conversation.
+/// Sets 404/403 on `response` and returns NO on failure; returns YES if the actor is a member.
+static BOOL XrpcChatGuardConvoMembership(NSString *convoId, NSString *actorDID, id chatService, HttpResponse *response) {
+    NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+    if (!convo) {
+        [XrpcErrorHelper setNotFoundError:response message:@"Conversation not found"];
+        return NO;
+    }
+    if (!XrpcChatConversationIncludesActor(convo, actorDID)) {
+        response.statusCode = HttpStatusForbidden;
+        [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Actor is not a member of this conversation"}];
+        return NO;
+    }
+    return YES;
+}
+
 /*! Fetch the allowIncoming preference for a DID from the PDS repo.
     Returns "all" (default), "none", or "following".
     On any error, returns "all" (fail-open for availability). */
@@ -278,6 +294,18 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
+        // Verify the conversation exists and the actor is not already a member.
+        NSDictionary *existingConvo = [chatService getConversationWithId:convoId error:nil];
+        if (!existingConvo) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Conversation not found"];
+            return;
+        }
+        if (XrpcChatConversationIncludesActor(existingConvo, actorDID)) {
+            response.statusCode = HttpStatusConflict;
+            [response setJsonBody:@{@"error": @"Conflict", @"message": @"Actor is already a member of this conversation"}];
+            return;
+        }
+
         NSError *error = nil;
         BOOL success = [chatService acceptConversation:convoId memberDid:actorDID error:&error];
         if (!success) {
@@ -306,6 +334,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
+
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
 
         NSError *error = nil;
         BOOL success = [chatService leaveConversation:convoId memberDid:actorDID error:&error];
@@ -432,6 +462,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
+
         NSError *error = nil;
         BOOL success = [chatService updateLastReadMessage:convoId
                                                 memberDid:actorDID
@@ -496,6 +528,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
+
         NSError *error = nil;
         BOOL success = [chatService muteConversation:convoId memberDid:actorDID error:&error];
         if (!success) {
@@ -524,6 +558,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
+
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
 
         NSError *error = nil;
         BOOL success = [chatService unmuteConversation:convoId memberDid:actorDID error:&error];
@@ -601,6 +637,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             return;
         }
 
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
+
         NSError *error = nil;
         BOOL success = [chatService lockConversation:convoId error:&error];
         if (!success) {
@@ -629,6 +667,8 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
+
+        if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
 
         NSError *error = nil;
         BOOL success = [chatService unlockConversation:convoId error:&error];
