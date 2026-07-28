@@ -30,6 +30,8 @@
 - (void)_applyDefaults {
     _mode                      = AppViewModeStandalone;
     _relayURLs                 = @[];
+    _jetstreamURLs            = @[];
+    _ingestMode              = AppViewIngestModeRelay;
     _dataDirectory             = [NSHomeDirectory() stringByAppendingPathComponent:
                                   @"Library/Application Support/AppView"];
     _httpPort                  = 3200;
@@ -47,6 +49,7 @@
     _partialProxyFallbackURL   = nil;
     _videoServiceURL           = nil;
     _plcURL                  = @"https://plc.directory";
+    _indexCollections          = @[];
 }
 
 // ---------------------------------------------------------------------------
@@ -62,6 +65,8 @@
         parser = [[GZConfigurationParsing alloc] initWithProperties:@[
             [GZConfigurationProperty propertyWithTargetKey:@"modeString" jsonKeys:@[@"mode"] envVar:@"APPVIEW_MODE" type:GZConfigurationPropertyTypeString],
             [GZConfigurationProperty propertyWithTargetKey:@"relayURLs" jsonKeys:@[@"relay_urls"] envVar:@"APPVIEW_RELAY_URLS" type:GZConfigurationPropertyTypeStringArray],
+            [GZConfigurationProperty propertyWithTargetKey:@"ingestMode" jsonKeys:@[@"ingest.mode", @"ingest_mode"] envVar:@"APPVIEW_INGEST_MODE" type:GZConfigurationPropertyTypeInteger],
+            [GZConfigurationProperty propertyWithTargetKey:@"jetstreamURLs" jsonKeys:@[@"ingest.jetstream_urls", @"ingest_jetstream_urls"] envVar:@"APPVIEW_INGEST_JETSTREAM_URLS" type:GZConfigurationPropertyTypeStringArray],
             [GZConfigurationProperty propertyWithTargetKey:@"dataDirectory" jsonKeys:@[@"data_directory", @"data_dir"] envVar:@"APPVIEW_DATA_DIR" type:GZConfigurationPropertyTypeString],
             [GZConfigurationProperty propertyWithTargetKey:@"httpPort" jsonKeys:@[@"http.port", @"port", @"http_port"] envVar:@"APPVIEW_HTTP_PORT" type:GZConfigurationPropertyTypeInteger],
             [GZConfigurationProperty propertyWithTargetKey:@"adminSecret" jsonKeys:@[@"admin_secret"] envVar:@"APPVIEW_ADMIN_SECRET" type:GZConfigurationPropertyTypeString],
@@ -77,7 +82,8 @@
             [GZConfigurationProperty propertyWithTargetKey:@"partialTTLHours" jsonKeys:@[@"partial.ttl_hours", @"partial_ttl_hours"] envVar:@"APPVIEW_PARTIAL_TTL_HOURS" type:GZConfigurationPropertyTypeInteger],
             [GZConfigurationProperty propertyWithTargetKey:@"partialProxyFallback" jsonKeys:@[@"partial.proxy_fallback", @"partial_proxy_fallback"] envVar:@"APPVIEW_PARTIAL_PROXY_FALLBACK" type:GZConfigurationPropertyTypeBoolean],
             [GZConfigurationProperty propertyWithTargetKey:@"partialProxyFallbackURL" jsonKeys:@[@"partial.proxy_fallback_url", @"proxy_fallback_url"] envVar:@"APPVIEW_PARTIAL_PROXY_FALLBACK_URL" type:GZConfigurationPropertyTypeString],
-            [GZConfigurationProperty propertyWithTargetKey:@"videoServiceURL" jsonKeys:@[@"video_service_url"] envVar:@"APPVIEW_VIDEO_SERVICE_URL" type:GZConfigurationPropertyTypeString]
+            [GZConfigurationProperty propertyWithTargetKey:@"videoServiceURL" jsonKeys:@[@"video_service_url"] envVar:@"APPVIEW_VIDEO_SERVICE_URL" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"indexCollections" jsonKeys:@[@"index.collections", @"index_collections"] envVar:@"APPVIEW_INDEX_COLLECTIONS" type:GZConfigurationPropertyTypeStringArray]
         ]];
     });
     return parser;
@@ -98,12 +104,23 @@
 }
 
 - (BOOL)validate:(NSError **)error {
-    if (_relayURLs.count == 0) {
-        if (error) *error = [NSError errorWithDomain:@"AppViewConfiguration"
-                                                code:1
-                                            userInfo:@{NSLocalizedDescriptionKey:
-                                                           @"appview.relay_urls must not be empty"}];
-        return NO;
+    // Jetstream mode doesn't need relay URLs.
+    if (_ingestMode == AppViewIngestModeJetstream) {
+        if (_jetstreamURLs.count == 0) {
+            if (error) *error = [NSError errorWithDomain:@"AppViewConfiguration"
+                                                    code:4
+                                                userInfo:@{NSLocalizedDescriptionKey:
+                                                               @"appview.ingest.jetstream_urls must not be empty in jetstream mode"}];
+            return NO;
+        }
+    } else {
+        if (_relayURLs.count == 0) {
+            if (error) *error = [NSError errorWithDomain:@"AppViewConfiguration"
+                                                    code:1
+                                                userInfo:@{NSLocalizedDescriptionKey:
+                                                               @"appview.relay_urls must not be empty"}];
+            return NO;
+        }
     }
     if (_dataDirectory.length == 0) {
         if (error) *error = [NSError errorWithDomain:@"AppViewConfiguration"
