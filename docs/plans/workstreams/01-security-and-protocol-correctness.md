@@ -2061,9 +2061,15 @@ revert that handler and add a targeted fix.
 
 ## S16. Video + Germ/Mikrus/Beskid trust-boundary sweep
 
-**Status: not started.** 2,410 lines across Video (1,226 lines) and
+**Status: complete ✅ (all 5 slices done).** 2,410 lines across Video (1,226 lines) and
 Germ/Mikrus/Beskid (1,184 lines) audited for isKindOfClass gaps, JWT
 claim typing, and proxy forwarding safety.
+
+**Completed slices (HEAD: 92f0c8b4):**
+- Slice 1: Video JWT claim guards + mandatory exp (fb593ca7)
+- Slices 2-3: VideoWorker retry_count guard + Germ mailbox agentRef/address guards + Beskid path guard (540a6943, 55023206)
+- Slice 4: Beskid auth header validation — isKindOfClass + newline check (f363e072)
+- Slice 5: Gate tests — 7 S16GateTests covering V1-V3 JWT claim guards (92f0c8b4)
 
 ### Evidence
 
