@@ -76,6 +76,19 @@ static NSSet<NSString *> *graphCollections(void) {
         }
     }
     
+    // list and listitem are addressed by rkey; a nil one formats as "(null)" and
+    // an empty one leaves an empty last segment, either of which stores a URI
+    // that no deleteRecord: call can ever match. follow and block ignore rkey.
+    BOOL addressedByRkey = [collection isEqualToString:@"app.bsky.graph.list"] ||
+                           [collection isEqualToString:@"app.bsky.graph.listitem"];
+    if (addressedByRkey && rkey.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"AppViewGraphIndexer"
+                                                code:400
+                                            userInfo:@{NSLocalizedDescriptionKey:
+                                                           @"Missing rkey for rkey-addressed graph record"}];
+        return NO;
+    }
+
     if ([collection isEqualToString:@"app.bsky.graph.list"]) {
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
         return [_graphService indexList:record did:did uri:uri cid:cid error:error];
@@ -125,6 +138,17 @@ static NSSet<NSString *> *graphCollections(void) {
 
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error {
     GZ_LOG_DEBUG(@"[AppViewGraphIndexer] Delete %@/%@ for %@", collection, rkey, did);
+    // Mirrors the guard in indexRecord:; without it the URI below cannot address
+    // any stored row, so the DELETE would silently match nothing.
+    if (rkey.length == 0 &&
+        ([collection isEqualToString:@"app.bsky.graph.list"] ||
+         [collection isEqualToString:@"app.bsky.graph.listitem"])) {
+        if (error) *error = [NSError errorWithDomain:@"AppViewGraphIndexer"
+                                                code:400
+                                            userInfo:@{NSLocalizedDescriptionKey:
+                                                           @"Missing rkey for rkey-addressed graph record"}];
+        return NO;
+    }
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
 
     if ([collection isEqualToString:@"app.bsky.graph.list"]) {

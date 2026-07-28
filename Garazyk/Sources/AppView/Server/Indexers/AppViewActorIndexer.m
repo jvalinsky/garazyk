@@ -45,7 +45,9 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     NSDictionary *profileRecord = record[@"record"] ?: record;
     NSString *displayName = profileRecord[@"displayName"];
     NSString *description = profileRecord[@"description"];
-    NSString *effectiveRkey = rkey ?: @"self";
+    // A profile record is addressed as ".../app.bsky.actor.profile/self"; callers that
+    // parse the rkey out of a commit op path may hand us nil or @"" for it.
+    NSString *effectiveRkey = rkey.length > 0 ? rkey : @"self";
 
     NSString *avatarCID = nil;
     id avatarBlob = profileRecord[@"avatar"];
@@ -88,10 +90,13 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     }
 
     NSString *handle = [AppViewIdentityHelper resolveHandleForDID:did error:nil];
+    // The rkey column must agree with the rkey embedded in the uri above, so both
+    // come from effectiveRkey; rkey itself may be nil, which the parameter array
+    // below cannot hold.
     [_avdb saveRecordWithURI:uri
                       did:did
                 collection:collection
-                     rkey:rkey
+                     rkey:effectiveRkey
                        cid:recordCID
                     handle:handle
                      value:[[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding]
