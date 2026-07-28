@@ -1962,3 +1962,90 @@ log — cancellations become unattributed again.
 
 - `../prompts/phase-24-ozone-trust-boundary.md` — slices 1-7,
   `depends_on: []`.
+
+## S15. Chat (syrena-chat) trust-boundary sweep
+
+**Status: not started.** A focused audit of the Chat module
+(`Garazyk/Sources/Chat/`, `Garazyk/Sources/Network/XrpcChatBsky*.m`,
+totaling ~2,800 lines) found widespread untyped JSON extraction at the
+XRPC handler boundary (S8/S13 defect class), one unconditional auth-nop
+endpoint, and a legacy token trust-without-verification fallback. The
+ChatAuthManager is well-implemented (JWT verification, DID resolution,
+audience/lxm checks), but the handler layer exposes the same unguarded
+`body[@"key"]` pattern that the S8 and S13 sweeps fixed in auth and
+registration.
+
+### Evidence
+
+**Missing isKindOfClass guards on all handler body extractions.**
+`XrpcChatBskyConvoPack.m:275` — `NSString *convoId = body[@"convoId"]`
+extracted without type check. Same pattern repeats at :304, :362-363
+(messageId, emoji), :391-392, :420-421, :453, :485, :513, and in
+sendMessage at :835 (`message[@"text"]` without isKindOfClass).
+A non-string value in any of these fields crashes on `length`,
+`isEqualToString:`, or `UTF8String` — the same defect class fixed in
+S8 (auth boundary) and S13 (registration boundary). Every handler in
+the XRPC pack has at least one unguarded extraction.
+
+**getConvoAvailability returns unconditional YES.**
+`XrpcChatBskyConvoPack.m:355` — `available: @YES` without checking
+an allowlist, blocklist, or the recipient's chat preferences. This
+is a genuine feature gap (bypasses `allowIncoming: "none"` in
+chat.bsky.actor.declaration) but low severity since it only exposes
+a boolean, not message content.
+
+**Legacy token fallback trusts sub claim.**
+`ChatAuthManager.m:388` — when `pdsUrl` is unset, `validateLegacyPDSToken`
+returns `jwt.payload.sub` without any signature verification. This is
+a configuration-dependent bypass (requires `pdsUrl` to be nil).
+
+**sendMessage and sendMessageBatch verify membership.**
+`XrpcChatBskyConvoPack.m:540,620` — membership check via
+`XrpcChatConversationIncludesActor` gates both message-send endpoints.
+This is the correct pattern and the rest of the handlers should follow
+it (currently acceptConvo, leaveConvo, mute/unmute, lock/unlock do not
+verify membership).
+
+### Slices
+
+1. isKindOfClass sweep: add guards to all handler body extractions in
+   XrpcChatBskyConvoPack.m, XrpcChatBskyActorPack.m, and
+   XrpcChatBskyGroupPack.m.
+2. getConvoAvailability hardening: query the recipient's
+   chat.bsky.actor.declaration record and respect allowIncoming
+   preference (return `available: @NO` when "none").
+3. Legacy token hardening: require `pdsUrl` to be configured or
+   reject legacy tokens outright (return nil instead of trusting
+   the sub claim).
+4. Membership verification parity: add
+   `XrpcChatConversationIncludesActor` checks to acceptConvo,
+   leaveConvo, muteConvo, unmuteConvo, lockConvo, and unlockConvo.
+5. addReaction/removeReaction validation: verify the message
+   belongs to a conversation the actor is a member of (currently
+   only checks messageId exists).
+6. sendMessageBatch array validation: each element in the
+   `messages` array must have `isKindOfClass:[NSDictionary class]`
+   and a valid `text` field (currently no per-element guards).
+7. Acceptance gate tests: add XrpcChatBskyConvoTests covering:
+   non-string convoId returns 400, non-member mute returns 403,
+   getConvoAvailability respects allowIncoming.
+
+### Gate
+
+- Non-string convoId/messageId/emoji returns 400.
+- Non-member cannot mute/unmute/lock/unlock/accept/leave a conversation (403).
+- getConvoAvailability returns `available: @NO` when recipient's
+  declaration says allowIncoming: "none".
+- Legacy token without PDS URL returns 401.
+- All existing chat tests pass.
+
+### Rollback
+
+Each slice is self-contained. Slice 1 (isKindOfClass sweep) is the
+highest risk — if any downstream code relies on non-string values,
+revert that handler and add a targeted fix.
+
+### Execution phases
+
+- `../prompts/phase-27-chat-trust-boundary.md` — slices 1-7,
+  `depends_on: [S13, S14]`.
