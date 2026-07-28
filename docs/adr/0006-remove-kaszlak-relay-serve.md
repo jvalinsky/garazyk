@@ -17,7 +17,7 @@ Meanwhile `zuk` is the repository's real relay binary: it assembles the
 listener, downstream handler, and durable cursor state, and the relay
 component classes are exercised in production paths by `zuk`,
 `PDSRelayService`, and `AppViewIngestEngine` — including account-event
-forwarding added in `28641e671`/`a3f8d3c53`.
+forwarding added in `91444a89`/`04f23030`.
 
 ## Decision
 

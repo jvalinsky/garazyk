@@ -31,7 +31,7 @@ compatibility row.
 ## Scope
 
 1. Stand up the three-PDS topology (PDS3 config and manifest landed in
-   `cc063779a`; prefer the `docker/` tooling). Enable
+   `65f367cc`; prefer the `docker/` tooling). Enable
    `permissionedSpacesEnabled` on all three; set
    `permissionedSpacesHostEndpoint` if Docker aliases differ from issuers.
 2. Run scenarios 93 and 94 via structured `hamownia agent` output; iterate
@@ -64,7 +64,7 @@ assess both before building images). The scenarios hard-exit if
 1. Either add a `"pds3"` case to `binary_services.ts` (independent issuer,
    signing key, and data dir) **or** build the PDS Docker image from the
    current source tree and use the compose/schemat topology from
-   `cc063779a`.
+   `65f367cc`.
 2. Stand up PDS1, PDS2, and PDS3 with `permissionedSpacesEnabled=true` on
    all three; PDS3 must use an independent issuer and signing key.
 3. Set `permissionedSpacesHostEndpoint` on each PDS if network aliases
@@ -153,8 +153,8 @@ public-repo isolation → membership-revocation credential denial.
 ### OAuth confirmation regression coverage (2026-07-18)
 
 The apparent missing-`code` redirect was historical form encoding behavior:
-`0a7925f9a` corrects GNUstep `+` form-space parsing and `3b6a4f5cb` makes
-scenario 94 submit `%20`-encoded forms. Commit `9000097ba` adds a
+`57c7bf0d` corrects GNUstep `+` form-space parsing and `0c8f7778` makes
+scenario 94 submit `%20`-encoded forms. Commit `583a5efa` adds a
 characterization test for the exact `atproto+space:` consent form and proves
 that `/oauth/authorize/confirm` returns a 302 whose Location includes both
 `code` and `state` (31 `OAuth2HandlerTests`, 0 failures).
@@ -175,7 +175,7 @@ not a topology/runner defect, so no code change is warranted.
 
 ### Private-blob acceptance result (2026-07-18)
 
-Commit `21eeb5719` extends scenario 93 with OAuth+DPoP upload through
+Commit `06d70f36` extends scenario 93 with OAuth+DPoP upload through
 `com.atproto.repo.uploadBlob` using all three experimental binding headers,
 remote `com.atproto.space.getBlob` retrieval through the reader credential,
 and public `repo.getBlob`/`sync.getBlob` rejection plus `sync.listBlobs` and
@@ -199,7 +199,7 @@ would create false acceptance evidence.
 The authorized production-excluded control plane is registered only when
 `PDS_RUNNING_TESTS`, `PDS_SPACE_RECOVERY_TEST_CONTROL`, and a non-production
 environment are all present. It is not an admin/public route, lexicon, or
-generated NSID. Commit `43b3ad9c3` uses it to seed a PDS2 replica, prune the
+generated NSID. Commit `4a71b2a3` uses it to seed a PDS2 replica, prune the
 PDS1 fixture oplog, run exactly one real reconciler pass, and report selector
 plus request counts. Structured run `2026-07-18t2238z-90828` passed **28/28**,
 observing `incremental`, `lightweight`, and `fullCAR`. It also fixed the real

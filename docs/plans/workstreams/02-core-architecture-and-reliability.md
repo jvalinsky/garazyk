@@ -33,7 +33,7 @@ this migration work is safe and contention is measured.
 raw `sqlite3 *`, and statement cache gone; tuned pragma config preserved). Schema
 creation and the legacy ALTER upgrades now run inside a single `transact:` that
 rolls back on any failed statement, so a partial database is no longer possible
-(`4b3324a09`).
+(`8b5fffab`).
 
 Covered by a legacy-schema upgrade fixture (columns added, `seq` backfilled, row
 readable, reopen converges) and an injected index-collision rollback test
@@ -71,12 +71,12 @@ Priority decomposition targets:
 - `UIBackendClient.m` — **DONE (2026-07-23)**: decomposed into 10 service
   categories (+PDS, +AppView, +Relay, +PLC, +Ozone, +Security, +Chat,
   +Video, +MST, +DataExplorer) plus `UIBackendClient_Internal.h`
-  (`9f5d4d59c`).
+  (`6ecef339`).
 - `UIServerRuntime.m` — **DONE (2026-07-23)**: route registrations moved
   into 11 route categories (+PDSRoutes, +AppViewRoutes, +RelayRoutes,
   +PLCRoutes, +DataExplorerRoutes, +LabRoutes, +OzoneRoutes,
   +SecurityRoutes, +ChatRoutes, +VideoRoutes, +MSTRoutes), core file
-  ~1840 → ~900 lines (`ce5c80065`). `garazyk-ui`/`AllTests` build clean
+  ~1840 → ~900 lines (`6ecef339`). `garazyk-ui`/`AllTests` build clean
   and `UIServerRuntimeTests` passes 23/23. Codemod scripts removed.
   Browser smoke and Linux GNUstep gate verified clean.
 - Migration manager — covered by phase 11 database decomposition.
@@ -108,8 +108,8 @@ Operator chose option 3: `kaszlak relay serve` is removed
 (`PDSCLIRelayCommand` and its tests deleted; `zuk` is the canonical relay
 binary). The underlying relay components stay — they serve `zuk`,
 `PDSRelayService`, and `AppViewIngestEngine`, and now forward account
-events end to end (`28641e671`, `a3f8d3c53`; scenario 97). Recorded as
-ADR 0006. The removal is committed (`d9fa51a1d`) with ADR 0006 — this
+events end to end (`91444a89`, `04f23030`; scenario 97). Recorded as
+ADR 0006. The removal is committed (`799fd706`) with ADR 0006 — this
 item is closed. Reviving a hosted relay later requires a new command that
 meets the old option-1 acceptance (see ADR 0006).
 
@@ -155,7 +155,7 @@ tracks the spec status for future revisits.
 A forward-compat, feature-flagged streamable-CAR pre-order enumerator
 (`+[MST setStreamableCARBlockOrderingEnabled:]`, default off) with
 preorder/fixture tests (`sync11-preorder-fixture.car`) is committed
-(`ed01c8085`, on the lock-free atomic-root refactor `34e2b94ae`,
+(`b775a12c`, on the lock-free atomic-root refactor `b775a12c`,
 2026-07-18). Decision: keep the flag off — turning it on ahead of
 finalized spec text risks shipping ordering upstream later changes
 incompatibly, and no consumer needs it today.
@@ -172,9 +172,9 @@ Garazyk's own collection-subset need independent of the upstream flag.
 
 After generator and coverage work:
 
-- ~~generate plain `NSString * const` endpoint NSIDs~~ — done (`f46ab5fb8`);
+- ~~generate plain `NSString * const` endpoint NSIDs~~ — done (`2468d5e0`);
 - ~~delete XrpcHandler pass-through registration methods in stages~~ — done
-  in the adoption sweep (`e212288bd`, with a CI drift check);
+  in the adoption sweep (`0601a505`, with a CI drift check);
 - ~~lint new raw endpoint literals~~ — done (2026-07-18): Narzedzia scans
   production Objective-C sources for direct `registerMethod:@"..."` calls,
   permits only internal underscore-prefixed handlers, and rejects every other

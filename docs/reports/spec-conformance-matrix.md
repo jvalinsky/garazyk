@@ -2,7 +2,7 @@
 title: Published-Spec Conformance Matrix
 status: report-only
 last_verified: 2026-07-23
-commit: fe5760967d629bb2f71824132ebdde0417ce515c
+commit: de67b72a
 ---
 
 # Published-Spec Conformance Matrix
@@ -99,7 +99,7 @@ Labels may be accepted without cryptographic verification.
 
 ## Verification
 
-- **Commit:** `fe5760967d629bb2f71824132ebdde0417ce515c`
+- **Commit:** `de67b72a`
 - **Date:** 2026-07-23
 - **XRPC coverage:** 392 endpoints, 100% coverage, 0 duplicates
 - **Scenario count:** 97 Deno/TypeScript e2e scenarios
