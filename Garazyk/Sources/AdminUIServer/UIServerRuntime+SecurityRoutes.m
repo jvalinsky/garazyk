@@ -34,8 +34,8 @@
     // Security: Revoke session
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/revoke-session" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: @"";
-        NSString *sessionID = request.jsonBody[@"id"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
+        NSString *sessionID = [request.jsonBody[@"id"] isKindOfClass:[NSString class]] ? request.jsonBody[@"id"] : @"";
         NSDictionary *result = [weakSelf.backendClient revokeSessionForDID:did sessionID:sessionID];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -47,8 +47,8 @@
     // Security: Delete app password
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-app-password" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: @"";
-        NSString *name = request.jsonBody[@"name"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
+        NSString *name = [request.jsonBody[@"name"] isKindOfClass:[NSString class]] ? request.jsonBody[@"name"] : @"";
         NSDictionary *result = [weakSelf.backendClient deleteAppPasswordForDID:did passwordName:name];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -60,8 +60,8 @@
     // Security: Create app password
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/create-app-password" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: @"";
-        NSString *name = request.jsonBody[@"name"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
+        NSString *name = [request.jsonBody[@"name"] isKindOfClass:[NSString class]] ? request.jsonBody[@"name"] : @"";
         NSDictionary *result = [weakSelf.backendClient createAppPasswordForDID:did name:name];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";

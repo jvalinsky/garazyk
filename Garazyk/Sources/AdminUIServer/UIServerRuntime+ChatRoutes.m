@@ -37,7 +37,7 @@
     // Chat: Lock conversation
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/lock-chat-convo" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *convoID = request.jsonBody[@"convoID"] ?: @"";
+        NSString *convoID = [request.jsonBody[@"convoID"] isKindOfClass:[NSString class]] ? request.jsonBody[@"convoID"] : @"";
         NSDictionary *result = [weakSelf.backendClient lockChatConvo:convoID];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
