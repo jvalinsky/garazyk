@@ -667,6 +667,10 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     [_relayService stop];
     [_spaceReconciler stop];
     _spaceReconciler = nil;
+    // Must be stopped before _spaceStore is closed below; its timer would
+    // otherwise keep pruning against a closed store.
+    [_spaceOplogPruner stop];
+    _spaceOplogPruner = nil;
     [_collectionMembershipPruner stop];
     _collectionMembershipPruner = nil;
     [_passwordResetTokenPruner stop];
