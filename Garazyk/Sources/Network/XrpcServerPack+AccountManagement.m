@@ -19,6 +19,7 @@
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/PDSDatabase.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Core/DID.h"
@@ -27,7 +28,6 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Email/PDSEmailProvider.h"
-#import <sqlite3.h>
 
 static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse *response) {
     if ([ATProtoPermissionScopeEvaluator evaluateAccountScopes:request.permissionScopes ?: @[]
@@ -89,16 +89,13 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
         // Store in email_confirmation_tokens (V17). TTL: 30 minutes.
         NSTimeInterval expiresAt = [[NSDate date] timeIntervalSince1970] + 1800.0;
-        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
-        sqlite3_stmt *stmt = NULL;
-        const char *insertSql = "INSERT INTO email_confirmation_tokens (token, did, email, expires_at) VALUES (?, ?, ?, ?)";
-        if (sqlite3_prepare_v2(db, insertSql, -1, &stmt, NULL) == SQLITE_OK) {
-            sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 3, account.email.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_int64(stmt, 4, (sqlite3_int64)expiresAt);
-            sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
+        NSError *tokenError = nil;
+        PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&tokenError];
+        if (!database || ![database executeParameterizedUpdate:
+                @"INSERT INTO email_confirmation_tokens (token, did, email, expires_at) VALUES (?, ?, ?, ?)"
+                params:@[token, did, account.email, @((sqlite3_int64)expiresAt)]
+                error:&tokenError]) {
+            GZ_LOG_ERROR(@"requestEmailConfirmation: failed to store token: %@", tokenError.localizedDescription);
         }
 
         // Send the token via email.
@@ -171,28 +168,31 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         }
 
         // Validate the opaque confirmation token (phase-23 slice 3b, V17).
-        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
-        sqlite3_stmt *stmt = NULL;
-        const char *selectSql = "SELECT did, email, expires_at, used_at FROM email_confirmation_tokens WHERE token = ?";
+        NSError *tokenError = nil;
+        PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&tokenError];
+        NSArray<NSDictionary *> *tokenRows = database ? [database executeParameterizedQuery:
+            @"SELECT did, email, expires_at, used_at FROM email_confirmation_tokens WHERE token = ?"
+            params:@[token]
+            error:&tokenError] : nil;
+        if (!database || tokenError) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalServerError", @"message": @"Service unavailable"}];
+            return;
+        }
+
         BOOL tokenValid = NO;
-        if (sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL) == SQLITE_OK) {
-            sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
-            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                const char *tokenDid = (const char *)sqlite3_column_text(stmt, 0);
-                const char *tokenEmail = (const char *)sqlite3_column_text(stmt, 1);
-                NSTimeInterval expiresAt = (NSTimeInterval)sqlite3_column_double(stmt, 2);
-                BOOL alreadyUsed = sqlite3_column_type(stmt, 3) != SQLITE_NULL;
+        NSDictionary *tokenRow = tokenRows.firstObject;
+        if (tokenRow) {
+            NSString *storedDid = tokenRow[@"did"] ?: @"";
+            NSString *storedEmail = tokenRow[@"email"] ?: @"";
+            NSTimeInterval expiresAt = [tokenRow[@"expires_at"] doubleValue];
+            BOOL alreadyUsed = tokenRow[@"used_at"] != nil;
 
-                NSString *storedDid = tokenDid ? [NSString stringWithUTF8String:tokenDid] : @"";
-                NSString *storedEmail = tokenEmail ? [NSString stringWithUTF8String:tokenEmail] : @"";
-
-                if (!alreadyUsed && [[NSDate date] timeIntervalSince1970] <= expiresAt &&
-                    [storedDid isEqualToString:did] &&
-                    [[storedEmail lowercaseString] isEqualToString:[email lowercaseString]]) {
-                    tokenValid = YES;
-                }
+            if (!alreadyUsed && [[NSDate date] timeIntervalSince1970] <= expiresAt &&
+                [storedDid isEqualToString:did] &&
+                [[storedEmail lowercaseString] isEqualToString:[email lowercaseString]]) {
+                tokenValid = YES;
             }
-            sqlite3_finalize(stmt);
         }
 
         if (!tokenValid) {
@@ -203,30 +203,30 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
         // Atomically claim the token — guards concurrent replays.
         NSTimeInterval claimTime = [[NSDate date] timeIntervalSince1970];
-        sqlite3_stmt *claimStmt = NULL;
-        const char *claimSql = "UPDATE email_confirmation_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL";
-        if (sqlite3_prepare_v2(db, claimSql, -1, &claimStmt, NULL) == SQLITE_OK) {
-            sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)claimTime);
-            sqlite3_bind_text(claimStmt, 2, token.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_step(claimStmt);
-            if (sqlite3_changes(db) == 0) {
-                sqlite3_finalize(claimStmt);
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid, expired, or already used confirmation token"}];
-                return;
-            }
-            sqlite3_finalize(claimStmt);
+        NSInteger claimedRows = 0;
+        if (![database executeParameterizedUpdate:
+                @"UPDATE email_confirmation_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL"
+                params:@[@((sqlite3_int64)claimTime), token]
+                changedRows:&claimedRows
+                error:&tokenError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalServerError", @"message": @"Service unavailable"}];
+            return;
+        }
+        if (claimedRows == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid, expired, or already used confirmation token"}];
+            return;
         }
 
         // Persist emailConfirmed flag on the account.
         NSString *nowStr = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
-        sqlite3_stmt *flagStmt = NULL;
-        const char *flagSql = "UPDATE accounts SET email_confirmed_at = ? WHERE did = ?";
-        if (sqlite3_prepare_v2(db, flagSql, -1, &flagStmt, NULL) == SQLITE_OK) {
-            sqlite3_bind_text(flagStmt, 1, nowStr.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(flagStmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_step(flagStmt);
-            sqlite3_finalize(flagStmt);
+        if (![database executeParameterizedUpdate:@"UPDATE accounts SET email_confirmed_at = ? WHERE did = ?"
+                                            params:@[nowStr, did]
+                                             error:&tokenError]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalServerError", @"message": @"Failed to confirm email"}];
+            return;
         }
 
         response.statusCode = HttpStatusOK;
@@ -280,8 +280,13 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
         // ── Path B: Token present — exchange for deletion ──
         if (confirmationToken.length > 0) {
-            sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
-            if (!db) {
+            NSError *tokenError = nil;
+            PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&tokenError];
+            NSArray<NSDictionary *> *tokenRows = database ? [database executeParameterizedQuery:
+                @"SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?"
+                params:@[confirmationToken]
+                error:&tokenError] : nil;
+            if (!database || tokenError) {
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"AccountDeleteFailed",
                                          @"message": @"Service unavailable"}];
@@ -289,27 +294,10 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             }
 
             // Validate the opaque token against password_reset_tokens.
-            sqlite3_stmt *stmt = NULL;
-            if (sqlite3_prepare_v2(db,
-                "SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?",
-                -1, &stmt, NULL) != SQLITE_OK) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"AccountDeleteFailed",
-                                         @"message": @"Service unavailable"}];
-                return;
-            }
-            sqlite3_bind_text(stmt, 1, confirmationToken.UTF8String, -1, SQLITE_TRANSIENT);
-
-            NSString *tokenDid = nil;
-            NSTimeInterval expiresAt = 0;
-            BOOL alreadyUsed = NO;
-            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                const unsigned char *didText = sqlite3_column_text(stmt, 0);
-                if (didText) tokenDid = [NSString stringWithUTF8String:(const char *)didText];
-                expiresAt = (NSTimeInterval)sqlite3_column_int64(stmt, 1);
-                alreadyUsed = (sqlite3_column_type(stmt, 2) != SQLITE_NULL);
-            }
-            sqlite3_finalize(stmt);
+            NSDictionary *tokenRow = tokenRows.firstObject;
+            NSString *tokenDid = tokenRow[@"did"];
+            NSTimeInterval expiresAt = [tokenRow[@"expires_at"] doubleValue];
+            BOOL alreadyUsed = tokenRow[@"used_at"] != nil;
 
             // Single error for all invalid-token cases — no leak.
             if (!tokenDid || alreadyUsed) {
@@ -333,26 +321,23 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
             // Atomically claim the token — guards concurrent replays.
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-            sqlite3_stmt *claimStmt = NULL;
-            if (sqlite3_prepare_v2(db,
-                "UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL",
-                -1, &claimStmt, NULL) != SQLITE_OK) {
+            NSInteger claimedRows = 0;
+            if (![database executeParameterizedUpdate:
+                    @"UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL"
+                    params:@[@((sqlite3_int64)now), confirmationToken]
+                    changedRows:&claimedRows
+                    error:&tokenError]) {
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"AccountDeleteFailed",
                                          @"message": @"Service unavailable"}];
                 return;
             }
-            sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)now);
-            sqlite3_bind_text(claimStmt, 2, confirmationToken.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_step(claimStmt);
-            if (sqlite3_changes(db) == 0) {
-                sqlite3_finalize(claimStmt);
+            if (claimedRows == 0) {
                 response.statusCode = HttpStatusBadRequest;
                 [response setJsonBody:@{@"error": @"InvalidToken",
                                          @"message": @"Invalid confirmation token"}];
                 return;
             }
-            sqlite3_finalize(claimStmt);
 
             // Delete the account (no password needed — Bearer auth + token is 2FA).
             NSError *deleteError = nil;
@@ -406,25 +391,13 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         NSTimeInterval expiresAt = [[NSDate date] timeIntervalSince1970] + 900.0;
 
         // Store token in service database.
-        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
-        if (!db) {
-            GZ_LOG_ERROR(@"requestAccountDelete: serviceDatabase returned NULL");
-            return;
-        }
-
-        sqlite3_stmt *stmt = NULL;
-        if (sqlite3_prepare_v2(db, "INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)", -1, &stmt, NULL) != SQLITE_OK) {
-            GZ_LOG_ERROR(@"requestAccountDelete: prepare INSERT failed: %s", sqlite3_errmsg(db));
-            return;
-        }
-        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt, 3, (sqlite3_int64)expiresAt);
-
-        int rc = sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-        if (rc != SQLITE_DONE) {
-            GZ_LOG_ERROR(@"requestAccountDelete: INSERT failed: %s", sqlite3_errmsg(db));
+        NSError *tokenError = nil;
+        PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&tokenError];
+        if (!database || ![database executeParameterizedUpdate:
+                @"INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)"
+                params:@[token, did, @((sqlite3_int64)expiresAt)]
+                error:&tokenError]) {
+            GZ_LOG_ERROR(@"requestAccountDelete: failed to store token: %@", tokenError.localizedDescription);
             return;
         }
 
@@ -481,25 +454,13 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         NSTimeInterval expiresAt = [[NSDate date] timeIntervalSince1970] + 900.0;
 
         // Store token in service database.
-        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
-        if (!db) {
-            GZ_LOG_ERROR(@"requestPasswordReset: serviceDatabase returned NULL");
-            return;
-        }
-
-        sqlite3_stmt *stmt = NULL;
-        if (sqlite3_prepare_v2(db, "INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)", -1, &stmt, NULL) != SQLITE_OK) {
-            GZ_LOG_ERROR(@"requestPasswordReset: prepare INSERT failed: %s", sqlite3_errmsg(db));
-            return;
-        }
-        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, account.did.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt, 3, (sqlite3_int64)expiresAt);
-
-        int rc = sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-        if (rc != SQLITE_DONE) {
-            GZ_LOG_ERROR(@"requestPasswordReset: INSERT failed: %s", sqlite3_errmsg(db));
+        NSError *tokenError = nil;
+        PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&tokenError];
+        if (!database || ![database executeParameterizedUpdate:
+                @"INSERT INTO password_reset_tokens (token, did, expires_at) VALUES (?, ?, ?)"
+                params:@[token, account.did, @((sqlite3_int64)expiresAt)]
+                error:&tokenError]) {
+            GZ_LOG_ERROR(@"requestPasswordReset: failed to store token: %@", tokenError.localizedDescription);
             return;
         }
 
@@ -536,33 +497,23 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         // via email from requestPasswordReset.
 
         // Look up the opaque token in password_reset_tokens.
-        sqlite3 *db = (sqlite3 *)[serviceDatabases serviceDatabase];
-        if (!db) {
+        NSError *tokenError = nil;
+        PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&tokenError];
+        NSArray<NSDictionary *> *tokenRows = database ? [database executeParameterizedQuery:
+            @"SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?"
+            params:@[token]
+            error:&tokenError] : nil;
+        if (!database || tokenError) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": @"Service unavailable"}];
             return;
         }
 
         // SELECT token metadata to validate expiry and resolve the DID.
-        sqlite3_stmt *stmt = NULL;
-        if (sqlite3_prepare_v2(db, "SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?", -1, &stmt, NULL) != SQLITE_OK) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": @"Service unavailable"}];
-            return;
-        }
-        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
-
-        NSString *did = nil;
-        NSTimeInterval expiresAt = 0;
-        BOOL alreadyUsed = NO;
-
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            const unsigned char *didText = sqlite3_column_text(stmt, 0);
-            if (didText) did = [NSString stringWithUTF8String:(const char *)didText];
-            expiresAt = (NSTimeInterval)sqlite3_column_int64(stmt, 1);
-            alreadyUsed = (sqlite3_column_type(stmt, 2) != SQLITE_NULL);
-        }
-        sqlite3_finalize(stmt);
+        NSDictionary *tokenRow = tokenRows.firstObject;
+        NSString *did = tokenRow[@"did"];
+        NSTimeInterval expiresAt = [tokenRow[@"expires_at"] doubleValue];
+        BOOL alreadyUsed = tokenRow[@"used_at"] != nil;
 
         // Use a single error message for all invalid-token cases — no leak.
         if (!did || alreadyUsed) {
@@ -579,25 +530,22 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         // Atomically claim the token. The WHERE used_at IS NULL guards against
         // concurrent replays even across connections.
         NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-        sqlite3_stmt *claimStmt = NULL;
-        if (sqlite3_prepare_v2(db,
-            "UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL",
-            -1, &claimStmt, NULL) != SQLITE_OK) {
+        NSInteger claimedRows = 0;
+        if (![database executeParameterizedUpdate:
+                @"UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL"
+                params:@[@((sqlite3_int64)now), token]
+                changedRows:&claimedRows
+                error:&tokenError]) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": @"Service unavailable"}];
             return;
         }
-        sqlite3_bind_int64(claimStmt, 1, (sqlite3_int64)now);
-        sqlite3_bind_text(claimStmt, 2, token.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_step(claimStmt);
-        if (sqlite3_changes(db) == 0) {
-            sqlite3_finalize(claimStmt);
+        if (claimedRows == 0) {
             // Another request already claimed this token.
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid reset token"}];
             return;
         }
-        sqlite3_finalize(claimStmt);
 
         // Get account and update password.
         NSError *accountError = nil;
