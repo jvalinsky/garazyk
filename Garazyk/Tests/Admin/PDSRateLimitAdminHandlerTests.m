@@ -4,12 +4,6 @@
 #import "Admin/Diagnostics/PDSRateLimitAdminHandler.h"
 #import "Database/Service/ServiceDatabases.h"
 
-// MARK: - Tests disabled pending API updates
-// These tests use outdated APIs that no longer exist.
-// Re-enable when tests are updated to use current APIs.
-
-#if 0
-
 #import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
@@ -64,5 +58,3 @@
 }
 
 @end
-
-#endif // Tests disabled pending API updates
