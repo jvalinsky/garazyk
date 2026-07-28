@@ -93,8 +93,8 @@
     // Ozone: Grant verification
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-grant-verification" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"];
-        NSString *displayName = request.jsonBody[@"displayName"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : nil;
+        NSString *displayName = [request.jsonBody[@"displayName"] isKindOfClass:[NSString class]] ? request.jsonBody[@"displayName"] : @"";
         if (!did || did.length == 0) {
             response.statusCode = 400;
             response.contentType = @"text/html; charset=utf-8";
@@ -113,7 +113,7 @@
     // Ozone: Revoke verification
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-revoke-verification" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSArray *dids = request.jsonBody[@"dids"] ?: @[];
+        NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
         NSDictionary *result = [weakSelf.backendClient revokeOzoneVerifications:dids];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -145,8 +145,8 @@
     // Ozone: Remove safelink rule
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/remove-safelink-rule" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *url = request.jsonBody[@"url"] ?: @"";
-        NSString *pattern = request.jsonBody[@"pattern"] ?: @"";
+        NSString *url = [request.jsonBody[@"url"] isKindOfClass:[NSString class]] ? request.jsonBody[@"url"] : @"";
+        NSString *pattern = [request.jsonBody[@"pattern"] isKindOfClass:[NSString class]] ? request.jsonBody[@"pattern"] : @"";
         NSDictionary *result = [weakSelf.backendClient removeSafelinkRule:url pattern:pattern];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -185,7 +185,7 @@
     // Ozone: Find related accounts
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-find-related" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSDictionary *result = [weakSelf.backendClient findRelatedAccounts:did];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneSignatureResultsPartial:result]];
@@ -194,7 +194,7 @@
     // Ozone: Find correlation
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-find-correlation" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSArray *dids = request.jsonBody[@"dids"] ?: @[];
+        NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
         NSDictionary *result = [weakSelf.backendClient findSignatureCorrelation:dids];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneSignatureResultsPartial:result]];
@@ -257,7 +257,7 @@
     // Ozone: Delete set
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-ozone-set" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *name = request.jsonBody[@"name"] ?: @"";
+        NSString *name = [request.jsonBody[@"name"] isKindOfClass:[NSString class]] ? request.jsonBody[@"name"] : @"";
         NSDictionary *result = [weakSelf.backendClient deleteOzoneSet:name];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -269,7 +269,7 @@
     // Ozone: Delete template
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-ozone-template" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *name = request.jsonBody[@"name"] ?: @"";
+        NSString *name = [request.jsonBody[@"name"] isKindOfClass:[NSString class]] ? request.jsonBody[@"name"] : @"";
         NSDictionary *result = [weakSelf.backendClient deleteOzoneTemplate:name];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -281,7 +281,7 @@
     // Ozone: Remove team member
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/remove-team-member" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSDictionary *result = [weakSelf.backendClient removeOzoneTeamMember:did];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
