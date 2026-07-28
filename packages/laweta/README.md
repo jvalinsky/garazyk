@@ -8,12 +8,9 @@ logs, checking health status, sampling stats, and parsing Docker events.
 execution, service lifecycle commands, and domain-specific cleanup live outside
 this package.
 
-## Why Laweta?
+## Name
 
-**Laweta** is the Polish word for a **tow truck**. Much like a tow truck is used
-to haul and manage vehicles, this package is designed to "tow" and manage Docker
-containers, handling the heavy lifting of container lifecycles and
-infrastructure management.
+_Laweta_ is the Polish word for a tow truck.
 
 ## Installation
 
@@ -23,12 +20,11 @@ deno add jsr:@garazyk/laweta
 
 ## Features
 
-- **Docker Engine API Client**: Typed wrappers for container and image
-  management.
-- **Docker Compose Integration**: Wrappers for `docker compose up/down/ps`.
-- **Event Streaming**: Listen to Docker engine events with ease.
-- **Resource Monitoring**: Stream container stats (CPU, Memory, IO).
-- **Health Checks**: Wait for HTTP or Docker-level health status.
+- Docker Engine API client: typed wrappers for container and image management.
+- Docker Compose: wrappers for `docker compose up/down/ps`.
+- Event streaming: subscribes to Docker engine events.
+- Resource monitoring: streams container stats (CPU, memory, IO).
+- Health checks: waits for HTTP or Docker-level health status.
 
 For scenario orchestration, use `@garazyk/hamownia`. For topology and service
 role metadata, use `@garazyk/schemat`.

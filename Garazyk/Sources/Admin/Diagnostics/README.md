@@ -1,8 +1,7 @@
 # System Diagnostics Dashboard
 
-The System Diagnostics Dashboard provides comprehensive monitoring and management capabilities for
-the AT Protocol PDS, covering three major areas: Sequencer Health, Blob Storage Audits, and Rate
-Limit Management.
+Monitoring and management for the AT Protocol PDS, covering sequencer health, blob storage audits,
+and rate limit management.
 
 ## Architecture Overview
 
@@ -417,7 +416,7 @@ Response:
 
 ## Testing
 
-Comprehensive integration tests are provided:
+Integration test coverage:
 
 - **PDSSequencerAnalyticsTests.m** (14 tests)
   - Collection start/stop
