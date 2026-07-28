@@ -1607,7 +1607,7 @@ via `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0` for operators who need it.
 
 ## S13. Registration, PhoneVerification, and Email trust-boundary sweep
 
-**Status: partially complete (slices 1, 2, 3, 3b, 4, 4b, 4d, 5, 6 done; all implementation slices complete, remaining work is cleanup + full-suite verification).** Slice 1 (CAPTCHA gate with siteverify + fail-closed) at `3a303467`. Slice 2 (phone OTP nil-provider fail-closed, ADR 0020) and slice 3 (email retry-race fix, DEBUG-only deterministic code, ADR 0022) at `2c9dc7ab`. Slice 3b (confirmEmail opaque token exchange, V17 migration) at `99f1738b`. Slice 4 (opaque password-reset tokens, V18 migration) and slice 4b (opaque account-delete tokens) at `c2277d62`. Slice 4d (confirmEmail acceptance gate tests + V17 email_confirmed_at ALTER TABLE) at `dd3842e4`. Slice 5 (Plivo 200-means-success fix, isKindOfClass guards, E.164 validation) at `a5a11cdc`. Slice 6 (composite gate AND semantics) plus the slice 1 follow-ups (tightened siteverify wait budget with cancellation, `percentEncode:` nil guard) landed at `0239f88c` (phase-25). A review of the
+**Status: complete ✅ (all 10 implementation slices done).** Slice 1 (CAPTCHA gate with siteverify + fail-closed) at `3a303467`. Slice 2 (phone OTP nil-provider fail-closed, ADR 0020) and slice 3 (email retry-race fix, DEBUG-only deterministic code, ADR 0022) at `2c9dc7ab`. Slice 3b (confirmEmail opaque token exchange, V17 migration) at `99f1738b`. Slice 4 (opaque password-reset tokens, V18 migration) and slice 4b (opaque account-delete tokens) at `c2277d62`. Slice 4c (expired token cleanup: email_confirmation_tokens + password_reset_tokens) at `09387919`. Slice 4d (confirmEmail acceptance gate tests + V17 email_confirmed_at ALTER TABLE) at `dd3842e4`. Slice 5 (Plivo 200-means-success fix, isKindOfClass guards, E.164 validation) at `a5a11cdc`. Slice 6 (composite gate AND semantics) plus the slice 1 follow-ups (tightened siteverify wait budget with cancellation, `percentEncode:` nil guard) landed at `0239f88c` (phase-25). V17 conditional ALTER TABLE fix at `c06045ae`. Full test suite clean (no regressions from phase-23 changes; 3 pre-existing failures in AdminAuthSync/RepoAuthRepo/RepoAuthIdentity). A review of the
 account-creation and verification trust boundaries — Registration,
 PhoneVerification, Email, and the XRPC handlers that consume them — found
 two complete no-op verification gates, a password-reset token that is the
@@ -1827,7 +1827,7 @@ Rollback is a one-line revert of the composite loop.
 
 ## S14. Ozone moderation trust-boundary sweep
 
-**Status: partially complete (slices 1-6 of 7 done; slices 1-5 at a66dd7b1, slice 6 uncommitted).** A focused security review of
+**Status: complete ✅ (all 7 slices done). Slices 1-5 at `a66dd7b1`, slices 6-7 at `cf23deba`. 66 XrpcToolsOzoneTests pass.** A focused security review of
 the Ozone moderation service (`Garazyk/Sources/Ozone/Services/ModerationService.m`,
 844 lines) and its XRPC trust boundary (`Garazyk/Sources/Network/XrpcToolsOzonePack.m`,
 1,228 lines) found an authorization gap that weakens every `tools.ozone.*`
@@ -1962,3 +1962,322 @@ log — cancellations become unattributed again.
 
 - `../prompts/phase-24-ozone-trust-boundary.md` — slices 1-7,
   `depends_on: []`.
+
+## S15. Chat (syrena-chat) trust-boundary sweep
+
+**Status: complete (slices 1-6 done).** A focused audit of the Chat module
+(`Garazyk/Sources/Chat/`, `Garazyk/Sources/Network/XrpcChatBsky*.m`,
+totaling ~2,800 lines) found widespread untyped JSON extraction at the
+XRPC handler boundary (S8/S13 defect class), one unconditional auth-nop
+endpoint, and a legacy token trust-without-verification fallback. The
+ChatAuthManager is well-implemented (JWT verification, DID resolution,
+audience/lxm checks), but the handler layer exposes the same unguarded
+`body[@"key"]` pattern that the S8 and S13 sweeps fixed in auth and
+registration.
+
+**Completed slices (HEAD: ac334207):**
+- Slice 1: isKindOfClass sweep (2e1c6321)
+- Slices 2-3: getConvoAvailability hardening + legacy token rejection + text/embed guards (432c03c4)
+- Slice 4: membership verification for 7 handlers (f5d68361)
+- Slice 5: addReaction/removeReaction membership verification via conversationIdForMessage (3786b2e1)
+- Slice 6: sendMessageBatch per-element validation (ac334207)
+
+**Remaining:** Slice 7 (acceptance gate tests — XrpcChatBskyConvoTests).
+
+### Evidence
+
+**Missing isKindOfClass guards on all handler body extractions.**
+`XrpcChatBskyConvoPack.m:275` — `NSString *convoId = body[@"convoId"]`
+extracted without type check. Same pattern repeats at :304, :362-363
+(messageId, emoji), :391-392, :420-421, :453, :485, :513, and in
+sendMessage at :835 (`message[@"text"]` without isKindOfClass).
+A non-string value in any of these fields crashes on `length`,
+`isEqualToString:`, or `UTF8String` — the same defect class fixed in
+S8 (auth boundary) and S13 (registration boundary). Every handler in
+the XRPC pack has at least one unguarded extraction.
+
+**getConvoAvailability returns unconditional YES.**
+`XrpcChatBskyConvoPack.m:355` — `available: @YES` without checking
+an allowlist, blocklist, or the recipient's chat preferences. This
+is a genuine feature gap (bypasses `allowIncoming: "none"` in
+chat.bsky.actor.declaration) but low severity since it only exposes
+a boolean, not message content.
+
+**Legacy token fallback trusts sub claim.**
+`ChatAuthManager.m:388` — when `pdsUrl` is unset, `validateLegacyPDSToken`
+returns `jwt.payload.sub` without any signature verification. This is
+a configuration-dependent bypass (requires `pdsUrl` to be nil).
+
+**sendMessage and sendMessageBatch verify membership.**
+`XrpcChatBskyConvoPack.m:540,620` — membership check via
+`XrpcChatConversationIncludesActor` gates both message-send endpoints.
+This is the correct pattern and the rest of the handlers should follow
+it (currently acceptConvo, leaveConvo, mute/unmute, lock/unlock do not
+verify membership).
+
+### Slices
+
+1. isKindOfClass sweep: add guards to all handler body extractions in
+   XrpcChatBskyConvoPack.m, XrpcChatBskyActorPack.m, and
+   XrpcChatBskyGroupPack.m.
+2. getConvoAvailability hardening: query the recipient's
+   chat.bsky.actor.declaration record and respect allowIncoming
+   preference (return `available: @NO` when "none").
+3. Legacy token hardening: require `pdsUrl` to be configured or
+   reject legacy tokens outright (return nil instead of trusting
+   the sub claim).
+4. Membership verification parity: add
+   `XrpcChatConversationIncludesActor` checks to acceptConvo,
+   leaveConvo, muteConvo, unmuteConvo, lockConvo, and unlockConvo.
+5. addReaction/removeReaction validation: verify the message
+   belongs to a conversation the actor is a member of (currently
+   only checks messageId exists).
+6. sendMessageBatch array validation: each element in the
+   `messages` array must have `isKindOfClass:[NSDictionary class]`
+   and a valid `text` field (currently no per-element guards).
+7. Acceptance gate tests: add XrpcChatBskyConvoTests covering:
+   non-string convoId returns 400, non-member mute returns 403,
+   getConvoAvailability respects allowIncoming.
+
+### Gate
+
+- Non-string convoId/messageId/emoji returns 400.
+- Non-member cannot mute/unmute/lock/unlock/accept/leave a conversation (403).
+- getConvoAvailability returns `available: @NO` when recipient's
+  declaration says allowIncoming: "none".
+- Legacy token without PDS URL returns 401.
+- All existing chat tests pass.
+
+### Rollback
+
+Each slice is self-contained. Slice 1 (isKindOfClass sweep) is the
+highest risk — if any downstream code relies on non-string values,
+revert that handler and add a targeted fix.
+
+### Execution phases
+
+- `../prompts/phase-27-chat-trust-boundary.md` — slices 1-7,
+  `depends_on: [S13, S14]`.
+
+## S16. Video + Germ/Mikrus/Beskid trust-boundary sweep
+
+**Status: complete ✅ (all 5 slices done).** 2,410 lines across Video (1,226 lines) and
+Germ/Mikrus/Beskid (1,184 lines) audited for isKindOfClass gaps, JWT
+claim typing, and proxy forwarding safety.
+
+**Completed slices (HEAD: 92f0c8b4):**
+- Slice 1: Video JWT claim guards + mandatory exp (fb593ca7)
+- Slices 2-3: VideoWorker retry_count guard + Germ mailbox agentRef/address guards + Beskid path guard (540a6943, 55023206)
+- Slice 4: Beskid auth header validation — isKindOfClass + newline check (f363e072)
+- Slice 5: Gate tests — 7 S16GateTests covering V1-V3 JWT claim guards (92f0c8b4)
+
+### Evidence
+
+**V1 — jwt.payload.aud used without isKindOfClass.**
+`VideoJWTAuthProvider.m:129` — `NSString *aud = jwt.payload.aud` is
+passed to `VideoServiceAuthDIDWithoutFragment:` which calls
+`rangeOfString:` on it. A non-string `aud` claim (arrays per RFC 7519)
+triggers `-[NSArray rangeOfString:]` → unrecognized selector crash.
+Same S8 defect class.
+
+**V2 — JWT claims trusted as their assumed type.**
+`VideoJWTAuthProvider.m:99,102,107,208` — `jwt.payload.sub` (used with
+`hasPrefix:`), `jwt.payload.did` (same), `jwt.payload.iss` (same),
+`jwt.payload.scope` (used with `isEqualToString:`). All extracted
+without isKindOfClass checks. A non-string value in any of these
+claims crashes on NSString methods.
+
+**V3 — Omitted exp claim yields non-expiring token.**
+`VideoJWTAuthProvider.m:145-152` — `NSDate *exp = jwt.payload.exp`
+checked with `if (exp && [exp timeIntervalSinceNow] < 0)`. If `exp`
+is nil (claim omitted), the check is skipped and the token never
+expires. Same gap documented in S8 slice 2.
+
+**V4 — job[@"retry_count"] without isKindOfClass.**
+`VideoWorker.m:473` — `[job[@"retry_count"] integerValue]` called
+without verifying the value is an NSNumber. A non-number value
+crashes on unrecognized selector. Low severity: job dicts come from
+the local database, not external input.
+
+**G1 — Missing isKindOfClass on string body fields.**
+`XrpcGermMailboxPack.m:84-85,124,206-207,242` — `agentRef`, `address`
+extracted from JSON body without isKindOfClass:[NSString class]
+guard. Truthiness checks catch nil, but non-string values pass
+through to downstream services. `countNum` and `epochNum` already
+have isKindOfClass:[NSNumber class] guards; `ciphertextObj` already
+guarded in `decodeBytesField:`.
+
+**B1 — Unguarded .length on hydration source path.**
+`BeskidXrpcRoutePack.m:309` — `NSString *path = source[@"path"]; if
+(path.length > 0)` calls `.length` without verifying it's a string.
+A non-string value from the upstream service crashes.
+
+**B2 — Unvalidated authorization header forwarding.**
+`BeskidXrpcRoutePack.m:293-294` — `NSString *auth =
+payload[@"authorization"]` forwarded to upstream PDS without
+isKindOfClass guard and without validating it's a `Bearer ...`
+token. Proxy behavior is intentional, but the header value should
+be validated as a string before `.length` access.
+
+**M1 — No significant findings in Mikrus.** All params validated
+through helpers with isKindOfClass guards; SQL parameterized; rate
+limiting present. Clean.
+
+### Slices
+
+1. Video isKindOfClass/JWT sweep: add isKindOfClass guards to
+   `jwt.payload.aud` (:129), `jwt.payload.sub` (:99), `jwt.payload.did`
+   (:102), `jwt.payload.iss` (:107), and `jwt.payload.scope` (:208)
+   in VideoJWTAuthProvider.m. Make `exp` mandatory (reject tokens
+   without exp claim). Add isKindOfClass guard to `job[@"retry_count"]`
+   at VideoWorker.m:473.
+2. Germ isKindOfClass sweep: add isKindOfClass:[NSString class]
+   guards to `agentRef` and `address` body extractions in
+   XrpcGermMailboxPack.m handlers.
+3. Beskid path guard: add isKindOfClass:[NSString class] guard to
+   `source[@"path"]` before `.length` access in
+   BeskidXrpcRoutePack.m:309.
+4. Beskid auth forwarding validation: add isKindOfClass:[NSString
+   class] guard to `payload[@"authorization"]` in
+   BeskidXrpcRoutePack.m:293-294.
+5. Acceptance gate tests for all findings.
+
+### Gate
+
+- Non-string `aud`/`sub`/`iss`/`scope`/`did` in JWT returns 401.
+- Token without `exp` claim returns 401.
+- Non-number `retry_count` handled gracefully (logged, not crashed).
+- Non-string `agentRef`/`address` in Germ mailbox returns 400.
+- Non-string `path` in Beskid hydration returns 400.
+- Non-string `authorization` in Beskid proxy returns 400.
+- All existing Video/Germ/Beskid tests pass.
+
+### Rollback
+
+Each slice is a single-commit revert. Slice 1 (Video JWT claims) is
+the highest operational risk — a real client sending non-string
+claims would start getting 401 where it previously got through.
+Slices 2-4 follow the same isKindOfClass pattern as S8/S13/S15 and
+carry the same rollback strategy.
+
+### Owner boundary
+
+`Garazyk/Sources/Video/` (slice 1), `Garazyk/Sources/Germ/` (slice
+2), `Garazyk/Sources/Beskid/` (slices 3-4). Mikrus is clean.
+
+### Execution phases
+
+- `../prompts/phase-28-video-germ-beskid-trust-boundary.md` — slices 1-5.
+
+## S17. Admin + AdminUIServer trust-boundary sweep
+
+**Status: not started.** A focused audit of the Admin and AdminUIServer
+modules (`Garazyk/Sources/Admin/`, `Garazyk/Sources/AdminUIServer/`,
+totaling ~8,000 lines) found the Admin core (PDSAdminAuth.m,
+AdminMiddleware.m) to be well-guarded with isKindOfClass checks already
+in place, but the AdminUIServer route handlers (~1,100 lines across 11
+route categories) exhibit the same unguarded `request.jsonBody[@"key"]`
+pattern fixed in S8, S13, and S15. The UIAuthManager is well-implemented
+(PBKDF2 password hashing, CSPRNG tokens, CSRF nonces), the template
+engine properly HTML-escapes, and the backend client's auth forwarding
+uses config-provided tokens (lower risk than the Beskid B2 case).
+
+### Evidence
+
+**Admin core is well-guarded.** `PDSAdminAuth.m:291` —
+`[request isKindOfClass:[NSDictionary class]]` guards the headers dict.
+`:305` — `[authorization isKindOfClass:[NSString class]]` before
+`hasPrefix:` call. `:311` — `[adminTokenHeader isKindOfClass:[NSString class]]`
+for X-Admin-Token header. `:358,508,658` —
+`[controller isKindOfClass:[PDSController class]]` before use.
+`AdminMiddleware.m` does not perform direct body extraction — it verifies
+admin access via Session objects and the PDSAdminAuth DID list.
+
+**U1 (high): Unguarded JSON extraction across all AdminUIServer route handlers.**
+`UIServerRuntime+OzoneRoutes.m:76` — `NSString *did = request.jsonBody[@"did"]`
+extracted without isKindOfClass. Same pattern repeats at :77 (displayName),
+:93 (dids array), :112 (:url, :pattern), :151-152 (:did, :dids).
+`UIServerRuntime+PDSRoutes.m:46` — `request.jsonBody[@"account"]` unguarded.
+`:57,64` — `request.jsonBody[@"dids"]` unguarded array extraction.
+`:143,152,162,172,182` — :did, :handle, :reportID, :action extractions
+all use `?: @""` fallback without isKindOfClass. Same pattern in
+SecurityRoutes.m:40-41 (:did, :id), :51-52, :62-63 (:did, :name).
+A non-string JSON value is silently coerced to empty string rather than
+returning 400 — the same defect class fixed across S8/S13/S15.
+
+**U2 (low): BackendClient auth forwarding without newline validation.**
+`UIBackendClient.m:117` —
+`[request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"]`.
+The token comes from `self.configuration.pdsAdminToken` (config-provided,
+not user input), so header injection risk is lower than the Beskid B2
+case. However, no newline character check is applied.
+
+**UIAuthManager is solid.** `UIAuthManager.m` uses PBKDF2 password hashing
+with random salt (600k iterations), CSPRNG session tokens (32 bytes),
+SHA-256 token hashing, CSRF double-submit cookie pattern with nonce
+expiration and one-time use, and constant-time comparison via
+`PDSSecurityCompare`. No findings.
+
+**Template engine properly escapes HTML.** `UITemplateEngine.m:5-9` —
+`EscapeHTML()` escapes &, <, >, ", '. The template engine distinguishes
+`{{key}}` (HTML-escaped) from `{{{key}}}` (raw passthrough). Section
+iteration variables (`{{key}}` within `{{#items}}...{{/items}}`) use
+escaped placeholders by default. No XSS findings.
+
+**U3 (minor): Admin DID list element types not validated.**
+`PDSAdminAuth.m:239` — `[dids isKindOfClass:[NSArray class]]` checks the
+array type but individual elements are used without isKindOfClass:
+`[self.adminDidsInternal containsObject:did]` at :501. A non-string
+array element loaded from the admin_dids.json file would persist silently.
+
+### Slices
+
+1. AdminUIServer route handler isKindOfClass sweep: add guards to all
+   `request.jsonBody[@"key"]` extractions in OzoneRoutes, PDSRoutes,
+   SecurityRoutes, and remaining route categories (AppViewRoutes,
+   ChatRoutes, DataExplorerRoutes, MSTRoutes, PLCRoutes, RelayRoutes,
+   VideoRoutes, LabRoutes). Non-string values → 400 with
+   `[XrpcErrorHelper setValidationError:response]`.
+2. BackendClient auth forwarding hardening: add isKindOfClass and
+   newline character check on token before Authorization header
+   interpolation, per B2/S16 slice 4 pattern.
+3. Admin DID list element validation: add NSString isKindOfClass check
+   per element in `PDSAdminAuthLoadAdminDids` and `addAdminDid:`.
+4. Template engine hardening: verify no user-controlled values reach
+   `{{{raw}}}` unescaped placeholders in any template file.
+5. Acceptance gate tests: add tests to PDSAdminAuthTests and a new
+   AdminUIRoutesTests suite covering:
+   - Non-string body fields in admin routes → 400
+   - Auth header with newline → 400
+   - Admin DID list with non-string elements → filtered out
+   - Template rendering with XSS payloads → escaped in output
+
+### Gate
+
+- Non-string JSON body values in AdminUIServer routes → 400.
+- Auth header with embedded newline → 400.
+- Admin DID list persists only NSString elements.
+- All HTML templates escape user-controlled values.
+- All existing admin tests pass (`PDSAdminAuthTests`,
+  `PDSAdminMiddlewareTests`).
+- `./build/tests/AllTests --gated=run` passes.
+
+### Rollback
+
+Each slice is self-contained:
+- Slice 1 (route handler sweep): If any route breaks due to stricter
+  validation, revert that specific handler and add targeted coercion.
+- Slice 2 (auth forwarding): If existing integrations rely on raw
+  token passthrough, make the guard opt-in per route.
+- Slice 3 (DID list): If non-string elements are intentionally stored
+  (unlikely), revert and add coercion at read time instead.
+
+### Owner boundary
+
+`Garazyk/Sources/Admin/` (slices 1, 3), `Garazyk/Sources/AdminUIServer/`
+(slices 1, 2, 4).
+
+### Execution phases
+
+- `../prompts/phase-28-admin-trust-boundary.md` — slices 1-5,
+  `depends_on: [S15, S16]`.

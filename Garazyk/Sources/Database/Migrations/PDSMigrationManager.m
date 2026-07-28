@@ -3346,8 +3346,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
         "email TEXT NOT NULL,"
         "expires_at INTEGER NOT NULL,"
         "used_at INTEGER NULL)",
-        "CREATE INDEX IF NOT EXISTS idx_email_confirmation_tokens_did ON email_confirmation_tokens(did)",
-        "ALTER TABLE accounts ADD COLUMN email_confirmed_at INTEGER NULL"
+        "CREATE INDEX IF NOT EXISTS idx_email_confirmation_tokens_did ON email_confirmation_tokens(did)"
     };
 
     for (size_t i = 0; i < sizeof(sqls) / sizeof(sqls[0]); i++) {
@@ -3362,7 +3361,30 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
             if (errMsg) sqlite3_free(errMsg);
             return NO;
         }
+        if (errMsg) sqlite3_free(errMsg);
     }
+    // Some test databases carry partial schemas without an accounts table;
+    // the ALTER TABLE would fail the migration unconditionally.
+    sqlite3_stmt *checkStmt = NULL;
+    if (sqlite3_prepare_v2(db, "SELECT 1 FROM sqlite_master WHERE type='table' AND name='accounts'", -1, &checkStmt, NULL) == SQLITE_OK) {
+        BOOL hasAccounts = (sqlite3_step(checkStmt) == SQLITE_ROW);
+        sqlite3_finalize(checkStmt);
+        if (hasAccounts) {
+            char *alterErr = NULL;
+            if (sqlite3_exec(db, "ALTER TABLE accounts ADD COLUMN email_confirmed_at INTEGER NULL", NULL, NULL, &alterErr) != SQLITE_OK) {
+                if (error) {
+                    NSString *msg = alterErr ? [NSString stringWithUTF8String:alterErr] : @"Unknown SQL error";
+                    *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                                 code:PDSMigrationErrorMigrationFailed
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V17 up failed (email_confirmed_at): %@", msg]}];
+                }
+                if (alterErr) sqlite3_free(alterErr);
+                return NO;
+            }
+            if (alterErr) sqlite3_free(alterErr);
+        }
+    }
+
     return YES;
 }
 

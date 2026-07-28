@@ -331,8 +331,11 @@
     forwardReq.HTTPMethod = @"GET";
     forwardReq.timeoutInterval = 5.0;
 
-    NSString *auth = payload[@"authorization"];
-    if (auth.length > 0) [forwardReq setValue:auth forHTTPHeaderField:@"Authorization"];
+    NSString *auth = [payload[@"authorization"] isKindOfClass:[NSString class]] ? payload[@"authorization"] : nil;
+    // Silently drop non-string or newline-containing auth values (header injection prevention).
+    if (auth.length > 0 && [auth rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location == NSNotFound) {
+        [forwardReq setValue:auth forHTTPHeaderField:@"Authorization"];
+    }
 
     // Send synchronous HTTP request to upstream service
     NSHTTPURLResponse *upstreamHttp = nil;
@@ -368,7 +371,7 @@
     for (NSDictionary *source in hydrationSources) {
         if (![source isKindOfClass:[NSDictionary class]]) continue;
         NSString *path = source[@"path"];
-        if (path.length > 0) {
+        if ([path isKindOfClass:[NSString class]] && path.length > 0) {
             [self extractURIsFromJSON:resJson path:path collector:extractedUris];
         }
     }

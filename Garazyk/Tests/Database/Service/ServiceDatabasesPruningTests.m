@@ -140,4 +140,49 @@
     XCTAssertEqualObjects(rows, (@[@{@"token": @"active-token"}]));
 }
 
+- (void)testPruneExpiredEmailConfirmationTokensUsesPooledDatabaseAccess {
+    NSTimeInterval now = [NSDate date].timeIntervalSince1970;
+    __block BOOL inserted = NO;
+    NSError *insertError = nil;
+    [self.dbs.servicePool transactWithDid:@"__service__"
+                                    block:^(id<PDSActorStoreTransactor> transactor, NSError **error) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        inserted = [store.database
+            executeParameterizedUpdate:
+                @"INSERT INTO email_confirmation_tokens "
+                 "(token, did, email, expires_at) VALUES (?, ?, ?, ?), (?, ?, ?, ?)"
+                                params:@[
+                                    @"expired-email-token", @"did:plc:expired",
+                                    @"expired@example.com", @(now - 60),
+                                    @"active-email-token", @"did:plc:active",
+                                    @"active@example.com", @(now + 60)
+                                ]
+                                 error:error];
+    }
+                                    error:&insertError];
+    XCTAssertTrue(inserted);
+    XCTAssertNil(insertError);
+
+    NSError *pruneError = nil;
+    NSInteger removed =
+        [self.dbs pruneExpiredEmailConfirmationTokensBefore:
+                      [NSDate dateWithTimeIntervalSince1970:now]
+                                                       error:&pruneError];
+    XCTAssertEqual(removed, 1);
+    XCTAssertNil(pruneError);
+
+    __block NSArray<NSDictionary *> *rows = nil;
+    [self.dbs.servicePool readWithDid:@"__service__"
+                                block:^(id<PDSActorStoreReader> reader, NSError **error) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        rows = [store.database
+            executeParameterizedQuery:
+                @"SELECT token FROM email_confirmation_tokens ORDER BY token"
+                                params:@[]
+                                 error:error];
+    }
+                                error:nil];
+    XCTAssertEqualObjects(rows, (@[@{@"token": @"active-email-token"}]));
+}
+
 @end

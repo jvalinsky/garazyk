@@ -810,6 +810,38 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     return removed;
 }
 
+- (NSInteger)pruneExpiredEmailConfirmationTokensBefore:(NSDate *)date
+                                                  error:(NSError **)error {
+    if (!date) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Expiration cutoff is required"}];
+        }
+        return -1;
+    }
+
+    __block NSInteger removed = -1;
+    [self.servicePool transactWithDid:@"__service__"
+                                block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        BOOL updated = [store.database
+            executeParameterizedUpdate:@"DELETE FROM email_confirmation_tokens WHERE expires_at < ?"
+                                params:@[@((sqlite3_int64)date.timeIntervalSince1970)]
+                                 error:innerError];
+        if (!updated) return;
+
+        NSArray<NSDictionary *> *rows =
+            [store.database executeParameterizedQuery:@"SELECT changes() AS removed"
+                                                params:@[]
+                                                 error:innerError];
+        if (!rows) return;
+        removed = [rows.firstObject[@"removed"] integerValue];
+    }
+                                error:error];
+    return removed;
+}
+
 - (NSInteger)pruneStaleCollectionMembershipsWithUserDatabasePool:(PDSDatabasePool *)userDatabasePool
                                                            error:(NSError **)error {
     static const NSInteger kChunkSize = 500;

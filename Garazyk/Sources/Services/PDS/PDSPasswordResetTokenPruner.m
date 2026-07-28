@@ -68,19 +68,31 @@ static const NSTimeInterval kMinimumPruneInterval = 300.0;
 - (void)pruneOnQueueIgnoringStopped:(BOOL)ignoreStopped {
     if (self.stopped && !ignoreStopped) return;
 
-    NSError *error = nil;
-    NSInteger removed =
-        [self.serviceDatabases pruneExpiredPasswordResetTokensBefore:[NSDate date]
-                                                               error:&error];
-    if (removed < 0) {
+    NSDate *cutoff = [NSDate date];
+    NSError *passwordError = nil;
+    NSInteger passwordRemoved =
+        [self.serviceDatabases pruneExpiredPasswordResetTokensBefore:cutoff
+                                                               error:&passwordError];
+    if (passwordRemoved < 0) {
         GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner failed: %@",
-                      error.localizedDescription ?: @"unknown database error");
-        return;
+                      passwordError.localizedDescription ?: @"unknown database error");
+    } else if (passwordRemoved > 0) {
+        GZ_LOG_INFO_C(@"ServiceDB",
+                      @"Token pruner removed %ld expired password-reset tokens",
+                      (long)passwordRemoved);
     }
 
-    if (removed > 0) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner removed %ld expired tokens",
-                      (long)removed);
+    NSError *emailError = nil;
+    NSInteger emailRemoved =
+        [self.serviceDatabases pruneExpiredEmailConfirmationTokensBefore:cutoff
+                                                                   error:&emailError];
+    if (emailRemoved < 0) {
+        GZ_LOG_INFO_C(@"ServiceDB", @"Email-confirmation token pruner failed: %@",
+                      emailError.localizedDescription ?: @"unknown database error");
+    } else if (emailRemoved > 0) {
+        GZ_LOG_INFO_C(@"ServiceDB",
+                      @"Token pruner removed %ld expired email-confirmation tokens",
+                      (long)emailRemoved);
     }
 }
 

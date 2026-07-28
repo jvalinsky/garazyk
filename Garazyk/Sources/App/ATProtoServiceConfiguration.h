@@ -422,7 +422,6 @@ extern BOOL ATProtoServiceConfigRunningUnderTests(void);
 
 /*! @abstract Grace period before an unreferenced temporary blob is eligible for sweeping. Defaults to six hours and is clamped to at least one hour. */
 @property (nonatomic, readonly) NSTimeInterval blobTemporaryGracePeriodSeconds;
-
 /*! @abstract Whether per-account Prometheus labels are enabled (default: NO, high cardinality risk on large hosts). */
 @property (nonatomic, readonly) BOOL metricsPerAccountLabels;
 

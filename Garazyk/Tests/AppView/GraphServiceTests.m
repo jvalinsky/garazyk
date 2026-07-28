@@ -3,6 +3,8 @@
 #import <XCTest/XCTest.h>
 #import "AppView/Services/GraphService.h"
 #import "Database/PDSDatabase.h"
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 
 @interface GraphServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -34,6 +36,8 @@
     [self.database executeParameterizedUpdate:@"DROP TABLE IF EXISTS bsky_graph_lists" params:@[] error:nil];
     [self.database executeParameterizedUpdate:@"DROP TABLE IF EXISTS bsky_graph_listitems" params:@[] error:nil];
     [self.database executeParameterizedUpdate:@"DROP TABLE IF EXISTS actor_mutes" params:@[] error:nil];
+    [self.database executeParameterizedUpdate:@"DROP TABLE IF EXISTS records" params:@[] error:nil];
+    [self.database executeParameterizedUpdate:@"DROP TABLE IF EXISTS blocks" params:@[] error:nil];
 
     // Starter packs table — matches the INSERT in indexStarterPack:
     // "INSERT OR REPLACE INTO starter_packs (uri, did, rkey, cid, name, created_at)"
@@ -59,6 +63,16 @@
         @"did TEXT, muted_did TEXT, created_at TEXT, "
         @"UNIQUE(did, muted_did))";
     [self.database executeParameterizedUpdate:mutesSql params:@[] error:nil];
+
+    // Records table (needed for getFollowsForActor:)
+    NSString *recordsSql = @"CREATE TABLE records ("
+        @"uri TEXT PRIMARY KEY, did TEXT, collection TEXT, rkey TEXT, cid TEXT)";
+    [self.database executeParameterizedUpdate:recordsSql params:@[] error:nil];
+
+    // Blocks table (needed for getRecordBodiesForPairs:)
+    NSString *blocksSql = @"CREATE TABLE blocks ("
+        @"cid BLOB PRIMARY KEY, repo_did TEXT, block_data BLOB, created_at TEXT)";
+    [self.database executeParameterizedUpdate:blocksSql params:@[] error:nil];
 }
 
 - (void)tearDown {
@@ -265,6 +279,45 @@
     // INSERT OR IGNORE should succeed even for duplicates
     XCTAssertTrue(result);
     XCTAssertNil(error);
+}
+
+#pragma mark - getFollowsForActor
+
+- (void)testGetFollowsForActor_ObjectValuedSubject_FiltersOut {
+    // F1 fix: record[@"subject"] as an object (not string) is safely rejected.
+    // This test inserts a follow record whose block data has
+    // subject = {uri: "..."} rather than subject = "did:plc:target".
+
+    NSDictionary *recordContent = @{@"subject": @{@"uri": @"at://did:plc:ignored/app.bsky.feed.post/abc"}};
+    NSError *cborError = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:recordContent error:&cborError];
+    XCTAssertNotNil(cborData, @"CBOR encode failed: %@", cborError);
+
+    NSString *cidString = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
+    CID *testCid = [CID cidFromString:cidString];
+    XCTAssertNotNil(testCid, @"CID parse failed");
+
+    // Insert block with object-valued subject
+    [self.database executeParameterizedUpdate:
+        @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, created_at) VALUES (?, ?, ?, ?)"
+        params:@[testCid.bytes, @"did:plc:test-user", cborData, @"2026-01-01T00:00:00Z"] error:nil];
+
+    // Insert follow record pointing to that CID
+    [self.database executeParameterizedUpdate:
+        @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid) VALUES (?, ?, ?, ?, ?)"
+        params:@[@"at://did:plc:test-user/app.bsky.graph.follow/abc",
+                  @"did:plc:test-user", @"app.bsky.graph.follow", @"abc", cidString] error:nil];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service getFollowsForActor:@"did:plc:test-user" limit:10 cursor:nil error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+
+    NSArray *follows = result[@"follows"];
+    XCTAssertNotNil(follows);
+    XCTAssertEqual(follows.count, 0,
+                   @"Object-valued subject should be filtered out (isKindOfClass guard), got %lu items",
+                   (unsigned long)follows.count);
 }
 
 @end

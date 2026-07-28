@@ -5,6 +5,7 @@
 #import "App/PDSController.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
+#import "Database/PDSDatabase.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 #include <stdlib.h>
 
@@ -544,6 +545,10 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     NSString *token = [controller.jwtMinter signPayload:claims error:&signError];
     if (token) {
         self.adminToken = token;
+        [self _auditLogAction:@"ADMIN_LOGIN"
+                  subjectType:@"account"
+                    subjectId:adminDID
+                      details:@"Password-based admin login"];
         return YES;
     }
 
@@ -560,6 +565,10 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     NSDate *now = [NSDate date];
     self.minimumTokenIssuedAt = now;
     PDSAdminAuthPersistMinIAT(self.dataDirectory, now);
+    [self _auditLogAction:@"ADMIN_LOGOUT"
+              subjectType:@"account"
+                subjectId:nil
+                  details:@"Admin logout — all tokens invalidated"];
 }
 
 #pragma mark - Admin DID Management
@@ -597,6 +606,10 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     
     if (changed) {
         [self saveAdminDids];
+        [self _auditLogAction:@"ADMIN_DID_ADD"
+                  subjectType:@"did"
+                    subjectId:did
+                      details:@"DID added to admin list"];
     }
     return YES;
 }
@@ -614,6 +627,10 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     
     if (changed) {
         [self saveAdminDids];
+        [self _auditLogAction:@"ADMIN_DID_REMOVE"
+                  subjectType:@"did"
+                    subjectId:did
+                      details:@"DID removed from admin list"];
     }
     return YES;
 }
@@ -629,6 +646,42 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 - (void)saveAdminDids {
     NSArray *dids = [self listAdminDids];
     PDSAdminAuthSaveAdminDids(self.dataDirectory, dids);
+}
+
+#pragma mark - Audit Logging
+
+- (void)_auditLogAction:(NSString *)action
+            subjectType:(NSString *)subjectType
+              subjectId:(nullable NSString *)subjectId
+                details:(nullable NSString *)details {
+    PDSController *controller = self.controller ?: [PDSController sharedController];
+    if (![controller isKindOfClass:[PDSController class]]) return;
+
+    NSError *dbError = nil;
+    PDSDatabase *db = [controller serviceDatabaseWithError:&dbError];
+    if (!db) {
+        GZ_LOG_AUTH_WARN(@"PDSAdminAuth: audit log unavailable: %@", dbError);
+        return;
+    }
+
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, NULL);
+    NSString *adminDID = @"unknown";
+    if (expectedIssuer.length > 0) {
+        NSURLComponents *components = [NSURLComponents componentsWithString:expectedIssuer];
+        NSString *host = components.host ?: expectedIssuer;
+        adminDID = [NSString stringWithFormat:@"did:web:%@", host];
+    }
+
+    NSDictionary *entry = @{
+        @"admin_did": adminDID,
+        @"action": action,
+        @"subject_type": subjectType ?: @"",
+        @"subject_id": subjectId ?: @"",
+        @"details": details ?: @"",
+        @"ip_address": [NSNull null]
+    };
+    [db insertAuditLogEntry:entry error:nil];
 }
 
 @end
