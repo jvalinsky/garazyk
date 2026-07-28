@@ -6,7 +6,6 @@
 #import "Compat/PDSTypes.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"
-#import <sqlite3.h>
 
 static const NSTimeInterval kMinimumPruneInterval = 300.0;
 
@@ -69,25 +68,19 @@ static const NSTimeInterval kMinimumPruneInterval = 300.0;
 - (void)pruneOnQueueIgnoringStopped:(BOOL)ignoreStopped {
     if (self.stopped && !ignoreStopped) return;
 
-    sqlite3 *db = (sqlite3 *)[self.serviceDatabases serviceDatabase];
-    if (!db) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner: serviceDatabase unavailable, skipping cycle");
+    NSError *error = nil;
+    NSInteger removed =
+        [self.serviceDatabases pruneExpiredPasswordResetTokensBefore:[NSDate date]
+                                                               error:&error];
+    if (removed < 0) {
+        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner failed: %@",
+                      error.localizedDescription ?: @"unknown database error");
         return;
     }
-
-    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, "DELETE FROM password_reset_tokens WHERE expires_at < ?", -1, &stmt, NULL) != SQLITE_OK) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner: prepare failed: %s", sqlite3_errmsg(db));
-        return;
-    }
-    sqlite3_bind_int64(stmt, 1, (sqlite3_int64)now);
-    sqlite3_step(stmt);
-    int removed = sqlite3_changes(db);
-    sqlite3_finalize(stmt);
 
     if (removed > 0) {
-        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner removed %d expired tokens", removed);
+        GZ_LOG_INFO_C(@"ServiceDB", @"Password-reset token pruner removed %ld expired tokens",
+                      (long)removed);
     }
 }
 

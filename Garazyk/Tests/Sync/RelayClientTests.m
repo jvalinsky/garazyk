@@ -10,6 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface RelayClient (Testing)
 - (void)firehoseSubscriptionDidConnect:(FirehoseSubscription *)subscription;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event;
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(NSError * _Nullable)error;
@@ -22,11 +23,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) XCTestExpectation *connectExpectation;
 @property (nonatomic, strong) XCTestExpectation *commitExpectation;
 @property (nonatomic, strong, nullable) XCTestExpectation *identityExpectation;
+@property (nonatomic, strong, nullable) XCTestExpectation *syncExpectation;
 @property (nonatomic, strong, nullable) XCTestExpectation *errorExpectation;
 @property (nonatomic, strong, nullable) XCTestExpectation *disconnectExpectation;
 @property (nonatomic, strong, nullable) XCTestExpectation *cursorExpectation;
 @property (nonatomic, strong, nullable) FirehoseCommitEvent *commitEvent;
 @property (nonatomic, strong, nullable) FirehoseIdentityEvent *identityEvent;
+@property (nonatomic, strong, nullable) FirehoseSyncEvent *syncEvent;
 @property (nonatomic, strong, nullable) FirehoseErrorEvent *errorEvent;
 @property (nonatomic, strong, nullable) NSError *disconnectError;
 @property (nonatomic, assign) int64_t receivedCursor;
@@ -46,6 +49,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
     self.identityEvent = event;
     [self.identityExpectation fulfill];
+}
+
+- (void)relayClient:(RelayClient *)client didReceiveSyncEvent:(FirehoseSyncEvent *)event {
+    self.syncEvent = event;
+    [self.syncExpectation fulfill];
 }
 
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
@@ -180,6 +188,27 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[delegate.identityExpectation, delegate.errorExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.identityEvent.did, @"did:plc:alice");
     XCTAssertEqualObjects(delegate.errorEvent.error, @"FutureCursor");
+}
+
+- (void)testSyncEventForwardsToDelegateAndAdvancesCursor {
+    RelayClient *client = [[RelayClient alloc]
+        initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
+    delegate.syncExpectation = [self expectationWithDescription:@"sync"];
+    [client setValue:delegate forKey:@"delegate"];
+
+    FirehoseSubscription *subscription =
+        [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    FirehoseSyncEvent *sync =
+        [FirehoseSyncEvent eventWithDid:@"did:plc:alice"
+                                    rev:@"3mrogbz3mwr2t"
+                                 blocks:[NSData dataWithBytes:"car" length:3]];
+    sync.seq = 456;
+    [client firehoseSubscription:subscription didReceiveSyncEvent:sync];
+
+    [self waitForExpectations:@[delegate.syncExpectation] timeout:1.0];
+    XCTAssertEqualObjects(delegate.syncEvent, sync);
+    XCTAssertEqual(client.currentSeq, 456);
 }
 
 #ifndef GNUSTEP

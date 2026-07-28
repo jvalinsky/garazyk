@@ -183,19 +183,34 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 
         id existingGroup = self.pendingOpenGroups[did];
         if (existingGroup) {
+#if PDS_GCD_OBJC_SUPPORT
             openGroup = PDS_GCD_CAST(dispatch_group_t, existingGroup);
+#else
+            openGroup = (dispatch_group_t)[(NSValue *)existingGroup pointerValue];
+            dispatch_retain(openGroup);
+#endif
             return;
         }
 
         openGroup = dispatch_group_create();
         dispatch_group_enter(openGroup);
+#if PDS_GCD_OBJC_SUPPORT
         self.pendingOpenGroups[did] = PDS_GCD_BRIDGE_ID(openGroup);
+#else
+        // libdispatch objects are C pointers on Linux. Wrapping the pointer
+        // prevents Foundation collections from sending Objective-C retain
+        // messages to a dispatch object.
+        self.pendingOpenGroups[did] = [NSValue valueWithPointer:openGroup];
+#endif
         shouldOpen = YES;
     });
 
     if (store) return store;
     if (!shouldOpen) {
         dispatch_group_wait(openGroup, DISPATCH_TIME_FOREVER);
+#if !PDS_GCD_OBJC_SUPPORT
+        dispatch_release(openGroup);
+#endif
         return [self storeForDid:did retainForUse:retainForUse error:error];
     }
 
@@ -229,6 +244,9 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
         }
         dispatch_group_leave(openGroup);
     });
+#if !PDS_GCD_OBJC_SUPPORT
+    dispatch_release(openGroup);
+#endif
 
     if (error && blockError) {
         *error = blockError;

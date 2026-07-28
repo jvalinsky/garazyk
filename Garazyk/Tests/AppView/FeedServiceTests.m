@@ -18,9 +18,6 @@
     if ([sql containsString:@"COUNT(*)"]) {
         return @[@{@"count": @0}];
     }
-    if ([sql containsString:@"created_at"]) {
-        return @[];
-    }
     if ([sql containsString:@"did IN"] && [params containsObject:@"app.bsky.feed.post"]) {
         return @[
             @{
@@ -30,6 +27,9 @@
                 @"value": @"{\"$type\":\"app.bsky.feed.post\",\"text\":\"Hello from value\",\"createdAt\":\"2026-05-14T00:00:00Z\"}"
             }
         ];
+    }
+    if ([sql containsString:@"created_at"]) {
+        return @[];
     }
     return @[];
 }

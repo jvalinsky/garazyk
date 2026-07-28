@@ -443,6 +443,15 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         return;
     }
 
+    rc = sqlite3_exec(_db, [kPDSBlobRefTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        result = NO;
+        return;
+    }
+
     rc = sqlite3_exec(_db, [kPDSIndexBlocksRepoDidSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];

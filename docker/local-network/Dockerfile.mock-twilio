@@ -2,7 +2,7 @@ FROM denoland/deno:alpine AS deps
 WORKDIR /deps
 COPY packages/hamownia/mock_twilio_server.ts .
 COPY packages/hamownia/mock_twilio.ts .
-RUN deno cache --deny-import mapping.mock_twilio_server.ts
+RUN deno cache --deny-import mock_twilio_server.ts
 
 FROM denoland/deno:alpine
 COPY --from=deps /deno-dir/ /deno-dir/

@@ -10,7 +10,7 @@ Deno.test("appendScenarioLoopResult preserves failed loop results for final summ
   failed.stepFailed("step", "boom");
   failed.finish();
   const scenario: ScenarioInfo = {
-    id: "99",
+    id: "999",
     name: "failed scenario",
     path: "/tmp/scenario.ts",
     requires: [],
