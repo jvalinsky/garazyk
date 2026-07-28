@@ -88,6 +88,20 @@
     XCTAssertNotNil(response.jsonBody[@"event"]);
 }
 
+- (void)testEmitModerationEventRejectsUnknownEventType {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    NSDictionary *event = @{
+        @"$type": @"tools.ozone.moderation.defs#modEventFabricated",
+        @"subject": @{@"did": self.userDid},
+        @"comment": @"test"
+    };
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.moderation.emitEvent"
+                                                      body:@{@"event": event}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
 - (void)testQueryModerationStatusesRequiresAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.moderation.queryStatuses"
                                              queryString:@""
@@ -520,10 +534,25 @@
 
 - (void)testUpdateRuleSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+
+    // First add a safelink rule to get a valid compound ID (url:pattern).
+    // Use a scheme-free URL so the compound ID splits cleanly into exactly
+    // 2 parts by componentsSeparatedByString:@":" (matching testRemoveRuleSuccessfully).
+    HttpResponse *addResponse = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.addRule"
+                                                         body:@{
+                                                             @"url": @"update.example.com",
+                                                             @"action": @"block"
+                                                         }
+                                                      headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(addResponse.statusCode, 200);
+    NSString *ruleId = addResponse.jsonBody[@"id"];
+    XCTAssertNotNil(ruleId);
+
+    // Then update the action using the compound ID returned by addRule.
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.updateRule"
                                                       body:@{
-                                                          @"id": @"rule123",
-                                                          @"url": @"https://updated.example.com",
+                                                          @"id": ruleId,
+                                                          @"url": @"update.example.com",
                                                           @"action": @"warn"
                                                       }
                                                    headers:@{@"authorization": adminAuthHeader}];
