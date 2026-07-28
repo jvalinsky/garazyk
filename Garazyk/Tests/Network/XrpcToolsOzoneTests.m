@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminAuthXrpcTestBase.h"
+#import "Admin/PDSAdminAuth.h"
 
 // Define XCTAssertIsInstance macro if not available
 #ifndef XCTAssertIsInstance
@@ -12,6 +13,14 @@
 @end
 
 @implementation XrpcToolsOzoneTests
+
+- (void)tearDown {
+    // Reset minimumTokenIssuedAt to nil so subsequent tests (and test runs)
+    // are not affected by the stale-token test's logout call, which sets
+    // minimumTokenIssuedAt = now and persists it to disk at :561.
+    [[PDSAdminAuth sharedAuth] setValue:nil forKey:@"minimumTokenIssuedAt"];
+    [super tearDown];
+}
 
 #pragma mark - Moderation Events Tests
 
@@ -27,6 +36,40 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.moderation.emitEvent"
                                                       body:@{@"event": @{}}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 403);
+}
+
+- (void)testEmitModerationEventRejectsStaleAdminToken {
+    // Cross a second boundary so the JWT iat is strictly before
+    // the new minimumTokenIssuedAt floor, then call logout which
+    // sets minimumTokenIssuedAt = now (PDSAdminAuth.m:560).
+    [NSThread sleepForTimeInterval:1.5];
+    [[PDSAdminAuth sharedAuth] logout];
+
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    NSDictionary *event = @{
+        @"type": @"takedown",
+        @"subject": @{@"did": self.userDid},
+        @"reason": @"spam"
+    };
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.moderation.emitEvent"
+                                                      body:@{@"event": event}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 403);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"Forbidden");
+}
+
+- (void)testEmitModerationEventRejectsNonAdminJwt {
+    // A valid user JWT (not in admin_dids.json) must be rejected.
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    NSDictionary *event = @{
+        @"type": @"takedown",
+        @"subject": @{@"did": self.userDid},
+        @"reason": @"spam"
+    };
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.moderation.emitEvent"
+                                                      body:@{@"event": event}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
 }
@@ -121,6 +164,40 @@
     XCTAssertNotNil(response.jsonBody[@"repo"]);
 }
 
+- (void)testGetSubjectsReturnsStoredReviewState {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+
+    // 1. Emit a takedown event to create a subject row with review_state = takendown.
+    NSDictionary *event = @{
+        @"$type": @"tools.ozone.moderation.defs#modEventTakedown",
+        @"subject": @{@"did": self.userDid},
+        @"comment": @"test takedown"
+    };
+    HttpResponse *emitResponse = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.moderation.emitEvent"
+                                                          body:@{@"event": event}
+                                                       headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(emitResponse.statusCode, 200);
+
+    // 2. Call getSubjects with the DID — reviewState should reflect the stored
+    //    takedown state, not the default "none".
+    NSString *subjectsParam = self.userDid;
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.moderation.getSubjects"
+                                             queryString:[NSString stringWithFormat:@"subjects=%@", subjectsParam]
+                                             queryParams:@{@"subjects": subjectsParam}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+
+    NSArray *subjects = response.jsonBody[@"subjects"];
+    XCTAssertNotNil(subjects);
+    XCTAssertEqual(subjects.count, 1U);
+
+    NSDictionary *subjectView = subjects.firstObject;
+    XCTAssertEqualObjects(subjectView[@"did"], self.userDid);
+    XCTAssertEqualObjects(subjectView[@"reviewState"],
+        @"tools.ozone.moderation.defs#takendown",
+        @"reviewState should reflect the takedown state, not 'none'");
+}
+
 - (void)testGetSubjectStatusSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.moderation.getSubjectStatus"
@@ -159,28 +236,71 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
+- (void)testAddTeamMemberRequiresDid {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.addMember"
+                                                      body:@{@"role": @"moderator"}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
 - (void)testAddTeamMemberSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.addMember"
-                                                      body:@{@"did": self.userDid, @"email": @"member@example.com", @"role": @"moderator"}
+                                                      body:@{@"did": self.userDid, @"role": @"moderator"}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertNotNil(response.jsonBody[@"id"]);
 }
 
-- (void)testUpdateTeamMemberSuccessfully {
+- (void)testUpdateTeamMemberRequiresDid {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.updateMember"
-                                                      body:@{@"email": @"member@example.com", @"role": @"admin"}
+                                                      body:@{@"role": @"admin"}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testUpdateTeamMemberSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+
+    // First add a member with a did.
+    HttpResponse *addResponse = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.addMember"
+                                                         body:@{@"did": self.userDid, @"role": @"moderator"}
+                                                      headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(addResponse.statusCode, 200);
+
+    // Then update the role by did.
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.updateMember"
+                                                      body:@{@"did": self.userDid, @"role": @"admin"}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
 }
 
-- (void)testDeleteTeamMemberSuccessfully {
+- (void)testDeleteTeamMemberRequiresDid {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.deleteMember"
-                                                      body:@{@"email": @"member@example.com"}
+                                                      body:@{}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testDeleteTeamMemberSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+
+    // First add a member with a did.
+    HttpResponse *addResponse = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.addMember"
+                                                         body:@{@"did": self.userDid, @"role": @"moderator"}
+                                                      headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(addResponse.statusCode, 200);
+
+    // Then remove the member by did.
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.deleteMember"
+                                                      body:@{@"did": self.userDid}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertTrue([response.jsonBody[@"success"] boolValue]);

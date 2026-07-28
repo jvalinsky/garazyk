@@ -35,6 +35,21 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         }];
         return nil;
     }
+
+    // Enforce minimumTokenIssuedAt freshness floor and admin-scope tokens.
+    // The canonical authorizeAdminRequest: path at XrpcAuthHelper.m:519-549
+    // calls isAuthenticatedWithRequest: internally; ExtractAdminDid was missing
+    // it, allowing stale admin tokens to remain valid on tools.ozone.* after
+    // the operator bumps the freshness floor.
+    if (![[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:request.headers]) {
+        response.statusCode = HttpStatusForbidden;
+        [response setJsonBody:@{
+            @"error": @"Forbidden",
+            @"message": @"Admin token expired or scope insufficient"
+        }];
+        return nil;
+    }
+
     return adminDid;
 }
 
@@ -458,8 +473,9 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
-        if (!body[@"email"]) {
-            [XrpcErrorHelper setValidationError:response message:@"email is required"];
+        NSString *did = body[@"did"];
+        if (!did || did.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
@@ -481,14 +497,16 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
-        if (!body[@"email"] || !body[@"role"]) {
-            [XrpcErrorHelper setValidationError:response message:@"email and role are required"];
+        NSString *did = body[@"did"];
+        NSString *role = body[@"role"];
+        if (!did || did.length == 0 || !role) {
+            [XrpcErrorHelper setValidationError:response message:@"did and role are required"];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [moderationService updateTeamMember:body[@"email"]
-                                                   newRole:body[@"role"]
+        BOOL success = [moderationService updateTeamMember:did
+                                                   newRole:role
                                                  updatedBy:adminDid
                                                      error:&error];
         if (!success) {
@@ -507,14 +525,14 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
-        NSString *email = body[@"email"];
-        if (!email) {
-            [XrpcErrorHelper setValidationError:response message:@"email is required"];
+        NSString *did = body[@"did"];
+        if (!did || did.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [moderationService removeTeamMember:email removedBy:adminDid error:&error];
+        BOOL success = [moderationService removeTeamMember:did removedBy:adminDid error:&error];
         if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
