@@ -1,0 +1,23 @@
+{
+  "id": "pub.leaflet.graph.subscription",
+  "defs": {
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "publication"
+        ],
+        "properties": {
+          "publication": {
+            "type": "string",
+            "format": "at-uri"
+          }
+        }
+      },
+      "description": "Record declaring a subscription to a publication"
+    }
+  },
+  "lexicon": 1
+}

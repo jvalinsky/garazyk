@@ -1,0 +1,289 @@
+{
+  "id": "blog.pckt.mini.post",
+  "defs": {
+    "tag": {
+      "type": "object",
+      "required": [
+        "tag"
+      ],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "maxLength": 640,
+          "maxGraphemes": 64
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "required": [
+        "uri"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "text",
+          "createdAt"
+        ],
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 640,
+              "maxGraphemes": 64
+            },
+            "maxLength": 8
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 300
+          },
+          "embed": {
+            "refs": [
+              "#images",
+              "#external",
+              "#record",
+              "#recordWithMedia"
+            ],
+            "type": "union"
+          },
+          "langs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "language"
+            },
+            "maxLength": 3
+          },
+          "reply": {
+            "ref": "#replyRef",
+            "type": "ref"
+          },
+          "facets": {
+            "type": "array",
+            "items": {
+              "ref": "#facet",
+              "type": "ref"
+            }
+          },
+          "labels": {
+            "refs": [
+              "com.atproto.label.defs#selfLabels"
+            ],
+            "type": "union"
+          },
+          "subject": {
+            "type": "string",
+            "format": "at-uri"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "publication": {
+            "type": "string",
+            "format": "at-uri"
+          }
+        }
+      }
+    },
+    "facet": {
+      "type": "object",
+      "required": [
+        "index",
+        "features"
+      ],
+      "properties": {
+        "index": {
+          "ref": "#byteSlice",
+          "type": "ref"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "refs": [
+              "#mention",
+              "#link",
+              "#tag"
+            ],
+            "type": "union"
+          }
+        }
+      }
+    },
+    "image": {
+      "type": "object",
+      "required": [
+        "image",
+        "alt"
+      ],
+      "properties": {
+        "alt": {
+          "type": "string"
+        },
+        "image": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000
+        },
+        "aspectRatio": {
+          "ref": "#aspectRatio",
+          "type": "ref"
+        }
+      }
+    },
+    "images": {
+      "type": "object",
+      "required": [
+        "images"
+      ],
+      "properties": {
+        "images": {
+          "type": "array",
+          "items": {
+            "ref": "#image",
+            "type": "ref"
+          },
+          "maxLength": 4
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "required": [
+        "record"
+      ],
+      "properties": {
+        "record": {
+          "ref": "com.atproto.repo.strongRef",
+          "type": "ref"
+        }
+      }
+    },
+    "mention": {
+      "type": "object",
+      "required": [
+        "did"
+      ],
+      "properties": {
+        "did": {
+          "type": "string",
+          "format": "did"
+        }
+      }
+    },
+    "external": {
+      "type": "object",
+      "required": [
+        "uri",
+        "title",
+        "description"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "thumb": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "replyRef": {
+      "type": "object",
+      "required": [
+        "root",
+        "parent"
+      ],
+      "properties": {
+        "root": {
+          "ref": "com.atproto.repo.strongRef",
+          "type": "ref"
+        },
+        "parent": {
+          "ref": "com.atproto.repo.strongRef",
+          "type": "ref"
+        }
+      }
+    },
+    "byteSlice": {
+      "type": "object",
+      "required": [
+        "byteStart",
+        "byteEnd"
+      ],
+      "properties": {
+        "byteEnd": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byteStart": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "aspectRatio": {
+      "type": "object",
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "recordWithMedia": {
+      "type": "object",
+      "required": [
+        "record",
+        "media"
+      ],
+      "properties": {
+        "media": {
+          "refs": [
+            "#images",
+            "#external"
+          ],
+          "type": "union"
+        },
+        "record": {
+          "ref": "#record",
+          "type": "ref"
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}

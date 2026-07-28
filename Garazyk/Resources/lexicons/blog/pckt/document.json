@@ -1,0 +1,27 @@
+{
+  "id": "blog.pckt.document",
+  "defs": {
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "document",
+          "site"
+        ],
+        "properties": {
+          "site": {
+            "type": "string",
+            "format": "uri"
+          },
+          "document": {
+            "ref": "com.atproto.repo.strongRef",
+            "type": "ref"
+          }
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}

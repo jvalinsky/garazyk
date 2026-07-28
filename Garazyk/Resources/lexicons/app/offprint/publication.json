@@ -1,0 +1,61 @@
+{
+  "id": "app.offprint.publication",
+  "defs": {
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "publication"
+        ],
+        "properties": {
+          "navigation": {
+            "type": "array",
+            "items": {
+              "ref": "#navItem",
+              "type": "ref"
+            },
+            "description": "Ordered top-level navigation items. Omitted when the publication uses the default navigation."
+          },
+          "publication": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Required AT-URI to a `site.standard.publication` compatible record."
+          }
+        }
+      }
+    },
+    "navItem": {
+      "type": "object",
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "href": {
+          "type": "string",
+          "description": "Resolved destination: a root-relative path or an absolute URL. Omitted for a dropdown-only label."
+        },
+        "label": {
+          "type": "string",
+          "description": "Display label for the navigation item.",
+          "maxGraphemes": 200
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "ref": "#navItem",
+            "type": "ref"
+          },
+          "description": "Nested items that render as a dropdown. Up to two levels deep."
+        },
+        "external": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the link opens an external site."
+        }
+      }
+    }
+  },
+  "lexicon": 1
+}
