@@ -4,6 +4,31 @@
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
 
+// Lexicon-defined moderation event types (ADR 0027).
+static NSSet<NSString *> *sValidEventTypes(void) {
+    static NSSet<NSString *> *types = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        types = [NSSet setWithArray:@[
+            @"tools.ozone.moderation.defs#modEventTakedown",
+            @"tools.ozone.moderation.defs#modEventAcknowledge",
+            @"tools.ozone.moderation.defs#modEventEscalate",
+            @"tools.ozone.moderation.defs#modEventComment",
+            @"tools.ozone.moderation.defs#modEventLabel",
+            @"tools.ozone.moderation.defs#modEventReport",
+            @"tools.ozone.moderation.defs#modEventMute",
+            @"tools.ozone.moderation.defs#modEventUnmute",
+            @"tools.ozone.moderation.defs#modEventMuteReporter",
+            @"tools.ozone.moderation.defs#modEventUnmuteReporter",
+            @"tools.ozone.moderation.defs#modEventReverseTakedown",
+            @"tools.ozone.moderation.defs#modEventResolveAppeal",
+            @"tools.ozone.moderation.defs#modEventTag",
+            @"tools.ozone.moderation.defs#modEventUntag",
+        ]];
+    });
+    return types;
+}
+
 @interface ModerationService ()
 @property (nonatomic, weak) id<PDSQueryDatabase> database;
 @end
@@ -35,7 +60,20 @@
     NSDictionary *subject = event[@"subject"];
     NSString *subjectDid = subject[@"did"] ?: @"";
     NSString *subjectType = subject[@"$type"] ?: @"com.atproto.admin.defs#repoRef";
-    NSString *action = event[@"$type"] ?: @"tools.ozone.moderation.defs#modEventComment";
+    NSString *action = event[@"$type"];
+    if (action) {
+        // Validate $type against the lexicon-defined event types (ADR 0027).
+        // Unknown types are rejected — they pollute the audit log, bypass
+        // review-state transitions, and confuse downstream consumers.
+        if (![sValidEventTypes() containsObject:action]) {
+            if (error) *error = [NSError errorWithDomain:@"ModerationService" code:400
+                                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                     [NSString stringWithFormat:@"Unknown event type: %@", action]}];
+            return nil;
+        }
+    } else {
+        action = @"tools.ozone.moderation.defs#modEventComment";
+    }
     NSString *reason = event[@"comment"] ?: @"";
 
     NSError *serializeError = nil;
@@ -633,8 +671,12 @@
     NSMutableArray *results = [NSMutableArray array];
 
     for (NSString *subject in subjects) {
-        // Get moderation status for subject
-        NSString *statusSql = @"SELECT * FROM moderation_subjects WHERE subject_did = ?";
+        // Get moderation status for subject. Use a column alias to bridge
+        // the snake_case schema to the camelCase API contract (per ADR 0025).
+        // Only review_state exists in this table; reviewed_at and reviewer_did
+        // are not real columns and always default to empty strings.
+        NSString *statusSql = @"SELECT review_state AS reviewState "
+                               @"FROM moderation_subjects WHERE subject_did = ?";
         NSArray *statusRows = [self.database executeParameterizedQuery:statusSql params:@[subject] error:nil];
 
         NSMutableDictionary *subjectView = [NSMutableDictionary dictionary];
@@ -642,10 +684,12 @@
 
         if (statusRows && statusRows.count > 0) {
             NSDictionary *row = statusRows.firstObject;
-            subjectView[@"reviewState"] = row[@"review_state"] ?: @"none";
-            subjectView[@"reviewedAt"] = row[@"reviewed_at"] ?: @"";
-            subjectView[@"reviewerDid"] = row[@"reviewer_did"] ?: @"";
-            subjectView[@"lastReviewedBy"] = row[@"reviewer_did"] ?: @"";
+            subjectView[@"reviewState"] = row[@"reviewState"] ?: @"none";
+            // reviewedAt, reviewerDid, and lastReviewedBy are not real columns
+            // in moderation_subjects — they always default to empty strings.
+            subjectView[@"reviewedAt"] = @"";
+            subjectView[@"reviewerDid"] = @"";
+            subjectView[@"lastReviewedBy"] = @"";
         } else {
             subjectView[@"reviewState"] = @"none";
         }

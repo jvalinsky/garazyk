@@ -76,7 +76,14 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSError *error = nil;
         NSDictionary *result = [moderationService emitModerationEvent:event createdBy:adminDid error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            // Validation errors (domain=ModerationService, code=400) from
+            // input guards (missing fields, unknown $type) surface as 400
+            // to the caller. All other errors are 500.
+            if ([error.domain isEqualToString:@"ModerationService"] && error.code == 400) {
+                [XrpcErrorHelper setValidationError:response message:error.localizedDescription];
+            } else {
+                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            }
             return;
         }
 
