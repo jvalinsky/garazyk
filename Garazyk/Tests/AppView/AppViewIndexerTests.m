@@ -63,6 +63,38 @@
     return @{@"name": @"Test Group", @"description": @"A group"};
 }
 
+/*! Collection with no domain indexer and no loaded lexicon, so it lands in the generic path. */
+static NSString * const kGenericCollection = @"com.example.generic";
+
+/*! Deliberately nil rkey, held in a variable so the nonnull annotation is not tripped. */
+static NSString *sMissingRkey = nil;
+
+- (AppViewGenericIndexer *)makeGenericIndexer {
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+    return [[AppViewGenericIndexer alloc] initWithRegistry:registry
+                                                  database:self.database
+                                                 validator:validator
+                                  domainIndexerCollections:[NSSet set]];
+}
+
+/*! Returns the single stored generic row for a DID, or nil if there is none. */
+- (nullable NSDictionary *)singleGenericRowForDID:(NSString *)did {
+    NSError *error = nil;
+    NSArray<NSDictionary *> *rows =
+        [self.database executeParameterizedQuery:@"SELECT uri, rkey FROM records WHERE did = ? AND collection = ?"
+                                          params:@[did, kGenericCollection]
+                                           error:&error];
+    XCTAssertNotNil(rows, @"Query failed: %@", error);
+    XCTAssertLessThanOrEqual(rows.count, 1u, @"Expected at most one row for %@", did);
+    return rows.firstObject;
+}
+
+/*! Last path segment of an at:// URI, without NSString path normalization. */
+- (NSString *)rkeyFromURI:(NSString *)uri {
+    return [[uri componentsSeparatedByString:@"/"] lastObject];
+}
+
 #pragma mark - AppViewActorIndexer
 
 - (void)testActorIndexerInstantiation {
@@ -415,6 +447,114 @@
                                                                          validator:validator
                                                          domainIndexerCollections:domainCollections];
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.feed.post"]);
+}
+
+- (void)testGenericIndexerNilRkeyStoresRkeyMatchingURI {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"name": @"no rkey anywhere"}
+                                   did:@"did:plc:generic1"
+                            collection:kGenericCollection
+                                  rkey:sMissingRkey
+                                   cid:@"bafygenericcid"
+                                 error:&error];
+    XCTAssertTrue(result, @"Indexing with a nil rkey must succeed: %@", error);
+    XCTAssertNil(error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic1"];
+    XCTAssertNotNil(row, @"Expected exactly one stored row");
+    NSString *storedRkey = row[@"rkey"];
+    XCTAssertGreaterThan(storedRkey.length, 0u, @"rkey column must not be empty");
+    XCTAssertEqualObjects(storedRkey, [self rkeyFromURI:row[@"uri"]],
+                          @"Stored rkey column must match the rkey embedded in the stored uri");
+}
+
+- (void)testGenericIndexerEmptyRkeyStoresRkeyMatchingURI {
+    // The ingest dispatcher passes @"" when a commit op path carries no rkey.
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"name": @"empty rkey op"}
+                                   did:@"did:plc:generic2"
+                            collection:kGenericCollection
+                                  rkey:@""
+                                   cid:@"bafygenericcid"
+                                 error:&error];
+    XCTAssertTrue(result, @"Indexing with an empty rkey must succeed: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic2"];
+    XCTAssertNotNil(row);
+    NSString *storedRkey = row[@"rkey"];
+    XCTAssertGreaterThan(storedRkey.length, 0u, @"rkey column must not be empty");
+    XCTAssertEqualObjects(storedRkey, [self rkeyFromURI:row[@"uri"]]);
+}
+
+- (void)testGenericIndexerFallsBackToRecordRkey {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"rkey": @"fromrecord"}
+                                   did:@"did:plc:generic3"
+                            collection:kGenericCollection
+                                  rkey:sMissingRkey
+                                   cid:@"bafygenericcid"
+                                 error:&error];
+    XCTAssertTrue(result, @"Indexing must fall back to the record's rkey: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic3"];
+    XCTAssertEqualObjects(row[@"rkey"], @"fromrecord");
+    XCTAssertEqualObjects(row[@"rkey"], [self rkeyFromURI:row[@"uri"]]);
+}
+
+- (void)testGenericIndexerIgnoresNonStringRecordRkey {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"rkey": @[@"not", @"a string"]}
+                                   did:@"did:plc:generic4"
+                            collection:kGenericCollection
+                                  rkey:sMissingRkey
+                                   cid:@"bafygenericcid"
+                                 error:&error];
+    XCTAssertTrue(result, @"A non-string record rkey must fall through to a generated one: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic4"];
+    XCTAssertTrue([row[@"rkey"] isKindOfClass:[NSString class]]);
+    XCTAssertEqualObjects(row[@"rkey"], [self rkeyFromURI:row[@"uri"]]);
+}
+
+- (void)testGenericIndexerDeleteRemovesRowIndexedUnderSameRkey {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    NSDictionary *record = @{@"$type": kGenericCollection, @"name": @"round trip"};
+    BOOL indexed = [indexer indexRecord:record
+                                    did:@"did:plc:generic5"
+                             collection:kGenericCollection
+                                   rkey:@"key1"
+                                    cid:@"bafygenericcid"
+                                  error:&error];
+    XCTAssertTrue(indexed, @"Indexing failed: %@", error);
+
+    NSDictionary *row = [self singleGenericRowForDID:@"did:plc:generic5"];
+    XCTAssertEqualObjects(row[@"rkey"], @"key1");
+    XCTAssertEqualObjects(row[@"rkey"], [self rkeyFromURI:row[@"uri"]]);
+
+    BOOL deleted = [indexer deleteRecord:@"key1"
+                                     did:@"did:plc:generic5"
+                              collection:kGenericCollection
+                                   error:&error];
+    XCTAssertTrue(deleted, @"Delete failed: %@", error);
+    XCTAssertNil([self singleGenericRowForDID:@"did:plc:generic5"],
+                 @"Delete must match the URI that indexing stored");
+}
+
+- (void)testGenericIndexerDeleteRejectsEmptyRkey {
+    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    NSError *error = nil;
+    XCTAssertFalse([indexer deleteRecord:@""
+                                     did:@"did:plc:generic6"
+                              collection:kGenericCollection
+                                   error:&error],
+                   @"An empty rkey cannot address a stored row");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
 }
 
 - (void)testGenericIndexerAddDomainCollection {

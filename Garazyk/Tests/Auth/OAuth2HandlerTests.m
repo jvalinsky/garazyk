@@ -340,7 +340,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         [self.handler handleTokenRequest:request response:response];
 
         XCTAssertEqual(response.statusCode, 400);
-        XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_grant");
+        XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_grant", @"body=%@", response.jsonBody);
         NSString *nextNonce = [response headerForKey:@"DPoP-Nonce"];
         XCTAssertTrue(nextNonce.length > 0);
         XCTAssertNotEqualObjects(nextNonce, incomingNonce);
@@ -846,10 +846,17 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                   @"Should succeed with valid client_metadata (got %ld)", (long)response.statusCode);
     XCTAssertNil(response.jsonBody[@"error"], @"Should not return an error for valid client_metadata");
     
+    // Tests 2 and 3 fall through to dynamic client discovery, which fetches the
+    // client_id URL. A loopback client_id on a closed port is refused
+    // immediately, so they assert the same rejection whether or not this machine
+    // can reach the internet; a public URL would hang until the validation
+    // timeout and return 503 instead.
+    NSString *unreachableClientID = @"http://127.0.0.1:9/client-metadata.json";
+
     // Test 2: Invalid JSON in client_metadata (should handle gracefully)
     NSDictionary *invalidQueryParams = @{
-        @"client_id": @"https://example.com",
-        @"redirect_uri": @"https://example.com/callback",
+        @"client_id": unreachableClientID,
+        @"redirect_uri": @"http://127.0.0.1:9/callback",
         @"response_type": @"code",
         @"state": @"test-state-invalid",
         @"code_challenge": @"test_challenge_invalid",
@@ -859,7 +866,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     HttpResponse *invalidResponse =
         [self authorizeViaPARWithParameters:invalidQueryParams
-                                    clientID:@"https://example.com"];
+                                    clientID:unreachableClientID];
 
     // Should handle gracefully (log warning) and continue
     // Check logs for "Failed to parse client_metadata JSON"
@@ -869,8 +876,8 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     // Test 3: No client_metadata parameter (should work normally)
     NSDictionary *noMetadataParams = @{
-        @"client_id": @"https://example.com",
-        @"redirect_uri": @"https://example.com/callback",
+        @"client_id": unreachableClientID,
+        @"redirect_uri": @"http://127.0.0.1:9/callback",
         @"response_type": @"code",
         @"state": @"test-state-no-metadata",
         @"code_challenge": @"test_challenge_no_metadata",
@@ -879,7 +886,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     HttpResponse *noMetadataResponse =
         [self authorizeViaPARWithParameters:noMetadataParams
-                                    clientID:@"https://example.com"];
+                                    clientID:unreachableClientID];
     
     // Should return 400 (client not registered)
     XCTAssertEqual(noMetadataResponse.statusCode, 400, @"Should return 400 when no client_metadata and not registered");

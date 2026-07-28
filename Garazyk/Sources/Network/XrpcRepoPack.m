@@ -265,8 +265,9 @@ BOOL validateApplyWritesPayload(id writes, NSError **error) {
         }
         if (rkey.length > 0) {
             NSError *rkeyError = nil;
-            if (![ATProtoValidator validateRkey:rkey error:&rkeyError] ||
-                ([action isEqualToString:@"create"] && rkey.length > 15)) {
+            // Record keys are 1-512 characters for every action; createRecord
+            // applies no extra cap, so applyWrites#create must not either.
+            if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
                 if (error) {
                     *error = repoPackValidationError(
                         PDSRepoPackValidationErrorInvalidRequest,
