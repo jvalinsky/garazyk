@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSSequencerAnalyticsCollector.h"
+#import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Metrics/GZMetrics.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
-#import <sqlite3.h>
 
 @interface PDSSequencerAnalyticsCollector ()
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
@@ -22,6 +22,21 @@
 @end
 
 @implementation PDSSequencerAnalyticsCollector
+
+/*!
+ The service connection, reached through PDSDatabase so statements run on that
+ object's serialized queue. Driving the raw sqlite3 handle from this collector's
+ own timer queue races every other user of the same connection.
+ */
+- (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:error];
+    if (!db && error && !*error) {
+        *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
+                                     code:-1
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
+    }
+    return db;
+}
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
                          subscribeHandler:(SubscribeReposHandler *)subscribeHandler {
@@ -149,13 +164,8 @@
 }
 
 - (BOOL)insertAnalyticsSnapshot:(NSDictionary *)snapshot error:(NSError **)error {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
-    if (!db) {
-        if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                                 code:-1
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
-        return NO;
-    }
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) return NO;
 
     NSString *sql = @"INSERT INTO sequencer_analytics "
                     @"(timestamp, seq_number, events_per_second, subscriber_count, "
@@ -163,36 +173,19 @@
                     @"event_type_distribution, created_at) "
                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                         code:sqlite3_extended_errcode(db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Prepare failed: %s", sqlite3_errmsg(db)]}];
-        }
-        return NO;
-    }
+    NSArray *params = @[
+        @([snapshot[@"timestamp"] longValue]),
+        @([snapshot[@"seq_number"] longLongValue]),
+        @([snapshot[@"events_per_second"] doubleValue]),
+        @([snapshot[@"subscriber_count"] longLongValue]),
+        @([snapshot[@"backpressure_warnings"] longLongValue]),
+        @([snapshot[@"backpressure_critical"] longLongValue]),
+        @([snapshot[@"queue_overflows"] longLongValue]),
+        snapshot[@"event_type_distribution"] ?: [NSNull null],
+        @((long long)[[NSDate date] timeIntervalSince1970])
+    ];
 
-    sqlite3_bind_int64(stmt, 1, [snapshot[@"timestamp"] longValue]);
-    sqlite3_bind_int64(stmt, 2, [snapshot[@"seq_number"] longLongValue]);
-    sqlite3_bind_double(stmt, 3, [snapshot[@"events_per_second"] doubleValue]);
-    sqlite3_bind_int64(stmt, 4, [snapshot[@"subscriber_count"] longLongValue]);
-    sqlite3_bind_int64(stmt, 5, [snapshot[@"backpressure_warnings"] longLongValue]);
-    sqlite3_bind_int64(stmt, 6, [snapshot[@"backpressure_critical"] longLongValue]);
-    sqlite3_bind_int64(stmt, 7, [snapshot[@"queue_overflows"] longLongValue]);
-    sqlite3_bind_text(stmt, 8, [snapshot[@"event_type_distribution"] UTF8String], -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 9, (long)[[NSDate date] timeIntervalSince1970]);
-
-    BOOL success = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-
-    if (!success && error) {
-        *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                     code:sqlite3_extended_errcode(db)
-                                 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-    }
-
-    return success;
+    return [db executeParameterizedUpdate:sql params:params error:error];
 }
 
 - (nullable NSDictionary *)currentSnapshot {
@@ -229,7 +222,7 @@
 
 - (nullable NSArray<NSDictionary *> *)historicalDataSince:(NSTimeInterval)timestamp
                                                    limit:(NSInteger)limit {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    PDSDatabase *db = [self serviceDatabaseWithError:nil];
     if (!db) return nil;
 
     NSString *sql = @"SELECT timestamp, seq_number, events_per_second, subscriber_count, "
@@ -239,34 +232,27 @@
                     @"ORDER BY timestamp ASC "
                     @"LIMIT ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        return nil;
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql
+                                                           params:@[@((long long)timestamp), @(limit)]
+                                                            error:nil];
+
+    NSMutableArray *results = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        [results addObject:@{
+            @"timestamp": @([row[@"timestamp"] longLongValue]),
+            @"seq": @([row[@"seq_number"] longLongValue]),
+            @"eventsPerSecond": @([row[@"events_per_second"] doubleValue]),
+            @"subscriberCount": @([row[@"subscriber_count"] longLongValue]),
+            @"backpressureWarnings": @([row[@"backpressure_warnings"] longLongValue]),
+            @"backpressureCritical": @([row[@"backpressure_critical"] longLongValue]),
+            @"queueOverflows": @([row[@"queue_overflows"] longLongValue])
+        }];
     }
-
-    sqlite3_bind_int64(stmt, 1, (long)timestamp);
-    sqlite3_bind_int64(stmt, 2, limit);
-
-    NSMutableArray *results = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        NSDictionary *row = @{
-            @"timestamp": @(sqlite3_column_int64(stmt, 0)),
-            @"seq": @(sqlite3_column_int64(stmt, 1)),
-            @"eventsPerSecond": @(sqlite3_column_double(stmt, 2)),
-            @"subscriberCount": @(sqlite3_column_int64(stmt, 3)),
-            @"backpressureWarnings": @(sqlite3_column_int64(stmt, 4)),
-            @"backpressureCritical": @(sqlite3_column_int64(stmt, 5)),
-            @"queueOverflows": @(sqlite3_column_int64(stmt, 6))
-        };
-        [results addObject:row];
-    }
-
-    sqlite3_finalize(stmt);
     return results.count > 0 ? results : nil;
 }
 
 - (nullable NSArray<NSDictionary *> *)hourlyDataForPastDays:(NSInteger)days {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    PDSDatabase *db = [self serviceDatabaseWithError:nil];
     if (!db) return nil;
 
     NSTimeInterval cutoff = [NSDate timeIntervalSinceReferenceDate] - (days * 24 * 3600);
@@ -281,56 +267,31 @@
                     @"GROUP BY hour "
                     @"ORDER BY hour ASC";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        return nil;
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql
+                                                           params:@[@((long long)cutoff)]
+                                                            error:nil];
+
+    NSMutableArray *results = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        [results addObject:@{
+            @"hour": @([row[@"hour"] longLongValue]),
+            @"avgEventsPerSecond": @([row[@"avg_eps"] doubleValue]),
+            @"avgSubscribers": @([row[@"avg_subs"] doubleValue]),
+            @"totalWarnings": @([row[@"total_warnings"] longLongValue])
+        }];
     }
-
-    sqlite3_bind_int64(stmt, 1, (long)cutoff);
-
-    NSMutableArray *results = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        NSDictionary *row = @{
-            @"hour": @(sqlite3_column_int64(stmt, 0)),
-            @"avgEventsPerSecond": @(sqlite3_column_double(stmt, 1)),
-            @"avgSubscribers": @(sqlite3_column_double(stmt, 2)),
-            @"totalWarnings": @(sqlite3_column_int64(stmt, 3))
-        };
-        [results addObject:row];
-    }
-
-    sqlite3_finalize(stmt);
     return results.count > 0 ? results : nil;
 }
 
 - (BOOL)pruneOlderThan:(NSInteger)retentionDays error:(NSError **)error {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
-    if (!db) {
-        if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                                 code:-1
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
-        return NO;
-    }
+    PDSDatabase *db = [self serviceDatabaseWithError:error];
+    if (!db) return NO;
 
     NSTimeInterval cutoff = [NSDate timeIntervalSinceReferenceDate] - (retentionDays * 24 * 3600);
 
-    NSString *sql = @"DELETE FROM sequencer_analytics WHERE timestamp < ?";
-
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                         code:sqlite3_extended_errcode(db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-        }
-        return NO;
-    }
-
-    sqlite3_bind_int64(stmt, 1, (long)cutoff);
-    BOOL success = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-
-    return success;
+    return [db executeParameterizedUpdate:@"DELETE FROM sequencer_analytics WHERE timestamp < ?"
+                                   params:@[@((long long)cutoff)]
+                                    error:error];
 }
 
 - (void)dealloc {

@@ -5,9 +5,18 @@
 #import "Admin/Diagnostics/PDSSequencerHealthHandler.h"
 #import "Admin/Diagnostics/PDSBlobAuditHandler.h"
 #import "Admin/Diagnostics/PDSRateLimitAdminHandler.h"
+#import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
+#import "Blob/BlobStorage.h"
+#import "Blob/PDSDiskBlobProvider.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/Service/ServiceDatabases.h"
 
 @interface PDSSystemDiagnosticsHandlerTests : XCTestCase
 @property (nonatomic, strong) PDSSystemDiagnosticsHandler *handler;
+@property (nonatomic, strong) PDSBlobAuditManager *auditManager;
+@property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
+@property (nonatomic, strong) PDSDatabasePool *userDatabasePool;
+@property (nonatomic, copy) NSString *tempDirectory;
 @end
 
 @implementation PDSSystemDiagnosticsHandlerTests
@@ -15,6 +24,39 @@
 - (void)setUp {
     [super setUp];
     self.handler = [[PDSSystemDiagnosticsHandler alloc] init];
+
+    // The blob routes answer 503 until an audit manager is supplied, so the
+    // routing and forwarding tests need a real one to reach the handler.
+    self.tempDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                          [NSString stringWithFormat:@"SystemDiagnosticsTests_%@", [[NSUUID UUID] UUIDString]]];
+    [[NSFileManager defaultManager] createDirectoryAtPath:self.tempDirectory
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
+
+    self.serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:self.tempDirectory
+                                                            serviceMaxSize:4
+                                                           didCacheMaxSize:2
+                                                          sequencerMaxSize:2];
+
+    NSString *userDbDir = [self.tempDirectory stringByAppendingPathComponent:@"users"];
+    self.userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:userDbDir maxSize:4];
+
+    NSURL *blobURL = [NSURL fileURLWithPath:[self.tempDirectory stringByAppendingPathComponent:@"blobs"]];
+    PDSDiskBlobProvider *provider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
+    BlobStorage *blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.userDatabasePool
+                                                                provider:provider];
+    self.auditManager = [[PDSBlobAuditManager alloc] initWithBlobStorage:blobStorage
+                                                        serviceDatabases:self.serviceDatabases];
+    self.handler.auditManager = self.auditManager;
+}
+
+- (void)tearDown {
+    [self.auditManager.auditQueue cancelAllOperations];
+    [self.serviceDatabases closeAll];
+    [self.userDatabasePool closeAll];
+    [[NSFileManager defaultManager] removeItemAtPath:self.tempDirectory error:nil];
+    [super tearDown];
 }
 
 - (void)testSharedHandlerReturnsSameInstance {
