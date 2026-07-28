@@ -53,7 +53,7 @@
     "check": "deno check packages/*/mod.ts",
     "lint": "deno lint packages/ --ignore=packages/gruszka/lexicons.ts",
     "fmt": "deno fmt packages/",
-    "test": "deno test -A packages/",
+    "test": "deno run -A packages/hamownia/cli.ts test",
     "generate-client": "deno run -A packages/gruszka/scripts/generate.ts",
     "hamownia": "deno run -A packages/hamownia/cli.ts",
     "narzedzia": "deno run -A packages/narzedzia/cli.ts",

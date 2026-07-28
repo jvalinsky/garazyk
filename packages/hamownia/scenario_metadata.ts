@@ -358,6 +358,13 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
       requireCapability(Role.pds3, Cap.pds3.getRecord),
     ],
   },
+  "99": {
+    timeout: 90,
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.relay, Cap.relay.subscribeRepos),
+    ],
+  },
 };
 
 /**

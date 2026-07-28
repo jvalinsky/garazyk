@@ -21,6 +21,7 @@
         kPDSRecordTableName,
         kPDSBlockTableName,
         kPDSBlobTableName,
+        kPDSBlobRefTableName,
         kPDSInviteCodeTableName,
         kPDSPasskeysTableName,
         kPDSAdminTakedownTableName
@@ -129,7 +130,10 @@
             @{@"from": @"repo_did", @"table": kPDSRepoTableName, @"to": @"owner_did"}
         ],
         kPDSBlobTableName: @[
-            @{@"from": @"did", @"table": kPDSAccountTableName, @"to": @"did"}
+            // Actor-store shards do not contain service-store account rows.
+        ],
+        kPDSBlobRefTableName: @[
+            @{@"from": @"blob_cid", @"table": kPDSBlobTableName, @"to": @"cid"}
         ],
         kPDSInviteCodeTableName: @[
             // invite_codes table currently has no foreign key constraints defined

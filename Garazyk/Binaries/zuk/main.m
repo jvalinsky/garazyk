@@ -86,6 +86,7 @@ void print_usage(void) {
     printf("  --upstream <url>      Upstream firehose URL (wss://...)\n");
     printf("  --data-dir <path>     Data directory for relay state\n");
     printf("  --config <path>       Configuration file path\n");
+    printf("  --validation-mode <mode>  Continuity policy: strict, log-only, or lenient\n");
     printf("  --no-upstream         Run without upstream (passthrough mode)\n");
     printf("  -v, --verbose         Enable debug logging\n");
     printf("  -h, --help            Show this help\n\n");
@@ -106,6 +107,24 @@ static int fail_with_usage(NSString *message) {
     }
     print_usage();
     return 2;
+}
+
+static BOOL parse_validation_mode(NSString *name,
+                                  RelayValidationMode *mode) {
+    NSString *normalized = name.lowercaseString;
+    if (normalized.length == 0 || [normalized isEqualToString:@"log-only"]) {
+        *mode = RelayValidationModeLogOnly;
+        return YES;
+    }
+    if ([normalized isEqualToString:@"strict"]) {
+        *mode = RelayValidationModeStrict;
+        return YES;
+    }
+    if ([normalized isEqualToString:@"lenient"]) {
+        *mode = RelayValidationModeLenient;
+        return YES;
+    }
+    return NO;
 }
 
 // Force NSDateFormatter category to be linked
@@ -161,6 +180,7 @@ int main(int argc, const char * argv[]) {
             [GZCommandLineOption optionWithLongName:@"port" shortName:@"p" type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"config" shortName:@"c" type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"validation-mode" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"upstream" shortName:@"u" type:GZCommandLineOptionTypeRepeatableString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"no-upstream" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
@@ -184,6 +204,9 @@ int main(int argc, const char * argv[]) {
         NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 2584;
         NSString *dataDir = parsedArgs[@"data-dir"];
         NSString *configPath = parsedArgs[@"config"];
+        NSString *validationModeName =
+            parsedArgs[@"validation-mode"] ?:
+            [NSProcessInfo processInfo].environment[@"RELAY_VALIDATION_MODE"];
         NSMutableArray<NSString *> *upstreamURLs = [NSMutableArray arrayWithArray:parsedArgs[@"upstream"] ?: @[]];
         BOOL noUpstream = [parsedArgs[@"no-upstream"] boolValue];
         BOOL verbose = [parsedArgs[@"verbose"] boolValue];
@@ -222,6 +245,10 @@ int main(int argc, const char * argv[]) {
                 // Override data directory if not set via CLI
                 if (!dataDir && relayConfig[@"dataDirectory"]) {
                     dataDir = relayConfig[@"dataDirectory"];
+                }
+                if (validationModeName.length == 0 &&
+                    [relayConfig[@"validationMode"] isKindOfClass:[NSString class]]) {
+                    validationModeName = relayConfig[@"validationMode"];
                 }
             }
             
@@ -297,6 +324,13 @@ int main(int argc, const char * argv[]) {
             initWithEventBuffer:eventBuffer
             subscribeReposHandler:subscribeReposHandler];
         downstreamHandler.metrics = metrics;
+        RelayValidationMode validationMode = RelayValidationModeLogOnly;
+        if (!parse_validation_mode(validationModeName, &validationMode)) {
+            return fail_with_usage(
+                [NSString stringWithFormat:@"Unknown validation mode: %@",
+                                           validationModeName]);
+        }
+        downstreamHandler.chainValidationMode = validationMode;
 
         // Initialize repo state manager for XRPC queries (with SQLite persistence)
         NSString *relayStatePath = [dataDir stringByAppendingPathComponent:@"relay_state.db"];

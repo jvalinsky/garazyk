@@ -188,7 +188,7 @@ Deno.test("toSummary: handles optional requirements and browser flows", () => {
 
 Deno.test("toSummary: unknown scenario ID gets empty parameters", () => {
   const scenario: ScenarioInfo = {
-    id: "99",
+    id: "999",
     name: "nonexistent",
     path: "/tmp/scenario.ts",
     requires: [],
@@ -201,7 +201,7 @@ Deno.test("toSummary: unknown scenario ID gets empty parameters", () => {
 
   const summary = toSummary(scenario);
 
-  assertEquals(summary.id, "99");
+  assertEquals(summary.id, "999");
   assertEquals(summary.timeout, undefined);
   assertEquals(summary.parameters, {});
 });

@@ -9,7 +9,7 @@
 
 import { parseArgs } from "@std/cli";
 import { fromFileUrl, join } from "@std/path";
-import { copy, exists } from "@std/fs";
+import { exists } from "@std/fs";
 
 const scriptDir = fromFileUrl(new URL(".", import.meta.url));
 const repoRoot = join(scriptDir, "..");
@@ -107,6 +107,68 @@ async function runDocker(
   }
 }
 
+/**
+ * Copy a directory tree while replacing symbolic links with their targets.
+ *
+ * Docker rejects staging-context symlinks whose targets live outside the
+ * context. The source asset trees intentionally link to the shared design
+ * system, so staging must materialize those links as ordinary files.
+ */
+async function copyTreeDereferencingSymlinks(
+  source: string,
+  target: string,
+  ancestors = new Set<string>(),
+): Promise<void> {
+  const resolvedSource = await Deno.realPath(source);
+  const sourceInfo = await Deno.stat(resolvedSource);
+
+  if (sourceInfo.isDirectory) {
+    if (ancestors.has(resolvedSource)) {
+      throw new Error(`Asset symlink cycle detected at ${source}`);
+    }
+
+    ancestors.add(resolvedSource);
+    try {
+      await Deno.mkdir(target, { recursive: true });
+      for await (const entry of Deno.readDir(resolvedSource)) {
+        await copyTreeDereferencingSymlinks(
+          join(resolvedSource, entry.name),
+          join(target, entry.name),
+          ancestors,
+        );
+      }
+    } finally {
+      ancestors.delete(resolvedSource);
+    }
+    return;
+  }
+
+  if (sourceInfo.isFile) {
+    await Deno.mkdir(join(target, ".."), { recursive: true });
+    await Deno.copyFile(resolvedSource, target);
+    await Deno.chmod(target, sourceInfo.mode ?? 0o644);
+    return;
+  }
+
+  throw new Error(`Unsupported asset entry type: ${source}`);
+}
+
+/** Replace one staged asset tree atomically so failed runs leave no partial tree. */
+async function stageAsset(name: string, source: string): Promise<void> {
+  const target = join(stagingDir, name);
+  const temporaryTarget = `${target}.tmp-${crypto.randomUUID()}`;
+  console.log(`[stage] Copying ${name}...`);
+
+  try {
+    await copyTreeDereferencingSymlinks(source, temporaryTarget);
+    await Deno.remove(target, { recursive: true }).catch(() => {});
+    await Deno.rename(temporaryTarget, target);
+  } catch (error) {
+    await Deno.remove(temporaryTarget, { recursive: true }).catch(() => {});
+    throw error;
+  }
+}
+
 async function buildMode() {
   console.log("[stage] Building Linux binaries inside Docker...");
   console.log(`[stage] Using Dockerfile: ${dockerfile}`);
@@ -186,25 +248,18 @@ async function buildMode() {
       lexiconStaging,
     ]);
 
-    // Assets copies
-    const copyAsset = async (name: string, containerPath: string) => {
-      const target = join(stagingDir, name);
-      if (!await exists(target)) {
-        console.log(`[stage] Copying ${name}...`);
-        await runDocker("cp", [`${containerId}:${containerPath}`, target]);
-      }
-    };
-
-    await copyAsset("PLC-assets", "/src/Garazyk/Sources/PLC/Assets");
-    await copyAsset("Auth-assets", "/src/Garazyk/Sources/Auth/Assets");
-
-    if (!await exists(join(stagingDir, "css-shared"))) {
-      console.log("[stage] Copying shared design system CSS...");
-      await copy(
-        join(repoRoot, "Garazyk/Sources/Shared/DesignSystem/css"),
-        join(stagingDir, "css-shared"),
-      );
-    }
+    await stageAsset(
+      "PLC-assets",
+      join(repoRoot, "Garazyk/Sources/PLC/Assets"),
+    );
+    await stageAsset(
+      "Auth-assets",
+      join(repoRoot, "Garazyk/Sources/Auth/Assets"),
+    );
+    await stageAsset(
+      "css-shared",
+      join(repoRoot, "Garazyk/Sources/Shared/DesignSystem/css"),
+    );
 
     console.log("[stage] Verifying binaries...");
     for (const binary of BINARIES) {

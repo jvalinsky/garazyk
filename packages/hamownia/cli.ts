@@ -7,7 +7,7 @@ import { fuzzCommand } from "./cli/fuzz.ts";
 import { runCommand } from "./cli/run.ts";
 import { serviceCommand } from "./cli/service.ts";
 import { smokeCommand } from "./cli/smoke.ts";
-import { testCommand } from "./cli/test.ts";
+import { testCommand } from "./cli/test_command.ts";
 
 export const hamowniaCommand = new Command()
   .name("hamownia")

@@ -48,7 +48,7 @@ function topology(): Topology {
 
 function scenario(path: string, name = "Test Scenario"): ScenarioInfo {
   return {
-    id: "99",
+    id: "999",
     name,
     path,
     requires: [],
@@ -186,7 +186,7 @@ Deno.test("Docker scenario options use schemat roleEnvKey mapping", () => {
   topo.capabilities = new Set(["createAccount"]);
 
   const options = buildDockerScenarioRunnerOptions(
-    scenario("/repo/scripts/scenarios/scenarios/99_test.ts"),
+    scenario("/repo/scripts/scenarios/scenarios/999_test.ts"),
     30,
     dockerArgs,
     topo,
