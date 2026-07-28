@@ -39,7 +39,7 @@
         _siteKey = [siteKey copy];
         _secretKey = [secretKey copy];
         _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
-        _siteverifyTimeout = 12.0;
+        _siteverifyTimeout = 5.0;
     }
     return self;
 }
@@ -128,8 +128,23 @@
     for (NSString *key in @[@"secret", @"response", @"remoteip"]) {
         NSString *value = formData[key];
         if (!value) continue;
+        NSString *encoded = [self percentEncode:value];
+        if (!encoded) {
+            // stringByAddingPercentEncodingWithAllowedCharacters: returns nil
+            // for unpaired surrogates. Reject rather than writing a literal
+            // "(null)" into the form body (e.g. secret=(null)).
+            GZ_LOG_WARN(@"[CaptchaGate] percentEncode failed for field %@ (unpaired surrogate)", key);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                             code:PDSRegistrationGateErrorInvalidCaptcha
+                                         userInfo:@{
+                                             NSLocalizedDescriptionKey: @"CAPTCHA verification request could not be encoded"
+                                         }];
+            }
+            return NO;
+        }
         if (fieldIndex > 0) [formBody appendString:@"&"];
-        [formBody appendFormat:@"%@=%@", key, [self percentEncode:value]];
+        [formBody appendFormat:@"%@=%@", key, encoded];
         fieldIndex++;
     }
 
@@ -139,16 +154,18 @@
     request.HTTPMethod = @"POST";
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     request.HTTPBody = bodyData;
-    request.timeoutInterval = 10.0;
+    request.timeoutInterval = 3.0;
 
     ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
-    options.timeout = 10.0;
+    options.timeout = 3.0;
     options.maxResponseBytes = 64 * 1024; // siteverify responses are small
 
     __block NSDictionary *responseJSON = nil;
     __block NSHTTPURLResponse *httpResponse = nil;
     __block NSError *requestError = nil;
     __block BOOL completed = NO;
+    NSLock *stateLock = [[NSLock alloc] init];
+    __block BOOL cancelled = NO;
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
@@ -157,6 +174,17 @@
                                              completion:^(NSData * _Nullable data,
                                                           NSHTTPURLResponse * _Nullable resp,
                                                           NSError * _Nullable taskError) {
+        [stateLock lock];
+        BOOL alreadyCancelled = cancelled;
+        if (!alreadyCancelled) {
+            completed = YES;
+        }
+        [stateLock unlock];
+        // The wait below already gave up on this request; do not touch
+        // shared state that nobody will read anymore.
+        if (alreadyCancelled) {
+            return;
+        }
         httpResponse = resp;
         requestError = taskError;
         if (!taskError && data && data.length > 0) {
@@ -165,7 +193,6 @@
                 responseJSON = parsed;
             }
         }
-        completed = YES;
         dispatch_semaphore_signal(semaphore);
     }];
 
@@ -175,8 +202,13 @@
 
     // Timeout — the completion block did not fire in time. Fail closed with
     // a 503-equivalent error so the client retries rather than believing the
-    // signup succeeded.
+    // signup succeeded. Mark the in-flight task cancelled so its completion,
+    // if it fires late, is a no-op rather than writing to __block state that
+    // this function has already stopped reading.
     if (waitResult != 0 || !completed) {
+        [stateLock lock];
+        cancelled = YES;
+        [stateLock unlock];
         GZ_LOG_WARN(@"[CaptchaGate] siteverify timed out for provider %@", _provider);
         if (error) {
             *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain

@@ -78,12 +78,18 @@ NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationg
         return YES;
     }
 
-    // OR logic: if ANY gate passes, the registration is allowed.
-    // Dispatch to the remoteAddress-aware variant when the gate implements it;
-    // fall back to the two-parameter method otherwise. Without this dispatch,
-    // the remoteAddress parameter is unreachable for gates that need it
-    // (e.g. CAPTCHA siteverify's remoteip field).
-    NSError *lastError = nil;
+    // AND logic: every configured gate must pass. Four independent
+    // *Required flags (invite code, phone OTP, CAPTCHA, OAuth-only) each add
+    // one gate here; treating that as a disjunction would let any one of
+    // them bypass all the others (e.g. a valid invite code skipping CAPTCHA
+    // entirely). Short-circuit on the first failing gate: its error
+    // (including any httpStatus, e.g. 503 for an unreachable CAPTCHA
+    // provider) is what the caller sees, and a gate that already rejected
+    // the request does not trigger a needless downstream siteverify
+    // round-trip. Dispatch to the remoteAddress-aware variant when the gate
+    // implements it; fall back to the two-parameter method otherwise.
+    // Without this dispatch, the remoteAddress parameter is unreachable for
+    // gates that need it (e.g. CAPTCHA siteverify's remoteip field).
     for (id<PDSRegistrationGate> gate in self.mutableGates) {
         NSError *gateError = nil;
         BOOL passed = NO;
@@ -97,22 +103,21 @@ NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationg
                                          configuration:configuration
                                                  error:&gateError];
         }
-        if (passed) {
-            return YES;
+        if (!passed) {
+            if (error) {
+                *error = gateError ?: [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                                           code:PDSRegistrationGateErrorNoGatePassed
+                                                       userInfo:@{
+                                                           NSLocalizedDescriptionKey:
+                                                               @"Registration rejected"
+                                                       }];
+            }
+            return NO;
         }
-        lastError = gateError;
     }
 
-    // All gates failed
-    if (error) {
-        *error = lastError ?: [NSError errorWithDomain:PDSRegistrationGateErrorDomain
-                                                   code:PDSRegistrationGateErrorNoGatePassed
-                                               userInfo:@{
-                                                   NSLocalizedDescriptionKey:
-                                                       @"Registration rejected: no gate passed"
-                                               }];
-    }
-    return NO;
+    // All configured gates passed.
+    return YES;
 }
 
 @end
