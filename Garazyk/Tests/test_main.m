@@ -1228,6 +1228,7 @@ int main(int argc, char *argv[]) {
       @"PDSSequencerAnalyticsTests",
       @"PDSRateLimitAdminHandlerTests",
       @"AppViewIndexerTests",
+      @"AppViewCollectionFilterTests",
       @"AppViewServiceTests",
       @"AppViewHookTests",
       @"PDSSQLiteRepositoryTests",

@@ -47,6 +47,7 @@
     _partialProxyFallbackURL   = nil;
     _videoServiceURL           = nil;
     _plcURL                  = @"https://plc.directory";
+    _indexCollections          = @[];
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +78,8 @@
             [GZConfigurationProperty propertyWithTargetKey:@"partialTTLHours" jsonKeys:@[@"partial.ttl_hours", @"partial_ttl_hours"] envVar:@"APPVIEW_PARTIAL_TTL_HOURS" type:GZConfigurationPropertyTypeInteger],
             [GZConfigurationProperty propertyWithTargetKey:@"partialProxyFallback" jsonKeys:@[@"partial.proxy_fallback", @"partial_proxy_fallback"] envVar:@"APPVIEW_PARTIAL_PROXY_FALLBACK" type:GZConfigurationPropertyTypeBoolean],
             [GZConfigurationProperty propertyWithTargetKey:@"partialProxyFallbackURL" jsonKeys:@[@"partial.proxy_fallback_url", @"proxy_fallback_url"] envVar:@"APPVIEW_PARTIAL_PROXY_FALLBACK_URL" type:GZConfigurationPropertyTypeString],
-            [GZConfigurationProperty propertyWithTargetKey:@"videoServiceURL" jsonKeys:@[@"video_service_url"] envVar:@"APPVIEW_VIDEO_SERVICE_URL" type:GZConfigurationPropertyTypeString]
+            [GZConfigurationProperty propertyWithTargetKey:@"videoServiceURL" jsonKeys:@[@"video_service_url"] envVar:@"APPVIEW_VIDEO_SERVICE_URL" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"indexCollections" jsonKeys:@[@"index.collections", @"index_collections"] envVar:@"APPVIEW_INDEX_COLLECTIONS" type:GZConfigurationPropertyTypeStringArray]
         ]];
     });
     return parser;
