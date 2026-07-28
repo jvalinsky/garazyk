@@ -47,7 +47,7 @@
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/disable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *account = request.jsonBody[@"account"] ?: [request queryParamForKey:@"account"];
+        NSString *account = [request.jsonBody[@"account"] isKindOfClass:[NSString class]] ? request.jsonBody[@"account"] : [request queryParamForKey:@"account"];
         NSDictionary *result = [weakSelf.backendClient disableInvitesForAccount:account ?: @""];
         if (result[@"error"]) {
             response.statusCode = 400;
@@ -63,8 +63,8 @@
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-takedown" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSArray *dids = request.jsonBody[@"dids"];
-        NSDictionary *result = [weakSelf.backendClient bulkTakedownAccounts:dids ?: @[]];
+        NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
+        NSDictionary *result = [weakSelf.backendClient bulkTakedownAccounts:dids];
         response.statusCode = 200;
         response.contentType = @"application/json";
         [response setJsonBody:result];
@@ -72,8 +72,8 @@
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-delete" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSArray *dids = request.jsonBody[@"dids"];
-        NSDictionary *result = [weakSelf.backendClient bulkDeleteAccounts:dids ?: @[]];
+        NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
+        NSDictionary *result = [weakSelf.backendClient bulkDeleteAccounts:dids];
         response.statusCode = 200;
         response.contentType = @"application/json";
         [response setJsonBody:result];
@@ -120,7 +120,7 @@
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/enable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *account = request.jsonBody[@"account"] ?: [request queryParamForKey:@"account"];
+        NSString *account = [request.jsonBody[@"account"] isKindOfClass:[NSString class]] ? request.jsonBody[@"account"] : [request queryParamForKey:@"account"];
         NSDictionary *result = [weakSelf.backendClient enableInvitesForAccount:account ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -132,8 +132,8 @@
     // PDS: Update handle action
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-handle" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: @"";
-        NSString *handle = request.jsonBody[@"handle"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
+        NSString *handle = [request.jsonBody[@"handle"] isKindOfClass:[NSString class]] ? request.jsonBody[@"handle"] : @"";
         NSDictionary *result = [weakSelf.backendClient updateAccountHandle:handle forDID:did];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -145,7 +145,7 @@
     // PDS: Delete account
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-account" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *did = request.jsonBody[@"did"] ?: @"";
+        NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSDictionary *result = [weakSelf.backendClient deleteAccount:did];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -167,8 +167,8 @@
     // PDS: Resolve report
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/resolve-pds-report" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *reportID = request.jsonBody[@"reportID"] ?: @"";
-        NSString *action = request.jsonBody[@"action"] ?: @"";
+        NSString *reportID = [request.jsonBody[@"reportID"] isKindOfClass:[NSString class]] ? request.jsonBody[@"reportID"] : @"";
+        NSString *action = [request.jsonBody[@"action"] isKindOfClass:[NSString class]] ? request.jsonBody[@"action"] : @"";
         NSDictionary *result = [weakSelf.backendClient resolveReport:reportID action:action];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
