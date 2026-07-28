@@ -5,8 +5,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/ActorStore/PDSActorStoreInternal.h"
-#import "Database/Utils/PDSSQLiteUtils.h"
-#import <sqlite3.h>
+#import "Database/PDSDatabase.h"
 
 @interface PDSHealthCheck ()
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
@@ -97,22 +96,19 @@
         return PDSHealthStatusCritical;
     }
     
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA integrity_check", -1, &stmt, NULL);
-    if (result != SQLITE_OK) {
+    NSError *queryError = nil;
+    NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:@"PRAGMA integrity_check"
+                                                                        params:@[]
+                                                                         error:&queryError];
+    if (queryError) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.health"
-                                        code:result
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare integrity check"}];
+                                        code:queryError.code
+                                    userInfo:@{NSLocalizedDescriptionKey: queryError.localizedDescription ?: @"Failed to run integrity check"}];
         }
         return PDSHealthStatusCritical;
     }
-    
-    NSString *checkResult = nil;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        const char *text = (const char *)sqlite3_column_text(stmt, 0);
-        checkResult = [NSString stringWithUTF8String:text];
-    }
+    NSString *checkResult = rows.firstObject[@"integrity_check"];
     
     if ([checkResult isEqualToString:@"ok"]) {
         return PDSHealthStatusHealthy;
@@ -141,24 +137,20 @@
         return NO;
     }
     
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA foreign_key_check", -1, &stmt, NULL);
-    if (result != SQLITE_OK) {
+    NSError *queryError = nil;
+    NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:@"PRAGMA foreign_key_check"
+                                                                        params:@[]
+                                                                         error:&queryError];
+    if (queryError) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.health"
-                                        code:result
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare foreign key check"}];
+                                        code:queryError.code
+                                    userInfo:@{NSLocalizedDescriptionKey: queryError.localizedDescription ?: @"Failed to run foreign key check"}];
         }
         return NO;
     }
-    
-    BOOL hasViolations = NO;
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        hasViolations = YES;
-        break;
-    }
-    
-    return !hasViolations;
+
+    return rows.count == 0;
 }
 
 - (NSDictionary<NSString *, NSNumber *> *)getTableSizes {
@@ -168,18 +160,16 @@
     PDSActorStore *store = [serviceDb.servicePool storeForDid:@"__service__" error:nil];
     
     if (store && store.isOpen) {
-        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], 
-            "SELECT name, SUM(pages * page_size) as size FROM sqlite_master "
-            "LEFT JOIN sqlite_dbpage USING(sqlite_dbpage.name) GROUP BY name",
-            -1, &stmt, NULL) == SQLITE_OK) {
-            
-            while (sqlite3_step(stmt) == SQLITE_ROW) {
-                const char *name = (const char *)sqlite3_column_text(stmt, 0);
-                long long size = sqlite3_column_int64(stmt, 1);
-                if (name) {
-                    sizes[[NSString stringWithUTF8String:name]] = @(size);
-                }
+        NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:
+            @"SELECT name, SUM(pages * page_size) AS size FROM sqlite_master "
+             "LEFT JOIN sqlite_dbpage USING(sqlite_dbpage.name) GROUP BY name"
+            params:@[]
+            error:nil];
+        for (NSDictionary *row in rows) {
+            NSString *name = row[@"name"];
+            NSNumber *size = row[@"size"];
+            if (name && size) {
+                sizes[name] = size;
             }
         }
     }
@@ -195,15 +185,12 @@
         return 0;
     }
     
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) FROM dbstat WHERE name = 'accounts'", -1, &stmt, NULL) != SQLITE_OK) {
-        return 0;
-    }
-    
-    double fragmentation = 0;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        fragmentation = sqlite3_column_double(stmt, 0);
-    }
+    NSArray<NSDictionary *> *rows = [store.database executeParameterizedQuery:
+        @"SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) AS fragmentation "
+         "FROM dbstat WHERE name = 'accounts'"
+        params:@[]
+        error:nil];
+    double fragmentation = [rows.firstObject[@"fragmentation"] doubleValue];
     
     return (NSUInteger)(fragmentation * 100);
 }

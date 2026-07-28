@@ -148,6 +148,22 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                              error:(NSError **)error;
 
 /*!
+ @method executeParameterizedUpdate:params:changedRows:error:
+ @abstract Executes a parameterized SQL statement and reports its affected row count.
+ @discussion The statement and sqlite3_changes() are evaluated on the database's
+ serialized queue, so the count always belongs to this statement.
+ @param sql SQL statement with ? placeholders.
+ @param params Array of values to bind to placeholders.
+ @param changedRows Receives the number of rows affected on success; may be NULL.
+ @param error On return, contains an error if the statement failed.
+ @return YES if the statement executed successfully, NO otherwise.
+ */
+- (BOOL)executeParameterizedUpdate:(NSString *)sql
+                            params:(NSArray *)params
+                       changedRows:(nullable NSInteger *)changedRows
+                             error:(NSError **)error;
+
+/*!
  @method parameterPlaceholdersForCount:
  @abstract Returns a string of ? placeholders for use in an IN clause.
  @param count Number of placeholders needed.
@@ -184,4 +200,3 @@ NS_ASSUME_NONNULL_END
 #import "PDSDatabase+WebAuthn.h"
 #import "PDSDatabase+Blocks.h"
 #import "PDSDatabase+OAuthClients.h"
-

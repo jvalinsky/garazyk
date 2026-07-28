@@ -1212,6 +1212,13 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
                             params:(NSArray *)params
                              error:(NSError **)error {
+    return [self executeParameterizedUpdate:sql params:params changedRows:NULL error:error];
+}
+
+- (BOOL)executeParameterizedUpdate:(NSString *)sql
+                            params:(NSArray *)params
+                       changedRows:(NSInteger *)changedRows
+                             error:(NSError **)error {
     // See executeParameterizedQuery:params:error: above.
     if (!self.isOpen) {
         [self openWithError:nil];
@@ -1246,6 +1253,9 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
     }
 
+    if (success && changedRows) {
+        *changedRows = sqlite3_changes(_db);
+    }
     result = success;
 
     return;

@@ -84,7 +84,10 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 /*!
  @method serviceDatabase
  
- @abstract Get raw service database connection from pool.
+ @abstract Deprecated raw service database connection accessor.
+ @discussion Do not use in production code. It returns an unowned connection
+ outside PDSDatabase's serialization queue; use serviceDatabaseWithError: and
+ PDSDatabase's parameterized APIs instead. Retained temporarily for tests.
  
  @return Raw sqlite3 handle or NULL on failure.
  */
