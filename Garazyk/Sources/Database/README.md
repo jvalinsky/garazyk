@@ -2,8 +2,8 @@
 
 ## Overview
 
-This document describes the single-tenant SQLite database architecture for the ATProto Personal Data
-Server (PDS), based on the Bluesky PDS reference implementation.
+The PDS uses a single-tenant SQLite layout, following the Bluesky PDS reference implementation:
+three service-level databases plus one database per user DID.
 
 ## Architecture
 
@@ -63,7 +63,7 @@ Garazyk/Sources/Database/
 │   └── PDSHealthCheck.m
 ├── PDSDatabase.h/m       # Legacy (deprecated)
 ├── Schema.h/m            # Legacy schema definitions
-└── ARCHITECTURE.md       # This document
+└── README.md             # This document
 ```
 
 ## Key Components
@@ -100,10 +100,10 @@ The `ActorStore` class manages a single user's SQLite database:
 
 Manages multiple ActorStore instances with LRU caching:
 
-- **Max size**: 30,000 open connections (matches Bluesky reference)
-- **File handle limit**: 30,000
-- **Auto-eviction**: 5-minute timeout for unused stores
-- **Hierarchical storage**: `${dbDirectory}/${didPrefix}/${did}`
+- Max size: 30,000 open connections, matching the Bluesky reference.
+- File handle limit: 30,000.
+- Auto-eviction: 5-minute timeout for unused stores.
+- Hierarchical storage: `${dbDirectory}/${didPrefix}/${did}`.
 
 **Usage**:
 
@@ -229,7 +229,7 @@ NSLog(@"Errors: %@", health[@"errors"]);
 
 ## Model Classes
 
-The same model classes are used in both architectures:
+Both architectures use the same model classes:
 
 - `PDSDatabaseAccount` - Account data (DID, handle, email, JWT tokens)
 - `PDSDatabaseRepo` - Repository info (owner DID, root CID)
@@ -250,14 +250,13 @@ PDSController *controller = [[PDSController alloc] initWithDirectory:@"/path/to/
 
 ## Next Steps
 
-1. **HTTP handler integration** - Update HTTP handlers to use `PDSDatabasePool`
-2. **Sequencer implementation** - Implement repo update sequencing
-3. **Rate limiting** - Add rate limiting to service database layer
-4. **Backup/recovery** - Implement using SQLite backup API
-5. **Testing** - Add unit and integration tests
+1. Update the HTTP handlers to use `PDSDatabasePool`.
+2. Implement repo update sequencing.
+3. Add rate limiting to the service database layer.
+4. Implement backup and recovery using the SQLite backup API.
+5. Add unit and integration tests.
 
 ## Dependencies
 
-- **macOS SDK**: `sqlite3.h`, `Security.framework`
-- **No external dependencies**
-- **Apple-first-party only**
+`sqlite3.h` and `Security.framework` from the macOS SDK. No external dependencies; Apple
+first-party only.

@@ -116,21 +116,19 @@ components:
 
 ## 1. Overview
 
-**Creative North Star: "Network Flight Deck"**
+The dashboard is a dense control surface for local ATProto network testing. It displays topology, service health, run progress, logs, and failures in a single view. The design language names ATProto roles and capabilities before project-specific names.
 
-The dashboard is a dense control surface for local ATProto network testing. It functions as an engineering instrument. It displays topology, service health, run progress, logs, and failures in a single view. The design language describes ATProto roles and capabilities before project-specific names.
-
-The UI provides a fixed toolbar, source-list sidebar, status bar, tabular service state, live progress, scenario cards, and log views. The design reduces control ambiguity, consolidates status, and builds diagnostic flows over summary counts.
+The UI provides a fixed toolbar, source-list sidebar, status bar, tabular service state, live progress, scenario cards, and log views. The layout is built to reduce control ambiguity, consolidate status, and lead the operator into a diagnostic flow rather than a summary count.
 
 Avoid decorative AppKit imitations, card-heavy overviews, modal-first configurations, color-only status indicators, and Garazyk-specific framing.
 
-**Key Characteristics:**
+Characteristics:
 
-- Product register, task-first, and dense by design.
-- System font, compact type scale, and small radii.
+- Product register, task-first, dense by design.
+- System font, compact type scale, small radii.
 - Restrained OKLCH palette with semantic state colors.
-- Split-pane and table patterns preferred over repeated cards when comparison matters.
-- State language must be consistent across toolbar, sidebar, status bar, detail pages, logs, and run history.
+- Split-pane and table patterns over repeated cards when comparison matters.
+- State language stays consistent across toolbar, sidebar, status bar, detail pages, logs, and run history.
 
 ## 2. Colors
 
@@ -175,7 +173,7 @@ The palette is a warm-neutral operational system with a restrained strawberry ac
 
 **Label/Mono Font:** SF Mono, Menlo, Monaco, Consolas, monospace for run IDs, metrics, logs, command output, and exact protocol values.
 
-**Character:** compact, native, and functional. Type should make status and hierarchy scannable without becoming decorative.
+**Character:** compact and native. Type makes status and hierarchy scannable without becoming decorative.
 
 ### Hierarchy
 
@@ -248,11 +246,11 @@ The dashboard should be flat by default and use tonal layering before shadows. B
 
 The run progress panel shows run state, elapsed time, total and remaining scenarios, current scenario, activity freshness, and mode badges. Stale activity requires text indicators, not just color.
 
-- **Layout & Structure:** Tinted background with a fine border (`var(--separator-color)`) and subtle shadow (`var(--shadow-sm)`). Features a segmented header and body separated by a hairline border (`var(--separator-color-secondary)`).
-- **Progress Track:** A highly precise, fine progress track with a `4px` height and `var(--radius-sm)` curvature.
-- **Progress Fill:** The bar fills with `var(--color-accent)` using a custom smooth decelerated easing (`width 0.6s cubic-bezier(0.25, 1, 0.5, 1)`).
-- **Glowing Tip:** Features an overlay tip (`::after`) with a soft glow (`8px` width, `rgba(255, 255, 255, 0.4)` background, and `2px` blur) to emphasize incremental completion.
-- **Activity Indicator:** Pairs color states (`var(--color-success)`, `var(--color-warning)`, `var(--color-destructive)`) with status text and active box-shadow glows (`0 0 6px`) to indicate update freshness dynamically.
+- **Layout and structure:** tinted background, `var(--separator-color)` border, `var(--shadow-sm)` shadow. A hairline `var(--separator-color-secondary)` border separates the header from the body.
+- **Progress track:** `4px` height, `var(--radius-sm)` corner radius.
+- **Progress fill:** `var(--color-accent)`, eased with `width 0.6s cubic-bezier(0.25, 1, 0.5, 1)`.
+- **Progress tip:** an `::after` overlay marks the leading edge. `8px` wide, `rgba(255, 255, 255, 0.4)` background, `2px` blur.
+- **Activity indicator:** pairs `var(--color-success)`, `var(--color-warning)`, and `var(--color-destructive)` with status text and a `0 0 6px` box-shadow to show update freshness.
 
 ### Log Viewer
 
@@ -260,20 +258,20 @@ The log viewer is a diagnostic tool, not a decoration. Use Log Well and Log Text
 
 ## 6. Do's and Don'ts
 
-### Do:
+### Do
 
-- **Do** keep topology, runner mode, implementation under test, and active run state visible while a run is active.
-- **Do** place action scope next to controls, especially start, stop, restart, topology changes, runner selection, and scenario parameters.
-- **Do** use tables, split panes, and grouped lists when users need to compare services, scenarios, steps, logs, or failures.
-- **Do** pair every color-coded state with text or an icon label.
-- **Do** make failed scenarios lead directly to the failed step, relevant service, log excerpt, and topology condition.
-- **Do** keep Garazyk-specific labels as implementation details; first describe ATProto roles, capabilities, services, and runners.
+- Keep topology, runner mode, implementation under test, and active run state visible while a run is active.
+- Place action scope next to controls, especially start, stop, restart, topology changes, runner selection, and scenario parameters.
+- Use tables, split panes, and grouped lists when users compare services, scenarios, steps, logs, or failures.
+- Pair every color-coded state with text or an icon label.
+- Make a failed scenario lead directly to the failed step, the relevant service, the log excerpt, and the topology condition.
+- Keep Garazyk-specific labels as implementation details. Name ATProto roles, capabilities, services, and runners first.
 
-### Don't:
+### Don't
 
-- **Don't** make the dashboard feel Garazyk-only when the model should fit swappable ATProto service implementations.
-- **Don't** use a card-heavy overview that hides relationships between topology, services, scenarios, logs, and failures.
-- **Don't** leave controls with unclear scope, especially start, stop, restart, topology changes, runner selection, and scenario parameters.
-- **Don't** rely on color alone for service health, scenario status, run state, compatibility, or stale activity.
-- **Don't** use modal-first configuration when inline, staged, or panel-based controls would keep context visible.
-- **Don't** use decorative AppKit imitation, hero metrics, gradient text, glass effects, ornamental motion, side-stripe accents, hardcoded black, or hardcoded white.
+- Make the dashboard feel Garazyk-only. The model should fit swappable ATProto service implementations.
+- Use a card-heavy overview that hides the relationships between topology, services, scenarios, logs, and failures.
+- Leave controls with unclear scope, especially start, stop, restart, topology changes, runner selection, and scenario parameters.
+- Rely on color alone for service health, scenario status, run state, compatibility, or stale activity.
+- Use modal-first configuration when inline, staged, or panel-based controls would keep context visible.
+- Use decorative AppKit imitation, hero metrics, gradient text, glass effects, ornamental motion, side-stripe accents, hardcoded black, or hardcoded white.
