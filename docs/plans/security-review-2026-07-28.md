@@ -975,6 +975,21 @@ header, then re-attempt the file-level deletion on the now-empty
 `OAuthProvider*` files. Future work item, recorded here so a follow-up
 audit does not re-do the same over-aggressive delete.
 
+**Resolved 2026-07-29 (S18 complete).** The exact refactor this amendment
+called for landed in `1013aa88` (protocol extraction) + `d47443f5` (the
+file-level delete, this time clean). Also deleted, since they conform
+only to the OAuthProvider-only protocols and have zero construction
+sites anywhere outside `PDSAuth.h`/`.m`: `PDSAuthStorage`,
+`PDSAuthClientRegistry`, `PDSAuthTokenSigner`,
+`PDSAuthUserAuthenticator`. Note `PDSAuthTokenSigner` was the class this
+review's own §4.7 entry (below) patched on 2026-07-29 09:47
+(`7e336dfe`) — that fix landed on code with zero consumers and is now
+moot along with the class it patched; §4.7's live-path half (`JWT.m:516`
+stamping `alg: ES256` on secp256k1-signed tokens) is untouched by either
+commit and may still be open. See
+`docs/plans/workstreams/01-security-and-protocol-correctness.md` § S18
+for full gate evidence.
+
 ### 4.6 DPoP `htu` from unvalidated Host
 
 **CONFIRMED, deployment-dependent.** `AuthVerifier.m:446` builds the expected
