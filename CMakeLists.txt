@@ -382,6 +382,9 @@ list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Ne
 list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRoute.m")
 list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRetryPolicy.m")
 list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpParsing.m")
+# Workstream 08 M4: ATProtoHandleValidator is a pure validator with no
+# Services/Storage/Transport dependency (see Identity/ note above).
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Identity/ATProtoHandleValidator.m")
 
 file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
   "Garazyk/Sources/Database/*.m"
@@ -427,6 +430,11 @@ list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDS/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Server/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Services/PDS(AdminService|PhoneVerificationProvider)\\.m$")
 list(APPEND ATPROTO_SERVICES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Security/Space/PDSSpaceAppAttestationVerifier.m")
+# ATProtoHandleValidator is a pure Foundation-only validator (no network,
+# storage, or keychain dependency) despite living in Identity/ alongside
+# HandleResolver (a real Services class — does live HTTP resolution via
+# ATProtoSafeHTTPClient/SSRFValidator) — carved out to ATProtoCore below.
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Identity/ATProtoHandleValidator\\.m$")
 
 file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
   "Garazyk/Sources/Network/*.m"
