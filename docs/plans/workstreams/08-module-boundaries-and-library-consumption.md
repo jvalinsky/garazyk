@@ -174,9 +174,36 @@ figure this milestone's verification gate names (86 → 36) was not
 re-measured directly — the module-boundary baseline is the tracked
 metric per M1's own correction, and it moved as described above.
 
-M4 remains not started. M0 (third-party consumption goal) remains an
-open decision — M1's baseline is useful either way, but M5/M6 stay gated
-on it.
+**M4 started** (`6d5ad6bd`). First inversion resolved: `Storage -> Services`
+via `ATProtoHandleValidator` — confirmed a pure Foundation-only validator
+(no network/storage/keychain dependency) despite living in `Identity/`
+alongside `HandleResolver.m`, a real Services class doing live HTTP
+resolution (`ATProtoSafeHTTPClient`/`SSRFValidator`). Same carve-out
+technique as M2/M3: `CMakeLists.txt` source-list change only, no file
+move, ~30 consumer files unaffected. Resolved both remaining leaks of
+this class (`ATProtoStorage` and `ATProtoTransport` each depended on it
+transitively via Services). Baseline ratcheted 51 → 49. Full
+`AllTests --gated=run` verified identical (pre-existing) failure profile.
+
+**Remaining M4 items, not yet started** (see the original scope below
+for the full list and per-item leak counts as originally estimated —
+not re-verified against the corrected baseline):
+- `Video -> Services`, `MediaCore -> Services`, `XRPC -> Video`:
+  `PDSBlobProvider` protocol relocation to Core.
+- `Transport -> Storage`: inject a storage protocol into `RateLimiter`
+  and the two route packs that import `PDSDatabase.h` directly.
+- `Transport -> Runtime`: invert route-pack registration so `App/`
+  handlers register themselves with the router instead of route packs
+  importing handlers.
+- `PLC <-> Sync`: a genuine cycle (`PLCServer` imports the WebSocket
+  adapter; `RelayEventValidator` imports `DIDPLCResolver`) — needs a
+  resolver protocol owned by Core.
+- `XRPC -> PLC`: a DAG question, not necessarily a code question —
+  needs a decision on whether PLC belongs below XRPC in the declared
+  graph before any code moves.
+
+M0 (third-party consumption goal) remains an open decision — M1's
+baseline is useful either way, but M5/M6 stay gated on it.
 
 # Module Boundaries and Library Consumption
 
