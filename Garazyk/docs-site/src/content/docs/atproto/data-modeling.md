@@ -1,106 +1,83 @@
 ---
-title: Data Modeling & Validation
-description: Parsing Lexicons, verifying XRPC schemas, and ensuring network-wide data integrity
+title: Data Modeling and Validation
+description: Lexicon schemas, repository records, and validation boundaries
 ---
 
-The AT Protocol is inherently, powerfully distributed. When millions of different clients, distinct
-Personal Data Server (PDS) instances, global AppViews, and Relays all talk to each other
-simultaneously over the internet, they absolutely cannot simply hurl unstructured, arbitrary JSON
-across the wire and hope the receiver understands it.
+AT Protocol services exchange data described by lexicons. A lexicon document
+assigns an NSID and defines one or more schemas for XRPC methods, repository
+records, or reusable object types.
 
-To ensure absolute interoperability across the federation, all inter-server and client-server
-communication is strictly typed via a unified JSON schema system called **Lexicons**.
+Lexicons give independent PDS, relay, AppView, and client implementations a
+shared wire contract. They do not replace application authorization or semantic
+checks; those remain the endpoint's responsibility.
 
-## Understanding Lexicons
+## Lexicon structure
 
-A single `.json` Lexicon file completely and definitively describes an RPC method, an Object schema,
-or a database Record. It acts as a contractual interface between the client and the server.
+A lexicon has an `id`, a revision number, and a `defs` map. The `main`
+definition is the default schema for the NSID. Other definitions can be
+referenced as `lex:<nsid>#<definition>`.
 
-For example, the `app.bsky.feed.post` lexicon defines exactly what a globally recognized "Tweet" (or
-"Skeet") looks like on the network:
+Common definition types include:
 
-- **`id`**: `app.bsky.feed.post` (The procedure, namespace, or record name identifier)
-- **`type`**: `record` (Denotes this schema describes data stored persistently in a user's
-  cryptographic repository, rather than a transient RPC query)
-- **`schema`**: Defines strictly what properties the JSON payload MUST or MAY contain.
-  - E.g., `text` must be a string with a maximum of 300 characters.
-  - E.g., `createdAt` must be a datetime formatted precisely as an ISO8601 string.
-  - E.g., `embed` can optionally contain a specific union of an image object or a quoted post.
+- `query`, `procedure`, and `subscription` for XRPC methods
+- `record` for repository collections
+- `object`, `array`, `string`, `integer`, `boolean`, `bytes`, `blob`, `ref`, and
+  `union`
 
-If you are implementing a server like `Garazyk PDS`, you must enforce these schemas rigidly on
-_every_ incoming HTTP request before passing any data to your underlying database or business
-routing layer. Failing to validate Lexicons means you risk storing malformed data that will break
-downstream Relays (AppViews) and corrupt the user's Merkle Search Tree (MST).
+Constraints can specify required object fields, string byte and grapheme limits,
+numeric ranges, array sizes, known values, and referenced schemas. For example,
+`app.bsky.feed.post` constrains `text` by both UTF-8 byte length and grapheme
+count.
 
-## Dynamic Validation in Objective-C
+## Repository records
 
-In a high-level JavaScript or TypeScript runtime environment, developers typically utilize powerful
-runtime libraries like `Zod` or `AJV` to elegantly validate incoming JSON payloads against defined
-schemas.
+A record collection is identified by an NSID such as `app.bsky.feed.post`. Each
+stored record also has a record key, producing an AT URI of the form:
 
-Because `Garazyk PDS` is written in low-level, high-performance Objective-C, we cannot rely on
-Node.js luxuries. Instead, we use the iOS/macOS Foundation framework's rigorously battle-tested
-`NSJSONSerialization` to parse incoming HTTP/1.1 body bytes securely into raw `NSDictionary` or
-`NSArray` heaps. _Then_, we manually algorithmically validate them against our custom Lexicon parser
-engine.
-
-```objc
-// Example simplified snippet representing core input validation inside an XrpcHandler
-- (BOOL)validateBody:(NSDictionary *)json 
-         withLexicon:(PDSLexicon *)lexicon 
-               error:(NSError **)error {
-               
-    // 1. Check if all strictly required fields declared by the Lexicon exist
-    for (NSString *key in lexicon.requiredProperties) {
-        if (!json[key]) {
-            // Immediately explicitly reject the HTTP request with a 400 Bad Request
-            *error = [PDSValidationError errorWithReason:[NSString stringWithFormat:@"Missing required param: %@", key]];
-            return NO;
-        }
-    }
-    
-    // 2. Iterate through the parsed NSDictionary payload to rigorously enforce:
-    //    - string length character limits
-    //    - maximum/minimum integer bounds
-    //    - exact array item constraints and depth limits
-    for (NSString *key in json) {
-        PDSConstraint *constraint = lexicon.properties[key];
-        
-        // If a client sends an unknown key not defined in the schema, it can optionally be rejected.
-        if (constraint) {
-            if (![constraint validateValue:json[key]]) {
-                *error = [PDSValidationError errorWithReason:[NSString stringWithFormat:@"Constraint violated for field: %@", key]];
-                return NO;
-            }
-        }
-    }
-    
-    return YES;
-}
+```text
+at://<repository-did>/<collection-nsid>/<record-key>
 ```
 
-### The `XrpcHandler` Lifecycle
+The record is encoded as DAG-CBOR before its CID is calculated. The repository
+MST maps `<collection-nsid>/<record-key>` to that record CID.
 
-By heavily utilizing the `XrpcHandler` abstract classes (such as `XrpcRepoPack` or
-`XrpcIdentityPack`), the PDS architectural design ensures that endpoint route handlers _only_
-execute application logic when the incoming data correctly matches the ATProto standard 1-to-1.
+Unknown lexicon fields may be allowed by an open object schema. Validators must
+follow the schema's closed/open behavior rather than rejecting every
+unrecognized key.
 
-The lifecycle of an incoming repository mutation travels through a strict sieve:
+## Garazyk validation
 
-1. **Routing:** The `HttpRouter` reads the absolute URL (e.g.,
-   `/xrpc/com.atproto.repo.createRecord`) and maps the invocation to the correct Objective-C
-   `XrpcHandler` subclass.
-2. **Auth Verification:** The handler rigorously mathematically asserts the `Authorization: Bearer`
-   JWT token or validates the complex DPoP cryptographic signature.
-3. **Parse & Validate:** The raw incoming JSON body bytes are parsed into objects and ruthlessly
-   validated against the cached Lexicon schema constraints. The request drops here if it is
-   malformed.
-4. **Execute:** _Only now_, perfectly confident in the structural integrity of the authenticated
-   data, does the Objective-C controller code run to physically mutate the local SQLite `.db` actor
-   file.
-5. **Serialize:** The outgoing server response is serialized beautifully back into either formatted
-   JSON or raw DAG-CBOR (Content Addressable aRchives) bytes, based entirely on the Lexicon's
-   rigidly defined return response types.
+`ATProtoLexiconRegistry` loads and indexes lexicon schemas.
+`ATProtoLexiconValidator` resolves references and applies type and constraint
+checks. Repository write paths use the registry for known collections before
+encoding records and updating the MST.
 
-By front-loading incredibly aggressive validation, `Garazyk PDS` protects the wider Bluesky network
-from data pollution.
+A request normally crosses several boundaries:
+
+1. The HTTP parser enforces framing and body-size limits.
+2. The XRPC layer parses query parameters or the declared input encoding.
+3. Authentication code verifies the caller and method-specific scope.
+4. Lexicon validation checks the input or record shape.
+5. The service applies semantic rules and performs the storage mutation.
+6. The response encoder emits the declared output content type.
+
+Each boundary should return its own error category. A malformed body is
+different from an authenticated caller lacking permission, and both are
+different from a database failure.
+
+## Objective-C representation
+
+Foundation values represent decoded JSON and DAG-CBOR data:
+
+- `NSDictionary<NSString *, id> *` for objects
+- `NSArray *` for arrays
+- `NSString *`, `NSNumber *`, and `NSData *` for scalar and byte values
+- `NSNull` for an explicit null where the schema permits it
+
+Code should check both the Objective-C class and the lexicon constraint before
+using a value. `NSNumber`, in particular, can represent booleans and several
+numeric encodings; class membership alone does not prove the expected lexicon
+type.
+
+Keep validation at ingress and import boundaries. Internal code may rely on
+validated types only when the boundary and its guarantees are explicit.
