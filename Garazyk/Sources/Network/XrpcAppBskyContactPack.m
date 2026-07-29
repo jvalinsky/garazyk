@@ -16,6 +16,7 @@
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/Generated/GZXrpcNSID.h"
+#import "Auth/AuthClaimTypeCheck.h"
 
 @implementation XrpcAppBskyContactPack
 
@@ -61,7 +62,13 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *phoneNumber = body[@"phoneNumber"];
+                       BOOL typeMismatch = NO;
+                       NSString *phoneNumber = AuthTypedValue(body, @"phoneNumber", [NSString class], &typeMismatch);
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response
+                                                     message:@"Request field has wrong type"];
+                         return;
+                       }
                        if (!phoneNumber || phoneNumber.length == 0) {
                          [XrpcErrorHelper setValidationError:response
                                                      message:@"phoneNumber is required"];
@@ -96,8 +103,14 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *phoneNumber = body[@"phoneNumber"];
-                       NSString *code = body[@"code"];
+                       BOOL typeMismatch = NO;
+                       NSString *phoneNumber = AuthTypedValue(body, @"phoneNumber", [NSString class], &typeMismatch);
+                       NSString *code = AuthTypedValue(body, @"code", [NSString class], &typeMismatch);
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response
+                                                     message:@"Request field has wrong type"];
+                         return;
+                       }
                        if (!phoneNumber || !code) {
                          [XrpcErrorHelper setValidationError:response
                                                      message:@"phoneNumber and code are required"];
@@ -134,8 +147,14 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *token = body[@"token"];
-                       NSArray *contacts = body[@"contacts"];
+                       BOOL typeMismatch = NO;
+                       NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
+                       NSArray *contacts = AuthTypedValue(body, @"contacts", [NSArray class], &typeMismatch);
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response
+                                                     message:@"Request field has wrong type"];
+                         return;
+                       }
                        if (!token || !contacts) {
                          [XrpcErrorHelper setValidationError:response
                                                      message:@"token and contacts are required"];
@@ -193,7 +212,12 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *matchDID = body[@"did"];
+                       BOOL typeMismatch = NO;
+                       NSString *matchDID = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         return;
+                       }
                        if (!matchDID) {
                          [XrpcErrorHelper setValidationError:response message:@"did is required"];
                          return;
@@ -271,8 +295,14 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *fromDID = body[@"from"];
-                       NSString *toDID = body[@"to"];
+                       BOOL typeMismatch = NO;
+                       NSString *fromDID = AuthTypedValue(body, @"from", [NSString class], &typeMismatch);
+                       NSString *toDID = AuthTypedValue(body, @"to", [NSString class], &typeMismatch);
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response
+                                                     message:@"Request field has wrong type"];
+                         return;
+                       }
                        if (!fromDID || !toDID) {
                          [XrpcErrorHelper setValidationError:response
                                                      message:@"from and to are required"];

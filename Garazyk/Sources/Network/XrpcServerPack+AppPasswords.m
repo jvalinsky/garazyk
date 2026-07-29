@@ -9,6 +9,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcServiceAuthHelper.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRepositoryService.h"
@@ -54,8 +55,13 @@
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *name = body[@"name"];
-        NSNumber *privilegedNumber = body[@"privileged"];
+        BOOL typeMismatch = NO;
+        NSString *name = AuthTypedValue(body, @"name", [NSString class], &typeMismatch);
+        NSNumber *privilegedNumber = AuthTypedValue(body, @"privileged", [NSNumber class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
         BOOL privileged = privilegedNumber.boolValue;
 
         if (name.length == 0) {
@@ -128,7 +134,12 @@
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *name = body[@"name"];
+        BOOL typeMismatch = NO;
+        NSString *name = AuthTypedValue(body, @"name", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (name.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing name"}];
