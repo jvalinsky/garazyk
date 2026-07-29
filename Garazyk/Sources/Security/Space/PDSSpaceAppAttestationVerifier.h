@@ -7,89 +7,84 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/** @abstract Error domain returned by app-attestation verification. */
 extern NSString *const PDSSpaceAppAttestationErrorDomain;
+
+/** @abstract Required value of the `typ` header for an app-attestation JWT. */
 extern NSString *const PDSSpaceAppAttestationJWTType;
 
+/**
+ * @abstract Failures produced while resolving or verifying an app attestation.
+ */
 typedef NS_ENUM(NSInteger, PDSSpaceAppAttestationError) {
+  /** The client metadata document could not be fetched. */
   PDSSpaceAppAttestationErrorMetadataUnreachable = 1,
+  /** Client metadata, its `client_id`, or its JWK-set reference is invalid. */
   PDSSpaceAppAttestationErrorMetadataInvalid,
+  /** The referenced JWK set could not be fetched or is not a JWK set. */
   PDSSpaceAppAttestationErrorJWKSUnreachable,
+  /** No usable published key matches the JWT's `kid`. */
   PDSSpaceAppAttestationErrorKeyNotFound,
+  /** The compact JWT or its protected header has an unsupported shape. */
   PDSSpaceAppAttestationErrorMalformed,
+  /** A required claim is absent or has the wrong JSON type. */
   PDSSpaceAppAttestationErrorClaims,
+  /** The ES256 signature does not verify with the selected published key. */
   PDSSpaceAppAttestationErrorSignature,
+  /** The issue and expiry timestamps exceed the allowed lifetime window. */
   PDSSpaceAppAttestationErrorLifetime,
+  /** The JWT expired, allowing for the verifier's clock-skew tolerance. */
   PDSSpaceAppAttestationErrorExpired,
+  /** The `iss` claim differs from the expected app client identifier. */
   PDSSpaceAppAttestationErrorIssuer,
+  /** The self-attested `sub` claim differs from its issuer. */
   PDSSpaceAppAttestationErrorSubject,
+  /** The `aud` claim differs from the receiving PDS audience. */
   PDSSpaceAppAttestationErrorAudience,
+  /** The JWT ID was already consumed or could not be persisted as consumed. */
   PDSSpaceAppAttestationErrorReplay,
 };
 
-/*!
- @class PDSSpaceAppAttestationVerifier
-
- @abstract Validates a managing-app attestation JWT end-to-end, per ADR 0004's
- deliberately-disabled-scope requirements for `managing-app` /
- `appAccess#allowList`: resolved client metadata, JWKS, key identifier,
- signature, issuer/subject equality, audience, expiry, nonce replay, and app
- identity.
-
- @discussion No upstream AT Protocol spec defines a wire format for this yet -
- Proposal 0016 names the `managing-app` policy without an attestation
- mechanism. This verifier implements Garazyk's own minimal scheme, recorded as
- an ADR 0004 amendment: the managing app's `client_id` is an HTTPS URL serving
- an OAuth-style client metadata document (mirroring the existing ATProto OAuth
- dynamic-client convention this codebase already uses in OAuth2Handler), and
- the app must present a short-lived (max 5 minute) ES256 JWT self-signed with
- a key from that document's JWKS, bound to this specific PDS as audience.
-
- A structural-only check (verifying shape without verifying a real signature
- against a resolved key) is explicitly not an option per the ADR - every
- successful verification here proves the caller controls the private key
- published at the client_id's own metadata endpoint.
+/**
+ * @abstract Verifies the identity of an app requesting a space credential.
+ * @discussion The app-client identifier roots trust in metadata whose
+ * self-declared `client_id` must match its URL. Verification selects `kid`
+ * from its JWK set and requires ES256, self-issued identity, PDS audience, a
+ * bounded lifetime, and an unused `jti`, which it records in the space store.
+ * Metadata and JWK-set fetches are synchronous; avoid latency-sensitive queues.
  */
 @interface PDSSpaceAppAttestationVerifier : NSObject
 
+/**
+ * @abstract Creates a verifier that records successful app-attestation IDs.
+ * @param spaceStore The persistent replay store used after successful validation.
+ */
 - (instancetype)initWithSpaceStore:(PDSSpaceStore *)spaceStore NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-/*!
- @method verifyAttestationJWT:forAppClientID:audience:error:
-
- @abstract Verifies a presented attestation JWT for a managing-app or an
- allow-listed app.
-
- @param attestationJWT The compact JWT the caller presented in the request
- body (e.g. `attestationJWT` field).
- @param appClientID The app's client_id URL - either the space's requested
- `managingApp` or one of its requested `appAccess#allowList` entries. Must be
- an `https://` URL; fetched with the same SSRF-safe policy already used for
- OAuth dynamic client metadata.
- @param serviceDID This PDS's own service DID, required as the JWT's `aud` so
- an attestation minted for one PDS cannot be replayed against another.
- @param error On failure, an error in `PDSSpaceAppAttestationErrorDomain`
- describing exactly which requirement failed.
- @return YES only if every requirement in the ADR's disabled-scope note is
- satisfied: the client_id's metadata resolves and self-identifies with a
- matching `client_id`, its JWKS contains a key matching the JWT's `kid`, the
- signature verifies against that key, `iss`/`sub` both equal `appClientID`,
- `aud` equals `serviceDID`, the token is unexpired and within a bounded
- lifetime, and its `jti` has not been seen before.
+/**
+ * @abstract Resolves published app keys and verifies one five-minute JWT.
+ * @discussion Metadata and remote `jwks_uri` use the safe HTTP client's production restrictions; an inline JWK set is accepted. The `jti` is consumed only after every check succeeds.
+ * @param attestationJWT The compact JWT presented by the app.
+ * @param appClientID The expected HTTPS metadata URL, `iss`, and `sub` value.
+ * @param serviceDID The exact PDS audience expected in `aud`.
+ * @param error Receives a `PDSSpaceAppAttestationErrorDomain` failure.
+ * @return YES after verification and replay-state persistence; otherwise NO.
  */
 - (BOOL)verifyAttestationJWT:(NSString *)attestationJWT
               forAppClientID:(NSString *)appClientID
                     audience:(NSString *)serviceDID
                        error:(NSError **)error;
 
-/*!
- @method verifyJWT:jwks:expectedIssuer:expectedAudience:error:
-
- @abstract The signature/claims/replay half of verification, given an
- already-resolved JWK Set - exposed separately so tests can exercise the
- actual crypto and claim checks without a real client-metadata/JWKS fetch.
- `verifyAttestationJWT:forAppClientID:audience:error:` calls this after
- resolving `jwks` over the network.
+/**
+ * @abstract Verifies an attestation against already-resolved JWK material.
+ * @discussion Callers establish that `jwks` belongs to `issuer`; this method enforces the ES256 header, claims, lifetime, signature, and replay protections. YES consumes `jti`.
+ * @param token The compact app-attestation JWT.
+ * @param jwks The trusted JWK-set dictionary from which to select `kid`.
+ * @param issuer The exact expected `iss` and `sub` value.
+ * @param audience The exact expected `aud` value.
+ * @param error Receives a `PDSSpaceAppAttestationErrorDomain` failure.
+ * @return YES after verification and replay-state persistence; otherwise NO.
  */
 - (BOOL)verifyJWT:(NSString *)token
              jwks:(NSDictionary *)jwks
