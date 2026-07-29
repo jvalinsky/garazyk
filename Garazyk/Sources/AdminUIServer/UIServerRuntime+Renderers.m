@@ -132,11 +132,17 @@
                 } else {
                     lastMsg = ((NSDictionary *)lastMsgObj)[@"text"] ?: @"(none)";
                     if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
+                    lastMsg = UIEscaped(lastMsg);
                 }
             } else if ([lastMsgObj isKindOfClass:[NSString class]]) {
                 lastMsg = lastMsgObj;
                 if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
+                lastMsg = UIEscaped(lastMsg);
             }
+            // lastMsg is either one of the two literal HTML fragments above
+            // (encrypted placeholder) or UIEscaped user message text — the
+            // template renders this field raw ({{{lastMsg}}}), so anything
+            // reaching here must already be safe HTML.
             mc[@"lastMsg"] = lastMsg;
             [mapped addObject:mc];
         }
@@ -172,7 +178,10 @@
                 mm[@"text"] = @"<em class=\"text-secondary\">End-to-end encrypted message</em>";
             } else {
                 mm[@"lockIcon"] = @"";
-                mm[@"text"] = msg[@"text"] ?: @"";
+                // The template renders this field raw ({{{text}}}); msg[@"text"]
+                // is user-controlled chat content, so it must be escaped here —
+                // the other branch above is a literal, already-safe HTML fragment.
+                mm[@"text"] = UIEscaped(msg[@"text"] ?: @"");
             }
             mm[@"time"] = msg[@"createdAt"] ?: msg[@"sentAt"] ?: @"";
             [mapped addObject:mm];
