@@ -187,7 +187,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @return YES if stored successfully, NO on failure.
  */
 - (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid error:(NSError **)error;
-- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid familyId:(nullable NSString *)familyId error:(NSError **)error;
+- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid error:(NSError **)error;
 /**
  * @abstract Store refresh token.
  * @param token Session token.
@@ -201,37 +201,22 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error;
 
 /*!
- @method rotateRefreshToken:error:
+ @method markRefreshTokenRotated:nextToken:graceExpiresAt:error:
 
- @abstract Atomically marks a refresh token as rotated for §4.3 reuse detection.
+ @abstract Marks a refresh token as rotated to a successor, shortening its own
+ expiry to a grace period rather than deleting it or tombstoning a family.
 
- @param token The refresh token to mark as rotated.
+ @discussion §4.3 reuse handling: within the grace window, replaying the old
+ token resolves (via sessionInfoForRefreshToken:) to the same nextToken, so a
+ client racing a dropped response can complete the refresh idempotently.
+
+ @param token The refresh token being rotated away.
+ @param nextToken The refresh token it was rotated to.
+ @param graceExpiresAt The shortened expiry for the old token.
  @param error Error pointer for storage failures.
- @return YES if marked (first rotation), NO if already rotated (reuse detected).
+ @return YES when the operation succeeds; otherwise NO.
  */
-- (BOOL)rotateRefreshToken:(NSString *)token error:(NSError **)error;
-
-/*!
- @method tombstoneRefreshTokenFamily:error:
-
- @abstract Tombstones an entire refresh-token family, revoking all its members.
-
- @param familyId The family ID to tombstone.
- @param error Error pointer for storage failures.
- @return YES when the family is tombstoned.
- */
-- (BOOL)tombstoneRefreshTokenFamily:(NSString *)familyId error:(NSError **)error;
-
-/*!
- @method isRefreshTokenFamilyTombstoned:error:
-
- @abstract Checks whether a refresh-token family has been tombstoned.
-
- @param familyId The family ID to check.
- @param error Error pointer for query failures.
- @return YES if the family has been tombstoned.
- */
-- (BOOL)isRefreshTokenFamilyTombstoned:(NSString *)familyId error:(NSError **)error;
+- (BOOL)markRefreshTokenRotated:(NSString *)token nextToken:(NSString *)nextToken graceExpiresAt:(NSDate *)graceExpiresAt error:(NSError **)error;
 /**
  * @abstract Revoke all refresh tokens for account did.
  * @param accountDid Actor DID for the request.

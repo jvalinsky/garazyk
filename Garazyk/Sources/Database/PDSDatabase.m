@@ -1026,7 +1026,8 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
                                  @"account_did TEXT NOT NULL,"
                                  @"session_id TEXT NOT NULL DEFAULT '',"
                                  @"created_at REAL NOT NULL,"
-                                 @"expires_at REAL NOT NULL"
+                                 @"expires_at REAL NOT NULL,"
+                                 @"next_token TEXT DEFAULT NULL"
                                  @")";
     rc = sqlite3_exec(_db, refreshTokensSQL.UTF8String, NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
