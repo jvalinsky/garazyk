@@ -184,14 +184,13 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *collection = body[@"collection"];
-        NSDictionary *record = body[@"record"];
-        NSString *rkey = body[@"rkey"];
-        NSString *repo = body[@"repo"];
-        NSString *swapCommit = body[@"swapCommit"];
-        NSString *swapRecord = body[@"swapRecord"];
-        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
+        NSString *collection = [request stringBodyForKey:@"collection"];
+        NSDictionary *record = [request stringBodyForKey:@"record"] ? nil : request.jsonBody[@"record"];
+        NSString *rkey = [request stringBodyForKey:@"rkey"];
+        NSString *repo = [request stringBodyForKey:@"repo"];
+        NSString *swapCommit = [request stringBodyForKey:@"swapCommit"];
+        NSString *swapRecord = [request stringBodyForKey:@"swapRecord"];
+        PDSValidationMode mode = validationModeFromValidateParameter(request.jsonBody[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
@@ -258,12 +257,11 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-        NSString *repo = body[@"repo"];
-        NSString *swapCommit = body[@"swapCommit"];
-        NSString *swapRecord = body[@"swapRecord"];
+        NSString *collection = [request stringBodyForKey:@"collection"];
+        NSString *rkey = [request stringBodyForKey:@"rkey"];
+        NSString *repo = [request stringBodyForKey:@"repo"];
+        NSString *swapCommit = [request stringBodyForKey:@"swapCommit"];
+        NSString *swapRecord = [request stringBodyForKey:@"swapRecord"];
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
@@ -320,14 +318,13 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-        NSDictionary *record = body[@"record"];
-        NSString *repo = body[@"repo"];
-        NSString *swapCommit = body[@"swapCommit"];
-        NSString *swapRecord = body[@"swapRecord"];
-        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
+        NSString *collection = [request stringBodyForKey:@"collection"];
+        NSString *rkey = [request stringBodyForKey:@"rkey"];
+        NSDictionary *record = [request stringBodyForKey:@"record"] ? nil : request.jsonBody[@"record"];
+        NSString *repo = [request stringBodyForKey:@"repo"];
+        NSString *swapCommit = [request stringBodyForKey:@"swapCommit"];
+        NSString *swapRecord = [request stringBodyForKey:@"swapRecord"];
+        PDSValidationMode mode = validationModeFromValidateParameter(request.jsonBody[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
@@ -426,8 +423,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
 
 #pragma mark - com.atproto.repo.applyWrites
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_applyWrites handler:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        if (!body) {
+        if (!request.jsonBody) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
             return;
@@ -443,10 +439,10 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        NSArray *writes = body[@"writes"];
-        NSString *repo = body[@"repo"];
-        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
-        NSString *swapCommit = body[@"swapCommit"];
+        NSArray *writes = [request arrayBodyForKey:@"writes"];
+        NSString *repo = [request stringBodyForKey:@"repo"];
+        PDSValidationMode mode = validationModeFromValidateParameter(request.jsonBody[@"validate"]);
+        NSString *swapCommit = [request stringBodyForKey:@"swapCommit"];
 
         GZ_LOG_INFO(@"applyWrites: did=%@ writeCount=%lu validationMode=%ld",
                     did,
