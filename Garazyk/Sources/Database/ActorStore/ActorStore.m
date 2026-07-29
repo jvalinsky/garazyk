@@ -16,13 +16,13 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/Migrations/PDSMigrationManager.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Security/PDSKeyEnvelope.h"
 #import "Debug/GZLogger.h"
 #import "PDSActorStoreInternal.h"
 #import "PDSActorStore+Account.h"
 #import "PDSActorStore+Blob.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import <sqlite3.h>
 

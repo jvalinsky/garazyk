@@ -15,7 +15,7 @@
 #import "Auth/PDSKeyProtocol.h"
 #import "Debug/GZLogger.h"
 #import "Security/PDSSecurityCompare.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 
 NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 

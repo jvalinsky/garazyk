@@ -3,7 +3,7 @@
 #import "Auth/PDSSecondFactorService.h"
 
 #import "Auth/Base32Utils.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/TOTPService.h"
 #import "Auth/WebAuthnVerifier.h"
 #import "Core/ATProtoError.h"

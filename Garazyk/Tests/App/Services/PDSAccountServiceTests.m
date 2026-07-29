@@ -5,7 +5,7 @@
 #import "Auth/JWT.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Auth/Base32Utils.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSSecondFactorService.h"
 #import "Auth/TOTPGenerator.h"
 #import "Database/Pool/DatabasePool.h"

@@ -7,8 +7,8 @@
 #import "Compat/XCTest/XCTest.h"
 #endif
 #import "../../Sources/PLC/PLCOperation.h"
-#import "Auth/Secp256k1.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/Secp256k1.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Core/ATProtoCBORSerialization.h"
 
 @interface PLCOperationTests : XCTestCase

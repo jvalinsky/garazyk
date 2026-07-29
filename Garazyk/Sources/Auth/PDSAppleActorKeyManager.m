@@ -10,7 +10,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #import "App/ATProtoServiceConfiguration.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 #if !defined(GNUSTEP)
 #import <Security/Security.h>

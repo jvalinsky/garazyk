@@ -9,7 +9,7 @@
 
 #import <CommonCrypto/CommonDigest.h>
 
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 #include <errno.h>
 #include <fcntl.h>

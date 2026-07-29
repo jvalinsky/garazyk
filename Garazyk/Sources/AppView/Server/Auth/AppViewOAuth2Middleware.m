@@ -11,7 +11,7 @@
 #import "Network/HttpRequest.h"
 #import "Auth/JWT.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"

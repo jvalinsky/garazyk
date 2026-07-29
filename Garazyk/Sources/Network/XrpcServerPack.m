@@ -32,7 +32,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
 #import "Auth/PDSSecondFactorService.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Core/ATProtoValidator.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
