@@ -10,6 +10,7 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "AppView/Services/DraftService.h"
 #import "Network/Generated/GZXrpcNSID.h"
+#import "Auth/AuthClaimTypeCheck.h"
 
 @implementation XrpcAppBskyDraftsPack
 
@@ -55,7 +56,12 @@
                        }
 
                        NSDictionary *body = [request jsonBody];
-                       NSDictionary *content = body[@"content"] ?: @{};
+                       BOOL typeMismatch = NO;
+                       NSDictionary *content = AuthTypedValue(body, @"content", [NSDictionary class], &typeMismatch) ?: @{};
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         return;
+                       }
 
                        NSError *error = nil;
                        NSDictionary *result = [draftService createDraftForDID:actorDID
@@ -83,14 +89,19 @@
                        }
 
                        NSDictionary *body = [request jsonBody];
-                       NSString *draftID = body[@"id"];
+                       BOOL typeMismatch = NO;
+                       NSString *draftID = AuthTypedValue(body, @"id", [NSString class], &typeMismatch);
+                       NSDictionary *content = AuthTypedValue(body, @"content", [NSDictionary class], &typeMismatch) ?: @{};
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         return;
+                       }
                        if (!draftID) {
                          [XrpcErrorHelper setValidationError:response
                                                      message:@"Missing draft id"];
                          return;
                        }
 
-                       NSDictionary *content = body[@"content"] ?: @{};
                        NSError *error = nil;
                        BOOL success = [draftService updateDraftForDID:actorDID
                                                              draftID:draftID
@@ -141,7 +152,13 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *draftID = body[@"id"] ?: body[@"uri"];
+                       BOOL typeMismatch = NO;
+                       NSString *draftID = AuthTypedValue(body, @"id", [NSString class], &typeMismatch)
+                           ?: AuthTypedValue(body, @"uri", [NSString class], &typeMismatch);
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         return;
+                       }
                        if (!draftID) {
                          [XrpcErrorHelper setValidationError:response
                                                      message:@"Missing draft id parameter"];

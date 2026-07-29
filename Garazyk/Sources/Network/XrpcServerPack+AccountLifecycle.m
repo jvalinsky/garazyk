@@ -9,6 +9,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcServiceAuthHelper.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRepositoryService.h"
@@ -59,9 +60,14 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteAccount handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
-        NSString *token = body[@"token"];
-        NSString *did = body[@"did"];
-        NSString *password = body[@"password"];
+        BOOL typeMismatch = NO;
+        NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
+        NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
+        NSString *password = AuthTypedValue(body, @"password", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         if (!did || !password) {
             response.statusCode = HttpStatusBadRequest;
@@ -212,7 +218,12 @@
         }
 
         NSDictionary *body = request.jsonBody;
-        NSString *reason = body[@"reason"];
+        BOOL typeMismatch = NO;
+        NSString *reason = AuthTypedValue(body, @"reason", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         NSError *error = nil;
         BOOL success = [adminController deactivateAccount:did reason:reason ?: @"User deactivation" error:&error];

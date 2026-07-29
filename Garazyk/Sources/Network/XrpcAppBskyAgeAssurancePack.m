@@ -15,6 +15,7 @@
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "AppView/Services/AgeAssuranceService.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
 @implementation XrpcAppBskyAgeAssurancePack
@@ -70,10 +71,16 @@
                        }
 
                        NSDictionary *body = request.jsonBody;
-                       NSString *email = body[@"email"];
-                       NSString *language = body[@"language"];
-                       NSString *countryCode = body[@"countryCode"];
-                       NSString *regionCode = body[@"regionCode"];
+                       BOOL typeMismatch = NO;
+                       NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
+                       NSString *language = AuthTypedValue(body, @"language", [NSString class], &typeMismatch);
+                       NSString *countryCode = AuthTypedValue(body, @"countryCode", [NSString class], &typeMismatch);
+                       NSString *regionCode = AuthTypedValue(body, @"regionCode", [NSString class], &typeMismatch);
+                       if (typeMismatch) {
+                         [XrpcErrorHelper setValidationError:response
+                                                     message:@"Request field has wrong type"];
+                         return;
+                       }
 
                        if (!email || !language || !countryCode) {
                          [XrpcErrorHelper setValidationError:response
