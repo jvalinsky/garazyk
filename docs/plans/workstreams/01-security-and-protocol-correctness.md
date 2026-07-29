@@ -2802,25 +2802,51 @@ Single-file change. No test classes required because the gate (check 1
 below) is structural grep — the existing `HttpRequestDispatcherTests`
 suite exercises the dispatch path.
 
-#### Sub-task B — typed-accessor sweep across XRPC request bodies *(§2.1 primary)*
+#### Sub-task B — typed-accessor sweep across XRPC request bodies *(§2.1 primary, in progress 2026-07-29, `f3aa3fb1`)*
 
-Reuse the ADR 0013 boundary approach at the XRPC parse site:
+No new helper needed — `AuthTypedValue` (`Auth/AuthClaimTypeCheck.h`)
+already exists in exactly this role (see the note at the top of this
+S20 section). The original plan named a
+`Auth/OAuthProviderProtocolUtils/auth_typed_value.{h,m}` path that no
+longer exists.
 
-- Add a thin helper `XrpcTypedValue` at
-  `Garazyk/Sources/Network/XrpcTypedValue.{h,m}` mirroring
-  `Auth/OAuthProviderProtocolUtils/auth_typed_value.{h,m}` (the
-  `AuthTypedValue` referenced by ADR 0013).
-- Replace every `NSString *x = request.jsonBody[@"x"]` (or
-  `[request.jsonBody objectForKey:@"x"]`) across the ~35 XRPC route packs
-  in `Garazyk/Sources/**/*.{m,h}` with the typed accessor. Sites that
-  already use a constants-table → typed protocol model are exempt.
-- On type mismatch, return `XRPCError InvalidRequest` (HTTP 400, error
-  `InvalidRequest`, message `"Field 'x' has wrong type"`). Never let the
-  guard bubble out of the handler.
+**Batch 1 complete** (`f3aa3fb1`): 33 call sites converted across 12
+files — `XrpcServerPack+AccountLifecycle.m` (2),
+`+AccountManagement.m` (6), `+AppPasswords.m` (2),
+`AppViewXRpcRoutePack+AgeAssurance.m` (1), `XrpcAdminPack+ServerStats.m`
+(2), `XrpcAppBskyAgeAssurancePack.m` (1), `XrpcAppBskyBookmarksPack.m`
+(2), `XrpcAppBskyContactPack.m` (5), `XrpcAppBskyDraftsPack.m` (3),
+`XrpcAppBskyGraphPack.m` (4), `XrpcAppBskyNotificationPack.m` (3,
+including one nested-field case one level below the top-level
+`jsonBody` dictionary — same crash mechanism, same fix), and
+`XrpcAppBskyUnspeccedPack.m` (2). Each site returns
+`XrpcErrorHelper`'s standard 400 `InvalidRequest` response on a type
+mismatch.
 
-Scope estimate: ~35 packs × 1–5 fields each ≈ 60–120 call sites. Each
-pack fix is local; the helper itself lands first as a one-commit
-prerequisite.
+**Important scope correction found during the sweep:** several files
+already guard every raw `jsonBody` read, either with an inline
+`isKindOfClass:` check or by routing through `HttpRequest`'s own
+`stringBodyForKey:`/`numberBodyForKey:`/`arrayBodyForKey:` typed
+accessors (which return `nil` on a type mismatch instead of the raw
+value) — confirmed already-safe and left untouched:
+`ATProtoHttpOAuthRoutePack.m`, `XrpcAdminPack+AccountInfo.m`,
+`XrpcAdminPack+Lifecycle.m`, `XrpcAppBskyActorPack.m`, and one route in
+`RelayXrpcRoutePack.m` (its own comment cites this exact fix, from a
+prior, narrower pass). This means the original "~35 packs × 1-5 fields
+≈ 60-120 call sites" estimate overstates the genuinely unguarded
+remainder — some meaningful fraction of the surface was already
+defended ad hoc before this sweep started.
+
+**Remaining files, not yet audited:** `XrpcChatBskyActorPack.m`,
+`XrpcChatBskyConvoPack.m` (~13 `jsonBody` sites), `XrpcChatBskyGroupPack.m`
+(~15 sites — these two chat files are the largest remaining chunk),
+`XrpcIdentityPack.m`, `XrpcLabelPack.m`, `XrpcMiddleware.m`,
+`XrpcModerationPack.m`, `XrpcRepoPack+Blobs.m`, `XrpcRepoPack+Records.m`,
+`XrpcServerPack+Session.m`, `XrpcSpacePack.m`,
+`XrpcSpaceRecoveryTestPack.m`, `XrpcSyncPack.m`, `XrpcToolsOzonePack.m`.
+Apply the same audit-first discipline to each: check for an existing
+inline guard or typed-accessor use before assuming a raw `jsonBody[@"x"]`
+read is actually a gap.
 
 #### Sub-task C — table-driven `(route, field)` × `{null, @1, @[], @{}, @true}` sweep
 
