@@ -356,6 +356,17 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! Optional key rotation manager for verifying with multiple keys. */
 @property (nonatomic, strong, nullable) id<PDSKeyManager> keyManager;
 
+/*! The expected token_use claim value (e.g. @"access" or @"refresh").
+    When set, the verifier rejects tokens whose token_use does not match.
+    Leave nil to skip this check (default). */
+@property (nonatomic, copy, nullable) NSString *expectedTokenUse;
+
+/*! The expected header typ value (e.g. @"at+jwt" or @"refresh+jwt").
+    When set alongside expectedTokenUse, the verifier also checks that the
+    token's header typ matches. Defense-in-depth: typ is in the unsigned
+    header, so this is secondary to the signed token_use check. */
+@property (nonatomic, copy, nullable) NSString *expectedTyp;
+
 /*! Whether tokens without subject claims are allowed. */
 @property (nonatomic, assign) BOOL allowMissingSubject;
 

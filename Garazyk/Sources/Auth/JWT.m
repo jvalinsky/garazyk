@@ -494,6 +494,44 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         }
     }
 
+    // §4.1: token_use enforcement prevents refresh tokens from being
+    // accepted as access tokens and vice versa. Access tokens are minted
+    // with token_use="access" (typ="at+jwt"), refresh tokens with
+    // token_use="refresh" (typ="refresh+jwt"). The verifier caller sets
+    // expectedTokenUse to the value they expect; nil means skip this check.
+    if (self.expectedTokenUse) {
+        if (!payload.token_use) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorMissingRequiredClaim
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing required 'token_use' claim"}];
+            }
+            return NO;
+        }
+        if (![payload.token_use isEqualToString:self.expectedTokenUse]) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidPayload
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid token_use: expected '%@', got '%@'", self.expectedTokenUse, payload.token_use]}];
+            }
+            return NO;
+        }
+        // When expectedTokenUse is set, also check the header typ for
+        // defense-in-depth. Access tokens carry typ="at+jwt", refresh
+        // tokens carry typ="refresh+jwt".
+        if (self.expectedTyp) {
+            NSString *typ = jwt.header.typ;
+            if (!typ || ![typ isEqualToString:self.expectedTyp]) {
+                if (error) {
+                    *error = [NSError errorWithDomain:JWTErrorDomain
+                                                 code:JWTErrorInvalidHeader
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid typ: expected '%@', got '%@'", self.expectedTyp, typ ?: @"(nil)"]}];
+                }
+                return NO;
+            }
+        }
+    }
+
     if (!payload.sub && !payload.did && !self.allowMissingSubject) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
