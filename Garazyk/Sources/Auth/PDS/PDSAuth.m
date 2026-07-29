@@ -247,7 +247,14 @@ NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
             NSData *y = [publicKeyData subdataWithRange:NSMakeRange(33, 32)];
             NSMutableDictionary *jwk = [NSMutableDictionary dictionary];
             jwk[@"kty"] = @"EC";
-            jwk[@"crv"] = @"P-256";
+            // §4.7: use the signing algorithm to determine the correct curve.
+            // ES256K → secp256k1, ES256 → P-256.
+            NSString *alg = self.minter.signingAlgorithm ?: @"ES256";
+            if ([alg isEqualToString:@"ES256K"]) {
+                jwk[@"crv"] = @"secp256k1";
+            } else {
+                jwk[@"crv"] = @"P-256";
+            }
             jwk[@"x"] = [self base64URLEncode:x];
             jwk[@"y"] = [self base64URLEncode:y];
             return @{@"keys": @[jwk]};
