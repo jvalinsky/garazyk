@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @return YES on success; otherwise NO.
  */
 - (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt error:(NSError **)error;
+- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt familyId:(nullable NSString *)familyId error:(NSError **)error;
 
 /**
  * @abstract Stores a new refresh token for a given actor DID.
@@ -62,6 +63,30 @@ NS_ASSUME_NONNULL_BEGIN
  * @return YES if active; otherwise NO.
  */
 - (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error;
+
+/**
+ * @abstract Atomically marks a refresh token as rotated.
+ * @param token The refresh token to mark as rotated.
+ * @param error Receives details when the database write fails.
+ * @return YES if the token was marked (first rotation), NO if already rotated.
+ */
+- (BOOL)rotateRefreshToken:(NSString *)token error:(NSError **)error;
+
+/**
+ * @abstract Tombstones an entire refresh-token family.
+ * @param familyId The family ID to tombstone.
+ * @param error Receives details when the database write fails.
+ * @return YES when the family is tombstoned.
+ */
+- (BOOL)tombstoneRefreshTokenFamily:(NSString *)familyId error:(NSError **)error;
+
+/**
+ * @abstract Checks whether a refresh-token family has been tombstoned.
+ * @param familyId The family ID to check.
+ * @param error Receives details when the database read fails.
+ * @return YES if any token in the family has a tombstoned_at timestamp.
+ */
+- (BOOL)isRefreshTokenFamilyTombstoned:(NSString *)familyId error:(NSError **)error;
 
 /**
  * @abstract Revokes a refresh token, invalidating it.

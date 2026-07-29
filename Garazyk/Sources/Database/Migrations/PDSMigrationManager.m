@@ -1249,6 +1249,62 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 @end
 
+#pragma mark - V18 Refresh Token Family Columns Migration
+
+@interface V18RefreshTokenFamilyColumns : NSObject <PDSMigration>
+@end
+
+@implementation V18RefreshTokenFamilyColumns
+
+- (NSInteger)version {
+    return 18;
+}
+
+- (NSString *)name {
+    return @"refresh_token_family_columns";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    // Add family_id, rotated_at, and tombstoned_at columns for §4.3 refresh-token
+    // reuse detection. family_id groups rotated tokens into families; rotated_at
+    // marks a token that was superseded by rotation; tombstoned_at marks the
+    // entire family as revoked due to stale-token reuse detection.
+    // Each ALTER TABLE is gated by column existence check for idempotency.
+    NSArray<NSString *> *schemaChanges = @[
+        @"ALTER TABLE refresh_tokens ADD COLUMN family_id TEXT DEFAULT ''",
+        @"ALTER TABLE refresh_tokens ADD COLUMN rotated_at REAL",
+        @"ALTER TABLE refresh_tokens ADD COLUMN tombstoned_at REAL",
+        @"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family ON refresh_tokens(family_id)",
+    ];
+
+    for (NSString *sql in schemaChanges) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            // ALTER TABLE ADD COLUMN fails harmlessly if column already exists.
+            // INDEX IF NOT EXISTS also handles this. Log and continue.
+            if (errMsg) {
+                GZ_LOG_DB_WARN(@"V18 schema change (non-fatal): %s", errMsg);
+                sqlite3_free(errMsg);
+            }
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    // SQLite does not support DROP COLUMN. The columns will remain in place
+    // but unused; this is a one-way migration.
+    if (error) {
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: @"V18 cannot be rolled back: SQLite does not support DROP COLUMN"}];
+    }
+    return NO;
+}
+
+@end
+
 #pragma mark - PDSMigrationManager Implementation
 
 @interface PDSMigrationManager ()
@@ -3417,6 +3473,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[V15CollectionMembershipWithoutRowid alloc] init]];
     [manager registerMigration:[[V16PasswordResetTokens alloc] init]];
     [manager registerMigration:[[V17EmailConfirmationTokens alloc] init]];
+    [manager registerMigration:[[V18RefreshTokenFamilyColumns alloc] init]];
     return manager;
 }
 
