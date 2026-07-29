@@ -40,11 +40,10 @@
     BOOL enforceDidWebServiceAuth = NO; // Default to NO as per registry
 #pragma mark - com.atproto.server.session.*
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAccount handler:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        NSString *email = body[@"email"];
-        NSString *handle = body[@"handle"];
-        NSString *password = body[@"password"];
-        NSString *did = body[@"did"];
+        NSString *email = [request stringBodyForKey:@"email"];
+        NSString *handle = [request stringBodyForKey:@"handle"];
+        NSString *password = [request stringBodyForKey:@"password"];
+        NSString *did = [request stringBodyForKey:@"did"];
 
         if (!email || !password || !handle) {
             response.statusCode = HttpStatusBadRequest;
@@ -66,12 +65,12 @@
             // fall back to the two-parameter method otherwise.
             BOOL passed = NO;
             if ([registrationGate respondsToSelector:@selector(validateRegistrationRequest:configuration:remoteAddress:error:)]) {
-                passed = [registrationGate validateRegistrationRequest:body
+                passed = [registrationGate validateRegistrationRequest:request.jsonBody
                                                           configuration:config
                                                           remoteAddress:request.remoteAddress
                                                                   error:&gateError];
             } else {
-                passed = [registrationGate validateRegistrationRequest:body
+                passed = [registrationGate validateRegistrationRequest:request.jsonBody
                                                           configuration:config
                                                                   error:&gateError];
             }
@@ -149,10 +148,9 @@
     }];
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createSession handler:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
-        NSString *identifier = body[@"identifier"];
-        NSString *password = body[@"password"];
-        NSString *authFactorToken = body[@"authFactorToken"];
+        NSString *identifier = [request stringBodyForKey:@"identifier"];
+        NSString *password = [request stringBodyForKey:@"password"];
+        NSString *authFactorToken = [request stringBodyForKey:@"authFactorToken"];
 
         if (!identifier || !password) {
             response.statusCode = HttpStatusBadRequest;
