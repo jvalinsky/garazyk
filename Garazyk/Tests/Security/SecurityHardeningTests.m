@@ -13,7 +13,7 @@
 
 #import <XCTest/XCTest.h>
 #import "Security/GZAuthzManager.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/TOTPGenerator.h"
 
 @interface SecurityHardeningTests : XCTestCase

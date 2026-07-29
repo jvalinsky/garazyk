@@ -7,7 +7,7 @@
 #import "Auth/PKCEUtil.h"
 #import "Auth/DPoPUtil.h"
 #import "Database/PDSDatabase.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Auth/Session.h"
 #import "Auth/JWT.h"
 #import "Network/HttpResponse.h"

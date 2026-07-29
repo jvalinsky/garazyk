@@ -8,7 +8,7 @@
 #import "Core/CBOR.h"
 #import "Repository/MST.h"
 #import "Auth/JWT.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 @interface ATProtoCoreTests : XCTestCase
 @end

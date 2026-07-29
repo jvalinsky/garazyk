@@ -12,7 +12,7 @@
  @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
 
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Security/PDSSecurityCompare.h"
 #import "Security/PDSKeyEnvelope.h"
 #if !TARGET_OS_LINUX

@@ -8,7 +8,7 @@
 #import <Security/SecRandom.h>
 
 #import "Auth/PDSActorKeyManagerProtocol.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Security/PDSSecurityCompare.h"
 #import "Security/Space/PDSSpaceLtHash.h"
 

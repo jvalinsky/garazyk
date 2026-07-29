@@ -5,8 +5,8 @@
 #import "PLC/PLCMockStore.h"
 #import "PLC/PLCAuditor.h"
 #import "PLC/PLCOperation.h"
-#import "Auth/Secp256k1.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/Secp256k1.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 

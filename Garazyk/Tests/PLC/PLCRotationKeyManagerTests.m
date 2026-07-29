@@ -7,7 +7,7 @@
 #endif
 
 #import "PLC/PLCRotationKeyManager.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 @interface PLCRotationKeyManagerTests : XCTestCase
 @property (nonatomic, copy) NSString *storageDir;

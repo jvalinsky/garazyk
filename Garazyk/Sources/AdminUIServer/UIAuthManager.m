@@ -3,7 +3,7 @@
 #import "AdminUIServer/UIAuthManager.h"
 #import "Network/HttpRequest.h"
 #import "Security/PDSSecurityCompare.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
