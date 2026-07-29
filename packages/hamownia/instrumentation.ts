@@ -214,7 +214,7 @@ export interface MetricSeriesEntry {
 /** Periodically scrapes Prometheus metrics endpoints and records time-series data. */
 export class PrometheusScraper {
   private samples: Record<string, MetricsSample[]> = {};
-  private intervalId?: number;
+  private intervalId?: ReturnType<typeof setInterval>;
 
   constructor(private endpoints: Record<string, string>) {
     for (const name of Object.keys(endpoints)) {
@@ -288,7 +288,7 @@ export class PrometheusScraper {
 /** Periodically samples database and WAL file sizes at configured paths. */
 export class StorageMonitor {
   private stats: Record<string, unknown[]> = {};
-  private intervalId?: number;
+  private intervalId?: ReturnType<typeof setInterval>;
 
   constructor(private paths: Record<string, string[]>) {
     for (const label of Object.keys(paths)) {

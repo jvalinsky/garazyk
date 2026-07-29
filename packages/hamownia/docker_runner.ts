@@ -130,7 +130,7 @@ export async function runScenarioInDocker(
     stderr: "inherit",
   }).spawn();
 
-  let timeoutId: number | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<"timeout">((resolveTimeout) => {
     timeoutId = setTimeout(
       () => resolveTimeout("timeout"),

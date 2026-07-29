@@ -58,7 +58,7 @@ export class DenoDnsResolver implements DnsResolver {
   async resolveTxt(domain: Domain): Promise<Result<string[][], string>> {
     const fqdn = `${this.prefix}.${domain}`;
     try {
-      let timeoutId: number | undefined;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
       const controller = new AbortController();
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {

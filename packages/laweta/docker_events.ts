@@ -122,8 +122,8 @@ export interface ContainerState {
 interface Waiter {
   resolve: (value: boolean) => void;
   reject: (reason: Error) => void;
-  timeoutId: number;
-  intervalId?: number;
+  timeoutId: ReturnType<typeof setTimeout>;
+  intervalId?: ReturnType<typeof setInterval>;
   serviceName: string;
   waitFor: "healthy" | "running";
 }

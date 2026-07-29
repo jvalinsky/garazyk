@@ -231,9 +231,8 @@ Deno.test("createProcessLifecycle: finalizeRun does not stop when keepRunning=tr
 // scheduleDrainTimeout
 // ---------------------------------------------------------------------------
 
-Deno.test("createProcessLifecycle: scheduleDrainTimeout returns a numeric timer id", () => {
+Deno.test("createProcessLifecycle: scheduleDrainTimeout returns a clearable timer id", () => {
   const { lifecycle } = makeLifecycle();
   const id = lifecycle.scheduleDrainTimeout(60000);
-  assertEquals(typeof id, "number");
   clearTimeout(id);
 });

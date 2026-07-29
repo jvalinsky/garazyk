@@ -36,7 +36,7 @@ export interface ProcessLifecycle {
     fatalError: unknown;
     collectDiagnostics: () => Promise<void>;
   }): Promise<void>;
-  scheduleDrainTimeout(timeoutMs?: number): number;
+  scheduleDrainTimeout(timeoutMs?: number): ReturnType<typeof setTimeout>;
 }
 
 /** Create a process lifecycle object with signal handling, graceful teardown, and drain timeout. */
@@ -126,9 +126,9 @@ export function createProcessLifecycle(
       );
       Deno.exit(0);
     }, timeoutMs);
-    // In Deno, setTimeout returns a number. Use Deno.unrefTimer to prevent
-    // the timeout from keeping the event loop alive — if the loop drains
-    // naturally, this process exits before the callback fires.
+    // Use Deno.unrefTimer to prevent the timeout from keeping the event loop
+    // alive — if the loop drains naturally, this process exits before the
+    // callback fires.
     Deno.unrefTimer(drainTimeout);
     return drainTimeout;
   };

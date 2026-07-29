@@ -24,7 +24,7 @@ export async function withTimeout<T>(
   timeoutSeconds: number,
   label: string,
 ): Promise<T> {
-  let timeoutId: number | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_resolve, reject) => {
     timeoutId = setTimeout(
       () => reject(new Error(`${label} timed out after ${timeoutSeconds}s`)),

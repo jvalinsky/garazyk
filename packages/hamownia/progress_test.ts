@@ -103,22 +103,37 @@ Deno.test("ProgressBar: formatDuration via finish output", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("DurationCache: get returns null for unknown scenario", () => {
-  const cache = new DurationCache("/nonexistent/path/that/does/not/exist");
-  assertEquals(cache.get("unknown-scenario"), null);
+  const repoRoot = Deno.makeTempDirSync();
+  try {
+    const cache = new DurationCache(repoRoot);
+    assertEquals(cache.get("unknown-scenario"), null);
+  } finally {
+    Deno.removeSync(repoRoot, { recursive: true });
+  }
 });
 
 Deno.test("DurationCache: set and get round-trips a duration", () => {
-  const cache = new DurationCache("/nonexistent/path/that/does/not/exist");
-  cache.set("01", 5000);
-  assertEquals(cache.get("01"), 5000);
+  const repoRoot = Deno.makeTempDirSync();
+  try {
+    const cache = new DurationCache(repoRoot);
+    cache.set("01", 5000);
+    assertEquals(cache.get("01"), 5000);
+  } finally {
+    Deno.removeSync(repoRoot, { recursive: true });
+  }
 });
 
 Deno.test("DurationCache: set applies EMA on subsequent calls (0.3 old + 0.7 new)", () => {
-  const cache = new DurationCache("/nonexistent/path/that/does/not/exist");
-  cache.set("01", 1000);
-  cache.set("01", 2000);
-  // EMA: Math.round(1000 * 0.3 + 2000 * 0.7) = Math.round(300 + 1400) = 1700
-  assertEquals(cache.get("01"), 1700);
+  const repoRoot = Deno.makeTempDirSync();
+  try {
+    const cache = new DurationCache(repoRoot);
+    cache.set("01", 1000);
+    cache.set("01", 2000);
+    // EMA: Math.round(1000 * 0.3 + 2000 * 0.7) = Math.round(300 + 1400) = 1700
+    assertEquals(cache.get("01"), 1700);
+  } finally {
+    Deno.removeSync(repoRoot, { recursive: true });
+  }
 });
 
 Deno.test("DurationCache: constructor with nonexistent path does not throw", () => {
