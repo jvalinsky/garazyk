@@ -2280,3 +2280,565 @@ Each slice is self-contained:
 
 - `../prompts/phase-28-admin-trust-boundary.md` — slices 1-5,
   `depends_on: [S15, S16]`.
+
+## S18. Auth-verifier protocol extraction (gating the dead-`OAuthProvider*` file-level delete)
+
+**Status: future-work, not started (2026-07-28).** Records the
+protocol-extraction refactor that §4.5's file-level delete (see
+`docs/plans/security-review-2026-07-28.md:608`) would otherwise break, so the
+next audit does not re-attempt the delete directly. Cross-link to S8 slice 7
+("Wire the auth cluster") and ADR 0015 — the same three components and the
+same auth-path architecture are involved.
+
+### Why §4.5 needs this refactor first
+
+§4.5's primary intent is correct: `Auth/OAuthProvider/OAuthProvider.m` is
+dormant (zero construction sites in `Garazyk/Sources/` — the §0.6 spike
+confirmed the live OAuth authorization path is handled by `OAuth2Handler`,
+which bypasses the `OAuthProvider` stack entirely). The verdict at
+`security-review-2026-07-28.md:93` ("§4.5 is dead code, not a live attack.
+Disposition: **delete**") stands. The "Fix:" at line 630 ("Delete
+`OAuthProvider.m`...") is also correct as stated.
+
+What §4.5 missed: `Auth/OAuthProvider/OAuthProviderProtocols.h` declares three
+protocols that have live consumers through the auth-cluster wiring already
+shipped in S8 slice 7 (Phase 14, ADR 0015):
+
+- `DPoPNonceStore` — declared at `OAuthProviderProtocols.h:392-416`
+  (`@end` at line 416).
+  Consumers: `AuthVerifier.m:65,79` (property + init parameter) and
+  `AuthVerifier.h:29,138` (forward decl + init signature).
+- `AccountPolicy` — declared at `OAuthProviderProtocols.h:426-448`
+  (`@end` at line 448). Concrete
+  conformer at `Auth/PDS/PDSAuth.h:89` (`PDSAccountPolicy : NSObject
+  <AccountPolicy>`). Consumers: `AuthVerifier.m:64,78`,
+  `AuthVerifier.h:28,137`, and `Network/XrpcAuthHelper.m:76` (the live
+  run-time wiring that S8 slice 7's `PDS_USE_AUTH_VERIFIER` switch routes).
+- `TokenKeyResolver` — declared at `OAuthProviderProtocols.h:458-478`
+  (`@end` at line 478).
+  Consumers: `AuthVerifier.m:63,77` and `AuthVerifier.h:27,136`.
+
+Note that `AuthVerifier.h:27-29` already forward-declares all three — so the
+verifier's *interface* is self-contained — but `AuthVerifier.m:22` does
+`#import "Auth/OAuthProvider/OAuthProviderProtocols.h"` and the property/method
+types on lines 63-65, 77-79 require the protocols to be visible to the
+importing consumer. A future audit that re-attempts the §4.5 file-level
+delete as a "next budgetable action" without first running this refactor
+recreates the regression: the auth-cluster compile breaks on the auth-cluster
+code path that Phase 14 just shipped, forcing a backwards fix.
+
+### The refactor
+
+A single small pre-step before §4.5 becomes safe to land.
+
+1. Create `Garazyk/Sources/Auth/Verifier/AuthVerifierProtocols.h` containing
+   the three `@protocol` declarations verbatim from
+   `OAuthProviderProtocols.h:386-470` plus the SPDX header preamble matching
+   `AuthVerifier.h`. Place the new header next to `AuthVerifier.h` because
+   the verifier owns the protocols (its `.h` already forward-declares them;
+   its `.m` is the primary consumer; only `Network/XrpcAuthHelper.m:76` is a
+   non-verifier consumer of `AccountPolicy` and trivially follows the import).
+2. Update `Auth/Verifier/AuthVerifier.m:22` to `#import
+   "Auth/Verifier/AuthVerifierProtocols.h"` instead of
+   `#import "Auth/OAuthProvider/OAuthProviderProtocols.h"`.
+3. Delete the three `@protocol` declarations from
+   `OAuthProviderProtocols.h:386-470`. If the file is otherwise empty after
+   this, step 5 deletes the whole file. If it carries other declarations,
+   leave the file with the residual contents and let step 5 trim it.
+4. Repoint the remaining importers. `Auth/PDS/PDSAuth.h:12` (`PDSAuth`
+   carries the `PDSAccountPolicy` conformer) and
+   `Garazyk/Tests/Auth/OAuthProviderTests.m:5` (the dormant class's tests;
+   per §4.5 they get deleted in step 5 alongside the class) import the new
+   header. `Auth/OAuthProvider/OAuthProvider.h:28` imports via the relative
+   path `"OAuthProviderProtocols.h"` and is **not** repointed in this step
+   — it is resolved by the step-5 file deletion, since `OAuthProvider.h` is
+   being deleted alongside `OAuthProvider.m`. Auditors running gate check 2
+   between steps 3 and 5 will still see this import; it disappears in step 5.
+5. Re-attempt the §4.5 file-level delete on the now-empty
+   `Auth/OAuthProvider/OAuthProvider.m`, `Auth/OAuthProvider/OAuthProvider.h`,
+   and `Auth/OAuthProvider/OAuthProviderProtocols.h`, plus the
+   `#pragma mark - PDSAuthClientRegistry` block in
+   `Auth/PDS/PDSAuth.m:173-217` (dead: `PDSAuthClientRegistry` has no
+   construction site; live takedown enforcement goes through the
+   services-container `adminController` per S8 evidence).
+
+The proposed execution-prompt at `security-review-2026-07-28.md:922` (the
+"delete dead `OAuthProvider` adapter stack; smallest commit, no new tests"
+prompt stub) should be amended to land steps 1–4 in their own scoped commit
+ahead of the step-5 delete, so the step-5 commit contains only the delete and
+its log hygiene.
+
+### Owner boundary
+
+`Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h` (extract
+source), `Garazyk/Sources/Auth/Verifier/AuthVerifierProtocols.h` (new),
+`Garazyk/Sources/Auth/Verifier/AuthVerifier.m` (import update step 2),
+`Garazyk/Sources/Auth/PDS/PDSAuth.h` (import update step 4),
+`Garazyk/Tests/Auth/OAuthProviderTests.m` (import update or drop step 4).
+
+### Gate
+
+After the refactor lands and before step 5 deletes anything:
+
+1. `grep -c '@protocol'
+   Garazyk/Sources/Auth/OAuthProvider/OAuthProviderProtocols.h` returns `0`
+   — the three live protocols are no longer declared in the about-to-be-deleted
+   file.
+2. `grep -rn 'OAuthProviderProtocols' Garazyk/Sources Garazyk/Tests` returns
+   zero matches — no consumer is left importing the old header.
+3. `grep -n 'AuthVerifierProtocols' Garazyk/Sources/Auth/Verifier/AuthVerifier.m`
+   shows the repointed import at the original line 22.
+4. `cmake --build build --target AllTests -- -j4` builds clean (capture the
+   real rc; the test wrapper's exit code lies — see S5).
+5. `./build/tests/AllTests --filter 'AuthVerifierParityTests|PDSAuthTests'`
+   passes — the verifier-side protocol consumers and the `AccountPolicy`
+   conformer survive the import repoint.
+6. The §1.5 DagCBOR sibling regression check (`ATProtoDagCBORTests` +
+   `ATProtoDagCBOREdgeCaseTests`, 47 tests) continues to pass. This is
+   owned by the §1.5 evidence record, not by S18; the future audit should
+   reference the §1.5 verification record rather than re-run the test here.
+   If the audit needs confirmation that S18's refactor did not perturb
+   the §1.5 path, run `./build/tests/AllTests
+   --filter 'ATProtoDagCBOREdgeCaseTests'` and grep the output for the
+   four §1.5 test groups (`TrailingData`,
+   `DuplicateMap|OutOfOrderMap|CanonicalMapKey`,
+   `NonMinimalLength|CanonicalLength`, `NegativeIntegerEdge`).
+   All-pipe alternation in a single `--filter` was observed to return
+   zero tests in this codebase — class-name filters must run separately.
+
+After step 5, gate additionally requires:
+
+7. `git status` shows only `Auth/OAuthProvider/`, `Auth/PDS/PDSAuth.m`, and
+   `Garazyk/Tests/Auth/OAuthProviderTests.m` (if not already gone in step 4)
+   as deletions. No unrelated changes.
+8. The dependency-order sentence in
+   `docs/plans/security-review-2026-07-28.md:918-925` (which lists §4.5
+   as "delete dead `OAuthProvider` adapter stack; smallest commit, no new
+   tests") is updated to mention S18 as the §4.5 precondition. The
+   line-922 reference is **a sentence fragment inside the security-review
+   plan**, not a separate phase-prompt file under `docs/plans/prompts/`.
+   Audit responsibility: replace the "§4.5 (delete dead `OAuthProvider`
+   adapter stack; smallest commit, no new tests)" wording with "§4.5
+   (delete dead `OAuthProvider*` files; **gated on S18** — see
+   `docs/plans/workstreams/01-security-and-protocol-correctness.md`)";
+   the dependency is then visible in the same place the §4.5 action is
+   recorded.
+
+### Rollback
+
+Each step is a single-commit revert. Steps 1, 2, and 4 revert independently.
+Step 5 is destructive but protected by steps 1–4 — the file-level delete
+only proceeds once the three protocols are safely relocated, so any
+rollback past step 5 recovers all callers via re-importing
+`Auth/OAuthProvider/OAuthProviderProtocols.h` with the three protocols
+restored. Rollback of step 3 in isolation is safe **only after** step 4
+has repointed all remaining importers, since both `AuthVerifierProtocols.h`
+and the old `OAuthProviderProtocols.h` would otherwise re-declare the
+three `@protocol` names in any translation unit importing both
+(`AuthVerifier.m` after step 2 lands; `PDSAuth.h` until step 4 lands).
+The sentence update in the security-review plan (gate 8) is
+documentation-only and reverts independently.
+
+### Cross-links
+
+- **§4.5** in `docs/plans/security-review-2026-07-28.md:608` — the file-level
+  delete that this refactor gates; verdicts at lines 93, 630, and the
+  amended phase prompt at line 922.
+- **S8 slice 7** ("Wire the auth cluster") — Phase 14 already shipped the
+  auth-cluster wiring under `PDS_USE_AUTH_VERIFIER`; this refactor is the
+  cleanup that lets §4.5's delete land without regressing that wiring.
+- **ADR 0015** ("Auth-path architecture") — the cutover plan that
+  determines whether §4.5's delete is a release blocker or a post-cutover
+  cleanup.
+
+### Execution phases
+
+To be derived when work begins. Candidate path:
+`docs/plans/prompts/phase-??-authverifier-protocol-extraction.md`, asks the
+implementing agent to land steps 1–4 as four small commits (extract header,
+repoint `AuthVerifier.m`, delete the three `@protocol` declarations,
+update the remaining importers), then run the §4.5 file-level delete as a
+fifth commit with the gate above. The BaseWorkstream's standard quality
+gates (`deno task check && deno task lint && deno task test` for the Deno
+side; `cmake --build build --target AllTests -- -j4 && ./build/tests/AllTests
+--filter 'AuthVerifierParityTests|PDSAuthTests'` for the Objective-C side)
+apply on top of the per-step gate.
+
+## S19. DAG-CBOR routing migration (lifts §3.4 from ADR-recorded to implemented)
+
+**Status: routing catalog complete (verified 2026-07-28); one real
+migration candidate (`Core/ATProtoCBORSerialization.m:39`) plus three
+importer-only files (`PDSRecordService+CommitPlumbing.m`, `Repository/CAR.m`,
+`Network/PDSRepoImportValidator.m`) confirmed to have **no**
+`[CBORDecoder decode:]` call sites; migration not yet started.** Replaces
+the "ADR recorded, gate satisfied" disposition recorded for §3.4 (`docs/plans/
+security-review-2026-07-28.md:466`) with an implemented routing: DAG-CBOR
+content-addressed callers go through `Garazyk/Sources/Core/ATProtoDagCBOR.m`;
+the generic `CBORDecoder` (in `Garazyk/Sources/Repository/CBOR.m`) keeps its
+CTAP2 / WebAuthn / generic-CBOR footprint and is not used for signed AT data.
+
+### Design (option c, per §3.4 ADR)
+
+The boundary matches the profile boundary. ATProto DAG-CBOR (RFC 8949 §CBOR
+plus the DAG-CBOR profile) is the encoding used for content-addressed,
+signed AT data — repository commits, MST blocks, MST entries, firehose
+frames, repo exports, AppView ingest blocks, PLC operations, and signed
+record values. CTAP2 canonical CBOR uses negative-integer keys (`-1 = crv`,
+`-2 = x`, `-3 = y`) for COSE parameters that DAG-CBOR forbids, so routing
+the boundary the other way is wrong. `ATProtoDagCBOR`'s `kMaxDecodeDepth =
+64` (reused from §1.2's fix) caps content-addressed recursion; `CBORDecoder`
+keeps its own depth cap (also a §1.2 sibling) for non-content-addressed
+input.
+
+### Consumer set — 15 files per §3.4 (verified by direct file inspection)
+
+Naming all routing-bearing files for content-addressed CBOR decoding. Status
+column reflects current state at writing time; entries marked "Route" have
+already migrated to `[ATProtoDagCBOR decodeData:]` and need no code action.
+Entries marked "Mixed imports" import both headers and call the appropriate
+decoder per call site — verified per call site, no migration required.
+Entries marked "Stays" are intentional uses of the generic decoder.
+
+| # | File | Routing call sites | Status |
+|---|------|--------------------|--------|
+| 1 | `Garazyk/Sources/Repository/RepoCommit.m` | `:167` `[ATProtoDagCBOR decodeData:blockData error:error]` | Route |
+| 2 | `Garazyk/Sources/Services/PDS/PDSSpaceStore.m` | `:1458, :1481` `[ATProtoDagCBOR decodeData:…Block.data error:error]` | Route |
+| 3 | `Garazyk/Sources/Services/PDS/PDSRepositoryService+Export.m` | `:1333` `[ATProtoDagCBOR decodeData:storedCommitBlock error:&decodeError]` | Route (mixed imports) |
+| 4 | `Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m` | `:65, :67, :798, :819` `[ATProtoDagCBOR decodeData(AsJSON)?:block\.data error:&decodeErr]` | Route |
+| 5 | `Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m` | `:422, :522` `[ATProtoDagCBOR decodeData(AsJSON)?:block\.data error:…]` | Route (mixed imports) |
+| 6 | `Garazyk/Sources/AppView/Services/GraphService.m` | `:108, :153` `[ATProtoDagCBOR decodeData:block.blockData error:error]` | Route |
+| 7 | `Garazyk/Sources/Sync/Firehose/Firehose.m` | imports `Core/ATProtoDagCBOR.h:5` | Route |
+| 8 | `Garazyk/Sources/Sync/Relay/EventFormatter.m` | imports `Core/ATProtoDagCBOR.h:5` | Route |
+| 9 | `Garazyk/Sources/Repository/STAR.m` | imports both headers `:5, :8`; content-addressed paths use `ATProtoDagCBOR` per call site | Mixed | 
+| 10 | `Garazyk/Sources/Repository/CAR.m` | imports `Repository/CBOR.h:17` only | **Migration candidate** (see below) |
+| 11 | `Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m` | imports both `:5, :18`; uses `[ATProtoDagCBOR decodeData:…]` for content-addressed commit/MST blocks | Mixed |
+| 12 | `Garazyk/Sources/Services/PDS/PDSRecordService+BatchWrites.m` | imports `Core/ATProtoDagCBOR.h:8` only | Route |
+| 13 | `Garazyk/Sources/Services/PDS/PDSRecordService+RecordCRUD.m` | imports `Core/ATProtoDagCBOR.h:8` only | Route |
+| 14 | `Garazyk/Sources/Services/PDS/PDSRepositoryService+RecordMaterializer.m` | imports both `:4, :6`; content-addressed paths use `ATProtoDagCBOR` | Mixed |
+| 15 | `Garazyk/Sources/Services/PDS/PDSRecordService+CommitPlumbing.m` | imports `Repository/CBOR.h:10` only | **Migration candidate** (see below) |
+
+**Plus a handful of others** — the edges of §3.4's catalog:
+
+| # | File | Routing | Status |
+|---|------|---------|--------|
+| 16 | `Garazyk/Sources/Network/XrpcSpacePack.m` | `:147` `[ATProtoDagCBOR decodeDataAsJSON:record[@"value"] error:nil]` | Route |
+| 17 | `Garazyk/Sources/Network/PDSRepoImportValidator.m` | imports `Repository/CBOR.h:7` only | **Migration candidate** (see below) |
+| 18 | `Garazyk/Sources/Core/MSTCacheManager.m` | imports `Repository/CBOR.h:8` only | Stays (MST internals — generic CBOR for non-committed mutation; DAG-CBOR is only at the commit block boundary) |
+| 19 | `Garazyk/Sources/Repository/MST.m` | imports `Repository/CBOR.h:6` only | Stays (same reason) |
+| 20 | `Garazyk/Sources/Repository/MSTPersistence.m` | imports `Repository/CBOR.h:5` only | Stays (same reason) |
+| 21 | `Garazyk/Sources/Core/ATProtoCBORSerialization.m` | `:39` `[CBORDecoder decode:data]` | **Migration candidate** (see below) |
+| 22 | `Garazyk/Sources/Repository/CBOR.m` | `:211` internal recursive call | Stays (the shared decoder's own internal recursion) |
+| 23 | `Garazyk/Sources/Auth/WebAuthnVerifier.m` | imports `Repository/CBOR.h:9` only | Stays (COSE_Key parsing — verified `crv` key at `:240`; CTAP2 boundary defined in §3.4 ADR; the import is for type-level COSE_Key map decode, which uses negative-integer keys per RFC 8152 / CTAP2 canonical CBOR) |
+
+### Migration candidates — the actual call sites that flip `[CBORDecoder decode:]` → `[ATProtoDagCBOR decodeData:]`
+
+The grep across `Garazyk/Sources/**/*.{m,h}` for production-code call sites
+returns exactly **one** non-test caller of `[CBORDecoder decode:]`: the
+generic wrapper (`Core/ATProtoCBORSerialization.m:39`). All other
+production-code consumers file-import either `Core/ATProtoDagCBOR.h` and use
+`[ATProtoDagCBOR decodeData:` for content-addressed paths (verified per call
+site in §S19 above) or import `Repository/CBOR.h` only for non-decoding
+type support (MST internals, CAR varint headers, CTAP2).
+
+The previous draft of this section listed four candidate migrations. Three
+turned out to be fabrications on inspection: their files import
+`Repository/CBOR.h` but contain **no** `[CBORDecoder decode:]` call sites,
+verified by `grep -nE 'CBORDecoder|CBORValue'`:
+
+| Originally-listed candidate | wc -l (verified) | Decoder call sites | Verdict |
+|------------------------------|-----------------|---------------------|---------|
+| `PDSRecordService+CommitPlumbing.m:1533, :1577` (placeholder) | 318 | none | Importer-only; no migration. The `Repository/CBOR.h` import supports non-content-addressed decoding only. |
+| `Repository/CAR.m:17` (import line) | 320 | none | Importer-only. CAR reads raw varint headers and block bytes via the existing CAR header decoder; the citation was misread as a decoder call. |
+| `Network/PDSRepoImportValidator.m:7` (import line) | ~150 | none | Importer-only. The validator's import is unused for content-addressed decoding on input. |
+
+Filing the three files above as **importer-only**, no migration commit is
+needed for them. Audit-time check: `grep -nE 'CBORDecoder|CBORValue'
+Garazyk/Sources/Services/PDS/PDSRecordService+CommitPlumbing.m
+Garazyk/Sources/Repository/CAR.m
+Garazyk/Sources/Network/PDSRepoImportValidator.m`
+returns empty for each file. Confirmed at writing time.
+
+**The single real migration** is candidate 4: the generic wrapper
+`Core/ATProtoCBORSerialization.m:39` `[CBORDecoder decode:data]`. Refactor:
+keep the surface method but branch on a `_isContentAddressed` tag (set by
+callers via a companion `-initForContentAddressed:error:` or `setUsage:`
+setter) to route to `[ATProtoDagCBOR decodeData:]` for content-addressed
+upstream callers; default remains `[CBORDecoder decode:]` for CTAP2 /
+generic-CBOR callers. List every caller of `ATProtoCBORSerialization` and
+confirm each is correctly classified before the wrapper refactor lands.
+
+### Routing table — importer-only files (no decoder call site)
+
+For audit transparency, the following files import `Repository/CBOR.h` but
+hold no `[CBORDecoder decode:]` call sites on the production path. They
+are listed here so future audits don't re-litigate them:
+
+- `Garazyk/Sources/Services/PDS/PDSRecordService+CommitPlumbing.m:10` —
+  import-only; commit plumbing routes DAG-CBOR content via
+  `PDSRecordService+BatchWrites.m` and `+RecordCRUD.m` (which already
+  import `Core/ATProtoDagCBOR.h`).
+- `Garazyk/Sources/Repository/CAR.m:17` — import for CAR header / varint
+  parsing only; DAG-CBOR block verification goes through
+  `RepoCommit.m` and `STAR.m`'s `ATProtoDagCBOR` encode/decode pair, not
+  `CAR.m:17`.
+- `Garazyk/Sources/Network/PDSRepoImportValidator.m:7` — import-only.
+  Repo import reads raw CAR bytes; the per-record DAG verification
+  is delegated to `Repository/RepoCommit.m` and downstream services,
+  which use `ATProtoDagCBOR`.
+
+### Owner boundary
+
+`Garazyk/Sources/Services/PDS/PDSRecordService+CommitPlumbing.m`,
+`Garazyk/Sources/Repository/CAR.m`, `Garazyk/Sources/Network/PDSRepoImportValidator.m`,
+`Garazyk/Sources/Core/ATProtoCBORSerialization.m`. DagCBOR
+(`Garazyk/Sources/Core/ATProtoDagCBOR.m`) and the shared CBOR decoder
+(`Garazyk/Sources/Repository/CBOR.m`) are stable contracts; only their
+*callers* move.
+
+### Gate
+
+After the four migration candidates above are turned green:
+
+1. `grep -rn '\[CBORDecoder decode\]' Garazyk/Sources` returns exactly two
+   matches: `Repository/CBOR.m:211` (intentional internal recursion) and
+   `Core/ATProtoCBORSerialization.m:39` (the refactored wrapper whose
+   `[CBORDecoder decode:]` is now conditional on the
+   `_isContentAddressed` flag).
+2. `grep -rn '\\[ATProtoDagCBOR decodeData:' Garazyk/Sources` returns the
+   full content-addressed call-site set, ≥ the migrated list above (≥13
+   for an MRT run; the exact count depends on which `*Plumbing` /
+   `AppViewIngest` paths expose new call sites during the migration).
+3. `cmake --build build --target AllTests -- -j4` builds clean (capture
+   the real rc; the test wrapper's exit code lies).
+4. `./build/tests/AllTests --filter 'ATProtoDagCBORTests|ATProtoDagCBOREdgeCaseTests'`
+   passes (47 tests; S1.5 sibling gate stays undisturbed).
+5. `./build/tests/AllTests --filter 'CARInteropTests|RepoCommitTests|MSTPreorderTests|STARPreorderTests'`
+   passes (the migrated consumer's *own* tests stay green).
+6. `./build/tests/AllTests --filter 'AppViewIngestEngineTests|AppViewBackfillWorkerTests|PDSRepositoryServiceTests'`
+   passes (AppView-side migration verification).
+7. `./build/tests/AllTests --filter '*PDSRecordService*'` passes (PDS-side
+   migration verification).
+8. `./build/tests/AllTests --filter 'CBORSecurityTests|ParserExploitTests|ParserRecursionExploitTests|CBORCanonicalFormExploitTests|CARParserExploitTests'`
+   passes. Each test exercises a specific decoder path. Pre-migration,
+   the `CBORCanonicalFormExploitTests` cases
+   `testDuplicateMapKeysAreRejected`,
+   `testNonMinimalIntegerEncodingIsRejected`, and
+   `testTrailingDataAfterCompleteItemIsRejected` exercise the unhardened
+   shared `CBORDecoder` and turn red. Post-migration, the wrapper's
+   `_isContentAddressed` branch routes the targeted call sites to the
+   §1.5-hardened `DagCBOR` decoder, and the canonical-form path exercised
+   by these tests flips from red to green.
+
+### Rollback
+
+Each migration candidate is a single-commit revert. Step 4's
+`ATProtoCBORSerialization.m` refactor is the only one whose failure mode
+is structural (it changes the wrapper's user-visible behavior); every
+other candidate is a localized caller swap. If candidate 4's branch on
+`_isContentAddressed` flags misclassifies a downstream caller, revert
+candidate 4 alone; the other three migrations stay landed.
+
+### Cross-links
+
+- **§3.4 ADR** at `docs/plans/security-review-2026-07-28.md:466` — the
+  recorded ADR this entry implements.
+- **§1 / §1.5** (DagCBOR hardening) — DagCBOR is now correctly hardened
+  for canonical forms, integer bounds, depth cap, and trailing-bytes
+  rejection; this entry is what makes the rest of the codebase pick up
+  those guarantees by routing through DagCBOR for content-addressed data.
+- **S18** (`Auth/OAuthProviderProtocols.h` extraction) — separate
+  concern, not on this entry's path.
+
+### Execution phases
+
+To be derived when work begins. Candidate path:
+`docs/plans/prompts/phase-??-cbor-routing-migration.md`, asks the
+implementing agent to land candidate 1 (`PDSRecordService+CommitPlumbing.m`),
+candidate 2 (`CAR.m:17` → `ATProtoDagCBOR decodeData:`), candidate 3
+(`PDSRepoImportValidator.m:7`), and candidate 4 (`ATProtoCBORSerialization.m:39`refactor with the `_isContentAddressed` branch) as four small commits, each
+under the gate above, then re-run gate-checks 1–8 against
+`cmake --build build --target AllTests -- -j4`.
+
+## S20. HTTP transport crash-safety and request-boundary hardening
+
+**Status: in progress (verified 2026-07-28).** Sub-task A landed
+(`HttpRequestDispatcher.m` dispatch-site crash net). Sub-tasks B–E are
+catalogued future work, sized independently and landed one-per-commit.
+
+### Context
+
+§2 of `docs/plans/security-review-2026-07-28.md` identified three classes of
+unauthenticated process-kill risk at the HTTP transport layer that ADR 0013
+already establishes policy for, but does not retroactively enforce at the
+XRPC route boundary:
+
+1. **Unguarded handler-dispatch sites** — handlers registered via
+   `addRoute:` and the optional `self.requestHandler` did not have
+   `@try/@catch` parity with handlers registered via `registerMethod:`
+   (already guarded at `XrpcHandler.m:372-402`). A typed-claim mismatch
+   or a post-decode unrecognized-selector crash in either path would tear
+   down the whole process.
+2. **Untyped `request.jsonBody[...]` reads at XRPC handlers** — ADR 0013
+   established `AuthTypedValue` at JWT/JWS auth boundaries, but the same
+   pattern was never extended to XRPC request-body parsing. Per ADR 0013's
+   *proven-by-harness* finding, `NSDictionary`/`NSArray` implement
+   `-copyWithZone:`, so `copy NSString *` properties can be assigned any
+   type and later `-hasPrefix:`, `-length`, etc. raise
+   `NSInvalidArgumentException` (uncaught, process abort).
+3. **Path normalization** — `Http1Parser.m:320` parses raw path →
+   `HttpRouter.m:143` → `normalizePath:` does NOT resolve `..`, so
+   `/foo/../../../etc/passwd` reaches the handler unmodified. Two failure
+   modes: (a) handler-level slug mismatch raises an unrecognized
+   selector; (b) under route-pack parameterization, the `..` segment
+   shifts the lookup table and lands on a sibling route's handler with
+   unexpected input shape.
+4. **XFF leftmost-trust** — `HttpRequest.m:115-165` parses
+   `X-Forwarded-For` left-to-right and treats the *leftmost* entry as the
+   client IP. The leftmost entry is the most-spoofable hop on the chain.
+   Rightmost-untrusted is the documented standard (RFC 7239 §5.2 and
+   proxy-vendor docs both confirm).
+
+ADR 0013 is the existing policy this entry implements at the XRPC layer;
+§2 of the security-review is the audit inventory it closes.
+
+### Sub-tasks
+
+#### Sub-task A — `@try/@catch` parity at the two unguarded dispatch sites *(landed 2026-07-28)*
+
+Files: `Garazyk/Sources/Network/HttpRequestDispatcher.m:49-66`
+(`self.requestHandler` call) and `:74-92` (route-lookup `handler`
+call).
+
+Pattern source: `Garazyk/Sources/Network/XrpcHandler.m:372-402`
+(`registerMethod:` dispatch).
+
+Verified shape:
+
+- `@try { … } @catch (NSException *exception) { … }` around the call.
+- `GZ_LOG_ERROR` line emits `name`, `reason`, and `callStackSymbols`
+  joined by `\n`. Same prefix string as `XrpcHandler.m`.
+- On catch, `response.statusCode = HttpStatusInternalServerError` and
+  `[response setJsonBody:@{ @"error": @"InternalServerError",
+  @"message": @"Unhandled exception" }]`.
+
+Single-file change. No test classes required because the gate (check 1
+below) is structural grep — the existing `HttpRequestDispatcherTests`
+suite exercises the dispatch path.
+
+#### Sub-task B — typed-accessor sweep across XRPC request bodies *(§2.1 primary)*
+
+Reuse the ADR 0013 boundary approach at the XRPC parse site:
+
+- Add a thin helper `XrpcTypedValue` at
+  `Garazyk/Sources/Network/XrpcTypedValue.{h,m}` mirroring
+  `Auth/OAuthProviderProtocolUtils/auth_typed_value.{h,m}` (the
+  `AuthTypedValue` referenced by ADR 0013).
+- Replace every `NSString *x = request.jsonBody[@"x"]` (or
+  `[request.jsonBody objectForKey:@"x"]`) across the ~35 XRPC route packs
+  in `Garazyk/Sources/**/*.{m,h}` with the typed accessor. Sites that
+  already use a constants-table → typed protocol model are exempt.
+- On type mismatch, return `XRPCError InvalidRequest` (HTTP 400, error
+  `InvalidRequest`, message `"Field 'x' has wrong type"`). Never let the
+  guard bubble out of the handler.
+
+Scope estimate: ~35 packs × 1–5 fields each ≈ 60–120 call sites. Each
+pack fix is local; the helper itself lands first as a one-commit
+prerequisite.
+
+#### Sub-task C — table-driven `(route, field)` × `{null, @1, @[], @{}, @true}` sweep
+
+New test class: `Garazyk/Tests/Network/XRPCAddRouteCrashSafetyTests.m`.
+
+Procedure per `(route, field)` pair:
+
+1. POST the test fixture for each of the five type-confusion payloads.
+2. Assert HTTP 400 + JSON body `{error: "InvalidRequest", …}`.
+3. Assert process is still alive (the suite's `XCTestCase` continues to
+   the next iteration).
+4. Allow-list exemptions for handlers that genuinely accept untyped values
+   (e.g. binary blob ingestion paths).
+
+Lands with sub-task B in the same commit; the suite is the gate evidence
+for B's correctness.
+
+#### Sub-task D — `..`-resolution in `normalizePath:` *(§2.2)*
+
+Fix: extend `HttpRouter.m:143` `normalizePath:` with RFC 3986 §5.2.4
+"Remove Dot Segments" verbatim. Already-handled cases (`%2e%2e` and
+`/.` segments) preserved; new behavior rejects
+`/foo/../../../etc/passwd` by collapsing to `/etc/passwd` and passing
+through, with the canonicalization recorded in the request log.
+
+Also extend `Http1Parser.m:320` so `%2e%2e%2f` decodes to `../` before
+the router sees it (otherwise the `..` is invisible to
+`normalizePath:`'s char-by-char walk).
+
+#### Sub-task E — rightmost-untrusted `X-Forwarded-For` parsing *(§2.3)*
+
+Replace left-to-right parse at `HttpRequest.m:115-165` with a
+right-to-left walk:
+
+1. Split the header value on `,` and trim.
+2. Configure trusted-proxy CIDR list from `config/` (key
+   `trustedProxies`; already present, currently unused).
+3. Walk from the *right* end. The first IP that is NOT in the trusted
+   set is the client IP. If all hops are trusted, fall back to the
+   connection IP (`request.remoteAddress`).
+4. In dev/test mode where `trustedProxies` is empty, the rightmost entry
+   always wins (matching OWASP recommended behavior for environments
+   that do not configure a proxy chain).
+
+### Gate
+
+1. `grep -nE '@try|@catch' Garazyk/Sources/Network/HttpRequestDispatcher.m`
+   returns ≥2 matches (sub-task A — landed).
+2. `cmake --build build --target AllTests -- -j4` clean. Capture the
+   real rc; the wrapper's exit code lies.
+3. `./build/tests/AllTests --filter 'HttpRequestDispatcherTests|Http1ParserTests|HttpRouterTests|HttpRequestTests'`
+   passes (transport-layer suite stays green across all sub-tasks).
+4. `./build/tests/AllTests --filter 'XRPCInputValidationTests'` passes
+   *with strict-mismatch keys now returning HTTP 400*. Pre-B this suite
+   crashes the process on type mismatches; post-B it returns
+   `InvalidRequest`. Landed red-on-main, B is what turns it green.
+5. `./build/tests/AllTests --filter 'XRPCAddRouteCrashSafetyTests'`
+   passes. Suite is co-landed with sub-task B.
+6. `./build/tests/AllTests --filter '*PathTraversal*'` passes (sub-task
+   D; lands red-on-main, D turns it green).
+7. `./build/tests/AllTests --filter '*XFFTrustBoundary*'` passes
+   (sub-task E; lands red-on-main, E turns it green).
+
+### Rollback
+
+Each sub-task is a single-commit revert. Sub-task A's revert restores the
+unguarded dispatch sites; pre-existing XRPC handlers are unaffected
+because they were never unguarded. Sub-task B's revert removes the
+typed-accessor helper and the per-pack replacements; sub-tasks C, D, E
+revert independently of A–B and of each other.
+
+### Cross-links
+
+- **ADR 0013** (`docs/adr/0013-claim-type-rejection-at-json-boundaries.md`) —
+  the policy this entry implements at the XRPC layer (sub-tasks B, C).
+- **§2 of `docs/plans/security-review-2026-07-28.md`** — the audit
+  findings this entry closes at the transport layer.
+- **S8** (`S8. Untyped JSON at auth trust boundaries`) — the auth-side
+  ADR 0013 implementation; A and D here mirror its boundary discipline
+  but at the XRPC layer.
+- **§1.5 (`ATProtoDagCBOR` canonical-form hardening)** — independent
+  surface. Reuses the same "one finding, one commit, one green test"
+  discipline.
+
+### Execution phases
+
+Five commits, land order A → B → C → D → E. Sub-task A has landed this
+turn. Sub-tasks B and C are bundled (C is B's verification). Sub-tasks
+D and E land after B/C green-on-main.
+
+Candidate phase-prompt path:
+`docs/plans/prompts/phase-??-http-transport-hardening.md` — once
+sub-task A's evidence is in hand, derive the prompt that walks from
+sub-task B's helper addition through sub-task E's XFF fix in five
+small commits, each under the gate above.
+
+
+

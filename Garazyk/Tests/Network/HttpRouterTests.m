@@ -346,6 +346,66 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertFalse(lowerCaseCalled, @"Case-sensitive routing should match only Files/*");
 }
 
+#pragma mark - §2.2 Path Normalization
+
+- (void)testPathNormalizationRejectsTraversal {
+    // Direct traversal above root: `/../health` → `` (empty, no match)
+    NSString *normalized = [[[HttpRouter alloc] init] normalizePath:@"/../health"];
+    XCTAssertEqualObjects(normalized, @"health",
+                          @".. above root must be dropped, path should be 'health'");
+
+    // Single-level traversal: `/api/../health` → `health`
+    normalized = [[[HttpRouter alloc] init] normalizePath:@"/api/../health"];
+    XCTAssertEqualObjects(normalized, @"health",
+                          @"api/../health must resolve to just health");
+
+    // Deep traversal: `/a/b/c/../../d` → `a/d`
+    normalized = [[[HttpRouter alloc] init] normalizePath:@"/a/b/c/../../d"];
+    XCTAssertEqualObjects(normalized, @"a/d",
+                          @"Deep .. traversal must resolve correctly");
+
+    // Current-directory segments: `/./a/./b` → `a/b`
+    normalized = [[[HttpRouter alloc] init] normalizePath:@"/./a/./b"];
+    XCTAssertEqualObjects(normalized, @"a/b",
+                          @". segments must be collapsed");
+
+    // Mix: `./../a/./b/../c` → `a/c`
+    normalized = [[[HttpRouter alloc] init] normalizePath:@"/./../a/./b/../c"];
+    XCTAssertEqualObjects(normalized, @"a/c",
+                          @"Mixed . and .. must resolve correctly");
+
+    // Double slashes: `//a//b` → `a/b`
+    normalized = [[[HttpRouter alloc] init] normalizePath:@"//a//b"];
+    XCTAssertEqualObjects(normalized, @"a/b",
+                          @"Double slashes must be collapsed");
+
+    // Traversal leading to route match: `/../health` → `health`
+    HttpRouter *router = [[HttpRouter alloc] init];
+    __block BOOL called = NO;
+    [router addRoute:@"GET" pattern:@"health" handler:^(HttpRequest *request, HttpResponse *response) {
+        called = YES;
+        response.statusCode = 200;
+    } priority:1000];
+
+    // Request with traversal that resolves to "health"
+    HttpRequest *traversalRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                           methodString:@"GET"
+                                                                   path:@"/api/../health"
+                                                            queryString:@""
+                                                            queryParams:@{}
+                                                                version:@"HTTP/1.1"
+                                                                headers:@{}
+                                                                   body:[NSData data]
+                                                           remoteAddress:@"127.0.0.1"];
+    XCTAssertTrue([self waitForHandlerInRouter:router request:traversalRequest],
+                  @"Route /api/../health must match /health after normalization");
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [router handleRequest:traversalRequest response:response];
+    XCTAssertTrue(called, @"Handler must be called after traversal normalization");
+    XCTAssertEqual(response.statusCode, 200);
+}
+
 @end
 
 NS_ASSUME_NONNULL_END
