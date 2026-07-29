@@ -209,11 +209,46 @@ doesn't depend on the sibling `jelcz` executable target) — confirmed via
 direct manual runs of the binary, not just the test harness, before
 concluding the actual code change was correct.
 
-**Remaining M4 items, not yet started** (see the original scope below
-for the full list and per-item leak counts as originally estimated —
-not re-verified against the corrected baseline):
-- `Transport -> Storage`: inject a storage protocol into `RateLimiter`
-  and the two route packs that import `PDSDatabase.h` directly.
+**`Transport -> Storage` investigated, not fixed** — genuinely needs
+design, matching this item's own framing. The 3 files the corrected
+baseline actually names are `RateLimiter.m` and two route packs
+(`ATProtoHttpOAuthRoutePack.m`, `ATProtoHttpWellKnownRoutePack.m`), and
+they're not the same shape of problem:
+- The two route packs are not narrowly-scoped database leaks at all —
+  they already import `OAuth2Handler`, `WebAuthnRegistrationHandler`,
+  `PDSSecondFactorService`, `PDSAccountService`, and `PDSController`
+  directly (several already separately flagged in the baseline). These
+  are Services-layer route handlers that happen to live in `Network/`
+  physically; injecting a storage protocol would leave the other
+  Services imports untouched. The real fix is deciding where these
+  files belong (XRPC layer, most likely, matching `Xrpc*.m`'s existing
+  carve-out from Transport) — a relocation decision, not a protocol
+  injection, and one this pass didn't have enough certainty to make
+  unilaterally.
+- `RateLimiter` is the cleaner case (only these 2 leak classes,
+  `ATProtoConnectionManagerSerial`/`ATProtoDatabaseQueryRunner`, no
+  other Services deps) but its dependency is deep: 16 call sites across
+  a 540-line file directly issue SQL through
+  `ATProtoDatabaseQueryRunner`/`ATProtoConnectionManagerSerial`, and
+  `RateLimiter` constructs both itself, lazily, inside
+  `ensureDatabaseOpened`. Unlike the `PDSReplayCache` fix (a single
+  already-protocol-typed property that just needed its one production
+  construction site repointed), `RateLimiter` is a process-wide
+  singleton (`+sharedLimiter`) with no caller anywhere passing in a
+  storage dependency — every consumer just calls `[RateLimiter
+  sharedLimiter]`. A real fix needs a factory seam (something like
+  `RateLimiterSetStorageFactory(...)`, set once at App/Runtime startup,
+  that `RateLimiter` calls lazily instead of hardcoding the concrete
+  classes) — a legitimate design task, not a mechanical move, and
+  larger than anything else fixed in this M4 pass. Recommended next
+  step for whoever picks this up: design the factory protocol first,
+  verify it against all of `RateLimiter`'s 16 internal call sites
+  (`executeQuery:`/`executeUpdate:`/`performWriteTransaction:error:`,
+  already conveniently matching the existing `ATProtoDatabaseTransactor`
+  protocol shape almost exactly), then wire the one production call
+  site (wherever `App`/`Runtime` boots the server) before touching
+  `RateLimiter.m` itself.
+
 - `Transport -> Runtime`: invert route-pack registration so `App/`
   handlers register themselves with the router instead of route packs
   importing handlers.
