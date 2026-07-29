@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2Handler.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/DPoPUtil.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"

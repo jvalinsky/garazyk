@@ -9,7 +9,7 @@
 #import "Database/PDSDatabase.h"
 #import "Auth/Crypto/Secp256k1.h"
 #import "Auth/Session.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Network/HttpResponse.h"
 #import "Auth/TestKeyFixtures.h"
 

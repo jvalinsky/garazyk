@@ -9,7 +9,7 @@
  */
 
 #import "Auth/Verifier/AuthVerifier.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/PDSKeyProtocol.h"

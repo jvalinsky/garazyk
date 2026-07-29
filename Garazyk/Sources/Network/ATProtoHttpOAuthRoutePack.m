@@ -13,7 +13,7 @@
 #import "App/PDSApplication.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/OAuth2.h"
 #import "Auth/OAuth2Handler.h"
 #import "Auth/PDSSecondFactorService.h"

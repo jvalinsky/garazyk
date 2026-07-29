@@ -8,7 +8,7 @@
 #import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/PDSSecondFactorService.h"
 #import "Debug/GZLogger.h"
 #import "PLC/PLCOperation.h"

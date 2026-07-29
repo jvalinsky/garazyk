@@ -3,7 +3,7 @@
 #import "Video/VideoJWTAuthProvider.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/DID.h"
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"

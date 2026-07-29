@@ -42,7 +42,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Debug/GZLogger.h"

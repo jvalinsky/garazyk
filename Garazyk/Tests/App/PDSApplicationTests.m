@@ -19,7 +19,7 @@
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Admin/PDSAdminController.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/ATProtoDataPaths.h"
 #import "Network/RateLimiter.h"
 #import "Services/PDS/PDSSpaceStore.h"

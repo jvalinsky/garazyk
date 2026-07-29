@@ -3,7 +3,7 @@
 
 #import "Network/XrpcSpacePack.h"
 
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/ATProtoDIDDocumentFields.h"
 #import "Core/ATProtoValidator.h"

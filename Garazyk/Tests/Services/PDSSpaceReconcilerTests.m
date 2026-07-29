@@ -4,7 +4,7 @@
 #import "Services/PDS/PDSSpaceReconciler.h"
 #import "Services/PDS/PDSSpaceStore.h"
 #import "Database/Pool/DatabasePool.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 @interface PDSSpaceReconcilerTests : XCTestCase
 @property (nonatomic, strong) PDSSpaceStore *spaceStore;

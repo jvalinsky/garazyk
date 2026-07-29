@@ -9,7 +9,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Admin/PDSAdminController.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 @class PDSDatabaseAccount;
 @class PDSRecordService;

@@ -4,7 +4,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 @interface PDSAdminAuthTests : XCTestCase
 @property (nonatomic, strong) NSDictionary<NSString *, id> *savedEnvValues;

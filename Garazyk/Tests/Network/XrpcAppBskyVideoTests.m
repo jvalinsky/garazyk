@@ -6,7 +6,7 @@
 #import "Video/VideoJobStore.h"
 #import "Video/VideoJWTAuthProvider.h"
 #import "Video/VideoXrpcPack.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 // Expose private class methods for testing
 @interface ATProtoVideoXrpcPack (Testing)
