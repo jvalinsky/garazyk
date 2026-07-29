@@ -15,6 +15,18 @@
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
 
+/*!
+ @brief Logs and converts an uncaught NSException at a dispatch site into a
+ 500 InternalServerError response.
+ @discussion Defined after @end so the helper is file-local. Forward-declared
+ here so @catch blocks inside @implementation can call it without producing
+ -Wimplicit-function-declaration. Parity with XrpcHandler.m:372-402.
+ */
+static void HttpRequestDispatcherHandleException(NSException *exception,
+                                                  HttpRequest *request,
+                                                  HttpResponse *response,
+                                                  NSString *context);
+
 @implementation HttpRequestDispatcher
 
 - (instancetype)initWithRouteLookupHandler:(HttpRouteLookupHandler)routeLookupHandler {
@@ -46,10 +58,13 @@
       }];
       return response;
     }
-  }
-
-  if (self.requestHandler) {
-    self.requestHandler(request, response);
+  }  if (self.requestHandler) {
+    @try {
+      self.requestHandler(request, response);
+    } @catch (NSException *exception) {
+      HttpRequestDispatcherHandleException(exception, request, response,
+                                            @"requestHandler");
+    }
     return response;
   }
 
@@ -59,16 +74,38 @@
                                          : nil;
   request.pathParameters = pathParameters;
   if (handler) {
-    handler(request, response);
+    @try {
+      handler(request, response);
+    } @catch (NSException *exception) {
+      HttpRequestDispatcherHandleException(exception, request, response,
+                                            @"route handler");
+    }
   } else {
     response.statusCode = HttpStatusNotFound;
     [response setJsonBody:@{
       @"error" : @"Not Found",
       @"message" : [NSString stringWithFormat:@"No handler for %@ %@",
-                                             request.methodString, request.path]
+                                              request.methodString, request.path]
     }];
   }
   return response;
+}
+
+static void HttpRequestDispatcherHandleException(NSException *exception,
+                                                  HttpRequest *request,
+                                                  HttpResponse *response,
+                                                  NSString *context) {
+  NSString *name = exception.name ?: @"(null)";
+  NSString *reason = exception.reason ?: @"(null)";
+  NSArray<NSString *> *stack = exception.callStackSymbols ?: @[];
+  GZ_LOG_ERROR(@"[HTTP] Unhandled exception in %@ (%@ %@): %@ (%@)\n%@",
+                context, request.methodString, request.path, name, reason,
+                [stack componentsJoinedByString:@"\n"]);
+  response.statusCode = HttpStatusInternalServerError;
+  [response setJsonBody:@{
+    @"error": @"InternalServerError",
+    @"message": @"Unhandled exception"
+  }];
 }
 
 @end
