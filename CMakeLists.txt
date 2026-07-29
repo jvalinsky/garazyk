@@ -373,6 +373,15 @@ list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.c$")
 # otherwise Core-clean files, so it's carved out to ATProtoServices below
 # rather than staying in the Core glob.
 list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Security/Space/PDSSpaceAppAttestationVerifier\\.m$")
+# Workstream 08 M3: HTTP message value types (Foundation-only, no I/O or
+# socket dependency) carved out of ATProtoTransport into Core so Services
+# can depend on the message types without pulling in the whole HTTP I/O
+# stack. See the matching EXCLUDE filters on ATPROTO_TRANSPORT_SOURCES.
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRequest.m")
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpResponse.m")
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRoute.m")
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRetryPolicy.m")
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpParsing.m")
 
 file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
   "Garazyk/Sources/Database/*.m"
@@ -432,6 +441,16 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoute
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\+.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpServerBuilder\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Generated/GZXrpcNSID\\.m$")
+# HttpRequest/HttpResponse/HttpRoute/HttpRetryPolicy/HttpParsing are
+# Foundation-only HTTP message value types with no I/O or socket
+# dependency (workstream 08 M3) — carved out to ATProtoCore so Services
+# can depend on the message types without depending on the whole
+# Transport I/O stack (HttpServer, Http1Parser, connection drivers).
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpRequest\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpResponse\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpRoute\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpRetryPolicy\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpParsing\\.m$")
 # UI route packs migrated to garazyk-ui — exclude from service binaries
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES

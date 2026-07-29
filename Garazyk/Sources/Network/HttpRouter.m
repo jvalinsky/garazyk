@@ -12,35 +12,9 @@
 #import "Compat/PDSTypes.h"
 #import "HttpRequest.h"
 #import "HttpResponse.h"
+#import "HttpRoute.h"
 #import "WebSocketUpgradeHandler.h"
 #import "HttpRouteTrie.h"
-
-@interface HttpRoute ()
-
-@property (nonatomic, readwrite, copy) NSString *method;
-@property (nonatomic, readwrite, copy) NSString *pattern;
-@property (nonatomic, readwrite, copy) HttpRouteHandler handler;
-@property (nonatomic, readwrite) NSUInteger priority;
-
-@end
-
-@implementation HttpRoute
-
-- (instancetype)initWithMethod:(NSString *)method
-                       pattern:(NSString *)pattern
-                       handler:(HttpRouteHandler)handler
-                      priority:(NSUInteger)priority {
-    self = [super init];
-    if (self) {
-        _method = [method copy];
-        _pattern = [pattern copy];
-        _handler = [handler copy];
-        _priority = priority;
-    }
-    return self;
-}
-
-@end
 
 @interface HttpRouter ()
 
