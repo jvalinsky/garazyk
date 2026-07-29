@@ -141,7 +141,8 @@
                                                     error:nil];
 
     self.runtime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:config
-                                                                   processor:self.mockProcessor];
+                                                                    processor:self.mockProcessor
+                                                                 blobProvider:[[RuntimeTestBlobProvider alloc] init]];
 }
 
 - (void)tearDown {
@@ -373,7 +374,8 @@
     badConfig.serviceDID = @"did:web:test";
 
     ATProtoMediaServiceRuntime *badRuntime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:badConfig
-                                                                                              processor:self.mockProcessor];
+                                                                                              processor:self.mockProcessor
+                                                                                           blobProvider:[[RuntimeTestBlobProvider alloc] init]];
     NSError *error = nil;
     BOOL started = [badRuntime startWithError:&error];
     XCTAssertFalse(started, @"Runtime should fail to start with /dev/null as data directory");
