@@ -355,7 +355,15 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID forAccountDid:resolvedDid error:nil];
+    // §4.3: store with family_id for reuse detection on future rotation.
+    NSString *familyId = [[NSUUID UUID] UUIDString];
+    if (self.serviceDatabases) {
+        [self.serviceDatabases storeRefreshToken:refreshToken sessionID:sessionID
+                                   forAccountDid:resolvedDid familyId:familyId error:nil];
+    } else {
+        [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID
+                               forAccountDid:resolvedDid error:nil];
+    }
 
     if (self.serviceDatabases) {
         NSDictionary *details = @{
@@ -493,7 +501,15 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID forAccountDid:account.did error:nil];
+    // §4.3: store with family_id for reuse detection on future rotation.
+    NSString *familyId = [[NSUUID UUID] UUIDString];
+    if (self.serviceDatabases) {
+        [self.serviceDatabases storeRefreshToken:refreshToken sessionID:sessionID
+                                   forAccountDid:account.did familyId:familyId error:nil];
+    } else {
+        [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID
+                               forAccountDid:account.did error:nil];
+    }
 
     return @{
         @"did": account.did,
@@ -621,6 +637,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     NSDictionary *sessionInfo = [_sessionRepository sessionInfoForRefreshToken:refreshToken error:&dbError];
     NSString *did = sessionInfo[@"account_did"];
     NSString *sessionID = sessionInfo[@"session_id"];
+    NSString *familyId = sessionInfo[@"family_id"];
     
     PDSDatabaseAccount *account = nil;
     if (did) {
@@ -635,8 +652,45 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         return nil;
     }
 
-    // Revoke old refresh token (Rotation)
-    [_sessionRepository revokeRefreshToken:refreshToken error:nil];
+    // §4.3: family-aware rotation. Only applies when the token has a family_id
+    // (tokens created before the V18 migration have empty family_id and are
+    // rotated through the legacy DELETE path).
+    if (familyId.length > 0 && self.serviceDatabases) {
+        // Step 1: check the sessionInfo's rotated_at field. If this token was
+        // already marked as rotated by a prior rotation, a stale copy was
+        // presented — tombstone the entire family.
+        id rotatedAt = sessionInfo[@"rotated_at"];
+        if (rotatedAt != nil && rotatedAt != [NSNull null]) {
+            GZ_LOG_AUTH_WARN(@"Refresh token reuse detected for family %@ (already rotated)", familyId);
+            [self.serviceDatabases tombstoneRefreshTokenFamily:familyId error:nil];
+            if (error) {
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                           message:@"Session invalidated due to token reuse"];
+            }
+            return nil;
+        }
+
+        // Step 2: check family tombstone (a prior reuse detection marked this
+        // entire token family as compromised).
+        if ([self.serviceDatabases isRefreshTokenFamilyTombstoned:familyId error:nil]) {
+            GZ_LOG_AUTH_WARN(@"Refresh token reuse detected for family %@ (tombstoned)", familyId);
+            if (error) {
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                           message:@"Session invalidated due to token reuse"];
+            }
+            return nil;
+        }
+
+        // Step 3: atomically mark this token as rotated. The UPDATE is
+        // guarded by WHERE rotated_at IS NULL so it's a no-op on a
+        // concurrent set; the SELECT-based checks at steps 1-2 already
+        // handled the stale-token case.
+        [self.serviceDatabases rotateRefreshToken:refreshToken error:nil];
+    } else {
+        // Legacy path: tokens without family_id (pre-migration) use the old
+        // DELETE-based rotation. No reuse detection available.
+        [_sessionRepository revokeRefreshToken:refreshToken error:nil];
+    }
 
     // Generate new access token - preserving same sessionID
     NSError *mintError = nil;
@@ -656,13 +710,22 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         return nil;
     }
 
-    // Generate new refresh token
+    // Generate new refresh token, preserving same family_id
     NSString *newRefreshToken = [[NSUUID UUID] UUIDString];
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [newRefreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    [_sessionRepository storeRefreshToken:newRefreshToken sessionID:sessionID forAccountDid:account.did error:nil];
+    
+    // Store with family_id when available (for new-style tokens; legacy path
+    // uses the protocol method which stores without family_id)
+    if (familyId.length > 0 && self.serviceDatabases) {
+        [self.serviceDatabases storeRefreshToken:newRefreshToken sessionID:sessionID
+                                   forAccountDid:account.did familyId:familyId error:nil];
+    } else {
+        [_sessionRepository storeRefreshToken:newRefreshToken sessionID:sessionID
+                               forAccountDid:account.did error:nil];
+    }
 
     return @{
         @"accessJwt": accessToken,
