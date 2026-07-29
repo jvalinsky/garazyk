@@ -63,7 +63,7 @@ static BOOL PLCValidateDidKey(NSString *key, NSError **error) {
 
 static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     NSError *cborError = nil;
-    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:op error:&cborError];
+    NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:op error:&cborError];
     if (!cbor) {
         if (error) *error = cborError;
         return NO;

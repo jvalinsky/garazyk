@@ -387,7 +387,7 @@
 
     // 4. Encode and sign the genesis operation.
     NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&cborError];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:opData error:&cborError];
     if (!cborData) {
         if (error) *error = cborError;
         return nil;
@@ -700,7 +700,7 @@
         return NO;
     }
     
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:newOpData error:&error];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:newOpData error:&error];
     NSData *sha256 = [CryptoUtils sha256:cborData];
     NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:privKeyData error:&error];
     

@@ -41,7 +41,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
   }
 
   NSData *cborData =
-      [ATProtoCBORSerialization encodeDataWithJSONObject:schema error:error];
+      [[[ATProtoCBORSerialization alloc] initWithContentAddressed:NO] encodeDataWithJSONObject:schema error:error];
   if (!cborData) {
     return nil;
   }

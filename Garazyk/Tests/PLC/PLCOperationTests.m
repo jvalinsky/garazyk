@@ -232,7 +232,7 @@
 
 - (NSData *)hashForData:(NSDictionary *)data {
     NSError *error = nil;
-    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
+    NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:data error:&error];
     if (!cbor) return [NSData data];
     return [CryptoUtils sha256:cbor];
 }
@@ -250,7 +250,7 @@
     };
     
     NSError *error = nil;
-    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&error];
+    NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:opData error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(cbor);
     
@@ -351,7 +351,7 @@
     };
     
     NSError *error = nil;
-    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&error];
+    NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:opData error:&error];
     XCTAssertNil(error);
     
     NSData *hash = [CryptoUtils sha256:cbor];

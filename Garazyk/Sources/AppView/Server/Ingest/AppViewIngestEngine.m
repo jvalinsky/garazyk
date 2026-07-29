@@ -793,7 +793,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             if (!record && reader && opCID) {
                 CARBlock *block = [reader blockWithCID:opCID];
                 if (block) {
-                    id decoded = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
+                    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.data error:nil];
                     if (!decoded) {
                         decoded = [ATProtoDagCBOR decodeData:block.data error:nil];
                     }
@@ -812,7 +812,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             if (!record && reader) {
                 for (CARBlock *block in reader.blocks) {
                     NSError *decodeErr = nil;
-                    id decoded = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
+                    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.data error:nil];
 
                     // Try DAG-CBOR if regular CBOR fails
                     if (!decoded) {

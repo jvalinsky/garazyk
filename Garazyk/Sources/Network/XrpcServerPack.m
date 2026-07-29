@@ -373,17 +373,13 @@ BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 + (void)registerAccountAndSessionMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                               services:(id<XrpcRoutePackServices>)services
                                      registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
-    // This method will be implemented in multiple parts due to size constraints
-    // Part 1: createAccount, createSession, getSession, refreshSession, deleteSession
     [self registerAccountCreationAndSessionEndpoints:dispatcher
                                            services:services
                                    registrationGate:registrationGate];
     
-    // Part 2: Invite codes
     [self registerInviteCodeEndpoints:dispatcher
                             services:services];
     
-    // Part 3: App passwords
     [self registerAppPasswordEndpoints:dispatcher
                              services:services];
     

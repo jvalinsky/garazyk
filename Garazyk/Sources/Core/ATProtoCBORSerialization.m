@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ATProtoCBORSerialization.h"
+#import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
 #import "Repository/CBOR.h"
-#import <Security/Security.h>
 
 static NSData *CBORBase64URLDecode(NSString *string) {
     if (!string || ![string isKindOfClass:[NSString class]]) {
@@ -18,10 +18,33 @@ static NSData *CBORBase64URLDecode(NSString *string) {
     return [[NSData alloc] initWithBase64EncodedString:base64 options:0];
 }
 
+/*!
+ @abstract §S19 candidate 4 — the `_isContentAddressed` ivar is the routing
+ flag that decides between the strict DAG-CBOR path (ATProtoDagCBOR) and the
+ legacy / CTAP2 / generic-CBOR path (CBORDecoder / CBOREncoder). Set at
+ construction; immutable for the lifetime of the instance.
+ */
+@interface ATProtoCBORSerialization ()
+@end
+
 @implementation ATProtoCBORSerialization
 
-+ (NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error {
-  CBORValue *cbor = [self cborValueFromObject:obj];
+- (nullable instancetype)initWithContentAddressed:(BOOL)contentAddressed {
+  self = [super init];
+  if (self) {
+    _isContentAddressed = contentAddressed;
+  }
+  return self;
+}
+
+- (void)setUsage:(BOOL)contentAddressed {
+  // Two-step companion setter: equivalent to passing the matching value to
+  // -initWithContentAddressed:. Use either form, but not both.
+  _isContentAddressed = contentAddressed;
+}
+
+- (NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error {
+  CBORValue *cbor = [ATProtoCBORSerialization cborValueFromObject:obj];
   if (!cbor) {
     if (error)
       *error = [NSError errorWithDomain:@"ATProtoCBORSerialization"
@@ -35,7 +58,19 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   return [CBOREncoder encode:cbor];
 }
 
-+ (id)JSONObjectWithData:(NSData *)data error:(NSError **)error {
+- (id)JSONObjectWithData:(NSData *)data error:(NSError **)error {
+  // §S19 candidate 4: branch the wrapped [CBORDecoder decode:] call on
+  // _isContentAddressed. Content-addressed callers (RepoCommit, MST/CAR
+  // blocks, Firehose, AppView ingest, sync, identity, profile records)
+  // route through the strict [ATProtoDagCBOR decodeDataAsJSON:] path --
+  // the same dispatch as the direct-from-DagCBOR identity at
+  // AppViewBackfillWorker.m:422. CTAP2 / generic-CBOR callers (lexicon
+  // schemas and similar non-CID'd payloads) stay on the legacy
+  // [CBORDecoder decode:] path.
+  if (self.isContentAddressed) {
+    return [ATProtoDagCBOR decodeDataAsJSON:data error:error];
+  }
+  // Fallthrough: generic / CTAP2 callers stay on the legacy decoder.
   CBORValue *cbor = [CBORDecoder decode:data];
   if (!cbor) {
     if (error)
@@ -47,7 +82,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
                  }];
     return nil;
   }
-  return [self objectFromCBORValue:cbor];
+  return [ATProtoCBORSerialization objectFromCBORValue:cbor];
 }
 
 #pragma mark - Private Helpers
@@ -91,7 +126,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
     NSMutableDictionary *map = [NSMutableDictionary dictionary];
     for (id key in sortedKeys) {
       CBORValue *keyVal = [self cborValueFromObject:key];
-      CBORValue *valVal = [self cborValueFromObject:[obj objectForKey:key]];
+      CBORValue *valVal = [ATProtoCBORSerialization cborValueFromObject:[obj objectForKey:key]];
       if (keyVal && valVal) {
         map[keyVal] = valVal;
       }
@@ -100,7 +135,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   } else if ([obj isKindOfClass:[NSArray class]]) {
     NSMutableArray *arr = [NSMutableArray array];
     for (id item in obj) {
-      CBORValue *val = [self cborValueFromObject:item];
+      CBORValue *val = [ATProtoCBORSerialization cborValueFromObject:item];
       if (val)
         [arr addObject:val];
     }
@@ -171,17 +206,17 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   case CBORTypeArray: {
     NSMutableArray *arr = [NSMutableArray array];
     for (CBORValue *val in cbor.array) {
-      id obj = [self objectFromCBORValue:val];
+      id obj = [ATProtoCBORSerialization objectFromCBORValue:val];
       if (obj)
-        [arr addObject:obj];
+        [arr addObject:val];
     }
     return arr;
   }
   case CBORTypeMap: {
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
     for (CBORValue *key in cbor.map) {
-      id keyObj = [self objectFromCBORValue:key];
-      id valObj = [self objectFromCBORValue:cbor.map[key]];
+      id keyObj = [ATProtoCBORSerialization objectFromCBORValue:key];
+      id valObj = [ATProtoCBORSerialization objectFromCBORValue:cbor.map[key]];
       if (keyObj && valObj) {
         // JSON keys must be strings
         if ([keyObj isKindOfClass:[NSString class]]) {
@@ -210,7 +245,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
       }
     }
     // For other tags, decode the inner value
-    return [self objectFromCBORValue:cbor.tagValue];
+    return [ATProtoCBORSerialization objectFromCBORValue:cbor.tagValue];
   }
   case CBORTypeSimpleOrFloat:
     if (cbor.simpleValue.unsignedIntegerValue == 20)

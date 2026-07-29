@@ -290,7 +290,7 @@
 
     NSDictionary *recordContent = @{@"subject": @{@"uri": @"at://did:plc:ignored/app.bsky.feed.post/abc"}};
     NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:recordContent error:&cborError];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:recordContent error:&cborError];
     XCTAssertNotNil(cborData, @"CBOR encode failed: %@", cborError);
 
     NSString *cidString = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";

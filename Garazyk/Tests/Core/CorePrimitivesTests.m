@@ -370,11 +370,11 @@
 - (void)testCborEncodeDecodeString {
     NSDictionary *dict = @{@"key": @"value"};
     NSError *error = nil;
-    NSData *encoded = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:&error];
+    NSData *encoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(encoded);
 
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:encoded error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:encoded error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(decoded);
     XCTAssertTrue([decoded isKindOfClass:[NSDictionary class]]);
@@ -384,11 +384,11 @@
 - (void)testCborEncodeDecodeInteger {
     NSDictionary *dict = @{@"count": @42};
     NSError *error = nil;
-    NSData *encoded = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:&error];
+    NSData *encoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(encoded);
 
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:encoded error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:encoded error:&error];
     XCTAssertNil(error);
     XCTAssertEqualObjects(((NSDictionary *)decoded)[@"count"], @42);
 }
@@ -396,11 +396,11 @@
 - (void)testCborEncodeDecodeNestedDict {
     NSDictionary *dict = @{@"outer": @{@"inner": @"value"}};
     NSError *error = nil;
-    NSData *encoded = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:&error];
+    NSData *encoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(encoded);
 
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:encoded error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:encoded error:&error];
     XCTAssertNil(error);
     NSDictionary *outer = ((NSDictionary *)decoded)[@"outer"];
     XCTAssertNotNil(outer);
@@ -410,11 +410,11 @@
 - (void)testCborEncodeDecodeArray {
     NSDictionary *dict = @{@"items": @[@"a", @"b", @"c"]};
     NSError *error = nil;
-    NSData *encoded = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:&error];
+    NSData *encoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(encoded);
 
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:encoded error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:encoded error:&error];
     XCTAssertNil(error);
     NSArray *items = ((NSDictionary *)decoded)[@"items"];
     XCTAssertNotNil(items);
@@ -426,11 +426,11 @@
 - (void)testCborEncodeDecodeBoolean {
     NSDictionary *dict = @{@"flag": @YES};
     NSError *error = nil;
-    NSData *encoded = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:&error];
+    NSData *encoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(encoded);
 
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:encoded error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:encoded error:&error];
     XCTAssertNil(error);
     XCTAssertEqualObjects(((NSDictionary *)decoded)[@"flag"], @YES);
 }
@@ -438,11 +438,11 @@
 - (void)testCborEncodeDecodeNull {
     NSDictionary *dict = @{@"value": [NSNull null]};
     NSError *error = nil;
-    NSData *encoded = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:&error];
+    NSData *encoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(encoded);
 
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:encoded error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:encoded error:&error];
     XCTAssertNil(error);
     XCTAssertEqualObjects(((NSDictionary *)decoded)[@"value"], [NSNull null]);
 }
@@ -450,11 +450,11 @@
 - (void)testCborEncodeEmptyDict {
     NSDictionary *dict = @{};
     NSError *error = nil;
-    NSData *encoded = [ATProtoCBORSerialization encodeDataWithJSONObject:dict error:&error];
+    NSData *encoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(encoded);
 
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:encoded error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:encoded error:&error];
     XCTAssertNil(error);
     XCTAssertTrue([decoded isKindOfClass:[NSDictionary class]]);
     XCTAssertEqual(((NSDictionary *)decoded).count, 0);
@@ -463,7 +463,7 @@
 - (void)testCborDecodeInvalidData {
     NSData *invalid = [NSData dataWithBytes:"\xFF\xFF" length:2];
     NSError *error = nil;
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:invalid error:&error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:invalid error:&error];
     // Invalid CBOR data should either return nil or produce an error
     XCTAssertTrue(decoded == nil || error != nil, @"Invalid CBOR should fail gracefully");
 }
@@ -475,9 +475,9 @@
     NSDictionary *dict1 = @{@"z_key": @1, @"a_key": @2};
     NSDictionary *dict2 = @{@"a_key": @2, @"z_key": @1};
     NSError *error = nil;
-    NSData *data1 = [ATProtoCBORSerialization encodeDataWithJSONObject:dict1 error:&error];
+    NSData *data1 = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict1 error:&error];
     XCTAssertNil(error);
-    NSData *data2 = [ATProtoCBORSerialization encodeDataWithJSONObject:dict2 error:&error];
+    NSData *data2 = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict2 error:&error];
     XCTAssertNil(error);
     // Both should produce identical bytes because keys are sorted
     XCTAssertEqualObjects(data1, data2);

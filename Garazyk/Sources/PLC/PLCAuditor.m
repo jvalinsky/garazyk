@@ -529,7 +529,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 
 - (NSData *)hashForOperationData:(NSDictionary *)data {
     NSError *error = nil;
-    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
+    NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:data error:&error];
     if (!cbor) {
         GZ_LOG_CORE_ERROR(@"Failed to encode unsigned data to CBOR: %@", error);
         return nil;

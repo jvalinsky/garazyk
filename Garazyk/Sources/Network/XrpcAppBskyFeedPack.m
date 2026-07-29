@@ -252,7 +252,7 @@
             if (!cid) continue;
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:actor error:nil];
             if (!block || !block.blockData) continue;
-            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            NSDictionary *record = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
             if (!record) continue;
 
             NSString *rkey = row[@"rkey"];
@@ -315,7 +315,7 @@
         if (cid) {
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
             if (block && block.blockData) {
-                record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+                record = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
             }
         }
 
@@ -361,7 +361,7 @@
             if (!cid) continue;
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
             if (!block || !block.blockData) continue;
-            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            NSDictionary *record = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
             if (!record) continue;
 
             NSString *text = record[@"text"] ?: @"";
@@ -418,7 +418,7 @@
             if (!cid) continue;
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
             if (!block || !block.blockData) continue;
-            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            NSDictionary *record = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
             if (!record) continue;
 
             NSDictionary *embed = record[@"embed"];

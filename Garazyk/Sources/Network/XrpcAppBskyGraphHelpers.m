@@ -202,7 +202,7 @@ NSDictionary *XrpcLoadListItemViewForListAndSubject(PDSDatabase *appViewDatabase
         PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:creatorDid error:nil];
         if (!block.blockData) continue;
 
-        NSDictionary *itemRecord = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+        NSDictionary *itemRecord = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
         if (![itemRecord isKindOfClass:[NSDictionary class]]) continue;
         if (![itemRecord[@"list"] isEqualToString:listURI]) continue;
         if (![itemRecord[@"subject"] isEqualToString:subjectDid]) continue;
@@ -241,7 +241,7 @@ NSDictionary *XrpcLoadListViewForURI(PDSDatabase *appViewDatabase, ActorService 
     if (cid) {
         PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
         if (block.blockData) {
-            record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            record = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
         }
     }
 
