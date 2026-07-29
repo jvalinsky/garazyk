@@ -5,6 +5,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcIdentityHelper.h"
 #import "Network/XrpcRoutePackServices.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -437,7 +438,13 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *handle = body[@"handle"];
+        BOOL typeMismatch = NO;
+        NSString *handle = AuthTypedValue(body, @"handle", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Request field has wrong type"}];
+            return;
+        }
         NSError *handleError = nil;
         if (![ATProtoHandleValidator validateHandle:handle error:&handleError]) {
             response.statusCode = HttpStatusBadRequest;
