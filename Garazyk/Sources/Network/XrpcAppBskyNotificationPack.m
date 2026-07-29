@@ -15,6 +15,7 @@
 #import "Network/XrpcAppBskyGraphHelpers.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/Generated/GZXrpcNSID.h"
@@ -153,7 +154,13 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                          return;
                        }
 
-                       BOOL priority = [body[@"priority"] boolValue];
+                       BOOL bodyTypeMismatch = NO;
+                       NSNumber *priorityNumber = AuthTypedValue(body, @"priority", [NSNumber class], &bodyTypeMismatch);
+                       if (bodyTypeMismatch) {
+                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         return;
+                       }
+                       BOOL priority = priorityNumber.boolValue;
 
                        NSError *error = nil;
                        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
@@ -260,7 +267,13 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                          return;
                        }
 
-                       BOOL priority = [body[@"priority"] boolValue];
+                       BOOL bodyTypeMismatch = NO;
+                       NSNumber *priorityNumber = AuthTypedValue(body, @"priority", [NSNumber class], &bodyTypeMismatch);
+                       if (bodyTypeMismatch) {
+                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         return;
+                       }
+                       BOOL priority = priorityNumber.boolValue;
 
                        NSError *error = nil;
                        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
@@ -606,8 +619,15 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                          return;
                        }
 
-                       BOOL postEnabled = [subscription[@"post"] boolValue];
-                       BOOL replyEnabled = [subscription[@"reply"] boolValue];
+                       BOOL subscriptionTypeMismatch = NO;
+                       NSNumber *postEnabledNumber = AuthTypedValue(subscription, @"post", [NSNumber class], &subscriptionTypeMismatch);
+                       NSNumber *replyEnabledNumber = AuthTypedValue(subscription, @"reply", [NSNumber class], &subscriptionTypeMismatch);
+                       if (subscriptionTypeMismatch) {
+                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         return;
+                       }
+                       BOOL postEnabled = postEnabledNumber.boolValue;
+                       BOOL replyEnabled = replyEnabledNumber.boolValue;
 
                        NSError *error = nil;
                        BOOL success = [notificationService putActivitySubscriptionForActor:actorDID

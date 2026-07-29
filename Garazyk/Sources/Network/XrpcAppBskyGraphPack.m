@@ -5,6 +5,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -243,7 +244,12 @@
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSDictionary *body = request.jsonBody;
-        NSString *targetDID = body[@"actor"];
+        BOOL typeMismatch = NO;
+        NSString *targetDID = AuthTypedValue(body, @"actor", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (!targetDID) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
             return;
@@ -268,7 +274,12 @@
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSDictionary *body = request.jsonBody;
-        NSString *targetDID = body[@"actor"];
+        BOOL typeMismatch = NO;
+        NSString *targetDID = AuthTypedValue(body, @"actor", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (!targetDID) {
             [XrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
             return;
@@ -790,7 +801,12 @@
         }
 
         NSDictionary *body = request.jsonBody;
-        NSString *subject = body[@"subject"];
+        BOOL typeMismatch = NO;
+        NSString *subject = AuthTypedValue(body, @"subject", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (!subject) {
             [XrpcErrorHelper setValidationError:response message:@"subject is required"];
             return;
@@ -828,7 +844,12 @@
         }
 
         NSDictionary *body = request.jsonBody;
-        NSString *subject = body[@"subject"];
+        BOOL typeMismatch = NO;
+        NSString *subject = AuthTypedValue(body, @"subject", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (!subject) {
             [XrpcErrorHelper setValidationError:response message:@"subject is required"];
             return;

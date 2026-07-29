@@ -8,6 +8,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcIdentityHelper.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/Crypto/JWT.h"
@@ -114,8 +115,13 @@
         }
 
         NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
-        
+        BOOL typeMismatch = NO;
+        NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
+
         if (did.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"did is required"}];
@@ -161,8 +167,14 @@
         }
 
         NSDictionary *body = request.jsonBody;
-        NSString *type = body[@"type"] ?: @"consistency";
-        BOOL dryRun = [body[@"dryRun"] boolValue];
+        BOOL typeMismatch = NO;
+        NSString *type = AuthTypedValue(body, @"type", [NSString class], &typeMismatch) ?: @"consistency";
+        NSNumber *dryRunNumber = AuthTypedValue(body, @"dryRun", [NSNumber class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
+        BOOL dryRun = dryRunNumber.boolValue;
 
         NSString *jobId = [auditManager startAuditWithType:type dryRun:dryRun];
         if (!jobId) {

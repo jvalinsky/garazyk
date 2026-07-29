@@ -11,6 +11,7 @@
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/Generated/GZXrpcNSID.h"
+#import "Auth/AuthClaimTypeCheck.h"
 
 @implementation XrpcAppBskyBookmarksPack
 
@@ -87,8 +88,13 @@
     }
 
     NSDictionary *body = [request jsonBody];
-    NSString *subjectURI = body[@"uri"];
-    NSString *subjectCID = body[@"cid"];
+    BOOL typeMismatch = NO;
+    NSString *subjectURI = AuthTypedValue(body, @"uri", [NSString class], &typeMismatch);
+    NSString *subjectCID = AuthTypedValue(body, @"cid", [NSString class], &typeMismatch);
+    if (typeMismatch) {
+      [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+      return;
+    }
     if (!subjectURI) {
       [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
       return;
@@ -122,7 +128,12 @@
     }
 
     NSDictionary *body = [request jsonBody];
-    NSString *subjectURI = body[@"uri"];
+    BOOL typeMismatch = NO;
+    NSString *subjectURI = AuthTypedValue(body, @"uri", [NSString class], &typeMismatch);
+    if (typeMismatch) {
+      [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+      return;
+    }
     if (!subjectURI) {
       [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
       return;
