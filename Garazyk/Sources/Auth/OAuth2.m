@@ -459,6 +459,24 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         requireNonce:(BOOL)requireNonce
       outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
                 error:(NSError **)error {
+    return [self verifyProof:dpopJwt
+                      method:method
+                         url:url
+                       nonce:nonce
+                requireNonce:requireNonce
+              outThumbprint:thumbprint
+        expectedAccessToken:nil
+                       error:error];
+}
+
++ (BOOL)verifyProof:(NSString *)dpopJwt
+              method:(NSString *)method
+                 url:(NSURL *)url
+               nonce:(nullable NSString *)nonce
+        requireNonce:(BOOL)requireNonce
+      outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+ expectedAccessToken:(nullable NSString *)expectedAccessToken
+                error:(NSError **)error {
     return [AuthCryptoDPoP verifyProof:dpopJwt
                                 method:method
                                    url:url
@@ -467,6 +485,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                         nonceValidator:(id<AuthCryptoDPoPNonceValidator>)[PDSNonceManager sharedManager]
                          replayChecker:(id<AuthCryptoDPoPReplayChecker>)[PDSReplayCache sharedCache]
                          outThumbprint:thumbprint
+                    expectedAccessToken:expectedAccessToken
                                  error:error];
 }
 

@@ -107,6 +107,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -123,6 +124,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -140,6 +142,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -164,6 +167,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -188,6 +192,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -212,6 +217,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -236,6 +242,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -261,6 +268,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -286,6 +294,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -312,6 +321,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -337,6 +347,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -362,6 +373,7 @@
                                 nonceValidator:nil
                                  replayChecker:[PDSReplayCache sharedCache]
                                  outThumbprint:nil
+                            expectedAccessToken:nil
                                          error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
@@ -398,7 +410,8 @@
                               nonceValidator:nil
                                replayChecker:replaySpy
                                outThumbprint:nil
-                                       error:&error];
+                            expectedAccessToken:nil
+                                         error:&error];
 
     XCTAssertFalse(valid);
     XCTAssertNotNil(error);
@@ -413,7 +426,113 @@
     XCTAssertNotNil(error);
 }
 
+#pragma mark - §4.2 DPoP ath (Access Token Hash) Validation
+
+- (void)testDPoPProofMissingAthWithExpectedAccessTokenRejected {
+    // DPoP proof without 'ath', but expectedAccessToken is provided — ath is REQUIRED per RFC 9449 §4.3
+    NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256",
+                          @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+                          @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
+    NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
+    NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com",
+                              @"iat": @([[NSDate date] timeIntervalSince1970]),
+                              @"jti": [[NSUUID UUID] UUIDString]};
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
+    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *proof = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
+
+    NSURL *url = [NSURL URLWithString:@"https://example.com"];
+    NSError *error = nil;
+    BOOL result = [AuthCryptoDPoP verifyProof:proof
+                                        method:@"GET"
+                                           url:url
+                                         nonce:nil
+                                  requireNonce:NO
+                                nonceValidator:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
+                                 outThumbprint:nil
+                            expectedAccessToken:@"test-access-token"
+                                         error:&error];
+    XCTAssertFalse(result, @"Missing ath with expectedAccessToken must be rejected");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, -18);
+    XCTAssertEqualObjects(error.domain, AuthCryptoDPoPErrorDomain);
+}
+
+- (void)testDPoPProofWithAthTypeMismatchRejected {
+    // ath claim must be a string — reject if wrong type
+    NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256",
+                          @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+                          @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
+    NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
+    // ath as number (wrong type)
+    NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com",
+                              @"iat": @([[NSDate date] timeIntervalSince1970]),
+                              @"jti": [[NSUUID UUID] UUIDString],
+                              @"ath": @12345};
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
+    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *proof = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
+
+    NSURL *url = [NSURL URLWithString:@"https://example.com"];
+    NSError *error = nil;
+    BOOL result = [AuthCryptoDPoP verifyProof:proof
+                                        method:@"GET"
+                                           url:url
+                                         nonce:nil
+                                  requireNonce:NO
+                                nonceValidator:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
+                                 outThumbprint:nil
+                            expectedAccessToken:nil
+                                         error:&error];
+    XCTAssertFalse(result, @"ath with wrong type must be rejected");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, -17);
+    XCTAssertEqualObjects(error.domain, AuthCryptoDPoPErrorDomain);
+}
+
+- (void)testDPoPProofWithoutAthAndNoAccessTokenAccepted {
+    // No ath, no expectedAccessToken — backward-compatible path, passes through to signature check
+    NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256",
+                          @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+                          @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
+    NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
+    NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com",
+                              @"iat": @([[NSDate date] timeIntervalSince1970]),
+                              @"jti": [[NSUUID UUID] UUIDString]};
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
+    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *proof = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
+
+    NSURL *url = [NSURL URLWithString:@"https://example.com"];
+    NSError *error = nil;
+    BOOL result = [AuthCryptoDPoP verifyProof:proof
+                                        method:@"GET"
+                                           url:url
+                                         nonce:nil
+                                  requireNonce:NO
+                                nonceValidator:nil
+                                 replayChecker:[PDSReplayCache sharedCache]
+                                 outThumbprint:nil
+                            expectedAccessToken:nil
+                                         error:&error];
+    // Should fail at signature check (not ath check), not at -18/-17
+    XCTAssertFalse(result, @"Missing ath without expectedAccessToken must pass ath check");
+    XCTAssertNotNil(error);
+    // Error should be signature-related (-13), not ath-related (-18)
+    XCTAssertNotEqual(error.code, -18, @"Should not fail at ath check when expectedAccessToken is nil");
+}
+
 @end
+
+#pragma mark - Base32Utils Tests
 
 #pragma mark - Base32Utils Tests
 

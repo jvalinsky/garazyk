@@ -244,7 +244,7 @@
             NSError *error = nil;
             BOOL valid = [AuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
                                                 nonce:nil requireNonce:NO nonceValidator:nil replayChecker:[PDSReplayCache sharedCache]
-                                        outThumbprint:nil error:&error];
+                                        outThumbprint:nil expectedAccessToken:nil error:&error];
             XCTAssertFalse(valid, @"DPoP header claim '%@' (%@) with wrong type must be rejected, not crash", claim, shape);
             XCTAssertNotNil(error, @"Rejection should set an error for claim '%@' (%@)", claim, shape);
             XCTAssertEqualObjects(error.domain, AuthCryptoDPoPErrorDomain);
@@ -259,7 +259,7 @@
     NSError *error = nil;
     BOOL valid = [AuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
                                         nonce:nil requireNonce:NO nonceValidator:nil replayChecker:[PDSReplayCache sharedCache]
-                                outThumbprint:nil error:&error];
+                                outThumbprint:nil expectedAccessToken:nil error:&error];
     XCTAssertFalse(valid, @"String-valued jwk must be rejected, not crash on jwk[@\"d\"] subscript");
     XCTAssertNotNil(error);
     XCTAssertEqualObjects(error.domain, AuthCryptoDPoPErrorDomain);
@@ -280,7 +280,7 @@
             NSError *error = nil;
             BOOL valid = [AuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
                                                 nonce:nil requireNonce:NO nonceValidator:nil replayChecker:[PDSReplayCache sharedCache]
-                                        outThumbprint:nil error:&error];
+                                        outThumbprint:nil expectedAccessToken:nil error:&error];
             XCTAssertFalse(valid, @"DPoP payload claim '%@' (%@) with wrong type must be rejected, not crash", claim, shape);
             XCTAssertNotNil(error);
             XCTAssertEqualObjects(error.domain, AuthCryptoDPoPErrorDomain);

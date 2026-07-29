@@ -15,6 +15,7 @@
 #import "Auth/PDSKeyProtocol.h"
 #import "Debug/GZLogger.h"
 #import "Security/PDSSecurityCompare.h"
+#import "Auth/CryptoUtils.h"
 
 NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 
@@ -65,6 +66,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
       nonceValidator:(nullable id<AuthCryptoDPoPNonceValidator>)nonceValidator
        replayChecker:(id<AuthCryptoDPoPReplayChecker>)replayChecker
        outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+  expectedAccessToken:(nullable NSString *)expectedAccessToken
                error:(NSError **)error {
 
     if (!dpopJwt) {
@@ -281,6 +283,54 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
             return NO;
         }
     }
+
+    // Validate ath (access token hash) per RFC 9449 §4.3
+    // Reset the flag for the ath read; all previous payload reads succeeded.
+    BOOL athTypeMismatch = NO;
+    NSString *proofAth = AuthTypedValue(payload, @"ath", [NSString class], &athTypeMismatch);
+    if (athTypeMismatch) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                         code:-17
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP payload 'ath' claim has unexpected type"}];
+        }
+        return NO;
+    }
+
+    if (expectedAccessToken) {
+        // When an access token is presented alongside the DPoP proof, ath is
+        // REQUIRED per RFC 9449 §4.3 — the proof must bind to the specific token.
+        if (!proofAth) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                             code:-18
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP proof missing required 'ath' claim for access token binding"}];
+            }
+            return NO;
+        }
+        // Compute expected ath = base64url(SHA-256(accessToken))
+        NSData *tokenData = [expectedAccessToken dataUsingEncoding:NSUTF8StringEncoding];
+        NSData *tokenHash = [CryptoUtils sha256:tokenData];
+        if (!tokenHash) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                             code:-18
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute access token hash"}];
+            }
+            return NO;
+        }
+        NSString *expectedAth = [AuthCryptoBase64URL encode:tokenHash];
+        if (![PDSSecurityCompare constantTimeEqualString:proofAth string:expectedAth]) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
+                                             code:-18
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP 'ath' claim does not match access token"}];
+            }
+            return NO;
+        }
+    }
+    // When expectedAccessToken is nil, ath is not required (e.g. DPoP proof
+    // used for client authentication at the token endpoint, RFC 9449 §4.1).
 
     // Create public key from JWK using protocol-based API
     NSError *keyError = nil;

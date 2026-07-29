@@ -218,6 +218,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                      nonceValidator:(id<AuthCryptoDPoPNonceValidator>)self.nonceStore
                                       replayChecker:[PDSReplayCache sharedCache]
                                       outThumbprint:&dpopThumbprint
+                                 expectedAccessToken:token
                                               error:&dpopError];
 
         if (!validProof) {
@@ -323,6 +324,17 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         NSDictionary *targetKey = nil;
         NSArray *keys = jwks[@"keys"];
         if ([keys isKindOfClass:[NSArray class]]) {
+            // §4.4: Require kid when JWKS has multiple keys to prevent key confusion.
+            // When only one key exists, the first-key fallback is unambiguous.
+            if (kid.length == 0 && keys.count > 1) {
+                if (error) {
+                    *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                                 code:AuthVerifierErrorInvalidSignature
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Multiple JWKS keys require a 'kid' claim in the token"}];
+                }
+                [[GZMetrics sharedMetrics] incrementAuthFailure:@"missing_kid"];
+                return nil;
+            }
             for (NSDictionary *key in keys) {
                 if (!kid || [key[@"kid"] isEqualToString:kid]) {
                     targetKey = key;
@@ -372,6 +384,23 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         claimsVerifier.allowedAlgorithms = @[@"ES256", @"RS256"];
         if (![claimsVerifier validateClaims:jwt.payload ofJWT:jwt error:&verifyError]) {
             if (error) *error = verifyError;
+            return nil;
+        }
+
+        // §4.4: Enforce allowedAlgorithms against the JWT's alg claim on the
+        // remote-issuer path. validateClaims: does not check alg — it only
+        // validates exp, nbf, iss, aud, token_use, and typ. The local-issuer
+        // path enforces alg in JWTVerifier.verifyJWT: via its own method, but
+        // the remote path verifies the signature manually and needs an
+        // explicit alg check here to prevent cross-algorithm confusion.
+        NSString *remoteAlg = jwt.header.alg ?: @"";
+        if (![claimsVerifier.allowedAlgorithms containsObject:remoteAlg]) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorInvalidSignature
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unsupported algorithm '%@' for remote issuer", remoteAlg]}];
+            }
+            [[GZMetrics sharedMetrics] incrementAuthFailure:@"invalid_algorithm"];
             return nil;
         }
     } else {
