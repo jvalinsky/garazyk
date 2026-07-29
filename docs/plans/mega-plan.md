@@ -451,6 +451,25 @@ remaining program does not depend on items 1-2.
    Round-trip, empty-tree, malformed-input, and STAR→CAR conversion tests
    added (6 new test methods). All 20 STARPreorderTests pass.
 
+10. **Open (added 2026-07-28):** make the ten `ATProto*` static-library
+    boundaries real. Complete
+    [workstream 08](workstreams/08-module-boundaries-and-library-consumption.md).
+    The declared dependency graph in `CMakeLists.txt` is not enforced:
+    `libATProtoCore.a` is declared dependency-free but carries six undefined
+    class references to Storage and Transport, and roughly 140 import edges
+    violate the declared layering. Static archives defer symbol resolution to
+    the final executable link, so this has never failed a build. Land the
+    link-time boundary gate (M1) before the structural items; it is what makes
+    the rest measurable. Items M5 and M6 are gated on the M0 decision   about whether third-party consumption is a goal.
+
+Cross-link (added 2026-07-28): activate two new workstream 01 sub-items
+alongside this entry — **S18** (`OAuthProvider*` adapter-stack deletion,
+security-review §4.5) and **S19** (DAG-CBOR routing migration,
+security-review §3.4). See
+[`docs/plans/security-review-2026-07-28.md`](security-review-2026-07-28.md)
+for full traceability; mirrored in the
+[`workstreams` table](./README.md#active-structure).
+
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
 

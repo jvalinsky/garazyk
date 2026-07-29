@@ -14,13 +14,14 @@ competing roadmaps.
 | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | [Mega plan](mega-plan.md)                                                                          | Priorities, dependency order, status, and release gates                     |
 | [Baseline and governance](workstreams/00-baseline-and-governance.md)                               | Current-state proof, branch reconciliation, and plan lifecycle              |
-| [Security and protocol correctness](workstreams/01-security-and-protocol-correctness.md)           | Exposed control surfaces, HTTP bounds, XRPC contracts, and federation tests |
+| [Security and protocol correctness](workstreams/01-security-and-protocol-correctness.md)           | Exposed control surfaces, HTTP bounds, XRPC contracts, federation tests; active sub-items **S18** (`OAuthProvider*` adapter-stack deletion, [§4.5](security-review-2026-07-28.md#45-oauth-client-auto-registration)) and **S19** (DAG-CBOR routing migration, [§3.4](security-review-2026-07-28.md#3.4-adr-strict-dag-cbor-decode-mode)) |
 | [Core architecture and reliability](workstreams/02-core-architecture-and-reliability.md)           | Persistence, Relay, sync, and Objective-C modernization                     |
 | [Repository boundaries](workstreams/03-repository-boundaries.md)                                   | Deno extraction, external repositories, package releases, and compatibility |
 | [Web and Admin UI](workstreams/04-web-and-admin-ui.md)                                             | Browser security, accessibility, and UI structure                           |
 | [Embedded runtime and deferred products](workstreams/05-embedded-runtime-and-deferred-products.md) | WASM kernel and product-level incomplete features                           |
 | [Permissioned spaces productionization](workstreams/06-permissioned-spaces.md)                     | Proposal 0016 acceptance scenarios, key rotation, attestation, upstream drift |
 | [Storage and MST optimization](workstreams/07-storage-and-mst-optimization.md)                     | `INSERT OR IGNORE`, `WITHOUT ROWID`, lazy MST hydration, covering indexes, DID caching, ingest decoupling |
+| [Module boundaries and library consumption](workstreams/08-module-boundaries-and-library-consumption.md) | Static-library dependency enforcement, Transport split, symbol namespacing, install/export rules |
 | [Phase execution prompts](prompts/README.md)                                                       | Derived agent prompts that execute the remaining phases; not a roadmap      |
 | [Retired plans](retired-plans.md)                                                                  | Disposition and recovery references for removed plans                       |
 
