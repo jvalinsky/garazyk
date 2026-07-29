@@ -421,7 +421,6 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
         NSString *expectedAccept = [self computeAcceptKey:_handshakeKey];
         NSString *headerSearch = [NSString stringWithFormat:@"Sec-WebSocket-Accept: %@", expectedAccept];
         
-        // Use a more robust check for the header (case-insensitive and handling different line endings)
         BOOL acceptMatched = NO;
         NSArray *lines = [resp componentsSeparatedByString:@"\r\n"];
         for (NSString *line in lines) {

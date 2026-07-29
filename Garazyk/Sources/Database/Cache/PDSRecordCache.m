@@ -19,17 +19,14 @@
 @end
 
 @interface PDSRecordCache ()
-// Cache storage
 @property (nonatomic, strong) NSMutableDictionary<NSString *, PDSRecordCacheEntry *> *storage;
 @property (nonatomic, strong) NSMutableArray<NSString *> *accessOrder;  // LRU tracking
 @property (nonatomic, assign) NSUInteger currentMemory;
 
-// Statistics
 @property (nonatomic, assign) NSUInteger hits;
 @property (nonatomic, assign) NSUInteger misses;
 @property (nonatomic, assign) NSUInteger evictions;
 
-// Thread safety
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
 
 @end
@@ -275,13 +272,18 @@
 }
 
 - (NSString *)extractDIDFromURI:(NSString *)uri {
-    NSArray *parts = [uri componentsSeparatedByString:@"/"];
-    return parts.count > 2 ? parts[2] : @"";
+    NSURLComponents *comp = [NSURLComponents componentsWithString:uri];
+    NSArray *pathParts = [comp.path componentsSeparatedByString:@"/"];
+    for (NSString *part in pathParts) {
+        if ([part hasPrefix:@"did:"]) return part;
+    }
+    return pathParts.count > 1 ? pathParts[1] : @"";
 }
 
 - (NSString *)extractCollectionFromURI:(NSString *)uri {
-    NSArray *parts = [uri componentsSeparatedByString:@"/"];
-    return parts.count > 3 ? parts[3] : @"";
+    NSURLComponents *comp = [NSURLComponents componentsWithString:uri];
+    NSArray *pathParts = [comp.path componentsSeparatedByString:@"/"];
+    return pathParts.count > 2 ? pathParts[2] : @"";
 }
 
 // Remove database-dependent methods from header (simplified cache)

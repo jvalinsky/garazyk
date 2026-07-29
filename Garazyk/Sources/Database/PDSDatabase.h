@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const PDSDatabaseErrorDomain;
 
-/*! Error codes for PDSDatabase. */
+/** @abstract Error codes for PDS database operations. */
 typedef NS_ENUM(NSInteger, PDSDatabaseError) {
     PDSDatabaseErrorNotOpen = 1000,
     PDSDatabaseErrorQueryFailed = 1001,
@@ -112,43 +112,48 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  */
 - (nullable sqlite3_stmt *)preparedStatementForQuery:(NSString *)query;
 
-/**
- * @abstract Executes a raw SQL statement.
- * @discussion DANGEROUS: Does not support parameter binding. Use only for internal schema setup or when the SQL string is a compile-time constant.
- * @param sql The SQL statement to execute.
- * @param error Receives details when the operation fails.
- * @return YES when the operation succeeds; otherwise NO.
+
+/*!
+ @method executeUnsafeRawSQL:error:
+ @abstract Runs a raw SQL statement without parameter binding.
+ @discussion DANGEROUS: Does not support parameter binding. Use only for internal schema setup or when the SQL string is a compile-time constant. SQL injection risk if caller interpolates user input.
+ @param sql The SQL statement to execute.
+ @param error Receives details when the operation fails.
+ @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error;
 
-/**
- * @abstract Executes a SQL query and returns results.
- * @discussion DANGEROUS: Does not support parameter binding. Prefer executeParameterizedQuery:params:error: instead.
- * @param sql The SQL query to execute.
- * @param error Receives details when the operation fails.
- * @return An array of dictionaries representing query results, or nil on failure.
+/*!
+ @method executeUnsafeRawQuery:error:
+ @abstract Runs a raw SQL query and returns results as dictionaries.
+ @discussion DANGEROUS: Does not support parameter binding. Prefer executeParameterizedQuery:params:error: instead.
+ @param sql The SQL query to execute.
+ @param error Receives details when the operation fails.
+ @return An array of dictionaries representing query results, or nil on failure.
  */
 - (NSArray<NSDictionary *> *)executeUnsafeRawQuery:(NSString *)sql error:(NSError **)error;
 
-/**
- * @abstract Executes a SQL query with parameterized values.
- * @discussion This is the RECOMMENDED method for executing queries with user-provided values. It uses SQLite parameter binding to prevent SQL injection attacks.
- * @param sql The SQL query with ? placeholders for parameters.
- * @param params An array of parameter values to bind to the query.
- * @param error Receives details when the operation fails.
- * @return An array of dictionaries representing query results, or nil on failure.
+/*!
+ @method executeParameterizedQuery:params:error:
+ @abstract Runs a query with SQLite parameter binding.
+ @discussion Use this for queries with user-provided values. Uses ? placeholders for parameters and SQLite parameter binding to prevent SQL injection.
+ @param sql The SQL query with ? placeholders for parameters.
+ @param params An array of parameter values to bind to the query.
+ @param error Receives details when the operation fails.
+ @return An array of dictionaries representing query results, or nil on failure.
  */
 - (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
-                                                params:(NSArray *)params
-                                                 error:(NSError **)error;
+                                                 params:(NSArray *)params
+                                                  error:(NSError **)error;
 
 /*!
  @method executeParameterizedQuery:params:modelClass:error:
- @abstract Executes a query and maps results to model objects.
- @param sql The SQL query to execute.
- @param params Array of parameters for placeholders.
- @param modelClass The class of the model to instantiate (must implement PDSDatabaseModel).
- @param error On return, contains an error if the query failed.
+ @abstract Runs a parameterized query and maps each result row to a model object.
+ @discussion Uses SQLite parameter binding, so it is safe for user-provided values.
+ @param sql The SQL query with ? placeholders for parameters.
+ @param params An array of parameter values to bind to the query.
+ @param modelClass The model class to instantiate; must conform to PDSDatabaseModel.
+ @param error Receives details when the operation fails.
  @return An array of model objects, or nil on failure.
  */
 - (nullable NSArray *)executeParameterizedQuery:(NSString *)sql

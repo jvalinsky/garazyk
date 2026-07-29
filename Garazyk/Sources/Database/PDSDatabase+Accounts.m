@@ -28,7 +28,6 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
-    // Validate handle
     if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
         result = NO;
         return;
@@ -83,7 +82,6 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
-    // Validate handle
     if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
         result = NO;
         return;
@@ -108,13 +106,11 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
     ATProtoDBBindValue(stmt, 6, account.refreshJwt);
     ATProtoDBBindValue(stmt, 7, [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]);
 
-    // 2FA
     ATProtoDBBindValue(stmt, 8, @(account.tfaEnabled));
     ATProtoDBBindValue(stmt, 9, account.tfaSecret);
     ATProtoDBBindValue(stmt, 10, account.recoveryCodes);
     ATProtoDBBindValue(stmt, 11, @(account.inviteEnabled));
 
-    // WHERE did = ?
     ATProtoDBBindValue(stmt, 12, account.did);
 
     rc = sqlite3_step(stmt);
@@ -296,7 +292,6 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
     account.recoveryCodes = [self valueFromStatement:stmt columnIndex:13];
     account.inviteEnabled = ([[self valueFromStatement:stmt columnIndex:14] intValue] != 0);
 
-    // Age assurance (columns 15, 16)
     account.ageAssurance = [self valueFromStatement:stmt columnIndex:15];
     account.ageVerifiedAt = [self valueFromStatement:stmt columnIndex:16];
 
