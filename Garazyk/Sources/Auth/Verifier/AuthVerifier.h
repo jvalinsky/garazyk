@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol TokenKeyResolver;
 @protocol AccountPolicy;
 @protocol DPoPNonceStore;
+@protocol AuthCryptoDPoPReplayChecker;
 
 @class HttpRequest;
 @class HttpResponse;
@@ -126,6 +127,18 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  @discussion Default is NO (DPoP is optional but recommended).
  */
 @property (nonatomic, assign) BOOL requireDPoP;
+
+/*!
+ @brief DPoP proof-of-possession replay detector.
+ @discussion No default — the concrete replay cache (`PDSReplayCache`) needs
+ storage, which this Core-layer class must not depend on, so the caller
+ injects it (e.g. `verifier.replayChecker = [PDSReplayCache sharedCache];`
+ right after construction, matching `setLocalPublicKey:`/`setLocalIssuer:`).
+ A nil replayChecker is NOT a silent skip: `AuthCryptoDPoP` treats every DPoP
+ proof as a replay when it has nothing to check against, so DPoP-bound
+ requests fail closed until this is wired.
+ */
+@property (nonatomic, strong, nullable) id<AuthCryptoDPoPReplayChecker> replayChecker;
 
 /*!
  @brief Initialize with protocols.

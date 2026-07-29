@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Auth/JWT.h"
+#import "Auth/PDSReplayCache.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/DPoPUtil.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
@@ -115,6 +116,7 @@
     [self.verifier setLocalPublicKey:keyPair.publicKey];
     [self.verifier setLocalIssuer:self.minter.issuer];
     self.verifier.expectedAudience = self.minter.audience;
+    self.verifier.replayChecker = [PDSReplayCache sharedCache];
 }
 
 - (HttpRequest *)requestWithAuthorization:(NSString *)authorization dpop:(NSString *)dpop {
