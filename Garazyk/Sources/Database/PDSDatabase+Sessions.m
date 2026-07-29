@@ -16,36 +16,16 @@
 }
 
 - (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt error:(NSError **)error {
-    return [self storeRefreshToken:token sessionID:sessionID forAccountDid:did expiresAt:expiresAt familyId:nil error:error];
-}
-
-- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt familyId:(nullable NSString *)familyId error:(NSError **)error {
     if (!token || !sessionID || !did || !expiresAt) return NO;
-    // If no family_id, use the legacy INSERT (no family_id column) for backward
-    // compatibility with databases that haven't run the V18 migration yet.
-    if (familyId.length == 0) {
-        NSString *sql = @"INSERT INTO refresh_tokens (token, session_id, account_did, created_at, expires_at) VALUES (?, ?, ?, ?, ?) "
-                         @"ON CONFLICT(token) DO UPDATE SET session_id=excluded.session_id, account_did=excluded.account_did, "
-                         @"created_at=excluded.created_at, expires_at=excluded.expires_at";
-        NSArray *params = @[
-            token,
-            sessionID,
-            did,
-            @([[NSDate date] timeIntervalSince1970]),
-            @(expiresAt.timeIntervalSince1970)
-        ];
-        return [self executeParameterizedUpdate:sql params:params error:error];
-    }
-    NSString *sql = @"INSERT INTO refresh_tokens (token, session_id, account_did, created_at, expires_at, family_id) VALUES (?, ?, ?, ?, ?, ?) "
+    NSString *sql = @"INSERT INTO refresh_tokens (token, session_id, account_did, created_at, expires_at) VALUES (?, ?, ?, ?, ?) "
                      @"ON CONFLICT(token) DO UPDATE SET session_id=excluded.session_id, account_did=excluded.account_did, "
-                     @"created_at=excluded.created_at, expires_at=excluded.expires_at, family_id=excluded.family_id";
+                     @"created_at=excluded.created_at, expires_at=excluded.expires_at";
     NSArray *params = @[
         token,
         sessionID,
         did,
         @([[NSDate date] timeIntervalSince1970]),
-        @(expiresAt.timeIntervalSince1970),
-        familyId
+        @(expiresAt.timeIntervalSince1970)
     ];
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
@@ -57,10 +37,7 @@
 
 - (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)token error:(NSError **)error {
     if (!token) return nil;
-    // Use the basic query without V18 columns for backward compatibility with
-    // databases that haven't run the migration yet. The PDSAccountService
-    // caller handles nil family_id gracefully (falls through to legacy path).
-    NSString *sql = @"SELECT account_did, session_id FROM refresh_tokens WHERE token = ? AND expires_at > ?";
+    NSString *sql = @"SELECT account_did, session_id, expires_at, next_token FROM refresh_tokens WHERE token = ? AND expires_at > ?";
     double now = [[NSDate date] timeIntervalSince1970];
     NSArray *rows = [self executeParameterizedQuery:sql params:@[token, @(now)] error:error];
     if (rows.count > 0) {
@@ -70,8 +47,14 @@
 }
 
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)token error:(NSError **)error {
-    NSDictionary *info = [self sessionInfoForRefreshToken:token error:error];
-    return info[@"account_did"];
+    if (!token) return nil;
+    NSString *sql = @"SELECT account_did FROM refresh_tokens WHERE token = ? AND expires_at > ? AND next_token IS NULL";
+    double now = [[NSDate date] timeIntervalSince1970];
+    NSArray *rows = [self executeParameterizedQuery:sql params:@[token, @(now)] error:error];
+    if (rows.count > 0) {
+        return rows.firstObject[@"account_did"];
+    }
+    return nil;
 }
 
 - (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error {
@@ -82,25 +65,10 @@
     return rows.count > 0;
 }
 
-- (BOOL)rotateRefreshToken:(NSString *)token error:(NSError **)error {
-    if (!token) return NO;
-    // Atomically mark as rotated. WHERE rotated_at IS NULL makes this a no-op
-    // if already rotated — returning NO so the caller detects reuse.
-    NSString *sql = @"UPDATE refresh_tokens SET rotated_at = ? WHERE token = ? AND rotated_at IS NULL";
-    return [self executeParameterizedUpdate:sql params:@[@([[NSDate date] timeIntervalSince1970]), token] error:error];
-}
-
-- (BOOL)tombstoneRefreshTokenFamily:(NSString *)familyId error:(NSError **)error {
-    if (!familyId || familyId.length == 0) return NO;
-    NSString *sql = @"UPDATE refresh_tokens SET tombstoned_at = ? WHERE family_id = ? AND tombstoned_at IS NULL";
-    return [self executeParameterizedUpdate:sql params:@[@([[NSDate date] timeIntervalSince1970]), familyId] error:error];
-}
-
-- (BOOL)isRefreshTokenFamilyTombstoned:(NSString *)familyId error:(NSError **)error {
-    if (!familyId || familyId.length == 0) return NO;
-    NSString *sql = @"SELECT 1 FROM refresh_tokens WHERE family_id = ? AND tombstoned_at IS NOT NULL LIMIT 1";
-    NSArray *results = [self executeParameterizedQuery:sql params:@[familyId] error:error];
-    return results.count > 0;
+- (BOOL)markRefreshTokenRotated:(NSString *)token nextToken:(NSString *)nextToken graceExpiresAt:(NSDate *)graceExpiresAt error:(NSError **)error {
+    if (!token || !nextToken || !graceExpiresAt) return NO;
+    NSString *sql = @"UPDATE refresh_tokens SET next_token = ?, expires_at = ? WHERE token = ?";
+    return [self executeParameterizedUpdate:sql params:@[nextToken, @(graceExpiresAt.timeIntervalSince1970), token] error:error];
 }
 
 - (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error {
