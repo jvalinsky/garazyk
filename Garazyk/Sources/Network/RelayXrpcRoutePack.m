@@ -671,9 +671,11 @@ static NSURL *didWebDocumentURL(NSString *did) {
     // Input: { "hostname": "..." }
     // Procedure: Request the relay to crawl a new PDS
 
-    // Parse JSON body
-    NSData *bodyData = request.body;
-    if (!bodyData || bodyData.length == 0)
+    // Use the request's pre-parsed JSON body with typed accessor.
+    // §2.1: body[field] bare access was a proven crash when field was null or
+    // a wrong type (NSInvalidArgumentException on -length). stringBodyForKey:
+    // returns nil for non-NSString values, which drops into the error path below.
+    if (!request.jsonBody)
     {
         response.statusCode = HttpStatusBadRequest;
         [response setJsonBody:@{
@@ -683,19 +685,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
         return;
     }
 
-    NSError *parseError = nil;
-    NSDictionary *body = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&parseError];
-    if (!body || ![body isKindOfClass:[NSDictionary class]])
-    {
-        response.statusCode = HttpStatusBadRequest;
-        [response setJsonBody:@{
-            @"error": @"InvalidRequest",
-            @"message": @"Invalid JSON body"
-        }];
-        return;
-    }
-
-    NSString *hostname = body[@"hostname"];
+    NSString *hostname = [request stringBodyForKey:@"hostname"];
     if (!hostname || hostname.length == 0)
     {
         response.statusCode = HttpStatusBadRequest;

@@ -485,6 +485,26 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
   return @[value];
 }
 
+#pragma mark - Typed JSON Body Accessors
+
+- (NSString *)stringBodyForKey:(NSString *)key {
+    id value = self.jsonBody[key];
+    if (![value isKindOfClass:[NSString class]]) return nil;
+    return value;
+}
+
+- (NSNumber *)numberBodyForKey:(NSString *)key {
+    id value = self.jsonBody[key];
+    if (![value isKindOfClass:[NSNumber class]]) return nil;
+    return value;
+}
+
+- (NSArray *)arrayBodyForKey:(NSString *)key {
+    id value = self.jsonBody[key];
+    if (![value isKindOfClass:[NSArray class]]) return nil;
+    return value;
+}
+
 #pragma mark - Middleware Context
 
 - (NSMutableDictionary *)middlewareContext {
