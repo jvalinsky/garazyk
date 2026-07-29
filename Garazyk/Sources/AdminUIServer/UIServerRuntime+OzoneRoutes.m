@@ -73,7 +73,7 @@
     // Ozone: Cancel scheduled actions
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-cancel-scheduled" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSArray *subjects = request.jsonBody[@"subjects"] ?: @[];
+        NSArray *subjects = [request.jsonBody[@"subjects"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"subjects"] : @[];
         NSDictionary *result = [weakSelf.backendClient cancelScheduledActionsForSubjects:subjects];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -310,7 +310,7 @@
     // Ozone: Add team member
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/add-ozone-team-member" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSDictionary *member = request.jsonBody[@"member"];
+        NSDictionary *member = [request.jsonBody[@"member"] isKindOfClass:[NSDictionary class]] ? request.jsonBody[@"member"] : nil;
         NSDictionary *result = [weakSelf.backendClient addOzoneTeamMember:member ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -322,7 +322,7 @@
     // Ozone: Create/update set
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/upsert-ozone-set" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSDictionary *setSpec = request.jsonBody[@"setSpec"];
+        NSDictionary *setSpec = [request.jsonBody[@"setSpec"] isKindOfClass:[NSDictionary class]] ? request.jsonBody[@"setSpec"] : nil;
         NSDictionary *result = [weakSelf.backendClient upsertOzoneSet:setSpec ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -334,7 +334,7 @@
     // Ozone: Create template
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/create-ozone-template" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSDictionary *template = request.jsonBody[@"template"];
+        NSDictionary *template = [request.jsonBody[@"template"] isKindOfClass:[NSDictionary class]] ? request.jsonBody[@"template"] : nil;
         NSDictionary *result = [weakSelf.backendClient createOzoneTemplate:template ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -346,7 +346,7 @@
     // Ozone: Update config
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-ozone-config" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSDictionary *config = request.jsonBody[@"config"];
+        NSDictionary *config = [request.jsonBody[@"config"] isKindOfClass:[NSDictionary class]] ? request.jsonBody[@"config"] : nil;
         NSDictionary *result = [weakSelf.backendClient updateOzoneConfig:config ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
