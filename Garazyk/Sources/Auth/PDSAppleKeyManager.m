@@ -13,7 +13,7 @@
  */
 
 #import "Auth/PDSAppleKeyManager.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/Secp256k1.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Database/PDSDatabase.h"

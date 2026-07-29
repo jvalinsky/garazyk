@@ -7,7 +7,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcRoutePackServices.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Admin/PDSAdminController.h"
 #import "Chat/Server/ChatAuthManager.h"
 

@@ -4,7 +4,7 @@
 
 #import "AppView/Services/AgeAssuranceService.h"
 #import "App/ATProtoServiceConfiguration.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Network/RateLimiter.h"
 #import "Network/XrpcHandler.h"

@@ -13,7 +13,7 @@
 #import "Database/PDSDatabase.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Auth/DPoPUtil.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/TestKeyFixtures.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"

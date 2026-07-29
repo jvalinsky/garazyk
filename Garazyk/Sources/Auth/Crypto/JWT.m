@@ -12,7 +12,7 @@
  @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
 
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/AuthClaimTypeCheck.h"
 #import "Auth/Crypto/Secp256k1.h"
 #import "Auth/PDSKeyManagerProtocol.h"

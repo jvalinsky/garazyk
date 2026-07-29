@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/OAuth2.h"
 #import "Auth/OAuth2Handler.h"
 #import "Database/PDSDatabase.h"

@@ -14,7 +14,7 @@
 
 #import "Auth/OAuth2.h"
 #import "Debug/GZLogRedactor.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Session.h"
 #import "Auth/TOTPService.h"
 #import "Auth/WebAuthnVerifier.h"

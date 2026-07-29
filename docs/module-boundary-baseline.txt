@@ -9,8 +9,6 @@
 # the regression.
 ATProtoCore:ATProtoSafeHTTPClient (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:ATProtoSafeHTTPClientOptions (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoCore)
-ATProtoCore:JWT (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
-ATProtoCore:JWTVerifier (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoMediaCore:PDSCloudStorageBlobProvider (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoMediaCore)
 ATProtoMediaCore:PDSDiskBlobProvider (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoMediaCore)
 ATProtoMediaCore:XrpcDispatcher (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoMediaCore)
@@ -50,8 +48,6 @@ ATProtoTransport:PDSAdminAuth (defined in ATProtoServices, not a declared PUBLIC
 ATProtoTransport:RelayAPIHandler (defined in ATProtoSync, not a declared PUBLIC dependency of ATProtoTransport)
 ATProtoTransport:WebAuthnRegistrationHandler (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoTransport)
 ATProtoTransport:XrpcErrorHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoTransport)
-ATProtoVideoService:JWT (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoVideoService)
-ATProtoVideoService:JWTVerifier (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoVideoService)
 ATProtoVideoService:XrpcAuthHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoVideoService)
 ATProtoVideoService:XrpcErrorHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoVideoService)
 ATProtoXRPC:ATProtoVideoWorker (defined in ATProtoVideoService, not a declared PUBLIC dependency of ATProtoXRPC)

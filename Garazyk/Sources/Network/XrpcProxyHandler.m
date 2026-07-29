@@ -4,7 +4,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/PDSActorKeyManagerProtocol.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Security/ATProtoPermissionScopeEvaluator.h"

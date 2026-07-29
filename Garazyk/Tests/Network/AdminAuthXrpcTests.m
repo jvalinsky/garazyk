@@ -9,7 +9,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Admin/PDSAdminAuth.h"
 
 @interface AdminAuthXrpcTests : XCTestCase

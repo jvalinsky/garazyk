@@ -4,7 +4,7 @@
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Security/ATProtoPermissionScope.h"
 #import "Security/Space/PDSSpaceScope.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 @implementation ATProtoPermissionScopeEvaluator
 

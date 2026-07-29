@@ -3,7 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/CID.h"
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
