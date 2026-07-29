@@ -2720,14 +2720,17 @@ under the gate above, then re-run gate-checks 1–8 against
 
 ## S20. HTTP transport crash-safety and request-boundary hardening
 
-**Status: in progress (verified 2026-07-29).** Sub-tasks A, D, and E have
-landed (`77d5ad8c`, `36240eed`, `2ec37c47` respectively — all on `main`,
-confirmed present in the current source: `HttpRequestDispatcher.m` has
-`@try`/`@catch` at both previously-unguarded dispatch sites;
-`HttpRouter.m`'s `normalizePath:` resolves `..` segments per RFC 3986
-§5.2.4; `HttpRequest.m` parses `X-Forwarded-For` right-to-left with a
-trusted-proxy check). Only sub-tasks B and C remain — the typed-accessor
-sweep across XRPC route packs and its verification suite.
+**Status: in progress (verified 2026-07-29).** Sub-tasks A, B, D, and E
+have landed (`77d5ad8c`, `f3aa3fb1`/`4fc2f097`, `36240eed`, `2ec37c47`
+respectively — all on `main`, confirmed present in the current source:
+`HttpRequestDispatcher.m` has `@try`/`@catch` at both
+previously-unguarded dispatch sites; `HttpRouter.m`'s `normalizePath:`
+resolves `..` segments per RFC 3986 §5.2.4; `HttpRequest.m` parses
+`X-Forwarded-For` right-to-left with a trusted-proxy check; every XRPC
+route pack's raw `jsonBody` reads are now either type-guarded or
+confirmed already safe). Only sub-task C remains — the verification
+suite proving B's fixes actually reject each type-confusion payload
+with a 400 rather than crashing.
 
 Sub-task B's helper already exists and needs no new code: `AuthTypedValue`
 (`Garazyk/Sources/Auth/AuthClaimTypeCheck.h`, a static-inline function
@@ -2802,7 +2805,7 @@ Single-file change. No test classes required because the gate (check 1
 below) is structural grep — the existing `HttpRequestDispatcherTests`
 suite exercises the dispatch path.
 
-#### Sub-task B — typed-accessor sweep across XRPC request bodies *(§2.1 primary, in progress 2026-07-29, `f3aa3fb1`)*
+#### Sub-task B — typed-accessor sweep across XRPC request bodies *(§2.1 primary, complete 2026-07-29, `f3aa3fb1`/`4fc2f097`)*
 
 No new helper needed — `AuthTypedValue` (`Auth/AuthClaimTypeCheck.h`)
 already exists in exactly this role (see the note at the top of this
@@ -2837,16 +2840,56 @@ prior, narrower pass). This means the original "~35 packs × 1-5 fields
 remainder — some meaningful fraction of the surface was already
 defended ad hoc before this sweep started.
 
-**Remaining files, not yet audited:** `XrpcChatBskyActorPack.m`,
-`XrpcChatBskyConvoPack.m` (~13 `jsonBody` sites), `XrpcChatBskyGroupPack.m`
-(~15 sites — these two chat files are the largest remaining chunk),
-`XrpcIdentityPack.m`, `XrpcLabelPack.m`, `XrpcMiddleware.m`,
-`XrpcModerationPack.m`, `XrpcRepoPack+Blobs.m`, `XrpcRepoPack+Records.m`,
-`XrpcServerPack+Session.m`, `XrpcSpacePack.m`,
-`XrpcSpaceRecoveryTestPack.m`, `XrpcSyncPack.m`, `XrpcToolsOzonePack.m`.
-Apply the same audit-first discipline to each: check for an existing
-inline guard or typed-accessor use before assuming a raw `jsonBody[@"x"]`
-read is actually a gap.
+**Batch 2 complete** (`4fc2f097`): 13 more call sites converted across
+4 files — `XrpcChatBskyGroupPack.m` (5 — required fields like
+`groupUri`/`linkId` were already guarded, but optional fields
+`description`/`privacy`/`joinability`/`name`/`newDescription`/
+`newPrivacy`/`enabled`/`embed` were not), `XrpcIdentityPack.m` (7 — the
+most security-sensitive of the whole sweep: `identifier`, `handle`, and
+the `submitPlcOperation` handler's nested fields — `operation.did`,
+`opData.type`, `opData.services.atproto_pds.{endpoint,type}`,
+`opData.prev` — which gate an attacker-supplied DID-rotation request
+before it reaches the PLC directory, the same surface phase-29/S17/S18
+hardened elsewhere this session), `XrpcLabelPack.m` (1), and
+`XrpcRepoPack+Blobs.m` (1).
+
+Also completed the audit for every remaining file: `XrpcChatBskyActorPack.m`,
+`XrpcChatBskyConvoPack.m`, `XrpcMiddleware.m`, `XrpcModerationPack.m`,
+`XrpcRepoPack+Records.m`, `XrpcServerPack+Session.m`, `XrpcSpacePack.m`,
+`XrpcSpaceRecoveryTestPack.m`, `XrpcSyncPack.m`, and
+`XrpcToolsOzonePack.m` needed no changes — confirmed safe either via
+inline `isKindOfClass:` checks, `HttpRequest`'s typed accessors, or by
+tracing that the raw `jsonBody` dictionary passed to a service method is
+safe by construction: `HttpRequest.parseJsonBody:` (`Network/HttpRequest.m`)
+already guarantees the top-level JSON body is either `nil` or an actual
+`NSDictionary` — a top-level JSON array/string/number can never reach a
+handler as `body` — so passing that already-guaranteed container through
+to a service method for its own nested-field validation carries no crash
+risk from *this* boundary.
+
+**This completes sub-task B across all ~35 originally scoped XRPC route
+pack files.** Final tally: 46 call sites fixed across 16 files; 19 files
+audited and confirmed already safe.
+
+**Lesson learned, found via a real regression during verification:**
+`XrpcChatBskyGroupPack.m`'s `createInviteLink`/`editInviteLink` handlers
+initially typed `expiresAt` as required-`NSString`, matching
+`GroupService.h`'s declared parameter type — but `GroupService.m`'s
+actual implementation passes it straight through to a raw SQL bind
+parameter (`ATProtoDBBindValue`, `Database/Utils/ATProtoDatabaseUtilities.h`)
+that is never messaged as a string, so it legitimately accepts either an
+ISO8601 string or a numeric Unix timestamp. `testCreateJoinLinkWithExpiry`
+(which sends a numeric epoch) caught this as a real regression, not a
+false alarm. The fix was to revert that one guard rather than "fix the
+test" — the header's declared parameter type documents intent, not a
+runtime guarantee, and SQLite's own bind layer silently accepts
+`NSString`/`NSNumber`/`NSData` alike. The rule this leaves for any future
+pass over this code: check what a field is actually *done with*
+downstream (is it messaged with a type-specific selector like `.length`/
+`isEqualToString:`/`.boolValue`, or just passed through to a
+multi-type-tolerant sink like SQL binding or JSON re-serialization)
+before adding a type guard — a declared Objective-C parameter type is not
+proof a runtime crash is reachable.
 
 #### Sub-task C — table-driven `(route, field)` × `{null, @1, @[], @{}, @true}` sweep
 
@@ -2934,17 +2977,20 @@ revert independently of A–B and of each other.
 ### Execution phases
 
 Originally planned as five commits landing A → B → C → D → E. In
-practice A, D, and E landed out of that order (verified 2026-07-29,
-`77d5ad8c`/`36240eed`/`2ec37c47`) while B and C — the largest, most
-time-consuming sub-tasks (60-120 call sites across ~35 route packs) —
-remained open. Only B and C are left; they are still bundled (C is B's
-verification suite) and land together.
+practice A, D, and E landed out of order (`77d5ad8c`/`36240eed`/`2ec37c47`),
+then B landed in two batches (`f3aa3fb1`, `4fc2f097`) covering the full
+~35-file route pack sweep — 46 call sites fixed across 16 files, 19
+files audited and confirmed already safe, with one real regression
+(the `expiresAt` false-positive) found and fixed during verification
+rather than assumed clean from the build alone. Only sub-task C
+remains: the verification suite proving each of B's fixes actually
+returns 400 for the type-confusion payloads it's meant to reject,
+rather than relying on manual review alone.
 
 Candidate phase-prompt path:
 `docs/plans/prompts/phase-??-http-transport-hardening.md` — derive the
-prompt that walks the sub-task B sweep (using the already-existing
-`AuthTypedValue` helper, `Auth/AuthClaimTypeCheck.h` — no new helper
-code needed) through the sub-task C verification suite, under the gate
+prompt that builds `Garazyk/Tests/Network/XRPCAddRouteCrashSafetyTests.m`
+against the now-complete sub-task B fix set, per the sub-task C spec
 above.
 
 
