@@ -13,7 +13,6 @@
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/PDSKeyProtocol.h"
-#import "Auth/PDSReplayCache.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
@@ -216,7 +215,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                               nonce:nil
                                        requireNonce:self.nonceStore != nil
                                      nonceValidator:(id<AuthCryptoDPoPNonceValidator>)self.nonceStore
-                                      replayChecker:[PDSReplayCache sharedCache]
+                                      replayChecker:self.replayChecker
                                       outThumbprint:&dpopThumbprint
                                  expectedAccessToken:token
                                               error:&dpopError];

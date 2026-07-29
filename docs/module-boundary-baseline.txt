@@ -12,7 +12,6 @@ ATProtoCore:ATProtoSafeHTTPClientOptions (defined in ATProtoTransport, not a dec
 ATProtoCore:CryptoUtils (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:JWT (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:JWTVerifier (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
-ATProtoCore:PDSReplayCache (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:Secp256k1 (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoMediaCore:PDSCloudStorageBlobProvider (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoMediaCore)
 ATProtoMediaCore:PDSDiskBlobProvider (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoMediaCore)
