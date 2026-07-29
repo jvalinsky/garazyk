@@ -5,7 +5,10 @@
 #import "Auth/Secp256k1.h"
 #import "Auth/DPoPUtil.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
+#import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/TestKeyFixtures.h"
 #import "Auth/Verifier/AuthVerifier.h"
 #import "Network/HttpRequest.h"
@@ -230,10 +233,49 @@
     HttpRequest *legacyRequest = [self requestWithAuthorization:authorization dpop:legacyProof.jwt];
     XCTAssertEqualObjects([self legacyDIDForAuthorization:authorization request:legacyRequest], @"did:plc:alice");
 
-    // The new verifier has a durable replay cache. Use a fresh proof for its
-    // independent evaluation while keeping the same token/key binding.
-    DPoPToken *newProof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
-    HttpRequest *newRequest = [self requestWithAuthorization:authorization dpop:newProof.jwt];
+    // The new verifier enforces ath (access token hash) per RFC 9449 §4.3.
+    // Create a fresh DPoP proof with ath so the new verifier accepts it.
+    // Keep the same token/key binding with a new JTI to avoid replay rejection.
+    NSData *tokenData = [token.encodedToken dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *tokenHash = [CryptoUtils sha256:tokenData];
+    NSString *athValue = [AuthCryptoBase64URL encode:tokenHash];
+
+    // Build the DPoP proof manually with ath in the payload
+    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:key error:&error];
+    XCTAssertNotNil(jwk, @"Failed to get public JWK: %@", error);
+    NSDictionary *headerDict = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
+    NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromURL:[NSURL URLWithString:url]];
+    NSDictionary *payloadDict = @{
+        @"htm": @"GET",
+        @"htu": canonicalHTU,
+        @"iat": @([[NSDate date] timeIntervalSince1970]),
+        @"jti": [[NSUUID UUID] UUIDString],
+        @"ath": athValue
+    };
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:headerDict options:0 error:&error];
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payloadDict options:0 error:&error];
+    XCTAssertNotNil(headerData);
+    XCTAssertNotNil(payloadData);
+    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEnc, payloadEnc];
+    NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+
+    CFErrorRef signError = NULL;
+    NSData *derSignature = CFBridgingRelease(SecKeyCreateSignature(key,
+                                                                     kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                                                     (__bridge CFDataRef)signingData,
+                                                                     &signError));
+    XCTAssertNotNil(derSignature, @"Signature failed");
+    if (signError) CFRelease(signError);
+
+    NSData *rawSignature = [AuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:&error];
+    rawSignature = [AuthCryptoECDSA normalizeLowS:rawSignature error:&error];
+    XCTAssertNotNil(rawSignature);
+    NSString *proofWithAth = [NSString stringWithFormat:@"%@.%@.%@", headerEnc, payloadEnc,
+                                                          [AuthCryptoBase64URL encode:rawSignature]];
+
+    HttpRequest *newRequest = [self requestWithAuthorization:authorization dpop:proofWithAth];
     XCTAssertEqualObjects([self newPrincipalForAuthorization:authorization request:newRequest].did, @"did:plc:alice");
     CFRelease(key);
 }
