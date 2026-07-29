@@ -66,29 +66,35 @@ links `libsecp256k1` directly (`PUBLIC`), matching every other module target.
 `CryptoUtils` each leaking into `ATProtoCore`, `ATProtoPLC`, and
 `ATProtoStorage`); baseline ratcheted 64 → 58.
 
-**Remaining ATProtoCore leaks (4), not yet addressed:**
+**`JWT`/`JWTVerifier` leaks also fixed** (`dcd46667`) — **no split needed.**
+The prior entry in this doc assumed `Auth/JWT.m` would need to be split
+(pure-verification classes to Core, `JWTMinter` staying in Services). A
+closer read of the `.m` implementation showed that assumption was wrong:
+`JWTMinter` never links against a concrete key-manager class — its signing
+methods only accept `id<PDSKeyManager>`/`id<PDSActorKeyManager>`, a
+compile-time protocol reference satisfied by whatever concrete class each
+caller passes in, not a link dependency of `JWT.m` itself. The file's only
+real class dependency was `Secp256k1` (already moved to `Auth/Crypto/` in
+the prior step); everything else it imports (`AuthClaimTypeCheck.h`,
+`PDSKeyManagerProtocol.h`, `PDSActorKeyManagerProtocol.h`,
+`Security/PDSSecurityCompare.h`, `CommonCrypto`, `Security/SecRandom`) is
+either a Foundation-only protocol/utility header or already Core-glob'd.
+So the whole file — `JWTHeader`/`JWTPayload`/`JWT`/`JWTVerifier`/`JWTMinter`
+together — moved as one unit from `Auth/` to `Auth/Crypto/`, no code
+changes. 72 consumer imports updated. This closed both remaining
+ATProtoCore leaks (`JWT`, `JWTVerifier`) plus two incidental
+`ATProtoVideoService` leaks of the same classes; baseline ratcheted
+58 → 54. Full `AllTests --gated=run` verified identical (pre-existing)
+failure profile before and after.
+
+**Remaining ATProtoCore leaks (2), not yet addressed:**
 - `ATProtoSafeHTTPClient`/`ATProtoSafeHTTPClientOptions` — one file left:
   `Security/Space/PDSSpaceAppAttestationVerifier.m` needs SSRF-control
   options (`allowPrivateHosts`, `maxResponseBytes`, `allowHTTP`,
   `followRedirects`) the minimal `GZHTTPClient` protocol doesn't cover.
   Extending the protocol to match, or relocating this file out of
-  Core's glob, is its own scoped follow-up.
-- `JWT`, `JWTVerifier` (both defined in `ATProtoServices`) — traced to a
-  single root cause: `Auth/JWT.m` (~850 lines) bundles
-  `JWTHeader`/`JWTPayload`/`JWT`/`JWTVerifier` (pure parsing/verification,
-  arguably Core-appropriate) together with `JWTMinter` (signing — needs
-  `Secp256k1` and keychain-backed key manager protocols, a real
-  Services-layer concern) in one file, which `AuthVerifier.m` (Core)
-  imports for the verifier half. Now that `Secp256k1` itself lives in
-  `Auth/Crypto/` (Core), `JWTVerifier`'s own dependency on it is no longer
-  cross-layer — the remaining blocker is purely the file split, not a
-  transitive dependency problem. Splitting this file is the correct fix
-  but was judged too risky to do in this pass without dedicated focus:
-  JWT verification is the exact security surface this session's other
-  work (phase-29, S17/S18) hardened, and a split needs care around which
-  of `JWTVerifier`'s ~72 consumer files need only the verifier half vs.
-  the minter half. Left as a scoped, security-sensitive follow-up — not
-  attempted blind.
+  Core's glob, is its own scoped follow-up. This is now ATProtoCore's
+  *only* remaining leak class.
 - The GNUstep-only `/usr/bin/curl` subprocess fallback in `DID.m` (M2's
   text flagged this as "move behind the protocol or delete," marked
   optional) — not touched. Doesn't affect the module-boundary leak count
