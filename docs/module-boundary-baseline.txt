@@ -7,8 +7,6 @@
 # added silently — CI fails until either the leak is fixed (preferred) or
 # this file is edited in the same commit that introduces it, so review sees
 # the regression.
-ATProtoMediaCore:PDSCloudStorageBlobProvider (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoMediaCore)
-ATProtoMediaCore:PDSDiskBlobProvider (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoMediaCore)
 ATProtoMediaCore:XrpcDispatcher (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoMediaCore)
 ATProtoMediaCore:XrpcErrorHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoMediaCore)
 ATProtoMediaCore:XrpcRoutePackServiceBag (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoMediaCore)

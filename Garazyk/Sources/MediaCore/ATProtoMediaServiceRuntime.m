@@ -4,8 +4,7 @@
 #import "MediaCore/ATProtoMediaWorker.h"
 #import "MediaCore/ATProtoMediaSQLiteStore.h"
 #import "MediaCore/ATProtoMediaXrpcPack.h"
-#import "Blob/PDSDiskBlobProvider.h"
-#import "Blob/PDSCloudStorageBlobProvider.h"
+#import "Blob/PDSBlobProvider.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -23,11 +22,13 @@
 @implementation ATProtoMediaServiceRuntime
 
 - (instancetype)initWithConfiguration:(ATProtoMediaServiceConfiguration *)configuration
-                            processor:(id<ATProtoMediaProcessor>)processor {
+                            processor:(id<ATProtoMediaProcessor>)processor
+                         blobProvider:(id<PDSBlobProvider>)blobProvider {
     self = [super init];
     if (self) {
         _configuration = configuration;
         _processor = processor;
+        _blobProvider = blobProvider;
     }
     return self;
 }
@@ -50,18 +51,11 @@
     }
 
     // ── Blob Provider ─────────────────────────────────────────
-    if (config.s3Bucket) {
-        self.blobProvider = [[PDSCloudStorageBlobProvider alloc] initWithBucket:config.s3Bucket
-                                                                         region:config.s3Region
-                                                                       endpoint:config.s3Endpoint
-                                                                      keyPrefix:@"blobs/"
-                                                                  accessKeyId:config.s3AccessKey ?: @""
-                                                               secretAccessKey:config.s3SecretKey ?: @""];
-        GZ_LOG_INFO(@"  Blob storage: S3 (%@)", config.s3Bucket);
-    } else {
-        self.blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:[NSURL fileURLWithPath:config.blobDirectory]];
-        GZ_LOG_INFO(@"  Blob storage: disk (%@)", config.blobDirectory);
-    }
+    // Constructed by the caller and injected via the initializer; this
+    // runtime only depends on the id<PDSBlobProvider> protocol, not on
+    // any concrete backend (see the initializer's doc comment in the
+    // header for why).
+    GZ_LOG_INFO(@"  Blob storage: %@", NSStringFromClass([self.blobProvider class]));
 
     // ── Worker ────────────────────────────────────────────────
     self.worker = [[ATProtoMediaWorker alloc] init];

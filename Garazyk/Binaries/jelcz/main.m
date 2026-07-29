@@ -26,6 +26,9 @@
 #endif
 #import "MediaCore/ATProtoMediaServiceRuntime.h"
 #import "MediaCore/ATProtoMediaServiceConfiguration.h"
+#import "Blob/PDSBlobProvider.h"
+#import "Blob/PDSDiskBlobProvider.h"
+#import "Blob/PDSCloudStorageBlobProvider.h"
 #import "Video/ATProtoVideoProcessor.h"
 #import "Video/VideoHLSGenerator.h"
 #import "Network/HttpServer.h"
@@ -260,8 +263,25 @@ static int run_serve(NSArray<NSString *> *args) {
     videoProcessor.outputBaseUrl = config.outputBaseUrl ?: [NSString stringWithFormat:@"http://localhost:%lu", (unsigned long)config.port];
     videoProcessor.include1080p = config.includeHighQuality;
 
+    // Select the blob storage backend. MediaCore only depends on the
+    // id<PDSBlobProvider> protocol, so the concrete backend is chosen and
+    // constructed here, where the whole library set is already linked.
+    id<PDSBlobProvider> blobProvider;
+    if (config.s3Bucket) {
+        blobProvider = [[PDSCloudStorageBlobProvider alloc] initWithBucket:config.s3Bucket
+                                                                     region:config.s3Region
+                                                                   endpoint:config.s3Endpoint
+                                                                  keyPrefix:@"blobs/"
+                                                                accessKeyId:config.s3AccessKey ?: @""
+                                                            secretAccessKey:config.s3SecretKey ?: @""];
+    } else {
+        blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:[NSURL fileURLWithPath:config.blobDirectory]];
+    }
+
     // Boot the framework runtime
-    ATProtoMediaServiceRuntime *runtime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:config processor:videoProcessor];
+    ATProtoMediaServiceRuntime *runtime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:config
+                                                                                           processor:videoProcessor
+                                                                                        blobProvider:blobProvider];
 
     // Configure HLS generator
     ATProtoVideoHLSGenerator *hlsGenerator = [ATProtoVideoHLSGenerator sharedGenerator];

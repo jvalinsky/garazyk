@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpServer;
 @class ATProtoMediaWorker;
+@protocol PDSBlobProvider;
 
 /**
  * @abstract Boots and manages a standalone media CDN service.
@@ -38,10 +39,17 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) ATProtoMediaWorker *worker;
 
 /**
- * @abstract Initializes the runtime with configuration and a processor.
+ * @abstract Initializes the runtime with configuration, a processor, and a
+ *    blob storage backend.
+ *
+ * @discussion The caller selects and constructs the blob provider (disk vs.
+ *    S3-compatible cloud storage) — MediaCore only depends on the
+ *    @c id&lt;PDSBlobProvider&gt; protocol, not on any concrete backend, which
+ *    lives in ATProtoServices.
  */
 - (instancetype)initWithConfiguration:(ATProtoMediaServiceConfiguration *)configuration
-                            processor:(id<ATProtoMediaProcessor>)processor;
+                            processor:(id<ATProtoMediaProcessor>)processor
+                         blobProvider:(id<PDSBlobProvider>)blobProvider;
 
 /**
  * @abstract Starts the HTTP server, worker, and all subsystems.
