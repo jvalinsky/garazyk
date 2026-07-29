@@ -25,7 +25,39 @@ not the six cited for `ATProtoCore` alone below. `docs/module-boundary-baseline.
 has the full corrected list; M2-M4 should work from that file, not from the
 `nm -u` counts in this section's original evidence.
 
-M2-M4 remain not started. M0 (third-party consumption goal) remains an
+**M2 partially complete** (`ebd19d22`). Of ATProtoCore's 11 real leaks
+(corrected count, not the six M2's original text cited), 4 are fixed:
+`MSTCacheManager`/`MSTAtomicReference` moved to `Repository/` (Storage);
+`CBOREncoder`/`CBORDecoder`/`CBORValue` moved from `Repository/CBOR.h`
+into `Core/CBOR.h` (already a standalone file pair, no CAR code mixed
+in — a clean move); a new `Core/GZHTTPClient.h` protocol (covering only
+the two methods `DID.m`/`GZProviderHTTPClient.m` actually call, with a
+raw timeout instead of `ATProtoSafeHTTPClientOptions`) with
+`ATProtoSafeHTTPClient` self-registering as the default via `+load`,
+removing the `Core → ATProtoSafeHTTPClient`/`ATProtoSafeHTTPClientOptions`
+leak for those two call sites.
+
+**Remaining ATProtoCore leaks (7 of 11), not yet addressed:**
+- `ATProtoSafeHTTPClient`/`ATProtoSafeHTTPClientOptions` — one file left:
+  `Security/Space/PDSSpaceAppAttestationVerifier.m` needs SSRF-control
+  options (`allowPrivateHosts`, `maxResponseBytes`, `allowHTTP`,
+  `followRedirects`) the minimal `GZHTTPClient` protocol doesn't cover.
+  Extending the protocol to match, or relocating this file out of
+  Core's glob, is its own scoped follow-up.
+- `CryptoUtils`, `JWT`, `JWTVerifier`, `PDSReplayCache`, `Secp256k1` (all
+  defined in `ATProtoServices`) — not analyzed yet; M2's original text
+  never mentioned these because its "six symbols" evidence undercounted.
+  Needs its own investigation into which Core files reference them and
+  why.
+- The GNUstep-only `/usr/bin/curl` subprocess fallback in `DID.m` (M2's
+  text flagged this as "move behind the protocol or delete," marked
+  optional) — not touched. Doesn't affect the module-boundary leak count
+  (`NSTask` isn't one of ours), but a Core primitive spawning a process
+  is still the kind of thing this workstream exists to clean up.
+  Deferred because GNUstep/Linux behavior can't be verified in this
+  environment — needs a pass with real GNUstep build/test access.
+
+M3-M4 remain not started. M0 (third-party consumption goal) remains an
 open decision — M1's baseline is useful either way, but M5/M6 stay gated
 on it.
 
