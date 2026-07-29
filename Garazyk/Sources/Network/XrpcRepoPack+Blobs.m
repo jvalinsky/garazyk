@@ -9,6 +9,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/RateLimiter.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSSpaceStore.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -374,7 +375,13 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
         if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
             return;
         }
-        NSString *cid = body[@"blob"];
+        BOOL typeMismatch = NO;
+        NSString *cid = AuthTypedValue(body, @"blob", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Request field has wrong type"}];
+            return;
+        }
         if (cid.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob CID"}];
