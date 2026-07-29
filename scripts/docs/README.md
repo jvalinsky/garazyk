@@ -71,7 +71,7 @@ npm run validate-config configs/plan-consolidation.json
 It runs JSON schema validation and semantic rule checks (no nested paths, no
 duplicates), reports errors with context, and prints a configuration summary.
 
-### Repo-Wide Registry and Validation (`repo_docs.ts`)
+### Repo-Wide Registry and Validation (`@garazyk/narzedzia/repo-docs`)
 
 Generates canonical metadata and enforces strict internal link/discoverability
 checks across repository markdown.
@@ -80,13 +80,13 @@ checks across repository markdown.
 
 ```bash
 # Generate registry, link graph, orphan report, and index/backlink pages
-deno run -A scripts/docs/repo_docs.ts sync
+deno run -A --config=deno.json packages/narzedzia/repo_docs.ts sync
 
 # Blocking validation modes
-deno run -A scripts/docs/repo_docs.ts validate --internal-strict --orphans
+deno run -A --config=deno.json packages/narzedzia/repo_docs.ts validate --internal-strict --orphans
 
 # Non-blocking scheduled external link report
-deno run -A scripts/docs/repo_docs.ts validate --external-report
+deno run -A --config=deno.json packages/narzedzia/repo_docs.ts validate --external-report
 ```
 
 ### Deno/TypeScript API Documentation

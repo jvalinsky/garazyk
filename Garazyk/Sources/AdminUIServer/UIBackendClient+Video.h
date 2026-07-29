@@ -5,27 +5,30 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Video-service administration operations used by the authenticated admin UI.
+ * @discussion Job listing and retry use the PDS administrative transport; direct video endpoints
+ * use the configured video admin token. Methods block for their HTTP request and return upstream
+ * JSON or a dictionary containing `error` and `message`; no NSError is exposed to callers.
+ */
 @interface UIBackendClient (Video)
 
 /**
- * @abstract Fetch video jobs with state.
- * @param state Job state filter.
- * @param limit Maximum number of records to return.
- * @param cursor Pagination cursor from a previous response.
- * @return The response dictionary, or nil when the request fails.
+ * @abstract Lists video jobs using optional state, page size, and cursor filters.
  */
 - (NSDictionary *)fetchVideoJobsWithState:(nullable NSString *)state limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 
+/** @abstract Retrieves a video job for a nonempty job identifier. */
 - (NSDictionary *)fetchVideoJobById:(NSString *)jobId;
 
+/** @abstract Retrieves video upload limits without changing video-service state. */
 - (NSDictionary *)fetchVideoUploadLimits;
 
+/** @abstract Retrieves health and normalizes successful responses to `status: online`. */
 - (NSDictionary *)fetchVideoHealth;
 
 /**
- * @abstract Retry video job with id.
- * @param jobId Video job identifier.
- * @return The response dictionary, or nil when the request fails.
+ * @abstract Requests a retry for a nonempty job identifier and changes job processing state.
  */
 - (NSDictionary *)retryVideoJobWithId:(NSString *)jobId;
 

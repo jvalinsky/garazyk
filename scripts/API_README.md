@@ -1,13 +1,13 @@
-# Garazyk Deno Harness
+# Garazyk TypeScript APIs
 
-A TypeScript test harness for running end-to-end scenarios against
-[AT Protocol](https://atproto.com/) services. Built on [Deno](https://deno.com/)
-for the Garazyk PDS, an Objective-C implementation of an AT Protocol Personal
-Data Server.
+Public TypeScript APIs for the Garazyk PDS, an Objective-C implementation of an
+[AT Protocol](https://atproto.com/) Personal Data Server. The packages cover
+XRPC clients, scenario execution, Docker orchestration, topology definitions,
+repository tooling, and terminal UI primitives.
 
-## What it does
+## Package overview
 
-The harness combines the packages used to write, run, and report integration
+The scenario packages can be combined to write, run, and report integration
 tests against ATProto services:
 
 - **XRPC client:** `@garazyk/gruszka` provides generated XRPC access, stable
@@ -73,6 +73,7 @@ result.printSummary();
 | `@garazyk/laweta`    | Docker Engine, Compose, events, health, and resource statistics  |
 | `@garazyk/schemat`   | Topology schemas, presets, manifests, ports, and runtime paths   |
 | `@garazyk/narzedzia` | Repository validation and documentation coverage tools           |
+| `@garazyk/tui`       | Terminal UI layout, rendering, and testing primitives            |
 
 ## Client namespaces
 
