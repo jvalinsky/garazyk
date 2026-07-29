@@ -18,6 +18,8 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
+#import "Core/DID.h"
+#import "Debug/GZLogger.h"
 
 #ifdef GNUSTEP
 #import <Security/Security.h>
@@ -244,8 +246,8 @@ static BOOL PDSHandleResolverRunningTests(void) {
     ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
     safeOptions.timeout = 10.0;
     safeOptions.maxResponseBytes = 1024; // DID responses are tiny
-    safeOptions.allowHTTP = PDSHandleResolverRunningTests() || envAllowPrivate;
-    safeOptions.allowPrivateHosts = PDSHandleResolverRunningTests() || envAllowPrivate;
+    safeOptions.allowHTTP = envAllowPrivate;
+    safeOptions.allowPrivateHosts = envAllowPrivate;
     safeOptions.followRedirects = YES;
 
     [self executeSafeHTTPSRequest:request
@@ -318,10 +320,22 @@ static BOOL PDSHandleResolverRunningTests(void) {
             return;
         }
 
-        if (![did hasPrefix:@"did:"]) {
+        // Validate DID format — must be a supported ATProto DID method.
+        if (![self isValidATProtoDID:did]) {
             NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
                                                         code:HandleErrorResolutionFailed
-                                                    userInfo:@{NSLocalizedDescriptionKey: @"Response does not contain a valid DID"}];
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"Response does not contain a valid ATProto DID"}];
+            completion(nil, resolveError);
+            return;
+        }
+
+        // §6 bidirectional verification: resolve the DID document and verify the
+        // handle appears in its alsoKnownAs. This prevents a handle→DID mapping
+        // that the DID's owner never claimed.
+        if (![self verifyHandleBacklink:handle did:did]) {
+            NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
+                                                        code:HandleErrorResolutionFailed
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"DID document does not claim this handle via alsoKnownAs"}];
             completion(nil, resolveError);
             return;
         }
@@ -506,6 +520,15 @@ static BOOL PDSHandleResolverRunningTests(void) {
             
             if ([fullTxt hasPrefix:@"did="]) {
                 NSString *did = [fullTxt substringFromIndex:4];
+                // Validate DID format — must be a supported ATProto DID method.
+                if (![self isValidATProtoDID:did]) {
+                    continue;
+                }
+                // §6 bidirectional verification: resolve the DID document and verify
+                // the handle appears in its alsoKnownAs.
+                if (![self verifyHandleBacklink:handle did:did]) {
+                    continue;
+                }
                 completion(did, nil);
                 return;
             }
@@ -547,6 +570,63 @@ static BOOL PDSHandleResolverRunningTests(void) {
         allowed = YES;
     });
     return allowed;
+}
+
+#pragma mark - §6 Identity Verification Helpers
+
+/*!
+ @abstract Validates that a DID string uses a supported ATProto DID method.
+ @discussion ATProto supports did:plc and did:web methods. This check prevents
+ arbitrary DID methods from being accepted via handle resolution.
+ */
+- (BOOL)isValidATProtoDID:(NSString *)did {
+    if (!did || did.length == 0) return NO;
+    if (![did hasPrefix:@"did:"]) return NO;
+    if ([did hasPrefix:@"did:plc:"]) return YES;
+    if ([did hasPrefix:@"did:web:"]) return YES;
+    return NO;
+}
+
+/*!
+ @abstract Verifies that the DID document for the given DID claims the handle.
+ @discussion Resolves the DID document and checks whether its "alsoKnownAs"
+ array contains an "at://<handle>" entry. This is the bidirectional
+ verification: after resolving a handle→DID, we confirm the DID points back.
+ @return YES if the DID document contains an at:// link to the handle; NO if
+ the document cannot be resolved or does not claim the handle.
+ */
+- (BOOL)verifyHandleBacklink:(NSString *)handle did:(NSString *)did {
+    if (handle.length == 0 || did.length == 0) return NO;
+    if (PDSHandleResolverRunningTests()) {
+        // In test mode, skip network-dependent bidirectional verification.
+        return YES;
+    }
+
+    NSError *resolveError = nil;
+    DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
+    if (!document) {
+        GZ_LOG_CORE_WARN(@"Bidirectional handle check: failed to resolve DID document for %@: %@",
+                          did, resolveError.localizedDescription ?: @"unknown error");
+        return NO;
+    }
+
+    NSString *expectedAka = [NSString stringWithFormat:@"at://%@", [handle lowercaseString]];
+    for (NSString *aka in document.alsoKnownAs ?: @[]) {
+        if ([aka isKindOfClass:[NSString class]]) {
+            NSString *normalizedAka = [aka lowercaseString];
+            // Strip trailing slash if present — at://handle/ is equivalent to at://handle
+            if ([normalizedAka hasSuffix:@"/"]) {
+                normalizedAka = [normalizedAka substringToIndex:normalizedAka.length - 1];
+            }
+            if ([normalizedAka isEqualToString:expectedAka]) {
+                return YES;
+            }
+        }
+    }
+
+    GZ_LOG_CORE_WARN(@"Bidirectional handle check: DID %@ does not claim handle %@ in alsoKnownAs",
+                      did, handle);
+    return NO;
 }
 
 @end
