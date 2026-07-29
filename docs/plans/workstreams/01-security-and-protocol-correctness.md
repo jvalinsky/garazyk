@@ -2720,9 +2720,27 @@ under the gate above, then re-run gate-checks 1–8 against
 
 ## S20. HTTP transport crash-safety and request-boundary hardening
 
-**Status: in progress (verified 2026-07-28).** Sub-task A landed
-(`HttpRequestDispatcher.m` dispatch-site crash net). Sub-tasks B–E are
-catalogued future work, sized independently and landed one-per-commit.
+**Status: in progress (verified 2026-07-29).** Sub-tasks A, D, and E have
+landed (`77d5ad8c`, `36240eed`, `2ec37c47` respectively — all on `main`,
+confirmed present in the current source: `HttpRequestDispatcher.m` has
+`@try`/`@catch` at both previously-unguarded dispatch sites;
+`HttpRouter.m`'s `normalizePath:` resolves `..` segments per RFC 3986
+§5.2.4; `HttpRequest.m` parses `X-Forwarded-For` right-to-left with a
+trusted-proxy check). Only sub-tasks B and C remain — the typed-accessor
+sweep across XRPC route packs and its verification suite.
+
+Sub-task B's helper already exists and needs no new code: `AuthTypedValue`
+(`Garazyk/Sources/Auth/AuthClaimTypeCheck.h`, a static-inline function
+deliberately designed to be shared across static-library archives without
+a link dependency — see its own doc comment) already implements exactly
+the pattern this sub-task calls for, currently used by `AuthCryptoDPoP.m`
+and `Auth/Crypto/JWT.m`. The doc's original text named a
+`Auth/OAuthProviderProtocolUtils/auth_typed_value.{h,m}` path for the
+`ADR 0013` reference implementation; that path doesn't exist (superseded
+by `AuthClaimTypeCheck.h`, likely during workstream 01's own S18
+`OAuthProvider*` deletion). Sub-task B is: extend `AuthTypedValue` usage
+from the auth layer to the ~35 XRPC route packs' own
+`request.jsonBody[@"field"]` reads, per the scope estimate below.
 
 ### Context
 
@@ -2820,7 +2838,7 @@ Procedure per `(route, field)` pair:
 Lands with sub-task B in the same commit; the suite is the gate evidence
 for B's correctness.
 
-#### Sub-task D — `..`-resolution in `normalizePath:` *(§2.2)*
+#### Sub-task D — `..`-resolution in `normalizePath:` *(§2.2, landed 2026-07-29, `36240eed`)*
 
 Fix: extend `HttpRouter.m:143` `normalizePath:` with RFC 3986 §5.2.4
 "Remove Dot Segments" verbatim. Already-handled cases (`%2e%2e` and
@@ -2832,7 +2850,7 @@ Also extend `Http1Parser.m:320` so `%2e%2e%2f` decodes to `../` before
 the router sees it (otherwise the `..` is invisible to
 `normalizePath:`'s char-by-char walk).
 
-#### Sub-task E — rightmost-untrusted `X-Forwarded-For` parsing *(§2.3)*
+#### Sub-task E — rightmost-untrusted `X-Forwarded-For` parsing *(§2.3, landed 2026-07-29, `2ec37c47`)*
 
 Replace left-to-right parse at `HttpRequest.m:115-165` with a
 right-to-left walk:
@@ -2889,15 +2907,19 @@ revert independently of A–B and of each other.
 
 ### Execution phases
 
-Five commits, land order A → B → C → D → E. Sub-task A has landed this
-turn. Sub-tasks B and C are bundled (C is B's verification). Sub-tasks
-D and E land after B/C green-on-main.
+Originally planned as five commits landing A → B → C → D → E. In
+practice A, D, and E landed out of that order (verified 2026-07-29,
+`77d5ad8c`/`36240eed`/`2ec37c47`) while B and C — the largest, most
+time-consuming sub-tasks (60-120 call sites across ~35 route packs) —
+remained open. Only B and C are left; they are still bundled (C is B's
+verification suite) and land together.
 
 Candidate phase-prompt path:
-`docs/plans/prompts/phase-??-http-transport-hardening.md` — once
-sub-task A's evidence is in hand, derive the prompt that walks from
-sub-task B's helper addition through sub-task E's XFF fix in five
-small commits, each under the gate above.
+`docs/plans/prompts/phase-??-http-transport-hardening.md` — derive the
+prompt that walks the sub-task B sweep (using the already-existing
+`AuthTypedValue` helper, `Auth/AuthClaimTypeCheck.h` — no new helper
+code needed) through the sub-task C verification suite, under the gate
+above.
 
 
 
