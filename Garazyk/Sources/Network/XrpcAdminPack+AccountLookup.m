@@ -123,16 +123,15 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *recipientDid = body[@"recipientDid"];
-        NSString *senderDid = body[@"senderDid"];
-        NSString *content = body[@"content"];
-        NSString *subject = body[@"subject"];
+        NSString *recipientDid = [request stringBodyForKey:@"recipientDid"];
+        NSString *senderDid = [request stringBodyForKey:@"senderDid"];
+        NSString *content = [request stringBodyForKey:@"content"];
+        NSString *subject = [request stringBodyForKey:@"subject"];
 
         NSError *didError = nil;
-        if (![recipientDid isKindOfClass:[NSString class]]
-            || ![senderDid isKindOfClass:[NSString class]]
-            || ![content isKindOfClass:[NSString class]]
+        if (!recipientDid
+            || !senderDid
+            || !content
             || content.length == 0
             || ![ATProtoValidator validateDID:recipientDid error:&didError]
             || ![ATProtoValidator validateDID:senderDid error:&didError]) {
@@ -176,9 +175,8 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *accountIdentifier = body[@"account"];
-        NSString *email = body[@"email"];
+        NSString *accountIdentifier = [request stringBodyForKey:@"account"];
+        NSString *email = [request stringBodyForKey:@"email"];
         if (email.length == 0 || !isLikelyEmail(email)) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid email"}];
@@ -238,9 +236,8 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *did = body[@"did"];
-        NSString *handle = body[@"handle"];
+        NSString *did = [request stringBodyForKey:@"did"];
+        NSString *handle = [request stringBodyForKey:@"handle"];
 
         NSError *didError = nil;
         if (![did isKindOfClass:[NSString class]] || ![ATProtoValidator validateDID:did error:&didError]) {
@@ -301,9 +298,8 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
-        NSString *password = body[@"password"];
+        NSString *did = [request stringBodyForKey:@"did"];
+        NSString *password = [request stringBodyForKey:@"password"];
 
         if (did.length == 0 || password.length == 0) {
             response.statusCode = HttpStatusBadRequest;

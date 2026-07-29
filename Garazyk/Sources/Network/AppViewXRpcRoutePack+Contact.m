@@ -13,8 +13,7 @@
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
 
-    NSDictionary *body = request.jsonBody;
-    NSString *phone = body[@"phoneNumber"];
+    NSString *phone = [request stringBodyForKey:@"phoneNumber"];
     if (!phone) {
         response.statusCode = 400;
         [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"phoneNumber is required" }];
@@ -37,9 +36,8 @@
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
 
-    NSDictionary *body = request.jsonBody;
-    NSString *phone = body[@"phoneNumber"];
-    NSString *code = body[@"code"];
+    NSString *phone = [request stringBodyForKey:@"phoneNumber"];
+    NSString *code = [request stringBodyForKey:@"code"];
     if (!phone || !code) {
         response.statusCode = 400;
         [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"phoneNumber and code are required" }];
@@ -62,9 +60,8 @@
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
 
-    NSDictionary *body = request.jsonBody;
-    NSArray *contacts = body[@"contacts"];
-    NSString *token = body[@"token"];
+    NSArray *contacts = [request arrayBodyForKey:@"contacts"];
+    NSString *token = [request stringBodyForKey:@"token"];
     if (!contacts || !token) {
         response.statusCode = 400;
         [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"contacts and token are required" }];
@@ -103,8 +100,7 @@
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
 
-    NSDictionary *body = request.jsonBody;
-    NSString *matchDID = body[@"did"];
+    NSString *matchDID = [request stringBodyForKey:@"did"];
     if (!matchDID) {
         response.statusCode = 400;
         [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"did is required" }];

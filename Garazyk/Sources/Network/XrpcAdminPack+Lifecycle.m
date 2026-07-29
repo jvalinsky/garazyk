@@ -55,17 +55,16 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody;
-        if (!body) {
+        if (!request.jsonBody) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
             return;
         }
 
-        NSDictionary *subject = subjectStatusSubjectFromRequestBody(body);
+        NSDictionary *subject = subjectStatusSubjectFromRequestBody(request.jsonBody);
         NSString *did = subject[@"did"];
         NSString *uri = subject[@"uri"];
-        NSString *reason = body[@"reason"];
+        NSString *reason = [request stringBodyForKey:@"reason"];
 
         if (did.length == 0 && uri.length == 0) {
             response.statusCode = HttpStatusBadRequest;
