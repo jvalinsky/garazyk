@@ -382,6 +382,8 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         claimsVerifier.expectedIssuer = issuer;
         claimsVerifier.expectedAudience = self.expectedAudience;
         claimsVerifier.allowedAlgorithms = @[@"ES256", @"RS256"];
+        claimsVerifier.expectedTokenUse = @"access";
+        claimsVerifier.expectedTyp = @"at+jwt";
         if (![claimsVerifier validateClaims:jwt.payload ofJWT:jwt error:&verifyError]) {
             if (error) *error = verifyError;
             return nil;
