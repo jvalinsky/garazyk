@@ -428,19 +428,15 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 @implementation CBORDecoder
 
 + (CBORValue *)decode:(NSData *)data {
-    // §1.5 item 1: reject trailing data after a complete item.
-    // The inner decoder discards its final offset, so an attacker can append
-    // arbitrary suffix bytes without changing the decoded value but changing
-    // the CID -- CBOR is content-addressed via the byte sequence, so trailing
-    // bytes are a CID-malleability primitive.
-    // Match test: CBORCanonicalFormExploitTests/testTrailingDataAfterCompleteItemIsRejected.
+    // §3.4 option (c): the generic CBOR decoder is lenient; strict canonical-form
+    // enforcement (trailing-data rejection, duplicate-key rejection, non-minimal
+    // length rejection) belongs in ATProtoDagCBOR for content-addressed callers.
     // §1.2 depth cap: passes depth=0 to the internal decoder, which rejects
     // nesting beyond kCBORMaxDecodeDepth.
     // Match test: ParserRecursionExploitTests/testNestingDepthIsBounded.
     NSUInteger offset = 0;
     CBORValue *result = [self decodeInternal:data offset:&offset depth:0];
     if (result == nil) return nil;
-    if (offset != data.length) return nil;
     return result;
 }
 
