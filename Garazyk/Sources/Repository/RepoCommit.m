@@ -6,7 +6,7 @@
 #import "Core/TID.h"
 #import "Repository/CAR.h"
 #import "Repository/STAR.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Debug/GZLogger.h"
 

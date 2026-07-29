@@ -3,7 +3,7 @@
 #import "Auth/TOTPService.h"
 #import "Auth/TOTPGenerator.h"
 #import "Auth/Base32Utils.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/YubiKeyOATH.h"
 #import "Security/PDSSecurityCompare.h"
 

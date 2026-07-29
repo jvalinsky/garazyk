@@ -31,7 +31,7 @@
 #import "Database/PDSRepositoryFactory.h"
 #import "Services/PDS/PDSRelayService.h"
 #import "Auth/JWT.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"

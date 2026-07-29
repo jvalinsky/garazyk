@@ -5,7 +5,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"

@@ -4,7 +4,7 @@
 #import "Sync/Relay/RelayMetrics.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Network/XrpcIdentityHelper.h"
 #import "Core/ATProtoDIDDocumentFields.h"
 #import "PLC/DIDPLCResolver.h"

@@ -7,7 +7,7 @@
 
 #import "Auth/JWT.h"
 #import "Auth/PDSActorKeyManagerProtocol.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 NSString *const PDSSpaceJWTErrorDomain = @"com.garazyk.space.jwt";
 NSString *const PDSSpaceDelegationJWTType = @"atproto-space-delegation+jwt";

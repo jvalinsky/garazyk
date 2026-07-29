@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PLC/PLCAuditor.h"
 #import "PLC/PLCDIDKey.h"
-#import "Auth/Secp256k1.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/Secp256k1.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSKeyProtocol.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoECDSA.h"

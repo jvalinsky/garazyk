@@ -13,8 +13,8 @@
 #import "Debug/GZLogger.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCRotationKeyManager.h"
-#import "Auth/Secp256k1.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/Secp256k1.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import <CommonCrypto/CommonKeyDerivation.h>

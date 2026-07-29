@@ -14,7 +14,7 @@
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Admin/PDSAdminController.h"
 #import "Auth/PDSSecondFactorService.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Core/ATProtoValidator.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"

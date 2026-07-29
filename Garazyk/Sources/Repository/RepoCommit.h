@@ -11,7 +11,7 @@
 #import <Foundation/Foundation.h>
 #import "Core/CID.h"
 #import "Core/TID.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

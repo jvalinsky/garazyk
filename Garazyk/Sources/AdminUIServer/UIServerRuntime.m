@@ -10,7 +10,7 @@
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
 #import "Network/Generated/GZXrpcNSID.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Debug/GZLogger.h"
 #import "AdminUIServer/UIServerRuntime+Private.h"
 #import "AdminUIServer/UITemplateEngine.h"

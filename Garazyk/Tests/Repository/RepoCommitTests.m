@@ -5,7 +5,7 @@
 #import "Core/CBOR.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Auth/PDSAppleKeyManager.h"
 
 @interface RepoCommitTests : XCTestCase

@@ -580,6 +580,7 @@ foreach(target ${PDS_MODULE_TARGETS})
   )
 endforeach()
 
+target_link_libraries(ATProtoCore PUBLIC ${SECP256K1_LIBRARIES})
 target_link_libraries(ATProtoStorage PUBLIC ATProtoCore)
 target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore ${SECP256K1_LIBRARIES} ${COREMEDIA} ${AVFOUNDATION})
 if(OpenSSL_FOUND)

@@ -3,7 +3,7 @@
 #import "Auth/OAuth2Handler+TokenRevocation.h"
 #import "Auth/OAuth2.h"
 #import "Auth/Session.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 

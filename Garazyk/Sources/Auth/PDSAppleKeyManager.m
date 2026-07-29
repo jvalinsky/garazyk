@@ -14,7 +14,7 @@
 
 #import "Auth/PDSAppleKeyManager.h"
 #import "Auth/JWT.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
