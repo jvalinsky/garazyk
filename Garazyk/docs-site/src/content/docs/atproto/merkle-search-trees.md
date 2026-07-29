@@ -1,81 +1,78 @@
 ---
 title: Merkle Search Trees (MST)
-description: Generating cryptographically verifiable data structures natively in Objective-C
+description: Deterministic repository trees and content-addressed blocks
 ---
 
-The absolute core data structure powering the entirety of the AT Protocol is the **Merkle Search
-Tree (MST)**. It is a highly deterministic, perfectly balanced cryptographic tree that gracefully
-acts as a key-value store mapping physical repository paths (e.g. `app.bsky.feed.post/3kabc123`) to
-unforgeable Content Identifiers (CIDs).
+An AT Protocol repository stores record paths in a Merkle Search Tree (MST).
+Each key has the form `<collection>/<record-key>`, and its value is the CID of
+the corresponding record block.
 
-Because absolutely every node explicitly mathematically hashes its own underlying children, the
-single Root CID of the tree powerfully serves as a unified cryptographic summary of the user's
-_entire_ decentralized repository.
+The MST is deterministic: the key bytes determine an entry's tree layer, and
+entries remain ordered by key. Two implementations given the same key-to-CID
+mapping produce the same node blocks and root CID.
 
 ```mermaid
 graph TD
-    A["Root CID: baef... (Hash of B and C)"] --> B["Path Prefix: app.bsky.feed.post"]
-    A --> C["Path Prefix: app.bsky.actor.profile"]
-    B --> D["Leaf Node (CID: bkaf...)"]
-    B --> E["Leaf Node (CID: cdaf...)"]
+    Root["Root node CID"] --> Left["Subtree CID"]
+    Root --> Entry["Record path -> record CID"]
+    Root --> Right["Subtree CID"]
 ```
 
-## IPFS Content Identifiers (CIDs)
+## Content identifiers
 
-ATProto natively integrates profound ideas directly from the **InterPlanetary File System (IPFS)**
-to algorithmically build these mathematical tree pointers. Specifically, every single node pointer
-(edge) in an interconnected MST is definitively a `CID` (Content Identifier).
+A CID identifies bytes rather than a storage location. AT Protocol repository
+blocks normally use:
 
-Unlike traditional web URLs that insecurely point to a physical **location**
-(`https://server.com/image.png`), which might silently change data maliciously tomorrow, a CID
-strictly points to the **content itself**. It is mathematically impossible for the content behind a
-CID to change without the CID itself completely changing.
+- CID version 1
+- the `dag-cbor` multicodec for records, MST nodes, and commits
+- the `sha2-256` multihash
+- base32 when a CID is rendered as text
 
-Every CID deployed in the ATProto PDS is formatted explicitly following the rigid IPFS spec format:
+Blob CIDs use the `raw` multicodec. A CID is immutable by construction: changing
+the encoded bytes changes the digest and therefore the CID.
 
-1. **Multibase Prefix**: Defines the string encoding (e.g. `b` natively represents `base32`).
-2. **CID Version**: Currently ATProto strictly only uses `CIDv1` across the network.
-3. **Multicodec**: Defines exactly what underlying data type the hash points to. ATProto strictly
-   uses `dag-cbor` (Directed Acyclic Graph mapped to Concise Binary Object Representation) for all
-   repository records and `raw` for attached blob binaries.
-4. **Multihash**: The cryptographic algorithm used (e.g., `sha2-256`) and the appended 32-byte hash
-   digest itself.
+MST nodes contain record entries and links to child nodes. Because each link is
+another CID, a change to one record produces new blocks along the path to the
+root. Unchanged subtrees retain their existing CIDs and can be reused.
 
-Because CIDs inherently include the physical SHA-256 hash of their content, they absolutely cannot
-be mutated. If a user maliciously alters a single character in a blog post payload, the CID
-physically changes. Consequently, this violently invalidates the parent nodes in the MST mapping all
-the way recursively up the hierarchy to the singular Root CID.
+## Deterministic layout
 
-## The Objective-C Repository Model
+MST placement is derived from the leading zero pairs in a hash of the key. The
+resulting levels have a probabilistic distribution, but no runtime randomness is
+involved. This gives independent implementations the same layout without storing
+balancing metadata.
 
-Our high-performance server implementation permanently resides under `Garazyk/Sources/Repository/`.
-Because repeatedly calculating deeply nested SHA-256 hashes of CBOR-encoded objects is tremendously
-CPU-intensive, we rigorously optimize our MST implementation directly on the metal natively.
+Node entries use prefix-compressed keys. Nodes serialize to the canonical
+DAG-CBOR shape defined by the AT Protocol repository specification. Encoders
+must preserve the required field and entry order; ordinary JSON serialization is
+not a substitute.
 
-1. **Deterministic CBOR Serialization:** Standard JSON is physically ambiguous (e.g., whitespace
-   variations, dictionary key ordering). We forcefully encode literally all tree nodes into strict
-   DAG-CBOR (Concise Binary Object Representation) to irrevocably ensure absolute bit-for-bit
-   mathematical equivalence across heterogeneous platforms.
-2. **Lightning CID Generation:** The tree engine rapidly hashes the tight CBOR payload using native
-   `CC_SHA256` (Apple's CoreCrypto) or `EVP_sha256` (OpenSSL) and cleanly formats it as a CIDv1
-   multihash entirely in memory without hitting the disk.
-3. **Optimized Database Lookups:** Since aggressively loading an entire 2-million node tree into RAM
-   is completely impossible for massive celebrity repositories, the virtual MST is heavily backed by
-   the physical SQLite `DatabasePool`. We utilize advanced SQL logic to only traverse and pull
-   specifically the exact sub-nodes that are strictly affected by a newly incoming HTTP write
-   operation.
+## Garazyk implementation
 
-## Generating the Replicating CAR File
+`Garazyk/Sources/Repository/MST.*` owns in-memory tree operations, node
+encoding, CID calculation, diffs, and traversal. Persistence code resolves node
+CIDs through a block provider and can load subtrees on demand.
 
-When a remote AppView or a Relay asks to actively "sync" a user repository across the internet
-(often via the `com.atproto.sync.getRepo` endpoint or the real-time websocket Firehose), we
-absolutely do not serialize and blindly send thousands of individual JSON objects in an array.
+Writers use copy-on-write nodes and publish a new root after the mutation is
+complete. Readers capture a root snapshot before walking, so a concurrent
+publication does not change the tree they are traversing.
 
-Instead, the recursive MST engine efficiently yields all "dirty" or requested raw CIDs in a
-localized stream. These raw CBOR blocks are efficiently heavily encoded into a highly compact **CAR
-(Content Addressable aRchives)** streamable binary format.
+The main operations are:
 
-The `Repository` Objective-C module fundamentally, essentially acts as a mathematically pure
-filesystem, where every single data block is addressable entirely by its inherent SHA-256
-cryptographic hash. This phenomenal design makes the sync operation between the PDS and the AppView
-utterly, mathematically verifiable, definitively preventing any man-in-the-middle data forgery.
+- `get:` to resolve a record path
+- `put:valueCID:` to add or replace a record CID
+- `delete:` to remove a path
+- diff and proof traversal for synchronization
+- CAR export for repository transfer
+
+## Commits and CAR files
+
+An MST root is referenced by a signed repository commit. The commit also
+includes the repository DID, revision, and previous commit link. Consumers
+verify the commit signature with the account signing key from the DID document.
+
+A CAR v1 file packages the commit and referenced DAG-CBOR blocks as a
+content-addressed stream. CAR readers must verify that each block's bytes match
+its CID and that the commit points to the expected MST root. A valid container
+alone does not establish repository authenticity; signature and structure checks
+are separate requirements.

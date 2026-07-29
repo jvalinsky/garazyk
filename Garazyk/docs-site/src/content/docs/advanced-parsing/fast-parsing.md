@@ -1,83 +1,71 @@
 ---
-title: Fast Parsing & Chunked Security
-description: Avoiding memory-hogging naive string splits during massive blob uploads
+title: Incremental Chunked-Body Parsing
+description: RFC 9112 framing, fragmented input, and body-size enforcement
 ---
 
-In HTTP/1.1, the `Transfer-Encoding: chunked` header is mandated when a payload is being streamed
-dynamically and the total exact `Content-Length` cannot possibly be known upfront by the connecting
-sender.
+HTTP/1.1 chunked transfer coding lets a sender transmit a body without a
+`Content-Length`. Each chunk starts with a hexadecimal size line, followed by
+that many bytes and a CRLF delimiter. A zero-sized chunk terminates the body.
 
-In the real world of the AT Protocol, this happens constantly. When a user records a video on their
-phone and uploads it to Bluesky via `com.atproto.repo.uploadBlob`, the client streams the data in
-fragmented binary chunks over the network.
-
-A naive implementation of a chunked parser in popular high-level interpreted languages (like Python
-or standard Node.js scripts) typically reads the entire incoming TCP stream into system memory,
-converts it to a massive comprehensive String object, and eagerly splits the entire string
-arbitrarily by `\r\n` tokens to isolate the chunk sizes from the binary data.
-
-**This is a critical, devastating performance bug in a centralized PDS.** Converting a raw 50MB
-binary video chunk into an Objective-C `NSString` will predictably cause massive Automatic Reference
-Counting (ARC) heap memory spikes, eagerly triggering the Linux OOM-killer (Out of Memory) and
-immediately, violently crashing the server under moderate concurrent load.
-
-## Byte-by-Byte Scanning
-
-`Garazyk PDS` combats this elegantly right at the network edge.
-
-The custom `HttpChunkedBodyParser` avoids high-level string reallocation entirely. Instead, it
-operates strictly down on the metal, using native `NSData` by algorithmically scanning raw `uint8_t`
-memory pointers inside the highly optimized `parseChunkSizeFromData:` routine.
-
-```objc
-+ (NSUInteger)parseChunkSizeFromData:(NSData *)data
-                              offset:(NSUInteger)offset
-                                size:(NSUInteger *)size {
-                                
-    // 1. Point a standard C-pointer directly to the raw, un-copied memory buffer
-    const uint8_t *bytes = data.bytes;
-    NSUInteger length = data.length;
-    NSUInteger current = offset;
-    
-    // 2. Scan byte-by-byte looking for the strict HTTP CRLF terminator (\r\n)
-    while (current < length - 1) {
-        if (bytes[current] == '\r' && bytes[current+1] == '\n') {
-            // Terminator found! The preceding bytes represent the chunk size in hex.
-            
-            // 3. Convert ONLY the tiny ASCII hex substring directly to an integer 
-            //    WITHOUT allocating any massive intermediate payload NSString objects.
-            NSString *hexStr = [[NSString alloc] initWithBytes:&bytes[offset]
-                                                        length:current - offset
-                                                      encoding:NSASCIIStringEncoding];
-            
-            NSScanner *scanner = [NSScanner scannerWithString:hexStr];
-            unsigned long long parsedSize = 0;
-            [scanner scanHexLongLong:&parsedSize];
-            
-            // Assign the successfully extracted integer by reference
-            *size = (NSUInteger)parsedSize;
-            
-            // Return the new byte offset pointer directly past the "\r\n"
-            return current + 2; 
-        }
-        current++;
-    }
-    
-    // Incomplete chunk size data in the TCP buffer, return 0 to cleanly wait for more socket bytes
-    return 0;
-}
+```text
+7\r\n
+Mozilla\r\n
+9\r\n
+Developer\r\n
+0\r\n
+\r\n
 ```
 
-### The $O(N)$ Zero-Copy Advantage
+## Parser state
 
-By precisely retaining the `NSData` buffer strictly where the physical C-pointer offset left off in
-the previous TCP stream fragment, the parser maintains an incredibly strict, deterministic $O(N)$
-execution time across thousands of parallel video uploads.
+`HttpChunkedBodyParser` moves through four useful states:
 
-Because we only allocate a tiny `NSString` to parse the tiny hex chunk length (e.g., parsing the
-string `"1F4\r\n"` instead of the 50MB binary blob following it), there are absolutely minimal
-intermediate object allocations.
+1. Read a chunk-size line.
+2. Read the declared chunk bytes and following CRLF.
+3. Read the final delimiter after the zero-sized chunk.
+4. Mark the body complete.
 
-This strict architectural guarantee dictates that a giant multi-gigabyte blob stream uploaded from a
-malicious client results in completely flat, zero-growth heap metrics on the server software,
-flawlessly ensuring stable memory metrics across heavy federation traffic periods.
+`appendData:error:` accepts arbitrary network fragments. A size line, payload,
+or delimiter can be split across calls. The parser returns the number of input
+bytes it consumed and leaves its state ready for the next fragment.
+
+## Validation
+
+The parser:
+
+- caps a chunk-size line at 256 bytes
+- accepts hexadecimal sizes and ignores chunk extensions
+- checks the CRLF after each chunk
+- rejects a chunk whose cumulative decoded size exceeds `maxSize`
+- returns a structured error for malformed framing
+
+The default maximum decoded body size is 50 MiB. Passing zero to
+`initWithMaxSize:` disables that parser limit and should be reserved for a
+caller that imposes an equivalent bound elsewhere.
+
+## Memory behavior
+
+Incremental parsing avoids converting binary payloads into one large string or
+rescanning all prior input after every read. The current implementation still
+appends decoded bytes to `NSMutableData` and returns a complete `NSData` body.
+Its memory use therefore grows with the accepted body size.
+
+Use `HttpStreamingBody` for routes that need to spill large content to a
+temporary file. Do not describe `HttpChunkedBodyParser` as zero-copy or
+constant-memory until its output contract changes.
+
+## Test cases
+
+Chunked-parser tests should cover:
+
+- every split point in the size line and CRLF delimiters
+- chunk extensions
+- a zero-length body
+- invalid hex digits and missing delimiters
+- cumulative size overflow
+- extra bytes after the completed body
+- reset and reuse
+
+The parser should be tested independently of the socket layer, then exercised
+through HTTP integration tests to confirm status-code and connection-close
+behavior.
