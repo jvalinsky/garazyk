@@ -2283,12 +2283,33 @@ Each slice is self-contained:
 
 ## S18. Auth-verifier protocol extraction (gating the dead-`OAuthProvider*` file-level delete)
 
-**Status: future-work, not started (2026-07-28).** Records the
-protocol-extraction refactor that §4.5's file-level delete (see
-`docs/plans/security-review-2026-07-28.md:608`) would otherwise break, so the
-next audit does not re-attempt the delete directly. Cross-link to S8 slice 7
-("Wire the auth cluster") and ADR 0015 — the same three components and the
-same auth-path architecture are involved.
+**Status: complete (2026-07-29).** Landed in two commits per this section's
+own sequencing recommendation: `1013aa88` (steps 1-4, the protocol
+extraction) and `d47443f5` (step 5, the §4.5 delete). All gate checks in
+this section pass: `OAuthProviderProtocols` has zero remaining consumers,
+`AuthVerifier.m:22` imports the new `AuthVerifierProtocols.h`, `AllTests`
+builds clean, `AuthVerifierParityTests` (9/9) and `ATProtoDagCBOREdgeCaseTests`
+(24/24, the §1.5 sibling gate) pass, and `git status` after step 5 showed
+only `Auth/OAuthProvider/`, `Auth/PDS/PDSAuth.[hm]`, and
+`Garazyk/Tests/Auth/OAuthProviderTests.m` as deletions/changes.
+
+One extension beyond this section's original step 5, needed for
+correctness rather than scope creep: the four other PDSAuth adapters
+(`PDSAuthStorage`, `PDSAuthClientRegistry`, `PDSAuthTokenSigner`,
+`PDSAuthUserAuthenticator`) conform to the other six OAuthProvider-only
+protocols this section didn't move, so deleting
+`OAuthProviderProtocols.h` as this section specifies would have left
+those four uncompilable. Verified all four have zero construction sites
+anywhere outside `PDSAuth.h`/`.m` (same dead-adapter-stack pattern as
+`PDSAuthClientRegistry`, which this section already knew about) and
+deleted them alongside it. `PDSAccountPolicy`, the one live
+`AccountPolicy` conformer, is untouched. Full `AllTests --gated=run`:
+4855 tests (4885 minus the 30 deleted `OAuthProviderTests` methods), 6
+failures, all pre-existing and unrelated (same set as before this
+change: DPoP nonce challenge, CommitChain/Firehose CAR,
+X-Forwarded-For proxy parsing).
+
+Original planning text kept below for the archaeology it recorded.
 
 ### Why §4.5 needs this refactor first
 
