@@ -73,9 +73,15 @@ typedef NS_ENUM(NSInteger, PDSDatabasePoolError) {
 /*! Gets or creates an actor store for a DID. */
 - (nullable PDSActorStore *)storeForDid:(NSString *)did error:(NSError **)error;
 
-/*! Executes a write transaction for a DID. */
-- (void)transactWithDid:(NSString *)did 
-                  block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block 
+/**
+ * @abstract Executes a write transaction for a DID.
+ * @param did The actor DID whose store owns the transaction.
+ * @param block The transaction body. Assigning its error pointer rolls back the transaction.
+ * @param error Receives store setup, block, rollback, or commit failures.
+ * @return YES when the transaction commits; otherwise NO.
+ */
+- (BOOL)transactWithDid:(NSString *)did
+                  block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                   error:(NSError **)error;
 
 /*! Executes a read-only transaction for a DID. */
