@@ -355,16 +355,17 @@ static void * const kDatabasePoolQueueKey = (void *)&kDatabasePoolQueueKey;
 
 #pragma mark - Transaction Support
 
-- (void)transactWithDid:(NSString *)did 
-                  block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block 
+- (BOOL)transactWithDid:(NSString *)did
+                  block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                   error:(NSError **)error {
     PDSActorStore *store = [self storeForDid:did retainForUse:YES error:error];
     if (!store) {
-        return;
+        return NO;
     }
-    
-    [store transactWithBlock:block error:error];
+
+    BOOL success = [store transactWithBlock:block error:error];
     [self releaseStoreUseForDid:did store:store];
+    return success;
 }
 
 - (void)readWithDid:(NSString *)did 

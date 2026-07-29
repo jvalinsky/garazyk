@@ -305,8 +305,13 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Closes the database. */
 - (void)close;
 
-/*! Executes a write transaction. */
-- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block 
+/**
+ * @abstract Executes a write transaction.
+ * @param block The transaction body. Assigning its error pointer rolls back the transaction.
+ * @param error Receives setup, block, rollback, or commit failures.
+ * @return YES when the transaction commits; otherwise NO.
+ */
+- (BOOL)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                     error:(NSError **)error;
 
 /*! Executes a read-only transaction. */
