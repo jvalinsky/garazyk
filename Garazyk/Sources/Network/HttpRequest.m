@@ -127,15 +127,24 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
     // Honor proxy headers only when explicitly enabled and the immediate peer
     // is trusted.
     if (trustedProxySource) {
+      // §2.3: Parse X-Forwarded-For from right to left, skipping entries
+      // that are trusted proxy addresses (loopback, RFC1918). A well-behaved
+      // proxy APPENDS the preceding hop's IP on the right, so the leftmost
+      // entry is the most client-controlled — and therefore untrustworthy.
+      // The rightmost non-trusted entry is the real client IP.
       NSString *forwardedFor = _headers[@"x-forwarded-for"];
       if (forwardedFor.length > 0) {
         NSArray<NSString *> *ips =
             [forwardedFor componentsSeparatedByString:@","];
-        NSString *first = [ips.firstObject
-            stringByTrimmingCharactersInSet:[NSCharacterSet
-                                                whitespaceCharacterSet]];
-        if (first.length > 0) {
-          _remoteAddress = [first copy];
+        for (NSInteger i = (NSInteger)ips.count - 1; i >= 0; i--) {
+          NSString *ip = [ips[i]
+              stringByTrimmingCharactersInSet:[NSCharacterSet
+                                                  whitespaceCharacterSet]];
+          if (ip.length > 0 &&
+              !PDSHttpRequestIsTrustedProxyAddress(ip)) {
+            _remoteAddress = [ip copy];
+            break;
+          }
         }
       }
       if (!_remoteAddress && _headers[@"x-real-ip"]) {
