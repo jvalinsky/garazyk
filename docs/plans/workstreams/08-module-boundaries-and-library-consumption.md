@@ -185,11 +185,33 @@ this class (`ATProtoStorage` and `ATProtoTransport` each depended on it
 transitively via Services). Baseline ratcheted 51 → 49. Full
 `AllTests --gated=run` verified identical (pre-existing) failure profile.
 
+**`MediaCore -> Services` (`PDSBlobProvider`) resolved** (`ad641b25`).
+The protocol itself (`Blob/PDSBlobProvider.h`) needed no move — it was
+already Foundation-only, and protocols don't produce `_OBJC_CLASS_$_`
+symbols so the nm-based detector was never actually flagging the
+protocol. The real leak was `ATProtoMediaServiceRuntime` (MediaCore)
+directly instantiating the concrete `PDSCloudStorageBlobProvider`/
+`PDSDiskBlobProvider` classes (Services) based on `config.s3Bucket`,
+despite only ever using the result through the protocol. Moved that
+backend-selection logic to `Garazyk/Binaries/jelcz/main.m` — the only
+production consumer of this runtime, and a binary that already links
+`ATProtoServices` — and changed the initializer to
+`initWithConfiguration:processor:blobProvider:`, taking the
+already-constructed `id<PDSBlobProvider>`. A pre-existing test fake
+(`RuntimeTestBlobProvider`, defined but never actually used) got wired
+in as a side effect. Baseline ratcheted 49 → 47. Full
+`AllTests --gated=run` verified identical (pre-existing) failure
+profile — after tracing down one false alarm along the way: a stale
+`jelcz` binary left over from an unrelated debugging step (rebuilding
+the `jelcz` target specifically while the tree was `git stash`ed, which
+never got relinked against the real fix afterward since `AllTests`
+doesn't depend on the sibling `jelcz` executable target) — confirmed via
+direct manual runs of the binary, not just the test harness, before
+concluding the actual code change was correct.
+
 **Remaining M4 items, not yet started** (see the original scope below
 for the full list and per-item leak counts as originally estimated —
 not re-verified against the corrected baseline):
-- `Video -> Services`, `MediaCore -> Services`, `XRPC -> Video`:
-  `PDSBlobProvider` protocol relocation to Core.
 - `Transport -> Storage`: inject a storage protocol into `RateLimiter`
   and the two route packs that import `PDSDatabase.h` directly.
 - `Transport -> Runtime`: invert route-pack registration so `App/`
