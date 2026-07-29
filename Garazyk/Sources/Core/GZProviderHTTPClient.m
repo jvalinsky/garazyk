@@ -9,7 +9,7 @@
  */
 
 #import "Core/GZProviderHTTPClient.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "Debug/GZLogger.h"
 
 // Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
@@ -44,7 +44,7 @@ NSString *const GZProviderHTTPClientErrorDomain = @"com.atproto.pds.providerhttp
         _authHeader = [authHeader copy];
         _timeoutInterval = 30.0;
         _maxRetries = 3;
-        _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
+        _safeHTTPClient = [GZHTTPClientRegistry sharedClient];
     }
     return self;
 }
@@ -190,11 +190,11 @@ NSString *const GZProviderHTTPClientErrorDomain = @"com.atproto.pds.providerhttp
 
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-        [self.safeHTTPClient performSafeDataTaskWithRequest:request
-                                                    options:[ATProtoSafeHTTPClientOptions defaultOptions]
-                                                completion:^(NSData * _Nullable data,
-                                                             NSURLResponse * _Nullable response,
-                                                             NSError * _Nullable taskError) {
+        [self.safeHTTPClient performDataTaskWithRequest:request
+                                                 timeout:0
+                                              completion:^(NSData * _Nullable data,
+                                                           NSURLResponse * _Nullable response,
+                                                           NSError * _Nullable taskError) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
 
             if (taskError) {

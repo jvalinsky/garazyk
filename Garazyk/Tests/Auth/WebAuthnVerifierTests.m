@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Auth/WebAuthnVerifier.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

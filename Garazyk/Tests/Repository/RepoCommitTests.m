@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Repository/RepoCommit.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
 #import "Auth/Secp256k1.h"

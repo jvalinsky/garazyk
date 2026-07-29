@@ -12,7 +12,7 @@
  @copyright Copyright (c) 2024 Jack Valinsky
  */
 
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import <Security/Security.h>
 
 /// Maximum nesting depth for CBOR decoder recursion.

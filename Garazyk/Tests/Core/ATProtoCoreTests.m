@@ -5,7 +5,7 @@
 #import "Core/CID.h"
 #import "Core/TID.h"
 #import "Core/DID.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Repository/MST.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"

@@ -9,13 +9,9 @@
 # the regression.
 ATProtoCore:ATProtoSafeHTTPClient (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:ATProtoSafeHTTPClientOptions (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoCore)
-ATProtoCore:CBORDecoder (defined in ATProtoStorage, not a declared PUBLIC dependency of ATProtoCore)
-ATProtoCore:CBOREncoder (defined in ATProtoStorage, not a declared PUBLIC dependency of ATProtoCore)
-ATProtoCore:CBORValue (defined in ATProtoStorage, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:CryptoUtils (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:JWT (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:JWTVerifier (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
-ATProtoCore:MST (defined in ATProtoStorage, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:PDSReplayCache (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoCore:Secp256k1 (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoCore)
 ATProtoMediaCore:PDSCloudStorageBlobProvider (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoMediaCore)

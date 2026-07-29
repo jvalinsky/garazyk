@@ -12,7 +12,7 @@
 #import "Repository/CAR.h"
 #import "Repository/STAR.h"
 #import "Repository/MST.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
