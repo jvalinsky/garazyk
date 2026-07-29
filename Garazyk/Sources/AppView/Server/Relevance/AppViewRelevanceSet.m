@@ -87,8 +87,6 @@
 }
 
 - (void)expandFromFollowsOf:(NSString *)did {
-    // Expansion is driven by the graph indexer when it processes follow records.
-    // This method is a hook for on-demand expansion from the query path.
     GZ_LOG_DEBUG(@"[AppViewRelevanceSet] expandFromFollowsOf: %@", did);
 }
 

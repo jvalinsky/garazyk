@@ -43,6 +43,170 @@ Nothing below is speculative. Findings the audit could not substantiate were dro
 
 ---
 
+## Status revision 2 — 2026-07-29 (supersedes revision 1 below)
+
+Re-reviewed after 8 security commits (`f093c806`..`36240eed`). Build green
+(`BUILD_RC=0`). Targeted suites re-run.
+
+### P0 (new) — the §4.1/§4.3 auth commits broke the refresh flow
+
+Full run: **4662 tests, 8 failures** (baseline run earlier the same day: 4660 / 9).
+Two failures are **new regressions**, confirmed by diffing against that baseline —
+neither appears in the earlier failure list:
+
+- `NetworkSecurityHardeningTests/testRefreshTokenRotation`
+  (`SecurityHardeningTests.m:172`) — *"New refresh token should work"*: got **401**,
+  expected 200. **Refreshing a session is broken outright.**
+- `PDSAccountServiceTests/testRefreshAccessToken_RotatesRefreshToken`
+  (`PDSAccountServiceTests.m:315`) — *"Old refresh token should be revoked after
+  rotation"*: the old token still resolves to an account. **This is the exact
+  property §4.3 was added to guarantee.**
+
+**Mechanism.** There are two coexisting refresh-token schemes:
+
+1. **JWT refresh tokens** — `mintRefreshTokenForDID:` (`JWT.m:784`) correctly sets
+   `payload.token_use = @"refresh"` (`:795`) and `header.typ = @"refresh+jwt"` (`:802`).
+2. **Opaque UUID refresh tokens** — the live session flow at
+   `PDSAccountService.m:713` mints `[[NSUUID UUID] UUIDString]`. Not a JWT: no
+   header, no claims, no signature.
+
+§4.1 added `expectedTokenUse` / `expectedTyp` enforcement to `verifyRefreshToken:`,
+which parses the token as a JWT. Against an opaque UUID that cannot succeed — hence
+the 401. Three further legacy mint paths (`JWT.m:572`, `:602`, `:671`) stamp the
+generic `typ = @"JWT"` with no `token_use`, so any token from those paths fails the
+new check too.
+
+This is a half-migration: the **verifier** was hardened without migrating every
+**minting** path, and without noticing that the live PDS session flow does not use
+JWTs for refresh at all.
+
+**Decide before fixing** — this is a design question, not a typo:
+- **(a)** Keep opaque UUID refresh tokens and make `verifyRefreshToken:` recognise
+  them (DB lookup + family/tombstone check), applying §4.1's JWT checks only to the
+  JWT scheme. Smaller change; keeps two schemes.
+- **(b)** Migrate the session flow to JWT refresh tokens from `mintRefreshTokenForDID:`.
+  One scheme, §4.1 applies uniformly — but it changes token format and needs a
+  migration for tokens already issued.
+
+The second failure (old token not revoked) sits in the rotation branch at
+`PDSAccountService.m:690`, where tokens without `family_id` fall back to
+"legacy DELETE-based rotation. No reuse detection available." Confirm whether the
+tombstone path and the legacy path are both actually revoking, and whether the
+account row and the session row are updated in the same store — the account lookup
+by `refresh_jwt` (`PDSDatabase+Accounts.m:157`) is what the test observes.
+
+**This outranks the STAR fixture below.** A broken refresh flow is user-facing, and
+a rotation that no longer revokes is a security regression in the feature that was
+just added to prevent exactly that.
+
+### Correction: §R1 was NOT a product regression — do not weaken the decoder
+
+Revision 1 called the STAR failures a P0 regression and recommended removing the
+trailing-data check from `Repository/CBOR.m`. **That recommendation was wrong and
+must not be actioned** — it would re-open a genuine CID-malleability hole to
+satisfy a broken test fixture.
+
+Root cause, traced end to end:
+
+- `STARPreorderTests.m:83` `testRecordDataForKey:` synthesizes record bytes as
+  `0xA1` followed by the raw UTF-8 key. `0xA1` is a CBOR `map(1)` header, and
+  what follows is not CBOR. **This fixture data was never valid CBOR.**
+- `STARPreorderTests.m:147` `classifyChunk:` calls `[CBORValue decode:chunk]` and
+  labels anything that fails to decode as a map `"other"`.
+- All four failures route through `classifyChunk:` — `:332`/`:336`, `:492`
+  (via `reader.blocks`), and `:674`.
+- The old lenient decoder parsed the `map(1)` prefix and **silently ignored the
+  trailing bytes**, so the fixture classified as `"record"`. The trailing-data
+  check now correctly rejects it, so it classifies as `"other"` and
+  `recordCount` is 0.
+
+Node counts are unaffected (5 nodes, as expected) because real MST nodes *are*
+valid CBOR. Only the synthetic records fail — which is precisely the signature of
+a fixture problem rather than a product one.
+
+**Correct fix:** make `testRecordDataForKey:` emit a valid canonical CBOR map
+(e.g. `{"k": "<key>"}`) and let the CIDs follow from those bytes. Product code is
+correct as written. This is a test-only change.
+
+### Closed since revision 1 (verified by running the tests)
+
+| Item | Evidence |
+|---|---|
+| §1.1 bounds wrap | `CARParserExploitTests` **2/2 green** |
+| §1.2 depth cap | `ParserRecursionExploitTests` **1/1 green, exit 0** (was SIGSEGV/139) |
+| §3.1 type-7 desync | covered in `CBORParserExploitTests` |
+| §3.3 negative integers | `CBORParserExploitTests` **6/6 green** — now includes an INT64_MIN encoder round-trip case |
+| §3.4 canonical form + §S19 routing | landed in `ATProtoDagCBOR`; `ATProtoCBORSerialization` routes via `initWithContentAddressed:` |
+| §4.1 token_use / typ | wired on the local path (`PDSAuth.m`, `AuthVerifier.m:295-296`); `verifyRefreshToken:` no longer delegates to `verifyAccessToken:`, closing the bidirectional confusion |
+| §4.3 refresh reuse detection | family-id + tombstone + migration |
+| §2.2 path normalization | `normalizePath:` now resolves `..` with a segment stack and drops above-root traversal |
+| §8 vacuous test | `XCTAssertTrue(YES)` replaced with real depth assertions |
+
+### Open — revised priorities
+
+**P0 — STAR test fixture** (above). Test-only; unblocks a fully green suite.
+
+**P1 — §R2 still stands.** `CBORCanonicalFormExploitTests` remains 2 failures
+(duplicate keys, non-minimal ints) asserting against `Repository/CBOR.m`. Under
+the §3.4 decision that decoder stays generic; the property is owned by
+`ATProtoDagCBOR` and covered in `ATProtoDagCBOREdgeCaseTests`. Delete the two,
+with the reason in the commit message. The §R1 correction makes this more urgent,
+not less: leaving red tests that *look* like they demand a stricter `CBOR.m` is
+exactly how the wrong fix gets applied.
+
+**P2 — §4.1 and §4.4 on the remote-issuer branch (one function, ~5 lines).**
+The token_use check lives in `validateClaims:` (`JWT.m:501`) and is **opt-in** —
+`if (self.expectedTokenUse)`, nil skips it. `AuthVerifier.m:289-296` (local
+issuer) sets it correctly. `AuthVerifier.m:369-373` (remote issuer) builds
+`claimsVerifier` with issuer/audience/algorithms but **not**
+`expectedTokenUse`/`expectedTyp`, so a remote-issued refresh token is still
+accepted as an access token. The same three lines also still assign
+`allowedAlgorithms` and then call `validateClaims:`, which never reads
+`jwt.header.alg` — §4.4 is unchanged. Fix both together.
+
+**P3 — §2.1 part 2 sweep is ~7% done.** The mechanism landed
+(`stringBodyForKey:` / `numberBodyForKey:` / `arrayBodyForKey:`, `HttpRequest.h`)
+and the proven `requestCrawl` crash is fixed. But adoption is **12 call sites
+across 3 pack files**, while **171** raw `NSString *x = body[@"..."]` sites remain
+under `Sources/Network/`. Not all are exploitable — the hazard is where the value
+is later sent `-length`, `-hasPrefix:`, or similar. Triage on that basis rather
+than sweeping blindly.
+
+### New findings from this pass
+
+**N1 — `encodeCount:` truncates above 2³² (low).** `CBOR.m` `encodeCount:` has
+branches for additional-info 24/25/26 but **no 27 (8-byte) branch**; the `else`
+casts an `NSUInteger` count through `(uint32_t)`. A byte string or array of
+≥ 4 GiB would encode a silently wrong length. Not remotely reachable under the
+50 MB body cap, and encoders are not attacker-driven — but it is a correctness
+landmine, and it means the encoder cannot represent what the decoder now accepts.
+
+**N2 — S19 is strict on decode, lenient on encode (design note).**
+`encodeDataWithJSONObject:` routes through `[CBOREncoder encode:]` *regardless*
+of `isContentAddressed`; only the decode path branches to `ATProtoDagCBOR`.
+`CBOREncoder` does sort map keys length-first then bytewise (correct DAG-CBOR
+ordering) and does emit minimal integers, and `CorePrimitivesTests:373-399`
+round-trips encode→decode with `contentAddressed:YES` — so this is not currently
+broken. But the asymmetry means any future encoder divergence surfaces as a
+round-trip failure rather than at the point of the mistake. Worth either routing
+encode through `ATProtoDagCBOR` too, or documenting the invariant with a
+property test.
+
+**N3 — `setUsage:` contradicts documented immutability.** The header calls the
+flag "immutable for the lifetime of the instance" but ships a public setter whose
+misuse is only a DEBUG warning. If any instance is ever shared or cached, one
+caller can flip another's decode strictness. Prefer deleting the setter now,
+while adoption is still small.
+
+### Unchanged
+
+§4.2 (DPoP `ath`), §4.6 (`htu` from Host), §5 (data layer: blob ownership,
+`stringValue` crash, unclamped limit, LIKE ESCAPE), §6 (blob CRLF, handle
+resolver), §7 (PLC, MST/commit integrity, Registration, AdminUI, Email,
+MediaCore/Video, password KDF) are all untouched since the original audit.
+
+---
+
 ## Status revision — 2026-07-29
 
 Re-verified against a clean build (`BUILD_RC=0`) and a full default run:
