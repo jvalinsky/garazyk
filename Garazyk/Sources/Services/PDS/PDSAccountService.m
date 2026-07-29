@@ -32,6 +32,13 @@
 #define kCCSuccess 0
 #endif
 
+// §4.3: grace period for refresh-token rotation. Matches the reference
+// AT Protocol PDS (packages/pds/src/account-manager/account-manager.ts),
+// which shortens a rotated-away token's expiry to this window instead of
+// deleting it, so a client racing a dropped response can replay it and
+// idempotently receive the same successor rather than being logged out.
+static const NSTimeInterval kRefreshTokenGracePeriodSeconds = 2 * 60 * 60;
+
 static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     if (!a || !b) {
         return a == b;
@@ -241,6 +248,82 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     return [self mintAccessTokenForDID:did handle:handle sessionID:nil error:error];
 }
 
+- (nullable NSString *)mintRefreshTokenStringForDID:(NSString *)did
+                                              handle:(NSString *)handle
+                                               error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing DID for token minting"}];
+        }
+        return nil;
+    }
+    if (!handle) {
+        handle = @"";
+    }
+    NSError *primaryMintError = nil;
+    if (self.minter) {
+        JWT *jwt = [self.minter mintRefreshTokenForDID:did
+                                                 handle:handle
+                                                 scopes:@[@"atproto"]
+                                                  error:&primaryMintError];
+        NSString *encoded = [jwt encodedToken];
+        if (encoded.length > 0) {
+            return encoded;
+        }
+        if (primaryMintError) {
+            GZ_LOG_ERROR(@"Primary refresh JWT mint failed for DID %@: %@", did,
+                          primaryMintError.localizedDescription ?: @"unknown");
+        }
+    }
+
+    // Fallback for test/sandbox environments where keychain-backed signing can fail.
+    NSError *fallbackKeyError = nil;
+    Secp256k1KeyPair *fallbackKeyPair =
+        [[Secp256k1 shared] generateKeyPairWithError:&fallbackKeyError];
+    if (!fallbackKeyPair) {
+        if (error) {
+            *error = primaryMintError ?: fallbackKeyError
+                ?: [NSError errorWithDomain:@"com.atproto.server"
+                                       code:1
+                                   userInfo:@{
+                                     NSLocalizedDescriptionKey :
+                                         @"JWT minter unavailable"
+                                   }];
+        }
+        return nil;
+    }
+
+    JWTMinter *fallbackMinter = [[JWTMinter alloc] init];
+    NSString *issuer = self.minter.issuer.length > 0 ? self.minter.issuer : @"http://localhost";
+    fallbackMinter.issuer = issuer;
+    fallbackMinter.audience = self.minter.audience.length > 0 ? self.minter.audience : issuer;
+    fallbackMinter.signingAlgorithm = @"ES256K";
+    fallbackMinter.keyManager = nil;
+    fallbackMinter.privateKey = fallbackKeyPair.privateKey;
+    fallbackMinter.publicKey = fallbackKeyPair.publicKey;
+
+    NSError *fallbackMintError = nil;
+    JWT *fallbackJWT = [fallbackMinter mintRefreshTokenForDID:did
+                                                        handle:handle
+                                                        scopes:@[@"atproto"]
+                                                         error:&fallbackMintError];
+    NSString *fallbackToken = [fallbackJWT encodedToken];
+    if (fallbackToken.length > 0) {
+        return fallbackToken;
+    }
+
+    if (error) {
+        *error = fallbackMintError ?: primaryMintError
+            ?: [NSError errorWithDomain:@"com.atproto.server"
+                                   code:1
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey : @"JWT minter unavailable"
+                               }];
+    }
+    return nil;
+}
+
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
                                         password:(NSString *)password
                                          handle:(NSString *)handle
@@ -350,16 +433,26 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
              GZ_LOG_ERROR(@"Failed to get store for DID %@ to import key: %@", resolvedDid, storeError);
         }
     }
-    NSString *refreshToken = [[NSUUID UUID] UUIDString];
+    NSError *refreshMintError = nil;
+    NSString *refreshToken = [self mintRefreshTokenStringForDID:resolvedDid handle:handle error:&refreshMintError];
+    if (!refreshToken) {
+        if (error) {
+            *error = refreshMintError ?: [NSError errorWithDomain:@"com.atproto.server"
+                                                               code:1
+                                                           userInfo:@{
+                                                             NSLocalizedDescriptionKey :
+                                                                 @"JWT minter unavailable"
+                                                           }];
+        }
+        return nil;
+    }
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    // §4.3: store with family_id for reuse detection on future rotation.
-    NSString *familyId = [[NSUUID UUID] UUIDString];
     if (self.serviceDatabases) {
         [self.serviceDatabases storeRefreshToken:refreshToken sessionID:sessionID
-                                   forAccountDid:resolvedDid familyId:familyId error:nil];
+                                   forAccountDid:resolvedDid error:nil];
     } else {
         [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID
                                forAccountDid:resolvedDid error:nil];
@@ -496,16 +589,26 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         }
         return nil;
     }
-    NSString *refreshToken = [[NSUUID UUID] UUIDString];
+    NSError *refreshMintError = nil;
+    NSString *refreshToken = [self mintRefreshTokenStringForDID:account.did handle:account.handle error:&refreshMintError];
+    if (!refreshToken) {
+        if (error) {
+            *error = refreshMintError ?: [NSError errorWithDomain:@"com.atproto.server"
+                                                               code:1
+                                                           userInfo:@{
+                                                             NSLocalizedDescriptionKey :
+                                                                 @"JWT minter unavailable"
+                                                           }];
+        }
+        return nil;
+    }
 
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    // §4.3: store with family_id for reuse detection on future rotation.
-    NSString *familyId = [[NSUUID UUID] UUIDString];
     if (self.serviceDatabases) {
         [self.serviceDatabases storeRefreshToken:refreshToken sessionID:sessionID
-                                   forAccountDid:account.did familyId:familyId error:nil];
+                                   forAccountDid:account.did error:nil];
     } else {
         [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID
                                forAccountDid:account.did error:nil];
@@ -633,12 +736,46 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken
                                        error:(NSError **)error {
 
+    // §4.1: refresh tokens are now minted as JWTs (mintRefreshTokenForDID:);
+    // verify shape, signature, and claims before trusting the token at all.
+    JWT *jwt = [JWT jwtWithToken:refreshToken error:nil];
+    if (!jwt) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                       message:@"Invalid refresh token"];
+        }
+        return nil;
+    }
+    if (self.minter) {
+        JWTVerifier *verifier = [[JWTVerifier alloc] init];
+        verifier.keyManager = self.minter.keyManager;
+        verifier.publicKey = self.minter.publicKey;
+        verifier.expectedIssuer = self.minter.issuer;
+        verifier.expectedAudience = self.minter.audience;
+        verifier.allowedAlgorithms = self.minter.signingAlgorithm.length > 0
+            ? @[self.minter.signingAlgorithm]
+            : @[@"ES256K", @"ES256"];
+        verifier.expectedTokenUse = @"refresh";
+        verifier.expectedTyp = @"refresh+jwt";
+        NSError *verifyError = nil;
+        if (![verifier verifyJWT:jwt error:&verifyError]) {
+            if (error) {
+                *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                           message:@"Invalid refresh token"];
+            }
+            return nil;
+        }
+    }
+
     NSError *dbError = nil;
     NSDictionary *sessionInfo = [_sessionRepository sessionInfoForRefreshToken:refreshToken error:&dbError];
     NSString *did = sessionInfo[@"account_did"];
     NSString *sessionID = sessionInfo[@"session_id"];
-    NSString *familyId = sessionInfo[@"family_id"];
-    
+    NSString *nextToken = sessionInfo[@"next_token"];
+    if (nextToken == (id)[NSNull null]) {
+        nextToken = nil;
+    }
+
     PDSDatabaseAccount *account = nil;
     if (did) {
         account = [_accountRepository accountForDid:did error:&dbError];
@@ -652,44 +789,40 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         return nil;
     }
 
-    // §4.3: family-aware rotation. Only applies when the token has a family_id
-    // (tokens created before the V18 migration have empty family_id and are
-    // rotated through the legacy DELETE path).
-    if (familyId.length > 0 && self.serviceDatabases) {
-        // Step 1: check the sessionInfo's rotated_at field. If this token was
-        // already marked as rotated by a prior rotation, a stale copy was
-        // presented — tombstone the entire family.
-        id rotatedAt = sessionInfo[@"rotated_at"];
-        if (rotatedAt != nil && rotatedAt != [NSNull null]) {
-            GZ_LOG_AUTH_WARN(@"Refresh token reuse detected for family %@ (already rotated)", familyId);
-            [self.serviceDatabases tombstoneRefreshTokenFamily:familyId error:nil];
-            if (error) {
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
-                                           message:@"Session invalidated due to token reuse"];
-            }
-            return nil;
-        }
-
-        // Step 2: check family tombstone (a prior reuse detection marked this
-        // entire token family as compromised).
-        if ([self.serviceDatabases isRefreshTokenFamilyTombstoned:familyId error:nil]) {
-            GZ_LOG_AUTH_WARN(@"Refresh token reuse detected for family %@ (tombstoned)", familyId);
-            if (error) {
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
-                                           message:@"Session invalidated due to token reuse"];
-            }
-            return nil;
-        }
-
-        // Step 3: atomically mark this token as rotated. The UPDATE is
-        // guarded by WHERE rotated_at IS NULL so it's a no-op on a
-        // concurrent set; the SELECT-based checks at steps 1-2 already
-        // handled the stale-token case.
-        [self.serviceDatabases rotateRefreshToken:refreshToken error:nil];
+    NSString *newRefreshToken;
+    if (nextToken.length > 0 && self.serviceDatabases) {
+        // §4.3: in-grace-period replay. This token was already rotated once;
+        // reissue the same successor idempotently (handles a client racing a
+        // dropped response) instead of minting another one.
+        newRefreshToken = nextToken;
     } else {
-        // Legacy path: tokens without family_id (pre-migration) use the old
-        // DELETE-based rotation. No reuse detection available.
-        [_sessionRepository revokeRefreshToken:refreshToken error:nil];
+        NSError *refreshMintError = nil;
+        newRefreshToken = [self mintRefreshTokenStringForDID:account.did handle:account.handle error:&refreshMintError];
+        if (!newRefreshToken) {
+            if (error) {
+                *error = refreshMintError ?: [NSError errorWithDomain:@"com.atproto.server"
+                                                                   code:1
+                                                               userInfo:@{
+                                                                 NSLocalizedDescriptionKey :
+                                                                     @"JWT minter unavailable"
+                                                               }];
+            }
+            return nil;
+        }
+
+        if (self.serviceDatabases) {
+            double originalExpiresAt = [sessionInfo[@"expires_at"] doubleValue];
+            double graceDeadline = [[NSDate date] timeIntervalSince1970] + kRefreshTokenGracePeriodSeconds;
+            NSDate *graceExpiresAt = [NSDate dateWithTimeIntervalSince1970:MIN(originalExpiresAt, graceDeadline)];
+            [self.serviceDatabases markRefreshTokenRotated:refreshToken nextToken:newRefreshToken graceExpiresAt:graceExpiresAt error:nil];
+            [self.serviceDatabases storeRefreshToken:newRefreshToken sessionID:sessionID
+                                       forAccountDid:account.did error:nil];
+        } else {
+            // Legacy path: no serviceDatabases wired up, no grace period available.
+            [_sessionRepository revokeRefreshToken:refreshToken error:nil];
+            [_sessionRepository storeRefreshToken:newRefreshToken sessionID:sessionID
+                                   forAccountDid:account.did error:nil];
+        }
     }
 
     // Generate new access token - preserving same sessionID
@@ -710,22 +843,9 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         return nil;
     }
 
-    // Generate new refresh token, preserving same family_id
-    NSString *newRefreshToken = [[NSUUID UUID] UUIDString];
-
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [newRefreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    
-    // Store with family_id when available (for new-style tokens; legacy path
-    // uses the protocol method which stores without family_id)
-    if (familyId.length > 0 && self.serviceDatabases) {
-        [self.serviceDatabases storeRefreshToken:newRefreshToken sessionID:sessionID
-                                   forAccountDid:account.did familyId:familyId error:nil];
-    } else {
-        [_sessionRepository storeRefreshToken:newRefreshToken sessionID:sessionID
-                               forAccountDid:account.did error:nil];
-    }
 
     return @{
         @"accessJwt": accessToken,

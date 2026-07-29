@@ -349,17 +349,6 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     return success;
 }
 
-- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid familyId:(nullable NSString *)familyId error:(NSError **)error {
-    NSUInteger ttl = self.refreshTokenTTLSeconds > 0 ? self.refreshTokenTTLSeconds : (30 * 24 * 60 * 60);
-    NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:ttl];
-    __block BOOL success = NO;
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store storeRefreshToken:token sessionID:sessionID forAccountDid:accountDid expiresAt:expiresAt familyId:familyId error:innerError];
-    } error:error];
-    return success;
-}
-
 - (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
     __block NSDictionary *info = nil;
     [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
@@ -409,31 +398,13 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     return [self revokeRefreshToken:token error:error];
 }
 
-- (BOOL)rotateRefreshToken:(NSString *)token error:(NSError **)error {
-    __block BOOL rotated = NO;
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        rotated = [store rotateRefreshToken:token error:innerError];
-    } error:error];
-    return rotated;
-}
-
-- (BOOL)tombstoneRefreshTokenFamily:(NSString *)familyId error:(NSError **)error {
+- (BOOL)markRefreshTokenRotated:(NSString *)token nextToken:(NSString *)nextToken graceExpiresAt:(NSDate *)graceExpiresAt error:(NSError **)error {
     __block BOOL success = NO;
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store tombstoneRefreshTokenFamily:familyId error:innerError];
+        success = [store markRefreshTokenRotated:token nextToken:nextToken graceExpiresAt:graceExpiresAt error:innerError];
     } error:error];
     return success;
-}
-
-- (BOOL)isRefreshTokenFamilyTombstoned:(NSString *)familyId error:(NSError **)error {
-    __block BOOL tombstoned = NO;
-    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
-        PDSActorStore *store = (PDSActorStore *)reader;
-        tombstoned = [store isRefreshTokenFamilyTombstoned:familyId error:innerError];
-    } error:error];
-    return tombstoned;
 }
 
 - (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)accountDid error:(NSError **)error {

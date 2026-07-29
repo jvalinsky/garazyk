@@ -27,7 +27,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @return YES on success; otherwise NO.
  */
 - (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt error:(NSError **)error;
-- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt familyId:(nullable NSString *)familyId error:(NSError **)error;
 
 /**
  * @abstract Stores a new refresh token for a given actor DID.
@@ -41,6 +40,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Retrieves session details for a specific refresh token.
+ * @discussion The "next_token" entry, when present, is the successor this
+ * token was already rotated to (an in-grace-period replay).
  * @param token The refresh token to lookup.
  * @param error Receives details when the database read fails.
  * @return A dictionary containing session details, or nil if not found or on error.
@@ -48,10 +49,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)token error:(NSError **)error;
 
 /**
- * @abstract Resolves the actor DID associated with a specific refresh token.
+ * @abstract Resolves the actor DID only when this is still the current
+ * (non-superseded) refresh token — i.e. next_token IS NULL.
  * @param token The refresh token to lookup.
  * @param error Receives details when the database read fails.
- * @return The actor DID, or nil if not found or on error.
+ * @return The actor DID, or nil if not found, superseded, or on error.
  */
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)token error:(NSError **)error;
 
@@ -65,28 +67,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error;
 
 /**
- * @abstract Atomically marks a refresh token as rotated.
- * @param token The refresh token to mark as rotated.
+ * @abstract Marks a refresh token as rotated to a successor, shortening its
+ * own expiry to a grace period rather than deleting it outright.
+ * @param token The refresh token being rotated away.
+ * @param nextToken The refresh token it was rotated to.
+ * @param graceExpiresAt The shortened expiry for the old token.
  * @param error Receives details when the database write fails.
- * @return YES if the token was marked (first rotation), NO if already rotated.
+ * @return YES when the operation succeeds; otherwise NO.
  */
-- (BOOL)rotateRefreshToken:(NSString *)token error:(NSError **)error;
-
-/**
- * @abstract Tombstones an entire refresh-token family.
- * @param familyId The family ID to tombstone.
- * @param error Receives details when the database write fails.
- * @return YES when the family is tombstoned.
- */
-- (BOOL)tombstoneRefreshTokenFamily:(NSString *)familyId error:(NSError **)error;
-
-/**
- * @abstract Checks whether a refresh-token family has been tombstoned.
- * @param familyId The family ID to check.
- * @param error Receives details when the database read fails.
- * @return YES if any token in the family has a tombstoned_at timestamp.
- */
-- (BOOL)isRefreshTokenFamilyTombstoned:(NSString *)familyId error:(NSError **)error;
+- (BOOL)markRefreshTokenRotated:(NSString *)token nextToken:(NSString *)nextToken graceExpiresAt:(NSDate *)graceExpiresAt error:(NSError **)error;
 
 /**
  * @abstract Revokes a refresh token, invalidating it.

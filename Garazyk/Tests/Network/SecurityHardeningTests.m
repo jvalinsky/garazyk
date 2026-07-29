@@ -150,26 +150,66 @@
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                       body:nil
                                                    headers:@{@"authorization": authHeader}];
-    
+
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertNotNil(response.jsonBody[@"accessJwt"]);
     XCTAssertNotNil(response.jsonBody[@"refreshJwt"]);
     XCTAssertNotEqualObjects(response.jsonBody[@"refreshJwt"], self.refreshJwt, @"Refresh token should be rotated");
-    
+
     NSString *newRefreshJwt = response.jsonBody[@"refreshJwt"];
-    
-    // 2. Try to use OLD refresh token again
+
+    // 2. Replay the OLD refresh token within the grace period. §4.3 uses a
+    // grace-period + idempotent-reissue model (matching the reference AT
+    // Protocol PDS), not family-wide tombstoning: a client racing a dropped
+    // response can still replay the old token and land on the same
+    // successor, rather than being logged out.
     HttpResponse *retryOldResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                              body:nil
                                                           headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(retryOldResponse.statusCode, 401, @"Old refresh token should be revoked after rotation");
-    
+    XCTAssertEqual(retryOldResponse.statusCode, 200, @"Old refresh token should be honored idempotently within the grace period");
+    XCTAssertEqualObjects(retryOldResponse.jsonBody[@"refreshJwt"], newRefreshJwt,
+                          @"Replaying the old token should reissue the same successor, not mint another one");
+
     // 3. Use NEW refresh token
     NSString *newAuthHeader = [NSString stringWithFormat:@"Bearer %@", newRefreshJwt];
     HttpResponse *useNewResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                             body:nil
                                                          headers:@{@"authorization": newAuthHeader}];
     XCTAssertEqual(useNewResponse.statusCode, 200, @"New refresh token should work");
+}
+
+- (void)testRefreshTokenReuseAfterGracePeriodIsRejected {
+    // A refresh token replayed after its grace period has fully elapsed is
+    // simply gone — no different from any other expired token — rather than
+    // tombstoning every other session for the account.
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.refreshJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+                                                      body:nil
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    NSString *newRefreshJwt = response.jsonBody[@"refreshJwt"];
+    XCTAssertNotNil(newRefreshJwt);
+
+    PDSServiceDatabases *serviceDBs = self.controller.serviceDatabases;
+    NSError *dbError = nil;
+    PDSDatabase *serviceDB = [serviceDBs serviceDatabaseWithError:&dbError];
+    XCTAssertNotNil(serviceDB, @"Failed to open service DB: %@", dbError);
+    BOOL backdated = [serviceDB executeParameterizedUpdate:@"UPDATE refresh_tokens SET expires_at = ? WHERE token = ?"
+                                                     params:@[@([[NSDate date] timeIntervalSince1970] - 60), self.refreshJwt]
+                                                      error:&dbError];
+    XCTAssertTrue(backdated, @"Failed to backdate old token's grace expiry: %@", dbError);
+
+    HttpResponse *retryAfterGrace = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+                                                             body:nil
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(retryAfterGrace.statusCode, 401, @"Old refresh token should be rejected once its grace period has elapsed");
+
+    // The other, still-current session is unaffected.
+    NSString *newAuthHeader = [NSString stringWithFormat:@"Bearer %@", newRefreshJwt];
+    HttpResponse *useNewResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+                                                            body:nil
+                                                         headers:@{@"authorization": newAuthHeader}];
+    XCTAssertEqual(useNewResponse.statusCode, 200, @"Current refresh token should remain valid after an unrelated stale-token rejection");
 }
 
 - (void)testRefreshTokenExpiry {

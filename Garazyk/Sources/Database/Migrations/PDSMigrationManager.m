@@ -1249,7 +1249,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 @end
 
-#pragma mark - V18 Refresh Token Family Columns Migration
+#pragma mark - V18 Refresh Token Grace Period Column Migration
 
 @interface V18RefreshTokenFamilyColumns : NSObject <PDSMigration>
 @end
@@ -1261,39 +1261,31 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 }
 
 - (NSString *)name {
-    return @"refresh_token_family_columns";
+    return @"refresh_token_grace_period_column";
 }
 
 - (BOOL)up:(sqlite3 *)db error:(NSError **)error {
-    // Add family_id, rotated_at, and tombstoned_at columns for §4.3 refresh-token
-    // reuse detection. family_id groups rotated tokens into families; rotated_at
-    // marks a token that was superseded by rotation; tombstoned_at marks the
-    // entire family as revoked due to stale-token reuse detection.
-    // Each ALTER TABLE is gated by column existence check for idempotency.
-    NSArray<NSString *> *schemaChanges = @[
-        @"ALTER TABLE refresh_tokens ADD COLUMN family_id TEXT DEFAULT ''",
-        @"ALTER TABLE refresh_tokens ADD COLUMN rotated_at REAL",
-        @"ALTER TABLE refresh_tokens ADD COLUMN tombstoned_at REAL",
-        @"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family ON refresh_tokens(family_id)",
-    ];
-
-    for (NSString *sql in schemaChanges) {
-        char *errMsg = NULL;
-        int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
-        if (rc != SQLITE_OK) {
-            // ALTER TABLE ADD COLUMN fails harmlessly if column already exists.
-            // INDEX IF NOT EXISTS also handles this. Log and continue.
-            if (errMsg) {
-                GZ_LOG_DB_WARN(@"V18 schema change (non-fatal): %s", errMsg);
-                sqlite3_free(errMsg);
-            }
+    // Add next_token for §4.3 refresh-token rotation with a grace period,
+    // matching the reference AT Protocol PDS design: rotating a token sets
+    // next_token to its successor and shortens its own expiry to a short
+    // grace window (rather than tombstoning an entire family), so a client
+    // racing a dropped response can still complete the refresh idempotently.
+    // Gated by column existence check for idempotency.
+    NSString *sql = @"ALTER TABLE refresh_tokens ADD COLUMN next_token TEXT DEFAULT NULL";
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        // ALTER TABLE ADD COLUMN fails harmlessly if the column already exists.
+        if (errMsg) {
+            GZ_LOG_DB_WARN(@"V18 schema change (non-fatal): %s", errMsg);
+            sqlite3_free(errMsg);
         }
     }
     return YES;
 }
 
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error {
-    // SQLite does not support DROP COLUMN. The columns will remain in place
+    // SQLite does not support DROP COLUMN. The column will remain in place
     // but unused; this is a one-way migration.
     if (error) {
         *error = [NSError errorWithDomain:PDSMigrationErrorDomain
