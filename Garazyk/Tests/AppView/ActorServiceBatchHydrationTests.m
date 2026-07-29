@@ -62,7 +62,7 @@
         @"displayName": [NSString stringWithFormat:@"Actor %ld", (long)index],
         @"description": @"test bio"
     };
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:profileValue error:&error];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:profileValue error:&error];
     XCTAssertNotNil(cborData, @"CBOR encode failed: %@", error);
     CID *cid = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
     XCTAssertNotNil(cid);

@@ -103,7 +103,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     if (!cid) return nil;
     PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
     if (!block || !block.blockData) return nil;
-    id decoded = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:error];
+    id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:error];
     if (!decoded) {
         decoded = [ATProtoDagCBOR decodeData:block.blockData error:error];
     }
@@ -148,7 +148,7 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
             if (![cidBytes isKindOfClass:[NSData class]] || ![blockData isKindOfClass:[NSData class]] || repoDid.length == 0) continue;
             NSString *cidStr = cidStringByBytes[cidBytes];
             if (!cidStr) continue;
-            id decoded = [ATProtoCBORSerialization JSONObjectWithData:blockData error:error];
+            id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:blockData error:error];
             if (!decoded) {
                 decoded = [ATProtoDagCBOR decodeData:blockData error:error];
             }

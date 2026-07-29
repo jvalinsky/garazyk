@@ -225,7 +225,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
         if (!expectedCBOR) continue;
 
         NSError *encodeError = nil;
-        NSData *actualCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:json error:&encodeError];
+        NSData *actualCBOR = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:json error:&encodeError];
         XCTAssertNotNil(actualCBOR, @"Failed to encode fixture JSON to CBOR: %@", encodeError);
         if (!actualCBOR) continue;
 
@@ -260,7 +260,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
     };
     
     NSError *error1 = nil;
-    NSData *cbor1 = [ATProtoCBORSerialization encodeDataWithJSONObject:record1 error:&error1];
+    NSData *cbor1 = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record1 error:&error1];
     XCTAssertNotNil(cbor1, @"Failed to encode record1: %@", error1);
     
     // Manually verify key ordering by checking CBOR structure
@@ -277,7 +277,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
     };
     
     NSError *error2 = nil;
-    NSData *cbor2 = [ATProtoCBORSerialization encodeDataWithJSONObject:record2 error:&error2];
+    NSData *cbor2 = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record2 error:&error2];
     XCTAssertNotNil(cbor2, @"Failed to encode record2: %@", error2);
     
     // Expected CBOR for {"z": 1, "aa": 2} with canonical ordering:
@@ -329,7 +329,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
         if (!expectedCBOR) continue;
         
         NSError *encodeError = nil;
-        NSData *actualCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:json error:&encodeError];
+        NSData *actualCBOR = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:json error:&encodeError];
         
         if (!actualCBOR) {
             [failedFixtures addObject:@{@"error": @"encoding failed", @"json": json}];

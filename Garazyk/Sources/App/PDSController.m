@@ -418,7 +418,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   NSError *cborError = nil;
   GZ_LOG_CORE_DEBUG(@"Encoding record with CBOR");
   NSData *recordData =
-      [ATProtoCBORSerialization encodeDataWithJSONObject:record
+      [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record
                                                    error:&cborError];
 
   if (!recordData) {

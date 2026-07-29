@@ -176,7 +176,7 @@
             if (cid && authorDID.length > 0) {
                 PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:authorDID error:nil];
                 if (block && block.blockData) {
-                    NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+                    NSDictionary *decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
                     if (decoded) record = decoded;
                 }
             }

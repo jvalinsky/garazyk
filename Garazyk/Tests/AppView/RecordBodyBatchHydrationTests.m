@@ -56,7 +56,7 @@
             @"text": [NSString stringWithFormat:@"Post %ld", (long)index],
             @"createdAt": @"2026-07-27T12:00:00.000Z"
         };
-        NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+        NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData, @"CBOR encode failed: %@", error);
         CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error], @"saveBlock failed: %@", error);
@@ -76,7 +76,7 @@
             @"subject": subject,
             @"createdAt": @"2026-07-27T12:00:00.000Z"
         };
-        NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+        NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData, @"CBOR encode failed: %@", error);
         CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error], @"saveBlock failed: %@", error);

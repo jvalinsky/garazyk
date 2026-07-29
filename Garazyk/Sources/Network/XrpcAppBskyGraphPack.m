@@ -166,7 +166,7 @@
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:actorDID error:nil];
             if (!block.blockData) continue;
 
-            NSDictionary *blockRecord = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            NSDictionary *blockRecord = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:nil];
             if (![blockRecord isKindOfClass:[NSDictionary class]]) continue;
 
             NSString *listURI = blockRecord[@"list"];
@@ -378,7 +378,7 @@
             if (!itemCid) continue;
             PDSDatabaseBlock *itemBlock = [services.appViewDatabase getBlockWithCid:itemCid.bytes repoDid:did error:nil];
             if (!itemBlock || !itemBlock.blockData) continue;
-            NSDictionary *itemRecord = [ATProtoCBORSerialization JSONObjectWithData:itemBlock.blockData error:nil];
+            NSDictionary *itemRecord = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:itemBlock.blockData error:nil];
             if (!itemRecord) continue;
             NSString *itemList = itemRecord[@"list"];
             if (![itemList isEqualToString:list]) continue;

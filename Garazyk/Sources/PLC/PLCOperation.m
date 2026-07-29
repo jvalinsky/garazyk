@@ -48,7 +48,7 @@ static BOOL isBase32Char(unichar c) {
 
 + (NSString *)calculateDIDForData:(NSDictionary *)data {
     NSError *error = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:data error:&error];
     if (!cborData || cborData.length > PLCMaxDAGCborOperationBytes) {
         return @"";
     }
@@ -85,7 +85,7 @@ static BOOL isBase32Char(unichar c) {
     //   did:plc:<first 24 chars of base32(SHA-256(DAG-CBOR(signedOp)))>
     // The signed operation includes the `sig` field.
     NSError *error = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:signedOperation error:&error];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:signedOperation error:&error];
     if (!cborData || cborData.length > PLCMaxDAGCborOperationBytes) {
         return @"";
     }
@@ -149,7 +149,7 @@ static BOOL isBase32Char(unichar c) {
 }
 
 + (nullable NSString *)calculateCIDForOperation:(NSDictionary *)operation error:(NSError **)error {
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:operation error:error];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:operation error:error];
     if (!cborData) {
         return nil;
     }

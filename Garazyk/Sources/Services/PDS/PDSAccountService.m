@@ -829,7 +829,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     };
     
     // Encode unsigned operation as DAG-CBOR and sign
-    NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
+    NSData *unsignedCBOR = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:NO] encodeDataWithJSONObject:unsignedData error:error];
     if (!unsignedCBOR) return nil;
     
     GZ_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Unsigned CBOR prepared for signing (length: %lu)", (unsigned long)unsignedCBOR.length);
@@ -897,7 +897,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     };
     
     // Re-sign for the operation
-    NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
+    NSData *unsignedCBOR = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:NO] encodeDataWithJSONObject:unsignedData error:error];
     if (!unsignedCBOR) return nil;
     
     NSData *hash = [CID rawSha256:unsignedCBOR];

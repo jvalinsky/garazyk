@@ -6,35 +6,65 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @class ATProtoCBORSerialization
- 
- @abstract CBOR (Conecis Binary Object Representation) serializer.
- 
- @discussion Handles encoding and decoding of ATProto data structures to/from 
- DAG-CBOR format. Ensures canonical encoding for consistent hashing.
+
+ @abstract CBOR serializer with content-addressed routing flag.
+
+ @discussion §S19 lifts §3.4 from ADR-recorded to implemented: per-instance
+ routing flag `_isContentAddressed` directs content-addressed callers
+ (repository records, MST/CAR blocks, profile records, sync ops, anything
+ with a CID) through `[ATProtoDagCBOR decodeData:]` / `[ATProtoDagCBOR
+ decodeDataAsJSON:]`, while CTAP2/generic-CBOR callers (lexicon schemas and
+ similar non-CID'd payloads) keep the plain `[CBORDecoder decode:]` /
+ `[CBOREncoder encode:]` path.
+
+ The flag is part of the immutable state set at construction. Callers that
+ prefer two-step setup can configure via `setUsage:`; both end-states are
+ equivalent.
+
+ Identity for the strict path: `[ATProtoDagCBOR decodeDataAsJSON:error:]`
+ (see `AppViewBackfillWorker.m:422`). The wrapped `[CBORDecoder decode:]`
+ at `ATProtoCBORSerialization.m:39` is the only `[CBORDecoder decode:]`
+ call that survives this refactor; every other production caller routes
+ through `[ATProtoDagCBOR decodeData:...]` (gate check 1 of §S19).
  */
 @interface ATProtoCBORSerialization : NSObject
 
-/*!
- @method encodeDataWithJSONObject:error:
- 
- @abstract Encodes a JSON-compatible object to DAG-CBOR.
- 
- @param obj The object to encode (NSDictionary, NSArray, etc.).
- @param error On return, contains an error if encoding failed.
- @return The CBOR-encoded data.
- */
-+ (NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error;
+@property (nonatomic, readonly) BOOL isContentAddressed;
 
 /*!
- @method JSONObjectWithData:error:
- 
- @abstract Decodes DAG-CBOR data into a JSON-compatible object.
- 
- @param data The CBOR data to decode.
- @param error On return, contains an error if decoding failed.
- @return The decoded object, or nil if decoding failed.
+ @brief Canonical initializer. The flag is immutable for the lifetime of the
+ instance.
+
+ @param contentAddressed Pass YES for repository records, MST/CAR blocks,
+ profile records, sync ops, and any data that has a CID or is hashed for
+ content addressing. Pass NO for lexicon schemas and other payloads that
+ don't participate in content addressing.
  */
-+ (id)JSONObjectWithData:(NSData *)data error:(NSError **)error;
+- (nullable instancetype)initWithContentAddressed:(BOOL)contentAddressed;
+
+/*!
+ @brief Companion setter for two-step configuration. Equivalent to passing
+ the matching value to `initWithContentAddressed:`. Re-setting after first
+ use is a programming error (the implementation warns in DEBUG); treat the
+ flag as immutable for the lifetime of the instance.
+ */
+- (void)setUsage:(BOOL)contentAddressed;
+
+/*!
+ @brief Encodes a JSON-compatible object to DAG-CBOR or generic CBOR.
+ @discussion Routes through `[CBOREncoder encode:]` regardless of the flag;
+ canonical-form alignment for content-addressed outputs is the responsibility
+ of the encoder, not the wrapper.
+ */
+- (NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error;
+
+/*!
+ @brief Decodes CBOR data into a JSON-compatible object.
+ @discussion When `isContentAddressed` is YES, delegates to
+ `[ATProtoDagCBOR decodeDataAsJSON:error:]` -- the strict DAG-CBOR path.
+ Otherwise uses `[CBORDecoder decode:]` -- the legacy / CTAP2 path.
+ */
+- (id)JSONObjectWithData:(NSData *)data error:(NSError **)error;
 
 @end
 

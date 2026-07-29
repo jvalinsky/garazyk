@@ -169,7 +169,7 @@
 
     // CBOR-encode the record for the blocks table
     NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cborError];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&cborError];
     XCTAssertNil(cborError);
     XCTAssertNotNil(cborData);
 
