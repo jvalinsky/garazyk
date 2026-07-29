@@ -294,6 +294,8 @@ NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
     verifier.expectedIssuer = self.issuer;
     verifier.expectedAudience = audience;
     verifier.allowedAlgorithms = @[@"ES256K", @"ES256"];
+    verifier.expectedTokenUse = @"access";
+    verifier.expectedTyp = @"at+jwt";
 
     JWT *jwt = [JWT jwtWithToken:token error:error];
     if (!jwt) return nil;
@@ -306,7 +308,25 @@ NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
 
 - (nullable NSDictionary *)verifyRefreshToken:(NSString *)token
                                      error:(NSError **)error {
-    return [self verifyAccessToken:token forAudience:self.issuer error:error];
+    // §4.1: run the same verifier pipeline but require token_use="refresh".
+    // The caller expects a refresh-token-validated dictionary; delegate to
+    // the same verifier with a different expectedTokenUse.
+    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    verifier.keyManager = self.minter.keyManager;
+    verifier.publicKey = self.minter.publicKey;
+    verifier.expectedIssuer = self.issuer;
+    verifier.expectedAudience = self.issuer;
+    verifier.allowedAlgorithms = @[@"ES256K", @"ES256"];
+    verifier.expectedTokenUse = @"refresh";
+    verifier.expectedTyp = @"refresh+jwt";
+
+    JWT *jwt = [JWT jwtWithToken:token error:error];
+    if (!jwt) return nil;
+
+    BOOL valid = [verifier verifyJWT:jwt error:error];
+    if (!valid) return nil;
+
+    return [jwt.payload toDictionary];
 }
 
 @end
