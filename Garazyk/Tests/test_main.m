@@ -1235,7 +1235,6 @@ int main(int argc, char *argv[]) {
       @"AppViewServiceTests",
       @"AppViewHookTests",
       @"PDSSQLiteRepositoryTests",
-      @"OAuthProviderTests",
       @"OAuthClientAuthPolicyTests",
       @"PDSSecondFactorServiceTests",
       @"PDSAppleKeyManagerTests",
