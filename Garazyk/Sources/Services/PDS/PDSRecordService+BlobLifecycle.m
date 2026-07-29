@@ -107,15 +107,16 @@
                               recordValue:(NSDictionary *)recordValue
                                    forDid:(NSString *)did
                                     error:(NSError **)error {
-    __block BOOL success = YES;
-    [self.databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        success = [self syncBlobReferencesForRecordURI:recordURI
-                                           recordValue:recordValue
-                                                forDid:did
-                                           transactor:transactor
-                                                error:blockError];
-    } error:error];
-    return success;
+    __block BOOL operationSucceeded = NO;
+    BOOL transactionSucceeded =
+        [self.databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+            operationSucceeded = [self syncBlobReferencesForRecordURI:recordURI
+                                                           recordValue:recordValue
+                                                                forDid:did
+                                                            transactor:transactor
+                                                                 error:blockError];
+        } error:error];
+    return transactionSucceeded && operationSucceeded;
 }
 
 - (BOOL)removeBlobReferencesForRecordURI:(NSString *)recordURI

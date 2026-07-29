@@ -5,19 +5,26 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract PDS Merkle-search-tree inspection operations for the authenticated admin UI.
+ * @discussion These calls use PDS administration authentication and return upstream JSON or
+ * dictionaries with `error` and `message`. Tree and statistics requests require a nonempty DID;
+ * export returns nil for validation or non-2xx transport failure.
+ */
 @interface UIBackendClient (MST)
 
+/** @abstract Lists accounts with available Merkle-search-tree data. */
 - (NSDictionary *)fetchMSTAccounts;
 
 /**
- * @abstract Fetch msttree for did.
- * @param did Actor DID for the request.
- * @return The response dictionary, or nil when the request fails.
+ * @abstract Retrieves the Merkle-search-tree structure for a nonempty DID.
  */
 - (NSDictionary *)fetchMSTTreeForDID:(NSString *)did;
 
+/** @abstract Retrieves Merkle-search-tree statistics for a nonempty DID. */
 - (NSDictionary *)fetchMSTStatsForDID:(NSString *)did;
 
+/** @abstract Retrieves a nonempty DID's MST export as JSON, DOT, or SVG bytes; unsupported formats become JSON. */
 - (NSData *)fetchMSTExportForDID:(NSString *)did format:(NSString *)format;
 
 @end

@@ -1,3 +1,5 @@
+/** @module topology_graph */
+
 import { bold, cyan, dim, green, red, yellow } from "@std/fmt/colors";
 import {
   type BinaryServiceName,
@@ -11,6 +13,7 @@ import type {
 } from "@garazyk/schemat";
 import { DEFAULT_PORTS, DEFAULT_SERVICE_NAMES } from "@garazyk/schemat";
 
+/** Transport or dependency relationship represented by a topology edge. */
 export type ConnectionType = "firehose" | "xrpc" | "did" | "depends";
 
 const CONNECTION_LABELS: Record<ConnectionType, string> = {
@@ -37,18 +40,33 @@ function connectionType(from: string, to: string): ConnectionType {
   return ROLE_CONNECTIONS[`${from}→${to}`] ?? "depends";
 }
 
+/**
+ * A service node in a rendered topology tree.
+ *
+ * @remarks Children represent known outbound dependencies whose roles occur in the source topology.
+ */
 export interface TopologyNode {
+  /** Topology role, such as `pds` or `relay`. */
   role: string;
+  /** Executable or Compose service name for the role. */
   binary: string;
+  /** Host port associated with the role. */
   port: number;
+  /** Host-visible URL associated with the role. */
   url: string;
+  /** Most recently observed binary-service status, or null when unknown. */
   status: BinaryServiceStatus | null;
+  /** Outbound dependency nodes and their connection kinds. */
   children: { node: TopologyNode; connection: ConnectionType }[];
 }
 
+/** A named topology forest and its human-readable description. */
 export interface TopologyTree {
+  /** Stable topology or manifest name. */
   name: string;
+  /** Source topology description. */
   description: string;
+  /** Nodes with no inbound known dependency edge. */
   roots: TopologyNode[];
 }
 
@@ -81,6 +99,11 @@ function statusForRole(
   return statusMap[role] ?? null;
 }
 
+/**
+ * Builds a topology from the local binary-service inventory and current process status.
+ *
+ * @returns A topology rooted at the known local binary services.
+ */
 export async function buildBinaryTopology(): Promise<TopologyTree> {
   const ctx = initRunDir();
   const status = await getBinaryServiceStatus(ctx);
@@ -98,6 +121,12 @@ export async function buildBinaryTopology(): Promise<TopologyTree> {
   };
 }
 
+/**
+ * Builds a topology from a resolved manifest and overlays local binary-service status.
+ *
+ * @param manifest - Manifest that supplies service names, URLs, and topology metadata.
+ * @returns A topology containing the manifest's declared roles.
+ */
 export async function buildManifestTopology(
   manifest: TopologyManifest,
 ): Promise<TopologyTree> {
@@ -118,6 +147,12 @@ export async function buildManifestTopology(
   };
 }
 
+/**
+ * Builds a topology from a registered preset and overlays local binary-service status.
+ *
+ * @param preset - Preset whose declared roles are rendered.
+ * @returns A topology containing the preset's declared roles.
+ */
 export async function buildPresetTopology(
   preset: RegisteredTopologyPreset,
 ): Promise<TopologyTree> {
@@ -212,6 +247,13 @@ function roleLabel(role: string): string {
   return cyan(role.toUpperCase());
 }
 
+/**
+ * Renders a topology as an indented terminal tree.
+ *
+ * @param tree - Topology to render.
+ * @param verbose - Whether to include process IDs and URLs where available.
+ * @returns Output lines without trailing newlines.
+ */
 export function renderTree(
   tree: TopologyTree,
   verbose: boolean,
@@ -341,6 +383,12 @@ function collectEdges(
   return edges;
 }
 
+/**
+ * Renders a topology as Mermaid graph source.
+ *
+ * @param tree - Topology to render.
+ * @returns Mermaid source lines without trailing newlines.
+ */
 export function renderMermaid(tree: TopologyTree): string[] {
   const lines: string[] = [];
   lines.push("graph TB");
@@ -431,6 +479,12 @@ function collectAllDotNodes(
   return map;
 }
 
+/**
+ * Renders a topology as Graphviz DOT source.
+ *
+ * @param tree - Topology to render.
+ * @returns DOT source lines without trailing newlines.
+ */
 export function renderDot(tree: TopologyTree): string[] {
   const lines: string[] = [];
   const escapedName = tree.name.replace(/"/g, '\\"');
@@ -501,6 +555,12 @@ function latexChildLines(
   return lines;
 }
 
+/**
+ * Renders a topology as a standalone TikZ/LaTeX document.
+ *
+ * @param tree - Topology to render.
+ * @returns LaTeX source lines without trailing newlines.
+ */
 export function renderLatex(tree: TopologyTree): string[] {
   const lines: string[] = [];
 
@@ -572,8 +632,17 @@ export function renderLatex(tree: TopologyTree): string[] {
 // Output format
 // ---------------------------------------------------------------------------
 
+/** Supported topology renderer output format. */
 export type OutputFormat = "text" | "mermaid" | "dot" | "latex";
 
+/**
+ * Selects and runs one topology renderer.
+ *
+ * @param tree - Topology to render.
+ * @param format - Requested output format.
+ * @param verbose - Verbosity flag used by the text renderer.
+ * @returns Rendered source or terminal output lines without trailing newlines.
+ */
 export function renderTopology(
   tree: TopologyTree,
   format: OutputFormat,

@@ -5,18 +5,23 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Chat administration operations used by the authenticated admin UI.
+ * @discussion Calls use the configured chat admin token and block for completion. Successful
+ * responses are returned as JSON; invalid input and non-2xx responses return an `error` and
+ * usually a `message`. Locking a conversation permanently changes its moderation state.
+ */
 @interface UIBackendClient (Chat)
 
 /**
- * @abstract Fetch chat convos with limit.
- * @param limit Maximum number of records to return.
- * @param cursor Pagination cursor from a previous response.
- * @return The response dictionary, or nil when the request fails.
+ * @abstract Lists chat conversations, forwarding an optional cursor and normalizing zero limit to 25.
  */
 - (NSDictionary *)fetchChatConvosWithLimit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 
+/** @abstract Lists messages for a nonempty conversation ID; zero limit is normalized to 50. */
 - (NSDictionary *)fetchChatMessagesForConvoID:(NSString *)convoID limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 
+/** @abstract Requests a lock for a nonempty conversation ID and changes its moderation state. */
 - (NSDictionary *)lockChatConvo:(NSString *)convoID;
 
 @end

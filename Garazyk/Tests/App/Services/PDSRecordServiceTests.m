@@ -2,12 +2,69 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Services/PDS/PDSRecordService.h"
+#import "Services/PDS/PDSRecordService+BlobLifecycle.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabaseBlob.h"
 #import "Core/CID.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
+
+@interface PDSRecordServiceTransactionTestPool : PDSDatabasePool
+@property (nonatomic, assign) BOOL invokesBlock;
+@property (nonatomic, assign) BOOL transactionSucceeds;
+@end
+
+@implementation PDSRecordServiceTransactionTestPool
+
+- (BOOL)transactWithDid:(NSString *)did
+                  block:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
+                  error:(NSError **)error {
+    (void)did;
+    if (self.invokesBlock) {
+        NSError *blockError = nil;
+        block((id<PDSActorStoreTransactor>)self, &blockError);
+        if (blockError) {
+            if (error) *error = blockError;
+            return NO;
+        }
+    }
+    if (!self.transactionSucceeds && error) {
+        *error = [NSError errorWithDomain:@"PDSRecordServiceTransactionTest"
+                                     code:1
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Simulated transaction failure"}];
+    }
+    return self.transactionSucceeds;
+}
+
+@end
+
+@interface PDSRecordServiceTransactionTestService : PDSRecordService
+@property (nonatomic, assign) BOOL operationInvoked;
+@property (nonatomic, assign) BOOL operationSucceeds;
+@end
+
+@implementation PDSRecordServiceTransactionTestService
+
+- (BOOL)syncBlobReferencesForRecordURI:(NSString *)recordURI
+                           recordValue:(NSDictionary *)recordValue
+                                forDid:(NSString *)did
+                            transactor:(id<PDSActorStoreTransactor>)transactor
+                                 error:(NSError **)error {
+    (void)recordURI;
+    (void)recordValue;
+    (void)did;
+    (void)transactor;
+    self.operationInvoked = YES;
+    if (!self.operationSucceeds && error) {
+        *error = [NSError errorWithDomain:@"PDSRecordServiceTransactionTest"
+                                     code:2
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Simulated blob operation failure"}];
+    }
+    return self.operationSucceeds;
+}
+
+@end
 
 @interface PDSRecordServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -70,6 +127,68 @@
 - (void)testServiceInitializationConfiguresDatabasePool {
     XCTAssertNotNil(self.service);
     XCTAssertEqual(self.service.databasePool, self.pool);
+}
+
+- (void)testRemoveBlobReferencesReturnsNOWhenTransactionSetupFails {
+    PDSRecordServiceTransactionTestPool *pool =
+        [[PDSRecordServiceTransactionTestPool alloc] initWithDbDirectory:self.testDirectory maxSize:1];
+    pool.invokesBlock = NO;
+    pool.transactionSucceeds = NO;
+    PDSRecordServiceTransactionTestService *service =
+        [[PDSRecordServiceTransactionTestService alloc] initWithDatabasePool:pool];
+    service.operationSucceeds = YES;
+
+    NSError *error = nil;
+    BOOL success = [service removeBlobReferencesForRecordURI:@"at://did:plc:test/app.bsky.feed.post/one"
+                                                     forDid:@"did:plc:test"
+                                                      error:&error];
+
+    XCTAssertFalse(success);
+    XCTAssertFalse(service.operationInvoked);
+    XCTAssertNotNil(error);
+    [pool closeAll];
+}
+
+- (void)testSyncBlobReferencesReturnsNOWhenTransactionCommitFails {
+    PDSRecordServiceTransactionTestPool *pool =
+        [[PDSRecordServiceTransactionTestPool alloc] initWithDbDirectory:self.testDirectory maxSize:1];
+    pool.invokesBlock = YES;
+    pool.transactionSucceeds = NO;
+    PDSRecordServiceTransactionTestService *service =
+        [[PDSRecordServiceTransactionTestService alloc] initWithDatabasePool:pool];
+    service.operationSucceeds = YES;
+
+    NSError *error = nil;
+    BOOL success = [service syncBlobReferencesForRecordURI:@"at://did:plc:test/app.bsky.feed.post/two"
+                                               recordValue:@{}
+                                                    forDid:@"did:plc:test"
+                                                     error:&error];
+
+    XCTAssertFalse(success);
+    XCTAssertTrue(service.operationInvoked);
+    XCTAssertNotNil(error);
+    [pool closeAll];
+}
+
+- (void)testSyncBlobReferencesReturnsYESWhenOperationAndTransactionSucceed {
+    PDSRecordServiceTransactionTestPool *pool =
+        [[PDSRecordServiceTransactionTestPool alloc] initWithDbDirectory:self.testDirectory maxSize:1];
+    pool.invokesBlock = YES;
+    pool.transactionSucceeds = YES;
+    PDSRecordServiceTransactionTestService *service =
+        [[PDSRecordServiceTransactionTestService alloc] initWithDatabasePool:pool];
+    service.operationSucceeds = YES;
+
+    NSError *error = nil;
+    BOOL success = [service syncBlobReferencesForRecordURI:@"at://did:plc:test/app.bsky.feed.post/three"
+                                               recordValue:@{}
+                                                    forDid:@"did:plc:test"
+                                                     error:&error];
+
+    XCTAssertTrue(success);
+    XCTAssertTrue(service.operationInvoked);
+    XCTAssertNil(error);
+    [pool closeAll];
 }
 
 - (void)testGetRecordNotFound {

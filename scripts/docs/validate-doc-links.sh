@@ -6,5 +6,5 @@ REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || (cd "
 
 cd "$REPO_ROOT"
 
-deno run -A scripts/docs/repo_docs.ts sync
-deno run -A scripts/docs/repo_docs.ts validate --internal-strict
+deno run -A --config=deno.json packages/narzedzia/repo_docs.ts sync
+deno run -A --config=deno.json packages/narzedzia/repo_docs.ts validate --internal-strict

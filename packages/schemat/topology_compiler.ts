@@ -30,17 +30,25 @@ export type { SourceBuildInfo } from "./topology.ts";
 
 /** Docker Compose build configuration. */
 export interface ComposeBuild {
+  /** Build-context directory, resolved by Docker Compose. */
   context: string;
+  /** Dockerfile path relative to {@link context}. */
   dockerfile: string;
+  /** Build-time arguments passed to the image build. */
   args?: Record<string, string>;
 }
 
 /** Docker Compose healthcheck definition. */
 export interface ComposeHealthCheck {
+  /** Command-array executed by Docker to determine container health. */
   test: string[];
+  /** Interval between health-check attempts. */
   interval: string;
+  /** Maximum duration of one health-check attempt. */
   timeout: string;
+  /** Number of consecutive failed attempts before unhealthy status. */
   retries: number;
+  /** Initial grace period before health-check failures count. */
   start_period: string;
 }
 
@@ -49,27 +57,41 @@ export type ComposeDependsOn = Record<string, { condition: string }>;
 
 /** Docker Compose service definition. */
 export interface ComposeService {
+  /** Image to run when this service is not built from source. */
   image?: string;
+  /** Optional local build configuration. */
   build?: ComposeBuild;
+  /** Explicit Docker container name. */
   container_name?: string;
+  /** Entrypoint command replacing the image default. */
   entrypoint?: string[];
+  /** Command or argument vector passed to the image entrypoint. */
   command?: string[] | string;
+  /** Published host-to-container port mappings. */
   ports?: string[];
+  /** Named-volume or bind-mount specifications. */
   volumes?: string[];
+  /** Environment variables supplied to the container. */
   environment?: Record<string, string>;
+  /** Services that must meet their configured dependency condition first. */
   depends_on?: ComposeDependsOn;
+  /** Docker health-check configuration. */
   healthcheck?: ComposeHealthCheck;
+  /** Compose network names or the topology-network alias configuration. */
   networks?: string[] | { topology_net: { aliases?: string[] } };
 }
 
 /** Top-level Docker Compose object serialized to YAML. */
 export interface ComposeObject {
+  /** Services keyed by their Docker Compose service names. */
   services: Record<string, ComposeService>;
+  /** Network definitions used by all rendered topology services. */
   networks: {
     topology_net: {
       driver: string;
     };
   };
+  /** Optional named-volume declarations. */
   volumes?: Record<string, null>;
 }
 
