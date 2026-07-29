@@ -11,6 +11,7 @@
 #import <XCTest/XCTest.h>
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/UIServerRuntime+Private.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -747,6 +748,34 @@
     XCTAssertEqualObjects(stub.lastBaseURL.absoluteString, @"http://appview.example");
     XCTAssertEqualObjects(stub.lastAdminToken, @"appview-token");
     XCTAssertEqualObjects(json[@"status"], @"online");
+}
+
+#pragma mark - S17: chat message XSS
+
+- (void)testChatMessagesPartialEscapesUserControlledMessageText {
+    NSString *payload = @"<script>alert(1)</script>";
+    NSDictionary *result = @{
+        @"messages": @[
+            @{@"text": payload, @"sender": @"did:plc:alice", @"createdAt": @"2026-04-28T00:00:00Z"}
+        ]
+    };
+    NSString *html = [self.runtime renderChatMessagesPartial:result];
+
+    XCTAssertFalse([html containsString:payload], @"Raw script tag must not appear unescaped in rendered output");
+    XCTAssertTrue([html containsString:@"&lt;script&gt;alert(1)&lt;/script&gt;"], @"Message text must be HTML-escaped");
+}
+
+- (void)testChatConvosPartialEscapesUserControlledLastMessageText {
+    NSString *payload = @"<img src=x onerror=alert(1)>";
+    NSDictionary *result = @{
+        @"convos": @[
+            @{@"id": @"convo-1", @"lastMessage": @{@"text": payload}}
+        ]
+    };
+    NSString *html = [self.runtime renderChatConvosPartial:result];
+
+    XCTAssertFalse([html containsString:payload], @"Raw img/onerror payload must not appear unescaped in rendered output");
+    XCTAssertTrue([html containsString:@"&lt;img src=x onerror=alert(1)&gt;"], @"Last-message text must be HTML-escaped");
 }
 
 @end
