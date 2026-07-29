@@ -10,7 +10,7 @@
 
 #import "HttpRouteTrie.h"
 #import "Compat/PDSTypes.h"
-#import "HttpRouter.h"
+#import "HttpRoute.h"
 
 @interface HttpRouteNode : NSObject
 
