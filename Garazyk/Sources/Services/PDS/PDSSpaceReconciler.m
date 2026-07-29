@@ -3,7 +3,7 @@
 
 #import "Services/PDS/PDSSpaceReconciler.h"
 
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Compat/PDSTypes.h"
 #import "Debug/GZLogger.h"
 #import "Core/ATProtoDIDDocumentFields.h"

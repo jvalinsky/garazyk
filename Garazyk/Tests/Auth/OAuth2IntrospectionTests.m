@@ -8,7 +8,7 @@
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2Handler.h"
 #import "Auth/OAuth2.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/Session.h"
 #import "Network/HttpRequest.h"

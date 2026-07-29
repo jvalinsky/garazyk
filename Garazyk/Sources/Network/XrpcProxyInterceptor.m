@@ -3,7 +3,7 @@
 #import "Network/XrpcProxyInterceptor.h"
 
 #import "App/ATProtoServiceConfiguration.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
 #import "Database/ActorStore/ActorStore.h"

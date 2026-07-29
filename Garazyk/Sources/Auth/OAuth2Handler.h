@@ -16,7 +16,7 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 @class OAuth2Server;
 @class HttpServer;

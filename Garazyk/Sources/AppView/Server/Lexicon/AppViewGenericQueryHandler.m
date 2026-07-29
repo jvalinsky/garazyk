@@ -15,7 +15,7 @@
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Debug/GZLogger.h"
 
 NSErrorDomain const AppViewGenericQueryHandlerErrorDomain = @"AppViewGenericQueryHandler";

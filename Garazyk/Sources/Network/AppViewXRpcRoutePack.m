@@ -15,7 +15,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Debug/GZLogger.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"

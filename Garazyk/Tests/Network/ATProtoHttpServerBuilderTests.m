@@ -15,7 +15,7 @@
 #import "App/PDSController.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import <sys/socket.h>
 #import <netinet/in.h>
 #import <arpa/inet.h>

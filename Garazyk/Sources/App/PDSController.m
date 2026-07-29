@@ -17,7 +17,7 @@
 #import "App/NodeInfo/NodeInfoHandler.h"
 #import "App/OAuthDemo/OAuthDemoHandler.h"
 #import "App/ATProtoServiceConfiguration.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/OAuth2Handler.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Auth/Crypto/Secp256k1.h"

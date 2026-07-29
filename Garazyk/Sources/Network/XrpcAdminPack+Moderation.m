@@ -10,7 +10,7 @@
 #import "Network/XrpcIdentityHelper.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"

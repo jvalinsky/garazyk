@@ -4,7 +4,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Admin/PDSAdminAuth.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"

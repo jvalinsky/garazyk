@@ -9,7 +9,7 @@
 #import "AppView/Server/Auth/AppViewOAuth2Middleware.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "Network/HttpRequest.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"

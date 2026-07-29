@@ -6,7 +6,7 @@
 #import "Network/RateLimiter.h"
 #import "Network/XrpcProxyHandler.h"
 #import "Network/XrpcMiddleware.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
 #import "App/ATProtoServiceConfiguration.h"
