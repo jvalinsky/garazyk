@@ -10,9 +10,11 @@
 
 - (void)testDeeplyNestedArraysDoesNotCrash {
     // Generate a deeply nested array: [[[[...]]]]
-    // This tests for stack overflow in recursive decoders
+    // This tests for stack overflow in recursive decoders.
+    // §1.2: kCBORMaxDecodeDepth = 64 caps nesting; decoder returns nil
+    // rather than recursing until stack exhaustion.
     NSMutableData *data = [NSMutableData data];
-    int depth = 10000; // Deep enough to blow stack if unchecked
+    int depth = 10000; // Far above the 64-level cap.
     
     // Write 10000 array headers [0x81, 0x81, ...]
     for (int i = 0; i < depth; i++) {
@@ -24,22 +26,19 @@
     uint8_t value = 0x01;
     [data appendBytes:&value length:1];
     
-    // We expect this to fail gracefully or return nil, but NOT crash
-    // Ideally the decoder should have a depth limit
     @try {
         CBORValue *decoded = [CBORDecoder decode:data];
-        // If it returns a value, it handled it (or the depth wasn't enough to crash)
-        // If it returns nil, it rejected it.
-        // The success condition here is "did not crash"
-        XCTAssertTrue(YES, @"Survived deep nesting");
+        XCTAssertNil(decoded,
+                     @"Deeply nested CBOR input (depth=%d) must be rejected by "
+                     @"the depth cap (kCBORMaxDecodeDepth=64).", depth);
     } @catch (NSException *exception) {
-        // If it throws an exception (e.g. stack overflow caught if possible, though unlikely), that's a failure of robustness but handled
-         XCTFail(@"Caught exception: %@", exception);
+        XCTFail(@"Caught exception: %@", exception);
     }
 }
 
 - (void)testDeeplyNestedMaps {
     // Generate deeply nested maps: {"a": {"a": ...}}
+    // §1.2: same depth cap applies; must return nil, not crash.
     NSMutableData *data = [NSMutableData data];
     int depth = 10000;
     
@@ -58,8 +57,10 @@
     [data appendBytes:&value length:1];
     
     @try {
-        [CBORDecoder decode:data];
-        XCTAssertTrue(YES, @"Survived deep map nesting");
+        CBORValue *decoded = [CBORDecoder decode:data];
+        XCTAssertNil(decoded,
+                     @"Deeply nested CBOR map (depth=%d) must be rejected by "
+                     @"the depth cap.", depth);
     } @catch (NSException *exception) {
          XCTFail(@"Caught exception: %@", exception);
     }
