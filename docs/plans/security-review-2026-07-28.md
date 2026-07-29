@@ -1,7 +1,7 @@
 ---
 title: Security Review Remediation — 2026-07-28
 status: proposed
-last_verified: 2026-07-28
+last_verified: 2026-07-29
 ---
 
 # Security Review Remediation — 2026-07-28
@@ -42,6 +42,38 @@ Nothing below is speculative. Findings the audit could not substantiate were dro
    `test_main.m` or it silently runs zero tests.
 
 ---
+
+## Status revision 3 — 2026-07-29 (supersedes revision 2 below)
+
+Phase 29 (`docs/plans/prompts/phase-29-refresh-flow-and-parser-test-debt.md`)
+closes every item this revision had open. All four evidenced by full-suite or
+targeted `AllTests --gated=run`.
+
+- **P0 (refresh flow regression)** — fixed in `bab8bbf2`. Migrated the session
+  flow to JWT refresh tokens (option (b) from revision 2's decision point; no
+  live prod, so no migration path needed) and replaced the family/tombstone
+  reuse-detection with the reference AT Protocol PDS's grace-period design
+  (see `bab8bbf2`'s message and the phase-29 file's Progress section for the
+  full trace — the actual bugs were narrower than this revision's diagnosis:
+  `verifyRefreshToken:` was never in the session-flow path at all, and the
+  two real defects were in §4.3's family/tombstone mechanism itself).
+- **P1 (§R2, `CBORCanonicalFormExploitTests`)** — already closed by `fea378c9`
+  before this pass; confirmed still deleted, `ATProtoDagCBOREdgeCaseTests`
+  retains the coverage.
+- **P2 (§4.1/§4.4 remote-issuer)** — product fix already landed
+  (`b77de70d` for alg, `c2bc66d1` for token_use/typ); this pass added the two
+  missing tests (`5da73c4e`, `AuthVerifierParityTests.m`).
+- **P3 (§2.1 sweep)** — still open, unchanged, tracked separately; not in
+  phase-29's scope.
+
+Full `AllTests --gated=run`: 4885 tests, 6 failures, all pre-existing and
+unrelated to this review's changes (confirmed via `git stash` against the
+same HEAD): `NetworkSecurityHardeningTests/testDPoPNonceChallenge`,
+`.../testDPoPNonceRetrySucceeds`,
+`XrpcMethodRegistryTests/testExtractDIDFromAuthHeaderDPoPNonceChallengeAndRetry`,
+`HttpRequestParsingTests/testForwardedHeadersHonoredForTrustedProxySourceMatchesRemoteAddress`,
+`CommitChainTests/testBroadcastCommitSetsSinceField`,
+`FirehoseIntegrationTests/testBroadcastCommitCARContainsRecordBlocks`.
 
 ## Status revision 2 — 2026-07-29 (supersedes revision 1 below)
 
