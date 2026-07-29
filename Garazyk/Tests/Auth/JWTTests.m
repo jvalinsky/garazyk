@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Auth/JWT.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import <CommonCrypto/CommonDigest.h>
 
 @interface JWTTests : XCTestCase

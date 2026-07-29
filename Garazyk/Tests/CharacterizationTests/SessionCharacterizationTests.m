@@ -3,7 +3,7 @@
 #import "CharacterizationTestBase.h"
 #import "Auth/Session.h"
 #import "Auth/JWT.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 @interface SessionCharacterizationTests : CharacterizationTestBase
 

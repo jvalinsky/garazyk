@@ -3,7 +3,7 @@
 #import "Auth/OAuth2Handler+PAR.h"
 #import "Auth/OAuth2.h"
 #import "Auth/OAuthClientAuthPolicy.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSNonceManager.h"
 #import "Database/PDSDatabase.h"
 #import "Security/PDSSecurityCompare.h"

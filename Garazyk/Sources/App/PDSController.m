@@ -20,7 +20,7 @@
 #import "Auth/JWT.h"
 #import "Auth/OAuth2Handler.h"
 #import "Auth/PDSKeyManagerFactory.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoError.h"
 #import "Core/ATProtoServiceContainer.h"

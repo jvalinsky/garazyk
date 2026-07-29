@@ -15,7 +15,7 @@
 #import "Debug/GZLogRedactor.h"
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Security/PDSKeyEnvelope.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"

@@ -3,7 +3,7 @@
 #import "Auth/OAuth2Handler+ClientValidation.h"
 #import "Auth/OAuth2.h"
 #import "Security/PDSSecurityCompare.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"
 #import "Database/PDSDatabase.h"
 #import "App/ATProtoServiceConfiguration.h"

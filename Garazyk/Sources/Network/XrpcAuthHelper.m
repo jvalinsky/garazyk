@@ -15,7 +15,7 @@
 #import "Auth/OAuth2.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/PDSReplayCache.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDS/PDSAuth.h"
 #import "Auth/Verifier/AuthVerifier.h"
 #import "App/ATProtoServiceConfiguration.h"

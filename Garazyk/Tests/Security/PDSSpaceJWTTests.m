@@ -6,7 +6,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #import "Auth/PDSActorKeyManagerProtocol.h"
-#import "Auth/Secp256k1.h"
+#import "Auth/Crypto/Secp256k1.h"
 #import "Security/Space/PDSSpaceJWT.h"
 
 @interface PDSSpaceJWTTestKeyManager : NSObject <PDSActorKeyManager>

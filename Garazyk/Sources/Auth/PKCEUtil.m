@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/PKCEUtil.h"
-#import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
 #import "Security/PDSSecurityCompare.h"
