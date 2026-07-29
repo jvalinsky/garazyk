@@ -19,7 +19,7 @@
 #import "Debug/GZLogger.h"
 #import "Metrics/GZMetrics.h"
 #import "Security/PDSSecurityCompare.h"
-#import "Auth/OAuthProvider/OAuthProviderProtocols.h"
+#import "Auth/Verifier/AuthVerifierProtocols.h"
 #import <Security/Security.h>
 
 NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
