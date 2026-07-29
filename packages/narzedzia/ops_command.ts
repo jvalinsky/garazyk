@@ -31,37 +31,92 @@ function sanitizePathForSqlite(path: string): string | null {
   return path;
 }
 
+/**
+ * Paths and retention policy used by {@link runBackup}.
+ *
+ * @public
+ */
 export interface BackupOptions {
+  /** PDS data root; defaults to `/var/lib/atprotopds/data` */
   dataDir?: string;
+  /** Destination directory for compressed backups */
   backupDir?: string;
+  /** Retention period in days, encoded as a decimal string */
   retention?: string;
 }
 
+/**
+ * Actor-store location used by {@link runBackfill}.
+ *
+ * @public
+ */
 export interface BackfillOptions {
+  /** PDS data root containing the `actors` directory */
   dataDir?: string;
 }
 
+/**
+ * Configuration file selected for production-safety validation.
+ *
+ * @public
+ */
 export interface ValidateConfigOptions {
+  /** Path to a JSON configuration file; block comments are permitted */
   configPath: string;
 }
 
+/**
+ * Account, storage, and Cloudflare inputs for initial PDS setup.
+ *
+ * @public
+ */
 export interface SetupPdsOptions {
+  /** Email address for the initial administrative account */
   email: string;
+  /** AT Protocol handle for the initial administrative account */
   handle: string;
+  /** Account password; a random value is generated when omitted */
   password?: string;
+  /** Cloudflare API bearer token with DNS edit permission */
   cfToken: string;
+  /** Cloudflare zone identifier that owns the handle's DNS names */
   cfZoneId: string;
+  /** PDS data directory; defaults to `$HOME/pds-data` */
   dataDir?: string;
+  /** CNAME target; defaults to the `DEPLOY_HOST` environment variable */
   cfTarget?: string;
 }
 
+/**
+ * Cloudflare inputs for adding an AT Protocol handle CNAME.
+ *
+ * @public
+ */
 export interface DnsAddOptions {
+  /** Cloudflare API bearer token with DNS edit permission */
   cfToken: string;
+  /** Cloudflare zone identifier that owns the handle */
   cfZoneId: string;
+  /** Fully qualified handle to register */
   handle: string;
+  /** Hostname stored as the CNAME target */
   cfTarget: string;
 }
 
+/**
+ * Creates a compressed snapshot of PDS SQLite databases and configuration.
+ *
+ * @remarks
+ * SQLite databases are copied with the SQLite `.backup` command. Missing
+ * databases and optional configuration files are reported and skipped. The
+ * temporary timestamped directory is removed after archive creation.
+ *
+ * @param options - Source, destination, and retention configuration
+ * @returns A promise that resolves after the archive attempt completes
+ * @throws If required directories cannot be created or external commands
+ * cannot be started
+ * @public
+ */
 export async function runBackup(options: BackupOptions): Promise<void> {
   const dataDir = options.dataDir || "/var/lib/atprotopds/data";
   const backupDir = options.backupDir || "/var/backups/atprotopds";
@@ -163,6 +218,18 @@ export async function runBackup(options: BackupOptions): Promise<void> {
   }
 }
 
+/**
+ * Recomputes account-usage rows in actor SQLite databases.
+ *
+ * @remarks
+ * Only actor database filenames containing a valid `did:plc` or `did:web`
+ * identifier are processed. Record, repository, and optional blob totals are
+ * written to each database's `account_usage` table.
+ *
+ * @param options - PDS data-directory selection
+ * @returns A promise that resolves after all actor databases are scanned
+ * @public
+ */
 export async function runBackfill(options: BackfillOptions): Promise<void> {
   const dataDir = options.dataDir || "/var/lib/atprotopds/data";
   const actorsDir = join(dataDir, "actors");
@@ -251,6 +318,18 @@ export async function runBackfill(options: BackfillOptions): Promise<void> {
   logInfo(`  Total blobs:      ${totalBlobs}`);
 }
 
+/**
+ * Validates production-critical PDS configuration settings.
+ *
+ * @remarks
+ * The command requires invite codes, the public PLC directory, and rate
+ * limiting, and rejects configurations with enabled debug flags. Validation
+ * failures terminate through the shared CLI error handler.
+ *
+ * @param options - Configuration file to validate
+ * @returns A promise that resolves when every required setting passes
+ * @public
+ */
 export async function runValidateConfig(
   options: ValidateConfigOptions,
 ): Promise<void> {
@@ -294,6 +373,19 @@ export async function runValidateConfig(
   }
 }
 
+/**
+ * Creates the initial PDS account, verifies its DID, and provisions DNS.
+ *
+ * @remarks
+ * This operation creates local directories, invokes the `kaszlak` binary,
+ * contacts `plc.directory`, and creates two Cloudflare CNAME records. When no
+ * password is supplied, the generated password is printed with the setup
+ * summary for the operator to capture.
+ *
+ * @param options - Account, filesystem, and Cloudflare setup inputs
+ * @returns A promise that resolves after account and DNS provisioning
+ * @public
+ */
 export async function runSetupPds(options: SetupPdsOptions): Promise<void> {
   const { email, handle, cfToken, cfZoneId } = options;
   if (!email || !handle || !cfToken || !cfZoneId) {
@@ -371,6 +463,13 @@ export async function runSetupPds(options: SetupPdsOptions): Promise<void> {
   );
 }
 
+/**
+ * Adds a Cloudflare CNAME for an AT Protocol handle.
+ *
+ * @param options - Cloudflare credentials, handle, and target hostname
+ * @returns A promise that resolves after the create-or-skip request
+ * @public
+ */
 export async function runDnsAdd(options: DnsAddOptions): Promise<void> {
   const { cfToken, cfZoneId, handle, cfTarget } = options;
   if (!cfToken || !cfZoneId || !handle || !cfTarget) {
@@ -383,9 +482,27 @@ export async function runDnsAdd(options: DnsAddOptions): Promise<void> {
   await cf.addCname(handle, cfTarget);
 }
 
+/**
+ * Minimal Cloudflare DNS client scoped to one zone.
+ *
+ * @public
+ */
 export class CloudflareClient {
+  /**
+   * Creates a zone-scoped DNS client.
+   *
+   * @param token - Cloudflare API bearer token
+   * @param zoneId - Zone identifier used for record operations
+   */
   constructor(private token: string, private zoneId: string) {}
 
+  /**
+   * Creates a DNS-only CNAME unless an equivalent name already exists.
+   *
+   * @param name - Fully qualified record name
+   * @param content - Target hostname stored in the CNAME
+   * @returns `true` when the record exists or is created; otherwise `false`
+   */
   async addCname(name: string, content: string): Promise<boolean> {
     logInfo(`Checking if CNAME for '${name}' already exists...`);
     const params = new URLSearchParams({

@@ -3,6 +3,7 @@
 import { assertEquals } from "@std/assert";
 import {
   classifyDoc,
+  computeOrphans,
   createRepoDocsPaths,
   inferCanonicalTarget,
   inferOwner,
@@ -26,6 +27,53 @@ Deno.test("classifyDoc: archive for archive/scratchpad/plans paths", () => {
   assertEquals(classifyDoc("docs/scratchpad/draft.md"), "archive");
   assertEquals(classifyDoc("docs/plans/archive/retired.md"), "archive");
   assertEquals(classifyDoc("docs/plan/draft.md"), "archive");
+});
+
+Deno.test("classifyDoc: decision records and Starlight content have dedicated classes", () => {
+  assertEquals(
+    classifyDoc("docs/adr/0001-example-decision.md"),
+    "decision-record",
+  );
+  assertEquals(
+    classifyDoc("Garazyk/docs-site/src/content/docs/auth/oauth-dpop.md"),
+    "site-content",
+  );
+});
+
+Deno.test("computeOrphans: requires inbound links only for canonical documents", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const result = await computeOrphans(
+      [
+        {
+          path: "docs/01-getting-started/setup.md",
+          classification: "canonical",
+          canonical_target: "docs/01-getting-started/setup.md",
+          owner: "docs",
+          status: "active",
+        },
+        {
+          path: "docs/adr/0001-example.md",
+          classification: "decision-record",
+          canonical_target: "docs/index.md",
+          owner: "docs",
+          status: "published",
+        },
+        {
+          path: "docs/archive/example.md",
+          classification: "archive",
+          canonical_target: "docs/index.md",
+          owner: "docs",
+          status: "archived",
+        },
+      ],
+      [],
+      `${tempDir}/orphan-allowlist.txt`,
+    );
+    assertEquals(result.orphans, ["docs/01-getting-started/setup.md"]);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
 });
 
 Deno.test("classifyDoc: entrypoint for root-level known files", () => {
@@ -84,7 +132,10 @@ Deno.test("inferCanonicalTarget: canonical files return themselves", () => {
 });
 
 Deno.test("inferCanonicalTarget: root entrypoints map to known targets", () => {
-  assertEquals(inferCanonicalTarget("README.md", "entrypoint"), "docs/index.md");
+  assertEquals(
+    inferCanonicalTarget("README.md", "entrypoint"),
+    "docs/index.md",
+  );
   assertEquals(
     inferCanonicalTarget("BUILD.md", "entrypoint"),
     "docs/01-getting-started/setup.md",

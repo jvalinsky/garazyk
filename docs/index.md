@@ -15,6 +15,7 @@ title: Garazyk Documentation
 - [Documentation map](11-reference/documentation-map.md)
 - [Deno scenario framework](11-reference/deno-scenario-framework.md)
 - [Deno packages](11-reference/deno-packages.md)
+- [Glossary](11-reference/glossary.md)
 - [Lexicon resolution](11-reference/lexicon-resolution.md)
 - [Admin UI](11-reference/admin-ui-documentation.md)
 - [Source-adjacent documentation](11-reference/source-adjacent-documentation.md)
