@@ -9,6 +9,20 @@ NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
 
 static const NSUInteger kMaxDecodeDepth = 64;
 
+// Compare two CBOR-encoded map keys per DAG-CBOR canonical sort order:
+// shorter encoded length sorts first; for equal lengths, byte-wise memcmp.
+// Mirrors the comparison used by the encoder in _canonicallySortedKeys: so
+// the round-trip is identity-preserving for canonical encodings.
+static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
+                                            const uint8_t *b, NSUInteger bLen) {
+    if (aLen < bLen) return -1;
+    if (aLen > bLen) return 1;
+    int cmp = memcmp(a, b, aLen);
+    if (cmp < 0) return -1;
+    if (cmp > 0) return 1;
+    return 0;
+}
+
 @implementation ATProtoDagCBOR
 
 #pragma mark - Public API
@@ -30,9 +44,18 @@ static const NSUInteger kMaxDecodeDepth = 64;
         }
         return nil;
     }
-    
+
     NSUInteger index = 0;
-    return [self _decodeFromBytes:data.bytes length:data.length index:&index depth:0 error:error];
+    id result = [self _decodeFromBytes:data.bytes length:data.length index:&index depth:0 error:error];
+    if (result && index != data.length) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeDecodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Trailing data after complete CBOR item"}];
+        }
+        return nil;
+    }
+    return result;
 }
 
 + (nullable NSData *)encodeJSONObject:(id)jsonObject error:(NSError **)error {
@@ -563,7 +586,28 @@ static const NSUInteger kMaxDecodeDepth = 64;
         }
         return nil;
     }
-    
+
+    // Reject non-minimal length encodings. DAG-CBOR canonical form requires
+    // that the encoded length fits within the smallest natural encoding for
+    // the parsed `additionalInfo`; otherwise one logical value would have
+    // multiple valid encodings, breaking content addressing.
+    if (additionalInfo >= 24 && additionalInfo <= 27) {
+        // Natural floor per DAG-CBOR canonical form — anything below this
+        // fits in a smaller additionalInfo, so the wider encoding is
+        // non-minimal:
+        //   additionalInfo 24 → value < 24    (could have used < 24)
+        //   additionalInfo 25 → value < 256   (could have used 24)
+        //   additionalInfo 26 → value < 65536 (could have used 25)
+        //   additionalInfo 27 → value < 2^32  (could have used 26)
+        static const uint64_t kMinValueForAdditional[] = {
+            24, 256, 65536, 4294967296ULL
+        };
+        if (value < kMinValueForAdditional[additionalInfo - 24]) {
+            [self _setDecodingError:error message:@"Non-minimal length encoding"];
+            return nil;
+        }
+    }
+
     return @(value);
 }
 
@@ -588,7 +632,7 @@ static const NSUInteger kMaxDecodeDepth = 64;
         [self _setDecodingError:error message:@"Negative integer exceeds int64 range"];
         return nil;
     }
-    return @(-(int64_t)(value + 1));
+    return @( -1 - (int64_t)value );
 }
 
 + (nullable NSData *)_decodeByteString:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
@@ -672,7 +716,12 @@ static const NSUInteger kMaxDecodeDepth = 64;
     }
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:count];
 
+    // Previous key's raw encoded bytes for sort-order + duplicate detection.
+    const uint8_t *prevKeyBytes = NULL;
+    NSUInteger prevKeyLen = 0;
+
     for (uint64_t i = 0; i < count; i++) {
+        NSUInteger keyStart = *index;
         id key = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
         if (!key) {
             if (error && !*error) {
@@ -682,7 +731,28 @@ static const NSUInteger kMaxDecodeDepth = 64;
             }
             return nil;
         }
-        
+        NSUInteger keyEnd = *index;
+        NSUInteger keyLen = keyEnd - keyStart;
+
+        // Enforce DAG-CBOR canonical sort order and reject duplicate keys.
+        // Two distinct encodings that decode to the same NSDictionary key
+        // would otherwise silently last-write-win through `dict[key] = value`,
+        // hiding the loss.
+        if (prevKeyBytes != NULL) {
+            NSInteger cmp = _dagCBORCompareEncodedKeys(bytes + keyStart, keyLen,
+                                                       prevKeyBytes, prevKeyLen);
+            if (cmp < 0) {
+                [self _setDecodingError:error message:@"Map keys not in canonical DAG-CBOR order"];
+                return nil;
+            }
+            if (cmp == 0) {
+                [self _setDecodingError:error message:@"Duplicate map key"];
+                return nil;
+            }
+        }
+        prevKeyBytes = bytes + keyStart;
+        prevKeyLen = keyLen;
+
         id value = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
         if (!value) {
             if (error && !*error) {
@@ -692,7 +762,7 @@ static const NSUInteger kMaxDecodeDepth = 64;
             }
             return nil;
         }
-        
+
         dict[key] = value;
     }
     
