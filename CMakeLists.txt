@@ -368,6 +368,11 @@ file(GLOB_RECURSE ATPROTO_CORE_SOURCES
 )
 list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.m$")
 list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.c$")
+# PDSSpaceAppAttestationVerifier holds a real Services dependency
+# (Services/PDS/PDSSpaceStore) despite living in Security/Space/ alongside
+# otherwise Core-clean files, so it's carved out to ATProtoServices below
+# rather than staying in the Core glob.
+list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Security/Space/PDSSpaceAppAttestationVerifier\\.m$")
 
 file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
   "Garazyk/Sources/Database/*.m"
@@ -412,6 +417,7 @@ list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Verifier/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDS/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Server/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Services/PDS(AdminService|PhoneVerificationProvider)\\.m$")
+list(APPEND ATPROTO_SERVICES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Security/Space/PDSSpaceAppAttestationVerifier.m")
 
 file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
   "Garazyk/Sources/Network/*.m"
