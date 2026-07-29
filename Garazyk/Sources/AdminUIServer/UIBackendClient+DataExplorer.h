@@ -5,24 +5,29 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Read-only PDS repository and blob inspection operations.
+ * @discussion All methods use the PDS administrative transport and block for their request. They
+ * return upstream JSON on success, or a dictionary with `error` and `message` on validation or
+ * upstream failure. List calls forward cursors; a zero limit is normalized by the implementation.
+ */
 @interface UIBackendClient (DataExplorer)
 
+/** @abstract Retrieves repository metadata for a nonempty DID. */
 - (NSDictionary *)describeRepo:(NSString *)did;
 
 /**
- * @abstract List records for did.
- * @param did Actor DID for the request.
- * @param collection Repository collection NSID.
- * @param limit Maximum number of records to return.
- * @param cursor Pagination cursor from a previous response.
- * @return The response dictionary, or nil when the request fails.
+ * @abstract Lists records for a nonempty DID with optional collection and cursor filters.
  */
 - (NSDictionary *)listRecordsForDID:(NSString *)did collection:(nullable NSString *)collection limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 
+/** @abstract Retrieves the record identified by nonempty DID, collection, and record key values. */
 - (NSDictionary *)getRecordForDID:(NSString *)did collection:(NSString *)collection rkey:(NSString *)rkey;
 
+/** @abstract Lists blobs for a nonempty DID, forwarding optional limit and cursor values. */
 - (NSDictionary *)fetchBlobsForDID:(NSString *)did limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 
+/** @abstract Requests the blob response for nonempty DID and CID values. */
 - (NSDictionary *)fetchBlobForDID:(NSString *)did cid:(NSString *)cid;
 
 @end

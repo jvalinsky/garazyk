@@ -14,17 +14,25 @@ import type { ProcedureOutput } from "@garazyk/gruszka";
 
 /** Options for creating a post task. */
 export interface PostOptions {
+  /** Text content stored in the post record. */
   text: string;
+  /** Rich-text annotations applied to {@link text}. */
   facets?: LexiconDefs["app.bsky.feed.post"]["main"]["facets"];
+  /** Root and parent references when the post is a reply. */
   reply?: LexiconDefs["app.bsky.feed.post"]["main"]["reply"];
+  /** Optional media, record, or external embed. */
   embed?: LexiconDefs["app.bsky.feed.post"]["main"]["embed"];
 }
 
 /** Options for creating a profile. */
 export interface ProfileOptions {
+  /** Display name stored in the profile record. */
   displayName?: string;
+  /** Profile biography text. */
   description?: string;
+  /** Blob reference or URL used as the profile avatar. */
   avatar?: string;
+  /** Blob reference or URL used as the profile banner. */
   banner?: string;
 }
 

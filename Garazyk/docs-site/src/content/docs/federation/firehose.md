@@ -1,155 +1,94 @@
 ---
 title: The Firehose
-description: Broadcasting to Relays, BGS, and AppViews in ATProto
+description: subscribeRepos events, replay cursors, and slow-consumer handling
 ---
 
-The crown jewel of a Personal Data Server (PDS) in the AT Protocol ecosystem is its ability to
-participate dynamically in the global federation. A PDS operating in isolation is largely invisible;
-to be part of the wider network, it must stream a massive "Firehose" of cryptographic repository
-mutations to the outer network via the `com.atproto.sync.subscribeRepos` endpoint. This streaming
-mechanism is what allows the Bluesky network to feel real-time and globally connected.
+`com.atproto.sync.subscribeRepos` is the PDS repository event stream. Relays
+connect over WebSocket, consume ordered events, and persist a cursor so they can
+resume after a disconnect.
 
-## What is a Firehose?
+## Event production
 
-A Firehose is a permanently open WebSocket connection where the PDS continuously, and sequentially,
-emits events as they happen. These events are broadcasted synchronously alongside local database
-commits. Rather than external services continually polling the PDS for updates, the PDS aggressively
-pushes state changes down the socket, enabling near-instantaneous propagation of data.
+A repository write updates record storage and produces a new signed commit. The
+PDS then appends an event with a sequence number to its durable event log. Live
+subscribers receive the same serialized event that replay readers load later.
 
-When a user interacts with the network by writing data—such as creating a new post, liking a skeet,
-or following another account:
+Persisting the event before broadcast matters. A process crash after the
+database commit but before a socket write must not create a gap that no cursor
+can recover.
 
-1. The local SQLite Database on the PDS is updated.
-2. The user's Merkle Search Tree (MST) is re-rooted to include the new Content Identifier (CID).
-3. The PDS packages this state delta into a DAG-CBOR payload.
-4. The event is broadcasted immediately to all active WebSocket clients.
+## Event schemas
 
-Typical consumers of this firehose include Relay servers (often called Big Graph Services or BGS)
-and AppViews (like the official Bluesky AppView), which aggregate data from thousands of PDS
-instances to present a unified chronological timeline to users.
+The `subscribeRepos` lexicon defines these normal event bodies:
 
-### Event Kinds
+- `#commit` reports repository operations and includes the commit and referenced
+  blocks.
+- `#sync` carries a larger repository synchronization payload.
+- `#identity` reports an identity update that requires DID document
+  re-resolution.
+- `#account` reports account status such as active, suspended, or taken down.
+- `#info` reports stream conditions such as an outdated cursor.
 
-There are three primary Event Kinds emitted over the `Garazyk PDS` firehose. Each serves a distinct
-purpose in keeping external consumers synchronized with the PDS's internal state:
+An XRPC error frame is separate from these normal message schemas. Consumers
+should dispatch on the subscription header's operation and type fields before
+decoding the body.
 
-- **`FirehoseEventKindCommit`**: A user updated their repository (e.g., liked, posted, deleted).
-  This is the most common event type. This event contains the raw CAR (Content Addressable aRchives)
-  blocks representing the exact Merkle Search Tree (MST) diff. Consumers apply these blocks to their
-  local copy of the user's repository to mirror the changes.
-- **`FirehoseEventKindIdentity`**: A user rotated their DID (Decentralized Identifier) recovery
-  keys, updated their handle, or migrated to a new PDS. This signals to relays that they must
-  re-fetch or re-verify the user's DID document.
-- **`FirehoseEventKindError`**: A stream error occurred, or a requested sequence cursor is invalid.
-  This informs the consumer that the connection must be closed or that they request an impossible
-  state segment.
+## Connection and replay
 
-## Architecture: `SubscribeReposHandler`
+A relay connects with an optional cursor:
 
-To handle potentially thousands of demanding relays listening to your server simultaneously, our
-Objective-C backend utilizes a specialized `WebSocketServer` broadcasting architecture orchestrated
-by the `SubscribeReposHandler`. Performance and memory safety are critical here, as backpressure
-from slow consumers could otherwise crash the server.
-
-### 1. Connection Lifecycle
-
-Whenever a new WebSocket upgrade completes on `/xrpc/com.atproto.sync.subscribeRepos`, the HTTP
-router delegates the connection to the `SubscribeReposHandler`.
-
-```mermaid
-sequenceDiagram
-    participant Relay as External Relay (BGS)
-    participant Router as HttpRouter
-    participant Handler as SubscribeReposHandler
-    
-    Relay->>Router: GET /xrpc/com.atproto.sync.subscribeRepos?cursor=12345
-    Router->>Handler: Upgrade to WebSocket
-    Handler-->>Relay: 101 Switching Protocols
-    Note over Handler: Connection added to attachedConnections
+```text
+GET /xrpc/com.atproto.sync.subscribeRepos?cursor=12345
 ```
 
-### 2. Notification Broadcasts
+`SubscribeReposHandler` registers the upgraded connection, replays events after
+the cursor in batches, and then transitions the subscriber to live delivery
+without changing event order.
 
-Actor data is managed by the `PDSDatabasePool`. When the pool successfully commits a transaction
-locally via its Serial Write Queue, it fires a global `NSNotification`
-(`PDSRecordDidChangeNotification`). This notification acts as the trigger for the firehose,
-containing the raw block data and the affected repository's DID.
+Cursor cases require different responses:
 
-### 3. Event Dispatch & Serialization
+- A valid retained cursor replays the following events.
+- A future cursor returns `FutureCursor`.
+- A cursor older than retained history produces `OutdatedCursor`; the consumer
+  must repair its state using repository sync endpoints according to its policy.
+- An invalid cursor is rejected before the WebSocket stream starts.
 
-The `SubscribeReposHandler` listens for this notification on its dedicated serial dispatch queue
-(`com.atproto.pds.subscribeRepos.events`). A deterministic serial queue ensures strict chronological
-ordering and guarantees that sequence numbering is monotonically increasing without race conditions.
+The default replay batch is 100 events, and one connection may replay at most
+10,000 events unless configuration overrides the limit.
 
-The handler serializes the updated CAR blocks and dispatches an asynchronous socket write to _every_
-registered subscriber simultaneously.
+## Ordering
 
-```objc
-// Simplified broadcast loop responding to a DB commit event
-dispatch_async(self.eventQueue, ^{
-    
-    // 1. Serialize the new ATProto Record into a DAG-CBOR FirehoseCommitEvent
-    NSData *cborEvent = [self serializeEvent:commitData];
-    
-    // 2. Wrap the CBOR payload mathematically into a WebSocket Binary Frame
-    NSData *wsFrame = [self wrapInWebSocketBinaryFrame:cborEvent];
-    
-    // 3. Iterate over the active subscribers
-    for (WebSocketConnection *sub in self.attachedConnections) {
-        
-        // 4. Fire a non-blocking TCP socket write across the network
-        // Includes backpressure checks to drop slow consumers
-        [self sendEventData:wsFrame toConnectionWithBackpressureCheck:sub];
-    }
-});
-```
+The handler serializes event-state transitions on its event queue. Sequence
+numbers come from the durable log, not from the order in which asynchronous
+socket writes happen to finish.
 
-## Resilience and Scale
+Subscribers must commit their cursor only after they have durably processed the
+corresponding event. Acknowledging a cursor first can lose data if the consumer
+crashes before storing the event.
 
-Operating a firehose at scale requires defensive programming. A public PDS is exposed to the open
-internet, meaning it must protect itself from resource exhaustion caused by misbehaving, malicious,
-or merely slow relays.
+## Backpressure
 
-### Backpressure and Slow Consumers
+Each connection has independent pending-send limits. The current defaults are:
 
-Because the broadcast method pushes bytes to a non-blocking POSIX socket and executes
-asynchronously, **one slow external Relay cannot bottleneck the rest of the server**.
+- 512 queued sends
+- 16 MiB of queued payload bytes
 
-The `SubscribeReposHandler` implements strict backpressure limits:
+If either limit is crossed, the handler sends a `ConsumerTooSlow` error frame
+when the socket remains writable and closes the connection with WebSocket policy
+code 1008. Other subscribers continue from their own queues.
 
-- **`kSubscribeReposMaxPendingBytesDefault` (16MB):** Subscriptions are memory intensive. If a
-  client's TCP window fills up and pending unsent bytes exceed 16MB in memory, the PDS considers the
-  consumer too slow. It yields a `ConsumerTooSlow` error frame and forcefully drops the connection.
-  This prevents memory bloat on the server and ensures fast consumers are not penalized by slow
-  ones.
+A slow consumer recovers through cursor replay. Raising the queue limit only
+moves the memory and latency boundary; it does not fix a consumer that cannot
+keep up with the event rate.
 
-### Cursor Replay (Catching Up)
+## Consumer validation
 
-It is expected that relays will disconnect occasionally (e.g., due to network drops or restarts).
-When they reconnect, they provide a `cursor` (sequence number) in the connection URL query
-parameters to resume exactly where they left off without missing events.
+Relays and AppViews should treat the stream as untrusted input:
 
-- The PDS maintains a global, monotonically increasing sequence number (cursor) for every event in
-  its `ServiceDatabases` (typically an auto-incrementing integer).
-- Upon reconnection with a specific cursor, the `SubscribeReposHandler` fetches historical events
-  occurring after that exact cursor and replays them rapidly in batches
-  (`kSubscribeReposReplayBatchSize`).
-- To prevent database abuse and excessive I/O, replays are capped (e.g.,
-  `kSubscribeReposMaxReplayEventsDefault` is typically limited to a few thousand).
-- If a relay falls too far behind the current state and requests a cursor that is older than the
-  configured local retention, it receives an `OutdatedCursor` error. In this scenario, the relay
-  must resynchronize the entire repository state over HTTP via standard sync endpoints
-  (`com.atproto.sync.getRepo` or `com.atproto.sync.getBlocks`) before reconnecting to the real-time
-  firehose.
+1. Parse the XRPC subscription envelope with size and depth bounds.
+2. Confirm event sequence and cursor behavior.
+3. Verify the signed repository commit with the DID signing key.
+4. Verify each included block against its CID.
+5. Apply repository operations atomically.
 
-## Conclusion
-
-The Firehose is the beating heart of an ATProto PDS, delivering instant updates across the global
-network. By combining sequential event queues, strictly enforced backpressure limits, and
-non-blocking I/O architectures, the Objective-C PDS implementation efficiently fans-out thousands of
-repository mutations per second. This ensures robust federation without compromising the
-responsiveness or stability of local read/write endpoints.
-
-> [!NOTE]
-> Ensure your network infrastructure (like reverse proxies or load balancers) does not restrict
-> long-lived HTTP/1.1 connections, or your firehose streams will be frequently terminated!
+Transport order alone does not establish authenticity or repository consistency.

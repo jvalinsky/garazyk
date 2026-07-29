@@ -5,24 +5,44 @@ title: Docs Noncanonical
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **120**
+Total documents in this view: **170**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
 | [docs/20-explanation/architecture/atproto_pds_architecture.md](../20-explanation/architecture/atproto_pds_architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/architecture/media_core_framework.md](../20-explanation/architecture/media_core_framework.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/DEPLOYMENT.md](../20-explanation/guides/DEPLOYMENT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0001-compat-shims-must-not-depend-on-database.md](../adr/0001-compat-shims-must-not-depend-on-database.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0002-defer-appview-database-queryrunner-migration.md](../adr/0002-defer-appview-database-queryrunner-migration.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0003-xrpc-registration-uses-plain-nsid-constants.md](../adr/0003-xrpc-registration-uses-plain-nsid-constants.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0004-experimental-permissioned-spaces.md](../adr/0004-experimental-permissioned-spaces.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0005-space-reconciliation-after-oplog-pruning.md](../adr/0005-space-reconciliation-after-oplog-pruning.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0006-remove-kaszlak-relay-serve.md](../adr/0006-remove-kaszlak-relay-serve.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md](../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0008-appview-durable-ingest-index-queue.md](../adr/0008-appview-durable-ingest-index-queue.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0009-star-versioning-and-variants.md](../adr/0009-star-versioning-and-variants.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0010-wasm-kernel-supported-subset.md](../adr/0010-wasm-kernel-supported-subset.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/adr/0011-wasm-compiled-cell-plane.md](../adr/0011-wasm-compiled-cell-plane.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/adr/0001-compat-shims-must-not-depend-on-database.md](../adr/0001-compat-shims-must-not-depend-on-database.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0002-defer-appview-database-queryrunner-migration.md](../adr/0002-defer-appview-database-queryrunner-migration.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0003-xrpc-registration-uses-plain-nsid-constants.md](../adr/0003-xrpc-registration-uses-plain-nsid-constants.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0004-experimental-permissioned-spaces.md](../adr/0004-experimental-permissioned-spaces.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0005-space-reconciliation-after-oplog-pruning.md](../adr/0005-space-reconciliation-after-oplog-pruning.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0006-remove-kaszlak-relay-serve.md](../adr/0006-remove-kaszlak-relay-serve.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md](../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0008-appview-durable-ingest-index-queue.md](../adr/0008-appview-durable-ingest-index-queue.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0009-star-versioning-and-variants.md](../adr/0009-star-versioning-and-variants.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0010-wasm-kernel-supported-subset.md](../adr/0010-wasm-kernel-supported-subset.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0011-wasm-compiled-cell-plane.md](../adr/0011-wasm-compiled-cell-plane.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0012-relay-future-cursor-treated-as-outdated.md](../adr/0012-relay-future-cursor-treated-as-outdated.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0013-blob-lifecycle-conformance.md](../adr/0013-blob-lifecycle-conformance.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0013-claim-type-rejection-at-json-boundaries.md](../adr/0013-claim-type-rejection-at-json-boundaries.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0014-dpop-replay-cache-durability.md](../adr/0014-dpop-replay-cache-durability.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0015-auth-path-architecture.md](../adr/0015-auth-path-architecture.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0016-pinned-egress-resolution.md](../adr/0016-pinned-egress-resolution.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0017-linux-secret-store-uses-an-operator-key.md](../adr/0017-linux-secret-store-uses-an-operator-key.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0018-password-reset-opaque-single-use-token.md](../adr/0018-password-reset-opaque-single-use-token.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0019-captcha-gate-fail-closed-siteverify.md](../adr/0019-captcha-gate-fail-closed-siteverify.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0020-phone-otp-nil-provider-fail-closed.md](../adr/0020-phone-otp-nil-provider-fail-closed.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0021-otp-attempt-counting-server-side.md](../adr/0021-otp-attempt-counting-server-side.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0022-contactservice-deterministic-code-compile-time-guard.md](../adr/0022-contactservice-deterministic-code-compile-time-guard.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0023-ozone-auth-gap-bypasses-freshness-floor.md](../adr/0023-ozone-auth-gap-bypasses-freshness-floor.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0024-safelink-mass-update-guard.md](../adr/0024-safelink-mass-update-guard.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0025-getSubjects-queries-wrong-column.md](../adr/0025-getSubjects-queries-wrong-column.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0026-team-management-uses-did-not-email-as-key.md](../adr/0026-team-management-uses-did-not-email-as-key.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0027-emitModerationEvent-validates-event-type.md](../adr/0027-emitModerationEvent-validates-event-type.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0028-updateSet-membership-is-atomic.md](../adr/0028-updateSet-membership-is-atomic.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0029-cancelScheduledAction-logs-audit-trail.md](../adr/0029-cancelScheduledAction-logs-audit-trail.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0030-registration-gate-composite-uses-and-semantics.md](../adr/0030-registration-gate-composite-uses-and-semantics.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
@@ -107,9 +127,24 @@ Total documents in this view: **120**
 | [docs/plans/prompts/phase-10-deferred-products.md](../plans/prompts/phase-10-deferred-products.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-11-storage-and-mst-optimization.md](../plans/prompts/phase-11-storage-and-mst-optimization.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-12-godfile-decomposition.md](../plans/prompts/phase-12-godfile-decomposition.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-13-auth-json-typing.md](../plans/prompts/phase-13-auth-json-typing.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-14-wire-auth-cluster.md](../plans/prompts/phase-14-wire-auth-cluster.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-15-blob-lifecycle.md](../plans/prompts/phase-15-blob-lifecycle.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-16-storage-pool-and-decoder.md](../plans/prompts/phase-16-storage-pool-and-decoder.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-17-websocket-and-http-framing.md](../plans/prompts/phase-17-websocket-and-http-framing.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-18-egress-pinning.md](../plans/prompts/phase-18-egress-pinning.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-19-core-decoder-bounds.md](../plans/prompts/phase-19-core-decoder-bounds.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-20-secret-store-and-cli.md](../plans/prompts/phase-20-secret-store-and-cli.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-21-appview-hydration.md](../plans/prompts/phase-21-appview-hydration.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-22-mst-viewer-and-dead-cookie.md](../plans/prompts/phase-22-mst-viewer-and-dead-cookie.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-25-registration-gate-composition.md](../plans/prompts/phase-25-registration-gate-composition.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-26-admin-adminui-trust-boundary.md](../plans/prompts/phase-26-admin-adminui-trust-boundary.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-27-chat-trust-boundary.md](../plans/prompts/phase-27-chat-trust-boundary.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-28-admin-trust-boundary.md](../plans/prompts/phase-28-admin-trust-boundary.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/README.md](../plans/prompts/README.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/security-review-2026-07-28.md](../plans/security-review-2026-07-28.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/00-baseline-and-governance.md](../plans/workstreams/00-baseline-and-governance.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/02-core-architecture-and-reliability.md](../plans/workstreams/02-core-architecture-and-reliability.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
@@ -118,6 +153,21 @@ Total documents in this view: **120**
 | [docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md](../plans/workstreams/05-embedded-runtime-and-deferred-products.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/06-permissioned-spaces.md](../plans/workstreams/06-permissioned-spaces.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/07-storage-and-mst-optimization.md](../plans/workstreams/07-storage-and-mst-optimization.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plc-legacy-create-operation.md](../plc-legacy-create-operation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/all-documents.md](all-documents.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/backlinks.md](backlinks.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/examples.md](examples.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/index.md](index.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/root-entrypoints.md](root-entrypoints.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/scripts.md](scripts.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/skills.md](skills.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/source-adjacent.md](source-adjacent.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/repo-index/tooling.md](tooling.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/2026-07-17-optimization-research.md](../reports/2026-07-17-optimization-research.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/spec-conformance-matrix.md](../reports/spec-conformance-matrix.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/agent-protocol.md](../tui/agent-protocol.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/architecture.md](../tui/architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/components.md](../tui/components.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |

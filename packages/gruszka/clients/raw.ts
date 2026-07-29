@@ -26,17 +26,35 @@ export class RawClient {
    * @param method The XRPC query method id.
    * @param params Query parameters.
    * @param token Optional auth token.
+   * @typeParam K - Lexicon query identifier that selects parameter and result types.
+   * @returns The decoded query result, or binary data for a binary-output query.
    */
   async query<K extends LexiconQueryIds>(
     method: K,
     params?: QueryParams<K>,
     token?: string,
   ): Promise<QueryOutput<K>>;
+  /**
+   * Invokes an untyped XRPC query.
+   *
+   * @param method - XRPC query method identifier.
+   * @param params - Query parameters.
+   * @param token - Optional bearer token.
+   * @returns The decoded response, or binary data for a binary-output query.
+   */
   async query(
     method: string,
     params?: Record<string, unknown>,
     token?: string,
   ): Promise<unknown>;
+  /**
+   * Dispatches a query through the transport using the lexicon's output encoding.
+   *
+   * @param method - XRPC query method identifier.
+   * @param params - Query parameters.
+   * @param token - Optional bearer token.
+   * @returns The decoded or binary transport result.
+   */
   async query(
     method: string,
     params?: Record<string, unknown>,
@@ -61,17 +79,35 @@ export class RawClient {
    * @param method The XRPC procedure method id.
    * @param input Procedure input payload.
    * @param token Optional auth token.
+   * @typeParam K - Lexicon procedure identifier that selects input and result types.
+   * @returns The decoded procedure result.
    */
   async procedure<K extends LexiconProcedureIds>(
     method: K,
     input?: ProcedureInput<K>,
     token?: string,
   ): Promise<ProcedureOutput<K>>;
+  /**
+   * Invokes an untyped XRPC procedure.
+   *
+   * @param method - XRPC procedure method identifier.
+   * @param input - Procedure input payload.
+   * @param token - Optional bearer token.
+   * @returns The decoded procedure response.
+   */
   async procedure(
     method: string,
     input?: unknown,
     token?: string,
   ): Promise<unknown>;
+  /**
+   * Dispatches a procedure through the transport using the lexicon's input encoding.
+   *
+   * @param method - XRPC procedure method identifier.
+   * @param input - Procedure input payload.
+   * @param token - Optional bearer token.
+   * @returns The decoded transport result.
+   */
   async procedure(
     method: string,
     input?: unknown,

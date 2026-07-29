@@ -1,6 +1,18 @@
 #!/usr/bin/env -S deno run -A
+
+/**
+ * Measures HeaderDoc coverage in Garazyk Objective-C headers.
+ *
+ * @module doc_coverage
+ */
+
 import { join, normalize } from "@std/path";
 
+/**
+ * Objective-C declaration categories counted by the coverage scanner.
+ *
+ * @public
+ */
 export type Bucket =
   | "classes"
   | "methods"
@@ -9,9 +21,20 @@ export type Bucket =
   | "categories"
   | "protocols";
 
+/** Documented and total declaration counts for one category. @public */
 export type Count = { total: number; documented: number };
+
+/** Declaration counts keyed by coverage category. @public */
 export type Counts = Record<Bucket, Count>;
+
+/** Missing declaration counts keyed by coverage category. @public */
 export type MissingCounts = Record<Bucket, number>;
+
+/**
+ * Source subsystem names used for coverage grouping and thresholds.
+ *
+ * @public
+ */
 export type Subsystem =
   | "Core"
   | "Database"
@@ -22,6 +45,11 @@ export type Subsystem =
   | "AdminUIServer"
   | "Other";
 
+/**
+ * Parsed command-line options for the HeaderDoc coverage scan.
+ *
+ * @public
+ */
 export type Options = {
   searchDir: string;
   minOverall?: number;
@@ -33,6 +61,11 @@ export type Options = {
   includeFrameworks: boolean;
 };
 
+/**
+ * Coverage details for one Objective-C header.
+ *
+ * @public
+ */
 export type FileReport = {
   path: string;
   subsystem: Subsystem;
@@ -41,6 +74,11 @@ export type FileReport = {
   missing: MissingCounts;
 };
 
+/**
+ * Complete HeaderDoc coverage result, including optional threshold checks.
+ *
+ * @public
+ */
 export type Report = {
   searchRoots: string[];
   filesAnalyzed: number;
@@ -84,18 +122,37 @@ const subsystems: Subsystem[] = [
   "Other",
 ];
 
+/**
+ * Creates zeroed declaration counts for every coverage category.
+ *
+ * @returns A mutable count record with independent entries
+ * @public
+ */
 export function emptyCounts(): Counts {
   return Object.fromEntries(
     buckets.map((bucket) => [bucket, { total: 0, documented: 0 }]),
   ) as Counts;
 }
 
+/**
+ * Creates zeroed missing-documentation counts.
+ *
+ * @returns A mutable missing-count record
+ * @public
+ */
 export function emptyMissingCounts(): MissingCounts {
   return Object.fromEntries(
     buckets.map((bucket) => [bucket, 0]),
   ) as MissingCounts;
 }
 
+/**
+ * Adds source declaration counts into an existing aggregate.
+ *
+ * @param target - Mutable aggregate to update
+ * @param source - Counts to add
+ * @public
+ */
 export function addCounts(target: Counts, source: Counts): void {
   for (const bucket of buckets) {
     target[bucket].total += source[bucket].total;
@@ -103,6 +160,13 @@ export function addCounts(target: Counts, source: Counts): void {
   }
 }
 
+/**
+ * Computes undocumented declarations for each category.
+ *
+ * @param counts - Documented and total declaration counts
+ * @returns Missing counts keyed by declaration category
+ * @public
+ */
 export function missingCounts(counts: Counts): MissingCounts {
   const results = emptyMissingCounts();
   for (const bucket of buckets) {
@@ -111,6 +175,18 @@ export function missingCounts(counts: Counts): MissingCounts {
   return results;
 }
 
+/**
+ * Counts Objective-C declarations and their adjacent documentation comments.
+ *
+ * @remarks
+ * The scanner intentionally uses lightweight line matching rather than a full
+ * Objective-C parser. A declaration is documented when a `/**` or `/*!`
+ * comment begins within the category-specific lookback window.
+ *
+ * @param content - Header source text
+ * @returns Declaration and documentation counts
+ * @public
+ */
 export function countDocumentation(content: string): Counts {
   const results = emptyCounts();
   const lines = content.split("\n");
@@ -187,6 +263,17 @@ export function countDocumentation(content: string): Counts {
   return results;
 }
 
+/**
+ * Recursively yields Objective-C headers below a directory.
+ *
+ * @remarks
+ * Compatibility headers under a `Compat` path are excluded from coverage.
+ *
+ * @param dir - Directory to traverse
+ * @returns An asynchronous sequence of header paths
+ * @throws If the search directory does not exist or cannot be read
+ * @public
+ */
 export async function* walkHeaders(dir: string): AsyncGenerator<string> {
   try {
     for await (const entry of Deno.readDir(dir)) {
@@ -206,10 +293,25 @@ export async function* walkHeaders(dir: string): AsyncGenerator<string> {
   }
 }
 
+/**
+ * Converts documented and total counts to an integer percentage.
+ *
+ * @param total - Total declarations
+ * @param documented - Documented declarations
+ * @returns A floor-rounded percentage, or 100 for an empty category
+ * @public
+ */
 export function pct(total: number, documented: number): number {
   return total === 0 ? 100 : Math.floor((documented * 100) / total);
 }
 
+/**
+ * Collapses per-category counts into one coverage summary.
+ *
+ * @param counts - Counts grouped by declaration category
+ * @returns Aggregate documented and total counts with percentage
+ * @public
+ */
 export function summarize(counts: Counts): Count & { percent: number } {
   const total = buckets.reduce((sum, bucket) => sum + counts[bucket].total, 0);
   const documented = buckets.reduce(
@@ -220,6 +322,13 @@ export function summarize(counts: Counts): Count & { percent: number } {
   return { total, documented, percent: pct(total, documented) };
 }
 
+/**
+ * Assigns a source path to its reporting subsystem.
+ *
+ * @param path - Objective-C header path
+ * @returns The matching subsystem, or `Other` when no mapping applies
+ * @public
+ */
 export function subsystemForPath(path: string): Subsystem {
   const normalized = normalize(path);
 
@@ -277,6 +386,13 @@ function parseSubsystemThreshold(
   return [subsystem, parseMinOverall(thresholdText)];
 }
 
+/**
+ * Classifies a repository document by location and filename.
+ *
+ * @param path - Repository-relative documentation path
+ * @returns A canonical, archive, entrypoint, or internal-reference label
+ * @public
+ */
 export function classifyDoc(path: string): string {
   const normalized = normalize(path);
   if (
@@ -294,6 +410,13 @@ export function classifyDoc(path: string): string {
   return "internal-reference";
 }
 
+/**
+ * Infers the owning documentation domain for a repository path.
+ *
+ * @param path - Repository-relative path
+ * @returns Owner label used by generated documentation metadata
+ * @public
+ */
 export function inferOwner(path: string): string {
   if (path.startsWith("docs/")) {
     if (path.startsWith("docs/security/")) return "security";
@@ -310,6 +433,13 @@ export function inferOwner(path: string): string {
   return "docs";
 }
 
+/**
+ * Maps a document classification to its lifecycle status.
+ *
+ * @param classification - Value returned by {@link classifyDoc}
+ * @returns `active`, `archived`, or `reference`
+ * @public
+ */
 export function inferStatus(classification: string): string {
   if (classification === "canonical" || classification === "entrypoint") {
     return "active";
@@ -318,6 +448,14 @@ export function inferStatus(classification: string): string {
   return "reference";
 }
 
+/**
+ * Selects the canonical documentation page for a non-canonical file.
+ *
+ * @param path - Repository-relative documentation path
+ * @param classification - Classification returned by {@link classifyDoc}
+ * @returns Repository-relative canonical target
+ * @public
+ */
 export function inferCanonicalTarget(
   path: string,
   classification: string,
@@ -375,6 +513,12 @@ export function inferCanonicalTarget(
   return "docs/index.md";
 }
 
+/**
+ * Creates zeroed coverage aggregates for every source subsystem.
+ *
+ * @returns Mutable subsystem report entries
+ * @public
+ */
 export function createSubsystemReport(): Record<Subsystem, {
   filesAnalyzed: number;
   totals: Counts;
@@ -396,6 +540,14 @@ export function createSubsystemReport(): Record<Subsystem, {
   }>;
 }
 
+/**
+ * Prints a formatted category and overall coverage table.
+ *
+ * @param title - Heading displayed above the table
+ * @param counts - Counts grouped by declaration category
+ * @param filesAnalyzed - Optional number of scanned headers
+ * @public
+ */
 export function printCounts(
   title: string,
   counts: Counts,
@@ -438,6 +590,12 @@ function missingTotal(counts: MissingCounts): number {
   );
 }
 
+/**
+ * Prints headers that contain undocumented declarations.
+ *
+ * @param files - Per-header coverage reports
+ * @public
+ */
 export function printFileReports(files: FileReport[]): void {
   const rows = files
     .filter((file) => missingTotal(file.missing) > 0)
@@ -467,6 +625,12 @@ export function printFileReports(files: FileReport[]): void {
   console.log("");
 }
 
+/**
+ * Prints the complete human-readable HeaderDoc coverage report.
+ *
+ * @param report - Coverage result to render
+ * @public
+ */
 export function printTextReport(report: Report): void {
   console.log("\nDOCUMENTATION COVERAGE REPORT");
   console.log("==============================\n");
@@ -519,6 +683,13 @@ export function printTextReport(report: Report): void {
   }
 }
 
+/**
+ * Scans configured source roots and builds a HeaderDoc coverage report.
+ *
+ * @param options - Search roots, grouping, output, and threshold options
+ * @returns Coverage totals and optional file or subsystem details
+ * @public
+ */
 export async function buildReport(options: Options): Promise<Report> {
   const searchRoots = [options.searchDir];
   if (options.includeFrameworks) {
@@ -624,6 +795,15 @@ Examples:
   deno run -A packages/narzedzia/doc_coverage.ts Garazyk/Sources --min-subsystem Chat=60`);
 }
 
+/**
+ * Parses HeaderDoc coverage command-line arguments.
+ *
+ * @param args - Command-line arguments excluding the executable name
+ * @param defaultSearchDir - Search root used when no positional path is given
+ * @returns Validated coverage options
+ * @throws If an option is unknown, incomplete, or outside its valid range
+ * @public
+ */
 export function parseArgs(
   args: string[],
   defaultSearchDir = "Garazyk/Sources",
@@ -693,6 +873,16 @@ export function parseArgs(
   return options;
 }
 
+/**
+ * Runs the HeaderDoc coverage CLI.
+ *
+ * @remarks
+ * Exits with status 1 when a configured threshold fails and status 2 for
+ * invalid arguments or scan errors.
+ *
+ * @returns A promise that resolves after report generation
+ * @public
+ */
 export async function main(): Promise<void> {
   try {
     const options = await parseArgs(Deno.args);

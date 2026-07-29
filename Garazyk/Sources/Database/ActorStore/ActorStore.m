@@ -223,9 +223,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     }
 }
 
-- (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
+- (BOOL)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                     error:(NSError **)error {
-    [self.database transactWithBlock:^(NSError **localError) {
+    return [self.database transactWithBlock:^(NSError **localError) {
         block(self, localError);
     } error:error];
 }
