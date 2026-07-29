@@ -48,6 +48,75 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
 
 #pragma mark - Structural Rejection
 
+- (void)testTrailingDataAfterCompleteItemIsRejected {
+    // Attack bytes: 0x01 is a CBOR unsigned integer with value 1; the trailing
+    // 0xFF is silently dropped by the pre-fix decoder, leaving identical
+    // decoded values across unlimited distinct byte strings. Reject so that
+    // two distinct bytes cannot both decode to the same canonical value.
+    const uint8_t attack[] = {0x01, 0xFF};
+    [self assertDecodeFailsForBytes:attack length:sizeof(attack)];
+}
+
+- (void)testDuplicateMapKeyIsRejected {
+    // A2 = map of 2 entries, then key "a" (61 61), value 1 (01), then key "a"
+    // again (61 61), value 2 (02). Pre-fix the NSDictionary last-write-wins
+    // silently kept only the second entry; DAG-CBOR rejects duplicate keys so
+    // a CID uniquely identifies one logical map.
+    const uint8_t attack[] = {0xA2, 0x61, 0x61, 0x01, 0x61, 0x61, 0x02};
+    [self assertDecodeFailsForBytes:attack length:sizeof(attack)];
+}
+
+- (void)testOutOfOrderMapKeysAreRejected {
+    // A2 = map of 2 entries, then key "b" (61 62), value 1 (01), then key "a"
+    // (61 61), value 2 (02). "a" (0x61) sorts before "b" (0x62) by the
+    // DAG-CBOR canonical sort order, so this encoding is not canonical.
+    const uint8_t attack[] = {0xA2, 0x61, 0x62, 0x01, 0x61, 0x61, 0x02};
+    [self assertDecodeFailsForBytes:attack length:sizeof(attack)];
+}
+
+- (void)testCanonicalMapKeysAccepted {
+    // Positive control: the canonical encoding of {"a": 1, "b": 2} must
+    // decode cleanly. If this fails after the fix, the comparison is wrong
+    // (likely off-by-one on length-first sort).
+    const uint8_t canonical[] = {0xA2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x02};
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(canonical, sizeof(canonical))
+                                      error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+}
+
+- (void)testMapKeyLengthFirstBoundary {
+    // Cross-major-type length-first boundary. Single-byte unsigned integer 0
+    // (0x00) is 1 byte; text string "a" is 3 bytes (61 61). By DAG-CBOR
+    // canonical sort, the 1-byte key sorts first regardless of major type.
+    const uint8_t canonical[] = {0xA2, 0x00, 0x01, 0x61, 0x61, 0x02};  // {0: 1, "a": 2}
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(canonical, sizeof(canonical))
+                                      error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+
+    // Same keys in byte-wise (wrong) order — "a" first, then 0 — must reject
+    // because the 3-byte key sorts after the 1-byte key by length-first rule.
+    const uint8_t outOfOrder[] = {0xA2, 0x61, 0x61, 0x01, 0x00, 0x02};  // {"a": 1, 0: 2}
+    [self assertDecodeFailsForBytes:outOfOrder length:sizeof(outOfOrder)];
+}
+
+- (void)testThreeEntryCanonicalMapAccepted {
+    // Three-entry positive control: {"a":1, "b":2, "c":3}. Confirms the sort
+    // check holds across more than one prior-key update, not just the first
+    // transition.
+    const uint8_t canonical[] = {0xA3, 0x61, 0x61, 0x01,
+                                           0x61, 0x62, 0x02,
+                                           0x61, 0x63, 0x03};
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(canonical, sizeof(canonical))
+                                      error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+}
+
 - (void)testMaxDecodeDepthExceeded {
     NSError *error = nil;
     NSMutableData *nested = [NSMutableData data];
@@ -120,6 +189,44 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
     [self assertDecodeFailsForBytes:breakByte length:sizeof(breakByte)];
 }
 
+- (void)testNonMinimalLengthEncodingRejectedForAllAdditionalInfoLevels {
+    // DAG-CBOR canonical form requires that a length/integer value fits in the
+    // smallest natural encoding for its declared `additionalInfo`. Otherwise
+    // the same logical value would have multiple valid encodings, breaking
+    // content addressing. Each attack below encodes integer 5 in a wider form
+    // than necessary; canonical encoding is just `0x05` (1 byte).
+    const uint8_t nonMinimal24[] = {0x18, 0x05};                                  // 2 bytes for value 5
+    const uint8_t nonMinimal25[] = {0x19, 0x00, 0x05};                            // 3 bytes for value 5
+    const uint8_t nonMinimal26[] = {0x1A, 0x00, 0x00, 0x00, 0x05};                // 5 bytes for value 5
+    const uint8_t nonMinimal27[] = {0x1B, 0x00, 0x00, 0x00, 0x00,
+                                    0x00, 0x00, 0x00, 0x05};                     // 9 bytes for value 5
+
+    [self assertDecodeFailsForBytes:nonMinimal24 length:sizeof(nonMinimal24)];
+    [self assertDecodeFailsForBytes:nonMinimal25 length:sizeof(nonMinimal25)];
+    [self assertDecodeFailsForBytes:nonMinimal26 length:sizeof(nonMinimal26)];
+    [self assertDecodeFailsForBytes:nonMinimal27 length:sizeof(nonMinimal27)];
+}
+
+- (void)testCanonicalLengthEncodingAcceptedAtFloor {
+    // Positive control: a length value that exactly meets the natural floor
+    // for its additionalInfo must decode cleanly. `0x18 0x18` is the
+    // canonical encoding of integer 24 (2 bytes: 24 is the smallest value
+    // that requires additionalInfo 24). `0x19 0x01 0x00` is the canonical
+    // encoding of integer 256.
+    NSError *error = nil;
+    const uint8_t canonical24[] = {0x18, 0x18};
+    id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(canonical24, sizeof(canonical24))
+                                      error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+
+    const uint8_t canonical25[] = {0x19, 0x01, 0x00};
+    decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(canonical25, sizeof(canonical25))
+                                  error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+}
+
 #pragma mark - Round Trip and Value Boundaries
 
 - (void)testRoundTripIdentity {
@@ -180,6 +287,24 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
         0x1B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
     };
     [self assertDecodeFailsForBytes:uint64MaxBytes length:sizeof(uint64MaxBytes)];
+}
+
+- (void)testNegativeIntegerEdgeAtInt64MaxPayloadDecodesToInt64Min {
+    // positive control for the §3.3 / §1.5 item 4 fix: a CBOR negative integer
+    // with payload 0x7FFFFFFFFFFFFFFF encodes the value -(INT64_MAX+1) = INT64_MIN.
+    // The pre-fix expression `-(int64_t)(value + 1)` invoked signed-overflow UB
+    // at that exact boundary; the fix ` -1 - (int64_t)value` is well-defined.
+    // Pre-fix this would crash the test runner; post-fix it decodes cleanly.
+    const uint8_t int64MinPayload[] = {
+        0x3B, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(int64MinPayload, sizeof(int64MinPayload))
+                                      error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+    XCTAssertTrue([decoded isKindOfClass:[NSNumber class]]);
+    XCTAssertEqual([(NSNumber *)decoded longLongValue], INT64_MIN);
 }
 
 #pragma mark - Width Defects (workstream 01 S11)
