@@ -9,6 +9,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcServiceAuthHelper.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRepositoryService.h"
@@ -144,8 +145,13 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         if (!XrpcAccountAllowsEmailManagement(request, response)) return;
 
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *email = body[@"email"];
-        NSString *token = body[@"token"];
+        BOOL typeMismatch = NO;
+        NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
+        NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (email.length == 0 || token.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing email or token"}];
@@ -235,7 +241,12 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         if (!XrpcAccountAllowsEmailManagement(request, response)) return;
 
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *email = body[@"email"];
+        BOOL typeMismatch = NO;
+        NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (email.length == 0 || !isLikelyEmail(email)) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid email"}];
@@ -265,7 +276,12 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *confirmationToken = body[@"token"];
+        BOOL typeMismatch = NO;
+        NSString *confirmationToken = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         // ── Path B: Token present — exchange for deletion ──
         if (confirmationToken.length > 0) {
@@ -414,7 +430,12 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestPasswordReset handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *email = body[@"email"];
+        BOOL typeMismatch = NO;
+        NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (email.length == 0 || !isLikelyEmail(email)) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing or invalid email"}];
@@ -482,8 +503,13 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_resetPassword handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *token = body[@"token"];
-        NSString *password = body[@"password"];
+        BOOL typeMismatch = NO;
+        NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
+        NSString *password = AuthTypedValue(body, @"password", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
         if (token.length == 0 || password.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing token or password"}];
@@ -594,7 +620,12 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_reserveSigningKey handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *did = body[@"did"];
+        BOOL typeMismatch = NO;
+        NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            return;
+        }
         NSString *signingKey = nil;
         NSError *error = nil;
 

@@ -5,6 +5,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "AppView/Services/AgeAssuranceService.h"
+#import "Auth/AuthClaimTypeCheck.h"
 
 @implementation AppViewXRpcRoutePack (AgeAssurance)
 
@@ -14,7 +15,17 @@
     if (!actorDID) return;
 
     NSDictionary *body = request.jsonBody;
-    if (!body || !body[@"email"] || !body[@"language"] || !body[@"countryCode"]) {
+    BOOL typeMismatch = NO;
+    NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
+    NSString *language = AuthTypedValue(body, @"language", [NSString class], &typeMismatch);
+    NSString *countryCode = AuthTypedValue(body, @"countryCode", [NSString class], &typeMismatch);
+    NSString *regionCode = AuthTypedValue(body, @"regionCode", [NSString class], &typeMismatch);
+    if (typeMismatch) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Request field has wrong type" }];
+        return;
+    }
+    if (!body || !email || !language || !countryCode) {
         response.statusCode = 400;
         [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"email, language, and countryCode required" }];
         return;
@@ -28,10 +39,10 @@
 
     NSError *error = nil;
     NSDictionary *result = [self.ageAssuranceService beginAgeAssurance:actorDID
-                                                                email:body[@"email"]
-                                                             language:body[@"language"]
-                                                          countryCode:body[@"countryCode"]
-                                                           regionCode:body[@"regionCode"]
+                                                                email:email
+                                                             language:language
+                                                          countryCode:countryCode
+                                                           regionCode:regionCode
                                                                 error:&error];
     if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
     response.statusCode = 200;

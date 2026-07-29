@@ -9,6 +9,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcAuthHelper.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "AppView/Services/AgeAssuranceService.h"
 #import "AppView/Services/SearchIndexService.h"
 #import "AppView/Services/FeedService.h"
@@ -305,8 +306,13 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_initAgeAssurance
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSDictionary *body = request.jsonBody;
-                       NSString *assurance = body[@"assurance"];
+                       BOOL typeMismatch = NO;
+                       NSString *assurance = AuthTypedValue(body, @"assurance", [NSString class], &typeMismatch);
                        NSArray *methods = body[@"methods"];
+                       if (typeMismatch) {
+                           [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                           return;
+                       }
 
                        if (!assurance || assurance.length == 0) {
                            [XrpcErrorHelper setValidationError:response message:@"assurance parameter is required"];
@@ -341,7 +347,12 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_unspecced_confirmAgeAssurance
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSDictionary *body = request.jsonBody;
-                       NSString *token = body[@"token"];
+                       BOOL typeMismatch = NO;
+                       NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
+                       if (typeMismatch) {
+                           [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                           return;
+                       }
 
                        if (!token || token.length == 0) {
                            [XrpcErrorHelper setValidationError:response message:@"token parameter is required"];
