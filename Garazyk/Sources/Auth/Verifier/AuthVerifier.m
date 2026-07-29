@@ -475,14 +475,16 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
 }
 
 - (nullable NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request {
-    NSString *method = request.methodString ?: @"GET";
     NSString *path = request.path ?: @"/";
-
     if (![path hasPrefix:@"/"]) {
         path = [@"/" stringByAppendingString:path];
     }
 
     NSString *hostHeader = [request headerForKey:@"Host"];
+    NSString *hostLower = [hostHeader lowercaseString];
+    BOOL localHost = [hostLower containsString:@"localhost"] ||
+                     [hostLower hasPrefix:@"127.0.0.1"] ||
+                     [hostLower isEqualToString:@"::1"];
     NSString *scheme = @"https";
 
     NSString *forwardedProto = [request headerForKey:@"X-Forwarded-Proto"];
@@ -492,11 +494,38 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         if ([firstProto isEqualToString:@"http"] || [firstProto isEqualToString:@"https"]) {
             scheme = firstProto;
         }
-    } else if ([hostHeader containsString:@"localhost"] || [hostHeader hasPrefix:@"127.0.0.1"]) {
+    } else if (localHost) {
         scheme = @"http";
     }
 
-    NSString *urlString = [NSString stringWithFormat:@"%@://%@%@", scheme, hostHeader, path];
+    // §4.6: Validate Host header against the configured issuer. In production,
+    // the DPoP htu must use the issuer's authority, not the client-supplied
+    // Host header, to prevent an attacker from manipulating htu validation.
+    // For local dev (localhost/127.0.0.1) the Host header is accepted directly.
+    NSString *authority = hostHeader;
+    NSURL *issuerURL = [NSURL URLWithString:self.localIssuer ?: @""];
+    if (issuerURL.host.length > 0 && !localHost) {
+        // Build the expected authority from the issuer
+        NSString *expectedAuthority = issuerURL.host;
+        if (issuerURL.port != nil) {
+            BOOL isDefaultPort =
+                ([issuerURL.scheme.lowercaseString isEqualToString:@"https"] &&
+                 issuerURL.port.integerValue == 443) ||
+                ([issuerURL.scheme.lowercaseString isEqualToString:@"http"] &&
+                 issuerURL.port.integerValue == 80);
+            if (!isDefaultPort) {
+                expectedAuthority = [NSString stringWithFormat:@"%@:%@",
+                                     issuerURL.host, issuerURL.port];
+            }
+        }
+        authority = expectedAuthority;
+    }
+
+    if (authority.length == 0) {
+        return nil;
+    }
+
+    NSString *urlString = [NSString stringWithFormat:@"%@://%@%@", scheme, authority, path];
     if (request.queryString.length > 0) {
         urlString = [urlString stringByAppendingFormat:@"?%@", request.queryString];
     }

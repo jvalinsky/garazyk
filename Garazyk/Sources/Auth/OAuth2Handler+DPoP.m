@@ -87,10 +87,15 @@
     }
   }
 
+  // §4.6: Validate Host header against the configured issuer. In production
+  // (non-local, non-trusted-forwarded), use the issuer's authority rather than
+  // the client-supplied Host header to prevent htu manipulation.
   NSString *authority = nil;
   if (hostHeader.length > 0 && (trustedForwarded || localHostHeader)) {
+    // When behind a trusted proxy or in local dev, the Host header is reliable.
     authority = hostHeader;
   } else if (issuerURL.host.length > 0) {
+    // Use the issuer's host as the canonical authority.
     authority = issuerURL.host;
     if (issuerURL.port != nil) {
       BOOL isDefaultPort =
@@ -103,6 +108,9 @@
             stringWithFormat:@"%@:%@", issuerURL.host, issuerURL.port];
       }
     }
+  } else if (hostHeader.length > 0) {
+    // Last resort: no issuer configured, accept Host header.
+    authority = hostHeader;
   }
 
   if (authority.length == 0) {
