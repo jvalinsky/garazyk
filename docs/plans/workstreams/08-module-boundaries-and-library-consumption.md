@@ -121,7 +121,60 @@ affect the leak count:
   Deferred because GNUstep/Linux behavior can't be verified in this
   environment — needs a pass with real GNUstep build/test access.
 
-M3-M4 remain not started. M0 (third-party consumption goal) remains an
+**M3 started** (`8b69415f`). Carved `HttpRequest.m`/`HttpResponse.m`
+(the Foundation-only message types M3's original text names) plus three
+more it didn't: `HttpRoute.m`/`HttpRetryPolicy.m`/`HttpParsing.m`, out of
+`ATProtoTransport`'s build into `ATProtoCore`. Two things the original
+scope missed, found only by reading the actual `.m` implementations
+(the same discipline that corrected the JWT.m split assumption in M2):
+- `HttpRoute` (the route-descriptor value type) and `HttpRouteHandler`
+  were bundled into `HttpRouter.h/.m` alongside `HttpRouter` itself (the
+  actual routing engine — a real I/O-adjacent class that must stay in
+  Transport), so this needed an actual class extraction into a new
+  `Network/HttpRoute.h/.m` pair, not just a move. `HttpRouteTrie.m` (the
+  trie router actually used on the live request path per this repo's
+  own architecture doc, not `HttpRouter`) only ever needed `HttpRoute`,
+  so its import was repointed to the new file, `HttpRouter` was
+  otherwise untouched.
+- `HttpRequest.m` calls `[HttpParsing parseQueryString:]` and
+  `[HttpParsing methodFromString:]` directly — a real class dependency
+  the plan's "Foundation and nothing else" framing missed. `HttpParsing.m`
+  itself has zero further dependencies (just `HttpRequest.h` +
+  Foundation), so it moved alongside to avoid introducing a *new*
+  Core → Transport leak.
+
+Same technique as `PDSSpaceAppAttestationVerifier.m` in M2: a
+`CMakeLists.txt` source-list change only, no file move, no consumer
+import changes (all ~200 consumer files already use absolute
+`"Network/*.h"` paths, unaffected by which archive the `.m` compiles
+into). Baseline only dropped by one entry (`HttpRetryPolicy`) — most of
+Services' coupling to these message types was already invisible to the
+nm-based leak detector for the same reason `PDSSpaceStore` was in M2:
+referencing a class only as a parameter/property type, without ever
+sending it a class message, emits no undefined `_OBJC_CLASS_$_` symbol.
+The architectural leak is real (this is exactly the coupling M3 exists
+to remove) even where the automated metric undercounts it — worth
+naming explicitly so a future pass doesn't mistake the small baseline
+delta for the size of the actual change. Full `AllTests --gated=run`
+verified identical (pre-existing) failure profile before and after;
+checked carefully rather than assumed safe, since this touches the live
+HTTP request path (`HttpServer` → `Http1Parser` → `HttpRouteTrie` →
+`XrpcDispatcher`).
+
+**Remaining for M3:** `HttpRouter` itself appears to be legacy/dead —
+its only non-test reference in the whole tree is `HttpRouterTests.m`;
+the live request path goes through `HttpRouteTrie` instead. Confirming
+and removing dead code is a separate, distinct decision from module
+boundaries and was left untouched here (out of scope for a boundary
+fix, and not something to do "while in the neighborhood" without
+explicit sign-off). `SSRFValidator`, `HttpBufferPool`, and the
+connection drivers were left in Transport per the original plan (they
+have genuine socket/I/O dependencies). The `Network/` import-count
+figure this milestone's verification gate names (86 → 36) was not
+re-measured directly — the module-boundary baseline is the tracked
+metric per M1's own correction, and it moved as described above.
+
+M4 remains not started. M0 (third-party consumption goal) remains an
 open decision — M1's baseline is useful either way, but M5/M6 stay gated
 on it.
 
