@@ -3,7 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Repository/MST.h"
 #import "Repository/CAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Core/CID.h"
 
 /**

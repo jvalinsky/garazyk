@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Firehose/FirehoseCARBuilder.h"
 #import "Repository/CAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Debug/GZLogger.h"
 #import "Core/NSDictionary+CID.h"
 

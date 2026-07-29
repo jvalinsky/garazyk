@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "MSTDecoderTests.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Repository/MST.h"
 #import "Core/CID.h"
 

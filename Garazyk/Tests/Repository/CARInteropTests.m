@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Repository/CAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Repository/MST.h"
 #import "Core/CID.h"
 

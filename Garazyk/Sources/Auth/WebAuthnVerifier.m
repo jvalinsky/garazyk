@@ -6,7 +6,7 @@
 #import "Auth/PDSKeyProtocol.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
 #import <Security/Security.h>

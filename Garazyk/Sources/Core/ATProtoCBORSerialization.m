@@ -3,7 +3,7 @@
 #import "ATProtoCBORSerialization.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 
 static NSData *CBORBase64URLDecode(NSString *string) {
     if (!string || ![string isKindOfClass:[NSString class]]) {

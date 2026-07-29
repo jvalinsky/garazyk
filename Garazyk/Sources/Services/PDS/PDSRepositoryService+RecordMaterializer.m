@@ -3,7 +3,7 @@
 #import "PDSRepositoryService+RecordMaterializer.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Database/PDSDatabase.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"

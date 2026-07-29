@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Core/MSTCacheManager.h"
-#import "Core/MSTAtomicReference.h"
+#import "Repository/MSTCacheManager.h"
+#import "Repository/MSTAtomicReference.h"
 #import "Repository/MST.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Core/CID.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 

@@ -6,7 +6,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "PDSHttpTestUtilities.h"
 #import "Repository/CAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Repository/STAR.h"
 
 @interface AdminAuthSyncTests : AdminAuthXrpcTestBase

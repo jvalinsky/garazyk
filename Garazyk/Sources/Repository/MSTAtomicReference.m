@@ -6,7 +6,7 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "Core/MSTAtomicReference.h"
+#import "Repository/MSTAtomicReference.h"
 #import "Repository/MST.h"
 #include <pthread.h>
 

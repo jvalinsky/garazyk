@@ -15,7 +15,7 @@
 #import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Repository/CAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Repository/RepoCommit.h"
 #import "Sync/Relay/EventFormatter.h"
 #import "Sync/Firehose/FirehoseCARBuilder.h"

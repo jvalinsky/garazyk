@@ -17,7 +17,7 @@
 #import "Core/CID.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
@@ -498,10 +498,10 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
-                                                   options:[ATProtoSafeHTTPClientOptions defaultOptions]
-                                                completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
-        
+    [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request
+                                                             timeout:0
+                                                          completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+
         if (error) {
             NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
                                                      code:DIDErrorNetworkError
@@ -602,14 +602,15 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
 
-    ATProtoSafeHTTPClientOptions *httpOptions = [ATProtoSafeHTTPClientOptions defaultOptions];
 #if defined(GNUSTEP)
-    httpOptions.timeout = 2.0;
+    NSTimeInterval httpTimeout = 2.0;
+#else
+    NSTimeInterval httpTimeout = 0; // use the conformer's default
 #endif
 
-    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
-                                                   options:httpOptions
-                                                completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request
+                                                             timeout:httpTimeout
+                                                          completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
 
         if (!error && response.statusCode == 200 && data.length > 0) {
             [self processPLCResponseData:data did:did completion:completion];
@@ -690,15 +691,12 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
 
-    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
-    options.timeout = 10.0;
-
     NSHTTPURLResponse *httpResponse = nil;
     NSError *requestError = nil;
-    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
-                                                                    options:options
-                                                                   response:&httpResponse
-                                                                      error:&requestError];
+    NSData *data = [[GZHTTPClientRegistry sharedClient] sendSynchronousRequest:request
+                                                                        timeout:10.0
+                                                                       response:&httpResponse
+                                                                          error:&requestError];
     
     if (requestError) {
         if (error) *error = requestError;

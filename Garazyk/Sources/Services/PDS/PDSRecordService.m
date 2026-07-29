@@ -6,7 +6,7 @@
 #import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Core/ATProtoBase32.h"
 #import "Core/GZPerDidWriteDispatcher.h"
-#import "Core/MSTCacheManager.h"
+#import "Repository/MSTCacheManager.h"
 #import "Core/Repositories/PDSSQLiteRecordRepository.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"

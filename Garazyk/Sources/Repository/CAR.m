@@ -14,7 +14,7 @@
 
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import <Security/Security.h>
 
 #pragma mark - CARBlock Implementation
