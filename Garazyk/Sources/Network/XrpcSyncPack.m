@@ -7,7 +7,7 @@
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSRelayService.h"
 #import "Services/PDS/PDSRepositoryService.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Compat/PDSTypes.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"

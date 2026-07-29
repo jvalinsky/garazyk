@@ -7,7 +7,7 @@
 #import "Network/HttpResponse.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest * _Nonnull request,
                                                         HttpResponse * _Nonnull response,

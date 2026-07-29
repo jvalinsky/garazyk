@@ -13,7 +13,7 @@
  */
 
 #import "Auth/Session.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"

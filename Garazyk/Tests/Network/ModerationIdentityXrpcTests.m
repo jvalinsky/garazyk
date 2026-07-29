@@ -8,7 +8,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 
 @interface ATProtoServiceConfiguration (Test)
 - (void)applyConfig:(NSDictionary *)config;

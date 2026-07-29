@@ -30,7 +30,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSRepositoryFactory.h"
 #import "Services/PDS/PDSRelayService.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/Secp256k1.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Blob/BlobStorage.h"

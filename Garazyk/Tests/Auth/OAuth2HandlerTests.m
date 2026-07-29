@@ -5,7 +5,7 @@
 #import "Auth/OAuth2.h"
 #import "Auth/OAuth2Handler+Testing.h"
 #import "Auth/DPoPUtil.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/TestKeyFixtures.h"
 #import "Network/HttpRequest.h"

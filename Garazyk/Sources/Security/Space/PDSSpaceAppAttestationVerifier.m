@@ -5,7 +5,7 @@
 
 #import <CommonCrypto/CommonDigest.h>
 
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/PDSKeyProtocol.h"
 #import "Network/ATProtoSafeHTTPClient.h"

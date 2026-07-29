@@ -15,7 +15,7 @@
 #import "Core/ATProtoValidator.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/DIDPLCResolver.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
 #import "Core/NSDateFormatter+ATProto.h"

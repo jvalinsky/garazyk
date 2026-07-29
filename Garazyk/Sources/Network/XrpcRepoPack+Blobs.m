@@ -16,7 +16,7 @@
 #import "Core/ATProtoValidator.h"
 #import "Security/Space/PDSSpaceScope.h"
 #import "Security/Space/PDSSpaceURI.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Network/Generated/GZXrpcNSID.h"
 

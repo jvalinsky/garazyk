@@ -5,7 +5,7 @@
 #import "Network/RateLimiter.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Core/PDSRecordEvents.h"
 
 @interface RepoAuthRepoTests : RepoAuthXrpcTestBase

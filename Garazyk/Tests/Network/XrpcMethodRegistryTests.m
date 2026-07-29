@@ -5,7 +5,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Auth/DPoPUtil.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/OAuth2.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/TestKeyFixtures.h"

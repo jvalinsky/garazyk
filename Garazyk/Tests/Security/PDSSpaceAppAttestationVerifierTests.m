@@ -5,7 +5,7 @@
 
 #import "Security/Space/PDSSpaceAppAttestationVerifier.h"
 #import "Services/PDS/PDSSpaceStore.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/PDSKeyProtocol.h"
 #import "Network/HttpServer.h"

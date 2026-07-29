@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Services/PDS/PDSAccountService.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Auth/Base32Utils.h"
 #import "Auth/Crypto/CryptoUtils.h"

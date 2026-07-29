@@ -11,7 +11,7 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #import "Auth/OAuth2.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/PDSReplayCache.h"

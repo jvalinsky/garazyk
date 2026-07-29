@@ -8,7 +8,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Auth/JWT.h"
+#import "Auth/Crypto/JWT.h"
 #include <stdlib.h>
 
 @interface XrpcProxyTests : XCTestCase
