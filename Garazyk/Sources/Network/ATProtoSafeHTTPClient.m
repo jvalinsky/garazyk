@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
+#import "Core/GZHTTPClient.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
 #import <Network/Network.h>
@@ -1010,3 +1011,39 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 @end
 
 #endif
+
+#pragma mark - GZHTTPClient conformance (workstream 08 M2)
+
+@interface ATProtoSafeHTTPClient (GZHTTPClient) <GZHTTPClient>
+@end
+
+@implementation ATProtoSafeHTTPClient (GZHTTPClient)
+
++ (void)load {
+    [GZHTTPClientRegistry setSharedClient:(id<GZHTTPClient>)[self sharedClient]];
+}
+
+- (void)performDataTaskWithRequest:(NSURLRequest *)request
+                            timeout:(NSTimeInterval)timeout
+                         completion:(void (^)(NSData * _Nullable data,
+                                              NSHTTPURLResponse * _Nullable response,
+                                              NSError * _Nullable error))completion {
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    if (timeout > 0) {
+        options.timeout = timeout;
+    }
+    [self performSafeDataTaskWithRequest:request options:options completion:completion];
+}
+
+- (nullable NSData *)sendSynchronousRequest:(NSURLRequest *)request
+                                    timeout:(NSTimeInterval)timeout
+                                   response:(NSHTTPURLResponse * _Nullable * _Nullable)response
+                                      error:(NSError **)error {
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    if (timeout > 0) {
+        options.timeout = timeout;
+    }
+    return [self sendSynchronousRequest:request options:options response:response error:error];
+}
+
+@end

@@ -3,7 +3,7 @@
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
 #import "Repository/MSTWalker.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Core/CID.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <arpa/inet.h>

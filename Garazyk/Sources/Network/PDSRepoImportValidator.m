@@ -4,7 +4,7 @@
 #import "Network/PDSRepoImportValidator.h"
 #import "Network/XrpcRepoPack_Internal.h"
 #import "Repository/CAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Repository/RepoCommit.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/DID.h"

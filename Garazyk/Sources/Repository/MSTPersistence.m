@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Repository/MSTPersistence.h"
 #import "Repository/MST.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Core/CID.h"
 #import "Database/PDSDatabase.h"
 

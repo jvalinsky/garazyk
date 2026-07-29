@@ -3,7 +3,7 @@
 #import "PDSRepositoryService+MST.h"
 #import "Repository/MST.h"
 #import "Core/CID.h"
-#import "Core/MSTCacheManager.h"
+#import "Repository/MSTCacheManager.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
 #import "Core/Repositories/PDSBlockRepository.h"

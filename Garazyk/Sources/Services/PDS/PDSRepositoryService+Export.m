@@ -3,7 +3,7 @@
 #import "PDSRepositoryService+Export.h"
 #import "Repository/CAR.h"
 #import "Repository/STAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
@@ -14,7 +14,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/Repositories/PDSBlockRepository.h"
 #import "Core/Repositories/PDSRepoRepository.h"
-#import "Core/MSTCacheManager.h"
+#import "Repository/MSTCacheManager.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 

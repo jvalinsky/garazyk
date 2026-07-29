@@ -9,7 +9,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Repository/CAR.h"
-#import "Repository/CBOR.h"
+#import "Core/CBOR.h"
 #import "Repository/MST.h"
 
 @interface PDSRepositoryServiceTests : XCTestCase
