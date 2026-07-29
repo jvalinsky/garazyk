@@ -187,6 +187,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @return YES if stored successfully, NO on failure.
  */
 - (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid error:(NSError **)error;
+- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid familyId:(nullable NSString *)familyId error:(NSError **)error;
 /**
  * @abstract Store refresh token.
  * @param token Session token.
@@ -198,6 +199,39 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 - (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error;
 - (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error;
+
+/*!
+ @method rotateRefreshToken:error:
+
+ @abstract Atomically marks a refresh token as rotated for §4.3 reuse detection.
+
+ @param token The refresh token to mark as rotated.
+ @param error Error pointer for storage failures.
+ @return YES if marked (first rotation), NO if already rotated (reuse detected).
+ */
+- (BOOL)rotateRefreshToken:(NSString *)token error:(NSError **)error;
+
+/*!
+ @method tombstoneRefreshTokenFamily:error:
+
+ @abstract Tombstones an entire refresh-token family, revoking all its members.
+
+ @param familyId The family ID to tombstone.
+ @param error Error pointer for storage failures.
+ @return YES when the family is tombstoned.
+ */
+- (BOOL)tombstoneRefreshTokenFamily:(NSString *)familyId error:(NSError **)error;
+
+/*!
+ @method isRefreshTokenFamilyTombstoned:error:
+
+ @abstract Checks whether a refresh-token family has been tombstoned.
+
+ @param familyId The family ID to check.
+ @param error Error pointer for query failures.
+ @return YES if the family has been tombstoned.
+ */
+- (BOOL)isRefreshTokenFamilyTombstoned:(NSString *)familyId error:(NSError **)error;
 /**
  * @abstract Revoke all refresh tokens for account did.
  * @param accountDid Actor DID for the request.
