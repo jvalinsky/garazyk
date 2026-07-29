@@ -87,14 +87,32 @@ ATProtoCore leaks (`JWT`, `JWTVerifier`) plus two incidental
 58 → 54. Full `AllTests --gated=run` verified identical (pre-existing)
 failure profile before and after.
 
-**Remaining ATProtoCore leaks (2), not yet addressed:**
-- `ATProtoSafeHTTPClient`/`ATProtoSafeHTTPClientOptions` — one file left:
-  `Security/Space/PDSSpaceAppAttestationVerifier.m` needs SSRF-control
-  options (`allowPrivateHosts`, `maxResponseBytes`, `allowHTTP`,
-  `followRedirects`) the minimal `GZHTTPClient` protocol doesn't cover.
-  Extending the protocol to match, or relocating this file out of
-  Core's glob, is its own scoped follow-up. This is now ATProtoCore's
-  *only* remaining leak class.
+**`ATProtoCore` reaches zero module-boundary leaks** (`b19d81cb`). The last
+leak class traced to a single file, `Security/Space/PDSSpaceAppAttestationVerifier.m`
+— living in a directory (`Security/Space/`) that's otherwise cleanly
+Core-resident, but itself holding a real `Services/PDS/PDSSpaceStore`
+dependency (a strong property injected via its designated initializer),
+on top of the `ATProtoSafeHTTPClient`/`ATProtoSafeHTTPClientOptions` leak
+the script detects. The `PDSSpaceStore` dependency doesn't trip the
+nm-based detector at all — referencing a class only as a property type,
+without ever sending it a class message, emits no undefined
+`_OBJC_CLASS_$_` symbol — but it's real: this file was never actually
+Core-clean, the script just couldn't see the second half of why. Rather
+than extending `GZHTTPClient`'s protocol to silence only the detected
+half, the whole file was carved out of `ATProtoCore`'s build into
+`ATProtoServices` — a `CMakeLists.txt` source-list change only (exclude
+from the Core glob, `list(APPEND)` into Services sources), no file move,
+mirroring the existing single-file-APPEND precedent already used for
+`Auth/PDSOpenSSLES256KeyManager.m`. The file's only non-test consumer,
+`Network/XrpcSpacePack.m`, is XRPC-layer and already depends on Services
+transitively, so this introduces no new cross-module dependency.
+Baseline ratcheted 54 → 52. Full `AllTests --gated=run` verified
+identical (pre-existing) failure profile before and after.
+
+**M2 is now complete for `ATProtoCore`** — zero leaks, matching the
+milestone's stated goal ("Make ATProtoCore standalone"). One item from
+M2's original scope remains open, tracked separately since it doesn't
+affect the leak count:
 - The GNUstep-only `/usr/bin/curl` subprocess fallback in `DID.m` (M2's
   text flagged this as "move behind the protocol or delete," marked
   optional) — not touched. Doesn't affect the module-boundary leak count
