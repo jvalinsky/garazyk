@@ -448,7 +448,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 
 - (NSData *)encodedCBORForRecord:(NSDictionary *)record {
     NSError *error = nil;
-    NSData *data = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+    NSData *data = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
     XCTAssertNotNil(data, @"Failed to encode CBOR: %@", error);
     return data;
 }

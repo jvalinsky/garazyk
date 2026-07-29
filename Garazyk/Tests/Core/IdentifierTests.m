@@ -21,9 +21,9 @@
     NSDictionary *dict2 = @{@"a": @1, @"b": @2};
     
     NSError *error = nil;
-    NSData *data1 = [ATProtoCBORSerialization encodeDataWithJSONObject:dict1 error:&error];
+    NSData *data1 = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict1 error:&error];
     XCTAssertNil(error);
-    NSData *data2 = [ATProtoCBORSerialization encodeDataWithJSONObject:dict2 error:&error];
+    NSData *data2 = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:dict2 error:&error];
     XCTAssertNil(error);
     
     XCTAssertEqualObjects(data1, data2);

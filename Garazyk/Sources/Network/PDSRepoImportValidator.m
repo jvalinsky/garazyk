@@ -221,7 +221,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
                 }
                 record.uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, record.collection, record.rkey];
 
-                id jsonObj = [ATProtoCBORSerialization JSONObjectWithData:valueBlock.data error:nil];
+                id jsonObj = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:valueBlock.data error:nil];
                 if (jsonObj) {
                     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonObj options:0 error:nil];
                     if (jsonData) {

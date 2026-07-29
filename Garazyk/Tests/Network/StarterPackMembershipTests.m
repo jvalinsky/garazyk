@@ -44,7 +44,7 @@ static CID *makeTestCID(NSUInteger idx) {
         @"list": listURIForInsert,
         @"name": @"Test Starter Pack"
     };
-    NSData *packBlockData = [ATProtoCBORSerialization encodeDataWithJSONObject:packBlockDict error:&dbError];
+    NSData *packBlockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:packBlockDict error:&dbError];
     XCTAssertNotNil(packBlockData, @"CBOR encode pack failed: %@", dbError);
 
     NSString *insertBlock = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, size, created_at) VALUES (?, ?, ?, ?, datetime('now'))";
@@ -68,7 +68,7 @@ static CID *makeTestCID(NSUInteger idx) {
         @"name": @"Test List",
         @"purpose": @"app.bsky.graph.defs#curatedList"
     };
-    NSData *listBlockData = [ATProtoCBORSerialization encodeDataWithJSONObject:listBlockDict error:&dbError];
+    NSData *listBlockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:listBlockDict error:&dbError];
     XCTAssertNotNil(listBlockData, @"CBOR encode list failed: %@", dbError);
 
     ok = [db executeParameterizedUpdate:insertBlock
@@ -100,7 +100,7 @@ static CID *makeTestCID(NSUInteger idx) {
         @"list": listURI,
         @"subject": subjectDid
     };
-    NSData *itemBlockData = [ATProtoCBORSerialization encodeDataWithJSONObject:itemBlockDict error:&dbError];
+    NSData *itemBlockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:itemBlockDict error:&dbError];
     XCTAssertNotNil(itemBlockData, @"CBOR encode listitem failed: %@", dbError);
 
     NSString *insertBlock = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, size, created_at) VALUES (?, ?, ?, ?, datetime('now'))";

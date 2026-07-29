@@ -487,7 +487,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
         };
 
         NSError *cborError = nil;
-        NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:operationData error:&cborError];
+        NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:operationData error:&cborError];
         if (!cborData) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": cborError.localizedDescription ?: @"Invalid PLC operation payload"}];
@@ -934,7 +934,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
                     
                     // Sign operation
                     NSError *signError = nil;
-                    NSData *opData = [ATProtoCBORSerialization encodeDataWithJSONObject:op error:&signError];
+                    NSData *opData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:op error:&signError];
                     NSData *hash = [CryptoUtils sha256:opData];
                     NSData *sigData = nil;
                     

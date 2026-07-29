@@ -108,7 +108,7 @@
     // Decode the record to extract relationship data
     NSDictionary *record = nil;
     if (recordCBOR) {
-        record = [ATProtoCBORSerialization JSONObjectWithData:recordCBOR error:nil];
+        record = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:recordCBOR error:nil];
     }
     if (!record) return;
 

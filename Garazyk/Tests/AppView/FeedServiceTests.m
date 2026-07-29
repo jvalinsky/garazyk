@@ -249,7 +249,7 @@
         @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
     };
     NSError *error = nil;
-    NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+    NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
     XCTAssertNotNil(blockData, @"CBOR encode failed: %@", error);
 
     NSString *uri = @"at://did:plc:alice/app.bsky.feed.post/shared";

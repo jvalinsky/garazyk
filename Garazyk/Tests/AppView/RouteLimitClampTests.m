@@ -46,7 +46,7 @@
             @"text": [NSString stringWithFormat:@"Post %ld", (long)i],
             @"createdAt": @"2026-07-27T12:00:00.000Z"
         };
-        NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+        NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData);
         CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error]);
@@ -73,7 +73,7 @@
             @"text": [NSString stringWithFormat:@"Post %ld", (long)i],
             @"createdAt": @"2026-07-27T12:00:00.000Z"
         };
-        NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+        NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData);
         CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error]);
@@ -103,7 +103,7 @@
             @"subject": subject,
             @"createdAt": @"2026-07-27T12:00:00.000Z"
         };
-        NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+        NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData);
         CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error]);
@@ -131,7 +131,7 @@
             @"subject": targetDid,
             @"createdAt": @"2026-07-27T12:00:00.000Z"
         };
-        NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+        NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData);
         CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:followerDid blockData:blockData contentType:@"application/cbor" error:&error]);
@@ -161,7 +161,7 @@
             @"subject": subject,
             @"createdAt": @"2026-07-27T12:00:00.000Z"
         };
-        NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+        NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData);
         CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error]);

@@ -86,7 +86,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     }
 
     if (!blockData) return nil;
-    return GZFeedDictionaryValue([ATProtoCBORSerialization JSONObjectWithData:blockData error:error]);
+    return GZFeedDictionaryValue([[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:blockData error:error]);
 }
 
 // Batches the same lookup -getRecordBodyFromCID:did:error: performs, keyed by
@@ -126,7 +126,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
             if (![cidBytes isKindOfClass:[NSData class]] || ![blockData isKindOfClass:[NSData class]]) continue;
             NSString *cidStr = cidStringByBytes[cidBytes];
             if (!cidStr) continue;
-            NSDictionary *decoded = GZFeedDictionaryValue([ATProtoCBORSerialization JSONObjectWithData:blockData error:error]);
+            NSDictionary *decoded = GZFeedDictionaryValue([[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:blockData error:error]);
             if (decoded) result[cidStr] = decoded;
         }
     }

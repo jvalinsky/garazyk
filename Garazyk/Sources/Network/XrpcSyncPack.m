@@ -1094,7 +1094,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
             }
 
             if (jsonObj) {
-              blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:jsonObj error:nil];
+              blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:jsonObj error:nil];
             }
           }
         }

@@ -147,7 +147,7 @@ static NSString *GZActorPlaceholders(NSUInteger count) {
                 NSData *blockData = row[@"block_data"];
                 if (!cid || did.length == 0 || blockData.length == 0) continue;
                 NSError *decodeError = nil;
-                NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:blockData error:&decodeError];
+                NSDictionary *record = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:blockData error:&decodeError];
                 if ([record isKindOfClass:[NSDictionary class]]) {
                     profileRecords[[NSString stringWithFormat:@"%@:%@", did, cid]] = record;
                 }
@@ -411,7 +411,7 @@ static NSString *GZActorPlaceholders(NSUInteger count) {
         if (cid) {
             PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
             if (block && block.blockData) {
-                return [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:error];
+                return [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.blockData error:error];
             }
         }
     }

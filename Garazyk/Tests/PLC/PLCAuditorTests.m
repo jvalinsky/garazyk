@@ -705,7 +705,7 @@
 
     // CBOR-encode the unsigned data
     NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:&cborError];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:unsignedData error:&cborError];
     XCTAssertNotNil(cborData, @"CBOR encoding should succeed: %@", cborError);
     NSString *cborHex = [self hexStringFromData:cborData];
 
@@ -756,7 +756,7 @@
     XCTAssertNotNil(unsignedData);
 
     NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:&cborError];
+    NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:unsignedData error:&cborError];
     XCTAssertNotNil(cborData, @"CBOR encoding should succeed: %@", cborError);
     NSString *cborHex = [self hexStringFromData:cborData];
 
