@@ -10,6 +10,7 @@
 
 #import <Foundation/Foundation.h>
 #import "Auth/OAuthProvider/OAuthProviderProtocols.h"
+#import "Auth/Verifier/AuthVerifierProtocols.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

@@ -11,7 +11,7 @@
 #import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/TestKeyFixtures.h"
 #import "Auth/Verifier/AuthVerifier.h"
-#import "Auth/OAuthProvider/OAuthProviderProtocols.h"
+#import "Auth/Verifier/AuthVerifierProtocols.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
