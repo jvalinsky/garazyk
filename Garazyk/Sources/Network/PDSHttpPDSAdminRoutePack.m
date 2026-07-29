@@ -96,7 +96,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
         if (!PDSAdminRequireDatabases(databases, response)) return;
 
         NSString *did = PDSAdminPathParameter(request, @"did");
-        NSString *sessionID = request.jsonBody[@"id"];
+        NSString *sessionID = [request stringBodyForKey:@"id"];
         if (did.length == 0 || sessionID.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID and session id are required"}];
@@ -161,9 +161,8 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
         if (!PDSAdminRequireDatabases(databases, response)) return;
 
         NSString *did = PDSAdminPathParameter(request, @"did");
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *name = body[@"name"];
-        BOOL privileged = [body[@"privileged"] respondsToSelector:@selector(boolValue)] ? [body[@"privileged"] boolValue] : NO;
+        NSString *name = [request stringBodyForKey:@"name"];
+        BOOL privileged = [[request numberBodyForKey:@"privileged"] boolValue];
         if (did.length == 0 || name.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID and app password name are required"}];

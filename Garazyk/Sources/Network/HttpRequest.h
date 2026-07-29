@@ -127,6 +127,30 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
  */
 @property (nonatomic, strong, nullable) NSMutableDictionary *middlewareContext;
 
+/*!
+ @abstract Typed JSON body accessor returning NSString or nil.
+ @discussion Returns the value for `key` from the JSON body iff it is an
+ NSString. Returns nil if the key is absent, nil, or holds a different type
+ (e.g. NSNull, NSNumber, NSArray). Prevents NSInvalidArgumentException
+ crashes when the caller assumes a type the sender did not provide.
+ @see ADR 0013
+ */
+- (nullable NSString *)stringBodyForKey:(NSString *)key;
+
+/*!
+ @abstract Typed JSON body accessor returning NSNumber or nil.
+ @discussion Returns the value for `key` from the JSON body iff it is an
+ NSNumber. Returns nil if the key is absent, nil, or holds a different type.
+ */
+- (nullable NSNumber *)numberBodyForKey:(NSString *)key;
+
+/*!
+ @abstract Typed JSON body accessor returning NSArray or nil.
+ @discussion Returns the value for `key` from the JSON body iff it is an
+ NSArray. Returns nil if the key is absent, nil, or holds a different type.
+ */
+- (nullable NSArray *)arrayBodyForKey:(NSString *)key;
+
 /*! Convenience: Returns the authenticated DID from middleware context. */
 - (nullable NSString *)authenticatedDid;
 

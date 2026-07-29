@@ -70,9 +70,8 @@
   [server addRoute:@"POST"
               path:@"/auth/2fa/webauthn/begin"
            handler:^(HttpRequest *request, HttpResponse *response) {
-             NSDictionary *body = request.jsonBody ?: @{};
-             NSString *identifier = body[@"identifier"];
-             NSString *password = body[@"password"];
+             NSString *identifier = [request stringBodyForKey:@"identifier"];
+             NSString *password = [request stringBodyForKey:@"password"];
              if (identifier.length == 0 || password.length == 0) {
                response.statusCode = HttpStatusBadRequest;
                [response setJsonBody:@{
@@ -113,10 +112,9 @@
   [server addRoute:@"POST"
               path:@"/auth/2fa/webauthn/complete"
            handler:^(HttpRequest *request, HttpResponse *response) {
-             NSDictionary *body = request.jsonBody ?: @{};
-             NSString *identifier = body[@"identifier"];
-             NSString *sessionID = body[@"sessionId"];
-             NSDictionary *assertion = body[@"assertion"];
+             NSString *identifier = [request stringBodyForKey:@"identifier"];
+             NSString *sessionID = [request stringBodyForKey:@"sessionId"];
+             NSDictionary *assertion = request.jsonBody[@"assertion"];
              if (identifier.length == 0 || sessionID.length == 0 ||
                  ![assertion isKindOfClass:[NSDictionary class]]) {
                response.statusCode = HttpStatusBadRequest;
