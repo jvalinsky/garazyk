@@ -3,9 +3,17 @@
 
 #import "Network/AppViewXRpcRoutePack.h"
 
+/**
+ * @abstract Authenticated draft and bookmark XRPC route handlers.
+ * @discussion Both handlers scope results to the DID from a validated bearer token. Authentication
+ * failures write a response before returning; backing-service failures produce 500 JSON errors.
+ * Bookmark reads clamp `limit` to 1...100 and forward an optional cursor.
+ */
 @interface AppViewXRpcRoutePack (DraftsAndBookmarks)
 
+/** @abstract Returns drafts owned by the authenticated actor. */
 - (void)handleGetDrafts:(HttpRequest *)request response:(HttpResponse *)response;
+/** @abstract Returns bookmarks owned by the authenticated actor with optional cursor pagination. */
 - (void)handleGetBookmarks:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end

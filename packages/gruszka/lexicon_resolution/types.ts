@@ -218,8 +218,11 @@ export interface LexiconDef {
 
 /** Parameter definition block within a query lexicon. */
 export interface LexiconParams {
+  /** Fixed discriminator for a query-parameter definition. */
   type?: "params";
+  /** Parameter names that callers must provide. */
   required?: string[];
+  /** Parameter schemas keyed by parameter name. */
   properties?: Record<string, LexiconSchema>;
 }
 
@@ -234,21 +237,37 @@ export interface LexiconBody {
 
 /** A single schema node within a lexicon definition. */
 export interface LexiconSchema {
+  /** Lexicon schema node type, such as `string`, `object`, or `array`. */
   type?: string;
+  /** Reference to one named schema definition. */
   ref?: string;
+  /** References to multiple named schema definitions. */
   refs?: string[];
+  /** Whether values may contain fields outside {@link properties}. */
   closed?: boolean;
+  /** Object-property schemas keyed by property name. */
   properties?: Record<string, LexiconSchema>;
+  /** Object-property names that the value must include. */
   required?: string[];
+  /** Element schema for an array value. */
   items?: LexiconSchema;
+  /** Human-readable schema description. */
   description?: string;
+  /** Inclusive numeric lower bound. */
   minimum?: number;
+  /** Inclusive numeric upper bound. */
   maximum?: number;
+  /** Permitted string values. */
   enum?: string[];
+  /** Single literal value required by the schema. */
   const?: unknown;
+  /** Default value supplied by schema consumers when the field is absent. */
   default?: unknown;
+  /** Minimum permitted string length. */
   minLength?: number;
+  /** Maximum permitted string length. */
   maxLength?: number;
+  /** Semantic string format identifier. */
   format?: string;
   /** Allow additional properties not explicitly listed in this schema. */
   [key: string]: unknown;

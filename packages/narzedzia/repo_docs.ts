@@ -1,46 +1,78 @@
 #!/usr/bin/env -S deno run -A
 import { dirname, fromFileUrl, join, relative, resolve } from "@std/path";
 
+/** Classifies a Markdown document by its publication and discoverability role. */
 export type Classification =
   | "canonical"
   | "archive"
+  | "decision-record"
   | "entrypoint"
-  | "internal-reference";
+  | "internal-reference"
+  | "site-content";
 
+/** Normalized metadata for a Markdown document in the repository registry. */
 export interface DocRecord {
+  /** Repository-relative path to the Markdown file. */
   path: string;
+  /** Publication and discoverability role inferred from the path. */
   classification: Classification;
+  /** Canonical documentation page that represents this document's subject. */
   canonical_target: string;
+  /** Team or subsystem responsible for maintaining the document. */
   owner: string;
+  /** Lifecycle state derived from the document classification. */
   status: string;
 }
 
+/** An unresolved internal Markdown link found while scanning a document. */
 export interface LinkIssue {
+  /** Repository-relative path of the document containing the link. */
   source: string;
+  /** One-based source line containing the unresolved link. */
   line: number;
+  /** Original link destination after whitespace normalization. */
   href: string;
+  /** Human-readable reason the link could not be resolved. */
   message: string;
 }
 
+/** A resolved Markdown link between two documents in the registry. */
 export interface LinkEdge {
+  /** Repository-relative path of the document containing the link. */
   source: string;
+  /** Repository-relative path of the resolved destination document. */
   target: string;
+  /** Original destination written in the source document. */
   href: string;
+  /** One-based source line containing the link. */
   line: number;
 }
 
+/** Filesystem locations used by the repository-documentation workflow. */
 export interface RepoDocsPaths {
+  /** Absolute repository root. */
   root: string;
+  /** Absolute `docs/` directory. */
   docs: string;
+  /** Directory for generated registry and graph metadata. */
   metadataDir: string;
+  /** Directory for generated human-readable reports. */
   reportsDir: string;
+  /** Directory for generated navigation pages. */
   indexDir: string;
+  /** JSON registry output path. */
   registryPath: string;
+  /** JSON Schema output path for registry records. */
   registrySchemaPath: string;
+  /** JSON link-graph output path. */
   graphPath: string;
+  /** JSON orphan-report output path. */
   orphanJsonPath: string;
+  /** JSON record of documentation moves. */
   migrationMapPath: string;
+  /** JSON report for scheduled external-link checks. */
   externalReportPath: string;
+  /** Text allowlist for canonical documents without inbound links. */
   orphanAllowlistPath: string;
 }
 
@@ -91,6 +123,12 @@ const SCAN_DIR_SKIP_NAMES = new Set([
   "sequencer",
 ]);
 
+/**
+ * Builds the repository-documentation output paths for a repository root.
+ *
+ * @param root Absolute path to the repository root.
+ * @returns Derived paths for registry, report, and index artifacts.
+ */
 export function createRepoDocsPaths(root: string): RepoDocsPaths {
   const docs = join(root, "docs");
   const metadataDir = join(docs, "metadata");
@@ -131,6 +169,13 @@ async function ensureDirs(paths: RepoDocsPaths) {
   }
 }
 
+/**
+ * Recursively yields Markdown files below a directory, excluding generated and
+ * dependency directories.
+ *
+ * @param dir Absolute directory to scan.
+ * @returns Absolute paths to discovered Markdown files.
+ */
 export async function* walkMarkdown(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
     if (entry.name.startsWith(".") || SCAN_DIR_SKIP_NAMES.has(entry.name)) {
@@ -145,6 +190,12 @@ export async function* walkMarkdown(dir: string): AsyncGenerator<string> {
   }
 }
 
+/**
+ * Discovers repository Markdown files in the supported documentation roots.
+ *
+ * @param paths Repository-documentation paths that identify the root.
+ * @returns Sorted, absolute paths to discovered Markdown files.
+ */
 export async function discoverMarkdownFiles(
   paths: RepoDocsPaths,
 ): Promise<string[]> {
@@ -163,6 +214,12 @@ export async function discoverMarkdownFiles(
   );
 }
 
+/**
+ * Classifies a repository-relative Markdown path without reading its contents.
+ *
+ * @param path Repository-relative Markdown path.
+ * @returns The document's publication and discoverability classification.
+ */
 export function classifyDoc(path: string): Classification {
   if (CANONICAL_DOC_RE.test(path)) return "canonical";
   if (["docs/index.md", "docs/README.md", "docs/SUMMARY.md"].includes(path)) {
@@ -172,6 +229,10 @@ export function classifyDoc(path: string): Classification {
     path.startsWith("docs/archive/") || path.startsWith("docs/scratchpad/") ||
     path.startsWith("docs/plans/archive/") || path.startsWith("docs/plan/")
   ) return "archive";
+  if (path.startsWith("docs/adr/")) return "decision-record";
+  if (path.startsWith("Garazyk/docs-site/src/content/docs/")) {
+    return "site-content";
+  }
   if (
     ROOT_ENTRYPOINTS.has(path) ||
     (path.startsWith("ADMINUI_") && path.endsWith(".md"))
@@ -181,6 +242,12 @@ export function classifyDoc(path: string): Classification {
   return "internal-reference";
 }
 
+/**
+ * Infers the responsible subsystem from a repository-relative document path.
+ *
+ * @param path Repository-relative path to classify.
+ * @returns Stable owner label used in generated registry records.
+ */
 export function inferOwner(path: string): string {
   if (path.startsWith("docs/")) {
     if (path.startsWith("docs/security/")) return "security";
@@ -201,10 +268,22 @@ function inferStatus(classification: Classification): string {
   if (classification === "canonical" || classification === "entrypoint") {
     return "active";
   }
+  if (
+    classification === "decision-record" || classification === "site-content"
+  ) {
+    return "published";
+  }
   if (classification === "archive") return "archived";
   return "reference";
 }
 
+/**
+ * Selects the canonical documentation page for a non-canonical document.
+ *
+ * @param path Repository-relative document path.
+ * @param classification Classification assigned to the document.
+ * @returns Repository-relative canonical target path.
+ */
 export function inferCanonicalTarget(
   path: string,
   classification: Classification,
@@ -262,6 +341,13 @@ export function inferCanonicalTarget(
   return CANONICAL_DEFAULT;
 }
 
+/**
+ * Builds sorted registry records for discovered Markdown files.
+ *
+ * @param files Absolute paths to discovered Markdown files.
+ * @param root Absolute repository root used to make paths relative.
+ * @returns Records sorted by repository-relative path.
+ */
 export function buildRegistry(files: string[], root: string): DocRecord[] {
   return files.map((file) => {
     const path = posixRel(root, file);
@@ -294,7 +380,14 @@ async function writeRegistrySchema(paths: RepoDocsPaths) {
         path: { type: "string" },
         classification: {
           type: "string",
-          enum: ["canonical", "archive", "entrypoint", "internal-reference"],
+          enum: [
+            "canonical",
+            "archive",
+            "decision-record",
+            "entrypoint",
+            "internal-reference",
+            "site-content",
+          ],
         },
         canonical_target: { type: "string" },
         owner: { type: "string" },
@@ -317,6 +410,18 @@ function removeFragmentAndQuery(href: string): string {
   return href.split("#", 1)[0].split("?", 1)[0];
 }
 
+/**
+ * Resolves an internal Markdown destination relative to its source document.
+ *
+ * Fragment-only links are intentionally excluded because they do not name a
+ * document. Extensionless paths are resolved as Markdown files or directory
+ * README/index files.
+ *
+ * @param source Absolute path of the document containing the link.
+ * @param hrefRaw Destination as written in the Markdown link.
+ * @param paths Repository-documentation paths used for root-relative links.
+ * @returns Absolute destination path, or `null` when the target is unresolved.
+ */
 export async function resolveInternalTarget(
   source: string,
   hrefRaw: string,
@@ -363,21 +468,40 @@ function* iterMarkdownLinks(
   }
 }
 
+/** Aggregate counts produced while scanning Markdown links. */
 export interface LinkStats {
+  /** Number of internal document links inspected. */
   internal: number;
+  /** Number of URL-scheme links inspected. */
   external: number;
+  /** Number of same-document fragment links skipped. */
   anchor: number;
+  /** Number of internal links that could not be resolved. */
   missing: number;
 }
 
+/** Complete result of internal and external Markdown link analysis. */
 export interface LinkAnalysis {
+  /** Resolved links whose targets are registered documents. */
   edges: LinkEdge[];
+  /** Unresolved internal links. */
   issues: LinkIssue[];
+  /** Resolved destinations grouped by source document. */
   outgoing: Record<string, string[]>;
+  /** Aggregate link counts. */
   stats: LinkStats;
+  /** Occurrences of each external URL destination. */
   externalCounts: Record<string, number>;
 }
 
+/**
+ * Parses links in Markdown files and resolves internal document destinations.
+ *
+ * @param files Absolute paths to scan.
+ * @param records Registry records that define graph nodes.
+ * @param paths Repository-documentation paths used during resolution.
+ * @returns Graph edges, unresolved links, outgoing links, and aggregate counts.
+ */
 export async function analyzeLinks(
   files: string[],
   records: DocRecord[],
@@ -451,11 +575,26 @@ async function loadOrphanAllowlist(path: string): Promise<Set<string>> {
   );
 }
 
+/** Result of an inbound-link analysis for documents subject to orphan checks. */
 export interface OrphanAnalysis {
+  /** Canonical documents with no inbound links and no allowlist entry. */
   orphans: string[];
+  /** Inbound-link count for every registry document. */
   inbound: Record<string, number>;
 }
 
+/**
+ * Finds canonical documents without inbound Markdown links, honoring an allowlist.
+ *
+ * Archive, decision-record, site-content, entrypoint, and source-adjacent
+ * documents are discoverable through other mechanisms and are not orphan-check
+ * candidates.
+ *
+ * @param records Registered documents to analyze.
+ * @param edges Resolved Markdown link edges between registered documents.
+ * @param orphanAllowlistPath Path to newline-delimited exempt document paths.
+ * @returns Inbound-link counts for all records and unlinked canonical documents.
+ */
 export async function computeOrphans(
   records: DocRecord[],
   edges: LinkEdge[],
@@ -470,7 +609,8 @@ export async function computeOrphans(
   const allowlist = await loadOrphanAllowlist(orphanAllowlistPath);
   const orphans = records
     .filter((record) =>
-      inbound[record.path] === 0 && !allowlist.has(record.path)
+      record.classification === "canonical" && inbound[record.path] === 0 &&
+      !allowlist.has(record.path)
     )
     .map((record) => record.path)
     .sort();
@@ -516,6 +656,14 @@ function makeRegistryTable(
   return lines.join("\n");
 }
 
+/**
+ * Writes deterministic registry tables, backlink inventory, and index hub pages.
+ *
+ * @param records Registry records to render.
+ * @param inbound Inbound-link counts keyed by repository-relative path.
+ * @param edges Resolved document-link graph edges.
+ * @param paths Output locations for generated index pages.
+ */
 export async function generateIndexPages(
   records: DocRecord[],
   inbound: Record<string, number>,
@@ -660,6 +808,11 @@ async function writeGraphOutputs(
   externalCounts: Record<string, number>,
   paths: RepoDocsPaths,
 ) {
+  const { orphans } = await computeOrphans(
+    records,
+    edges,
+    paths.orphanAllowlistPath,
+  );
   const payload = {
     generated_at: Math.floor(Date.now() / 1000),
     summary: {
@@ -685,9 +838,7 @@ async function writeGraphOutputs(
   await writeJson(paths.graphPath, payload);
   await writeJson(paths.orphanJsonPath, {
     generated_at: Math.floor(Date.now() / 1000),
-    orphans: Object.entries(inbound).filter(([, count]) => count === 0).map(([
-      path,
-    ]) => path),
+    orphans,
     inbound,
   });
 
@@ -704,8 +855,6 @@ async function writeGraphOutputs(
     "## Orphans",
     "",
   ];
-  const orphans = Object.entries(inbound).filter(([, count]) => count === 0)
-    .map(([path]) => path).sort();
   report.push(
     ...(orphans.length
       ? orphans.map((path) => `- \`${path}\``)
@@ -800,18 +949,36 @@ async function validateInternalStrict(
   return await analyzeLinks(files, records, paths);
 }
 
+/** Result of an HTTP probe for one external Markdown link. */
 export interface ExternalLinkResult {
+  /** `ok`, `error`, or `warning` according to the probe outcome. */
   status: string;
+  /** HTTP status code when a response was received. */
   code: number | null;
+  /** Response summary or the transport failure message. */
   message: string;
 }
 
+/** Persisted report for all unique external links in the registry. */
 export interface ExternalLinkReport {
+  /** Unix timestamp in seconds when the report was generated. */
   generated_at: number;
+  /** Number of distinct external URLs probed. */
   checked: number;
+  /** Probe results keyed by external URL. */
   results: Record<string, ExternalLinkResult>;
 }
 
+/**
+ * Probes each unique external Markdown URL with a bounded HTTP HEAD request.
+ *
+ * Probe failures are recorded as warnings so scheduled reporting can distinguish
+ * unavailable services from confirmed HTTP errors.
+ *
+ * @param records Registry records whose existing files are scanned.
+ * @param paths Paths that identify source files and the report output location.
+ * @returns The persisted external-link report.
+ */
 export async function checkExternalLinks(
   records: DocRecord[],
   paths: RepoDocsPaths,
@@ -988,6 +1155,14 @@ function usage(): never {
   Deno.exit(2);
 }
 
+/**
+ * Runs the repository-documentation CLI using `Deno.args`.
+ *
+ * Supported commands are `sync`, `enrich-related`, and `validate`; validation
+ * requires one or more explicit modes to avoid accidental network checks.
+ *
+ * @returns Process exit code for the selected command.
+ */
 export async function main(): Promise<number> {
   const defaultRoot = resolve(dirname(fromFileUrl(import.meta.url)), "../..");
   const paths = createRepoDocsPaths(defaultRoot);

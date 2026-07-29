@@ -177,15 +177,34 @@
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
     
     __autoreleasing NSError *txError = nil;
-    [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+    BOOL transactionSucceeded = [self.pool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         __autoreleasing NSError *createError = nil;
         XCTAssertTrue([transactor createAccount:account error:&createError], @"Create failed: %@", createError);
     } error:&txError];
+    XCTAssertTrue(transactionSucceeded);
+    XCTAssertNil(txError);
     
     __autoreleasing NSError *fetchError = nil;
     PDSDatabaseAccount *fetched = [self.pool getAccount:did error:&fetchError];
     XCTAssertNotNil(fetched, @"Get account failed: %@", fetchError);
     XCTAssertEqualObjects(fetched.handle, @"account.test");
+}
+
+- (void)testTransactionReturnsNOWhenBlockReportsFailure {
+    NSString *did = @"did:plc:tttttttttttttttttttttttt";
+    NSError *error = nil;
+    BOOL success = [self.pool transactWithDid:did
+                                        block:^(__unused id<PDSActorStoreTransactor> transactor,
+                                                NSError **blockError) {
+        *blockError = [NSError errorWithDomain:@"DatabasePoolTests"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Simulated block failure"}];
+    }
+                                        error:&error];
+
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, @"DatabasePoolTests");
 }
 
 - (void)testEnumerationIncludesEveryOnDiskActorAfterOpeningOneStore {

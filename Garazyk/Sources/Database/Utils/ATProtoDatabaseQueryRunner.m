@@ -10,9 +10,8 @@
 @property (nonatomic, strong) id<ATProtoConnectionManager> connectionManager;
 @property (nonatomic, copy) ATProtoDatabaseQueryRunnerErrorFactory errorFactory;
 
-// Core prepare/bind/step mechanics against an already-open connection, shared by the
-// self-managing methods (which obtain the connection from the ConnectionManager) and the
-// transaction-scoped transactor (which binds the in-flight transaction's connection).
+// Share statement preparation, binding, and stepping between manager-supplied
+// connections and the connection bound to an active transaction.
 - (nullable NSArray<NSDictionary<NSString *, id> *> *)queryOnConnection:(sqlite3 *)db
                                                                    sql:(NSString *)sql
                                                                 params:(nullable NSArray *)params
@@ -23,9 +22,8 @@
                           error:(NSError **)error;
 @end
 
-/// Private transactor: binds the runner's prepare/bind/step mechanics to one transaction's
-/// connection, so a -performWriteTransaction: block receives read/write verbs instead of a
-/// raw sqlite3 *. Short-lived — created and used entirely within the transaction block.
+// Binds the runner's statement operations to the active transaction connection.
+// The runner creates and uses each instance within one transaction block.
 @interface ATProtoDatabaseQueryRunnerTransactor : NSObject <ATProtoDatabaseTransactor>
 - (instancetype)initWithRunner:(ATProtoDatabaseQueryRunner *)runner connection:(sqlite3 *)db;
 @end
@@ -190,9 +188,7 @@
 - (BOOL)executeUpdate:(NSString *)sql
                params:(nullable NSArray *)params
                 error:(NSError **)error {
-    // updateOnConnection: returns the affected-row count (>= 0) or -1 on failure (with *error
-    // set). Collapse to BOOL success — a transaction caller rolls back on the error, and a
-    // successful zero-row write is still success, matching the old connection: variant.
+    // A zero-row write still succeeds. Only the -1 failure sentinel requests rollback.
     return [_runner updateOnConnection:_db sql:sql params:params error:error] >= 0;
 }
 
