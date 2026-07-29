@@ -17,6 +17,7 @@ import { ProgressBar as ProgressBarClass } from "./progress.ts";
 
 /** A scenario run has started. */
 export interface RunStartedEvent {
+  /** Event discriminator for run initialization. */
   type: "run_start";
   /** Unique run identifier. */
   runId: string;
@@ -30,6 +31,7 @@ export interface RunStartedEvent {
 
 /** A scenario is about to be executed. */
 export interface ScenarioStartedEvent {
+  /** Event discriminator for a scenario entering execution. */
   type: "scenario_start";
   /** Two-digit scenario ID (e.g. "01"). */
   scenarioId: string;
@@ -45,6 +47,7 @@ export interface ScenarioStartedEvent {
 
 /** A scenario has finished execution. */
 export interface ScenarioCompletedEvent {
+  /** Event discriminator for a completed scenario. */
   type: "scenario_complete";
   /** Two-digit scenario ID. */
   scenarioId: string;
@@ -70,6 +73,7 @@ export interface ScenarioCompletedEvent {
 
 /** An essential service is unhealthy or a container has crashed. */
 export interface ServiceFailureEvent {
+  /** Event discriminator for an essential-service failure. */
   type: "service_failure";
   /** Human-readable failure description. */
   message: string;
@@ -81,6 +85,7 @@ export interface ServiceFailureEvent {
 
 /** Progress update during a run. */
 export interface RunProgressEvent {
+  /** Event discriminator for an in-progress run update. */
   type: "run_progress";
   /** Number of scenarios completed so far. */
   completed: number;
@@ -98,6 +103,7 @@ export interface RunProgressEvent {
 
 /** The run has finished (either normally or aborted). */
 export interface RunFinishedEvent {
+  /** Event discriminator for a terminal run outcome. */
   type: "run_finished";
   /** Unique run identifier. */
   runId: string;
@@ -164,6 +170,11 @@ export class HumanReadableSink implements ScenarioRunEventSink {
   private readonly writeln: (line: string) => void;
   private readonly writeStream: typeof Deno.stdout;
 
+  /**
+   * Creates a terminal-output sink.
+   *
+   * @param options - Output destination and duration-cache dependencies.
+   */
   constructor(options: HumanReadableSinkOptions) {
     this.durationCache = options.durationCache;
     this.writeStream = options.writer === "stderr" ? Deno.stderr : Deno.stdout;
@@ -172,6 +183,11 @@ export class HumanReadableSink implements ScenarioRunEventSink {
     };
   }
 
+  /**
+   * Handles one run-loop event and writes its terminal representation.
+   *
+   * @param event - Event emitted by the scenario run loop.
+   */
   emit(event: ScenarioRunEvent): void {
     switch (event.type) {
       case "run_start": {
@@ -230,11 +246,17 @@ export class HumanReadableSink implements ScenarioRunEventSink {
     }
   }
 
+  /**
+   * Writes an already formatted terminal fragment without appending a newline.
+   *
+   * @param line - ANSI-capable output fragment.
+   */
   private writeRaw(line: string): void {
     if (!line) return;
     this.writeStream.writeSync(this.encoder.encode(line));
   }
 
+  /** Clears the current terminal progress line. */
   private clearLine(): void {
     this.writeStream.writeSync(
       this.encoder.encode("\r" + " ".repeat(120) + "\r"),
@@ -253,6 +275,11 @@ export class HumanReadableSink implements ScenarioRunEventSink {
 export class NdjsonSink implements ScenarioRunEventSink {
   private readonly encoder = new TextEncoder();
 
+  /**
+   * Serializes one event as exactly one NDJSON record on standard output.
+   *
+   * @param event - Event emitted by the scenario run loop.
+   */
   emit(event: ScenarioRunEvent): void {
     Deno.stdout.writeSync(
       this.encoder.encode(JSON.stringify(event) + "\n"),
@@ -274,16 +301,27 @@ export class MultiSink implements ScenarioRunEventSink {
   /**
    * @param sinks - Sinks to forward events to, in order.
    */
+  /**
+   * Creates a sink fan-out with deterministic child ordering.
+   *
+   * @param sinks - Event sinks to invoke in order.
+   */
   constructor(sinks: ScenarioRunEventSink[]) {
     this.sinks = sinks;
   }
 
+  /**
+   * Forwards an event to every configured sink in order.
+   *
+   * @param event - Event emitted by the scenario run loop.
+   */
   emit(event: ScenarioRunEvent): void {
     for (const sink of this.sinks) {
       sink.emit(event);
     }
   }
 
+  /** Completes all configured sink cleanup in order. */
   async close(): Promise<void> {
     for (const sink of this.sinks) {
       await sink.close?.();

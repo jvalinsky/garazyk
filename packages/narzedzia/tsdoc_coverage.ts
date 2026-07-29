@@ -1,9 +1,25 @@
 #!/usr/bin/env -S deno run -A
 
+/**
+ * Measures documentation coverage for exported TypeScript declarations.
+ *
+ * @module tsdoc_coverage
+ */
+
 import { basename, dirname, join, relative, resolve } from "@std/path";
 
-type JsonObject = Record<string, unknown>;
+/**
+ * JSON object shape used for Deno documentation nodes.
+ *
+ * @public
+ */
+export type JsonObject = Record<string, unknown>;
 
+/**
+ * Declaration categories included in a coverage report.
+ *
+ * @public
+ */
 export type SymbolKind =
   | "class"
   | "interface"
@@ -16,43 +32,99 @@ export type SymbolKind =
   | "interfaceProperty"
   | "typeParam";
 
+/**
+ * Source coordinates reported by `deno doc --json`.
+ *
+ * @public
+ */
 export interface SourceLocation {
+  /** Source filename or file URL */
   filename?: string;
+  /** One-based source line */
   line?: number;
+  /** Zero-based source column */
   col?: number;
 }
 
+/**
+ * Normalized JSDoc tag data read from Deno's documentation JSON.
+ *
+ * @public
+ */
 export interface JsDocTag {
+  /** Deno's tag kind, such as `param` or `return` */
   kind?: string;
+  /** Parameter or type-parameter name associated with the tag */
   name?: string;
+  /** Documentation text attached to the tag */
   doc?: string;
+  /** Scalar tag value used by tags that do not expose `doc` */
   value?: string;
 }
 
+/**
+ * Documentation attached to one declaration in Deno's JSON output.
+ *
+ * @public
+ */
 export interface JsDoc {
+  /** Declaration summary and remarks */
   doc?: string;
+  /** Structured tags attached to the declaration */
   tags?: JsDocTag[];
 }
 
+/**
+ * Documentation status for one exported declaration or member.
+ *
+ * @public
+ */
 export interface CoverageItem {
+  /** Declaration category */
   kind: SymbolKind;
+  /** Qualified display name */
   symbol: string;
+  /** Repository-relative source path */
   file: string;
+  /** One-based source line */
   line: number;
+  /** Whether the declaration satisfies the coverage rule for its category */
   documented: boolean;
 }
 
+/**
+ * Aggregate documentation counts for a set of declarations.
+ *
+ * @public
+ */
 export interface CoverageBucket {
+  /** Number of declarations that satisfy their documentation rule */
   documented: number;
+  /** Number of declarations evaluated */
   total: number;
+  /** Documented declarations as a percentage of the total */
   percent: number;
 }
 
+/**
+ * Complete TypeScript documentation coverage result.
+ *
+ * @remarks
+ * `missing` contains the declaration-level data needed to produce actionable
+ * reports, while `warnings` records files that Deno could not analyze.
+ *
+ * @public
+ */
 export interface CoverageReport {
+  /** Aggregate coverage across every analyzed declaration */
   overall: CoverageBucket;
+  /** Coverage grouped by declaration category */
   byKind: Record<SymbolKind, CoverageBucket>;
+  /** Coverage grouped by repository-relative source path */
   byFile: Record<string, CoverageBucket>;
+  /** Declarations that did not satisfy their category's documentation rule */
   missing: CoverageItem[];
+  /** Non-fatal analysis failures and malformed documentation output */
   warnings: string[];
 }
 
@@ -232,6 +304,15 @@ function isSourceFile(path: string): boolean {
   return path.endsWith(".ts") || path.endsWith(".tsx");
 }
 
+/**
+ * Collects analyzable TypeScript source files below a path.
+ *
+ * @param path - File or directory to inspect
+ * @param files - Accumulator used by recursive calls
+ * @returns Absolute paths for non-test TypeScript and TSX source files
+ * @throws If the path cannot be resolved or read
+ * @public
+ */
 export async function collectSourceFiles(
   path: string,
   files: string[] = [],
@@ -268,6 +349,18 @@ async function hasExportedSyntax(path: string): Promise<boolean> {
   return /\bexport\b/.test(source);
 }
 
+/**
+ * Runs `deno doc --json` for one source file.
+ *
+ * @remarks
+ * The nearest Deno configuration determines the command's working directory.
+ * Analysis failures are returned as warnings so a multi-file report can
+ * continue without hiding the affected file.
+ *
+ * @param path - Absolute or repository-relative source path
+ * @returns Parsed documentation nodes and an optional non-fatal warning
+ * @public
+ */
 export async function loadDocJson(
   path: string,
 ): Promise<{ nodes: JsonObject[]; warning?: string }> {
@@ -519,6 +612,14 @@ function bucketFor(items: CoverageItem[]): CoverageBucket {
   };
 }
 
+/**
+ * Aggregates declaration-level results into report buckets.
+ *
+ * @param items - Documentation status for analyzed declarations
+ * @param warnings - Non-fatal source-analysis warnings
+ * @returns Coverage totals grouped by kind and source file
+ * @public
+ */
 export function buildReport(
   items: CoverageItem[],
   warnings: string[],
@@ -549,6 +650,12 @@ export function buildReport(
   };
 }
 
+/**
+ * Prints a human-readable coverage report.
+ *
+ * @param report - Coverage report to render
+ * @public
+ */
 export function printReport(report: CoverageReport): void {
   console.log("TypeScript documentation coverage");
   console.log(
@@ -584,6 +691,16 @@ export function printReport(report: CoverageReport): void {
   }
 }
 
+/**
+ * Runs the TypeScript documentation coverage CLI.
+ *
+ * @remarks
+ * Exits with status 1 when `--min-overall` is configured and unmet, or status
+ * 2 when command-line arguments are invalid.
+ *
+ * @returns A promise that resolves after reporting completes
+ * @public
+ */
 export async function main(): Promise<void> {
   const paths: string[] = [];
   let json = false;
