@@ -1931,6 +1931,20 @@ add_custom_target(run-tests COMMAND "${CMAKE_BINARY_DIR}/scripts/run-tests.sh"
   DEPENDS AllTests
 )
 
+# §1.5 DAG-CBOR strict canonical-form gate. Runs ATProtoDagCBORTests and
+# ATProtoDagCBOREdgeCaseTests only; bypasses the broader
+# ParserRecursionExploitTests regression which previously segfaulted the wider
+# binary. Target is fast (~13ms) and is wired into CI as a commit-time gate.
+# Note: the test runner's --filter syntax is glob-style (not regex or
+# substring), so the filter must end in '*' to match both class names; the
+# literal 'ATProtoDagCBOR' matches zero tests.
+add_custom_target(test_dagcbor_strict
+  COMMAND "${CMAKE_BINARY_DIR}/tests/AllTests" --filter 'ATProtoDagCBOR*' --gated=run
+  DEPENDS AllTests
+  USES_TERMINAL
+  COMMENT "Running §1.5 DAG-CBOR strict canonical-form gate (~13ms)"
+)
+
 if(BUILD_FUZZERS)
   # Alias targets for convenience
 add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_cbor_struct fuzz_xrpc_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst fuzz_minimizer fuzz_multi_json fuzz_blob fuzz_firehose fuzz_oauth)

@@ -111,6 +111,10 @@ jobs:
         run: |
           cmake --build build --parallel 4 --target kaszlak AllTests
 
+      - name: Run §1.5 DAG-CBOR strict gate
+        run: |
+          cmake --build build --target test_dagcbor_strict
+
       - name: Run Tests
         run: |
           ctest --test-dir build --output-on-failure
@@ -182,6 +186,10 @@ jobs:
       - name: Build (GNUstep)
         run: |
           cmake --build build-linux --parallel 4 --target september AllTests
+
+      - name: Run §1.5 DAG-CBOR strict gate (GNUstep)
+        run: |
+          cmake --build build-linux --target test_dagcbor_strict
 
       - name: Run Tests (GNUstep)
         run: |
