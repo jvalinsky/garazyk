@@ -22,6 +22,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "PLC/PLCRotationKeyManager.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCAuditor.h"
@@ -78,7 +79,13 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     // com.atproto.identity.refreshIdentity
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_refreshIdentity handler:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *identifier = body[@"identifier"] ?: [request queryParamForKey:@"identifier"];
+        BOOL typeMismatch = NO;
+        NSString *identifier = AuthTypedValue(body, @"identifier", [NSString class], &typeMismatch) ?: [request queryParamForKey:@"identifier"];
+        if (typeMismatch) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Request field has wrong type"}];
+            return;
+        }
         if (identifier.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing identifier"}];
@@ -540,15 +547,32 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
             return;
         }
 
-        NSString *operationDid = operation[@"did"];
+        BOOL opTypeMismatch = NO;
+        NSString *operationDid = AuthTypedValue(operation, @"did", [NSString class], &opTypeMismatch);
+        if (opTypeMismatch) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Request field has wrong type"}];
+            return;
+        }
         if (operationDid.length > 0 && ![operationDid isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
             [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Operation DID does not match authenticated account"}];
             return;
         }
 
-        NSDictionary *opData = operation[@"data"] ?: operation;
-        NSString *opType = opData[@"type"];
+        id opDataValue = operation[@"data"] ?: operation;
+        if (![opDataValue isKindOfClass:[NSDictionary class]]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"operation.data must be an object"}];
+            return;
+        }
+        NSDictionary *opData = (NSDictionary *)opDataValue;
+        NSString *opType = AuthTypedValue(opData, @"type", [NSString class], &opTypeMismatch);
+        if (opTypeMismatch) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Request field has wrong type"}];
+            return;
+        }
         if (![opType isEqualToString:@"plc_operation"]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Operation must be type plc_operation"}];
@@ -580,8 +604,14 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
         if ([services isKindOfClass:[NSDictionary class]]) {
             NSDictionary *atprotoPds = services[@"atproto_pds"];
             if ([atprotoPds isKindOfClass:[NSDictionary class]]) {
-                NSString *endpoint = atprotoPds[@"endpoint"];
-                NSString *serviceType = atprotoPds[@"type"];
+                BOOL pdsTypeMismatch = NO;
+                NSString *endpoint = AuthTypedValue(atprotoPds, @"endpoint", [NSString class], &pdsTypeMismatch);
+                NSString *serviceType = AuthTypedValue(atprotoPds, @"type", [NSString class], &pdsTypeMismatch);
+                if (pdsTypeMismatch) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Request field has wrong type"}];
+                    return;
+                }
                 if (![serviceType isEqualToString:@"AtprotoPersonalDataServer"]) {
                     response.statusCode = HttpStatusBadRequest;
                     [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"services.atproto_pds.type must be AtprotoPersonalDataServer"}];
@@ -631,8 +661,9 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
             if (ops.count > 0) {
                 PLCOperation *lastOp = ops.lastObject;
                 NSString *expectedPrev = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
-                id submittedPrev = opData[@"prev"];
-                if (expectedPrev && submittedPrev != [NSNull null] && ![submittedPrev isEqualToString:expectedPrev]) {
+                id submittedPrevValue = opData[@"prev"];
+                NSString *submittedPrev = [submittedPrevValue isKindOfClass:[NSString class]] ? submittedPrevValue : nil;
+                if (expectedPrev && submittedPrevValue != [NSNull null] && ![submittedPrev isEqualToString:expectedPrev]) {
                     response.statusCode = HttpStatusBadRequest;
                     [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"prev does not match last operation CID"}];
                     return;
@@ -741,7 +772,13 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
-        NSString *handle = body[@"handle"];
+        BOOL typeMismatch = NO;
+        NSString *handle = AuthTypedValue(body, @"handle", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Request field has wrong type"}];
+            return;
+        }
         GZ_LOG_DEBUG(@"updateHandle: handle=%@", handle);
         if (handle.length == 0) {
             response.statusCode = HttpStatusBadRequest;

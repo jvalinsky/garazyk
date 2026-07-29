@@ -11,6 +11,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcHandlerContext.h"
+#import "Auth/AuthClaimTypeCheck.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
@@ -70,9 +71,14 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
         NSDictionary *body = request.jsonBody;
         NSString *name = body[@"name"];
-        NSString *description = body[@"description"];
-        NSString *privacy = body[@"privacy"] ?: @"private";
-        NSString *joinability = body[@"joinability"] ?: @"invite_only";
+        BOOL typeMismatch = NO;
+        NSString *description = AuthTypedValue(body, @"description", [NSString class], &typeMismatch);
+        NSString *privacy = AuthTypedValue(body, @"privacy", [NSString class], &typeMismatch) ?: @"private";
+        NSString *joinability = AuthTypedValue(body, @"joinability", [NSString class], &typeMismatch) ?: @"invite_only";
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         if (![name isKindOfClass:[NSString class]] || name.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"name is required"];
@@ -132,9 +138,14 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
         NSDictionary *body = request.jsonBody;
         NSString *groupUri = body[@"groupUri"];
-        NSString *newName = body[@"name"];
-        NSString *newDescription = body[@"description"];
-        NSString *newPrivacy = body[@"privacy"];
+        BOOL typeMismatch = NO;
+        NSString *newName = AuthTypedValue(body, @"name", [NSString class], &typeMismatch);
+        NSString *newDescription = AuthTypedValue(body, @"description", [NSString class], &typeMismatch);
+        NSString *newPrivacy = AuthTypedValue(body, @"privacy", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
@@ -359,8 +370,17 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
         NSDictionary *body = request.jsonBody;
         NSString *groupUri = body[@"groupUri"];
+        // expiresAt is passed straight through to a SQL bind parameter
+        // (GroupService.m's createInviteLinkForGroup:...) without ever being
+        // messaged as a string, so it accepts either an ISO8601 string or a
+        // numeric epoch timestamp — no type guard needed here.
         NSString *expiresAt = body[@"expiresAt"];
-        NSNumber *maxUses = body[@"maxUses"];
+        BOOL typeMismatch = NO;
+        NSNumber *maxUses = AuthTypedValue(body, @"maxUses", [NSNumber class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
@@ -398,9 +418,18 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
         NSDictionary *body = request.jsonBody;
         NSString *linkId = body[@"linkId"];
-        NSNumber *enabled = body[@"enabled"];
+        BOOL typeMismatch = NO;
+        NSNumber *enabled = AuthTypedValue(body, @"enabled", [NSNumber class], &typeMismatch);
+        // expiresAt is passed straight through to a SQL bind parameter
+        // (GroupService.m's editInviteLink:...) without ever being messaged
+        // as a string, so it accepts either an ISO8601 string or a numeric
+        // epoch timestamp — no type guard needed here.
         NSString *expiresAt = body[@"expiresAt"];
-        NSNumber *maxUses = body[@"maxUses"];
+        NSNumber *maxUses = AuthTypedValue(body, @"maxUses", [NSNumber class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         if (![linkId isKindOfClass:[NSString class]] || linkId.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
@@ -597,7 +626,12 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
         NSDictionary *body = request.jsonBody;
         NSString *groupUri = body[@"groupUri"];
         NSString *text = body[@"text"];
-        NSString *embed = body[@"embed"];
+        BOOL typeMismatch = NO;
+        NSString *embed = AuthTypedValue(body, @"embed", [NSString class], &typeMismatch);
+        if (typeMismatch) {
+            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            return;
+        }
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
