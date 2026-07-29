@@ -18,7 +18,6 @@ ATProtoPLC:PDSWebSocketNetworkAdapter (defined in ATProtoSync, not a declared PU
 ATProtoServices:ATProtoSafeHTTPClient (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoServices)
 ATProtoServices:ATProtoSafeHTTPClientOptions (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoServices)
 ATProtoServices:DIDPLCResolver (defined in ATProtoPLC, not a declared PUBLIC dependency of ATProtoServices)
-ATProtoServices:HttpRetryPolicy (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoServices)
 ATProtoServices:HttpServer (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoServices)
 ATProtoServices:PDSBaseCommand (defined in ATProtoRuntime, not a declared PUBLIC dependency of ATProtoServices)
 ATProtoServices:PDSCLIDispatcher (defined in ATProtoRuntime, not a declared PUBLIC dependency of ATProtoServices)
