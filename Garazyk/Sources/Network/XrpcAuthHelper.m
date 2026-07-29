@@ -185,9 +185,10 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     }
 
     NSString *authority = nil;
-    if (hostHeader.length > 0 && (trustForwarded || localHostHeader)) {
-        authority = hostHeader;
-    } else if (issuerURL.host.length > 0) {
+    // Authoritative source: use the configured issuer URL when available.
+    // The issuer URL is the trusted source of truth for the expected host.
+    // Only fall back to the Host header in local development (no issuer configured).
+    if (issuerURL.host.length > 0) {
         authority = issuerURL.host;
         if (issuerURL.port != nil) {
             BOOL isDefaultPort = ([issuerURL.scheme.lowercaseString isEqualToString:@"https"] && issuerURL.port.integerValue == 443) ||
@@ -196,6 +197,9 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                 authority = [NSString stringWithFormat:@"%@:%@", issuerURL.host, issuerURL.port];
             }
         }
+    } else if (hostHeader.length > 0 && (trustForwarded || localHostHeader)) {
+        // Without an issuer URL (e.g. local dev), accept the Host header from trusted sources.
+        authority = hostHeader;
     }
     if (authority.length == 0) {
         return nil;
