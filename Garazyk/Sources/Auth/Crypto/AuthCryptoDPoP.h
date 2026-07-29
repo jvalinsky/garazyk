@@ -105,6 +105,7 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
       nonceValidator:(nullable id<AuthCryptoDPoPNonceValidator>)nonceValidator
        replayChecker:(id<AuthCryptoDPoPReplayChecker>)replayChecker
        outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+  expectedAccessToken:(nullable NSString *)expectedAccessToken
                error:(NSError **)error;
 
 /*! Creates a signed DPoP proof JWT.

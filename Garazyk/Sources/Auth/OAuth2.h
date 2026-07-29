@@ -417,6 +417,25 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
                error:(NSError **)error;
 
 /*!
+ @method verifyProof:method:url:nonce:requireNonce:outThumbprint:expectedAccessToken:error:
+
+ @abstract Verifies a DPoP proof with optional access token hash (ath) binding per RFC 9449 §4.3.
+
+ @param expectedAccessToken Optional access token for ath binding validation.
+        When non-nil, the proof's 'ath' claim is required and must equal
+        base64url(SHA-256(expectedAccessToken)). Pass nil when the DPoP proof
+        is used without an access token (e.g. client auth at token endpoint).
+ */
++ (BOOL)verifyProof:(NSString *)dpopJwt
+              method:(NSString *)method
+                 url:(NSURL *)url
+               nonce:(nullable NSString *)nonce
+        requireNonce:(BOOL)requireNonce
+      outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
+ expectedAccessToken:(nullable NSString *)expectedAccessToken
+                error:(NSError **)error;
+
+/*!
  @method verifyProof:method:url:nonce:outThumbprint:error:
 
  @abstract Verifies a DPoP proof without requiring a server nonce.

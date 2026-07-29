@@ -196,6 +196,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
                               nonceValidator:nil
                                replayChecker:(id<AuthCryptoDPoPReplayChecker>)[PDSReplayCache sharedCache]
                                outThumbprint:&thumbprint
+                          expectedAccessToken:nil
                                        error:error];
     if (!valid) return NO;
 

@@ -165,6 +165,7 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
                                    nonceValidator:nil
                                     replayChecker:[PDSReplayCache sharedCache]
                                     outThumbprint:&dpopThumbprint
+                               expectedAccessToken:token
                                             error:&dpopError];
 
     if (!validProof) {
