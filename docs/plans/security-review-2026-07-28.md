@@ -43,6 +43,121 @@ Nothing below is speculative. Findings the audit could not substantiate were dro
 
 ---
 
+## Status revision — 2026-07-29
+
+Re-verified against a clean build (`BUILD_RC=0`) and a full default run:
+**4660 tests, 9 failures.** Of those 9: 4 are this plan's known-open exploit
+tests, 4 are a **new regression** (§R1), and 1 is a pre-existing test-isolation
+flake (§R4). Everything below is measured, not inferred, except where stated.
+
+### Landed since the plan was written
+
+| Item | State | Evidence |
+|---|---|---|
+| §1.1 bounds wrap | **DONE** — all 4 sites | `CBOR.m:516,532` and `CAR.m:186,258` now use `length > data.length - offset`. `CARParserExploitTests` **fully green** (2/2). |
+| §1.2 depth cap | **DONE** | `kCBORMaxDecodeDepth = 64`, threaded via `decodeInternal:offset:depth:`. `ParserRecursionExploitTests` exits **0** — was SIGSEGV/139. |
+| §3.1 type-7 desync | **DONE** | `decodeSimpleOrFloat:` now consumes 1/2/4/8 payload bytes for additional-info 24–27. |
+| §3.4 canonical form | **DONE, in the right place** | `ATProtoDagCBOR.m` now rejects trailing data (`:54`), non-minimal lengths (`:590`), and duplicate keys + enforces sort order (`:737`). `ATProtoDagCBOREdgeCaseTests.m` gained 125 lines covering all four additional-info levels. This is option (c) executed as chosen. |
+| §2.1 part 1 (guard parity) | **DONE** | `HttpRequestDispatcher.m:77` wraps `handler(request, response)` in `@try/@catch`. |
+| §2.1 part 2 (typed accessors) | **NOT DONE** | No `stringForKey:`/`numberForKey:` on `HttpRequest`. The plan warned these are not substitutes: the guard converts crashes to 500s but leaves the type confusion, and does not cover throws from `dispatch_async` frames. |
+| §3.3 negative integers | **NOT DONE** | 2 tests still failing. |
+| §4–§8 | **Untouched** | |
+
+### R1 — REGRESSION (P0): STAR round-trip decodes 0 records
+
+Four failures in `STARPreorderTests` — `testSTARL0RoundTripViaVerifyingReader`
+and `testSTARLiteHasNoMSTNodesAndUsesVersionTwo` both assert 8 records and get
+**0**; `testEmitsSTARL0FixtureForComparison` fails twice.
+
+**Mechanism (confirmed by reading):** `CBORDecoder decode:` (`CBOR.m:439-444`)
+now ends with `if (offset != data.length) return nil;`. `[CBORValue decode:]`
+(`CBOR.m:216`) forwards straight to it. `STAR.m` calls `[CBORValue decode:]` at
+`:705` (`parseCommit:`) and `:838` (wire node). Neither `STAR.m` nor
+`STARPreorderTests.m` is modified — only decoder behavior changed.
+
+**Root cause is architectural, not a typo.** The trailing-data check was added
+to `Repository/CBOR.m` — the *generic* decoder that the §3.4 decision
+(option (c)) says must stay lenient, because it also serves WebAuthn
+attestation parsing at `WebAuthnVerifier.m:65`. Strictness belongs in
+`ATProtoDagCBOR`, where it has correctly landed. This is option-(a) drift into
+a decoder that was deliberately excluded from strictness.
+
+Two candidate fixes:
+- **(i) Remove the trailing check from `CBOR.m`.** Aligned with the chosen
+  architecture; strictness stays in `ATProtoDagCBOR`, which already has it and
+  already has better test coverage. Preferred.
+- **(ii) Leave the check; migrate `STAR.m` to `decode:offset:`** and have it
+  validate the residual offset itself. Keeps CBOR.m strict but re-opens the
+  WebAuthn question and contradicts the §3.4 decision.
+
+**Honest caveat:** the full suite was never run *before* these changes, so it is
+not proven that `STARPreorderTests` was green beforehand. The causal chain is
+clear and STAR is unmodified, but that is inference — confirm with a `git stash`
+of the two decoder files before treating it as settled.
+
+### R2 — Two exploit tests now assert the wrong contract (P1)
+
+`CBORCanonicalFormExploitTests/testDuplicateMapKeysAreRejected` and
+`.../testNonMinimalIntegerEncodingIsRejected` assert that
+**`Repository/CBOR.m`** enforces canonical form. Under option (c) it must not:
+it is the generic decoder, and CTAP2 canonical CBOR is a different profile from
+DAG-CBOR. Equivalent coverage now correctly exists in
+`ATProtoDagCBOREdgeCaseTests` against the decoder that owns the property.
+
+These tests were written before the §3.4 decision and encode option (a)'s
+expectations. Leaving them red is actively dangerous: the obvious way to make
+them pass is to make `CBOR.m` fully strict, which is exactly what caused §R1 and
+would push further into WebAuthn's parse path.
+
+**Action:** delete all three assertions from `CBORCanonicalFormExploitTests`
+(including the trailing-data one, which is the §R1 cause), and rely on
+`ATProtoDagCBOREdgeCaseTests`. Record the reason in the deletion commit so the
+coverage is not "restored" later by someone reading only the test name.
+
+### R3 — Negative integers: scope narrowed (P2)
+
+The defect is confined to `Repository/CBOR.m`. `ATProtoDagCBOR.m:624` is
+**already correct** and is a ready reference implementation:
+
+```objc
+if (value > (uint64_t)INT64_MAX) {
+    [self _setDecodingError:error message:@"Negative integer exceeds int64 range"];
+    return nil;
+}
+return @( -1 - (int64_t)value );
+```
+
+This is **not** a canonicalization-policy question and does not wait on §3.4:
+it is a correctness and signed-overflow-UB bug, and COSE — i.e. WebAuthn — uses
+negative integers heavily for key parameters (`-1` crv, `-2` x, `-3` y). Port
+the `ATProtoDagCBOR` form into `CBOR.m`.
+
+### R4 — Not a regression
+
+`PDSBlobAuditOperationTests/testBaseClassMainSetsProgressToComplete` fails in the
+full run but **passes 8/8 in isolation on two consecutive runs**. That is
+order-dependent shared state, pre-existing and unrelated to this work. Worth its
+own ticket; do not let it block this plan.
+
+### R5 — Hygiene
+
+The legacy CAR parser still uses the unsafe idiom at `CAR.m:325`, `:352`, `:361`
+(`offset + X > data.length`). The audit established these are safe on 64-bit
+builds because the lengths are `uint32_t` and cannot wrap an `NSUInteger`. They
+are not a vulnerability — but leaving two idioms in one file is a trap for the
+next edit. Apply the same helper for consistency.
+
+Separately: the working tree carries **64 modified files with nothing
+committed**. The green parts (§1.1, §1.2, §3.1, §3.4, §2.1 part 1) should be
+committed before the P0 work starts, so a bisect can distinguish them.
+
+### Revised order
+
+**P0** §R1 STAR regression → **P1** §R2 retarget tests → **P2** §R3 negative
+integers → **P3** §2.1 part 2 typed accessors → then Sections 4–8 unchanged.
+
+---
+
 ## Section 0 — Verification spikes (completed 2026-07-28)
 
 Five findings were **PLAUSIBLE** only because the audit ran out of budget

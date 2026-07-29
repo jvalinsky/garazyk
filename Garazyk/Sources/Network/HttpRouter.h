@@ -149,6 +149,21 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
 - (nullable HttpRouteHandler)handlerForRequest:(HttpRequest *)request;
 
 /*!
+ @method normalizePath:
+
+ @abstract Securely normalizes a URL path by resolving `..` and `.` segments.
+
+ @discussion Strips leading slashes, collapses double slashes, resolves `..`
+ parent-directory segments (dropping traversals above root), and removes `.`
+ current-directory segments. Prevents path traversal attacks from bypassing
+ route matching.
+
+ @param path The raw URL path to normalize.
+ @return The normalized path without `..` or `.` segments.
+ */
+- (NSString *)normalizePath:(NSString *)path;
+
+/*!
  @method extractParametersFromPath:pattern:
 
  @abstract Extract parameters from a URL path using a pattern.

@@ -262,12 +262,40 @@
 }
 
 - (NSString *)normalizePath:(NSString *)path {
-    // Remove leading slashes and normalize
-    while ([path hasPrefix:@"/"]) {
-        path = [path substringFromIndex:1];
+    // §2.2: resolve `..` segments securely. This prevents attackers from
+    // bypassing route matching by embedding directory traversal sequences.
+    // The algorithm:
+    //   - Split by "/" and maintain a stack of resolved segments
+    //   - Ignore empty segments (from leading/trailing/double slashes)
+    //   - Skip "." (current directory)
+    //   - Pop the stack for ".." (parent directory) — silently drops
+    //     traversals above root for security
+    //   - All other segments are pushed onto the stack
+    //   - Rejoin with "/"
+    //
+    // Edge cases handled: trailing slashes (last component empty → skipped),
+    // double slashes (empty component in middle → skipped), root-only paths
+    // (empty stack → empty string).
+    //
+    // Match test: HttpRouterTests/testPathNormalizationRejectsTraversal.
+    NSArray<NSString *> *components = [path componentsSeparatedByString:@"/"];
+    NSMutableArray<NSString *> *resolved = [NSMutableArray array];
+
+    for (NSString *component in components) {
+        if ([component isEqualToString:@".."]) {
+            if (resolved.count > 0) {
+                [resolved removeLastObject];
+            }
+            // Traversal above root is silently dropped (security).
+        } else if ([component isEqualToString:@"."]) {
+            // Current-directory segment — skip.
+        } else if (component.length > 0) {
+            [resolved addObject:component];
+        }
+        // Empty segments (leading, trailing, or double slashes) are skipped.
     }
 
-    return path;
+    return [resolved componentsJoinedByString:@"/"];
 }
 
 - (void)setupRoutes {
