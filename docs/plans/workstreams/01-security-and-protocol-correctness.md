@@ -2466,11 +2466,26 @@ apply on top of the per-step gate.
 
 ## S19. DAG-CBOR routing migration (lifts §3.4 from ADR-recorded to implemented)
 
-**Status: routing catalog complete (verified 2026-07-28); one real
-migration candidate (`Core/ATProtoCBORSerialization.m:39`) plus three
-importer-only files (`PDSRecordService+CommitPlumbing.m`, `Repository/CAR.m`,
-`Network/PDSRepoImportValidator.m`) confirmed to have **no**
-`[CBORDecoder decode:]` call sites; migration not yet started.** Replaces
+**Status: complete (verified 2026-07-29).** The section below documented
+candidate 4 as not yet migrated as of 2026-07-28; that was already stale —
+`Core/ATProtoCBORSerialization.m` (`e65454c0`, predates this workstream
+entry) already branches `JSONObjectWithData:error:` on `_isContentAddressed`
+to `[ATProtoDagCBOR decodeDataAsJSON:]`, with the legacy `[CBORDecoder
+decode:]` path retained only for the non-content-addressed fallthrough.
+Gate re-verified 2026-07-29: `grep -rn '\[CBORDecoder decode:'
+Garazyk/Sources` returns exactly the two expected real call sites
+(`Repository/CBOR.m:217` internal recursion, `ATProtoCBORSerialization.m:74`
+the conditional fallthrough); `ATProtoDagCBORTests` (23),
+`ATProtoDagCBOREdgeCaseTests` (24), `CARInteropTests` (18),
+`RepoCommitTests` (14), `MSTPreorderTests` (10) all green, 0 failures. The
+three importer-only files below needed no migration, confirmed empty for
+`CBORDecoder|CBORValue` at writing time and unchanged since. The three
+`CBORCanonicalFormExploitTests` cases this section's gate #8 expected to
+flip red→green no longer exist — they were deleted as testing the wrong
+contract against the intentionally-generic `Repository/CBOR.m` (phase-29
+slice 3, `fea378c9`/`14279b3c`); the canonical-form property they
+misattributed is covered by `ATProtoDagCBOREdgeCaseTests` instead, which is
+green above. Historical candidate framing kept below for context. Replaces
 the "ADR recorded, gate satisfied" disposition recorded for §3.4 (`docs/plans/
 security-review-2026-07-28.md:466`) with an implemented routing: DAG-CBOR
 content-addressed callers go through `Garazyk/Sources/Core/ATProtoDagCBOR.m`;
