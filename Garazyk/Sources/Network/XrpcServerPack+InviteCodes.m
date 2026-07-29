@@ -45,10 +45,9 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSNumber *useCountNumber = body[@"useCount"];
+        NSNumber *useCountNumber = [request numberBodyForKey:@"useCount"];
         NSInteger useCount = useCountNumber.integerValue;
-        NSString *forAccount = body[@"forAccount"];
+        NSString *forAccount = [request stringBodyForKey:@"forAccount"];
         NSString *targetDid = forAccount.length > 0 ? forAccount : did;
 
         if (![targetDid isEqualToString:did]) {
@@ -80,12 +79,11 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSNumber *codeCountNumber = body[@"codeCount"] ?: @1;
-        NSNumber *useCountNumber = body[@"useCount"];
+        NSNumber *codeCountNumber = [request numberBodyForKey:@"codeCount"] ?: @1;
+        NSNumber *useCountNumber = [request numberBodyForKey:@"useCount"];
         NSInteger codeCount = codeCountNumber.integerValue;
         NSInteger useCount = useCountNumber.integerValue;
-        NSArray<NSString *> *forAccounts = body[@"forAccounts"];
+        NSArray *forAccounts = [request arrayBodyForKey:@"forAccounts"];
         if (![forAccounts isKindOfClass:[NSArray class]] || forAccounts.count == 0) {
             forAccounts = @[did];
         }
