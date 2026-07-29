@@ -6,6 +6,7 @@
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
 #import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 
 /**
  * Pins STAR-L0's depth-first / record-interleaved chunk emission order against
@@ -81,13 +82,13 @@
 #pragma mark - Test data helpers
 
 - (NSData *)testRecordDataForKey:(NSString *)key {
-    // Deterministic per-record data: marker byte + key UTF-8.
+    // Deterministic per-record data: valid canonical DAG-CBOR map.
     // CID is SHA-256 of this data — cryptographically consistent round-trip.
-    NSMutableData *out = [NSMutableData data];
-    uint8_t marker = 0xA1;
-    [out appendBytes:&marker length:1];
-    [out appendData:[key dataUsingEncoding:NSUTF8StringEncoding]];
-    return out;
+    NSError *error = nil;
+    NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES]
+        encodeDataWithJSONObject:@{@"v": key} error:&error];
+    NSCAssert(cbor != nil, @"Failed to encode record CBOR: %@", error);
+    return cbor;
 }
 
 - (MSTBlockProvider)recordProviderForTree:(MST *)tree {
