@@ -14,6 +14,7 @@
 #import "Auth/JWT.h"
 #import "Auth/OAuth2.h"
 #import "Auth/PDSNonceManager.h"
+#import "Auth/PDSReplayCache.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/PDS/PDSAuth.h"
 #import "Auth/Verifier/AuthVerifier.h"
@@ -79,6 +80,7 @@ static AuthVerifier *XrpcAuthSharedVerifier(void) {
         [verifier setLocalIssuer:controller.jwtMinter.issuer ?: @""];
         verifier.expectedAudience = controller.jwtMinter.issuer ?: @"";
         verifier.requireDPoP = [ATProtoServiceConfiguration sharedConfiguration].requireDPoPNonce;
+        verifier.replayChecker = [PDSReplayCache sharedCache];
         GZ_LOG_AUTH_INFO(@"AuthVerifier cluster constructed (issuer=%@)",
                           controller.jwtMinter.issuer ?: @"");
     });
