@@ -183,7 +183,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     }
     offset += headerSize;
 
-    if (offset + headerLength > data.length) {
+    if (headerLength > data.length - offset) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-1
@@ -255,7 +255,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         }
         offset += blockSize;
 
-        if (offset + blockLen > data.length) {
+        if (blockLen > data.length - offset) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.car"
                                              code:-5
