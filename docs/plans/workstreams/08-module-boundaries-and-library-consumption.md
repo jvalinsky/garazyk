@@ -37,18 +37,42 @@ raw timeout instead of `ATProtoSafeHTTPClientOptions`) with
 removing the `Core → ATProtoSafeHTTPClient`/`ATProtoSafeHTTPClientOptions`
 leak for those two call sites.
 
-**Remaining ATProtoCore leaks (7 of 11), not yet addressed:**
+**`PDSReplayCache` leak also fixed** (`2668fb1b`). `AuthVerifier.m` called
+`[PDSReplayCache sharedCache]` directly just to obtain an instance to pass
+to `AuthCryptoDPoP`'s already-protocol-typed `replayChecker:` parameter
+(`id<AuthCryptoDPoPReplayChecker>`, which `PDSReplayCache` already
+conforms to) — the class itself can't move to Core (it needs
+`Database/Connection/ATProtoConnectionManagerSerial`, a real Storage
+dependency), so the fix is injection, not relocation. Added
+`AuthVerifier.replayChecker` (nullable, same pattern as
+`nonceStore`/`accountPolicy`/`keyResolver`) and wired it at the one
+production construction site (`XrpcAuthHelper.m`) and the test site.
+Handled carefully: `AuthCryptoDPoP` treats a nil `replayChecker` as "jti
+reuse detected" (fail closed), so a missed injection breaks DPoP-bound
+requests rather than silently disabling replay protection — verified via
+the full DPoP suite (45/45) before landing.
+
+**Remaining ATProtoCore leaks (6 of 11), not yet addressed:**
 - `ATProtoSafeHTTPClient`/`ATProtoSafeHTTPClientOptions` — one file left:
   `Security/Space/PDSSpaceAppAttestationVerifier.m` needs SSRF-control
   options (`allowPrivateHosts`, `maxResponseBytes`, `allowHTTP`,
   `followRedirects`) the minimal `GZHTTPClient` protocol doesn't cover.
   Extending the protocol to match, or relocating this file out of
   Core's glob, is its own scoped follow-up.
-- `CryptoUtils`, `JWT`, `JWTVerifier`, `PDSReplayCache`, `Secp256k1` (all
-  defined in `ATProtoServices`) — not analyzed yet; M2's original text
-  never mentioned these because its "six symbols" evidence undercounted.
-  Needs its own investigation into which Core files reference them and
-  why.
+- `CryptoUtils`, `JWT`, `JWTVerifier`, `Secp256k1` (all defined in
+  `ATProtoServices`) — traced to a single root cause: `Auth/JWT.m` (~850
+  lines) bundles `JWTHeader`/`JWTPayload`/`JWT`/`JWTVerifier` (pure
+  parsing/verification, arguably Core-appropriate) together with
+  `JWTMinter` (signing — needs `Secp256k1` and keychain-backed key
+  manager protocols, a real Services-layer concern) in one file, which
+  `AuthVerifier.m` (Core) imports for the verifier half. Splitting this
+  file is the correct fix but was judged too risky to do in this pass
+  without dedicated focus: JWT verification is the exact security
+  surface this session's other work (phase-29, S17/S18) hardened, and a
+  split needs careful analysis of which JWTVerifier internals actually
+  touch Secp256k1 (verification may already be curve-agnostic via
+  `PDSPublicKeyProtocol`) before any file movement. Left as a scoped,
+  security-sensitive follow-up — not attempted blind.
 - The GNUstep-only `/usr/bin/curl` subprocess fallback in `DID.m` (M2's
   text flagged this as "move behind the protocol or delete," marked
   optional) — not touched. Doesn't affect the module-boundary leak count
