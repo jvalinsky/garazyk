@@ -2170,16 +2170,39 @@ carry the same rollback strategy.
 
 ## S17. Admin + AdminUIServer trust-boundary sweep
 
-**Status: not started.** A focused audit of the Admin and AdminUIServer
-modules (`Garazyk/Sources/Admin/`, `Garazyk/Sources/AdminUIServer/`,
-totaling ~8,000 lines) found the Admin core (PDSAdminAuth.m,
-AdminMiddleware.m) to be well-guarded with isKindOfClass checks already
-in place, but the AdminUIServer route handlers (~1,100 lines across 11
-route categories) exhibit the same unguarded `request.jsonBody[@"key"]`
-pattern fixed in S8, S13, and S15. The UIAuthManager is well-implemented
-(PBKDF2 password hashing, CSPRNG tokens, CSRF nonces), the template
-engine properly HTML-escapes, and the backend client's auth forwarding
-uses config-provided tokens (lower risk than the Beskid B2 case).
+**Status: complete (2026-07-29, `e340d6de`).** By the time this item was
+picked up, the concurrent §2.1 typed-accessor sweep and other same-day
+commits had already closed slices 2 (`UIBackendSafeBearerHeader` —
+isKindOfClass + newline guard on the forwarded auth token) and 3
+(`PDSAdminAuthLoadAdminDids` filters to NSString elements) and all of
+slice 1 except `OzoneRoutes.m`, which still had 5 sites passing
+`request.jsonBody[@"key"]` straight to a `backendClient` method typed to
+expect NSDictionary/NSArray with no isKindOfClass guard — fixed.
+
+**Slice 4 surfaced a real, previously-unknown finding, not just
+hardening:** `renderChatMessagesPartial:`/`renderChatConvosPartial:`
+(`UIServerRuntime+Renderers.m`) assigned fully user-controlled chat
+message text directly into template context keys that
+`chat-messages.html`/`chat-convos.html` render through the *raw*,
+unescaped `{{{text}}}`/`{{{lastMsg}}}` placeholders — any chat
+participant could plant a `<script>` tag that executes in an admin's
+session when they open that conversation in the dashboard. Fixed by
+escaping the user-controlled branch with the existing `UIEscaped()`
+helper before it reaches the template (the other value threaded through
+the same raw placeholders — the encrypted-message indicator — is
+legitimately trusted server-generated HTML, which is why the templates
+use raw placeholders at all). Two regression tests added
+(`UIServerRuntimeTests.m`) calling the renderers directly with
+`<script>`/`onerror` payloads.
+
+Not separately unit-tested (both already correctly implemented, low
+severity, config-provided not user-reachable): slice 2's newline
+rejection and slice 3's non-string DID filtering. `UIBackendSafeBearerHeader`
+is a file-private `static` function, so testing it properly would need
+either exposing it or an HTTP-capturing test harness — judged
+disproportionate to the residual risk.
+
+Original planning text and evidence kept below for the archaeology.
 
 ### Evidence
 
