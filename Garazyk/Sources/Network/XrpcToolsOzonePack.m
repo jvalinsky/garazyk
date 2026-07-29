@@ -66,8 +66,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSDictionary *event = body[@"event"];
+        NSDictionary *event = [request arrayBodyForKey:@"event"] ? nil : request.jsonBody[@"event"];
         if (!event) {
             [XrpcErrorHelper setValidationError:response message:@"event is required"];
             return;
@@ -188,8 +187,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSArray *uris = body[@"uris"];
+        NSArray *uris = [request arrayBodyForKey:@"uris"];
         if (!uris || uris.count == 0) {
             [XrpcErrorHelper setValidationError:response message:@"uris is required"];
             return;
@@ -235,8 +233,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSArray *dids = body[@"dids"];
+        NSArray *dids = [request arrayBodyForKey:@"dids"];
         if (!dids || dids.count == 0) {
             [XrpcErrorHelper setValidationError:response message:@"dids is required"];
             return;
@@ -356,16 +353,15 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSDictionary *action = body[@"action"];
-        NSArray *subjects = body[@"subjects"];
+        NSDictionary *action = [request arrayBodyForKey:@"action"] ? nil : request.jsonBody[@"action"];
+        NSArray *subjects = [request arrayBodyForKey:@"subjects"];
         if (!action || !subjects) {
             [XrpcErrorHelper setValidationError:response message:@"action and subjects are required"];
             return;
         }
 
         NSError *error = nil;
-        NSDictionary *results = [moderationService scheduleAction:body createdBy:adminDid error:&error];
+        NSDictionary *results = [moderationService scheduleAction:request.jsonBody createdBy:adminDid error:&error];
         if (error || !results) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
@@ -398,8 +394,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *actionId = body[@"id"];
+        NSString *actionId = [request stringBodyForKey:@"id"];
         if (!actionId) {
             [XrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
@@ -422,9 +417,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSArray *subjects = body[@"subjects"];
-        NSString *comment = body[@"comment"];
+        NSArray *subjects = [request arrayBodyForKey:@"subjects"];
+        NSString *comment = [request stringBodyForKey:@"comment"];
         if (!subjects || subjects.count == 0) {
             [XrpcErrorHelper setValidationError:response message:@"subjects is required"];
             return;
@@ -479,15 +473,14 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
+        NSString *did = [request stringBodyForKey:@"did"];
         if (!did || did.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
-        NSString *memberId = [moderationService addTeamMember:body createdBy:adminDid error:&error];
+        NSString *memberId = [moderationService addTeamMember:request.jsonBody createdBy:adminDid error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
@@ -503,9 +496,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
-        NSString *role = body[@"role"];
+        NSString *did = [request stringBodyForKey:@"did"];
+        NSString *role = [request stringBodyForKey:@"role"];
         if (!did || did.length == 0 || !role) {
             [XrpcErrorHelper setValidationError:response message:@"did and role are required"];
             return;
@@ -531,8 +523,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
+        NSString *did = [request stringBodyForKey:@"did"];
         if (!did || did.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
@@ -574,20 +565,19 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *name = body[@"name"];
+        NSString *name = [request stringBodyForKey:@"name"];
         if (!name) {
             [XrpcErrorHelper setValidationError:response message:@"name is required"];
             return;
         }
 
         NSError *error = nil;
-        NSString *setId = body[@"id"]; // Optional: if provided, update existing set
+        NSString *setId = [request stringBodyForKey:@"id"]; // Optional: if provided, update existing set
         if (setId) {
             // Update existing set
             BOOL success = [moderationService updateSet:setId
                                                newName:name
-                                             newValues:body[@"values"]
+                                             newValues:[request arrayBodyForKey:@"values"]
                                              updatedBy:adminDid
                                                  error:&error];
             if (!success) {
@@ -598,7 +588,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
             [response setJsonBody:@{@"id": setId}];
         } else {
             // Create new set
-            NSString *newSetId = [moderationService createSet:body createdBy:adminDid error:&error];
+            NSString *newSetId = [moderationService createSet:request.jsonBody createdBy:adminDid error:&error];
             if (error) {
                 [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
                 return;
@@ -614,8 +604,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *setId = body[@"id"];
+        NSString *setId = [request stringBodyForKey:@"id"];
         if (!setId) {
             [XrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
@@ -693,9 +682,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *setId = body[@"id"];
-        NSArray *values = body[@"values"];
+        NSString *setId = [request stringBodyForKey:@"id"];
+        NSArray *values = [request arrayBodyForKey:@"values"];
         if (!setId || !values) {
             [XrpcErrorHelper setValidationError:response message:@"id and values are required"];
             return;
@@ -718,9 +706,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *setId = body[@"id"];
-        NSArray *values = body[@"values"];
+        NSString *setId = [request stringBodyForKey:@"id"];
+        NSArray *values = [request arrayBodyForKey:@"values"];
         if (!setId || !values) {
             [XrpcErrorHelper setValidationError:response message:@"id and values are required"];
             return;
@@ -745,14 +732,18 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        if (!body[@"name"] || !body[@"contentMarkdown"]) {
+        NSString *templateName = [request stringBodyForKey:@"name"];
+        NSString *templateContent = [request stringBodyForKey:@"contentMarkdown"];
+        if (!templateName || !templateContent) {
             [XrpcErrorHelper setValidationError:response message:@"name and contentMarkdown are required"];
             return;
         }
 
-        NSMutableDictionary *templateInput = [body mutableCopy];
-        templateInput[@"text"] = body[@"contentMarkdown"];
+        NSMutableDictionary *templateInput = [[NSMutableDictionary alloc] init];
+        [request.jsonBody enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+            templateInput[key] = obj;
+        }];
+        templateInput[@"text"] = templateContent;
 
         NSError *error = nil;
         NSString *templateId = [moderationService createCommunicationTemplate:templateInput createdBy:adminDid error:&error];
@@ -771,8 +762,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *templateId = body[@"id"];
+        NSString *templateId = [request stringBodyForKey:@"id"];
         if (!templateId) {
             [XrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
@@ -780,8 +770,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
 
         NSError *error = nil;
         BOOL success = [moderationService updateCommunicationTemplate:templateId
-                                                              newName:body[@"name"]
-                                                             newText:body[@"contentMarkdown"]
+                                                              newName:[request stringBodyForKey:@"name"]
+                                                             newText:[request stringBodyForKey:@"contentMarkdown"]
                                                           updatedBy:adminDid
                                                                 error:&error];
         if (!success) {
@@ -799,8 +789,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *templateId = body[@"id"];
+        NSString *templateId = [request stringBodyForKey:@"id"];
         if (!templateId) {
             [XrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
@@ -842,8 +831,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
+        NSString *did = [request stringBodyForKey:@"did"];
         if (!did) {
             [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
@@ -866,8 +854,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
+        NSString *did = [request stringBodyForKey:@"did"];
         if (!did) {
             [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
@@ -948,9 +935,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *url = body[@"url"];
-        NSString *action = body[@"action"];
+        NSString *url = [request stringBodyForKey:@"url"];
+        NSString *action = [request stringBodyForKey:@"action"];
 
         if (!url || url.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"url is required"];
@@ -963,7 +949,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         }
 
         NSError *error = nil;
-        NSString *ruleId = [moderationService createSafelink:body createdBy:adminDid error:&error];
+        NSString *ruleId = [moderationService createSafelink:request.jsonBody createdBy:adminDid error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
@@ -979,10 +965,9 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *ruleId = body[@"id"];
-        NSString *url = body[@"url"];
-        NSString *action = body[@"action"];
+        NSString *ruleId = [request stringBodyForKey:@"id"];
+        NSString *url = [request stringBodyForKey:@"url"];
+        NSString *action = [request stringBodyForKey:@"action"];
 
         if (!ruleId || ruleId.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"id is required"];
@@ -1006,8 +991,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *ruleId = body[@"id"];
+        NSString *ruleId = [request stringBodyForKey:@"id"];
 
         if (!ruleId || ruleId.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"id is required"];
@@ -1033,10 +1017,9 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *key = body[@"key"];
-        NSString *value = body[@"value"];
-        NSString *scope = body[@"scope"] ?: @"global";
+        NSString *key = [request stringBodyForKey:@"key"];
+        NSString *value = [request stringBodyForKey:@"value"];
+        NSString *scope = [request stringBodyForKey:@"scope"] ?: @"global";
 
         if (!key || key.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"key is required"];
@@ -1082,8 +1065,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSArray *keys = body[@"keys"];
+        NSArray *keys = [request arrayBodyForKey:@"keys"];
 
         if (!keys || keys.count == 0) {
             [XrpcErrorHelper setValidationError:response message:@"keys array is required"];
@@ -1102,16 +1084,15 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did = body[@"did"];
+        NSString *did = [request stringBodyForKey:@"did"];
 
         if (!did || did.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
-        NSString *limitStr = body[@"limit"];
-        NSString *cursor = body[@"cursor"];
+        NSString *limitStr = [request stringBodyForKey:@"limit"];
+        NSString *cursor = [request stringBodyForKey:@"cursor"];
         NSInteger limit = limitStr ? [limitStr integerValue] : 50;
         if (limit <= 0) limit = 50;
         if (limit > 100) limit = 100;
@@ -1129,9 +1110,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSString *did1 = body[@"did1"];
-        NSString *did2 = body[@"did2"];
+        NSString *did1 = [request stringBodyForKey:@"did1"];
+        NSString *did2 = [request stringBodyForKey:@"did2"];
 
         if (!did1 || did1.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"did1 is required"];
@@ -1237,9 +1217,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
-        NSDictionary *body = request.jsonBody;
         NSError *error = nil;
-        BOOL success = [moderationService updateServerSettings:body updatedBy:adminDid error:&error];
+        BOOL success = [moderationService updateServerSettings:request.jsonBody updatedBy:adminDid error:&error];
         if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;

@@ -194,7 +194,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
         if (!PDSAdminRequireDatabases(databases, response)) return;
 
         NSString *did = PDSAdminPathParameter(request, @"did");
-        NSString *name = request.jsonBody[@"name"];
+        NSString *name = [request stringBodyForKey:@"name"];
         if (did.length == 0 || name.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"DID and app password name are required"}];
