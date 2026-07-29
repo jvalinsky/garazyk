@@ -11,6 +11,7 @@
 #import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/TestKeyFixtures.h"
 #import "Auth/Verifier/AuthVerifier.h"
+#import "Auth/OAuthProvider/OAuthProviderProtocols.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
@@ -60,6 +61,23 @@
 
 - (BOOL)isSessionActive:(NSString *)sid forAccountDid:(NSString *)did error:(NSError **)error {
     return self.active;
+}
+
+@end
+
+@interface AuthParityKeyResolver : NSObject <TokenKeyResolver>
+@property (nonatomic, copy) NSString *allowedIssuer;
+@property (nonatomic, strong) NSDictionary *jwks;
+@end
+
+@implementation AuthParityKeyResolver
+
+- (nullable NSDictionary *)jwksForIssuer:(NSString *)issuer error:(NSError **)error {
+    return [issuer isEqualToString:self.allowedIssuer] ? self.jwks : nil;
+}
+
+- (BOOL)isIssuerAllowed:(NSString *)issuer {
+    return [issuer isEqualToString:self.allowedIssuer];
 }
 
 @end
@@ -143,6 +161,54 @@
     AuthVerifierPrincipal *principal = [self newPrincipalForAuthorization:authorization request:request];
     XCTAssertEqualObjects(legacyDID, expectedDID);
     XCTAssertEqualObjects(principal.did, expectedDID);
+}
+
+/// Manually constructs a JWT signed with a P-256 key, letting the caller set the
+/// header's alg independently of the key's real curve — needed to test §4.4's
+/// algorithm-confusion defense on the remote-issuer path, where a genuinely
+/// valid P-256 signature can be mislabeled with a disallowed alg.
+- (nullable NSString *)signedRemoteTokenWithIssuer:(NSString *)issuer
+                                          audience:(NSString *)audience
+                                               sub:(NSString *)sub
+                                          tokenUse:(NSString *)tokenUse
+                                               typ:(NSString *)typ
+                                               alg:(NSString *)alg
+                                        privateKey:(SecKeyRef)privateKey
+                                             error:(NSError **)error {
+    NSDictionary *headerDict = @{@"alg": alg, @"typ": typ};
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSDictionary *payloadDict = @{
+        @"iss": issuer,
+        @"sub": sub,
+        @"aud": audience,
+        @"token_use": tokenUse,
+        @"iat": @(now),
+        @"exp": @(now + 3600)
+    };
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:headerDict options:0 error:error];
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payloadDict options:0 error:error];
+    if (!headerData || !payloadData) return nil;
+
+    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEnc, payloadEnc];
+    NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+
+    CFErrorRef signError = NULL;
+    NSData *derSignature = CFBridgingRelease(SecKeyCreateSignature(privateKey,
+                                                                     kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                                                     (__bridge CFDataRef)signingData,
+                                                                     &signError));
+    if (!derSignature) {
+        if (error && signError) *error = CFBridgingRelease(signError);
+        return nil;
+    }
+    NSData *rawSignature = [AuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:error];
+    rawSignature = [AuthCryptoECDSA normalizeLowS:rawSignature error:error];
+    if (!rawSignature) return nil;
+
+    NSString *sigEnc = [AuthCryptoBase64URL encode:rawSignature];
+    return [NSString stringWithFormat:@"%@.%@.%@", headerEnc, payloadEnc, sigEnc];
 }
 
 - (NSString *)thumbprintFromProof:(NSString *)proof error:(NSError **)error {
@@ -314,6 +380,92 @@
     AuthVerifierPrincipal *principal = [self newPrincipalForAuthorization:authorization
                                                                     request:[self requestWithAuthorization:authorization dpop:nil]];
     XCTAssertTrue(principal.isAdmin);
+}
+
+// §4.1/§4.4: the remote-issuer path (JWKS fetched from another PDS) enforces
+// expectedTokenUse/expectedTyp and the alg allowlist just like the local
+// path — phase-29 slice 4.
+
+- (void)testRemoteIssuerRejectsRefreshTokenAtAccessTokenBoundary {
+    NSError *error = nil;
+    SecKeyRef privateKey = PDSTestCreateFixedP256PrivateKey(&error);
+    XCTAssertNotNil((__bridge id)privateKey, @"Failed to create fixed P-256 key: %@", error);
+    SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
+    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:publicKey error:&error];
+    XCTAssertNotNil(jwk, @"Failed to derive public JWK: %@", error);
+
+    NSString *remoteIssuer = @"https://other-pds.example.com";
+    AuthParityKeyResolver *resolver = [[AuthParityKeyResolver alloc] init];
+    resolver.allowedIssuer = remoteIssuer;
+    resolver.jwks = @{@"keys": @[jwk]};
+
+    AuthVerifier *remoteVerifier = [[AuthVerifier alloc] initWithKeyResolver:resolver
+                                                                accountPolicy:self.accountPolicy
+                                                                   nonceStore:nil];
+    [remoteVerifier setLocalIssuer:self.minter.issuer];
+    remoteVerifier.expectedAudience = self.minter.audience;
+
+    // A refresh token, genuinely minted and signed by the remote PDS, presented
+    // where an access token is expected.
+    NSString *token = [self signedRemoteTokenWithIssuer:remoteIssuer
+                                                audience:self.minter.audience
+                                                     sub:@"did:plc:alice"
+                                                tokenUse:@"refresh"
+                                                     typ:@"refresh+jwt"
+                                                     alg:@"ES256"
+                                              privateKey:privateKey
+                                                   error:&error];
+    XCTAssertNotNil(token, @"Failed to sign remote token: %@", error);
+
+    NSError *verifyError = nil;
+    AuthVerifierPrincipal *principal = [remoteVerifier verifyAccessToken:token error:&verifyError];
+    XCTAssertNil(principal, @"A remote-issued refresh token must not be accepted as an access token");
+    XCTAssertNotNil(verifyError);
+
+    CFRelease(privateKey);
+    CFRelease(publicKey);
+}
+
+- (void)testRemoteIssuerRejectsDisallowedAlgorithm {
+    NSError *error = nil;
+    SecKeyRef privateKey = PDSTestCreateFixedP256PrivateKey(&error);
+    XCTAssertNotNil((__bridge id)privateKey, @"Failed to create fixed P-256 key: %@", error);
+    SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
+    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:publicKey error:&error];
+    XCTAssertNotNil(jwk, @"Failed to derive public JWK: %@", error);
+
+    NSString *remoteIssuer = @"https://other-pds.example.com";
+    AuthParityKeyResolver *resolver = [[AuthParityKeyResolver alloc] init];
+    resolver.allowedIssuer = remoteIssuer;
+    resolver.jwks = @{@"keys": @[jwk]};
+
+    AuthVerifier *remoteVerifier = [[AuthVerifier alloc] initWithKeyResolver:resolver
+                                                                accountPolicy:self.accountPolicy
+                                                                   nonceStore:nil];
+    [remoteVerifier setLocalIssuer:self.minter.issuer];
+    remoteVerifier.expectedAudience = self.minter.audience;
+
+    // Every claim is otherwise valid (access/at+jwt, correct aud) and the
+    // signature is a genuine P-256 signature the JWKS key verifies — only the
+    // header's alg is mislabeled outside the allowlist, simulating an
+    // algorithm-confusion attempt.
+    NSString *token = [self signedRemoteTokenWithIssuer:remoteIssuer
+                                                audience:self.minter.audience
+                                                     sub:@"did:plc:alice"
+                                                tokenUse:@"access"
+                                                     typ:@"at+jwt"
+                                                     alg:@"ES256K"
+                                              privateKey:privateKey
+                                                   error:&error];
+    XCTAssertNotNil(token, @"Failed to sign remote token: %@", error);
+
+    NSError *verifyError = nil;
+    AuthVerifierPrincipal *principal = [remoteVerifier verifyAccessToken:token error:&verifyError];
+    XCTAssertNil(principal, @"A token whose header alg is outside the remote allowlist must be rejected");
+    XCTAssertNotNil(verifyError);
+
+    CFRelease(privateKey);
+    CFRelease(publicKey);
 }
 
 @end
