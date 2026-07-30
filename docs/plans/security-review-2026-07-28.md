@@ -171,13 +171,15 @@ correct as written. This is a test-only change.
 | §3.4 canonical form + §S19 routing | landed in `ATProtoDagCBOR`; `ATProtoCBORSerialization` routes via `initWithContentAddressed:` |
 | §4.1 token_use / typ | wired on the local path (`PDSAuth.m`, `AuthVerifier.m:295-296`); `verifyRefreshToken:` no longer delegates to `verifyAccessToken:`, closing the bidirectional confusion |
 | §4.2 DPoP `ath` | `AuthCryptoDPoP` requires/matches `ath` when `expectedAccessToken` is set; `AuthVerifier`, `AppViewOAuth2Middleware`, and `XrpcAuthHelper` pass the presented token |
+| §4.6 DPoP `htu` | Issuer authority preferred; Host / `X-Forwarded-Proto` only under trusted-proxy gate (`AuthVerifier`, AppView middleware aligned with Xrpc/OAuth2Handler) |
 | §4.3 refresh reuse detection | family-id + tombstone + migration |
 | §2.2 path normalization | `normalizePath:` now resolves `..` with a segment stack and drops above-root traversal |
 | §5.1 blob ownership | `PDSDatabase+Blobs` and `PDSActorStore+Blob` preserve `did` on CID conflict; deletes scoped by `(cid, did)` |
 | §5.2–§5.4 moderation SQL | ModerationService cursor/`limit`/`LIKE ESCAPE`; AppView Group/Graph/Actor/Feed siblings; Ozone route clamps |
 | §6.1 blob CDN redirect | `CID cidFromString:` before `Location`; CR/LF stripped in `HttpResponse setHeader:` |
-| §6.2 active-content headers | CSP `default-src 'none'; sandbox` on repo/sync blob download paths (with nosniff) |
+| §6.2 active-content headers | CSP on repo/sync downloads; MimeTypeValidator drops html/svg/js/css/xml/postscript from supported uploads |
 | §6.4 / §6.5 / §6.7 handle resolver | failure-cache key normalized; DNS TXT `did=` trimmed/bounded; ambient `XCTestCase` SSRF bypass removed (env-only) |
+| §6.6 handle backlink | `verifyHandleBacklink:did:` requires DID `alsoKnownAs` claim (non-test) |
 | §8 vacuous test | `XCTAssertTrue(YES)` replaced with real depth assertions |
 | N1 `encodeCount:` 8-byte | additional-info 27 branch for counts ≥ 2³² |
 | N3 `setUsage:` setter | deleted; usage is immutable for the instance lifetime |
@@ -234,12 +236,10 @@ public setter deleted. Was: header claimed immutable but shipped a public setter
 
 ### Unchanged
 
-§4.6 (`htu` from Host), §5.5 (write-path IDOR / secrets-at-rest follow-ups),
-§6 residual (MimeTypeValidator denylist still allows `text/html` /
-`image/svg+xml` at upload — CSP on download mitigates top-level script),
+§5.5 (write-path IDOR / secrets-at-rest follow-ups),
 §7 (PLC, MST/commit integrity, Registration, AdminUI, Email,
 MediaCore/Video, password KDF) remain open or partially open since the
-original audit. §4.2 / §5.1–§5.4 / §6.1–§6.2 / §6.4–§6.7 / N1 / N3 closed
+original audit. §4.2 / §4.6 / §5.1–§5.4 / §6.1–§6.2 / §6.4–§6.7 / N1 / N3 closed
 2026-07-30 on `cursor/execute-remaining-plan-work-96ec`.
 
 ---
@@ -997,12 +997,14 @@ for full gate evidence.
 
 ### 4.6 DPoP `htu` from unvalidated Host
 
-**CONFIRMED, deployment-dependent.** `AuthVerifier.m:446` builds the expected
-`htu` from the `Host` and `X-Forwarded-Proto` headers with no host allowlist and
-no trusted-proxy check, so the requester chooses the value their proof is
-compared against. Behind a proxy that overwrites both headers this is not
-reachable; combined with §2.3 it is worth fixing together. `hostHeader` is also
-used with no nil-guard (yields the literal `https://(null)/path`).
+**REMEDIATED (2026-07-30).** Resource-server DPoP URL builders prefer the
+configured issuer authority/scheme. `X-Forwarded-Proto` / Host are honored only
+when `PDS_TRUST_PROXY_HEADERS` is set and the peer is a trusted proxy address
+(same gate as §2.3): `AuthVerifier`, `XrpcAuthHelper`, `OAuth2Handler+DPoP`,
+and `AppViewOAuth2Middleware`. Missing authority returns nil (no
+`https://(null)/…`).
+
+Was: **CONFIRMED, deployment-dependent** — Host + X-Forwarded-Proto unbound.
 
 ### 4.7 JWKS advertises secp256k1 as P-256
 
@@ -1077,10 +1079,13 @@ Was: emptiness-only check, raw query string interpolated into 302 Location.
 
 ### 6.2 Active-content MIME denylist is route-only
 
-**PARTIALLY REMEDIATED (2026-07-30).** Repo/sync blob download paths now set
-CSP `default-src 'none'; sandbox` (matching `XrpcSpacePack`) plus existing
-nosniff / selective attachment. Upload-path MimeTypeValidator denylist gap
-(`text/html`, `image/svg+xml` still supported) remains a regression-risk note.
+**REMEDIATED (2026-07-30).** Repo/sync blob download paths set CSP
+`default-src 'none'; sandbox` (matching `XrpcSpacePack`) plus nosniff /
+selective attachment. `MimeTypeValidator` no longer lists active types
+(`text/html`, `image/svg+xml`, `text/javascript`, `application/javascript`,
+`text/css`, `application/xml`, `application/postscript`) as supported, so
+`BlobStorage validateBlob:` rejects them even if a route denylist is skipped.
+Route-level `isActiveUploadMimeType` remains as defense in depth.
 
 ### 6.3 Verified clean — blob path traversal
 
@@ -1112,12 +1117,13 @@ prefix / length bound.
 
 ### 6.6 Resolution is one-way
 
-**CONFIRMED for the resolver; exploitability depends on callers.**
-`HandleResolver` never fetches a DID document and has no `alsoKnownAs`
-cross-check, so whoever controls a domain can assert any DID — including a
-victim's — and it is cached for 300 s. **Next step:** enumerate `resolveHandle:`
-callers and check whether any performs the reverse verification. This is the
-highest-value follow-up in the identity slice.
+**REMEDIATED (already on tree; documented 2026-07-30).** After HTTPS/DNS
+handle→DID resolution, `HandleResolver verifyHandleBacklink:did:` resolves the
+DID document and requires `alsoKnownAs` to contain `at://<handle>` (skipped only
+under explicit test-mode env). Domain control alone cannot assert a victim DID.
+
+Was: **CONFIRMED for the resolver** — no reverse check; exploitability depended
+on callers.
 
 ### 6.7 Failure-cache key mismatch
 
