@@ -23,6 +23,48 @@
 
 NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
 
+static BOOL AuthVerifierEnvBool(NSString *value) {
+    if (value.length == 0) {
+        return NO;
+    }
+    NSString *normalized = [[value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    return [normalized isEqualToString:@"1"] ||
+           [normalized isEqualToString:@"true"] ||
+           [normalized isEqualToString:@"yes"] ||
+           [normalized isEqualToString:@"on"];
+}
+
+static BOOL AuthVerifierIsTrustedProxyRemoteAddress(NSString *remoteAddress) {
+    NSString *candidate = [[remoteAddress ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    if (candidate.length == 0) {
+        return NO;
+    }
+    if ([candidate hasPrefix:@"127."] || [candidate isEqualToString:@"::1"] || [candidate isEqualToString:@"localhost"]) {
+        return YES;
+    }
+    if ([candidate hasPrefix:@"10."] || [candidate hasPrefix:@"192.168."]) {
+        return YES;
+    }
+    if ([candidate hasPrefix:@"172."]) {
+        NSArray<NSString *> *parts = [candidate componentsSeparatedByString:@"."];
+        if (parts.count >= 2) {
+            NSInteger secondOctet = [parts[1] integerValue];
+            if (secondOctet >= 16 && secondOctet <= 31) {
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
+
+static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    if (!AuthVerifierEnvBool(env[@"PDS_TRUST_PROXY_HEADERS"])) {
+        return NO;
+    }
+    return AuthVerifierIsTrustedProxyRemoteAddress(request.remoteAddress);
+}
+
 #pragma mark - AuthVerifierPrincipal
 
 @interface AuthVerifierPrincipal ()
@@ -481,33 +523,48 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         path = [@"/" stringByAppendingString:path];
     }
 
-    NSString *hostHeader = [request headerForKey:@"Host"];
+    NSString *hostHeader = [[request headerForKey:@"Host"]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *hostLower = [hostHeader lowercaseString];
     BOOL localHost = [hostLower containsString:@"localhost"] ||
                      [hostLower hasPrefix:@"127.0.0.1"] ||
+                     [hostLower hasPrefix:@"[::1]"] ||
                      [hostLower isEqualToString:@"::1"];
-    NSString *scheme = @"https";
 
-    NSString *forwardedProto = [request headerForKey:@"X-Forwarded-Proto"];
-    if (forwardedProto.length > 0) {
-        NSString *firstProto = [[forwardedProto componentsSeparatedByString:@","] firstObject];
-        firstProto = [firstProto stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if ([firstProto isEqualToString:@"http"] || [firstProto isEqualToString:@"https"]) {
-            scheme = firstProto;
+    // §4.6: only honor X-Forwarded-Proto when the operator opted in AND the
+    // immediate peer is a trusted proxy address. Otherwise the client picks
+    // the scheme their DPoP proof is compared against.
+    BOOL trustForwarded = AuthVerifierShouldTrustForwardedHeaders(request);
+
+    NSString *scheme = nil;
+    if (trustForwarded) {
+        NSString *forwardedProto = [[request headerForKey:@"X-Forwarded-Proto"] lowercaseString];
+        if (forwardedProto.length > 0) {
+            NSString *firstProto = [[forwardedProto componentsSeparatedByString:@","] firstObject];
+            firstProto = [firstProto stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if ([firstProto isEqualToString:@"http"] || [firstProto isEqualToString:@"https"]) {
+                scheme = firstProto;
+            }
         }
-    } else if (localHost) {
-        scheme = @"http";
     }
 
-    // §4.6: Validate Host header against the configured issuer. In production,
-    // the DPoP htu must use the issuer's authority, not the client-supplied
-    // Host header, to prevent an attacker from manipulating htu validation.
-    // For local dev (localhost/127.0.0.1) the Host header is accepted directly.
-    NSString *authority = hostHeader;
     NSURL *issuerURL = [NSURL URLWithString:self.localIssuer ?: @""];
+    if (scheme.length == 0) {
+        if (localHost) {
+            scheme = @"http";
+        } else if (issuerURL.scheme.length > 0) {
+            scheme = issuerURL.scheme;
+        } else {
+            scheme = @"https";
+        }
+    }
+
+    // §4.6: production htu authority comes from the configured issuer, not the
+    // client-supplied Host header. Host is accepted only for local/dev or when
+    // forwarded headers are trusted from a proxy peer.
+    NSString *authority = nil;
     if (issuerURL.host.length > 0 && !localHost) {
-        // Build the expected authority from the issuer
-        NSString *expectedAuthority = issuerURL.host;
+        authority = issuerURL.host;
         if (issuerURL.port != nil) {
             BOOL isDefaultPort =
                 ([issuerURL.scheme.lowercaseString isEqualToString:@"https"] &&
@@ -515,11 +572,17 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                 ([issuerURL.scheme.lowercaseString isEqualToString:@"http"] &&
                  issuerURL.port.integerValue == 80);
             if (!isDefaultPort) {
-                expectedAuthority = [NSString stringWithFormat:@"%@:%@",
-                                     issuerURL.host, issuerURL.port];
+                authority = [NSString stringWithFormat:@"%@:%@",
+                             issuerURL.host, issuerURL.port];
             }
         }
-        authority = expectedAuthority;
+    } else if (hostHeader.length > 0 && (trustForwarded || localHost)) {
+        authority = hostHeader;
+    } else if (hostHeader.length > 0 && issuerURL.host.length == 0) {
+        // No issuer configured (misconfig / early boot): refuse rather than
+        // binding htu to an unvalidated Host (literal https://(null)/… was the
+        // prior failure mode when Host was also missing).
+        authority = nil;
     }
 
     if (authority.length == 0) {
