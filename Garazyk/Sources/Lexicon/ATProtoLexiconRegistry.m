@@ -5,6 +5,7 @@
 #import "ATProtoLexiconError.h"
 #import "Compat/PDSTypes.h"
 #import "Debug/GZLogger.h"
+#import "Core/ATProtoDataPaths.h"
 
 @interface ATProtoLexiconRegistry ()
 
@@ -175,10 +176,6 @@
         [paths addObject:bundlePath];
     }
 
-    BOOL isDir = NO;
-    if ([fm fileExistsAtPath:@"/usr/share/garazyk/lexicons" isDirectory:&isDir] && isDir) {
-        [paths addObject:@"/usr/share/garazyk/lexicons"];
-    }
 
     NSString *cwd = fm.currentDirectoryPath ?: @"";
     NSArray<NSString *> *candidates = @[
@@ -198,10 +195,12 @@
     }
 
     if (dataDirectory.length > 0) {
-        NSString *customPath = [dataDirectory stringByAppendingPathComponent:@"lexicons"];
-        BOOL isDir = NO;
-        if ([fm fileExistsAtPath:customPath isDirectory:&isDir] && isDir) {
-            [paths addObject:customPath];
+        ATProtoDataPaths *dataPaths = [ATProtoDataPaths pathsForBaseDirectory:dataDirectory];
+        if (dataPaths.lexiconsDirectory) {
+            BOOL isDir = NO;
+            if ([fm fileExistsAtPath:dataPaths.lexiconsDirectory isDirectory:&isDir] && isDir) {
+                [paths addObject:dataPaths.lexiconsDirectory];
+            }
         }
     }
 
