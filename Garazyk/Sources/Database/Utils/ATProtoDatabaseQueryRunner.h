@@ -54,11 +54,51 @@ typedef NSError * _Nonnull (^ATProtoDatabaseQueryRunnerErrorFactory)(sqlite3 * _
 @end
 
 /**
+ * @abstract The public surface of @c ATProtoDatabaseQueryRunner, extracted as a protocol
+ * so callers outside Storage (e.g. Transport's @c RateLimiter) can depend on the
+ * capability without linking the concrete class.
+ */
+@protocol ATProtoQueryRunning <NSObject>
+
+/**
+ * @abstract Executes a query on a connection supplied by the manager.
+ * @param sql The SQL statement to prepare and execute.
+ * @param params Positional values to bind, or nil when the statement has no parameters.
+ * @param error Receives connection, preparation, binding, or execution failures.
+ * @return Rows keyed by column name, or nil when the query fails. SQL NULL values become NSNull.
+ */
+- (nullable NSArray<NSDictionary<NSString *, id> *> *)executeQuery:(NSString *)sql
+                                                            params:(nullable NSArray *)params
+                                                             error:(NSError **)error;
+
+/**
+ * @abstract Executes one write statement on a connection supplied by the manager.
+ * @param sql The INSERT, UPDATE, DELETE, or DDL statement to execute.
+ * @param params Positional values to bind, or nil when the statement has no parameters.
+ * @param error Receives connection, preparation, binding, or execution failures.
+ * @return The number of changed rows, or -1 on failure. A successful no-op returns 0.
+ */
+- (NSInteger)executeUpdate:(NSString *)sql
+                    params:(nullable NSArray *)params
+                     error:(NSError **)error;
+
+/**
+ * @abstract Runs a block inside a manager-controlled write transaction.
+ * @param block Work that uses the transaction-bound transactor. Return NO to roll back.
+ * @param error Receives the block's error or a translated transaction failure.
+ * @return YES when the transaction commits; otherwise NO.
+ */
+- (BOOL)performWriteTransaction:(BOOL (^)(id<ATProtoDatabaseTransactor> tx, NSError **error))block
+                          error:(NSError **)error;
+
+@end
+
+/**
  * @abstract Executes parameterized SQLite statements through a connection manager.
  * @discussion Each non-transactional call acquires its connection from the supplied manager.
  * Transaction blocks receive an @c ATProtoDatabaseTransactor bound to one write transaction.
  */
-@interface ATProtoDatabaseQueryRunner : NSObject
+@interface ATProtoDatabaseQueryRunner : NSObject <ATProtoQueryRunning>
 
 /**
  * @abstract Unavailable; initialize the runner with a connection manager.
