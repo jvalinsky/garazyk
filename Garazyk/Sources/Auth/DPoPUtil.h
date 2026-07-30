@@ -106,6 +106,21 @@ NS_ASSUME_NONNULL_BEGIN
                                        error:(NSError **)error;
 
 /*!
+ @brief Creates a DPoP proof bound to an access token.
+
+ @param accessToken Access token whose SHA-256 hash is emitted as the required `ath` claim.
+
+ @discussion Use this overload for resource-server requests authenticated with a
+ DPoP-bound access token, as required by RFC 9449 section 4.3.
+ */
++ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
+                                         uri:(NSString *)htu
+                                       nonce:(nullable NSString *)nonce
+                                 accessToken:(nullable NSString *)accessToken
+                                         key:(SecKeyRef)privateKey
+                                       error:(NSError **)error;
+
+/*!
  @brief Verifies a DPoP proof JWT.
 
  @param dpopJwt The proof JWT string

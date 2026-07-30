@@ -128,6 +128,20 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertNotNil(accessToken);
         XCTAssertNil(error);
         NSString *authorization = [NSString stringWithFormat:@"DPoP %@", [accessToken encodedToken]];
+        NSString *encodedAccessToken = [accessToken encodedToken];
+
+        // A DPoP proof used with a resource-server access token must bind that
+        // token through its RFC 9449 `ath` claim. The unsigned-key proof above
+        // is only used to derive the JWK thumbprint needed to mint the token.
+        error = nil;
+        initialProof = [DPoPUtil createDPoPForMethod:@"GET"
+                                                 uri:dpopURLString
+                                               nonce:nil
+                                         accessToken:encodedAccessToken
+                                                 key:privateKey
+                                               error:&error];
+        XCTAssertNotNil(initialProof);
+        XCTAssertNil(error);
 
         HttpRequest *firstRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                             methodString:@"GET"
@@ -155,6 +169,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         DPoPToken *retryProof = [DPoPUtil createDPoPForMethod:@"GET"
                                                            uri:dpopURLString
                                                         nonce:challengeNonce
+                                                  accessToken:encodedAccessToken
                                                           key:privateKey
                                                         error:&error];
         if ([error.domain isEqualToString:NSOSStatusErrorDomain]) {

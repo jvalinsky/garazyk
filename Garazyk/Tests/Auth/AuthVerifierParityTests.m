@@ -298,6 +298,13 @@
     XCTAssertNotNil(token, @"Token minting failed: %@", error);
 
     NSString *authorization = [@"DPoP " stringByAppendingString:token.encodedToken];
+    legacyProof = [DPoPUtil createDPoPForMethod:@"GET"
+                                            uri:url
+                                          nonce:nil
+                                    accessToken:token.encodedToken
+                                            key:key
+                                          error:&error];
+    XCTAssertNotNil(legacyProof, @"DPoP proof creation failed: %@", error);
     HttpRequest *legacyRequest = [self requestWithAuthorization:authorization dpop:legacyProof.jwt];
     XCTAssertEqualObjects([self legacyDIDForAuthorization:authorization request:legacyRequest], @"did:plc:alice");
 
