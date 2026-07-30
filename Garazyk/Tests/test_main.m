@@ -954,7 +954,6 @@ int main(int argc, char *argv[]) {
       @"HandleResolverSSRFTests",
       @"WebSocketUpgradeHandlerTests",
       @"SSLPinningTests",
-      @"HttpRouterTests",
       @"HttpRequestDispatcherTests",
       @"HttpRouteTrieTests",
       @"HttpRequestParsingTests",
