@@ -460,6 +460,7 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpOAuth
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpOAuthRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpRelayAPIRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpPDSAdminRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpWellKnownRoutePack\\.m$")
 # HttpRequest/HttpResponse/HttpRoute/HttpRetryPolicy/HttpParsing are
 # Foundation-only HTTP message value types with no I/O or socket
 # dependency (workstream 08 M3) — carved out to ATProtoCore so Services
@@ -522,6 +523,7 @@ file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
   "Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m"
   "Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m"
   "Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m"
+  "Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.m"
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/ATProtoServiceConfiguration\\.m$")
