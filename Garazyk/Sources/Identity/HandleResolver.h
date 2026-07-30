@@ -52,7 +52,7 @@ typedef NS_ENUM(NSInteger, HandleError) {
 @property (nonatomic, strong) NSCache<NSString *, NSString *> *resolutionCache;
 
 /*! Cache of failed resolutions for backoff. */
-@property (nonatomic, strong) NSCache<NSString *, id> *failureCache;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, id> *failureCache;
 
 /*! TTL for cached resolutions in seconds. */
 @property (nonatomic, assign) NSTimeInterval cacheExpirationInterval;
