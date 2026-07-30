@@ -330,7 +330,12 @@
         }
 
         NSString *path = @"/xrpc/com.atproto.server.getSession";
-        NSString *dpopURLString = [kPDSTestDPoPBaseURL stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
+        // The server reconstructs the expected DPoP htu from jwtMinter.issuer
+        // (authoritative over the Host header once an issuer is configured),
+        // not from kPDSTestDPoPBaseURL — which defaults to port 2583 while
+        // ATProtoServiceConfiguration's own default serverPort is 8080. Build
+        // the proof's htu from the same issuer the server will check against.
+        NSString *dpopURLString = [controller.jwtMinter.issuer stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
         NSURL *dpopURL = [NSURL URLWithString:dpopURLString];
 
         // Real signed DPoP proof — without a nonce — so the verifier
@@ -457,7 +462,12 @@
         }
 
         NSString *path = @"/xrpc/com.atproto.server.getSession";
-        NSString *dpopURLString = [kPDSTestDPoPBaseURL stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
+        // The server reconstructs the expected DPoP htu from jwtMinter.issuer
+        // (authoritative over the Host header once an issuer is configured),
+        // not from kPDSTestDPoPBaseURL — which defaults to port 2583 while
+        // ATProtoServiceConfiguration's own default serverPort is 8080. Build
+        // the proof's htu from the same issuer the server will check against.
+        NSString *dpopURLString = [controller.jwtMinter.issuer stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
         NSURL *dpopURL = [NSURL URLWithString:dpopURLString];
 
         // Initial proof carries no nonce — the verifier trips the
